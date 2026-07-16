@@ -1,0 +1,199 @@
+import { describe, expect, it, vi, beforeEach, beforeAll } from "vitest";
+
+function makeChain(result: unknown) {
+  const calls: Record<string, unknown[][]> = {};
+  const chain: any = { __calls: calls };
+  const methods = ["from", "where", "limit", "orderBy", "set", "values"];
+  for (const m of methods) {
+    chain[m] = (...args: unknown[]) => {
+      (calls[m] ??= []).push(args);
+      return chain;
+    };
+  }
+  chain.then = (resolve: (v: unknown) => void, reject?: (e: unknown) => void) =>
+    Promise.resolve(result).then(resolve, reject);
+  return chain;
+}
+
+function makeTxMock() {
+  const tx = {
+    insert: vi.fn(),
+    update: vi.fn(),
+  };
+  return tx;
+}
+
+// withTimeout() checks out a dedicated connection per call so it can
+// destroy() it if the call times out — see server/db.ts. The mock
+// connection just needs release()/destroy() so that code path doesn't throw.
+const mockConnection = { release: vi.fn(), destroy: vi.fn() };
+
+const dbMock = {
+  select: vi.fn(),
+  insert: vi.fn(),
+  update: vi.fn(),
+  delete: vi.fn(),
+  transaction: vi.fn(),
+  $client: {
+    getConnection: vi.fn((cb: (err: unknown, conn: unknown) => void) =>
+      cb(null, mockConnection)
+    ),
+  },
+};
+
+vi.mock("drizzle-orm/mysql2", () => ({
+  drizzle: vi.fn(() => dbMock),
+}));
+
+import {
+  createStripeReconciliation,
+  getAvailableProductsForMatching,
+  getKnownOrderPaymentIntentIds,
+  getKnownPosPaymentIntentIds,
+  getKnownReconciliationPaymentIntentIds,
+  getStripeReconciliationByToken,
+  rejectStripeReconciliation,
+  resolveStripeReconciliationConfirmed,
+} from "./db";
+
+beforeAll(() => {
+  process.env.DATABASE_URL = "mysql://test:test@localhost:3306/test";
+});
+
+beforeEach(() => {
+  dbMock.select.mockReset();
+  dbMock.insert.mockReset();
+  dbMock.update.mockReset();
+  dbMock.delete.mockReset();
+  dbMock.transaction.mockReset();
+  mockConnection.release.mockReset();
+  mockConnection.destroy.mockReset();
+  dbMock.$client.getConnection.mockClear();
+  dbMock.$client.getConnection.mockImplementation(
+    (cb: (err: unknown, conn: unknown) => void) => cb(null, mockConnection)
+  );
+});
+
+describe("getAvailableProductsForMatching", () => {
+  it("returns the products from the query", async () => {
+    const products = [{ id: 1, price: "100.00" }];
+    dbMock.select.mockReturnValue(makeChain(products));
+    const result = await getAvailableProductsForMatching();
+    expect(result).toEqual(products);
+  });
+});
+
+describe("getKnownOrderPaymentIntentIds", () => {
+  it("returns a set of non-null payment intent ids", async () => {
+    dbMock.select.mockReturnValue(
+      makeChain([{ id: "pi_1" }, { id: "pi_2" }])
+    );
+    const result = await getKnownOrderPaymentIntentIds();
+    expect(result).toEqual(new Set(["pi_1", "pi_2"]));
+  });
+});
+
+describe("getKnownPosPaymentIntentIds", () => {
+  it("returns a set of pos order payment intent ids", async () => {
+    dbMock.select.mockReturnValue(makeChain([{ id: "pi_pos_1" }]));
+    const result = await getKnownPosPaymentIntentIds();
+    expect(result).toEqual(new Set(["pi_pos_1"]));
+  });
+});
+
+describe("getKnownReconciliationPaymentIntentIds", () => {
+  it("returns a set of already-recorded reconciliation payment intent ids", async () => {
+    dbMock.select.mockReturnValue(makeChain([{ id: "pi_r_1" }]));
+    const result = await getKnownReconciliationPaymentIntentIds();
+    expect(result).toEqual(new Set(["pi_r_1"]));
+  });
+});
+
+describe("createStripeReconciliation", () => {
+  it("inserts the reconciliation row", async () => {
+    const insertChain = makeChain(undefined);
+    dbMock.insert.mockReturnValue(insertChain);
+
+    await createStripeReconciliation({
+      stripePaymentIntentId: "pi_1",
+      amountRappen: 10000,
+      currency: "chf",
+      stripeCreatedAt: new Date(),
+      candidateProductIds: "1,2",
+      confirmationToken: "tok",
+      status: "pending_review",
+    });
+
+    expect(dbMock.insert).toHaveBeenCalledTimes(1);
+    expect(insertChain.__calls.values[0][0]).toMatchObject({
+      stripePaymentIntentId: "pi_1",
+      candidateProductIds: "1,2",
+    });
+  });
+});
+
+describe("getStripeReconciliationByToken", () => {
+  it("returns undefined when no row matches", async () => {
+    dbMock.select.mockReturnValue(makeChain([]));
+    expect(await getStripeReconciliationByToken("missing")).toBeUndefined();
+  });
+
+  it("returns the row when found", async () => {
+    const row = { id: 1, confirmationToken: "tok" };
+    dbMock.select.mockReturnValue(makeChain([row]));
+    expect(await getStripeReconciliationByToken("tok")).toEqual(row);
+  });
+});
+
+describe("rejectStripeReconciliation", () => {
+  it("marks the row rejected and resolved", async () => {
+    const updateChain = makeChain(undefined);
+    dbMock.update.mockReturnValue(updateChain);
+
+    await rejectStripeReconciliation(5);
+
+    expect(dbMock.update).toHaveBeenCalledTimes(1);
+    const [setArg] = updateChain.__calls.set[0];
+    expect(setArg.status).toBe("rejected");
+    expect(setArg.resolvedAt).toBeInstanceOf(Date);
+  });
+});
+
+describe("resolveStripeReconciliationConfirmed", () => {
+  it("inserts the sale, decrements stock, and marks the reconciliation confirmed inside one transaction", async () => {
+    const tx = makeTxMock();
+    const insertPosOrderChain = makeChain({ insertId: 42 });
+    const insertItemChain = makeChain(undefined);
+    const updateProductChain = makeChain(undefined);
+    const updateReconChain = makeChain(undefined);
+
+    tx.insert
+      .mockReturnValueOnce(insertPosOrderChain)
+      .mockReturnValueOnce(insertItemChain);
+    tx.update
+      .mockReturnValueOnce(updateProductChain)
+      .mockReturnValueOnce(updateReconChain);
+
+    dbMock.transaction.mockImplementation(async (cb: (tx: unknown) => unknown) =>
+      cb(tx)
+    );
+
+    await resolveStripeReconciliationConfirmed(9, 3, 10000, "pi_1");
+
+    expect(dbMock.transaction).toHaveBeenCalledTimes(1);
+    expect(insertPosOrderChain.__calls.values[0][0]).toMatchObject({
+      stripePaymentIntentId: "pi_1",
+      status: "paid",
+      totalRappen: 10000,
+    });
+    expect(insertItemChain.__calls.values[0][0]).toMatchObject({
+      posOrderId: 42,
+      productId: 3,
+      priceRappen: 10000,
+    });
+    expect(updateReconChain.__calls.set[0][0]).toMatchObject({
+      status: "confirmed",
+      chosenProductId: 3,
+    });
+  });
+});

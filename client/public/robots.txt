@@ -1,0 +1,20 @@
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://kalakosh.ch/sitemap.xml
+
+# Disallow admin routes
+Disallow: /admin
+Disallow: /admin/
+Disallow: /checkout/success
+Disallow: /checkout/cancel
+
+# Allow crawling of product pages, shop, and content pages
+Allow: /shop
+Allow: /product/
+Allow: /about
+Allow: /contact
+Allow: /faq
+Allow: /policy
+Allow: /impressum

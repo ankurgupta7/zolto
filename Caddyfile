@@ -1,0 +1,32 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Caddyfile — Kalakosh Zurich self-hosted
+#
+# Replace "yourdomain.com" with your actual domain.
+# Caddy will automatically obtain and renew an SSL certificate via Let's Encrypt.
+# ─────────────────────────────────────────────────────────────────────────────
+
+kalakosh.ch {
+    # Reverse proxy all traffic to the Node.js app
+    reverse_proxy app:3000
+
+    # Enable gzip compression
+    encode gzip
+
+    # Security headers
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "SAMEORIGIN"
+        Referrer-Policy "strict-origin-when-cross-origin"
+    }
+
+    # Logging
+    log {
+        output file /var/log/caddy/access.log
+    }
+}
+
+# Redirect www → apex
+www.kalakosh.ch {
+    redir https://kalakosh.ch{uri} permanent
+}

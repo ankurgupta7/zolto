@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "mysql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1780685493729,
+      "tag": "0000_harsh_the_liberteens",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1780685610132,
+      "tag": "0001_wide_invaders",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1780692086770,
+      "tag": "0002_aberrant_william_stryker",
+      "breakpoints": true
+    }
+  ]
+}

@@ -1,0 +1,136 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+  <defs>
+    <radialGradient id="bg" cx="25%" cy="50%" r="90%">
+      <stop offset="0%" stop-color="#3A3028"/>
+      <stop offset="55%" stop-color="#2D2620"/>
+      <stop offset="100%" stop-color="#231E19"/>
+    </radialGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#B8963E" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#B8963E" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="pearlSheen" cx="30%" cy="25%" r="75%">
+      <stop offset="0%" stop-color="#F7F3EE" stop-opacity="0.9"/>
+      <stop offset="50%" stop-color="#D4B060" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#B8963E" stop-opacity="0.1"/>
+    </radialGradient>
+    <radialGradient id="gemGlow" cx="40%" cy="30%" r="60%">
+      <stop offset="0%" stop-color="#D4B060" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#B8963E" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="softBlur">
+      <feGaussianBlur stdDeviation="2"/>
+    </filter>
+  </defs>
+
+  <!-- Base background -->
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+
+  <!-- Ambient left glow (behind hero text) -->
+  <ellipse cx="480" cy="480" rx="520" ry="420" fill="url(#glow)" opacity="0.7"/>
+
+  <!-- ─── Large ring composition, right side ─── -->
+  <circle cx="1380" cy="390" r="340" fill="none" stroke="#B8963E" stroke-width="1.5" opacity="0.18"/>
+  <circle cx="1380" cy="390" r="295" fill="none" stroke="#B8963E" stroke-width="0.8" opacity="0.12"/>
+  <circle cx="1380" cy="390" r="245" fill="none" stroke="#D4B060" stroke-width="0.4" opacity="0.09"/>
+  <circle cx="1380" cy="390" r="180" fill="none" stroke="#B8963E" stroke-width="0.4" opacity="0.07"/>
+
+  <!-- Ring highlight arc (makes it look 3D) -->
+  <path d="M 1110,300 A 340,340 0 0 1 1650,350" fill="none" stroke="#D4B060" stroke-width="2" opacity="0.08"/>
+
+  <!-- ─── Diamond / faceted gem — upper right ─── -->
+  <g opacity="0.22" transform="translate(1620, 160)">
+    <!-- Outer diamond -->
+    <polygon points="0,-90 60,-30 0,90 -60,-30" fill="none" stroke="#B8963E" stroke-width="1.2"/>
+    <!-- Upper facets -->
+    <line x1="0" y1="-90" x2="60" y2="-30" stroke="#D4B060" stroke-width="0.5"/>
+    <line x1="0" y1="-90" x2="-60" y2="-30" stroke="#D4B060" stroke-width="0.5"/>
+    <line x1="0" y1="-90" x2="0" y2="0" stroke="#B8963E" stroke-width="0.6"/>
+    <!-- Girdle -->
+    <line x1="-60" y1="-30" x2="60" y2="-30" stroke="#B8963E" stroke-width="0.6"/>
+    <!-- Lower facets -->
+    <line x1="-60" y1="-30" x2="0" y2="0" stroke="#D4B060" stroke-width="0.4"/>
+    <line x1="60" y1="-30" x2="0" y2="0" stroke="#D4B060" stroke-width="0.4"/>
+    <!-- Inner fill suggestion -->
+    <polygon points="0,-60 40,-25 0,40 -40,-25" fill="#B8963E" opacity="0.05"/>
+    <!-- Gem glow -->
+    <ellipse cx="0" cy="-20" rx="30" ry="25" fill="url(#gemGlow)" opacity="0.5"/>
+  </g>
+
+  <!-- ─── Second smaller gem — mid right ─── -->
+  <g opacity="0.14" transform="translate(1820, 560)">
+    <polygon points="0,-55 38,-18 0,55 -38,-18" fill="none" stroke="#B8963E" stroke-width="1"/>
+    <line x1="0" y1="-55" x2="0" y2="0" stroke="#B8963E" stroke-width="0.5"/>
+    <line x1="-38" y1="-18" x2="38" y2="-18" stroke="#B8963E" stroke-width="0.5"/>
+    <polygon points="0,-38 25,-15 0,30 -25,-15" fill="#B8963E" opacity="0.04"/>
+  </g>
+
+  <!-- ─── Hexagonal gemstone — lower right ─── -->
+  <g opacity="0.16" transform="translate(1750, 820)">
+    <polygon points="0,-50 43,-25 43,25 0,50 -43,25 -43,-25" fill="none" stroke="#B8963E" stroke-width="1"/>
+    <polygon points="0,-32 28,-16 28,16 0,32 -28,16 -28,-16" fill="none" stroke="#D4B060" stroke-width="0.5"/>
+    <line x1="0" y1="-50" x2="0" y2="-32" stroke="#B8963E" stroke-width="0.4"/>
+    <line x1="43" y1="-25" x2="28" y2="-16" stroke="#B8963E" stroke-width="0.4"/>
+    <line x1="43" y1="25" x2="28" y2="16" stroke="#B8963E" stroke-width="0.4"/>
+    <line x1="0" y1="50" x2="0" y2="32" stroke="#B8963E" stroke-width="0.4"/>
+    <line x1="-43" y1="25" x2="-28" y2="16" stroke="#B8963E" stroke-width="0.4"/>
+    <line x1="-43" y1="-25" x2="-28" y2="-16" stroke="#B8963E" stroke-width="0.4"/>
+    <line x1="0" y1="-32" x2="0" y2="32" stroke="#B8963E" stroke-width="0.3" opacity="0.5"/>
+    <line x1="-28" y1="-16" x2="28" y2="16" stroke="#B8963E" stroke-width="0.3" opacity="0.5"/>
+    <line x1="28" y1="-16" x2="-28" y2="16" stroke="#B8963E" stroke-width="0.3" opacity="0.5"/>
+  </g>
+
+  <!-- ─── Pearl strand arc ─── -->
+  <!-- Main necklace curve -->
+  <path d="M 1050,680 Q 1300,760 1550,700" fill="none" stroke="#B8963E" stroke-width="0.6" opacity="0.1"/>
+  <!-- Pearls along the curve (approximate Bezier points) -->
+  <circle cx="1055" cy="678" r="7" fill="url(#pearlSheen)" opacity="0.14"/>
+  <circle cx="1105" cy="695" r="9" fill="url(#pearlSheen)" opacity="0.16"/>
+  <circle cx="1160" cy="711" r="8" fill="url(#pearlSheen)" opacity="0.13"/>
+  <circle cx="1215" cy="724" r="10" fill="url(#pearlSheen)" opacity="0.17"/>
+  <circle cx="1272" cy="732" r="8" fill="url(#pearlSheen)" opacity="0.14"/>
+  <circle cx="1328" cy="734" r="9" fill="url(#pearlSheen)" opacity="0.15"/>
+  <circle cx="1384" cy="730" r="8" fill="url(#pearlSheen)" opacity="0.13"/>
+  <circle cx="1438" cy="720" r="7" fill="url(#pearlSheen)" opacity="0.12"/>
+  <circle cx="1490" cy="706" r="8" fill="url(#pearlSheen)" opacity="0.13"/>
+  <circle cx="1542" cy="700" r="7" fill="url(#pearlSheen)" opacity="0.11"/>
+
+  <!-- ─── Small ring bottom left ─── -->
+  <circle cx="160" cy="940" r="180" fill="none" stroke="#B8963E" stroke-width="1" opacity="0.07"/>
+  <circle cx="160" cy="940" r="140" fill="none" stroke="#B8963E" stroke-width="0.5" opacity="0.05"/>
+
+  <!-- ─── Bracelet arc — top center ─── -->
+  <path d="M 780,80 A 200,200 0 0 1 1180,80" fill="none" stroke="#B8963E" stroke-width="1" opacity="0.1"/>
+  <path d="M 800,68 A 195,195 0 0 1 1160,68" fill="none" stroke="#D4B060" stroke-width="0.4" opacity="0.06"/>
+
+  <!-- ─── Scattered starbursts ─── -->
+  <g transform="translate(950, 580)" opacity="0.12">
+    <line x1="0" y1="-12" x2="0" y2="12" stroke="#D4B060" stroke-width="0.8"/>
+    <line x1="-12" y1="0" x2="12" y2="0" stroke="#D4B060" stroke-width="0.8"/>
+    <line x1="-8" y1="-8" x2="8" y2="8" stroke="#D4B060" stroke-width="0.5"/>
+    <line x1="8" y1="-8" x2="-8" y2="8" stroke="#D4B060" stroke-width="0.5"/>
+    <circle cx="0" cy="0" r="2.5" fill="#B8963E" opacity="0.5"/>
+  </g>
+  <g transform="translate(1480, 460)" opacity="0.1">
+    <line x1="0" y1="-9" x2="0" y2="9" stroke="#D4B060" stroke-width="0.7"/>
+    <line x1="-9" y1="0" x2="9" y2="0" stroke="#D4B060" stroke-width="0.7"/>
+    <line x1="-6" y1="-6" x2="6" y2="6" stroke="#D4B060" stroke-width="0.4"/>
+    <line x1="6" y1="-6" x2="-6" y2="6" stroke="#D4B060" stroke-width="0.4"/>
+    <circle cx="0" cy="0" r="2" fill="#B8963E" opacity="0.4"/>
+  </g>
+  <g transform="translate(700, 820)" opacity="0.08">
+    <line x1="0" y1="-10" x2="0" y2="10" stroke="#D4B060" stroke-width="0.6"/>
+    <line x1="-10" y1="0" x2="10" y2="0" stroke="#D4B060" stroke-width="0.6"/>
+    <line x1="-7" y1="-7" x2="7" y2="7" stroke="#D4B060" stroke-width="0.4"/>
+    <line x1="7" y1="-7" x2="-7" y2="7" stroke="#D4B060" stroke-width="0.4"/>
+    <circle cx="0" cy="0" r="2" fill="#B8963E" opacity="0.35"/>
+  </g>
+
+  <!-- ─── Subtle horizontal rule grid (very faint) ─── -->
+  <g opacity="0.03">
+    <line x1="0" y1="200" x2="1920" y2="200" stroke="#B8963E" stroke-width="0.5"/>
+    <line x1="0" y1="400" x2="1920" y2="400" stroke="#B8963E" stroke-width="0.5"/>
+    <line x1="0" y1="700" x2="1920" y2="700" stroke="#B8963E" stroke-width="0.5"/>
+    <line x1="0" y1="950" x2="1920" y2="950" stroke="#B8963E" stroke-width="0.5"/>
+  </g>
+</svg>

@@ -1,0 +1,339 @@
+# Kalakosh Zurich — Self-Hosting Guide
+
+This guide walks you through deploying the Kalakosh Zurich jewellery store on any Linux VPS. The entire stack runs inside Docker containers managed by Docker Compose. Caddy handles HTTPS automatically via Let's Encrypt — no manual certificate management needed.
+
+Admin login uses **Google OAuth** — only the designated Google account (`shwena9@gmail.com` by default, configurable via `ADMIN_EMAIL`) can access the admin panel. All other visitors browse the public storefront without any account.
+
+---
+
+## What You Need
+
+| Requirement | Minimum spec | Recommended |
+|---|---|---|
+| VPS | 1 vCPU, 1 GB RAM | 2 vCPU, 4 GB RAM (Hetzner CX22 ~€4/mo) |
+| OS | Ubuntu 22.04 or Debian 12 | Ubuntu 24.04 LTS |
+| Domain | Any domain pointing to your server IP | — |
+| Docker | 24+ | Latest stable |
+| Docker Compose | v2 plugin | Latest stable |
+
+---
+
+## Architecture Overview
+
+```
+Internet
+    │
+    ▼
+ Caddy :443 (HTTPS, auto Let's Encrypt)
+    │
+    ▼
+ Node.js app :3000 (Express + tRPC + React)
+    │          │
+    │          ▼
+    │       MySQL :3306 (product catalogue, users)
+    │
+    ▼
+ S3-compatible storage (Cloudflare R2 / AWS S3 / Backblaze B2)
+    │
+    ▼
+ LLM API (Groq / OpenAI / Ollama) — for Discord message parsing
+```
+
+The Discord bot runs as a long-lived WebSocket connection inside the Node.js process — no separate service needed.
+
+---
+
+## Step 1 — Provision Your VPS
+
+Any provider works. Hetzner is recommended for European users (fast, cheap, GDPR-compliant).
+
+1. Create a server with Ubuntu 24.04.
+2. Note the public IP address.
+3. SSH in: `ssh root@YOUR_SERVER_IP`
+
+---
+
+## Step 2 — Install Docker
+
+```bash
+curl -fsSL https://get.docker.com | sh
+docker --version
+docker compose version
+```
+
+---
+
+## Step 3 — Point Your Domain to the Server
+
+In your domain registrar's DNS settings (e.g. Swissonic.ch), add:
+
+| Type | Name | Value | TTL |
+|---|---|---|---|
+| `A` | `@` | `YOUR_SERVER_IP` | 300 |
+| `A` | `www` | `YOUR_SERVER_IP` | 300 |
+
+Verify propagation: `dig +short yourdomain.com`
+
+---
+
+## Step 4 — Set Up Google OAuth
+
+This is the only admin login method. No password is stored on your server.
+
+1. Go to [console.cloud.google.com](https://console.cloud.google.com)
+2. Create a new project (or use an existing one)
+3. Go to **APIs & Services → OAuth consent screen**
+   - User type: **External**
+   - Fill in app name (e.g. "Kalakosh Admin"), your email, and save
+   - Under **Test users**, add `shwena9@gmail.com`
+4. Go to **APIs & Services → Credentials → Create Credentials → OAuth 2.0 Client ID**
+   - Application type: **Web application**
+   - Authorized redirect URIs: `https://yourdomain.com/api/oauth/callback`
+   - Click **Create** and copy the **Client ID** and **Client Secret**
+
+> **Important:** The redirect URI must exactly match your domain. If you use `www`, add both `https://yourdomain.com/api/oauth/callback` and `https://www.yourdomain.com/api/oauth/callback`.
+
+---
+
+## Step 5 — Get the Code
+
+Download the project ZIP from the Manus Management UI (⋯ → Download as ZIP), upload it to your server, and unzip:
+
+```bash
+scp kalakosh-selfhost.zip root@YOUR_SERVER_IP:/opt/
+ssh root@YOUR_SERVER_IP
+cd /opt && unzip kalakosh-selfhost.zip && cd kalakosh-selfhost
+```
+
+---
+
+## Step 6 — Configure Environment Variables
+
+```bash
+cp .env.example .env
+nano .env
+```
+
+### Required values
+
+**Database** — internal MySQL credentials, choose any strong passwords:
+```env
+MYSQL_ROOT_PASSWORD=a_strong_root_password
+MYSQL_DATABASE=kalakosh
+MYSQL_USER=kalakosh_user
+MYSQL_PASSWORD=a_strong_user_password
+```
+
+**Session secret** — generate a random 32-char string:
+```bash
+openssl rand -hex 32
+```
+```env
+JWT_SECRET=<output of above command>
+```
+
+**Google OAuth** — from Step 4:
+```env
+GOOGLE_CLIENT_ID=your_client_id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your_client_secret
+ADMIN_EMAIL=shwena9@gmail.com
+```
+
+**Discord Bot:**
+```env
+DISCORD_BOT_TOKEN=your_bot_token
+DISCORD_CHANNEL_ID=your_channel_id
+DISCORD_OWNER_USER_ID=your_discord_user_id   # optional, for DM notifications
+```
+
+**LLM — Groq (recommended, free tier):**
+Sign up at [console.groq.com](https://console.groq.com) → API Keys.
+```env
+LLM_BASE_URL=https://api.groq.com/openai/v1
+LLM_API_KEY=gsk_your_groq_key
+LLM_MODEL=llama3-8b-8192
+```
+
+**S3 Storage — Cloudflare R2 (recommended, free 10 GB):**
+Create a bucket at [dash.cloudflare.com](https://dash.cloudflare.com) → R2.
+```env
+S3_BUCKET=kalakosh-images
+S3_REGION=auto
+S3_ACCESS_KEY_ID=your_r2_access_key
+S3_SECRET_ACCESS_KEY=your_r2_secret_key
+S3_ENDPOINT=https://YOUR_ACCOUNT_ID.r2.cloudflarestorage.com
+S3_PUBLIC_URL=https://pub-HASH.r2.dev   # enable public access in R2 dashboard
+```
+
+**Stripe Payments (cards + TWINT, optional):**
+Online checkout is handled by [Stripe](https://dashboard.stripe.com). Use a
+Swiss/CHF Stripe account so TWINT is available. In the dashboard enable the
+**Cards** and **TWINT** payment methods, then add a webhook endpoint pointing
+to `https://yourdomain.com/api/stripe/webhook` subscribed to
+`checkout.session.completed`, `checkout.session.async_payment_succeeded`,
+`checkout.session.async_payment_failed` and `checkout.session.expired`.
+```env
+STRIPE_SECRET_KEY=sk_live_your_secret_key
+STRIPE_WEBHOOK_SECRET=whsec_your_webhook_signing_secret
+PUBLIC_BASE_URL=https://yourdomain.com   # used for Stripe success/cancel redirects
+```
+If `STRIPE_SECRET_KEY` is left blank, the storefront hides online payment and
+customers are routed to the WhatsApp enquiry flow instead.
+
+**POS Terminal / Tap to Pay (optional):**
+The Android and iOS market-stall apps authenticate requests with a shared API key and use Stripe Terminal for in-person payments. Add a second webhook endpoint at `https://yourdomain.com/api/pos/webhook` subscribed to `payment_intent.succeeded`.
+```bash
+openssl rand -hex 32   # generate POS_API_KEY
+```
+```env
+POS_API_KEY=<generated above>
+STRIPE_POS_WEBHOOK_SECRET=whsec_your_pos_webhook_signing_secret
+# Stripe Terminal Location for Tap to Pay (Dashboard → More → Terminal → Locations).
+# Served to the POS apps at runtime via GET /api/pos/config — not baked into the builds.
+STRIPE_LOCATION_ID=tml_your_location_id
+```
+Leave all three blank if you are not using the POS apps.
+
+**Backups (optional):**
+`deploy/backup.sh` dumps the database, exports inventory CSV, and uploads to a secondary S3 bucket and/or a private GitHub repository. Run it from cron or manually.
+```env
+# Secondary S3 (e.g. Backblaze B2 if primary is Cloudflare R2)
+BACKUP_S3_BUCKET=kalakosh-backups
+BACKUP_S3_REGION=us-west-004
+BACKUP_S3_ACCESS_KEY_ID=your_b2_key_id
+BACKUP_S3_SECRET_ACCESS_KEY=your_b2_app_key
+BACKUP_S3_ENDPOINT=https://s3.us-west-004.backblazeb2.com
+
+# GitHub private repo — each weekly backup is committed as backup.sql + inventory.csv
+BACKUP_GITHUB_REPO=youruser/kalakosh-backups
+BACKUP_GITHUB_TOKEN=github_pat_...
+```
+Leave blank to skip backups.
+
+---
+
+## Step 7 — Configure Caddy
+
+Replace the placeholder domain in `Caddyfile`:
+
+```bash
+sed -i 's/yourdomain.com/kalakoshzurich.ch/g' Caddyfile
+```
+
+---
+
+## Step 8 — Start Everything
+
+```bash
+docker compose up -d
+docker compose logs -f app   # watch startup logs
+```
+
+Caddy will obtain an SSL certificate within ~30 seconds. Visit `https://yourdomain.com` to see the storefront.
+
+To access the admin panel, go to `https://yourdomain.com/admin` and click **Sign in with Google**.
+
+---
+
+## Ongoing Operations
+
+### View logs
+```bash
+docker compose logs -f app     # application + Discord bot logs
+docker compose logs -f caddy   # access logs
+```
+
+### Update the application
+```bash
+docker compose build app
+docker compose up -d app
+```
+
+### Backup the database
+```bash
+docker compose exec db mysqldump -u root -p kalakosh > backup_$(date +%Y%m%d).sql
+```
+
+### Restore from backup
+```bash
+cat backup_20260101.sql | docker compose exec -T db mysql -u root -p kalakosh
+```
+
+### Stop everything
+```bash
+docker compose down
+```
+
+### Reconcile Stripe payments
+
+Card terminals and webhooks can occasionally miss recording a sale locally.
+The **Reconcile Stripe Payments** button in the admin panel scans recent
+successful Stripe payments for any with no matching row in the local orders
+or POS sales tables, guesses the 1-3 in-stock pieces closest in price to each
+one, and — if `RESEND_API_KEY` and `ADMIN_EMAIL` are set — emails `ADMIN_EMAIL`
+a shortlist with one-click links. Clicking a link opens a confirmation page;
+only after you click **Confirm** there is the sale recorded and inventory
+decremented. This never runs automatically — trigger it from the admin panel
+whenever you suspect a payment is missing.
+
+---
+
+## Environment Variable Reference
+
+| Variable | Required | Description |
+|---|---|---|
+| `MYSQL_*` | Yes | Internal database credentials |
+| `JWT_SECRET` | Yes | Session cookie signing secret (32+ chars) |
+| `GOOGLE_CLIENT_ID` | Yes | Google OAuth client ID |
+| `GOOGLE_CLIENT_SECRET` | Yes | Google OAuth client secret |
+| `ADMIN_EMAIL` | Yes | Google account allowed to log in as admin |
+| `DISCORD_BOT_TOKEN` | Yes | Discord bot token |
+| `DISCORD_CHANNEL_ID` | Yes | Channel to watch for new products |
+| `DISCORD_OWNER_USER_ID` | No | Your Discord user ID for DM notifications |
+| `LLM_BASE_URL` | Yes | OpenAI-compatible API base URL |
+| `LLM_API_KEY` | Yes | API key (`ollama` for local Ollama) |
+| `LLM_MODEL` | Yes | Model name (e.g. `llama3-8b-8192`) |
+| `S3_BUCKET` | Yes | Storage bucket name |
+| `S3_REGION` | Yes | Region (`auto` for R2) |
+| `S3_ACCESS_KEY_ID` | Yes | Storage access key |
+| `S3_SECRET_ACCESS_KEY` | Yes | Storage secret key |
+| `S3_ENDPOINT` | No | Custom endpoint for non-AWS providers |
+| `S3_PUBLIC_URL` | No | Public CDN base URL for serving images |
+| `STRIPE_SECRET_KEY` | No | Stripe secret key — enables card & TWINT checkout |
+| `STRIPE_WEBHOOK_SECRET` | No | Signing secret for `/api/stripe/webhook` |
+| `PUBLIC_BASE_URL` | No | Canonical site URL for Stripe success/cancel redirects |
+| `POS_API_KEY` | No | Shared secret for the POS apps — Android and iOS (generate with `openssl rand -hex 32`) |
+| `STRIPE_POS_WEBHOOK_SECRET` | No | Signing secret for `/api/pos/webhook` |
+| `STRIPE_LOCATION_ID` | No | Stripe Terminal Location ID served to POS apps at runtime via `GET /api/pos/config` — not baked into builds |
+| `BACKUP_S3_BUCKET` | No | Secondary S3 bucket for database backups |
+| `BACKUP_S3_REGION` | No | Region for secondary backup bucket |
+| `BACKUP_S3_ACCESS_KEY_ID` | No | Access key for secondary backup bucket |
+| `BACKUP_S3_SECRET_ACCESS_KEY` | No | Secret key for secondary backup bucket |
+| `BACKUP_S3_ENDPOINT` | No | Endpoint for secondary backup provider (e.g. Backblaze B2) |
+| `BACKUP_GITHUB_REPO` | No | Private GitHub repo for weekly SQL + CSV backup commits |
+| `BACKUP_GITHUB_TOKEN` | No | Fine-grained PAT with Contents: Read & Write for the backup repo |
+
+---
+
+## Troubleshooting
+
+**"Sign in with Google" shows an error**
+Ensure the redirect URI in Google Cloud Console exactly matches `https://yourdomain.com/api/oauth/callback`. Also confirm `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are correct in `.env`.
+
+**"Access denied" after Google login**
+Only the email set in `ADMIN_EMAIL` is allowed. Confirm you are signing in with `shwena9@gmail.com` (or whatever you set).
+
+**Site shows "502 Bad Gateway"**
+The app container may still be starting. Check: `docker compose logs app`. If it shows a database connection error, wait 10–15 seconds and retry.
+
+**SSL certificate not issued**
+Ensure your domain's DNS A record points to the correct server IP and has propagated. Check: `docker compose logs caddy`.
+
+**Discord bot not connecting**
+Verify `DISCORD_BOT_TOKEN` is correct and the bot has been added to your server with **Message Content Intent** enabled.
+
+**Products not being added from Discord**
+Check `DISCORD_CHANNEL_ID` is the numeric ID (not the channel name). Check `docker compose logs app` for LLM errors.
+
+**Images not showing**
+If `S3_PUBLIC_URL` is not set, images are served via signed URLs through the `/uploads/` proxy. Ensure all `S3_*` credentials are correct.

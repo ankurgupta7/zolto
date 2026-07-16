@@ -1,0 +1,316 @@
+// ── HTML escaping ─────────────────────────────────────────────────────────────
+// Several fields interpolated into the receipt HTML below (customer name,
+// email, product labels, payment method) originate from Stripe Checkout
+// session data, which the payer controls. Escape them to prevent HTML/markup
+// injection into the email body.
+export function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+// ── Brand colours ────────────────────────────────────────────────────────────
+const C = {
+  brown: "#2D2620",
+  gold: "#B8963E",
+  mid: "#6B5E52",
+  light: "#8A7865",
+  divider: "#E0D8CC",
+  faint: "#F0EAE0",
+};
+
+// ── Shared receipt data ───────────────────────────────────────────────────────
+export interface ReceiptItem {
+  id: number;
+  name: string;
+  nameEn: string | null;
+  price: string;
+  imageUrl: string | null;
+}
+
+export interface OrderReceiptOptions {
+  to: string;
+  customerName: string | null;
+  orderRef: number;
+  createdAt?: string | Date;
+  items: ReceiptItem[];
+  /** Total charged in smallest unit (Rappen for CHF) */
+  amountTotal: number;
+  paymentMethod?: string | null;
+}
+
+// ── HTML receipt (email body) ─────────────────────────────────────────────────
+export function buildReceiptHtml(opts: OrderReceiptOptions): string {
+  const baseUrl = (process.env.PUBLIC_BASE_URL ?? "https://kalakosh.ch").replace(/\/$/, "");
+  const ref = String(opts.orderRef).padStart(5, "0");
+  const date = new Date(opts.createdAt ?? Date.now()).toLocaleDateString("en-GB", {
+    day: "numeric", month: "long", year: "numeric",
+  });
+
+  const subtotalRappen = opts.items.reduce(
+    (s, p) => s + Math.round(parseFloat(p.price) * 100), 0
+  );
+  const shippingRappen = opts.amountTotal - subtotalRappen;
+
+  const resolveUrl = (url: string | null) => {
+    if (!url) return null;
+    return url.startsWith("http") ? url : `${baseUrl}${url}`;
+  };
+
+  const itemRows = opts.items
+    .map((p) => {
+      const productUrl = `${baseUrl}/product/${p.id}`;
+      const imgSrc = resolveUrl(p.imageUrl);
+      const label = escapeHtml(p.nameEn ?? p.name);
+
+      const thumbCell = imgSrc
+        ? `<td style="padding:10px 14px 10px 0;width:60px;vertical-align:middle">
+            <a href="${productUrl}" style="display:block">
+              <img src="${imgSrc}" width="56" height="56" alt="${label}"
+                   style="display:block;width:56px;height:56px;object-fit:cover;border:1px solid ${C.faint}">
+            </a>
+          </td>`
+        : `<td style="width:0;padding:0"></td>`;
+
+      return `
+      <tr>
+        ${thumbCell}
+        <td style="padding:10px 0;border-bottom:1px solid ${C.faint};vertical-align:middle">
+          <a href="${productUrl}" style="font-family:Georgia,serif;font-size:14px;color:${C.brown};text-decoration:none">${label}</a>
+        </td>
+        <td style="padding:10px 0;border-bottom:1px solid ${C.faint};font-family:Arial,sans-serif;font-size:14px;color:${C.brown};text-align:right;vertical-align:middle;white-space:nowrap">CHF ${Number(p.price).toFixed(2)}</td>
+      </tr>`;
+    })
+    .join("");
+
+  const shippingRow =
+    shippingRappen > 0
+      ? `<tr>
+          <td style="width:0;padding:0"></td>
+          <td style="padding:9px 0;border-bottom:1px solid ${C.faint};font-family:Arial,sans-serif;font-size:14px;color:${C.mid}">Shipping</td>
+          <td style="padding:9px 0;border-bottom:1px solid ${C.faint};font-family:Arial,sans-serif;font-size:14px;color:${C.mid};text-align:right;white-space:nowrap">CHF ${(shippingRappen / 100).toFixed(2)}</td>
+        </tr>`
+      : "";
+
+  const paymentRow = opts.paymentMethod
+    ? `<p style="margin:18px 0 0;padding-top:14px;border-top:1px solid ${C.divider};font-family:Arial,sans-serif;font-size:12px;color:${C.mid}">
+        Payment: <span style="text-transform:uppercase">${escapeHtml(opts.paymentMethod)}</span>
+      </p>`
+    : "";
+
+  const billedTo = opts.customerName
+    ? `<div style="margin-bottom:24px">
+        <p style="margin:0 0 6px;font-family:Arial,sans-serif;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:${C.mid}">Billed to</p>
+        <p style="margin:0;font-family:Georgia,serif;font-size:14px;color:${C.brown}">${escapeHtml(opts.customerName)}</p>
+        <p style="margin:2px 0 0;font-family:Arial,sans-serif;font-size:12px;color:${C.mid}">${escapeHtml(opts.to)}</p>
+      </div>`
+    : "";
+
+  return `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#FAF8F5;font-family:Arial,sans-serif">
+  <div style="max-width:560px;margin:40px auto;background:#fff;border:1px solid ${C.divider}">
+
+    <!-- Letterhead -->
+    <div style="background:${C.brown};padding:32px;text-align:center">
+      <p style="margin:0 0 6px;font-family:Georgia,serif;font-size:22px;letter-spacing:0.22em;color:${C.gold};text-transform:uppercase">Kalakosh</p>
+      <p style="margin:0;font-family:Arial,sans-serif;font-size:11px;letter-spacing:0.08em;color:${C.light}">Handcrafted Jewellery · Zurich · kalakosh.ch</p>
+    </div>
+
+    <div style="padding:32px">
+
+      <!-- Receipt header -->
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1px solid ${C.divider};padding-bottom:20px;margin-bottom:24px">
+        <p style="margin:0;font-family:Arial,sans-serif;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:${C.brown}">Receipt</p>
+        <div style="text-align:right">
+          <p style="margin:0;font-family:Arial,sans-serif;font-size:13px;color:${C.brown}">#${ref}</p>
+          <p style="margin:3px 0 0;font-family:Arial,sans-serif;font-size:11px;color:${C.mid}">${date}</p>
+        </div>
+      </div>
+
+      ${billedTo}
+
+      <!-- Items -->
+      <table style="width:100%;border-collapse:collapse">
+        <thead>
+          <tr>
+            <th style="width:0;padding:0"></th>
+            <th style="padding-bottom:8px;text-align:left;font-family:Arial,sans-serif;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:${C.mid};font-weight:normal;border-bottom:1px solid ${C.divider}">Item</th>
+            <th style="padding-bottom:8px;text-align:right;font-family:Arial,sans-serif;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:${C.mid};font-weight:normal;border-bottom:1px solid ${C.divider}">Price</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${itemRows}
+          ${shippingRow}
+          <tr>
+            <td style="width:0;padding:0"></td>
+            <td style="padding-top:14px;font-family:Arial,sans-serif;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:${C.brown}">Total</td>
+            <td style="padding-top:14px;font-family:Arial,sans-serif;font-size:14px;color:${C.brown};text-align:right;font-weight:bold;white-space:nowrap">CHF ${(opts.amountTotal / 100).toFixed(2)}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      ${paymentRow}
+
+    </div>
+
+    <!-- Footer -->
+    <div style="border-top:1px solid ${C.divider};padding:14px 32px;text-align:center">
+      <p style="margin:0;font-family:Arial,sans-serif;font-size:11px;color:#A09080;line-height:1.6">
+        return@kalakosh.ch · 14-day returns on unworn, undamaged pieces
+      </p>
+    </div>
+
+  </div>
+</body>
+</html>`;
+}
+
+// ── Public API ────────────────────────────────────────────────────────────────
+export async function sendOrderReceipt(opts: OrderReceiptOptions): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) return;
+
+  const from = process.env.RESEND_FROM_EMAIL ?? "Kalakosh <orders@kalakosh.ch>";
+  const ref = String(opts.orderRef).padStart(5, "0");
+
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from,
+      to: opts.to,
+      subject: `Your Kalakosh order #${ref}`,
+      html: buildReceiptHtml(opts),
+    }),
+  });
+
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Resend API ${res.status}: ${body}`);
+  }
+}
+
+// ── Stripe reconciliation review email ──────────────────────────────────────
+export interface ReconciliationCandidate {
+  id: number;
+  name: string;
+  nameEn: string | null;
+  price: string;
+}
+
+export interface ReconciliationReviewItem {
+  paymentIntentId: string;
+  /** Amount charged, in the smallest currency unit (Rappen for CHF). */
+  amountRappen: number;
+  currency: string;
+  stripeCreatedAt: Date;
+  /** Ranked best-guess products, closest price match first. */
+  candidates: ReconciliationCandidate[];
+  /** Single-use secret embedded in this item's confirm links. */
+  token: string;
+}
+
+export function buildReconciliationReviewHtml(items: ReconciliationReviewItem[]): string {
+  const baseUrl = (process.env.PUBLIC_BASE_URL ?? "https://kalakosh.ch").replace(/\/$/, "");
+
+  const sections = items
+    .map(item => {
+      const amount = (item.amountRappen / 100).toFixed(2);
+      const date = item.stripeCreatedAt.toLocaleString("en-GB", {
+        dateStyle: "medium",
+        timeStyle: "short",
+      });
+
+      const candidateRows = item.candidates
+        .map((c, index) => {
+          const label = escapeHtml(c.nameEn ?? c.name);
+          const url = `${baseUrl}/api/reconciliation/confirm?token=${encodeURIComponent(item.token)}&choice=${index}`;
+          return `
+          <tr>
+            <td style="padding:8px 0;border-bottom:1px solid ${C.faint};font-family:Arial,sans-serif;font-size:13px;color:${C.brown}">${label} — CHF ${Number(c.price).toFixed(2)}</td>
+            <td style="padding:8px 0;border-bottom:1px solid ${C.faint};text-align:right;white-space:nowrap">
+              <a href="${url}" style="display:inline-block;background:${C.gold};color:${C.brown};text-decoration:none;padding:6px 14px;font-family:Arial,sans-serif;font-size:12px;text-transform:uppercase;letter-spacing:0.05em">Assign</a>
+            </td>
+          </tr>`;
+        })
+        .join("");
+
+      const noneUrl = `${baseUrl}/api/reconciliation/confirm?token=${encodeURIComponent(item.token)}&choice=none`;
+
+      return `
+      <div style="margin-bottom:28px;padding-bottom:24px;border-bottom:1px solid ${C.divider}">
+        <p style="margin:0 0 4px;font-family:Arial,sans-serif;font-size:13px;color:${C.brown}">
+          <strong>CHF ${amount}</strong> · ${date}
+        </p>
+        <p style="margin:0 0 12px;font-family:Arial,sans-serif;font-size:11px;color:${C.mid}">
+          Stripe payment ${escapeHtml(item.paymentIntentId)} has no matching order or POS sale.
+        </p>
+        <table style="width:100%;border-collapse:collapse">${candidateRows}</table>
+        <p style="margin:12px 0 0">
+          <a href="${noneUrl}" style="font-family:Arial,sans-serif;font-size:12px;color:${C.mid}">None of these — mark for manual review</a>
+        </p>
+      </div>`;
+    })
+    .join("");
+
+  return `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#FAF8F5;font-family:Arial,sans-serif">
+  <div style="max-width:560px;margin:40px auto;background:#fff;border:1px solid ${C.divider}">
+
+    <div style="background:${C.brown};padding:32px;text-align:center">
+      <p style="margin:0 0 6px;font-family:Georgia,serif;font-size:22px;letter-spacing:0.22em;color:${C.gold};text-transform:uppercase">Kalakosh</p>
+      <p style="margin:0;font-family:Arial,sans-serif;font-size:11px;letter-spacing:0.08em;color:${C.light}">Stripe payments needing a match</p>
+    </div>
+
+    <div style="padding:32px">
+      <p style="margin:0 0 20px;font-family:Arial,sans-serif;font-size:13px;color:${C.mid}">
+        ${items.length} Stripe payment${items.length === 1 ? "" : "s"} ${items.length === 1 ? "was" : "were"} found with no matching order. Pick the piece each one paid for, or mark it for manual review.
+      </p>
+      ${sections}
+    </div>
+
+  </div>
+</body>
+</html>`;
+}
+
+export async function sendReconciliationReviewEmail(
+  items: ReconciliationReviewItem[]
+): Promise<void> {
+  if (items.length === 0) return;
+
+  const apiKey = process.env.RESEND_API_KEY;
+  const to = process.env.ADMIN_EMAIL;
+  if (!apiKey || !to) return;
+
+  const from = process.env.RESEND_FROM_EMAIL ?? "Kalakosh <orders@kalakosh.ch>";
+
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from,
+      to,
+      subject: `${items.length} Stripe payment${items.length === 1 ? "" : "s"} need a match`,
+      html: buildReconciliationReviewHtml(items),
+    }),
+  });
+
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Resend API ${res.status}: ${body}`);
+  }
+}

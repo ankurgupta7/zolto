@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "mysql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1783258410631,
+      "tag": "0000_baseline_2026_07_05",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1783356966260,
+      "tag": "0001_pos_order_items_custom_and_overrides",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1783363687234,
+      "tag": "0002_pos_orders_payment_method",
+      "breakpoints": true
+    }
+  ]
+}

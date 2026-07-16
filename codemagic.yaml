@@ -1,0 +1,54 @@
+---
+# Codemagic CI/CD for Kalakosh-ch
+# Automatically triggers on Pull Requests to main.
+workflows:
+  ios-build:
+    name: iOS Build
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    triggering:
+      events:
+        - pull_request
+      branch_patterns:
+        - pattern: 'main'
+          include: true
+          source: false
+
+    integrations:
+      app_store_connect: codemagic_service_account
+
+    environment:
+      ios_signing:
+        distribution_type: development
+        bundle_identifier: ch.kalakosh.app
+      vars:
+        XCODE_PROJECT: "ios/Kalakosh.xcodeproj"
+        XCODE_SCHEME: "Kalakosh"
+        BUNDLE_ID: "ch.kalakosh.app"
+        POS_API_KEY: $POS_API_KEY
+      xcode: latest
+
+    scripts:
+      - name: Install dependencies
+        script: |
+          pnpm install
+
+      - name: Build iOS IPA
+        script: |
+          xcode-project build-ipa \
+            --project "$XCODE_PROJECT" \
+            --scheme "$XCODE_SCHEME" \
+            --xcargs "POS_API_KEY=$POS_API_KEY"
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
+
+    publishing:
+      email:
+        recipients:
+          - prevail-chafe-gory@duck.com
+        notify:
+          success: true
+          failure: true

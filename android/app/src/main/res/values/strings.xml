@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Kalakosh</string>
+    <string name="error_title">Uh oh.</string>
+    <string name="error_subtitle">Things are breaking.</string>
+    <string name="error_offline">You seem to be offline.\nCheck your connection and try again.</string>
+    <string name="error_generic">Something went wrong on our end.\nWe\'re already on it.</string>
+    <string name="retry">Try Again</string>
+</resources>

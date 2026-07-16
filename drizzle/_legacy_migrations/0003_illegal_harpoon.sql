@@ -1,0 +1,1 @@
+ALTER TABLE `products` ADD `sold` boolean DEFAULT false NOT NULL;

@@ -1,0 +1,1069 @@
+import { useRef, useState } from "react";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { trpc } from "@/lib/trpc";
+import { toast } from "sonner";
+import { getLoginUrl } from "@/const";
+import { PRODUCT_CATEGORIES, type ProductCategory } from "@shared/types";
+import {
+  Upload,
+  FileSpreadsheet,
+  CheckCircle2,
+  XCircle,
+  Loader2,
+  Download,
+  ExternalLink,
+  ChevronRight,
+  NotebookPen,
+  Sparkles,
+} from "lucide-react";
+import { Link } from "wouter";
+
+// ─── CSV parsing ──────────────────────────────────────────────────────────────
+
+function parseRow(line: string): string[] {
+  const fields: string[] = [];
+  let field = "";
+  let inQuote = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      if (inQuote && line[i + 1] === '"') {
+        field += '"';
+        i++;
+      } else {
+        inQuote = !inQuote;
+      }
+    } else if (ch === "," && !inQuote) {
+      fields.push(field.trim());
+      field = "";
+    } else {
+      field += ch;
+    }
+  }
+  fields.push(field.trim());
+  return fields;
+}
+
+export function parseCsv(text: string): Record<string, string>[] {
+  const lines = text
+    .trim()
+    .split(/\r?\n/)
+    .filter(l => l.trim());
+  if (lines.length < 2) return [];
+  const headers = parseRow(lines[0]).map(h =>
+    h.toLowerCase().replace(/[\s_-]+/g, "")
+  );
+  return lines.slice(1).map(line => {
+    const values = parseRow(line);
+    return Object.fromEntries(headers.map((h, i) => [h, values[i] ?? ""]));
+  });
+}
+
+// CSV import maps free-text categories onto known values; "Sets" is folded into
+// "Other" (unmatched rows default to "Other"), matching the AI import flows.
+export const VALID_CATEGORIES: ProductCategory[] = PRODUCT_CATEGORIES.filter(
+  c => c !== "Sets"
+);
+
+// Importing in small batches (rather than one request for all rows) bounds
+// how long a single request can run and lets the UI show progress instead of
+// a single spinner that can appear to hang on a large import.
+export const IMPORT_CHUNK_SIZE = 5;
+
+function normalizeCategory(raw: string): ProductCategory | null {
+  const lower = raw.trim().toLowerCase();
+  return VALID_CATEGORIES.find(c => c.toLowerCase() === lower) ?? null;
+}
+
+function getField(raw: Record<string, string>, ...keys: string[]): string {
+  for (const k of keys) {
+    const val = raw[k.toLowerCase().replace(/[\s_-]+/g, "")];
+    if (val?.trim()) return val.trim();
+  }
+  return "";
+}
+
+export interface CsvRow {
+  name: string;
+  nameEn?: string;
+  description: string;
+  descriptionEn?: string;
+  price: number;
+  category: ProductCategory;
+  quantity: number;
+  imageUrl?: string;
+  _valid: boolean;
+  _errors: string[];
+  _selected: boolean;
+}
+
+export function mapRows(raw: Record<string, string>[]): CsvRow[] {
+  return raw.map(r => {
+    const errors: string[] = [];
+    const name = getField(r, "name");
+    const description = getField(r, "description", "desc");
+    const priceStr = getField(r, "price");
+    const categoryStr = getField(r, "category", "cat");
+
+    if (!name) errors.push("name required");
+    if (!description) errors.push("description required");
+    const price = parseFloat(priceStr.replace(/[^0-9.]/g, ""));
+    if (!priceStr || Number.isNaN(price) || price <= 0)
+      errors.push("invalid price");
+    const category = normalizeCategory(categoryStr);
+    if (!category)
+      errors.push(
+        `category must be one of: Necklaces, Earrings, Rings, Bracelets, Bangles, Anklets, Brooches, Hair Accessories, Other`
+      );
+
+    const qtyStr = getField(r, "quantity", "qty", "stock");
+    const quantity = qtyStr ? parseInt(qtyStr, 10) : 1;
+
+    return {
+      name: name || "(empty)",
+      nameEn: getField(r, "nameEn", "nameenglish", "name_en") || undefined,
+      description: description || "",
+      descriptionEn:
+        getField(
+          r,
+          "descriptionEn",
+          "description_en",
+          "descen",
+          "descriptionenglish"
+        ) || undefined,
+      price: Number.isNaN(price) ? 0 : price,
+      category: (category ?? "Other") as ProductCategory,
+      quantity: Number.isNaN(quantity) || quantity < 0 ? 1 : quantity,
+      imageUrl:
+        getField(
+          r,
+          "imageUrl",
+          "image_url",
+          "imageurl",
+          "image",
+          "img",
+          "photo"
+        ) || undefined,
+      _valid: errors.length === 0,
+      _errors: errors,
+      _selected: true,
+    };
+  });
+}
+
+// Re-checks a row after an inline edit. Category isn't re-checked here since
+// the preview table only ever lets the admin pick from VALID_CATEGORIES.
+export function revalidateRow(row: CsvRow): CsvRow {
+  const errors: string[] = [];
+  if (!row.name.trim()) errors.push("name required");
+  if (!row.description.trim()) errors.push("description required");
+  if (!row.price || row.price <= 0) errors.push("invalid price");
+  return { ...row, _valid: errors.length === 0, _errors: errors };
+}
+
+// ─── Template download ────────────────────────────────────────────────────────
+
+function downloadTemplate() {
+  const headers =
+    "name,nameEn,description,descriptionEn,price,category,quantity,imageUrl";
+  const example =
+    '"Mondstein-Ohrhänger","Moonstone Drop Earrings",' +
+    '"Zarte Ohrhänger mit natürlichem Mondstein in Sterlingsilber.","Delicate earrings with natural moonstone in sterling silver.",' +
+    "185,Earrings,1,https://example.com/image.jpg";
+  const blob = new Blob([`${headers}\n${example}`], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "kalakosh-product-import-template.csv";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ─── Map AI handwritten items to CsvRow ───────────────────────────────────────
+
+export function mapHandwrittenItems(
+  items: Array<{
+    name: string;
+    description: string;
+    price: number;
+    category: string;
+    quantity: number;
+  }>
+): CsvRow[] {
+  return items.map(item => {
+    const errors: string[] = [];
+    if (!item.name?.trim()) errors.push("name required");
+    if (!item.description?.trim()) errors.push("description required");
+    if (!item.price || item.price <= 0) errors.push("invalid price");
+    const category = normalizeCategory(item.category ?? "");
+    if (!category) errors.push("invalid category");
+    return {
+      name: item.name?.trim() || "(empty)",
+      description: item.description?.trim() || "",
+      price: item.price ?? 0,
+      category: (category ?? "Other") as ProductCategory,
+      quantity: item.quantity ?? 1,
+      _valid: errors.length === 0,
+      _errors: errors,
+      _selected: true,
+    };
+  });
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
+
+type Stage = "input" | "preview" | "done";
+
+export default function CsvImport() {
+  const { user, isAuthenticated, loading } = useAuth();
+  const utils = trpc.useUtils();
+  const fileRef = useRef<HTMLInputElement>(null);
+  const handwritingRef = useRef<HTMLInputElement>(null);
+
+  const [stage, setStage] = useState<Stage>("input");
+  const [sheetUrl, setSheetUrl] = useState("");
+  const [rows, setRows] = useState<CsvRow[]>([]);
+  const [importResult, setImportResult] = useState<{
+    created: number;
+    updated: number;
+    failed: string[];
+  } | null>(null);
+  const [handwritingPreviews, setHandwritingPreviews] = useState<string[]>([]);
+  const [handwritingProgress, setHandwritingProgress] = useState<{
+    done: number;
+    total: number;
+  } | null>(null);
+  const [importProgress, setImportProgress] = useState<{
+    done: number;
+    total: number;
+  } | null>(null);
+
+  // Only used to preview which rows will create vs. update in place — never
+  // written to directly from this page.
+  const { data: existingProducts } = trpc.products.adminList.useQuery(
+    undefined,
+    { enabled: isAuthenticated && user?.role === "admin" }
+  );
+  const existingByName = new Map(
+    (existingProducts ?? []).map(p => [p.name.trim().toLowerCase(), p])
+  );
+
+  const fetchSheetMutation = trpc.products.fetchSheetCsv.useMutation({
+    onError: e => toast.error(e.message),
+  });
+
+  const loadCsv = (text: string) => {
+    const raw = parseCsv(text);
+    if (raw.length === 0) {
+      toast.error(
+        "No data rows found — check the file has a header row and at least one data row"
+      );
+      return;
+    }
+    const mapped = mapRows(raw);
+    setRows(mapped);
+    setStage("preview");
+  };
+
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.name.endsWith(".csv") && file.type !== "text/csv") {
+      toast.error(
+        "Please upload a .csv file. For Excel, use File → Save As → CSV."
+      );
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => loadCsv(reader.result as string);
+    reader.onerror = () => toast.error("Failed to read file");
+    reader.readAsText(file, "UTF-8");
+    e.target.value = "";
+  };
+
+  const readFileAsDataUrl = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => reject(new Error("Failed to read image"));
+      reader.readAsDataURL(file);
+    });
+
+  const handleHandwritingFiles = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = "";
+    if (files.length === 0) return;
+
+    const ALLOWED = [
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+      "image/heic",
+      "image/heif",
+    ];
+    for (const file of files) {
+      if (file.type && !ALLOWED.includes(file.type)) {
+        toast.error(
+          `${file.name}: please upload a JPEG, PNG, WebP or HEIC image`
+        );
+        return;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error(`${file.name}: image must be under 10 MB`);
+        return;
+      }
+    }
+
+    let dataUrls: string[];
+    try {
+      dataUrls = await Promise.all(files.map(readFileAsDataUrl));
+    } catch {
+      toast.error("Failed to read one or more images");
+      return;
+    }
+    setHandwritingPreviews(dataUrls);
+    setHandwritingProgress({ done: 0, total: dataUrls.length });
+
+    const allItems: Array<{
+      name: string;
+      description: string;
+      price: number;
+      category: string;
+      quantity: number;
+    }> = [];
+    const failedFiles: string[] = [];
+
+    for (let i = 0; i < dataUrls.length; i++) {
+      try {
+        const result =
+          await utils.client.products.parseHandwrittenInventory.mutate({
+            imageData: dataUrls[i],
+            mimeType: files[i].type || "image/jpeg",
+          });
+        allItems.push(...result.items);
+      } catch {
+        failedFiles.push(files[i].name);
+      }
+      setHandwritingProgress({ done: i + 1, total: dataUrls.length });
+    }
+    setHandwritingProgress(null);
+
+    if (failedFiles.length > 0) {
+      toast.error(`AI parsing failed for: ${failedFiles.join(", ")}`);
+    }
+    if (allItems.length === 0) {
+      toast.error(
+        "AI could not extract any items from these photos — try clearer photos"
+      );
+      return;
+    }
+    const mapped = mapHandwrittenItems(allItems);
+    setRows(mapped);
+    setStage("preview");
+    toast.success(
+      `AI extracted ${allItems.length} item${allItems.length !== 1 ? "s" : ""} from ${dataUrls.length} photo${dataUrls.length !== 1 ? "s" : ""}`
+    );
+  };
+
+  const updateRow = (index: number, patch: Partial<CsvRow>) => {
+    setRows(prev =>
+      prev.map((r, i) => (i === index ? revalidateRow({ ...r, ...patch }) : r))
+    );
+  };
+
+  const toggleRowSelected = (index: number, selected: boolean) => {
+    setRows(prev =>
+      prev.map((r, i) => (i === index ? { ...r, _selected: selected } : r))
+    );
+  };
+
+  const toggleAllSelected = (selected: boolean) => {
+    setRows(prev => prev.map(r => ({ ...r, _selected: selected })));
+  };
+
+  const handleFetchSheet = async () => {
+    if (!sheetUrl.trim()) {
+      toast.error("Enter a Google Sheets URL");
+      return;
+    }
+    const result = await fetchSheetMutation.mutateAsync({
+      url: sheetUrl.trim(),
+    });
+    loadCsv(result.csv);
+  };
+
+  const handleImport = async () => {
+    const toImport = rows.filter(r => r._valid && r._selected);
+    if (toImport.length === 0) {
+      toast.error("No rows selected to import");
+      return;
+    }
+
+    const chunks: CsvRow[][] = [];
+    for (let i = 0; i < toImport.length; i += IMPORT_CHUNK_SIZE) {
+      chunks.push(toImport.slice(i, i + IMPORT_CHUNK_SIZE));
+    }
+
+    setImportProgress({ done: 0, total: chunks.length });
+    let created = 0;
+    let updated = 0;
+    const failed: string[] = [];
+
+    for (let i = 0; i < chunks.length; i++) {
+      try {
+        const result = await utils.client.products.csvImport.mutate({
+          rows: chunks[i].map(r => ({
+            name: r.name,
+            nameEn: r.nameEn,
+            description: r.description,
+            descriptionEn: r.descriptionEn,
+            price: r.price,
+            category: r.category,
+            quantity: r.quantity,
+            imageUrl: r.imageUrl,
+          })),
+        });
+        created += result.created;
+        updated += result.updated;
+        failed.push(...result.failed);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        console.error("[CsvImport] Batch import failed:", err);
+        toast.error(`A batch failed to import: ${message}`);
+        failed.push(...chunks[i].map(r => r.name));
+      }
+      setImportProgress({ done: i + 1, total: chunks.length });
+    }
+
+    setImportProgress(null);
+    setImportResult({ created, updated, failed });
+    setStage("done");
+    utils.products.adminList.invalidate();
+    utils.products.list.invalidate();
+  };
+
+  // Auth guards
+  if (loading)
+    return (
+      <div className="min-h-screen flex items-center justify-center pt-20">
+        <Loader2 className="animate-spin text-[#2D2620]" size={32} />
+      </div>
+    );
+
+  if (!isAuthenticated)
+    return (
+      <div className="min-h-screen flex items-center justify-center pt-20 bg-background">
+        <div className="text-center max-w-sm">
+          <h2 className="font-serif text-foreground text-2xl mb-4">
+            Admin Required
+          </h2>
+          <a
+            href={getLoginUrl()}
+            className="inline-flex items-center gap-2 bg-[#2D2620] text-white px-8 py-3.5 text-sm uppercase tracking-[0.15em] font-sans hover:bg-[#3A3028] transition-colors"
+          >
+            Sign In
+          </a>
+        </div>
+      </div>
+    );
+
+  if (user?.role !== "admin")
+    return (
+      <div className="min-h-screen flex items-center justify-center pt-20 bg-background">
+        <div className="text-center max-w-sm">
+          <h2 className="font-serif text-foreground text-2xl mb-4">
+            Access Denied
+          </h2>
+        </div>
+      </div>
+    );
+
+  const validRows = rows.filter(r => r._valid);
+  const invalidRows = rows.filter(r => !r._valid);
+  const selectedForImport = rows.filter(r => r._valid && r._selected);
+  const allSelected = rows.length > 0 && rows.every(r => r._selected);
+  const someSelected = rows.some(r => r._selected) && !allSelected;
+
+  return (
+    <div className="page-enter pt-20 min-h-screen bg-[#EDE7DF]">
+      {/* Header */}
+      <section className="bg-[#2D2620] py-10">
+        <div className="container flex items-center justify-between">
+          <div>
+            <p className="text-[#B8963E] text-xs uppercase tracking-[0.3em] mb-1 font-sans">
+              Admin
+            </p>
+            <h1 className="font-serif text-white text-2xl">
+              CSV / Spreadsheet Import
+            </h1>
+            <p className="text-white/50 text-xs font-sans mt-1">
+              Import product data from a CSV file or Google Sheets
+            </p>
+          </div>
+          <Link
+            href="/admin"
+            className="text-white/60 hover:text-white text-xs uppercase tracking-[0.15em] font-sans transition-colors"
+          >
+            ← Admin
+          </Link>
+        </div>
+      </section>
+
+      <div className="container py-8 max-w-5xl">
+        {/* ── Stage: Input ── */}
+        {stage === "input" && (
+          <div>
+            {/* Template download */}
+            <div className="bg-white border border-[#E0D8CC] p-5 mb-6 flex items-center justify-between flex-wrap gap-4">
+              <div>
+                <p className="font-serif text-foreground text-sm mb-0.5">
+                  Download the template
+                </p>
+                <p className="text-muted-foreground text-xs font-sans">
+                  Columns:{" "}
+                  <span className="font-mono text-[11px]">
+                    name, nameEn, description, descriptionEn, price, category,
+                    quantity, imageUrl
+                  </span>
+                </p>
+                <p className="text-muted-foreground text-xs font-sans mt-0.5">
+                  Categories must be exactly:{" "}
+                  <span className="font-mono">Silver</span> ·{" "}
+                  <span className="font-mono">Semi-Precious Gems</span> ·{" "}
+                  <span className="font-mono">Pearls</span>
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={downloadTemplate}
+                className="flex items-center gap-2 border border-[#2D2620] text-[#2D2620] px-5 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:bg-[#2D2620] hover:text-white transition-colors flex-shrink-0"
+              >
+                <Download size={14} />
+                Download Template
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* CSV File Upload */}
+              <div className="bg-white border border-[#E0D8CC] p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <FileSpreadsheet size={18} className="text-[#B8963E]" />
+                  <h2 className="font-serif text-foreground text-lg">
+                    Upload CSV File
+                  </h2>
+                </div>
+                <p className="text-muted-foreground text-xs font-sans mb-5">
+                  Save your spreadsheet as CSV (UTF-8). Excel:{" "}
+                  <em>File → Save As → CSV UTF-8</em>.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => fileRef.current?.click()}
+                  className="w-full border-2 border-dashed border-[#2D2620]/20 hover:border-[#B8963E] transition-colors p-8 text-center group"
+                >
+                  <Upload
+                    size={28}
+                    className="mx-auto mb-2 text-[#2D2620]/30 group-hover:text-[#B8963E] transition-colors"
+                  />
+                  <p className="font-serif text-foreground text-sm mb-0.5">
+                    Click to select a .csv file
+                  </p>
+                  <p className="text-muted-foreground text-xs font-sans">
+                    or drag and drop here
+                  </p>
+                </button>
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept=".csv,text/csv"
+                  className="hidden"
+                  onChange={handleFile}
+                  data-testid="csv-file-input"
+                />
+              </div>
+
+              {/* Google Sheets */}
+              <div className="bg-white border border-[#E0D8CC] p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <ExternalLink size={18} className="text-[#B8963E]" />
+                  <h2 className="font-serif text-foreground text-lg">
+                    Google Sheets URL
+                  </h2>
+                </div>
+                <p className="text-muted-foreground text-xs font-sans mb-2">
+                  Share your sheet with <em>"Anyone with the link"</em>, then
+                  paste the URL below.
+                </p>
+                <p className="text-muted-foreground text-xs font-sans mb-5">
+                  The first sheet (tab) will be imported. Column names in the
+                  first row must match the template.
+                </p>
+                <input
+                  type="url"
+                  value={sheetUrl}
+                  onChange={e => setSheetUrl(e.target.value)}
+                  placeholder="https://docs.google.com/spreadsheets/d/..."
+                  className="w-full border border-[#2D2620]/20 px-4 py-2.5 text-sm font-sans focus:outline-none focus:border-[#B8963E] bg-transparent mb-4"
+                />
+                <button
+                  type="button"
+                  onClick={handleFetchSheet}
+                  disabled={fetchSheetMutation.isPending || !sheetUrl.trim()}
+                  className="w-full flex items-center justify-center gap-2 bg-[#2D2620] text-white px-6 py-3 text-sm uppercase tracking-[0.15em] font-sans hover:bg-[#3A3028] transition-colors disabled:opacity-60"
+                >
+                  {fetchSheetMutation.isPending ? (
+                    <Loader2 size={15} className="animate-spin" />
+                  ) : (
+                    <ChevronRight size={15} />
+                  )}
+                  {fetchSheetMutation.isPending ? "Fetching…" : "Load Sheet"}
+                </button>
+              </div>
+            </div>
+
+            {/* Handwritten Inventory Photos */}
+            <div className="mt-6 bg-white border border-[#E0D8CC] p-6">
+              <div className="flex items-center gap-2 mb-1">
+                <NotebookPen size={18} className="text-[#B8963E]" />
+                <h2 className="font-serif text-foreground text-lg">
+                  Handwritten Inventory Photos
+                </h2>
+                <span className="ml-2 flex items-center gap-1 text-[10px] uppercase tracking-[0.12em] text-[#B8963E] font-sans bg-[#B8963E]/10 px-2 py-0.5">
+                  <Sparkles size={9} />
+                  AI
+                </span>
+              </div>
+              <p className="text-muted-foreground text-xs font-sans mb-5">
+                Photograph pages from your diary or notebook — select as many as
+                you like at once. AI will read each item's name, price,
+                category, and quantity from every photo and build a combined
+                list you can review and edit before importing.
+              </p>
+
+              {handwritingProgress ? (
+                <div className="flex flex-col items-center justify-center py-12 gap-3">
+                  <Sparkles
+                    size={30}
+                    className="text-[#B8963E] animate-pulse"
+                  />
+                  <p className="font-serif text-foreground">
+                    Reading your inventory…
+                  </p>
+                  <p className="text-muted-foreground text-xs font-sans">
+                    Photo{" "}
+                    {Math.min(
+                      handwritingProgress.done + 1,
+                      handwritingProgress.total
+                    )}{" "}
+                    of {handwritingProgress.total}
+                  </p>
+                  {handwritingPreviews.length > 0 && (
+                    <div className="flex flex-wrap justify-center gap-2 mt-3">
+                      {handwritingPreviews.map((src, i) => (
+                        <img
+                          key={i}
+                          src={src}
+                          alt={`Uploaded inventory ${i + 1}`}
+                          className={`h-24 w-24 object-cover border ${
+                            i < handwritingProgress.done
+                              ? "border-[#B8963E]"
+                              : "border-[#E0D8CC]"
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="flex flex-col sm:flex-row gap-4 items-start">
+                  <button
+                    type="button"
+                    onClick={() => handwritingRef.current?.click()}
+                    className="flex-1 border-2 border-dashed border-[#2D2620]/20 hover:border-[#B8963E] transition-colors p-8 text-center group"
+                  >
+                    <NotebookPen
+                      size={28}
+                      className="mx-auto mb-2 text-[#2D2620]/30 group-hover:text-[#B8963E] transition-colors"
+                    />
+                    <p className="font-serif text-foreground text-sm mb-0.5">
+                      Upload photos of your notes
+                    </p>
+                    <p className="text-muted-foreground text-xs font-sans">
+                      JPEG, PNG, WebP or HEIC · max 10 MB each · multiple
+                      allowed
+                    </p>
+                  </button>
+                  {handwritingPreviews.length > 0 && (
+                    <div className="flex flex-wrap gap-2 flex-shrink-0">
+                      {handwritingPreviews.map((src, i) => (
+                        <img
+                          key={i}
+                          src={src}
+                          alt={`Previous upload ${i + 1}`}
+                          className="w-16 h-16 object-cover border border-[#E0D8CC]"
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+              <input
+                ref={handwritingRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+                multiple
+                className="hidden"
+                onChange={handleHandwritingFiles}
+                data-testid="handwriting-file-input"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* ── Stage: Preview ── */}
+        {stage === "preview" && (
+          <div>
+            {/* Summary bar */}
+            <div className="flex flex-wrap items-center gap-4 mb-6">
+              <div className="flex items-center gap-2 bg-white border border-[#E0D8CC] px-4 py-2.5">
+                <CheckCircle2
+                  size={16}
+                  className="text-green-600 flex-shrink-0"
+                />
+                <span className="text-sm font-sans">
+                  <strong>{validRows.length}</strong> valid rows
+                </span>
+              </div>
+              {invalidRows.length > 0 && (
+                <div className="flex items-center gap-2 bg-white border border-[#E0D8CC] px-4 py-2.5">
+                  <XCircle size={16} className="text-red-500 flex-shrink-0" />
+                  <span className="text-sm font-sans">
+                    <strong>{invalidRows.length}</strong> rows with errors (will
+                    be skipped)
+                  </span>
+                </div>
+              )}
+              <div className="flex items-center gap-2 bg-white border border-[#E0D8CC] px-4 py-2.5">
+                <span className="text-sm font-sans">
+                  <strong>{selectedForImport.length}</strong> selected for
+                  import
+                </span>
+              </div>
+              <div className="ml-auto flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRows([]);
+                    setStage("input");
+                    setSheetUrl("");
+                    setHandwritingPreviews([]);
+                  }}
+                  disabled={importProgress !== null}
+                  className="border border-[#2D2620]/20 text-muted-foreground px-5 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:border-[#2D2620] hover:text-foreground transition-colors disabled:opacity-60"
+                >
+                  ← Back
+                </button>
+                <button
+                  type="button"
+                  onClick={handleImport}
+                  disabled={
+                    importProgress !== null || selectedForImport.length === 0
+                  }
+                  className="flex items-center gap-2 bg-[#B8963E] text-[#2D2620] px-6 py-2.5 text-xs uppercase tracking-[0.15em] font-sans font-medium hover:bg-[#D4B060] transition-colors disabled:opacity-60"
+                >
+                  {importProgress ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : (
+                    <Upload size={14} />
+                  )}
+                  {importProgress
+                    ? `Importing ${importProgress.done}/${importProgress.total}…`
+                    : `Import ${selectedForImport.length} Product${selectedForImport.length !== 1 ? "s" : ""}`}
+                </button>
+              </div>
+            </div>
+
+            <p className="text-xs text-muted-foreground font-sans mb-4">
+              Uncheck any row you don't want to import — nothing is written
+              until you click Import.
+            </p>
+
+            {/* Preview table */}
+            <div className="bg-white border border-[#E0D8CC] overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm font-sans">
+                  <thead>
+                    <tr className="border-b border-[#E0D8CC] bg-[#EDE7DF]">
+                      <th className="text-left px-4 py-3 w-8">
+                        <input
+                          type="checkbox"
+                          checked={allSelected}
+                          ref={el => {
+                            if (el) el.indeterminate = someSelected;
+                          }}
+                          onChange={e => toggleAllSelected(e.target.checked)}
+                          aria-label="Select all rows"
+                        />
+                      </th>
+                      <th className="text-left px-4 py-3 text-xs uppercase tracking-[0.12em] text-muted-foreground font-normal w-8"></th>
+                      <th className="text-left px-4 py-3 text-xs uppercase tracking-[0.12em] text-muted-foreground font-normal">
+                        Name
+                      </th>
+                      <th className="text-left px-4 py-3 text-xs uppercase tracking-[0.12em] text-muted-foreground font-normal">
+                        Action
+                      </th>
+                      <th className="text-left px-4 py-3 text-xs uppercase tracking-[0.12em] text-muted-foreground font-normal hidden md:table-cell">
+                        Category
+                      </th>
+                      <th className="text-left px-4 py-3 text-xs uppercase tracking-[0.12em] text-muted-foreground font-normal">
+                        Price
+                      </th>
+                      <th className="text-left px-4 py-3 text-xs uppercase tracking-[0.12em] text-muted-foreground font-normal hidden sm:table-cell">
+                        Qty
+                      </th>
+                      <th className="text-left px-4 py-3 text-xs uppercase tracking-[0.12em] text-muted-foreground font-normal hidden lg:table-cell">
+                        Image URL
+                      </th>
+                      <th className="text-left px-4 py-3 text-xs uppercase tracking-[0.12em] text-muted-foreground font-normal">
+                        Issues
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rows.map((row, i) => {
+                      const match = existingByName.get(
+                        row.name.trim().toLowerCase()
+                      );
+                      return (
+                        <tr
+                          key={i}
+                          className={`border-b border-[#E0D8CC] last:border-0 ${!row._valid ? "bg-red-50/50" : ""} ${!row._selected ? "opacity-50" : ""}`}
+                        >
+                          <td className="px-4 py-3">
+                            <input
+                              type="checkbox"
+                              checked={row._selected}
+                              onChange={e =>
+                                toggleRowSelected(i, e.target.checked)
+                              }
+                              aria-label={`Select ${row.name || "row"} for import`}
+                            />
+                          </td>
+                          <td className="px-4 py-3">
+                            {row._valid ? (
+                              <CheckCircle2
+                                size={15}
+                                className="text-green-600"
+                              />
+                            ) : (
+                              <XCircle size={15} className="text-red-500" />
+                            )}
+                          </td>
+                          <td className="px-4 py-3 min-w-[200px]">
+                            <input
+                              type="text"
+                              value={row.name}
+                              onChange={e =>
+                                updateRow(i, { name: e.target.value })
+                              }
+                              placeholder="Name"
+                              className="w-full bg-transparent border-b border-transparent hover:border-[#E0D8CC] focus:border-[#B8963E] focus:outline-none font-serif text-foreground text-sm py-0.5"
+                            />
+                            <input
+                              type="text"
+                              value={row.description}
+                              onChange={e =>
+                                updateRow(i, { description: e.target.value })
+                              }
+                              placeholder="Description"
+                              className="w-full bg-transparent border-b border-transparent hover:border-[#E0D8CC] focus:border-[#B8963E] focus:outline-none text-muted-foreground text-xs py-0.5 mt-0.5"
+                            />
+                            <input
+                              type="text"
+                              value={row.nameEn ?? ""}
+                              onChange={e =>
+                                updateRow(i, {
+                                  nameEn: e.target.value || undefined,
+                                })
+                              }
+                              placeholder="Name (English)"
+                              className="w-full bg-transparent border-b border-transparent hover:border-[#E0D8CC] focus:border-[#B8963E] focus:outline-none text-muted-foreground/80 text-[11px] italic py-0.5 mt-0.5"
+                            />
+                            <input
+                              type="text"
+                              value={row.descriptionEn ?? ""}
+                              onChange={e =>
+                                updateRow(i, {
+                                  descriptionEn: e.target.value || undefined,
+                                })
+                              }
+                              placeholder="Description (English)"
+                              className="w-full bg-transparent border-b border-transparent hover:border-[#E0D8CC] focus:border-[#B8963E] focus:outline-none text-muted-foreground/80 text-[11px] italic py-0.5"
+                            />
+                          </td>
+                          <td className="px-4 py-3">
+                            {match ? (
+                              <span
+                                className="text-[10px] uppercase tracking-[0.1em] px-2 py-0.5 font-sans bg-[#FFF0DC] text-[#8B5914]"
+                                title={`Will update existing product #${match.id}`}
+                              >
+                                Update #{match.id}
+                              </span>
+                            ) : (
+                              <span className="text-[10px] uppercase tracking-[0.1em] px-2 py-0.5 font-sans bg-[#E8F4EC] text-[#2D6B4A]">
+                                Create
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 hidden md:table-cell">
+                            <select
+                              value={row.category}
+                              onChange={e =>
+                                updateRow(i, {
+                                  category: e.target.value as ProductCategory,
+                                })
+                              }
+                              className="text-[10px] uppercase tracking-[0.1em] px-2 py-1 font-sans bg-[#E8E8E8] text-[#555] border-none focus:outline-none focus:ring-1 focus:ring-[#B8963E]"
+                            >
+                              {VALID_CATEGORIES.map(c => (
+                                <option key={c} value={c}>
+                                  {c}
+                                </option>
+                              ))}
+                            </select>
+                          </td>
+                          <td className="px-4 py-3 font-serif text-[#2D2620]">
+                            <div className="flex items-center gap-1">
+                              <span className="text-xs text-muted-foreground">
+                                CHF
+                              </span>
+                              <input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={row.price || ""}
+                                onChange={e =>
+                                  updateRow(i, {
+                                    price: parseFloat(e.target.value) || 0,
+                                  })
+                                }
+                                placeholder="0.00"
+                                className="w-20 bg-transparent border-b border-transparent hover:border-[#E0D8CC] focus:border-[#B8963E] focus:outline-none font-serif text-sm py-0.5"
+                              />
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 hidden sm:table-cell text-muted-foreground">
+                            <input
+                              type="number"
+                              min="0"
+                              step="1"
+                              value={row.quantity}
+                              onChange={e => {
+                                const quantity = parseInt(e.target.value, 10);
+                                updateRow(i, {
+                                  quantity:
+                                    Number.isNaN(quantity) || quantity < 0
+                                      ? 0
+                                      : quantity,
+                                });
+                              }}
+                              className="w-14 bg-transparent border-b border-transparent hover:border-[#E0D8CC] focus:border-[#B8963E] focus:outline-none text-sm py-0.5"
+                            />
+                          </td>
+                          <td className="px-4 py-3 hidden lg:table-cell">
+                            <input
+                              type="text"
+                              value={row.imageUrl ?? ""}
+                              onChange={e =>
+                                updateRow(i, {
+                                  imageUrl: e.target.value || undefined,
+                                })
+                              }
+                              placeholder="https://…"
+                              title={row.imageUrl}
+                              className="w-full max-w-[180px] bg-transparent border-b border-transparent hover:border-[#E0D8CC] focus:border-[#B8963E] focus:outline-none text-xs font-mono text-muted-foreground py-0.5"
+                            />
+                          </td>
+                          <td className="px-4 py-3">
+                            {row._errors.length > 0 ? (
+                              <span className="text-xs text-red-600">
+                                {row._errors.join("; ")}
+                              </span>
+                            ) : (
+                              <span className="text-xs text-muted-foreground/40">
+                                —
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {invalidRows.length > 0 && (
+              <p className="text-xs text-muted-foreground font-sans mt-3">
+                Rows with errors will be skipped. Edit the name, description,
+                price, or category directly in the table above to fix them
+                before importing.
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* ── Stage: Done ── */}
+        {stage === "done" && importResult && (
+          <div className="text-center py-16">
+            <div className="w-20 h-20 bg-[#2D2620] rounded-full flex items-center justify-center mx-auto mb-6">
+              <CheckCircle2 size={40} className="text-[#B8963E]" />
+            </div>
+            <h2 className="font-serif text-foreground text-3xl mb-3">
+              {importResult.created} product
+              {importResult.created !== 1 ? "s" : ""} created
+              {importResult.updated > 0 && `, ${importResult.updated} updated`}
+            </h2>
+            <p className="text-muted-foreground font-sans mb-2">
+              {importResult.updated > 0
+                ? "Rows matching an existing product name were updated in place instead of duplicated. "
+                : ""}
+              Products are now visible in the shop. You can add photos via the
+              admin panel.
+            </p>
+            {importResult.failed.length > 0 && (
+              <p className="text-amber-600 text-sm font-sans mb-4">
+                {importResult.failed.length} failed:{" "}
+                {importResult.failed.join(", ")}
+              </p>
+            )}
+            <div className="flex flex-col sm:flex-row gap-3 justify-center mt-8">
+              <button
+                type="button"
+                onClick={() => {
+                  setStage("input");
+                  setRows([]);
+                  setImportResult(null);
+                  setSheetUrl("");
+                  setHandwritingPreviews([]);
+                }}
+                className="flex items-center justify-center gap-2 border border-[#2D2620] text-[#2D2620] px-8 py-3 text-sm uppercase tracking-[0.15em] font-sans hover:bg-[#2D2620] hover:text-white transition-colors"
+              >
+                <Upload size={14} />
+                Import More
+              </button>
+              <Link
+                href="/admin"
+                className="flex items-center justify-center gap-2 bg-[#2D2620] text-white px-8 py-3 text-sm uppercase tracking-[0.15em] font-sans hover:bg-[#3A3028] transition-colors"
+              >
+                Go to Admin Panel
+              </Link>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

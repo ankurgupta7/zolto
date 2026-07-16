@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Placeholder icon — replace via Android Studio: right-click res → New → Image Asset -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#000000"
+        android:pathData="M44,28 L44,80 L52,80 L52,58 L70,80 L80,80 L60,54 L78,28 L68,28 L52,52 L52,28 Z" />
+</vector>
