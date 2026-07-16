@@ -1,8 +1,8 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { router, publicProcedure, checkFeature, requireTenant } from "../_core/trpc";
-import { db } from "../../db";
-import { tenants, tenantSettings, users } from "../../../drizzle/schema";
+import { db } from "../db";
+import { tenants, tenantSettings, users } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
 import crypto from "crypto";
 

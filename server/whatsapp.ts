@@ -3,8 +3,12 @@ import type { Request, Response } from "express";
 import { PRODUCT_CATEGORIES, type ProductCategory } from "@shared/const";
 import { invokeLLM } from "./_core/llm";
 import { notifyOwner } from "./_core/notification";
-import { createProduct } from "./db";
+import { createProduct, getTenantSettings } from "./db";
 import { storagePut } from "./storage";
+import type { TenantBranding } from "./_core/email";
+import { tenants, tenantSettings } from "../drizzle/schema";
+import { eq } from "drizzle-orm";
+import { getDb } from "./db";
 
 // These AI extractors describe a single photographed/described piece, so "Sets"
 // is folded into "Other" (see the prompt) and deliberately omitted from the
@@ -44,11 +48,46 @@ export async function handleWebhookMessage(req: Request, res: Response) {
     const changes = entry?.changes?.[0];
     const value = changes?.value;
     const messages = value?.messages;
+    const metadata = value?.metadata;
 
     if (!messages || messages.length === 0) return;
 
     const message = messages[0];
     const messageType = message.type;
+
+    // ── Look up tenant by WhatsApp business number ─────────────────────────
+    const businessPhone = metadata?.display_phone_number ?? "";
+    let tenantId: number | undefined;
+    let branding: TenantBranding = {
+      tenantName: "your store",
+      tenantDomain: process.env.PUBLIC_BASE_URL ?? "https://zolto.ch",
+    };
+
+    if (businessPhone) {
+      const db = await getDb();
+      if (db) {
+        const result = await db
+          .select({ tenant: tenants, settings: tenantSettings })
+          .from(tenants)
+          .leftJoin(tenantSettings, eq(tenants.id, tenantSettings.tenantId))
+          .where(eq(tenantSettings.whatsappNumber, businessPhone))
+          .limit(1);
+        if (result.length > 0) {
+          const row = result[0];
+          tenantId = row.tenant.id;
+          branding = {
+            tenantName: row.settings?.whiteLabelName ?? row.tenant.name,
+            tenantDomain: row.tenant.domain ?? row.settings?.publicDomain ?? process.env.PUBLIC_BASE_URL ?? "https://zolto.ch",
+            contactEmail: row.settings?.contactEmail ?? undefined,
+          };
+        }
+      }
+    }
+
+    if (!tenantId) {
+      console.log(`[WhatsApp] No tenant mapped to business number ${businessPhone}, skipping`);
+      return;
+    }
 
     let imageUrl: string | null = null;
     let textContent = "";
@@ -76,8 +115,8 @@ export async function handleWebhookMessage(req: Request, res: Response) {
       return;
     }
 
-    // Parse product details with LLM
-    const parsed = await parseProductFromMessage(textContent);
+    // Parse product details with tenant-branded LLM prompt
+    const parsed = await parseProductFromMessage(textContent, branding.tenantName);
     if (!parsed) {
       console.log("[WhatsApp] Could not parse product from message");
       return;
@@ -93,16 +132,17 @@ export async function handleWebhookMessage(req: Request, res: Response) {
       imageKey: imageUrl ? `whatsapp/${Date.now()}` : undefined,
       visible: true,
       source: "whatsapp",
+      tenantId,
     });
 
-    // Notify the owner
+    // Notify the owner with tenant branding
     await notifyOwner({
-      title: "New product added via WhatsApp",
-      content: `✨ "${parsed.name}" has been added to the catalogue at $${parsed.price}.`,
+      title: `New product added via WhatsApp — ${branding.tenantName}`,
+      content: `✨ "${parsed.name}" has been added to the ${branding.tenantName} catalogue at $${parsed.price}.`,
     });
 
     console.log(
-      `[WhatsApp] Product created: ${parsed.name} @ $${parsed.price}`
+      `[WhatsApp] Product created for ${branding.tenantName}: ${parsed.name} @ $${parsed.price}`
     );
   } catch (err) {
     console.error("[WhatsApp] Error processing webhook:", err);
@@ -111,7 +151,10 @@ export async function handleWebhookMessage(req: Request, res: Response) {
 
 // ─── LLM Parser ──────────────────────────────────────────────────────────────
 
-export async function parseProductFromMessage(text: string): Promise<{
+export async function parseProductFromMessage(
+  text: string,
+  tenantName?: string
+): Promise<{
   name: string;
   description: string;
   price: number;
@@ -120,11 +163,12 @@ export async function parseProductFromMessage(text: string): Promise<{
   if (!text.trim()) return null;
 
   try {
+    const storeName = tenantName ?? "your store";
     const response = await invokeLLM({
       messages: [
         {
           role: "system",
-          content: `You are a product data extractor for Kalakosh Jewellery – Zürich, a luxury jewellery boutique.
+          content: `You are a product data extractor for ${storeName}.
 Extract product information from the owner's message and return a JSON object.
 Write the product name and description in German (Swiss German spelling: use ss instead of ß).
 

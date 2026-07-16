@@ -20,8 +20,9 @@ import axios from "axios";
 import { PRODUCT_CATEGORIES, type ProductCategory } from "@shared/const";
 import { invokeLLM } from "./_core/llm";
 import { notifyOwner } from "./_core/notification";
-import { createProduct, getProductByDiscordMessageId } from "./db";
+import { createProduct, getProductByDiscordMessageId, getTenantByDiscordChannelId, getTenantSettings } from "./db";
 import { storagePut } from "./storage";
+import type { TenantBranding } from "./_core/email";
 
 // These AI extractors describe a single photographed/described piece, so "Sets"
 // is folded into "Other" (see the prompt) and deliberately omitted from the
@@ -35,7 +36,10 @@ const DISCORD_API = "https://discord.com/api/v10";
 
 // ─── LLM Parser ──────────────────────────────────────────────────────────────
 
-export async function parseProductFromMessage(text: string): Promise<{
+export async function parseProductFromMessage(
+  text: string,
+  tenantName?: string
+): Promise<{
   name: string;
   description: string;
   price: number;
@@ -45,12 +49,13 @@ export async function parseProductFromMessage(text: string): Promise<{
 
   try {
     const model = process.env.LLM_MODEL;
+    const storeName = tenantName ?? "your store";
     const response = await invokeLLM({
       ...(model ? { model } : {}),
       messages: [
         {
           role: "system",
-          content: `You are a product data extractor for Kalakosh Zurich, a luxury jewelry boutique.
+          content: `You are a product data extractor for ${storeName}.
 Extract product information from the owner's Discord message and return a JSON object.
 
 Available categories: ${AI_CATEGORIES.map(c => `"${c}"`).join(", ")}
@@ -182,16 +187,29 @@ export interface DiscordMessage {
 export async function handleDiscordMessage(
   message: DiscordMessage
 ): Promise<void> {
-  // Only process messages from the configured channel
-  if (DISCORD_CHANNEL_ID && message.channel_id !== DISCORD_CHANNEL_ID) return;
-
   // Ignore bot messages
   if (message.author.bot) return;
 
+  // ── Look up tenant by Discord channel ID ─────────────────────────────────
+  const tenant = await getTenantByDiscordChannelId(message.channel_id);
+  if (!tenant) {
+    // If no tenant mapped to this channel, fall back to legacy single-channel mode
+    if (DISCORD_CHANNEL_ID && message.channel_id !== DISCORD_CHANNEL_ID) return;
+    if (!DISCORD_CHANNEL_ID) {
+      console.log(`[Discord] No tenant mapped to channel ${message.channel_id}, skipping`);
+      return;
+    }
+  }
+
+  const tenantName = tenant?.name ?? "your store";
+  const settings = tenant ? await getTenantSettings(tenant.id) : null;
+  const branding: TenantBranding = {
+    tenantName: settings?.whiteLabelName ?? tenantName,
+    tenantDomain: tenant?.domain ?? settings?.publicDomain ?? process.env.PUBLIC_BASE_URL ?? "https://zolto.ch",
+    contactEmail: settings?.contactEmail ?? undefined,
+  };
+
   // ── Deduplication: skip if this Discord message was already processed ──────
-  // Discord sometimes fires MESSAGE_CREATE twice (e.g. when an image finishes
-  // processing after the initial send). The unique discordMessageId prevents
-  // duplicate catalogue entries.
   const existing = await getProductByDiscordMessageId(message.id);
   if (existing) {
     console.log(`[Discord] Message ${message.id} already processed, skipping`);
@@ -201,7 +219,6 @@ export async function handleDiscordMessage(
   const text = message.content ?? "";
   const attachments = message.attachments ?? [];
 
-  // Need at least some text to parse product info
   if (!text.trim() && attachments.length === 0) return;
 
   // Download the first image attachment if present
@@ -213,14 +230,14 @@ export async function handleDiscordMessage(
     imageUrl = await downloadDiscordAttachment(imageAttachment);
   }
 
-  // Parse product details from the message text
-  const parsed = await parseProductFromMessage(text || "New jewelry item");
+  // Parse product details using tenant-branded prompt
+  const parsed = await parseProductFromMessage(text || "New jewelry item", branding.tenantName);
   if (!parsed) {
     console.log("[Discord] Could not parse product from message, skipping");
     return;
   }
 
-  // Create the product in the database (with the Discord message ID for dedup)
+  // Create the product in the database
   await createProduct({
     name: parsed.name,
     description: parsed.description,
@@ -229,14 +246,15 @@ export async function handleDiscordMessage(
     imageUrl: imageUrl ?? undefined,
     imageKey: imageUrl ? `discord/${Date.now()}` : undefined,
     visible: true,
-    source: "whatsapp", // reusing enum value for "external channel"
+    source: "whatsapp",
     discordMessageId: message.id,
+    tenantId: tenant?.id,
   });
 
-  // Notify the owner
+  // Notify the owner with tenant branding
   await notifyOwner({
-    title: "New product added via Discord",
-    content: `✨ "${parsed.name}" has been added to the Kalakosh Zurich catalogue at CHF ${parsed.price}.`,
+    title: `New product added via Discord — ${branding.tenantName}`,
+    content: `✨ "${parsed.name}" has been added to the ${branding.tenantName} catalogue at CHF ${parsed.price}.`,
   });
 
   // Send a confirmation reply to the Discord channel
@@ -245,7 +263,7 @@ export async function handleDiscordMessage(
       await axios.post(
         `${DISCORD_API}/channels/${message.channel_id}/messages`,
         {
-          content: `✅ **${parsed.name}** (${parsed.category}) — CHF ${parsed.price} has been added to the catalogue!`,
+          content: `✅ **${parsed.name}** (${parsed.category}) — CHF ${parsed.price} has been added to the ${branding.tenantName} catalogue!`,
           message_reference: { message_id: message.id },
         },
         { headers: { Authorization: `Bot ${DISCORD_BOT_TOKEN}` } }
@@ -256,7 +274,7 @@ export async function handleDiscordMessage(
   }
 
   console.log(
-    `[Discord] Product created: ${parsed.name} @ CHF ${parsed.price}`
+    `[Discord] Product created for ${branding.tenantName}: ${parsed.name} @ CHF ${parsed.price}`
   );
 }
 
@@ -369,7 +387,7 @@ function identify(): void {
       d: {
         token: DISCORD_BOT_TOKEN,
         intents: (1 << 9) | (1 << 15), // GUILD_MESSAGES + MESSAGE_CONTENT
-        properties: { os: "linux", browser: "kalakosh", device: "kalakosh" },
+        properties: { os: "linux", browser: "zolto", device: "zolto" },
       },
     })
   );

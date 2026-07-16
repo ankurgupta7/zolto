@@ -16,8 +16,9 @@ import type { Request, Response } from "express";
 import { PRODUCT_CATEGORIES, type ProductCategory } from "@shared/const";
 import { invokeLLM } from "./_core/llm";
 import { notifyOwner } from "./_core/notification";
-import { createProduct } from "./db";
+import { createProduct, getTenantBySlackChannelId, getTenantSettings } from "./db";
 import { storagePut } from "./storage";
+import type { TenantBranding } from "./_core/email";
 
 // These AI extractors describe a single photographed/described piece, so "Sets"
 // is folded into "Other" (see the prompt) and deliberately omitted from the
@@ -96,8 +97,23 @@ export async function handleSlackEvent(req: Request, res: Response) {
     if (event.subtype && event.subtype !== "file_share") return;
     if (event.bot_id) return; // ignore bot messages
 
+    const channelId: string = event.channel ?? "";
     const text: string = event.text ?? "";
     const files: SlackFile[] = event.files ?? [];
+
+    // ── Look up tenant by Slack channel ID ──────────────────────────────────
+    const tenant = await getTenantBySlackChannelId(channelId);
+    if (!tenant) {
+      console.log(`[Slack] No tenant mapped to channel ${channelId}, skipping`);
+      return;
+    }
+
+    const settings = await getTenantSettings(tenant.id);
+    const branding: TenantBranding = {
+      tenantName: settings?.whiteLabelName ?? tenant.name,
+      tenantDomain: tenant.domain ?? settings?.publicDomain ?? process.env.PUBLIC_BASE_URL ?? "https://zolto.ch",
+      contactEmail: settings?.contactEmail ?? undefined,
+    };
 
     // Need at least some text to parse product info
     if (!text.trim() && files.length === 0) return;
@@ -116,8 +132,8 @@ export async function handleSlackEvent(req: Request, res: Response) {
       }
     }
 
-    // Parse product details from the message text
-    const parsed = await parseProductFromMessage(text || "New jewelry item");
+    // Parse product details using tenant-branded prompt
+    const parsed = await parseProductFromMessage(text || "New jewelry item", branding.tenantName);
     if (!parsed) {
       console.log("[Slack] Could not parse product from message, skipping");
       return;
@@ -132,17 +148,18 @@ export async function handleSlackEvent(req: Request, res: Response) {
       imageUrl: imageUrl ?? undefined,
       imageKey: imageUrl ? `slack/${Date.now()}` : undefined,
       visible: true,
-      source: "whatsapp", // reusing enum value for "external channel"
+      source: "whatsapp",
+      tenantId: tenant.id,
     });
 
-    // Notify the owner
+    // Notify the owner with tenant branding
     await notifyOwner({
-      title: "New product added via Slack",
-      content: `✨ "${parsed.name}" has been added to the Kalakosh Zurich catalogue at CHF ${parsed.price}.`,
+      title: `New product added via Slack — ${branding.tenantName}`,
+      content: `✨ "${parsed.name}" has been added to the ${branding.tenantName} catalogue at CHF ${parsed.price}.`,
     });
 
     console.log(
-      `[Slack] Product created: ${parsed.name} @ CHF ${parsed.price}`
+      `[Slack] Product created for ${branding.tenantName}: ${parsed.name} @ CHF ${parsed.price}`
     );
   } catch (err) {
     console.error("[Slack] Error processing event:", err);
@@ -151,7 +168,10 @@ export async function handleSlackEvent(req: Request, res: Response) {
 
 // ─── LLM Parser ──────────────────────────────────────────────────────────────
 
-export async function parseProductFromMessage(text: string): Promise<{
+export async function parseProductFromMessage(
+  text: string,
+  tenantName?: string
+): Promise<{
   name: string;
   description: string;
   price: number;
@@ -160,11 +180,12 @@ export async function parseProductFromMessage(text: string): Promise<{
   if (!text.trim()) return null;
 
   try {
+    const storeName = tenantName ?? "your store";
     const response = await invokeLLM({
       messages: [
         {
           role: "system",
-          content: `You are a product data extractor for Kalakosh Zurich, a luxury jewelry boutique.
+          content: `You are a product data extractor for ${storeName}.
 Extract product information from the owner's Slack message and return a JSON object.
 
 Available categories: ${AI_CATEGORIES.map(c => `"${c}"`).join(", ")}

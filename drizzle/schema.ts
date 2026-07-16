@@ -63,6 +63,12 @@ export const tenantSettings = mysqlTable("tenant_settings", {
   // SEO / Meta
   metaTitle: varchar("meta_title", { length: 255 }),
   metaDescription: text("meta_description"),
+  // Branding
+  whiteLabelName: varchar("white_label_name", { length: 255 }),
+  publicDomain: varchar("public_domain", { length: 255 }),
+  // External channel IDs (for multi-tenant bot mapping)
+  discordChannelId: varchar("discord_channel_id", { length: 64 }),
+  slackChannelId: varchar("slack_channel_id", { length: 64 }),
   // Contact
   contactEmail: varchar("contact_email", { length: 320 }),
   contactPhone: varchar("contact_phone", { length: 32 }),

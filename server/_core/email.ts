@@ -1,4 +1,22 @@
-// ── HTML escaping ─────────────────────────────────────────────────────────────
+export interface TenantBranding {
+  tenantName: string;
+  tenantDomain: string;
+  contactEmail?: string;
+}
+
+const DEFAULT_BRANDING: TenantBranding = {
+  tenantName: "Zolto Store",
+  tenantDomain: process.env.PUBLIC_BASE_URL?.replace(/\/$/, "") ?? "https://zolto.ch",
+  contactEmail: process.env.RESEND_FROM_EMAIL ?? "orders@zolto.ch",
+};
+
+function resolveBranding(override?: Partial<TenantBranding>): TenantBranding {
+  return {
+    tenantName: override?.tenantName ?? DEFAULT_BRANDING.tenantName,
+    tenantDomain: override?.tenantDomain ?? DEFAULT_BRANDING.tenantDomain,
+    contactEmail: override?.contactEmail ?? DEFAULT_BRANDING.contactEmail,
+  };
+}
 // Several fields interpolated into the receipt HTML below (customer name,
 // email, product labels, payment method) originate from Stripe Checkout
 // session data, which the payer controls. Escape them to prevent HTML/markup
@@ -40,11 +58,13 @@ export interface OrderReceiptOptions {
   /** Total charged in smallest unit (Rappen for CHF) */
   amountTotal: number;
   paymentMethod?: string | null;
+  branding?: Partial<TenantBranding>;
 }
 
 // ── HTML receipt (email body) ─────────────────────────────────────────────────
 export function buildReceiptHtml(opts: OrderReceiptOptions): string {
-  const baseUrl = (process.env.PUBLIC_BASE_URL ?? "https://kalakosh.ch").replace(/\/$/, "");
+  const branding = resolveBranding(opts.branding);
+  const baseUrl = branding.tenantDomain;
   const ref = String(opts.orderRef).padStart(5, "0");
   const date = new Date(opts.createdAt ?? Date.now()).toLocaleDateString("en-GB", {
     day: "numeric", month: "long", year: "numeric",
@@ -117,8 +137,8 @@ export function buildReceiptHtml(opts: OrderReceiptOptions): string {
 
     <!-- Letterhead -->
     <div style="background:${C.brown};padding:32px;text-align:center">
-      <p style="margin:0 0 6px;font-family:Georgia,serif;font-size:22px;letter-spacing:0.22em;color:${C.gold};text-transform:uppercase">Kalakosh</p>
-      <p style="margin:0;font-family:Arial,sans-serif;font-size:11px;letter-spacing:0.08em;color:${C.light}">Handcrafted Jewellery · Zurich · kalakosh.ch</p>
+      <p style="margin:0 0 6px;font-family:Georgia,serif;font-size:22px;letter-spacing:0.22em;color:${C.gold};text-transform:uppercase">${escapeHtml(branding.tenantName)}</p>
+      <p style="margin:0;font-family:Arial,sans-serif;font-size:11px;letter-spacing:0.08em;color:${C.light}">Handcrafted with care · ${escapeHtml(branding.tenantDomain.replace(/^https?:\/\//, ""))}</p>
     </div>
 
     <div style="padding:32px">
@@ -161,7 +181,7 @@ export function buildReceiptHtml(opts: OrderReceiptOptions): string {
     <!-- Footer -->
     <div style="border-top:1px solid ${C.divider};padding:14px 32px;text-align:center">
       <p style="margin:0;font-family:Arial,sans-serif;font-size:11px;color:#A09080;line-height:1.6">
-        return@kalakosh.ch · 14-day returns on unworn, undamaged pieces
+        ${escapeHtml(branding.contactEmail ?? `support@${branding.tenantDomain.replace(/^https?:\/\//, "")}`)} · 14-day returns on unworn, undamaged pieces
       </p>
     </div>
 
@@ -175,7 +195,8 @@ export async function sendOrderReceipt(opts: OrderReceiptOptions): Promise<void>
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) return;
 
-  const from = process.env.RESEND_FROM_EMAIL ?? "Kalakosh <orders@kalakosh.ch>";
+  const branding = resolveBranding(opts.branding);
+  const from = branding.contactEmail ?? `orders@${branding.tenantDomain.replace(/^https?:\/\//, "")}`;
   const ref = String(opts.orderRef).padStart(5, "0");
 
   const res = await fetch("https://api.resend.com/emails", {
@@ -187,7 +208,7 @@ export async function sendOrderReceipt(opts: OrderReceiptOptions): Promise<void>
     body: JSON.stringify({
       from,
       to: opts.to,
-      subject: `Your Kalakosh order #${ref}`,
+      subject: `Your ${branding.tenantName} order #${ref}`,
       html: buildReceiptHtml(opts),
     }),
   });
@@ -218,8 +239,9 @@ export interface ReconciliationReviewItem {
   token: string;
 }
 
-export function buildReconciliationReviewHtml(items: ReconciliationReviewItem[]): string {
-  const baseUrl = (process.env.PUBLIC_BASE_URL ?? "https://kalakosh.ch").replace(/\/$/, "");
+export function buildReconciliationReviewHtml(items: ReconciliationReviewItem[], branding?: Partial<TenantBranding>): string {
+  const b = resolveBranding(branding);
+  const baseUrl = b.tenantDomain;
 
   const sections = items
     .map(item => {
@@ -268,7 +290,7 @@ export function buildReconciliationReviewHtml(items: ReconciliationReviewItem[])
   <div style="max-width:560px;margin:40px auto;background:#fff;border:1px solid ${C.divider}">
 
     <div style="background:${C.brown};padding:32px;text-align:center">
-      <p style="margin:0 0 6px;font-family:Georgia,serif;font-size:22px;letter-spacing:0.22em;color:${C.gold};text-transform:uppercase">Kalakosh</p>
+      <p style="margin:0 0 6px;font-family:Georgia,serif;font-size:22px;letter-spacing:0.22em;color:${C.gold};text-transform:uppercase">${escapeHtml(b.tenantName)}</p>
       <p style="margin:0;font-family:Arial,sans-serif;font-size:11px;letter-spacing:0.08em;color:${C.light}">Stripe payments needing a match</p>
     </div>
 
@@ -285,7 +307,8 @@ export function buildReconciliationReviewHtml(items: ReconciliationReviewItem[])
 }
 
 export async function sendReconciliationReviewEmail(
-  items: ReconciliationReviewItem[]
+  items: ReconciliationReviewItem[],
+  branding?: Partial<TenantBranding>
 ): Promise<void> {
   if (items.length === 0) return;
 
@@ -293,7 +316,8 @@ export async function sendReconciliationReviewEmail(
   const to = process.env.ADMIN_EMAIL;
   if (!apiKey || !to) return;
 
-  const from = process.env.RESEND_FROM_EMAIL ?? "Kalakosh <orders@kalakosh.ch>";
+  const b = resolveBranding(branding);
+  const from = b.contactEmail ?? `orders@${b.tenantDomain.replace(/^https?:\/\//, "")}`;
 
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
@@ -304,8 +328,8 @@ export async function sendReconciliationReviewEmail(
     body: JSON.stringify({
       from,
       to,
-      subject: `${items.length} Stripe payment${items.length === 1 ? "" : "s"} need a match`,
-      html: buildReconciliationReviewHtml(items),
+      subject: `${items.length} Stripe payment${items.length === 1 ? "" : "s"} need a match — ${b.tenantName}`,
+      html: buildReconciliationReviewHtml(items, branding),
     }),
   });
 

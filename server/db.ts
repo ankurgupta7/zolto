@@ -12,6 +12,7 @@ import {
 } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import type { Pool as MySqlPool, PoolConnection } from "mysql2";
+import * as schema from "../drizzle/schema";
 import {
   type BulkUploadLog,
   bulkUploadLogs,
@@ -32,15 +33,28 @@ import {
   type StripeReconciliation,
   stripeReconciliations,
   users,
+  tenants,
+  tenantSettings,
+  type Tenant,
+  type TenantSetting,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
-let _db: ReturnType<typeof drizzle> | null = null;
+let _db: ReturnType<typeof drizzle<typeof schema>> | null = null;
+
+export const db = new Proxy({} as ReturnType<typeof drizzle<typeof schema>>, {
+  get(_target, prop) {
+    if (!_db) {
+      throw new Error("Database not initialized. Call getDb() first.");
+    }
+    return (_db as any)[prop];
+  },
+});
 
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
-      _db = drizzle(process.env.DATABASE_URL);
+      _db = drizzle(process.env.DATABASE_URL, { schema, mode: "default" });
     } catch (error) {
       console.warn("[Database] Failed to connect:", error);
       _db = null;
@@ -563,4 +577,60 @@ export async function resolveStripeReconciliationConfirmed(
         .where(eq(stripeReconciliations.id, reconciliationId));
     })
   );
+}
+
+// ─── Tenants ──────────────────────────────────────────────────────────────────
+
+export async function getTenantByDiscordChannelId(
+  channelId: string
+): Promise<Tenant | undefined> {
+  return withDb(async db => {
+    const result = await db
+      .select({ tenant: tenants })
+      .from(tenants)
+      .innerJoin(tenantSettings, eq(tenants.id, tenantSettings.tenantId))
+      .where(eq(tenantSettings.discordChannelId, channelId))
+      .limit(1);
+    return result.length > 0 ? result[0].tenant : undefined;
+  }, undefined);
+}
+
+export async function getTenantBySlackChannelId(
+  channelId: string
+): Promise<Tenant | undefined> {
+  return withDb(async db => {
+    const result = await db
+      .select({ tenant: tenants })
+      .from(tenants)
+      .innerJoin(tenantSettings, eq(tenants.id, tenantSettings.tenantId))
+      .where(eq(tenantSettings.slackChannelId, channelId))
+      .limit(1);
+    return result.length > 0 ? result[0].tenant : undefined;
+  }, undefined);
+}
+
+export async function getTenantSettings(
+  tenantId: number
+): Promise<TenantSetting | undefined> {
+  return withDb(async db => {
+    const result = await db
+      .select()
+      .from(tenantSettings)
+      .where(eq(tenantSettings.tenantId, tenantId))
+      .limit(1);
+    return result.length > 0 ? result[0] : undefined;
+  }, undefined);
+}
+
+export async function getTenantById(
+  id: number
+): Promise<Tenant | undefined> {
+  return withDb(async db => {
+    const result = await db
+      .select()
+      .from(tenants)
+      .where(eq(tenants.id, id))
+      .limit(1);
+    return result.length > 0 ? result[0] : undefined;
+  }, undefined);
 }
