@@ -45,13 +45,13 @@ export default function InstagramManager() {
           value={newUrl}
           onChange={(e) => setNewUrl(e.target.value)}
           placeholder="https://www.instagram.com/p/XXXXX/"
-          className="flex-1 border border-[#2D2620]/20 px-4 py-2.5 text-sm font-sans focus:outline-none focus:border-[#B8963E] transition-colors bg-transparent"
+          className="flex-1 border border-[var(--brand-ink)]/20 px-4 py-2.5 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] transition-colors bg-transparent"
           required
         />
         <button
           type="submit"
           disabled={addMutation.isPending || !newUrl.trim()}
-          className="flex items-center gap-2 bg-[#2D2620] text-white px-5 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:bg-[#3A3028] transition-colors disabled:opacity-60 flex-shrink-0"
+          className="flex items-center gap-2 bg-[var(--brand-ink)] text-white px-5 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:bg-[var(--brand-ink-hover)] transition-colors disabled:opacity-60 flex-shrink-0"
         >
           {addMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
           Add
@@ -65,7 +65,7 @@ export default function InstagramManager() {
           <span className="font-sans">Loading posts…</span>
         </div>
       ) : !posts || posts.length === 0 ? (
-        <div className="text-center py-8 border border-dashed border-[#2D2620]/20">
+        <div className="text-center py-8 border border-dashed border-[var(--brand-ink)]/20">
           <p className="text-muted-foreground text-sm font-sans">
             No posts added yet. Paste an Instagram post URL above to get started.
           </p>
@@ -81,7 +81,7 @@ export default function InstagramManager() {
           {posts.map((post, idx) => (
             <div
               key={post.id}
-              className="flex items-center gap-3 p-3 border border-[#E0D8CC] bg-[#FAF8F4] group"
+              className="flex items-center gap-3 p-3 border border-[var(--brand-border)] bg-[var(--brand-surface-2)] group"
             >
               <GripVertical size={14} className="text-muted-foreground/40 flex-shrink-0" />
               <span className="text-xs text-muted-foreground font-sans w-5 flex-shrink-0">
@@ -94,7 +94,7 @@ export default function InstagramManager() {
                 href={post.postUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="p-1.5 text-muted-foreground hover:text-[#2D2620] transition-colors flex-shrink-0"
+                className="p-1.5 text-muted-foreground hover:text-[var(--brand-ink)] transition-colors flex-shrink-0"
                 title="Open post"
               >
                 <ExternalLink size={14} />

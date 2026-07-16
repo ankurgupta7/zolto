@@ -100,7 +100,7 @@ export default function ImageLightbox({ images, activeIndex, onClose, onNext, on
               key={i}
               onClick={(e) => { e.stopPropagation(); onGoTo(i); }}
               className={`h-1.5 rounded-full transition-all duration-200 ${
-                i === activeIndex ? "bg-[#B8963E] w-5" : "bg-white/30 hover:bg-white/60 w-1.5"
+                i === activeIndex ? "bg-[var(--brand-accent)] w-5" : "bg-white/30 hover:bg-white/60 w-1.5"
               }`}
               aria-label={`Go to image ${i + 1}`}
             />

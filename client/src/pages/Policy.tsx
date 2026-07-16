@@ -153,9 +153,9 @@ export default function Policy() {
 
   return (
     <div className="page-enter pt-20">
-      <section className="bg-[#2D2620] py-20">
+      <section className="bg-[var(--brand-ink)] py-20">
         <div className="container text-center">
-          <p className="text-[#B8963E] text-xs uppercase tracking-[0.3em] mb-3 font-sans">
+          <p className="text-[var(--brand-accent)] text-xs uppercase tracking-[0.3em] mb-3 font-sans">
             Kalakosh Zürich
           </p>
           <h1 className="font-serif text-white">{content.title}</h1>
@@ -182,7 +182,7 @@ export default function Policy() {
                       dangerouslySetInnerHTML={{
                         __html: para.replace(
                           RETURN_EMAIL,
-                          `<a href="mailto:${RETURN_EMAIL}" class="text-[#2D2620] underline hover:text-[#B8963E]">${RETURN_EMAIL}</a>`
+                          `<a href="mailto:${RETURN_EMAIL}" class="text-[var(--brand-ink)] underline hover:text-[var(--brand-accent)]">${RETURN_EMAIL}</a>`
                         ),
                       }}
                     />

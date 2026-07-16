@@ -39,9 +39,9 @@ export default function CheckoutSuccess() {
     <div className="page-enter pt-28 pb-24 min-h-[60vh]">
       <div className="container max-w-2xl text-center">
         {isLoading && !order ? (
-          <Loader2 className="w-12 h-12 text-[#B8963E] animate-spin mx-auto mb-6" />
+          <Loader2 className="w-12 h-12 text-[var(--brand-accent)] animate-spin mx-auto mb-6" />
         ) : (
-          <CheckCircle2 className="w-16 h-16 text-[#2D2620] mx-auto mb-6" />
+          <CheckCircle2 className="w-16 h-16 text-[var(--brand-ink)] mx-auto mb-6" />
         )}
 
         <h1 className="font-serif text-foreground text-3xl mb-3">
@@ -54,7 +54,7 @@ export default function CheckoutSuccess() {
         </p>
 
         {order?.amountTotal != null && (
-          <p className="font-serif text-2xl text-[#2D2620] my-6">
+          <p className="font-serif text-2xl text-[var(--brand-ink)] my-6">
             CHF {(order.amountTotal / 100).toFixed(2)}
           </p>
         )}
@@ -71,13 +71,13 @@ export default function CheckoutSuccess() {
           </p>
         )}
 
-        <div className="border-t border-[#E0D8CC] pt-6 mb-8 text-xs text-muted-foreground font-sans leading-relaxed">
+        <div className="border-t border-[var(--brand-border)] pt-6 mb-8 text-xs text-muted-foreground font-sans leading-relaxed">
           <p>{t("success.returnsNote")}</p>
         </div>
 
         <Link
           href="/shop"
-          className="inline-flex bg-[#2D2620] text-[#B8963E] px-8 py-3.5 text-sm uppercase tracking-[0.15em] font-sans hover:bg-[#3A3028] transition-colors"
+          className="inline-flex bg-[var(--brand-ink)] text-[var(--brand-accent)] px-8 py-3.5 text-sm uppercase tracking-[0.15em] font-sans hover:bg-[var(--brand-ink-hover)] transition-colors"
         >
           {t("success.continueShopping")}
         </Link>

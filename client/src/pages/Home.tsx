@@ -99,8 +99,8 @@ export default function Home() {
         </motion.div>
 
         {/* Colour wash — static, above parallax */}
-        <div className="absolute inset-0 bg-[#2D2620]/70 pointer-events-none" />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#2D2620]/80 via-[#2D2620]/40 to-transparent pointer-events-none" />
+        <div className="absolute inset-0 bg-[var(--brand-ink)]/70 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[var(--brand-ink)]/80 via-[var(--brand-ink)]/40 to-transparent pointer-events-none" />
 
         {/* Hero text — drifts and fades as user scrolls */}
         <motion.div
@@ -110,7 +110,7 @@ export default function Home() {
           <div className="max-w-2xl">
             <motion.p
               {...fadeUpProps(0.1)}
-              className="text-[#B8963E] text-xs uppercase tracking-[0.3em] mb-6 font-sans"
+              className="text-[var(--brand-accent)] text-xs uppercase tracking-[0.3em] mb-6 font-sans"
             >
               {t("home.badge")}
             </motion.p>
@@ -133,7 +133,7 @@ export default function Home() {
             >
               <Link
                 href="/shop"
-                className="inline-flex items-center gap-2 bg-[#B8963E] text-[#2D2620] px-8 py-3.5 text-sm uppercase tracking-[0.15em] font-sans font-medium hover:bg-[#D4B060] transition-colors duration-300"
+                className="inline-flex items-center gap-2 bg-[var(--brand-accent)] text-[var(--brand-ink)] px-8 py-3.5 text-sm uppercase tracking-[0.15em] font-sans font-medium hover:bg-[var(--brand-accent-light)] transition-colors duration-300"
               >
                 {t("home.exploreCollection")}
               </Link>
@@ -141,7 +141,7 @@ export default function Home() {
                 href="https://www.instagram.com/kalakoshzurich"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 border border-white/30 text-white px-8 py-3.5 text-sm uppercase tracking-[0.15em] font-sans font-medium hover:border-[#B8963E] hover:text-[#B8963E] transition-colors duration-300"
+                className="inline-flex items-center gap-2 border border-white/30 text-white px-8 py-3.5 text-sm uppercase tracking-[0.15em] font-sans font-medium hover:border-[var(--brand-accent)] hover:text-[var(--brand-accent)] transition-colors duration-300"
               >
                 <InstagramIcon />
                 @kalakoshzurich
@@ -165,7 +165,7 @@ export default function Home() {
       </section>
 
       {/* ── Founder Story Strip ────────────────────────────────────────────────── */}
-      <section className="py-20 bg-[#EDE7DF] overflow-hidden">
+      <section className="py-20 bg-[var(--brand-surface)] overflow-hidden">
         <div className="container">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center max-w-5xl mx-auto">
 
@@ -176,7 +176,7 @@ export default function Home() {
               viewport={VIEWPORT_OPTS}
               transition={{ duration: 1.0, ease: EASE_VISCOUS }}
             >
-              <motion.p {...fadeUpProps(0)} className="text-[#B8963E] text-xs uppercase tracking-[0.3em] mb-4 font-sans">
+              <motion.p {...fadeUpProps(0)} className="text-[var(--brand-accent)] text-xs uppercase tracking-[0.3em] mb-4 font-sans">
                 {t("home.founderBadge")}
               </motion.p>
               <motion.h2 {...fadeUpProps(0.1)} className="font-serif text-foreground text-2xl md:text-3xl mb-6 leading-snug">
@@ -199,7 +199,7 @@ export default function Home() {
               <motion.div {...fadeUpProps(0.3)}>
                 <Link
                   href="/about"
-                  className="inline-flex items-center gap-2 text-sm text-[#2D2620] uppercase tracking-[0.15em] font-sans hover:text-[#B8963E] transition-colors border-b border-[#2D2620]/30 hover:border-[#B8963E] pb-0.5"
+                  className="inline-flex items-center gap-2 text-sm text-[var(--brand-ink)] uppercase tracking-[0.15em] font-sans hover:text-[var(--brand-accent)] transition-colors border-b border-[var(--brand-ink)]/30 hover:border-[var(--brand-accent)] pb-0.5"
                 >
                   {t("home.founderLink")} →
                 </Link>
@@ -230,9 +230,9 @@ export default function Home() {
                     boxShadow: "0 16px 40px rgba(26,74,46,0.10)",
                     transition: { duration: 0.4, ease: EASE_VISCOUS },
                   }}
-                  className="text-center py-8 px-4 bg-white border border-[#E0D8CC]"
+                  className="text-center py-8 px-4 bg-white border border-[var(--brand-border)]"
                 >
-                  <div className="text-2xl text-[#B8963E] font-serif mb-3">{p.icon}</div>
+                  <div className="text-2xl text-[var(--brand-accent)] font-serif mb-3">{p.icon}</div>
                   <p className="font-serif text-foreground text-lg mb-1">{p.title}</p>
                   <p className="text-muted-foreground text-xs font-sans uppercase tracking-[0.12em]">{p.desc}</p>
                 </motion.div>
@@ -243,12 +243,12 @@ export default function Home() {
       </section>
 
       {/* ── Collection Strip ───────────────────────────────────────────────────── */}
-      <section className="py-8 bg-background border-b border-[#E0D8CC] overflow-hidden">
+      <section className="py-8 bg-background border-b border-[var(--brand-border)] overflow-hidden">
         <div className="container">
           <div className="flex items-center gap-3 overflow-x-auto pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
             <motion.span
               {...fadeInProps(0)}
-              className="text-[#B8963E] text-[10px] uppercase tracking-[0.25em] font-sans whitespace-nowrap shrink-0 mr-1"
+              className="text-[var(--brand-accent)] text-[10px] uppercase tracking-[0.25em] font-sans whitespace-nowrap shrink-0 mr-1"
             >
               {t("home.ourCollections")}
             </motion.span>
@@ -262,11 +262,11 @@ export default function Home() {
               >
                 <Link
                   href={`/shop?category=${encodeURIComponent(cat.name)}`}
-                  className="group inline-flex items-center gap-2 bg-[#2D2620] text-white hover:bg-[#3A3028] transition-colors duration-300 px-5 py-2.5 text-xs font-sans uppercase tracking-[0.12em] whitespace-nowrap shrink-0"
+                  className="group inline-flex items-center gap-2 bg-[var(--brand-ink)] text-white hover:bg-[var(--brand-ink-hover)] transition-colors duration-300 px-5 py-2.5 text-xs font-sans uppercase tracking-[0.12em] whitespace-nowrap shrink-0"
                 >
-                  <span className="text-[#B8963E] font-serif text-base leading-none">{cat.icon}</span>
+                  <span className="text-[var(--brand-accent)] font-serif text-base leading-none">{cat.icon}</span>
                   {cat.displayName}
-                  <span className="text-[#B8963E]/60 group-hover:text-[#B8963E] transition-colors">→</span>
+                  <span className="text-[var(--brand-accent)]/60 group-hover:text-[var(--brand-accent)] transition-colors">→</span>
                 </Link>
               </motion.div>
             ))}
@@ -276,7 +276,7 @@ export default function Home() {
 
       {/* ── Featured Products Carousel ─────────────────────────────────────────── */}
       {featured.length > 0 && (
-        <section className="py-16 bg-[#EDE7DF] overflow-hidden">
+        <section className="py-16 bg-[var(--brand-surface)] overflow-hidden">
           <div className="container">
             <div className="flex items-end justify-between mb-10">
               <motion.div
@@ -285,7 +285,7 @@ export default function Home() {
                 viewport={VIEWPORT_OPTS}
                 transition={{ duration: 0.9, ease: EASE_VISCOUS }}
               >
-                <motion.p {...fadeUpProps(0.05)} className="text-[#B8963E] text-xs uppercase tracking-[0.3em] mb-3 font-sans">
+                <motion.p {...fadeUpProps(0.05)} className="text-[var(--brand-accent)] text-xs uppercase tracking-[0.3em] mb-3 font-sans">
                   {t("home.latestArrivals")}
                 </motion.p>
                 <motion.h2 {...fadeUpProps(0.15)} className="font-serif text-foreground">
@@ -295,7 +295,7 @@ export default function Home() {
               <motion.div {...fadeInProps(0.25)}>
                 <Link
                   href="/shop"
-                  className="inline-flex items-center gap-2 text-sm text-[#2D2620] uppercase tracking-[0.15em] font-sans hover:text-[#B8963E] transition-colors border-b border-[#2D2620]/30 hover:border-[#B8963E] pb-0.5"
+                  className="inline-flex items-center gap-2 text-sm text-[var(--brand-ink)] uppercase tracking-[0.15em] font-sans hover:text-[var(--brand-accent)] transition-colors border-b border-[var(--brand-ink)]/30 hover:border-[var(--brand-accent)] pb-0.5"
                 >
                   {t("home.viewAll")}
                 </Link>
@@ -317,8 +317,8 @@ export default function Home() {
                     </CarouselItem>
                   ))}
                 </CarouselContent>
-                <CarouselPrevious className="hidden sm:flex bg-white border-[#B8963E]/40 text-[#2D2620] hover:bg-[#EDE7DF] hover:border-[#B8963E]" />
-                <CarouselNext className="hidden sm:flex bg-white border-[#B8963E]/40 text-[#2D2620] hover:bg-[#EDE7DF] hover:border-[#B8963E]" />
+                <CarouselPrevious className="hidden sm:flex bg-white border-[var(--brand-accent)]/40 text-[var(--brand-ink)] hover:bg-[var(--brand-surface)] hover:border-[var(--brand-accent)]" />
+                <CarouselNext className="hidden sm:flex bg-white border-[var(--brand-accent)]/40 text-[var(--brand-ink)] hover:bg-[var(--brand-surface)] hover:border-[var(--brand-accent)]" />
               </Carousel>
             </motion.div>
           </div>

@@ -2,6 +2,8 @@ import { Link } from "wouter";
 import { useTranslation } from "react-i18next";
 import { useMemo } from "react";
 import { trpc } from "@/lib/trpc";
+import { useTenant } from "@/contexts/TenantContext";
+import { instagramHref, whatsappHref } from "@/lib/branding";
 import type { ProductCategory } from "@shared/types";
 
 const InstagramIcon = ({ className = "w-5 h-5" }: { className?: string }) => (
@@ -12,6 +14,9 @@ const InstagramIcon = ({ className = "w-5 h-5" }: { className?: string }) => (
 
 export default function Footer() {
   const { t } = useTranslation();
+  const { branding } = useTenant();
+  const igHref = instagramHref(branding);
+  const waHref = whatsappHref(branding);
   const { data: allProducts } = trpc.products.list.useQuery({});
   const availableCategories = useMemo(
     () => new Set(allProducts?.map((p) => p.category) ?? []),
@@ -37,14 +42,14 @@ export default function Footer() {
   ];
 
   return (
-    <footer className="bg-[#2D2620] text-white/70">
+    <footer className="bg-[var(--brand-ink)] text-white/70">
       <div className="divider-gold" />
 
       {/* Instagram Follow Banner */}
       <div className="border-b border-white/10">
         <div className="container py-8">
           <a
-            href="https://www.instagram.com/kalakoshzurich"
+            href={igHref ?? "#"}
             target="_blank"
             rel="noopener noreferrer"
             className="group flex flex-col sm:flex-row items-center justify-center gap-4 text-center sm:text-left"
@@ -56,11 +61,11 @@ export default function Footer() {
               <p className="text-white font-serif text-lg leading-tight">
                 {t("footer.instagramBanner")}
               </p>
-              <p className="text-[#B8963E] text-sm font-sans tracking-wide mt-0.5">
+              <p className="text-[var(--brand-accent)] text-sm font-sans tracking-wide mt-0.5">
                 {t("footer.instagramHandle")}
               </p>
             </div>
-            <span className="sm:ml-auto flex items-center gap-2 bg-white/10 border border-white/20 text-white text-xs uppercase tracking-[0.15em] font-sans px-5 py-2.5 group-hover:bg-[#B8963E] group-hover:text-[#2D2620] group-hover:border-[#B8963E] transition-all duration-200">
+            <span className="sm:ml-auto flex items-center gap-2 bg-white/10 border border-white/20 text-white text-xs uppercase tracking-[0.15em] font-sans px-5 py-2.5 group-hover:bg-[var(--brand-accent)] group-hover:text-[var(--brand-ink)] group-hover:border-[var(--brand-accent)] transition-all duration-200">
               <InstagramIcon className="w-3.5 h-3.5" />
               {t("footer.instagramFollow")}
             </span>
@@ -73,27 +78,33 @@ export default function Footer() {
           {/* Brand */}
           <div>
             <div className="mb-4">
-              <img
-                src="/kalakosh-logo-banner-dark.png"
-                alt="Kalakosh Zurich"
-                className="h-12 w-auto object-contain"
-              />
+              {branding.logoUrlDark ? (
+                <img
+                  src={branding.logoUrlDark}
+                  alt={branding.storeName}
+                  className="h-12 w-auto object-contain"
+                />
+              ) : (
+                <span className="font-serif text-2xl text-white">
+                  {branding.storeName}
+                </span>
+              )}
             </div>
             <p className="text-sm leading-relaxed text-white/50 max-w-xs mb-5">
               {t("footer.tagline")}
             </p>
             <div className="flex items-center gap-3">
               <a
-                href="https://www.instagram.com/kalakoshzurich"
+                href={igHref ?? "#"}
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label="Kalakosh Zurich on Instagram"
+                aria-label={`${branding.storeName} on Instagram`}
                 className="w-9 h-9 flex items-center justify-center rounded-full bg-white/10 text-white/60 hover:bg-gradient-to-br hover:from-[#f09433] hover:via-[#dc2743] hover:to-[#bc1888] hover:text-white transition-all duration-200"
               >
                 <InstagramIcon className="w-4 h-4" />
               </a>
               <a
-                href="https://wa.me/41791721714"
+                href={waHref ?? "#"}
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Chat on WhatsApp"
@@ -109,7 +120,7 @@ export default function Footer() {
 
           {/* Navigation */}
           <div>
-            <h4 className="text-xs uppercase tracking-[0.2em] text-[#B8963E] mb-4 font-sans">
+            <h4 className="text-xs uppercase tracking-[0.2em] text-[var(--brand-accent)] mb-4 font-sans">
               {t("footer.navigation")}
             </h4>
             <ul className="space-y-2">
@@ -117,7 +128,7 @@ export default function Footer() {
                 <li key={link.href}>
                   <Link
                     href={link.href}
-                    className="text-sm text-white/60 hover:text-[#B8963E] transition-colors duration-200"
+                    className="text-sm text-white/60 hover:text-[var(--brand-accent)] transition-colors duration-200"
                   >
                     {link.label}
                   </Link>
@@ -128,7 +139,7 @@ export default function Footer() {
 
           {/* Collections + Follow */}
           <div>
-            <h4 className="text-xs uppercase tracking-[0.2em] text-[#B8963E] mb-4 font-sans">
+            <h4 className="text-xs uppercase tracking-[0.2em] text-[var(--brand-accent)] mb-4 font-sans">
               {t("footer.collections")}
             </h4>
             <ul className="space-y-2 mb-6">
@@ -136,7 +147,7 @@ export default function Footer() {
                 <li key={cat.name}>
                   <Link
                     href={`/shop?category=${encodeURIComponent(cat.name)}`}
-                    className="text-sm text-white/60 hover:text-[#B8963E] transition-colors duration-200"
+                    className="text-sm text-white/60 hover:text-[var(--brand-accent)] transition-colors duration-200"
                   >
                     {cat.label}
                   </Link>
@@ -144,17 +155,17 @@ export default function Footer() {
               ))}
             </ul>
 
-            <h4 className="text-xs uppercase tracking-[0.2em] text-[#B8963E] mb-3 font-sans">
+            <h4 className="text-xs uppercase tracking-[0.2em] text-[var(--brand-accent)] mb-3 font-sans">
               {t("footer.followUs")}
             </h4>
             <a
-              href="https://www.instagram.com/kalakoshzurich"
+              href={igHref ?? "#"}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-sm text-white/60 hover:text-[#B8963E] transition-colors duration-200"
+              className="inline-flex items-center gap-2 text-sm text-white/60 hover:text-[var(--brand-accent)] transition-colors duration-200"
             >
               <InstagramIcon className="w-4 h-4" />
-              @kalakoshzurich
+              @{branding.instagramHandle}
             </a>
           </div>
         </div>
@@ -166,17 +177,17 @@ export default function Footer() {
           <div className="flex items-center gap-4">
             <Link
               href="/policy"
-              className="text-white/40 hover:text-[#B8963E] transition-colors duration-200"
+              className="text-white/40 hover:text-[var(--brand-accent)] transition-colors duration-200"
             >
               {t("footer.policy")}
             </Link>
             <Link
               href="/impressum"
-              className="text-white/40 hover:text-[#B8963E] transition-colors duration-200"
+              className="text-white/40 hover:text-[var(--brand-accent)] transition-colors duration-200"
             >
               {t("footer.impressum")}
             </Link>
-            <p className="font-serif italic text-[#B8963E]/40">{t("footer.swissQuality")}</p>
+            <p className="font-serif italic text-[var(--brand-accent)]/40">{t("footer.swissQuality")}</p>
           </div>
         </div>
       </div>

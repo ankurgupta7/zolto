@@ -107,10 +107,10 @@ export default function ProductModal({ product, open, onClose }: Props) {
         </button>
 
         {/* Image area — fixed height, never scrolls away */}
-        <div className="aspect-[4/3] bg-[#F0EBE3] relative overflow-hidden flex-shrink-0">
+        <div className="aspect-[4/3] bg-[var(--brand-surface-3)] relative overflow-hidden flex-shrink-0">
           {total === 0 ? (
             <div className="w-full h-full flex items-center justify-center">
-              <span className="text-7xl text-[#B8963E]/20 font-serif">◇</span>
+              <span className="text-7xl text-[var(--brand-accent)]/20 font-serif">◇</span>
             </div>
           ) : total === 1 ? (
             <button
@@ -125,7 +125,7 @@ export default function ProductModal({ product, open, onClose }: Props) {
               />
               {product.sold && (
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <div className="bg-[#2D2620]/80 text-[#B8963E] text-sm uppercase tracking-[0.3em] font-sans px-5 py-2.5 backdrop-blur-sm border border-[#B8963E]/40">
+                  <div className="bg-[var(--brand-ink)]/80 text-[var(--brand-accent)] text-sm uppercase tracking-[0.3em] font-sans px-5 py-2.5 backdrop-blur-sm border border-[var(--brand-accent)]/40">
                     {t("product.sold")}
                   </div>
                 </div>
@@ -161,7 +161,7 @@ export default function ProductModal({ product, open, onClose }: Props) {
 
               {product.sold && (
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-                  <div className="bg-[#2D2620]/80 text-[#B8963E] text-sm uppercase tracking-[0.3em] font-sans px-5 py-2.5 backdrop-blur-sm border border-[#B8963E]/40">
+                  <div className="bg-[var(--brand-ink)]/80 text-[var(--brand-accent)] text-sm uppercase tracking-[0.3em] font-sans px-5 py-2.5 backdrop-blur-sm border border-[var(--brand-accent)]/40">
                     {t("product.sold")}
                   </div>
                 </div>
@@ -174,7 +174,7 @@ export default function ProductModal({ product, open, onClose }: Props) {
                     key={i}
                     onClick={() => carouselApi?.scrollTo(i)}
                     className={`h-1.5 rounded-full transition-all duration-200 ${
-                      i === activeIdx ? "bg-[#B8963E] w-4" : "bg-white/50 hover:bg-white/80 w-1.5"
+                      i === activeIdx ? "bg-[var(--brand-accent)] w-4" : "bg-white/50 hover:bg-white/80 w-1.5"
                     }`}
                     aria-label={`Go to image ${i + 1}`}
                   />
@@ -201,9 +201,9 @@ export default function ProductModal({ product, open, onClose }: Props) {
               onClick={handleClose}
               className="group flex-1"
             >
-              <h2 className="font-serif text-foreground text-xl leading-snug group-hover:text-[#2D2620] transition-colors">
+              <h2 className="font-serif text-foreground text-xl leading-snug group-hover:text-[var(--brand-ink)] transition-colors">
                 {displayName}
-                <span className="ml-1.5 text-[#B8963E] text-base opacity-0 group-hover:opacity-100 transition-opacity">→</span>
+                <span className="ml-1.5 text-[var(--brand-accent)] text-base opacity-0 group-hover:opacity-100 transition-opacity">→</span>
               </h2>
             </Link>
             {product.sold && (
@@ -219,7 +219,7 @@ export default function ProductModal({ product, open, onClose }: Props) {
             {displayDescription}
           </p>
 
-          <p className={`font-serif text-2xl mb-4 ${product.sold ? "text-muted-foreground line-through" : "text-[#2D2620]"}`}>
+          <p className={`font-serif text-2xl mb-4 ${product.sold ? "text-muted-foreground line-through" : "text-[var(--brand-ink)]"}`}>
             CHF {Number(product.price).toFixed(2)}
           </p>
 
@@ -244,7 +244,7 @@ export default function ProductModal({ product, open, onClose }: Props) {
                 <button
                   type="button"
                   onClick={openCart}
-                  className="inline-flex items-center justify-center gap-2 w-full bg-[#2D2620] text-[#B8963E] px-6 py-3 text-xs uppercase tracking-[0.15em] font-sans hover:bg-[#3A3028] transition-colors duration-200"
+                  className="inline-flex items-center justify-center gap-2 w-full bg-[var(--brand-ink)] text-[var(--brand-accent)] px-6 py-3 text-xs uppercase tracking-[0.15em] font-sans hover:bg-[var(--brand-ink-hover)] transition-colors duration-200"
                 >
                   <Check size={14} />
                   {t("product.inBag")}
@@ -253,7 +253,7 @@ export default function ProductModal({ product, open, onClose }: Props) {
                 <button
                   type="button"
                   onClick={handleAddToCart}
-                  className="inline-flex items-center justify-center gap-2 w-full bg-[#2D2620] text-[#B8963E] px-6 py-3 text-xs uppercase tracking-[0.15em] font-sans hover:bg-[#3A3028] transition-colors duration-200"
+                  className="inline-flex items-center justify-center gap-2 w-full bg-[var(--brand-ink)] text-[var(--brand-accent)] px-6 py-3 text-xs uppercase tracking-[0.15em] font-sans hover:bg-[var(--brand-ink-hover)] transition-colors duration-200"
                 >
                   <ShoppingBag size={14} />
                   {t("product.addToBag")}

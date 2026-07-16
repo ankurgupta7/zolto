@@ -88,18 +88,18 @@ function StepBar({ step }: { step: 1 | 2 | 3 | 4 }) {
           <div
             className={`flex items-center gap-2 px-3 py-1.5 text-xs uppercase tracking-[0.12em] font-sans ${
               step === s.n
-                ? "bg-[#2D2620] text-white"
+                ? "bg-[var(--brand-ink)] text-white"
                 : step > s.n
-                  ? "bg-[#B8963E]/20 text-[#B8963E]"
+                  ? "bg-[var(--brand-accent)]/20 text-[var(--brand-accent)]"
                   : "bg-transparent text-muted-foreground"
             }`}
           >
             <span
               className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 ${
                 step > s.n
-                  ? "bg-[#B8963E] text-white"
+                  ? "bg-[var(--brand-accent)] text-white"
                   : step === s.n
-                    ? "bg-white text-[#2D2620]"
+                    ? "bg-white text-[var(--brand-ink)]"
                     : "border border-current"
               }`}
             >
@@ -601,7 +601,7 @@ export default function BulkUpload() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center pt-20">
-        <Loader2 className="animate-spin text-[#2D2620]" size={32} />
+        <Loader2 className="animate-spin text-[var(--brand-ink)]" size={32} />
       </div>
     );
   }
@@ -615,7 +615,7 @@ export default function BulkUpload() {
           </h2>
           <a
             href={getLoginUrl()}
-            className="inline-flex items-center gap-2 bg-[#2D2620] text-white px-8 py-3.5 text-sm uppercase tracking-[0.15em] font-sans hover:bg-[#3A3028] transition-colors"
+            className="inline-flex items-center gap-2 bg-[var(--brand-ink)] text-white px-8 py-3.5 text-sm uppercase tracking-[0.15em] font-sans hover:bg-[var(--brand-ink-hover)] transition-colors"
           >
             {t("bulkUpload.signIn")}
           </a>
@@ -639,12 +639,12 @@ export default function BulkUpload() {
   // ── Render ───────────────────────────────────────────────────────────────────
 
   return (
-    <div className="page-enter pt-20 min-h-screen bg-[#EDE7DF]">
+    <div className="page-enter pt-20 min-h-screen bg-[var(--brand-surface)]">
       {/* Header */}
-      <section className="bg-[#2D2620] py-10">
+      <section className="bg-[var(--brand-ink)] py-10">
         <div className="container flex items-center justify-between">
           <div>
-            <p className="text-[#B8963E] text-xs uppercase tracking-[0.3em] mb-1 font-sans">
+            <p className="text-[var(--brand-accent)] text-xs uppercase tracking-[0.3em] mb-1 font-sans">
               {t("bulkUpload.adminBadge")}
             </p>
             <h1 className="font-serif text-white text-2xl">
@@ -681,11 +681,11 @@ export default function BulkUpload() {
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="w-full border-2 border-dashed border-[#2D2620]/30 hover:border-[#B8963E] transition-colors p-10 text-center mb-6 group"
+              className="w-full border-2 border-dashed border-[var(--brand-ink)]/30 hover:border-[var(--brand-accent)] transition-colors p-10 text-center mb-6 group"
             >
               <Upload
                 size={32}
-                className="mx-auto mb-3 text-[#2D2620]/40 group-hover:text-[#B8963E] transition-colors"
+                className="mx-auto mb-3 text-[var(--brand-ink)]/40 group-hover:text-[var(--brand-accent)] transition-colors"
               />
               <p className="font-serif text-foreground text-lg mb-1">
                 {t("bulkUpload.tapToSelect")}
@@ -728,7 +728,7 @@ export default function BulkUpload() {
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="aspect-square border-2 border-dashed border-[#2D2620]/20 hover:border-[#B8963E] flex items-center justify-center transition-colors"
+                    className="aspect-square border-2 border-dashed border-[var(--brand-ink)]/20 hover:border-[var(--brand-accent)] flex items-center justify-center transition-colors"
                   >
                     <Upload size={20} className="text-muted-foreground" />
                   </button>
@@ -741,7 +741,7 @@ export default function BulkUpload() {
                   <button
                     type="button"
                     onClick={() => setStep(2)}
-                    className="flex items-center gap-2 bg-[#2D2620] text-white px-6 py-3 text-sm uppercase tracking-[0.15em] font-sans hover:bg-[#3A3028] transition-colors"
+                    className="flex items-center gap-2 bg-[var(--brand-ink)] text-white px-6 py-3 text-sm uppercase tracking-[0.15em] font-sans hover:bg-[var(--brand-ink-hover)] transition-colors"
                   >
                     {t("bulkUpload.nextGroup")}
                     <ChevronRight size={16} />
@@ -776,8 +776,8 @@ export default function BulkUpload() {
                 }}
                 className={`flex items-center gap-2 px-4 py-2 text-xs uppercase tracking-[0.12em] font-sans transition-colors ${
                   groupingMode
-                    ? "bg-[#B8963E] text-[#2D2620]"
-                    : "bg-white border border-[#2D2620]/20 text-foreground hover:border-[#B8963E]"
+                    ? "bg-[var(--brand-accent)] text-[var(--brand-ink)]"
+                    : "bg-white border border-[var(--brand-ink)]/20 text-foreground hover:border-[var(--brand-accent)]"
                 }`}
               >
                 <Layers size={14} />
@@ -790,7 +790,7 @@ export default function BulkUpload() {
                 <button
                   type="button"
                   onClick={createGroup}
-                  className="flex items-center gap-2 bg-[#2D2620] text-white px-4 py-2 text-xs uppercase tracking-[0.12em] font-sans hover:bg-[#3A3028] transition-colors"
+                  className="flex items-center gap-2 bg-[var(--brand-ink)] text-white px-4 py-2 text-xs uppercase tracking-[0.12em] font-sans hover:bg-[var(--brand-ink-hover)] transition-colors"
                 >
                   <Layers size={14} />
                   {t("bulkUpload.createGroup", {
@@ -820,9 +820,9 @@ export default function BulkUpload() {
                   return (
                     <div
                       key={group.id}
-                      className="bg-white border border-[#E0D8CC] p-3 flex items-center gap-3"
+                      className="bg-white border border-[var(--brand-border)] p-3 flex items-center gap-3"
                     >
-                      <div className="w-7 h-7 bg-[#2D2620] text-white flex items-center justify-center text-xs font-bold font-sans flex-shrink-0">
+                      <div className="w-7 h-7 bg-[var(--brand-ink)] text-white flex items-center justify-center text-xs font-bold font-sans flex-shrink-0">
                         {group.label}
                       </div>
                       <div className="flex gap-1.5 flex-1 overflow-x-auto">
@@ -873,18 +873,18 @@ export default function BulkUpload() {
                       alt={photo.fileName}
                       className={`w-full h-full object-cover bg-[#E8E0D4] transition-all ${
                         isSelected
-                          ? "ring-2 ring-[#B8963E] ring-offset-1"
+                          ? "ring-2 ring-[var(--brand-accent)] ring-offset-1"
                           : ""
                       } ${group ? "opacity-70" : ""}`}
                     />
                     {group && (
-                      <div className="absolute top-1 left-1 w-5 h-5 bg-[#2D2620] text-white flex items-center justify-center text-[9px] font-bold font-sans">
+                      <div className="absolute top-1 left-1 w-5 h-5 bg-[var(--brand-ink)] text-white flex items-center justify-center text-[9px] font-bold font-sans">
                         {group.label}
                       </div>
                     )}
                     {isSelected && (
-                      <div className="absolute inset-0 bg-[#B8963E]/20 flex items-center justify-center">
-                        <CheckCircle2 size={24} className="text-[#B8963E]" />
+                      <div className="absolute inset-0 bg-[var(--brand-accent)]/20 flex items-center justify-center">
+                        <CheckCircle2 size={24} className="text-[var(--brand-accent)]" />
                       </div>
                     )}
                     {!group && !isSelected && (
@@ -897,7 +897,7 @@ export default function BulkUpload() {
               })}
             </div>
 
-            <div className="bg-white border border-[#E0D8CC] p-4 mb-6 text-sm font-sans">
+            <div className="bg-white border border-[var(--brand-border)] p-4 mb-6 text-sm font-sans">
               <p
                 className="text-foreground font-medium mb-1"
                 dangerouslySetInnerHTML={{
@@ -920,7 +920,7 @@ export default function BulkUpload() {
               <button
                 type="button"
                 onClick={() => setStep(1)}
-                className="flex items-center gap-2 border border-[#2D2620]/20 text-foreground px-5 py-3 text-sm uppercase tracking-[0.15em] font-sans hover:border-[#2D2620] transition-colors"
+                className="flex items-center gap-2 border border-[var(--brand-ink)]/20 text-foreground px-5 py-3 text-sm uppercase tracking-[0.15em] font-sans hover:border-[var(--brand-ink)] transition-colors"
               >
                 <ChevronLeft size={16} />
                 {t("bulkUpload.back")}
@@ -928,7 +928,7 @@ export default function BulkUpload() {
               <button
                 type="button"
                 onClick={runAnalysis}
-                className="flex-1 flex items-center justify-center gap-2 bg-[#2D2620] text-white px-6 py-3 text-sm uppercase tracking-[0.15em] font-sans hover:bg-[#3A3028] transition-colors"
+                className="flex-1 flex items-center justify-center gap-2 bg-[var(--brand-ink)] text-white px-6 py-3 text-sm uppercase tracking-[0.15em] font-sans hover:bg-[var(--brand-ink-hover)] transition-colors"
               >
                 <Sparkles size={16} />
                 {t("bulkUpload.analyseAI")}
@@ -957,7 +957,7 @@ export default function BulkUpload() {
               <div className="flex flex-col items-center justify-center py-24 gap-4">
                 <Sparkles
                   size={36}
-                  className={`text-[#B8963E] ${findingMatches && !analyzing ? "" : "animate-pulse"}`}
+                  className={`text-[var(--brand-accent)] ${findingMatches && !analyzing ? "" : "animate-pulse"}`}
                 />
                 <p className="font-serif text-foreground text-lg">
                   {analyzing
@@ -984,11 +984,11 @@ export default function BulkUpload() {
                         key={card.groupId}
                         className={`bg-white border transition-all ${
                           card.confirmed
-                            ? "border-[#2D2620]/30 shadow-sm"
-                            : "border-[#E0D8CC] opacity-50"
+                            ? "border-[var(--brand-ink)]/30 shadow-sm"
+                            : "border-[var(--brand-border)] opacity-50"
                         }`}
                       >
-                        <div className="flex items-center gap-3 p-4 border-b border-[#E0D8CC]">
+                        <div className="flex items-center gap-3 p-4 border-b border-[var(--brand-border)]">
                           <div className="flex gap-1.5 flex-shrink-0">
                             {card.photoIds.slice(0, 3).map(pid => {
                               const photo = photos.find(p => p.id === pid);
@@ -1041,7 +1041,7 @@ export default function BulkUpload() {
                                   e.target.checked
                                 )
                               }
-                              className="w-4 h-4 accent-[#2D2620]"
+                              className="w-4 h-4 accent-[var(--brand-ink)]"
                             />
                             <span className="text-xs font-sans text-muted-foreground">
                               {t("bulkUpload.include")}
@@ -1052,7 +1052,7 @@ export default function BulkUpload() {
                         {/* ── Match banner ── */}
                         {card.confirmed && hasMatch && (
                           <div
-                            className={`px-4 py-2.5 border-b border-[#E0D8CC] ${
+                            className={`px-4 py-2.5 border-b border-[var(--brand-border)] ${
                               match.confidence === "exact"
                                 ? "bg-green-50"
                                 : "bg-amber-50"
@@ -1108,8 +1108,8 @@ export default function BulkUpload() {
                                 }
                                 className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-sans transition-colors ${
                                   decision.action === "add-to-existing"
-                                    ? "bg-[#2D2620] text-white"
-                                    : "bg-white border border-[#2D2620]/20 text-foreground hover:border-[#2D2620]"
+                                    ? "bg-[var(--brand-ink)] text-white"
+                                    : "bg-white border border-[var(--brand-ink)]/20 text-foreground hover:border-[var(--brand-ink)]"
                                 }`}
                               >
                                 <Merge size={12} />
@@ -1125,8 +1125,8 @@ export default function BulkUpload() {
                                 }
                                 className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-sans transition-colors ${
                                   decision.action === "create-new"
-                                    ? "bg-[#2D2620] text-white"
-                                    : "bg-white border border-[#2D2620]/20 text-foreground hover:border-[#2D2620]"
+                                    ? "bg-[var(--brand-ink)] text-white"
+                                    : "bg-white border border-[var(--brand-ink)]/20 text-foreground hover:border-[var(--brand-ink)]"
                                 }`}
                               >
                                 <PlusCircle size={12} />
@@ -1146,7 +1146,7 @@ export default function BulkUpload() {
                                       updateDescription: e.target.checked,
                                     })
                                   }
-                                  className="w-3.5 h-3.5 accent-[#2D2620]"
+                                  className="w-3.5 h-3.5 accent-[var(--brand-ink)]"
                                 />
                                 <span className="text-xs font-sans text-muted-foreground">
                                   Also update description
@@ -1165,7 +1165,7 @@ export default function BulkUpload() {
                                 className="block text-xs uppercase tracking-[0.12em] text-foreground font-sans mb-1.5"
                               >
                                 {t("bulkUpload.fieldNameDe")}{" "}
-                                <span className="text-[#B8963E]">*</span>
+                                <span className="text-[var(--brand-accent)]">*</span>
                               </label>
                               <input
                                 id={`bulk-name-${card.groupId}`}
@@ -1178,7 +1178,7 @@ export default function BulkUpload() {
                                     e.target.value
                                   )
                                 }
-                                className="w-full border border-[#2D2620]/20 px-3 py-2 text-sm font-sans focus:outline-none focus:border-[#B8963E] transition-colors bg-transparent"
+                                className="w-full border border-[var(--brand-ink)]/20 px-3 py-2 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] transition-colors bg-transparent"
                               />
                             </div>
 
@@ -1189,7 +1189,7 @@ export default function BulkUpload() {
                                 className="block text-xs uppercase tracking-[0.12em] text-foreground font-sans mb-1.5"
                               >
                                 {t("bulkUpload.fieldNameEn")}{" "}
-                                <span className="text-[#B8963E]">*</span>
+                                <span className="text-[var(--brand-accent)]">*</span>
                               </label>
                               <input
                                 id={`bulk-nameEn-${card.groupId}`}
@@ -1202,7 +1202,7 @@ export default function BulkUpload() {
                                     e.target.value
                                   )
                                 }
-                                className="w-full border border-[#2D2620]/20 px-3 py-2 text-sm font-sans focus:outline-none focus:border-[#B8963E] transition-colors bg-transparent"
+                                className="w-full border border-[var(--brand-ink)]/20 px-3 py-2 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] transition-colors bg-transparent"
                               />
                             </div>
 
@@ -1212,7 +1212,7 @@ export default function BulkUpload() {
                                 className="block text-xs uppercase tracking-[0.12em] text-foreground font-sans mb-1.5"
                               >
                                 {t("bulkUpload.fieldCategory")}{" "}
-                                <span className="text-[#B8963E]">*</span>
+                                <span className="text-[var(--brand-accent)]">*</span>
                               </label>
                               <select
                                 id={`bulk-category-${card.groupId}`}
@@ -1224,7 +1224,7 @@ export default function BulkUpload() {
                                     e.target.value as ProductCategory
                                   )
                                 }
-                                className="w-full border border-[#2D2620]/20 px-3 py-2 text-sm font-sans focus:outline-none focus:border-[#B8963E] transition-colors bg-white"
+                                className="w-full border border-[var(--brand-ink)]/20 px-3 py-2 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] transition-colors bg-white"
                               >
                                 {CATEGORIES.map(c => (
                                   <option key={c} value={c}>
@@ -1240,7 +1240,7 @@ export default function BulkUpload() {
                                 className="block text-xs uppercase tracking-[0.12em] text-foreground font-sans mb-1.5"
                               >
                                 {t("bulkUpload.fieldPrice")}{" "}
-                                <span className="text-[#B8963E]">*</span>
+                                <span className="text-[var(--brand-accent)]">*</span>
                               </label>
                               <input
                                 id={`bulk-price-${card.groupId}`}
@@ -1256,7 +1256,7 @@ export default function BulkUpload() {
                                   )
                                 }
                                 placeholder={t("bulkUpload.pricePlaceholder")}
-                                className="w-full border border-[#2D2620]/20 px-3 py-2 text-sm font-sans focus:outline-none focus:border-[#B8963E] transition-colors bg-transparent"
+                                className="w-full border border-[var(--brand-ink)]/20 px-3 py-2 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] transition-colors bg-transparent"
                               />
                             </div>
 
@@ -1267,7 +1267,7 @@ export default function BulkUpload() {
                                 className="block text-xs uppercase tracking-[0.12em] text-foreground font-sans mb-1.5"
                               >
                                 {t("bulkUpload.fieldDescriptionDe")}{" "}
-                                <span className="text-[#B8963E]">*</span>
+                                <span className="text-[var(--brand-accent)]">*</span>
                               </label>
                               <textarea
                                 id={`bulk-description-${card.groupId}`}
@@ -1280,7 +1280,7 @@ export default function BulkUpload() {
                                   )
                                 }
                                 rows={3}
-                                className="w-full border border-[#2D2620]/20 px-3 py-2 text-sm font-sans focus:outline-none focus:border-[#B8963E] transition-colors bg-transparent resize-none"
+                                className="w-full border border-[var(--brand-ink)]/20 px-3 py-2 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] transition-colors bg-transparent resize-none"
                               />
                             </div>
 
@@ -1291,7 +1291,7 @@ export default function BulkUpload() {
                                 className="block text-xs uppercase tracking-[0.12em] text-foreground font-sans mb-1.5"
                               >
                                 {t("bulkUpload.fieldDescriptionEn")}{" "}
-                                <span className="text-[#B8963E]">*</span>
+                                <span className="text-[var(--brand-accent)]">*</span>
                               </label>
                               <textarea
                                 id={`bulk-descriptionEn-${card.groupId}`}
@@ -1304,7 +1304,7 @@ export default function BulkUpload() {
                                   )
                                 }
                                 rows={3}
-                                className="w-full border border-[#2D2620]/20 px-3 py-2 text-sm font-sans focus:outline-none focus:border-[#B8963E] transition-colors bg-transparent resize-none"
+                                className="w-full border border-[var(--brand-ink)]/20 px-3 py-2 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] transition-colors bg-transparent resize-none"
                               />
                             </div>
                           </div>
@@ -1314,7 +1314,7 @@ export default function BulkUpload() {
                   })}
                 </div>
 
-                <div className="bg-[#2D2620]/5 border border-[#2D2620]/10 p-4 mb-6 flex items-center justify-between">
+                <div className="bg-[var(--brand-ink)]/5 border border-[var(--brand-ink)]/10 p-4 mb-6 flex items-center justify-between">
                   <div>
                     <p
                       className="text-sm font-sans text-foreground"
@@ -1396,7 +1396,7 @@ export default function BulkUpload() {
                   <button
                     type="button"
                     onClick={() => setStep(2)}
-                    className="flex items-center gap-2 border border-[#2D2620]/20 text-foreground px-5 py-3 text-sm uppercase tracking-[0.15em] font-sans hover:border-[#2D2620] transition-colors"
+                    className="flex items-center gap-2 border border-[var(--brand-ink)]/20 text-foreground px-5 py-3 text-sm uppercase tracking-[0.15em] font-sans hover:border-[var(--brand-ink)] transition-colors"
                   >
                     <ChevronLeft size={16} />
                     {t("bulkUpload.back")}
@@ -1408,7 +1408,7 @@ export default function BulkUpload() {
                       publishing ||
                       reviewCards.filter(c => c.confirmed).length === 0
                     }
-                    className="flex-1 flex items-center justify-center gap-2 bg-[#B8963E] text-[#2D2620] px-6 py-3 text-sm uppercase tracking-[0.15em] font-sans font-medium hover:bg-[#D4B060] transition-colors disabled:opacity-60"
+                    className="flex-1 flex items-center justify-center gap-2 bg-[var(--brand-accent)] text-[var(--brand-ink)] px-6 py-3 text-sm uppercase tracking-[0.15em] font-sans font-medium hover:bg-[var(--brand-accent-light)] transition-colors disabled:opacity-60"
                   >
                     {publishing ? (
                       <Loader2 size={16} className="animate-spin" />
@@ -1428,8 +1428,8 @@ export default function BulkUpload() {
         {/* ── STEP 4: Done ── */}
         {step === 4 && publishResult && (
           <div className="text-center py-16">
-            <div className="w-20 h-20 bg-[#2D2620] rounded-full flex items-center justify-center mx-auto mb-6">
-              <CheckCircle2 size={40} className="text-[#B8963E]" />
+            <div className="w-20 h-20 bg-[var(--brand-ink)] rounded-full flex items-center justify-center mx-auto mb-6">
+              <CheckCircle2 size={40} className="text-[var(--brand-accent)]" />
             </div>
             <h2 className="font-serif text-foreground text-3xl mb-3">
               {t("bulkUpload.published", {
@@ -1463,21 +1463,21 @@ export default function BulkUpload() {
               <button
                 type="button"
                 onClick={resetAll}
-                className="flex items-center justify-center gap-2 bg-[#2D2620] text-white px-8 py-3 text-sm uppercase tracking-[0.15em] font-sans hover:bg-[#3A3028] transition-colors"
+                className="flex items-center justify-center gap-2 bg-[var(--brand-ink)] text-white px-8 py-3 text-sm uppercase tracking-[0.15em] font-sans hover:bg-[var(--brand-ink-hover)] transition-colors"
               >
                 <Upload size={16} />
                 {t("bulkUpload.uploadMore")}
               </button>
               <Link
                 href="/shop"
-                className="flex items-center justify-center gap-2 border border-[#2D2620] text-[#2D2620] px-8 py-3 text-sm uppercase tracking-[0.15em] font-sans hover:bg-[#2D2620] hover:text-white transition-colors"
+                className="flex items-center justify-center gap-2 border border-[var(--brand-ink)] text-[var(--brand-ink)] px-8 py-3 text-sm uppercase tracking-[0.15em] font-sans hover:bg-[var(--brand-ink)] hover:text-white transition-colors"
               >
                 <ImageIcon size={16} />
                 {t("bulkUpload.viewShop")}
               </Link>
               <Link
                 href="/admin"
-                className="flex items-center justify-center gap-2 border border-[#2D2620]/20 text-foreground px-8 py-3 text-sm uppercase tracking-[0.15em] font-sans hover:border-[#2D2620] transition-colors"
+                className="flex items-center justify-center gap-2 border border-[var(--brand-ink)]/20 text-foreground px-8 py-3 text-sm uppercase tracking-[0.15em] font-sans hover:border-[var(--brand-ink)] transition-colors"
               >
                 {t("bulkUpload.adminPanel")}
               </Link>

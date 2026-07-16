@@ -77,17 +77,17 @@ export default function OrderReceipt({
         <button
           type="button"
           onClick={() => window.print()}
-          className="inline-flex items-center gap-2 border border-[#2D2620] text-[#2D2620] px-6 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:bg-[#2D2620] hover:text-[#B8963E] transition-colors"
+          className="inline-flex items-center gap-2 border border-[var(--brand-ink)] text-[var(--brand-ink)] px-6 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:bg-[var(--brand-ink)] hover:text-[var(--brand-accent)] transition-colors"
         >
           <Printer className="w-3.5 h-3.5" />
           {t("success.receipt.print")}
         </button>
       </div>
 
-      <div id="order-receipt" className="border border-[#E0D8CC] bg-white text-left">
+      <div id="order-receipt" className="border border-[var(--brand-border)] bg-white text-left">
         {/* Letterhead */}
-        <div className="bg-[#2D2620] px-8 py-7 text-center">
-          <p className="text-[#B8963E] text-xl tracking-[0.22em] uppercase font-serif mb-1">
+        <div className="bg-[var(--brand-ink)] px-8 py-7 text-center">
+          <p className="text-[var(--brand-accent)] text-xl tracking-[0.22em] uppercase font-serif mb-1">
             Kalakosh
           </p>
           <p className="text-[#8A7865] text-xs tracking-[0.1em] font-sans">
@@ -97,27 +97,27 @@ export default function OrderReceipt({
 
         <div className="px-8 py-7">
           {/* Receipt header row */}
-          <div className="flex justify-between items-start border-b border-[#E0D8CC] pb-5 mb-6">
-            <p className="text-[#2D2620] text-xs tracking-[0.18em] uppercase font-sans">
+          <div className="flex justify-between items-start border-b border-[var(--brand-border)] pb-5 mb-6">
+            <p className="text-[var(--brand-ink)] text-xs tracking-[0.18em] uppercase font-sans">
               {t("success.receipt.title")}
             </p>
             <div className="text-right">
-              <p className="text-[#2D2620] text-sm font-sans">#{orderRef}</p>
-              <p className="text-[#6B5E52] text-xs font-sans mt-0.5">{date}</p>
+              <p className="text-[var(--brand-ink)] text-sm font-sans">#{orderRef}</p>
+              <p className="text-[var(--brand-muted-2)] text-xs font-sans mt-0.5">{date}</p>
             </div>
           </div>
 
           {/* Billed to */}
           {(customerName || customerEmail) && (
             <div className="mb-6">
-              <p className="text-[#2D2620] text-xs tracking-[0.12em] uppercase font-sans mb-2">
+              <p className="text-[var(--brand-ink)] text-xs tracking-[0.12em] uppercase font-sans mb-2">
                 {t("success.receipt.billedTo")}
               </p>
               {customerName && (
-                <p className="text-[#2D2620] text-sm font-serif">{customerName}</p>
+                <p className="text-[var(--brand-ink)] text-sm font-serif">{customerName}</p>
               )}
               {customerEmail && (
-                <p className="text-[#6B5E52] text-xs font-sans mt-0.5">{customerEmail}</p>
+                <p className="text-[var(--brand-muted-2)] text-xs font-sans mt-0.5">{customerEmail}</p>
               )}
             </div>
           )}
@@ -125,12 +125,12 @@ export default function OrderReceipt({
           {/* Items table */}
           <table className="w-full">
             <thead>
-              <tr className="border-b border-[#E0D8CC]">
+              <tr className="border-b border-[var(--brand-border)]">
                 <th className="w-0 p-0"></th>
-                <th className="pb-2 text-left text-xs tracking-[0.1em] uppercase font-sans text-[#6B5E52] font-normal">
+                <th className="pb-2 text-left text-xs tracking-[0.1em] uppercase font-sans text-[var(--brand-muted-2)] font-normal">
                   {t("success.receipt.item")}
                 </th>
-                <th className="pb-2 text-right text-xs tracking-[0.1em] uppercase font-sans text-[#6B5E52] font-normal">
+                <th className="pb-2 text-right text-xs tracking-[0.1em] uppercase font-sans text-[var(--brand-muted-2)] font-normal">
                   {t("success.receipt.price")}
                 </th>
               </tr>
@@ -149,12 +149,12 @@ export default function OrderReceipt({
                       </a>
                     )}
                   </td>
-                  <td className="py-2.5 text-sm text-[#2D2620] font-serif pr-4 align-middle">
-                    <a href={`/product/${item.id}`} className="hover:text-[#B8963E] transition-colors">
+                  <td className="py-2.5 text-sm text-[var(--brand-ink)] font-serif pr-4 align-middle">
+                    <a href={`/product/${item.id}`} className="hover:text-[var(--brand-accent)] transition-colors">
                       {item.nameEn ?? item.name}
                     </a>
                   </td>
-                  <td className="py-2.5 text-sm text-[#2D2620] font-sans text-right whitespace-nowrap align-middle">
+                  <td className="py-2.5 text-sm text-[var(--brand-ink)] font-sans text-right whitespace-nowrap align-middle">
                     CHF {Number(item.price).toFixed(2)}
                   </td>
                 </tr>
@@ -163,10 +163,10 @@ export default function OrderReceipt({
               {shippingRappen > 0 && (
                 <tr className="border-b border-[#F0EAE0]">
                   <td className="w-0 p-0"></td>
-                  <td className="py-2.5 text-sm text-[#6B5E52] font-sans pr-4">
+                  <td className="py-2.5 text-sm text-[var(--brand-muted-2)] font-sans pr-4">
                     {t("success.receipt.shipping")}
                   </td>
-                  <td className="py-2.5 text-sm text-[#6B5E52] font-sans text-right whitespace-nowrap">
+                  <td className="py-2.5 text-sm text-[var(--brand-muted-2)] font-sans text-right whitespace-nowrap">
                     CHF {formatCHF(shippingRappen)}
                   </td>
                 </tr>
@@ -174,10 +174,10 @@ export default function OrderReceipt({
 
               <tr>
                 <td className="w-0 p-0"></td>
-                <td className="pt-4 pb-1 text-sm tracking-[0.1em] uppercase font-sans text-[#2D2620] pr-4">
+                <td className="pt-4 pb-1 text-sm tracking-[0.1em] uppercase font-sans text-[var(--brand-ink)] pr-4">
                   {t("success.receipt.total")}
                 </td>
-                <td className="pt-4 pb-1 text-sm font-sans text-[#2D2620] text-right whitespace-nowrap font-semibold">
+                <td className="pt-4 pb-1 text-sm font-sans text-[var(--brand-ink)] text-right whitespace-nowrap font-semibold">
                   CHF {formatCHF(amountTotal)}
                 </td>
               </tr>
@@ -186,7 +186,7 @@ export default function OrderReceipt({
 
           {/* Payment method */}
           {paymentMethod && (
-            <p className="mt-5 pt-4 border-t border-[#E0D8CC] text-xs text-[#6B5E52] font-sans">
+            <p className="mt-5 pt-4 border-t border-[var(--brand-border)] text-xs text-[var(--brand-muted-2)] font-sans">
               {t("success.receipt.paymentMethod")}:{" "}
               <span className="uppercase">{paymentMethod}</span>
             </p>
@@ -194,7 +194,7 @@ export default function OrderReceipt({
         </div>
 
         {/* Footer */}
-        <div className="border-t border-[#E0D8CC] px-8 py-4 text-center">
+        <div className="border-t border-[var(--brand-border)] px-8 py-4 text-center">
           <p className="text-[#A09080] text-xs font-sans leading-relaxed">
             return@kalakosh.ch · 14-day returns on unworn, undamaged pieces
           </p>

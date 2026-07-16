@@ -65,9 +65,9 @@ export default function Impressum() {
 
   return (
     <div className="page-enter pt-20">
-      <section className="bg-[#2D2620] py-20">
+      <section className="bg-[var(--brand-ink)] py-20">
         <div className="container text-center">
-          <p className="text-[#B8963E] text-xs uppercase tracking-[0.3em] mb-3 font-sans">
+          <p className="text-[var(--brand-accent)] text-xs uppercase tracking-[0.3em] mb-3 font-sans">
             Kalakosh Zürich
           </p>
           <h1 className="font-serif text-white">{content.title}</h1>
@@ -79,13 +79,13 @@ export default function Impressum() {
         <div className="container max-w-2xl">
           <dl className="space-y-5">
             {content.rows.map((row) => (
-              <div key={row.label} className="border-b border-[#E0D8CC] pb-4">
+              <div key={row.label} className="border-b border-[var(--brand-border)] pb-4">
                 <dt className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-sans mb-1">
                   {row.label}
                 </dt>
                 <dd className="text-foreground font-sans text-sm">
                   {row.href ? (
-                    <a href={row.href} className="text-[#2D2620] hover:text-[#B8963E] transition-colors">
+                    <a href={row.href} className="text-[var(--brand-ink)] hover:text-[var(--brand-accent)] transition-colors">
                       {row.value}
                     </a>
                   ) : (

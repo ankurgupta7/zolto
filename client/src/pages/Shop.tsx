@@ -75,9 +75,9 @@ export default function Shop() {
   return (
     <div className="page-enter pt-20">
       {/* Header */}
-      <section className="bg-[#2D2620] py-20">
+      <section className="bg-[var(--brand-ink)] py-20">
         <div className="container text-center">
-          <p className="text-[#B8963E] text-xs uppercase tracking-[0.3em] mb-3 font-sans">
+          <p className="text-[var(--brand-accent)] text-xs uppercase tracking-[0.3em] mb-3 font-sans">
             {t("shop.badge")}
           </p>
           <h1 className="font-serif text-white">{t("shop.title")}</h1>
@@ -86,7 +86,7 @@ export default function Shop() {
       </section>
 
       {/* Category Filters */}
-      <section className="bg-[#EDE7DF] border-b border-[#E0D8CC] sticky top-16 md:top-20 z-30">
+      <section className="bg-[var(--brand-surface)] border-b border-[var(--brand-border)] sticky top-16 md:top-20 z-30">
         <div className="container">
           <div className="flex items-center gap-1 overflow-x-auto py-4 scrollbar-hide">
             {visibleCategoryValues.map(cat => (
@@ -96,8 +96,8 @@ export default function Shop() {
                 onClick={() => setActiveCategory(cat)}
                 className={`flex-shrink-0 px-5 py-2 text-xs uppercase tracking-[0.15em] font-sans transition-all duration-200 ${
                   activeCategory === cat
-                    ? "bg-[#2D2620] text-[#B8963E]"
-                    : "text-[#2D2620]/60 hover:text-[#2D2620] hover:bg-[#2D2620]/5"
+                    ? "bg-[var(--brand-ink)] text-[var(--brand-accent)]"
+                    : "text-[var(--brand-ink)]/60 hover:text-[var(--brand-ink)] hover:bg-[var(--brand-ink)]/5"
                 }`}
               >
                 {CATEGORY_LABELS[cat] ?? cat}
@@ -136,7 +136,7 @@ export default function Shop() {
             </>
           ) : (
             <div className="text-center py-24">
-              <div className="text-6xl text-[#B8963E]/20 font-serif mb-6">
+              <div className="text-6xl text-[var(--brand-accent)]/20 font-serif mb-6">
                 ◇
               </div>
               <h3 className="font-serif text-foreground text-xl mb-3">

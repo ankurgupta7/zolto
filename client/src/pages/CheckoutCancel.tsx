@@ -17,13 +17,13 @@ export default function CheckoutCancel() {
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Link
             href="/checkout"
-            className="inline-flex justify-center bg-[#2D2620] text-[#B8963E] px-8 py-3.5 text-sm uppercase tracking-[0.15em] font-sans hover:bg-[#3A3028] transition-colors"
+            className="inline-flex justify-center bg-[var(--brand-ink)] text-[var(--brand-accent)] px-8 py-3.5 text-sm uppercase tracking-[0.15em] font-sans hover:bg-[var(--brand-ink-hover)] transition-colors"
           >
             {t("cancel.backToCheckout")}
           </Link>
           <Link
             href="/shop"
-            className="inline-flex justify-center border border-[#2D2620] text-[#2D2620] px-8 py-3.5 text-sm uppercase tracking-[0.15em] font-sans hover:bg-[#2D2620] hover:text-[#B8963E] transition-colors"
+            className="inline-flex justify-center border border-[var(--brand-ink)] text-[var(--brand-ink)] px-8 py-3.5 text-sm uppercase tracking-[0.15em] font-sans hover:bg-[var(--brand-ink)] hover:text-[var(--brand-accent)] transition-colors"
           >
             {t("cancel.continueShopping")}
           </Link>

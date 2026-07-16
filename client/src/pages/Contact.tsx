@@ -28,9 +28,9 @@ export default function Contact() {
   return (
     <div className="page-enter pt-20">
       {/* Header */}
-      <section className="bg-[#2D2620] py-20">
+      <section className="bg-[var(--brand-ink)] py-20">
         <div className="container text-center">
-          <p className="text-[#B8963E] text-xs uppercase tracking-[0.3em] mb-3 font-sans">
+          <p className="text-[var(--brand-accent)] text-xs uppercase tracking-[0.3em] mb-3 font-sans">
             {t("contact.badge")}
           </p>
           <h1 className="font-serif text-white">{t("contact.title")}</h1>
@@ -43,7 +43,7 @@ export default function Contact() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 max-w-5xl mx-auto">
             {/* Left: Info */}
             <div>
-              <p className="text-[#B8963E] text-xs uppercase tracking-[0.3em] mb-4 font-sans">
+              <p className="text-[var(--brand-accent)] text-xs uppercase tracking-[0.3em] mb-4 font-sans">
                 {t("contact.subBadge")}
               </p>
               <h2 className="font-serif text-foreground text-2xl mb-6">
@@ -56,44 +56,44 @@ export default function Contact() {
 
               <div className="space-y-6">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.2em] text-[#2D2620] font-sans mb-1">
+                  <p className="text-xs uppercase tracking-[0.2em] text-[var(--brand-ink)] font-sans mb-1">
                     {t("contact.location")}
                   </p>
                   <p className="text-muted-foreground text-sm font-sans">{t("contact.locationValue")}</p>
                 </div>
                 <div>
-                  <p className="text-xs uppercase tracking-[0.2em] text-[#2D2620] font-sans mb-1">
+                  <p className="text-xs uppercase tracking-[0.2em] text-[var(--brand-ink)] font-sans mb-1">
                     {t("contact.whatsapp")}
                   </p>
                   <a
                     href="https://wa.me/41791721714"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-sm font-sans text-[#2D2620] hover:text-[#B8963E] transition-colors"
+                    className="text-sm font-sans text-[var(--brand-ink)] hover:text-[var(--brand-accent)] transition-colors"
                   >
                     +41 79 172 17 14
                   </a>
                 </div>
                 <div>
-                  <p className="text-xs uppercase tracking-[0.2em] text-[#2D2620] font-sans mb-1">
+                  <p className="text-xs uppercase tracking-[0.2em] text-[var(--brand-ink)] font-sans mb-1">
                     {t("contact.email")}
                   </p>
                   <a
                     href="mailto:info@kalakosh.ch"
-                    className="text-sm font-sans text-[#2D2620] hover:text-[#B8963E] transition-colors"
+                    className="text-sm font-sans text-[var(--brand-ink)] hover:text-[var(--brand-accent)] transition-colors"
                   >
                     info@kalakosh.ch
                   </a>
                 </div>
                 <div>
-                  <p className="text-xs uppercase tracking-[0.2em] text-[#2D2620] font-sans mb-2">
+                  <p className="text-xs uppercase tracking-[0.2em] text-[var(--brand-ink)] font-sans mb-2">
                     {t("contact.instagram")}
                   </p>
                   <a
                     href="https://www.instagram.com/kalakoshzurich"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="group flex items-center gap-3 p-3 border border-[#E0D8CC] hover:border-transparent bg-white hover:bg-gradient-to-r hover:from-[#f09433] hover:via-[#dc2743] hover:to-[#bc1888] transition-all duration-300"
+                    className="group flex items-center gap-3 p-3 border border-[var(--brand-border)] hover:border-transparent bg-white hover:bg-gradient-to-r hover:from-[#f09433] hover:via-[#dc2743] hover:to-[#bc1888] transition-all duration-300"
                   >
                     <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#f09433] via-[#dc2743] to-[#bc1888] flex items-center justify-center flex-shrink-0">
                       <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-white" aria-hidden="true">
@@ -107,7 +107,7 @@ export default function Contact() {
                   </a>
                 </div>
                 <div>
-                  <p className="text-xs uppercase tracking-[0.2em] text-[#2D2620] font-sans mb-1">
+                  <p className="text-xs uppercase tracking-[0.2em] text-[var(--brand-ink)] font-sans mb-1">
                     {t("contact.responseTime")}
                   </p>
                   <p className="text-muted-foreground text-sm font-sans">
@@ -116,8 +116,8 @@ export default function Contact() {
                 </div>
               </div>
 
-              <div className="mt-12 p-6 border border-[#B8963E]/20 bg-[#EDE7DF]">
-                <div className="text-[#B8963E] text-xl font-serif mb-3">◇</div>
+              <div className="mt-12 p-6 border border-[var(--brand-accent)]/20 bg-[var(--brand-surface)]">
+                <div className="text-[var(--brand-accent)] text-xl font-serif mb-3">◇</div>
                 <p className="font-serif text-foreground italic text-lg leading-relaxed">
                   {t("contact.quote")}
                 </p>
@@ -128,7 +128,7 @@ export default function Contact() {
             <div>
               {submitted ? (
                 <div className="flex flex-col items-center justify-center h-full text-center py-16">
-                  <div className="text-5xl text-[#B8963E] font-serif mb-6">✦</div>
+                  <div className="text-5xl text-[var(--brand-accent)] font-serif mb-6">✦</div>
                   <h3 className="font-serif text-foreground text-2xl mb-4">
                     {t("contact.thankYou")}
                   </h3>
@@ -138,7 +138,7 @@ export default function Contact() {
                   <button
                     type="button"
                     onClick={() => { setSubmitted(false); setForm({ name: "", email: "", subject: "", message: "" }); }}
-                    className="mt-8 text-sm text-[#2D2620] uppercase tracking-[0.15em] font-sans border-b border-[#2D2620]/30 hover:border-[#B8963E] hover:text-[#B8963E] transition-colors"
+                    className="mt-8 text-sm text-[var(--brand-ink)] uppercase tracking-[0.15em] font-sans border-b border-[var(--brand-ink)]/30 hover:border-[var(--brand-accent)] hover:text-[var(--brand-accent)] transition-colors"
                   >
                     {t("contact.sendAnother")}
                   </button>
@@ -148,7 +148,7 @@ export default function Contact() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div>
                       <label htmlFor="name" className="block text-xs uppercase tracking-[0.15em] text-foreground font-sans mb-2">
-                        {t("contact.name")} <span className="text-[#B8963E]">*</span>
+                        {t("contact.name")} <span className="text-[var(--brand-accent)]">*</span>
                       </label>
                       <input
                         type="text"
@@ -157,13 +157,13 @@ export default function Contact() {
                         value={form.name}
                         onChange={handleChange}
                         required
-                        className="w-full bg-transparent border border-[#2D2620]/20 px-4 py-3 text-sm font-sans text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-[#B8963E] transition-colors"
+                        className="w-full bg-transparent border border-[var(--brand-ink)]/20 px-4 py-3 text-sm font-sans text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-[var(--brand-accent)] transition-colors"
                         placeholder={t("contact.namePlaceholder")}
                       />
                     </div>
                     <div>
                       <label htmlFor="email" className="block text-xs uppercase tracking-[0.15em] text-foreground font-sans mb-2">
-                        {t("contact.email")} <span className="text-[#B8963E]">*</span>
+                        {t("contact.email")} <span className="text-[var(--brand-accent)]">*</span>
                       </label>
                       <input
                         type="email"
@@ -172,7 +172,7 @@ export default function Contact() {
                         value={form.email}
                         onChange={handleChange}
                         required
-                        className="w-full bg-transparent border border-[#2D2620]/20 px-4 py-3 text-sm font-sans text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-[#B8963E] transition-colors"
+                        className="w-full bg-transparent border border-[var(--brand-ink)]/20 px-4 py-3 text-sm font-sans text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-[var(--brand-accent)] transition-colors"
                         placeholder="ihre@email.com"
                       />
                     </div>
@@ -187,7 +187,7 @@ export default function Contact() {
                       id="subject"
                       value={form.subject}
                       onChange={handleChange}
-                      className="w-full bg-background border border-[#2D2620]/20 px-4 py-3 text-sm font-sans text-foreground focus:outline-none focus:border-[#B8963E] transition-colors"
+                      className="w-full bg-background border border-[var(--brand-ink)]/20 px-4 py-3 text-sm font-sans text-foreground focus:outline-none focus:border-[var(--brand-accent)] transition-colors"
                     >
                       <option value="">{t("contact.selectSubject")}</option>
                       <option value="product">{t("contact.subjectProduct")}</option>
@@ -199,7 +199,7 @@ export default function Contact() {
 
                   <div>
                     <label htmlFor="message" className="block text-xs uppercase tracking-[0.15em] text-foreground font-sans mb-2">
-                      {t("contact.message")} <span className="text-[#B8963E]">*</span>
+                      {t("contact.message")} <span className="text-[var(--brand-accent)]">*</span>
                     </label>
                     <textarea
                       name="message"
@@ -208,7 +208,7 @@ export default function Contact() {
                       onChange={handleChange}
                       required
                       rows={6}
-                      className="w-full bg-transparent border border-[#2D2620]/20 px-4 py-3 text-sm font-sans text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-[#B8963E] transition-colors resize-none"
+                      className="w-full bg-transparent border border-[var(--brand-ink)]/20 px-4 py-3 text-sm font-sans text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-[var(--brand-accent)] transition-colors resize-none"
                       placeholder={t("contact.messagePlaceholder")}
                     />
                   </div>
@@ -216,7 +216,7 @@ export default function Contact() {
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="w-full bg-[#2D2620] text-white py-4 text-sm uppercase tracking-[0.15em] font-sans hover:bg-[#3A3028] transition-colors duration-200 disabled:opacity-60"
+                    className="w-full bg-[var(--brand-ink)] text-white py-4 text-sm uppercase tracking-[0.15em] font-sans hover:bg-[var(--brand-ink-hover)] transition-colors duration-200 disabled:opacity-60"
                   >
                     {submitting ? t("contact.sending") : t("contact.send")}
                   </button>

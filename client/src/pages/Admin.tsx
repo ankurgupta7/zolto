@@ -192,7 +192,7 @@ function ProductRow({ product, onRefetch }: ProductRowProps) {
   return (
     <>
       <tr
-        className={`border-b border-[#E0D8CC] last:border-0 transition-colors hover:bg-[#FAF8F4] ${!product.visible ? "opacity-50" : ""}`}
+        className={`border-b border-[var(--brand-border)] last:border-0 transition-colors hover:bg-[var(--brand-surface-2)] ${!product.visible ? "opacity-50" : ""}`}
       >
         {/* Product */}
         <td className="px-6 py-4">
@@ -201,11 +201,11 @@ function ProductRow({ product, onRefetch }: ProductRowProps) {
               <img
                 src={product.imageUrl}
                 alt={product.name}
-                className="w-10 h-10 object-cover flex-shrink-0 bg-[#F0EBE3]"
+                className="w-10 h-10 object-cover flex-shrink-0 bg-[var(--brand-surface-3)]"
               />
             ) : (
-              <div className="w-10 h-10 bg-[#F0EBE3] flex items-center justify-center flex-shrink-0">
-                <span className="text-[#B8963E]/40 font-serif">◇</span>
+              <div className="w-10 h-10 bg-[var(--brand-surface-3)] flex items-center justify-center flex-shrink-0">
+                <span className="text-[var(--brand-accent)]/40 font-serif">◇</span>
               </div>
             )}
             <div>
@@ -236,7 +236,7 @@ function ProductRow({ product, onRefetch }: ProductRowProps) {
 
         {/* Price */}
         <td className="px-4 py-4">
-          <span className="font-serif text-[#2D2620] text-sm">
+          <span className="font-serif text-[var(--brand-ink)] text-sm">
             CHF {Number(product.price).toFixed(2)}
           </span>
         </td>
@@ -252,7 +252,7 @@ function ProductRow({ product, onRefetch }: ProductRowProps) {
                 qtyMutation.mutate({ id: product.id, quantity: n });
               }}
               disabled={isBusy || parseInt(qtyValue, 10) <= 0}
-              className="w-6 h-6 flex items-center justify-center border border-[#2D2620]/20 text-muted-foreground hover:border-[#2D2620] hover:text-foreground transition-colors disabled:opacity-30 text-sm leading-none"
+              className="w-6 h-6 flex items-center justify-center border border-[var(--brand-ink)]/20 text-muted-foreground hover:border-[var(--brand-ink)] hover:text-foreground transition-colors disabled:opacity-30 text-sm leading-none"
             >
               −
             </button>
@@ -267,7 +267,7 @@ function ProductRow({ product, onRefetch }: ProductRowProps) {
                   (e.target as HTMLInputElement).blur();
                 }
               }}
-              className="w-10 text-center text-sm font-sans border border-[#2D2620]/20 py-0.5 focus:outline-none focus:border-[#B8963E] bg-transparent"
+              className="w-10 text-center text-sm font-sans border border-[var(--brand-ink)]/20 py-0.5 focus:outline-none focus:border-[var(--brand-accent)] bg-transparent"
             />
             <button
               type="button"
@@ -277,7 +277,7 @@ function ProductRow({ product, onRefetch }: ProductRowProps) {
                 qtyMutation.mutate({ id: product.id, quantity: n });
               }}
               disabled={isBusy}
-              className="w-6 h-6 flex items-center justify-center border border-[#2D2620]/20 text-muted-foreground hover:border-[#2D2620] hover:text-foreground transition-colors disabled:opacity-30 text-sm leading-none"
+              className="w-6 h-6 flex items-center justify-center border border-[var(--brand-ink)]/20 text-muted-foreground hover:border-[var(--brand-ink)] hover:text-foreground transition-colors disabled:opacity-30 text-sm leading-none"
             >
               +
             </button>
@@ -301,7 +301,7 @@ function ProductRow({ product, onRefetch }: ProductRowProps) {
               type="button"
               onClick={() => (editing ? setEditing(false) : startEdit())}
               title={editing ? "Cancel edit" : "Edit product"}
-              className={`p-2 transition-colors ${editing ? "text-[#B8963E]" : "text-muted-foreground hover:text-[#2D2620]"}`}
+              className={`p-2 transition-colors ${editing ? "text-[var(--brand-accent)]" : "text-muted-foreground hover:text-[var(--brand-ink)]"}`}
             >
               <Pencil size={15} />
             </button>
@@ -317,7 +317,7 @@ function ProductRow({ product, onRefetch }: ProductRowProps) {
               }
               disabled={isBusy}
               title={product.visible ? "Hide product" : "Show product"}
-              className="p-2 text-muted-foreground hover:text-[#2D2620] transition-colors disabled:opacity-40"
+              className="p-2 text-muted-foreground hover:text-[var(--brand-ink)] transition-colors disabled:opacity-40"
             >
               {toggleMutation.isPending ? (
                 <Loader2 size={15} className="animate-spin" />
@@ -371,7 +371,7 @@ function ProductRow({ product, onRefetch }: ProductRowProps) {
 
       {/* Inline edit row */}
       {editing && (
-        <tr className="border-b border-[#E0D8CC] bg-[#FAF8F4]">
+        <tr className="border-b border-[var(--brand-border)] bg-[var(--brand-surface-2)]">
           <td colSpan={6} className="px-6 py-5">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
               <div>
@@ -385,7 +385,7 @@ function ProductRow({ product, onRefetch }: ProductRowProps) {
                   onChange={e =>
                     setEditForm(f => ({ ...f, name: e.target.value }))
                   }
-                  className="w-full border border-[#2D2620]/20 px-3 py-2 text-sm font-sans focus:outline-none focus:border-[#B8963E] bg-white"
+                  className="w-full border border-[var(--brand-ink)]/20 px-3 py-2 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] bg-white"
                 />
               </div>
               <div>
@@ -399,7 +399,7 @@ function ProductRow({ product, onRefetch }: ProductRowProps) {
                   onChange={e =>
                     setEditForm(f => ({ ...f, nameEn: e.target.value }))
                   }
-                  className="w-full border border-[#2D2620]/20 px-3 py-2 text-sm font-sans focus:outline-none focus:border-[#B8963E] bg-white"
+                  className="w-full border border-[var(--brand-ink)]/20 px-3 py-2 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] bg-white"
                 />
               </div>
               <div>
@@ -415,7 +415,7 @@ function ProductRow({ product, onRefetch }: ProductRowProps) {
                   onChange={e =>
                     setEditForm(f => ({ ...f, price: e.target.value }))
                   }
-                  className="w-full border border-[#2D2620]/20 px-3 py-2 text-sm font-sans focus:outline-none focus:border-[#B8963E] bg-white"
+                  className="w-full border border-[var(--brand-ink)]/20 px-3 py-2 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] bg-white"
                 />
               </div>
               <div>
@@ -431,7 +431,7 @@ function ProductRow({ product, onRefetch }: ProductRowProps) {
                       category: e.target.value as ProductCategory,
                     }))
                   }
-                  className="w-full border border-[#2D2620]/20 px-3 py-2 text-sm font-sans focus:outline-none focus:border-[#B8963E] bg-white"
+                  className="w-full border border-[var(--brand-ink)]/20 px-3 py-2 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] bg-white"
                 >
                   {CATEGORIES.map(c => (
                     <option key={c} value={c}>
@@ -451,7 +451,7 @@ function ProductRow({ product, onRefetch }: ProductRowProps) {
                     setEditForm(f => ({ ...f, description: e.target.value }))
                   }
                   rows={3}
-                  className="w-full border border-[#2D2620]/20 px-3 py-2 text-sm font-sans focus:outline-none focus:border-[#B8963E] bg-white resize-none"
+                  className="w-full border border-[var(--brand-ink)]/20 px-3 py-2 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] bg-white resize-none"
                 />
               </div>
               <div>
@@ -465,7 +465,7 @@ function ProductRow({ product, onRefetch }: ProductRowProps) {
                     setEditForm(f => ({ ...f, descriptionEn: e.target.value }))
                   }
                   rows={3}
-                  className="w-full border border-[#2D2620]/20 px-3 py-2 text-sm font-sans focus:outline-none focus:border-[#B8963E] bg-white resize-none"
+                  className="w-full border border-[var(--brand-ink)]/20 px-3 py-2 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] bg-white resize-none"
                 />
               </div>
             </div>
@@ -474,7 +474,7 @@ function ProductRow({ product, onRefetch }: ProductRowProps) {
                 type="button"
                 onClick={handleSaveEdit}
                 disabled={updateMutation.isPending}
-                className="flex items-center gap-2 bg-[#2D2620] text-white px-6 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:bg-[#3A3028] transition-colors disabled:opacity-60"
+                className="flex items-center gap-2 bg-[var(--brand-ink)] text-white px-6 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:bg-[var(--brand-ink-hover)] transition-colors disabled:opacity-60"
               >
                 {updateMutation.isPending ? (
                   <Loader2 size={13} className="animate-spin" />
@@ -486,7 +486,7 @@ function ProductRow({ product, onRefetch }: ProductRowProps) {
               <button
                 type="button"
                 onClick={() => setEditing(false)}
-                className="flex items-center gap-2 border border-[#2D2620]/20 text-muted-foreground px-6 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:border-[#2D2620] hover:text-foreground transition-colors"
+                className="flex items-center gap-2 border border-[var(--brand-ink)]/20 text-muted-foreground px-6 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:border-[var(--brand-ink)] hover:text-foreground transition-colors"
               >
                 <X size={13} />
                 Cancel
@@ -729,7 +729,7 @@ export default function Admin() {
   if (loading)
     return (
       <div className="min-h-screen flex items-center justify-center pt-20">
-        <Loader2 className="animate-spin text-[#2D2620]" size={32} />
+        <Loader2 className="animate-spin text-[var(--brand-ink)]" size={32} />
       </div>
     );
 
@@ -737,7 +737,7 @@ export default function Admin() {
     return (
       <div className="min-h-screen flex items-center justify-center pt-20 bg-background">
         <div className="text-center max-w-sm">
-          <div className="text-5xl text-[#B8963E]/30 font-serif mb-6">◇</div>
+          <div className="text-5xl text-[var(--brand-accent)]/30 font-serif mb-6">◇</div>
           <h2 className="font-serif text-foreground text-2xl mb-4">
             Admin Access
           </h2>
@@ -746,7 +746,7 @@ export default function Admin() {
           </p>
           <a
             href={getLoginUrl()}
-            className="inline-flex items-center gap-2 bg-[#2D2620] text-white px-8 py-3.5 text-sm uppercase tracking-[0.15em] font-sans hover:bg-[#3A3028] transition-colors"
+            className="inline-flex items-center gap-2 bg-[var(--brand-ink)] text-white px-8 py-3.5 text-sm uppercase tracking-[0.15em] font-sans hover:bg-[var(--brand-ink-hover)] transition-colors"
           >
             Sign In
           </a>
@@ -758,7 +758,7 @@ export default function Admin() {
     return (
       <div className="min-h-screen flex items-center justify-center pt-20 bg-background">
         <div className="text-center max-w-sm">
-          <div className="text-5xl text-[#B8963E]/30 font-serif mb-6">✕</div>
+          <div className="text-5xl text-[var(--brand-accent)]/30 font-serif mb-6">✕</div>
           <h2 className="font-serif text-foreground text-2xl mb-4">
             Access Denied
           </h2>
@@ -776,12 +776,12 @@ export default function Admin() {
       .reduce((sum, p) => sum + Number(p.price) * p.quantity, 0) ?? 0;
 
   return (
-    <div className="page-enter pt-20 min-h-screen bg-[#EDE7DF]">
+    <div className="page-enter pt-20 min-h-screen bg-[var(--brand-surface)]">
       {/* Header */}
-      <section className="bg-[#2D2620] py-12">
+      <section className="bg-[var(--brand-ink)] py-12">
         <div className="container flex items-center justify-between flex-wrap gap-4">
           <div>
-            <p className="text-[#B8963E] text-xs uppercase tracking-[0.3em] mb-1 font-sans">
+            <p className="text-[var(--brand-accent)] text-xs uppercase tracking-[0.3em] mb-1 font-sans">
               Admin Panel
             </p>
             <h1 className="font-serif text-white text-2xl">
@@ -854,7 +854,7 @@ export default function Admin() {
             <button
               type="button"
               onClick={() => setShowAddForm(v => !v)}
-              className="flex items-center gap-2 bg-[#B8963E] text-[#2D2620] px-5 py-2.5 text-xs uppercase tracking-[0.15em] font-sans font-medium hover:bg-[#D4B060] transition-colors"
+              className="flex items-center gap-2 bg-[var(--brand-accent)] text-[var(--brand-ink)] px-5 py-2.5 text-xs uppercase tracking-[0.15em] font-sans font-medium hover:bg-[var(--brand-accent-light)] transition-colors"
             >
               <Plus size={14} />
               Add Product
@@ -866,7 +866,7 @@ export default function Admin() {
       <div className="container py-10">
         {/* Add Product Form */}
         {showAddForm && (
-          <div className="bg-white border border-[#E0D8CC] p-8 mb-8">
+          <div className="bg-white border border-[var(--brand-border)] p-8 mb-8">
             <h2 className="font-serif text-foreground text-xl mb-6">
               Add New Product
             </h2>
@@ -876,7 +876,7 @@ export default function Admin() {
             >
               <div>
                 <label htmlFor="create-name" className="block text-xs uppercase tracking-[0.15em] text-foreground font-sans mb-2">
-                  Name <span className="text-[#B8963E]">*</span>
+                  Name <span className="text-[var(--brand-accent)]">*</span>
                 </label>
                 <input
                   id="create-name"
@@ -884,14 +884,14 @@ export default function Admin() {
                   value={form.name}
                   onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
                   required
-                  className="w-full border border-[#2D2620]/20 px-4 py-2.5 text-sm font-sans focus:outline-none focus:border-[#B8963E] transition-colors bg-transparent"
+                  className="w-full border border-[var(--brand-ink)]/20 px-4 py-2.5 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] transition-colors bg-transparent"
                   placeholder="e.g. Moonstone Drop Earrings"
                 />
               </div>
 
               <div>
                 <label htmlFor="create-price" className="block text-xs uppercase tracking-[0.15em] text-foreground font-sans mb-2">
-                  Price (CHF) <span className="text-[#B8963E]">*</span>
+                  Price (CHF) <span className="text-[var(--brand-accent)]">*</span>
                 </label>
                 <input
                   id="create-price"
@@ -903,14 +903,14 @@ export default function Admin() {
                     setForm(p => ({ ...p, price: e.target.value }))
                   }
                   required
-                  className="w-full border border-[#2D2620]/20 px-4 py-2.5 text-sm font-sans focus:outline-none focus:border-[#B8963E] transition-colors bg-transparent"
+                  className="w-full border border-[var(--brand-ink)]/20 px-4 py-2.5 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] transition-colors bg-transparent"
                   placeholder="e.g. 185.00"
                 />
               </div>
 
               <div>
                 <label htmlFor="create-category" className="block text-xs uppercase tracking-[0.15em] text-foreground font-sans mb-2">
-                  Category <span className="text-[#B8963E]">*</span>
+                  Category <span className="text-[var(--brand-accent)]">*</span>
                 </label>
                 <select
                   id="create-category"
@@ -921,7 +921,7 @@ export default function Admin() {
                       category: e.target.value as ProductCategory,
                     }))
                   }
-                  className="w-full border border-[#2D2620]/20 px-4 py-2.5 text-sm font-sans focus:outline-none focus:border-[#B8963E] transition-colors bg-white"
+                  className="w-full border border-[var(--brand-ink)]/20 px-4 py-2.5 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] transition-colors bg-white"
                 >
                   {CATEGORIES.map(c => (
                     <option key={c} value={c}>
@@ -943,7 +943,7 @@ export default function Admin() {
                   onChange={e =>
                     setForm(p => ({ ...p, quantity: e.target.value }))
                   }
-                  className="w-full border border-[#2D2620]/20 px-4 py-2.5 text-sm font-sans focus:outline-none focus:border-[#B8963E] transition-colors bg-transparent"
+                  className="w-full border border-[var(--brand-ink)]/20 px-4 py-2.5 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] transition-colors bg-transparent"
                   placeholder="1"
                 />
               </div>
@@ -959,14 +959,14 @@ export default function Admin() {
                   onChange={e =>
                     setForm(p => ({ ...p, imageUrl: e.target.value }))
                   }
-                  className="w-full border border-[#2D2620]/20 px-4 py-2.5 text-sm font-sans focus:outline-none focus:border-[#B8963E] transition-colors bg-transparent"
+                  className="w-full border border-[var(--brand-ink)]/20 px-4 py-2.5 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] transition-colors bg-transparent"
                   placeholder="https://..."
                 />
               </div>
 
               <div className="md:col-span-2">
                 <label htmlFor="create-description" className="block text-xs uppercase tracking-[0.15em] text-foreground font-sans mb-2">
-                  Description <span className="text-[#B8963E]">*</span>
+                  Description <span className="text-[var(--brand-accent)]">*</span>
                 </label>
                 <textarea
                   id="create-description"
@@ -976,7 +976,7 @@ export default function Admin() {
                   }
                   required
                   rows={3}
-                  className="w-full border border-[#2D2620]/20 px-4 py-2.5 text-sm font-sans focus:outline-none focus:border-[#B8963E] transition-colors bg-transparent resize-none"
+                  className="w-full border border-[var(--brand-ink)]/20 px-4 py-2.5 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] transition-colors bg-transparent resize-none"
                   placeholder="Describe the piece..."
                 />
               </div>
@@ -1034,7 +1034,7 @@ export default function Admin() {
                         setDupState("idle");
                         setDupResults([]);
                       }}
-                      className="px-5 py-2 text-xs uppercase tracking-[0.15em] font-sans text-muted-foreground border border-[#2D2620]/20 hover:border-[#2D2620] transition-colors"
+                      className="px-5 py-2 text-xs uppercase tracking-[0.15em] font-sans text-muted-foreground border border-[var(--brand-ink)]/20 hover:border-[var(--brand-ink)] transition-colors"
                     >
                       Cancel
                     </button>
@@ -1050,7 +1050,7 @@ export default function Admin() {
                     dupState === "checking" ||
                     dupState === "found"
                   }
-                  className="flex items-center gap-2 bg-[#2D2620] text-white px-8 py-3 text-sm uppercase tracking-[0.15em] font-sans hover:bg-[#3A3028] transition-colors disabled:opacity-60"
+                  className="flex items-center gap-2 bg-[var(--brand-ink)] text-white px-8 py-3 text-sm uppercase tracking-[0.15em] font-sans hover:bg-[var(--brand-ink-hover)] transition-colors disabled:opacity-60"
                 >
                   {createMutation.isPending || dupState === "checking" ? (
                     <Loader2 size={14} className="animate-spin" />
@@ -1067,7 +1067,7 @@ export default function Admin() {
                     setDupState("idle");
                     setDupResults([]);
                   }}
-                  className="px-8 py-3 text-sm uppercase tracking-[0.15em] font-sans text-muted-foreground border border-[#2D2620]/20 hover:border-[#2D2620] transition-colors"
+                  className="px-8 py-3 text-sm uppercase tracking-[0.15em] font-sans text-muted-foreground border border-[var(--brand-ink)]/20 hover:border-[var(--brand-ink)] transition-colors"
                 >
                   Cancel
                 </button>
@@ -1090,9 +1090,9 @@ export default function Admin() {
             ].map(stat => (
               <div
                 key={stat.label}
-                className="bg-white border border-[#E0D8CC] p-5 text-center"
+                className="bg-white border border-[var(--brand-border)] p-5 text-center"
               >
-                <p className="font-serif text-[#2D2620] text-3xl mb-1">
+                <p className="font-serif text-[var(--brand-ink)] text-3xl mb-1">
                   {stat.value}
                 </p>
                 <p className="text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans">
@@ -1104,10 +1104,10 @@ export default function Admin() {
         )}
 
         {/* AI Insights */}
-        <div className="mb-8 bg-white border border-[#E0D8CC] overflow-hidden">
-          <div className="flex items-center justify-between px-6 py-5 border-b border-[#E0D8CC] bg-[#EDE7DF]">
+        <div className="mb-8 bg-white border border-[var(--brand-border)] overflow-hidden">
+          <div className="flex items-center justify-between px-6 py-5 border-b border-[var(--brand-border)] bg-[var(--brand-surface)]">
             <div>
-              <p className="text-[#B8963E] text-xs uppercase tracking-[0.3em] mb-1 font-sans">
+              <p className="text-[var(--brand-accent)] text-xs uppercase tracking-[0.3em] mb-1 font-sans">
                 AI
               </p>
               <h2 className="font-serif text-foreground text-xl">
@@ -1131,7 +1131,7 @@ export default function Admin() {
                 type="button"
                 onClick={() => insightsMutation.mutate()}
                 disabled={insightsMutation.isPending}
-                className="flex items-center gap-2 bg-[#2D2620] text-white px-5 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:bg-[#3A3028] transition-colors disabled:opacity-50"
+                className="flex items-center gap-2 bg-[var(--brand-ink)] text-white px-5 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:bg-[var(--brand-ink-hover)] transition-colors disabled:opacity-50"
               >
                 {insightsMutation.isPending ? (
                   <Loader2 size={13} className="animate-spin" />
@@ -1147,7 +1147,7 @@ export default function Admin() {
 
           {insightsMutation.isPending && (
             <div className="flex items-center justify-center gap-3 py-10 text-muted-foreground">
-              <Loader2 size={20} className="animate-spin text-[#B8963E]" />
+              <Loader2 size={20} className="animate-spin text-[var(--brand-accent)]" />
               <p className="text-sm font-sans">
                 Analysing your catalogue and sales data…
               </p>
@@ -1159,7 +1159,7 @@ export default function Admin() {
               {/* Highlights */}
               <div>
                 <div className="flex items-center gap-2 mb-4">
-                  <TrendingUp size={14} className="text-[#B8963E]" />
+                  <TrendingUp size={14} className="text-[var(--brand-accent)]" />
                   <h3 className="text-xs uppercase tracking-[0.2em] text-muted-foreground font-sans">
                     Highlights
                   </h3>
@@ -1167,7 +1167,7 @@ export default function Admin() {
                 <ul className="space-y-2.5">
                   {insightsData.highlights.map((h, i) => (
                     <li key={i} className="flex items-start gap-2.5">
-                      <span className="w-5 h-5 flex-shrink-0 bg-[#EDE7DF] text-[#2D2620] rounded-full flex items-center justify-center text-[10px] font-bold font-sans mt-0.5">
+                      <span className="w-5 h-5 flex-shrink-0 bg-[var(--brand-surface)] text-[var(--brand-ink)] rounded-full flex items-center justify-center text-[10px] font-bold font-sans mt-0.5">
                         {i + 1}
                       </span>
                       <p className="text-sm font-sans text-foreground leading-relaxed">
@@ -1181,7 +1181,7 @@ export default function Admin() {
               {/* Recommendations */}
               <div>
                 <div className="flex items-center gap-2 mb-4">
-                  <Lightbulb size={14} className="text-[#B8963E]" />
+                  <Lightbulb size={14} className="text-[var(--brand-accent)]" />
                   <h3 className="text-xs uppercase tracking-[0.2em] text-muted-foreground font-sans">
                     Recommendations
                   </h3>
@@ -1189,7 +1189,7 @@ export default function Admin() {
                 <ul className="space-y-2.5">
                   {insightsData.recommendations.map((r, i) => (
                     <li key={i} className="flex items-start gap-2.5">
-                      <span className="w-5 h-5 flex-shrink-0 bg-[#B8963E]/10 text-[#B8963E] rounded-full flex items-center justify-center text-[10px] font-bold font-sans mt-0.5">
+                      <span className="w-5 h-5 flex-shrink-0 bg-[var(--brand-accent)]/10 text-[var(--brand-accent)] rounded-full flex items-center justify-center text-[10px] font-bold font-sans mt-0.5">
                         →
                       </span>
                       <p className="text-sm font-sans text-foreground leading-relaxed">
@@ -1201,8 +1201,8 @@ export default function Admin() {
               </div>
 
               {/* Top Category & Slow Movers */}
-              <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-[#E0D8CC]">
-                <div className="bg-[#EDE7DF] p-4">
+              <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-[var(--brand-border)]">
+                <div className="bg-[var(--brand-surface)] p-4">
                   <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-sans mb-1">
                     Top Category
                   </p>
@@ -1236,7 +1236,7 @@ export default function Admin() {
 
           {!insightsData && !insightsMutation.isPending && (
             <div className="text-center py-10 text-muted-foreground">
-              <BarChart3 size={32} className="mx-auto mb-3 text-[#B8963E]/30" />
+              <BarChart3 size={32} className="mx-auto mb-3 text-[var(--brand-accent)]/30" />
               <p className="text-sm font-sans">
                 Click "Generate Insights" to get AI-powered analysis of your
                 sales and inventory.
@@ -1248,7 +1248,7 @@ export default function Admin() {
         {/* Product Table */}
         {productsLoading ? (
           <div className="flex items-center justify-center py-24">
-            <Loader2 className="animate-spin text-[#2D2620]" size={32} />
+            <Loader2 className="animate-spin text-[var(--brand-ink)]" size={32} />
           </div>
         ) : products && products.length > 0 ? (
           <div className="space-y-6">
@@ -1316,11 +1316,11 @@ export default function Admin() {
               </div>
             ) : (
               /* ── Flat table view (newest / name) ── */
-              <div className="bg-white border border-[#E0D8CC] overflow-hidden">
+              <div className="bg-white border border-[var(--brand-border)] overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full">
                   <thead>
-                    <tr className="border-b border-[#E0D8CC] bg-[#EDE7DF]">
+                    <tr className="border-b border-[var(--brand-border)] bg-[var(--brand-surface)]">
                       <th className="text-left px-6 py-4 text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans font-normal">
                         Product
                       </th>
@@ -1356,8 +1356,8 @@ export default function Admin() {
             )}
           </div>
         ) : (
-          <div className="bg-white border border-[#E0D8CC] text-center py-24">
-            <div className="text-5xl text-[#B8963E]/20 font-serif mb-6">◇</div>
+          <div className="bg-white border border-[var(--brand-border)] text-center py-24">
+            <div className="text-5xl text-[var(--brand-accent)]/20 font-serif mb-6">◇</div>
             <h3 className="font-serif text-foreground text-xl mb-3">
               No products yet
             </h3>
@@ -1369,14 +1369,14 @@ export default function Admin() {
               <button
                 type="button"
                 onClick={() => setShowAddForm(true)}
-                className="inline-flex items-center gap-2 bg-[#2D2620] text-white px-8 py-3 text-sm uppercase tracking-[0.15em] font-sans hover:bg-[#3A3028] transition-colors"
+                className="inline-flex items-center gap-2 bg-[var(--brand-ink)] text-white px-8 py-3 text-sm uppercase tracking-[0.15em] font-sans hover:bg-[var(--brand-ink-hover)] transition-colors"
               >
                 <Plus size={14} />
                 Add First Product
               </button>
               <Link
                 href="/admin/csv-import"
-                className="inline-flex items-center gap-2 border border-[#2D2620] text-[#2D2620] px-8 py-3 text-sm uppercase tracking-[0.15em] font-sans hover:bg-[#2D2620] hover:text-white transition-colors"
+                className="inline-flex items-center gap-2 border border-[var(--brand-ink)] text-[var(--brand-ink)] px-8 py-3 text-sm uppercase tracking-[0.15em] font-sans hover:bg-[var(--brand-ink)] hover:text-white transition-colors"
               >
                 <FileSpreadsheet size={14} />
                 CSV Import
@@ -1386,10 +1386,10 @@ export default function Admin() {
         )}
 
         {/* Instagram Post Grid Manager */}
-        <div className="mt-8 bg-white border border-[#E0D8CC] p-6 md:p-8">
+        <div className="mt-8 bg-white border border-[var(--brand-border)] p-6 md:p-8">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <p className="text-[#B8963E] text-xs uppercase tracking-[0.3em] mb-1 font-sans">
+              <p className="text-[var(--brand-accent)] text-xs uppercase tracking-[0.3em] mb-1 font-sans">
                 Instagram
               </p>
               <h2 className="font-serif text-foreground text-xl">
@@ -1400,16 +1400,16 @@ export default function Admin() {
                 embedded posts on the home page.
               </p>
             </div>
-            <Instagram size={28} className="text-[#B8963E] flex-shrink-0" />
+            <Instagram size={28} className="text-[var(--brand-accent)] flex-shrink-0" />
           </div>
           <InstagramManager />
         </div>
 
         {/* Bulk Upload AI Error Logs */}
-        <div className="mt-8 bg-white border border-[#E0D8CC] overflow-hidden">
-          <div className="flex items-center justify-between px-6 py-5 border-b border-[#E0D8CC] bg-[#EDE7DF]">
+        <div className="mt-8 bg-white border border-[var(--brand-border)] overflow-hidden">
+          <div className="flex items-center justify-between px-6 py-5 border-b border-[var(--brand-border)] bg-[var(--brand-surface)]">
             <div>
-              <p className="text-[#B8963E] text-xs uppercase tracking-[0.3em] mb-1 font-sans">
+              <p className="text-[var(--brand-accent)] text-xs uppercase tracking-[0.3em] mb-1 font-sans">
                 Debug
               </p>
               <h2 className="font-serif text-foreground text-xl">
@@ -1424,7 +1424,7 @@ export default function Admin() {
           </div>
           {bulkLogsLoading ? (
             <div className="flex items-center justify-center py-12">
-              <Loader2 className="animate-spin text-[#2D2620]" size={24} />
+              <Loader2 className="animate-spin text-[var(--brand-ink)]" size={24} />
             </div>
           ) : !bulkLogs || bulkLogs.length === 0 ? (
             <div className="text-center py-12">
@@ -1436,7 +1436,7 @@ export default function Admin() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm font-sans">
                 <thead>
-                  <tr className="border-b border-[#E0D8CC]">
+                  <tr className="border-b border-[var(--brand-border)]">
                     <th className="text-left px-6 py-3 text-xs uppercase tracking-[0.15em] text-muted-foreground font-normal">
                       Time
                     </th>
@@ -1455,7 +1455,7 @@ export default function Admin() {
                   {bulkLogs.map(log => (
                     <tr
                       key={log.id}
-                      className="border-b border-[#E0D8CC] last:border-0 hover:bg-[#FAF8F4]"
+                      className="border-b border-[var(--brand-border)] last:border-0 hover:bg-[var(--brand-surface-2)]"
                     >
                       <td className="px-6 py-3 text-xs text-muted-foreground whitespace-nowrap">
                         {new Date(log.createdAt).toLocaleString()}
@@ -1493,9 +1493,9 @@ export default function Admin() {
         </div>
 
         {/* Discord Integration Info */}
-        <div className="mt-8 bg-[#2D2620] p-6 md:p-8">
+        <div className="mt-8 bg-[var(--brand-ink)] p-6 md:p-8">
           <div className="flex items-start gap-4">
-            <div className="text-[#B8963E] text-2xl font-serif mt-1 flex-shrink-0">
+            <div className="text-[var(--brand-accent)] text-2xl font-serif mt-1 flex-shrink-0">
               ◈
             </div>
             <div>
@@ -1508,7 +1508,7 @@ export default function Admin() {
                 to the catalogue.
               </p>
               <div className="bg-white/5 border border-white/10 p-4 font-mono text-xs text-white/70 leading-relaxed">
-                <p className="text-[#B8963E] mb-1">Example Discord message:</p>
+                <p className="text-[var(--brand-accent)] mb-1">Example Discord message:</p>
                 <p>
                   Sterling silver moonstone ring. Delicate band with a 8mm round
                   moonstone, oxidised finish. Price: CHF 220

@@ -9,19 +9,19 @@ import { useCart } from "@/contexts/CartContext";
 /** TWINT wordmark-style badge (text fallback — avoids shipping the trademarked logo). */
 const PaymentBadges = () => (
   <div className="flex items-center gap-2 flex-wrap">
-    <span className="inline-flex items-center gap-1 text-[11px] font-sans uppercase tracking-wider bg-white border border-[#E0D8CC] text-[#2D2620] px-2 py-1">
+    <span className="inline-flex items-center gap-1 text-[11px] font-sans uppercase tracking-wider bg-white border border-[var(--brand-border)] text-[var(--brand-ink)] px-2 py-1">
       <CreditCard size={12} /> Visa
     </span>
-    <span className="text-[11px] font-sans uppercase tracking-wider bg-white border border-[#E0D8CC] text-[#2D2620] px-2 py-1">
+    <span className="text-[11px] font-sans uppercase tracking-wider bg-white border border-[var(--brand-border)] text-[var(--brand-ink)] px-2 py-1">
       Mastercard
     </span>
-    <span className="text-[11px] font-sans uppercase tracking-wider bg-white border border-[#E0D8CC] text-[#2D2620] px-2 py-1">
+    <span className="text-[11px] font-sans uppercase tracking-wider bg-white border border-[var(--brand-border)] text-[var(--brand-ink)] px-2 py-1">
       Amex
     </span>
     <span className="text-[11px] font-sans uppercase tracking-wider bg-[#1A1A1A] text-white px-2 py-1">
       TWINT
     </span>
-    <span className="text-[11px] font-sans uppercase tracking-wider bg-white border border-[#E0D8CC] text-[#2D2620] px-2 py-1">
+    <span className="text-[11px] font-sans uppercase tracking-wider bg-white border border-[var(--brand-border)] text-[var(--brand-ink)] px-2 py-1">
       Debit
     </span>
   </div>
@@ -67,12 +67,12 @@ export default function Checkout() {
     return (
       <div className="page-enter pt-28 pb-24 min-h-[60vh]">
         <div className="container max-w-2xl text-center">
-          <div className="text-6xl text-[#B8963E]/20 font-serif mb-6">◇</div>
+          <div className="text-6xl text-[var(--brand-accent)]/20 font-serif mb-6">◇</div>
           <h1 className="font-serif text-foreground text-2xl mb-3">{t("checkout.emptyTitle")}</h1>
           <p className="text-muted-foreground text-sm font-sans mb-8">{t("checkout.emptySub")}</p>
           <Link
             href="/shop"
-            className="inline-flex bg-[#2D2620] text-[#B8963E] px-8 py-3.5 text-sm uppercase tracking-[0.15em] font-sans hover:bg-[#3A3028] transition-colors"
+            className="inline-flex bg-[var(--brand-ink)] text-[var(--brand-accent)] px-8 py-3.5 text-sm uppercase tracking-[0.15em] font-sans hover:bg-[var(--brand-ink-hover)] transition-colors"
           >
             {t("checkout.browseShop")}
           </Link>
@@ -91,18 +91,18 @@ export default function Checkout() {
           {/* Order summary */}
           <div className="lg:col-span-3 space-y-5">
             {items.map((item) => (
-              <div key={item.id} className="flex gap-4 items-start border-b border-[#E0D8CC] pb-5">
-                <div className="w-24 h-28 bg-[#F0EBE3] flex-shrink-0 overflow-hidden">
+              <div key={item.id} className="flex gap-4 items-start border-b border-[var(--brand-border)] pb-5">
+                <div className="w-24 h-28 bg-[var(--brand-surface-3)] flex-shrink-0 overflow-hidden">
                   {item.imageUrl ? (
                     <img src={item.imageUrl} alt={displayName(item)} className="w-full h-full object-cover" />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-3xl text-[#B8963E]/30 font-serif">◇</div>
+                    <div className="w-full h-full flex items-center justify-center text-3xl text-[var(--brand-accent)]/30 font-serif">◇</div>
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="font-serif text-foreground text-lg leading-tight mb-1">{displayName(item)}</h3>
                   <p className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground font-sans mb-2">{item.category}</p>
-                  <p className="font-serif text-[#2D2620] text-xl">CHF {Number(item.price).toFixed(2)}</p>
+                  <p className="font-serif text-[var(--brand-ink)] text-xl">CHF {Number(item.price).toFixed(2)}</p>
                 </div>
                 <button
                   type="button"
@@ -118,12 +118,12 @@ export default function Checkout() {
 
           {/* Payment panel */}
           <div className="lg:col-span-2">
-            <div className="bg-[#EDE7DF] border border-[#E0D8CC] p-6 sticky top-28">
+            <div className="bg-[var(--brand-surface)] border border-[var(--brand-border)] p-6 sticky top-28">
               <div className="flex items-center justify-between mb-4">
                 <span className="text-sm uppercase tracking-[0.15em] font-sans text-muted-foreground">
                   {t("cart.subtotal")}
                 </span>
-                <span className="font-serif text-2xl text-[#2D2620]">CHF {total.toFixed(2)}</span>
+                <span className="font-serif text-2xl text-[var(--brand-ink)]">CHF {total.toFixed(2)}</span>
               </div>
               <p className="text-xs text-muted-foreground font-sans mb-5">{t("checkout.shippingNote")}</p>
 
@@ -139,11 +139,11 @@ export default function Checkout() {
                   type="checkbox"
                   checked={accepted}
                   onChange={(e) => setAccepted(e.target.checked)}
-                  className="mt-0.5 w-4 h-4 accent-[#2D2620]"
+                  className="mt-0.5 w-4 h-4 accent-[var(--brand-ink)]"
                 />
                 <span className="text-xs text-muted-foreground font-sans leading-relaxed">
                   {t("checkout.acceptPrefix")}{" "}
-                  <Link href="/policy" className="text-[#2D2620] underline hover:text-[#B8963E]">
+                  <Link href="/policy" className="text-[var(--brand-ink)] underline hover:text-[var(--brand-accent)]">
                     {t("checkout.acceptPolicyLink")}
                   </Link>
                   .
@@ -152,7 +152,7 @@ export default function Checkout() {
 
               <p className="text-[11px] text-muted-foreground font-sans mb-5 pl-6">
                 {t("policy.returnsShort")}{" "}
-                <Link href="/policy" className="text-[#2D2620] underline hover:text-[#B8963E] transition-colors">
+                <Link href="/policy" className="text-[var(--brand-ink)] underline hover:text-[var(--brand-accent)] transition-colors">
                   {t("checkout.readPolicy")}
                 </Link>
               </p>
@@ -166,7 +166,7 @@ export default function Checkout() {
                   type="button"
                   onClick={handlePay}
                   disabled={submitting || !accepted}
-                  className="w-full flex items-center justify-center gap-2 bg-[#2D2620] text-[#B8963E] py-3.5 text-sm uppercase tracking-[0.15em] font-sans hover:bg-[#3A3028] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full flex items-center justify-center gap-2 bg-[var(--brand-ink)] text-[var(--brand-accent)] py-3.5 text-sm uppercase tracking-[0.15em] font-sans hover:bg-[var(--brand-ink-hover)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Lock size={14} />
                   {submitting ? t("checkout.redirecting") : t("checkout.payNow")}

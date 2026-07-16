@@ -70,11 +70,11 @@ export default function BulkChangeReviewDialog({
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
 
-        <div className="max-h-80 overflow-y-auto border border-[#E0D8CC] divide-y divide-[#E0D8CC]">
+        <div className="max-h-80 overflow-y-auto border border-[var(--brand-border)] divide-y divide-[var(--brand-border)]">
           {items.map(item => (
             <label
               key={item.id}
-              className="flex items-center gap-3 px-4 py-2.5 text-sm font-sans cursor-pointer hover:bg-[#EDE7DF]/50"
+              className="flex items-center gap-3 px-4 py-2.5 text-sm font-sans cursor-pointer hover:bg-[var(--brand-surface)]/50"
             >
               <input
                 type="checkbox"
@@ -97,7 +97,7 @@ export default function BulkChangeReviewDialog({
             type="button"
             onClick={onCancel}
             disabled={isApplying}
-            className="border border-[#2D2620]/20 text-muted-foreground px-5 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:border-[#2D2620] hover:text-foreground transition-colors disabled:opacity-50"
+            className="border border-[var(--brand-ink)]/20 text-muted-foreground px-5 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:border-[var(--brand-ink)] hover:text-foreground transition-colors disabled:opacity-50"
           >
             Cancel
           </button>
@@ -108,7 +108,7 @@ export default function BulkChangeReviewDialog({
             className={`flex items-center gap-2 px-6 py-2.5 text-xs uppercase tracking-[0.15em] font-sans font-medium transition-colors disabled:opacity-60 ${
               destructive
                 ? "bg-red-600 text-white hover:bg-red-700"
-                : "bg-[#B8963E] text-[#2D2620] hover:bg-[#D4B060]"
+                : "bg-[var(--brand-accent)] text-[var(--brand-ink)] hover:bg-[var(--brand-accent-light)]"
             }`}
           >
             {isApplying && <Loader2 size={14} className="animate-spin" />}

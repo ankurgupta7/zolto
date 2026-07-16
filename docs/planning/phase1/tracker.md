@@ -229,24 +229,32 @@ Copy this template daily. Keep it in `memory/2026-07-17.md` or a new daily file.
 ## Repo Implementation Status (zolto — branch `claude/agent-context-migration-c2v8mx`)
 
 > Actual state of the code, verified against the repo. This is the ground truth; the checklists above are the plan.
-> Last verified: 2026-07-16.
+> Last verified: 2026-07-16 (frontend refactor landed).
 
 | Plan item | Planned in | Status in code | Notes |
 |-----------|-----------|----------------|-------|
 | `tenants` table | Sprint 2 | ✅ Implemented | `drizzle/schema.ts` |
 | `tenant_settings` (branding) | Phase 2.6 | ✅ Implemented | incl. `whiteLabelName`, `publicDomain`, `contactEmail`, Discord/Slack channel IDs |
 | `iteration_logs` table | Sprint 1 | ✅ Implemented | `drizzle/schema.ts` |
-| Tenant context resolution | Sprint 2.3 | ✅ Implemented | `server/_core/context.ts` |
-| Self-serve signup **backend** | Sprint 3.1 | ✅ Implemented | `server/routers/tenant.ts` → `tenantRouter.create` (14-day trial, referral codes, POS key gen) |
+| Tenant context resolution (server) | Sprint 2.3 | ✅ Implemented | `server/_core/context.ts` |
+| Self-serve signup **backend** | Sprint 3.1 | ✅ Implemented | `server/routers/tenant.ts` → `tenantRouter.create` (14-day trial, referral codes, POS key gen). NOTE: admin-user creation + Stripe still stubbed (TODOs in file). |
 | Tenant-aware branding (Discord/Slack/WhatsApp/email) | Phase 2.6 | ✅ Implemented | commit `1c5db74`; beyond original Phase 1 scope |
-| Signup **frontend** (`Signup.tsx`) | Sprint 3.2 | ❌ Not built | On hold — pending Zolto-vs-Kalakosh domain/branding split decision |
-| Onboarding wizard (`Onboarding.tsx`) | Sprint 3.3 | ❌ Not built | On hold — same reason |
-| Pricing page | Week 4 | ❌ Not built | Copy ready in `marketing/pricing-page-copy.md`; page on hold |
-| Legal pages wired into site | Week 4 | ❌ Not built | Drafts ready in `legal/`; `client/src/pages/Policy.tsx` currently holds Kalakosh AGB |
+| **Hostname surface split** (marketing vs storefront) | new | ✅ Implemented | `client/src/lib/surface.ts` + `App.tsx`; apex→marketing, subdomain→storefront, `?surface`/`?tenant` dev overrides |
+| **Storefront theming from `tenant_settings`** | Phase 2.6 | ✅ Implemented | Kalakosh palette → CSS vars (`--brand-*` in `index.css`); `TenantContext` injects `--brand-ink` from `primaryColor`; chrome (Navbar/Footer/WhatsApp) reads name/contacts/logo from branding. Non-Kalakosh tenants get neutral defaults (no borrowed contacts). |
+| Signup **frontend** (`Signup.tsx`) | Sprint 3.2 | ✅ Implemented | `client/src/marketing/pages/Signup.tsx`, wired to `tenant.create` |
+| Onboarding wizard (`Onboarding.tsx`) | Sprint 3.3 | ⚠️ Partial | `client/src/marketing/pages/Onboarding.tsx` — client-side checklist; **not yet persisted** (`onboardingStep` column exists but no mutation) |
+| Pricing page | Week 4 | ✅ Implemented | `client/src/marketing/pages/Pricing.tsx` from `marketing/pricing-page-copy.md` |
+| Platform legal pages (Zolto ToS/Privacy) | Week 4 | ✅ Implemented | `client/src/marketing/pages/Legal.tsx` (/legal/privacy, /legal/terms). Storefront still uses tenant's own AGB (`pages/Policy.tsx`). |
 | Chatbot metrics dashboard | Sprint 4 | ❌ Not built | — |
 | `feature_usage`, `chatbot_conversations` tables | Sprint 1 | ❌ Not built | Verified absent from `drizzle/schema.ts`; required before the chatbot metrics dashboard |
 
-**Known blocker:** the `zolto` client is still a fork of Kalakosh's storefront (hardcoded Kalakosh theme, copy, contact details). Frontend SaaS pages are deliberately deferred until the marketing-domain-vs-tenant-storefront split is decided. See the business plan §1.2 and the repo README's note that Kalakosh has no hardcoded fallback in Zolto.
+**Resolved blocker (was: Kalakosh-forked client):** the marketing-vs-storefront split is now built (hostname-aware, same app). The storefront themes itself from `tenant_settings`; the Zolto marketing surface (`/`, `/pricing`, `/signup`, `/onboarding`, `/legal/*`) has its own slate+violet identity. Kalakosh stays pixel-identical via per-tenant defaults.
+
+**Follow-ups (tracked, not yet done):**
+- Persist onboarding progress (add a `tenant.updateOnboardingStep` mutation; wire the wizard to it).
+- Finish signup backend: create the admin user (currently commented out) and the Stripe customer.
+- Derive the full warm-neutral palette from a single tenant `primaryColor` (today only `--brand-ink` is tenant-driven; tints keep Kalakosh defaults).
+- Deep tenant *content* (FAQ/About/AGB prose) is still Kalakosh-specific by design — a tenant CMS is out of current scope.
 
 ---
 

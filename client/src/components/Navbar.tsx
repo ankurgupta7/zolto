@@ -5,6 +5,8 @@ import { useTranslation } from "react-i18next";
 import { ShoppingBag } from "lucide-react";
 import i18n from "@/lib/i18n";
 import { useCart } from "@/contexts/CartContext";
+import { useTenant } from "@/contexts/TenantContext";
+import { instagramHref } from "@/lib/branding";
 
 const InstagramIcon = () => (
   <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4" aria-hidden="true">
@@ -28,7 +30,7 @@ function LanguageSwitcher() {
       type="button"
       onClick={toggle}
       aria-label="Switch language"
-      className="text-xs uppercase tracking-[0.15em] font-sans transition-colors duration-200 border px-2 py-1 text-[#1C1714]/50 border-[#1C1714]/15 hover:text-[#B8963E] hover:border-[#B8963E]"
+      className="text-xs uppercase tracking-[0.15em] font-sans transition-colors duration-200 border px-2 py-1 text-[var(--brand-text)]/50 border-[var(--brand-text)]/15 hover:text-[var(--brand-accent)] hover:border-[var(--brand-accent)]"
     >
       {currentLang === "de" ? "EN" : "DE"}
     </button>
@@ -44,13 +46,13 @@ function CartButton({ compact = false }: { compact?: boolean }) {
       aria-label="Open shopping bag"
       className={`relative transition-colors duration-200 ${
         compact
-          ? "text-[#1C1714]/70 p-2"
-          : "text-[#1C1714]/70 hover:text-[#B8963E]"
+          ? "text-[var(--brand-text)]/70 p-2"
+          : "text-[var(--brand-text)]/70 hover:text-[var(--brand-accent)]"
       }`}
     >
       <ShoppingBag className="w-5 h-5" />
       {count > 0 && (
-        <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-[16px] px-1 flex items-center justify-center rounded-full bg-[#B8963E] text-[#F7F3EE] text-[10px] font-sans font-semibold leading-none">
+        <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-[16px] px-1 flex items-center justify-center rounded-full bg-[var(--brand-accent)] text-[var(--brand-ground)] text-[10px] font-sans font-semibold leading-none">
           {count}
         </span>
       )}
@@ -64,6 +66,8 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const { t } = useTranslation();
+  const { branding } = useTenant();
+  const igHref = instagramHref(branding);
 
   const NAV_LINKS = [
     { label: t("nav.home"), href: "/" },
@@ -87,21 +91,27 @@ export default function Navbar() {
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-[#F7F3EE] ${
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-[var(--brand-ground)] ${
         scrolled
-          ? "shadow-sm shadow-black/6 border-b border-[#DDD4C9]"
-          : "border-b border-[#DDD4C9]/60"
+          ? "shadow-sm shadow-black/6 border-b border-[var(--brand-border-2)]"
+          : "border-b border-[var(--brand-border-2)]/60"
       }`}
     >
       <div className="container">
         <div className="flex items-center justify-between h-20 md:h-24">
           {/* Logo — black on white, no inversion needed */}
           <Link href="/" className="flex items-center group">
-            <img
-              src="/kalakosh-logo-banner.png"
-              alt="Kalakosh Zürich"
-              className="h-14 md:h-18 w-auto object-contain"
-            />
+            {branding.logoUrl ? (
+              <img
+                src={branding.logoUrl}
+                alt={branding.storeName}
+                className="h-14 md:h-18 w-auto object-contain"
+              />
+            ) : (
+              <span className="font-serif text-2xl text-[var(--brand-text)]">
+                {branding.storeName}
+              </span>
+            )}
           </Link>
 
           {/* Desktop nav */}
@@ -112,8 +122,8 @@ export default function Navbar() {
                 href={link.href}
                 className={`text-sm uppercase tracking-[0.15em] font-sans transition-colors duration-200 ${
                   location === link.href
-                    ? "text-[#B8963E]"
-                    : "text-[#1C1714]/60 hover:text-[#B8963E]"
+                    ? "text-[var(--brand-accent)]"
+                    : "text-[var(--brand-text)]/60 hover:text-[var(--brand-accent)]"
                 }`}
               >
                 {link.label}
@@ -123,10 +133,10 @@ export default function Navbar() {
               <div className="flex items-center gap-2">
                 <Link
                   href="/admin"
-                  className={`text-sm uppercase tracking-[0.15em] font-sans transition-colors duration-200 border border-[#B8963E]/30 px-3 py-1 ${
+                  className={`text-sm uppercase tracking-[0.15em] font-sans transition-colors duration-200 border border-[var(--brand-accent)]/30 px-3 py-1 ${
                     location === "/admin"
-                      ? "text-[#B8963E] border-[#B8963E]"
-                      : "text-[#B8963E]/60 hover:text-[#B8963E] hover:border-[#B8963E]"
+                      ? "text-[var(--brand-accent)] border-[var(--brand-accent)]"
+                      : "text-[var(--brand-accent)]/60 hover:text-[var(--brand-accent)] hover:border-[var(--brand-accent)]"
                   }`}
                 >
                   {t("nav.admin")}
@@ -134,10 +144,10 @@ export default function Navbar() {
                 <Link
                   href="/admin/bulk-upload"
                   title="Bulk Upload"
-                  className={`text-sm uppercase tracking-[0.15em] font-sans transition-colors duration-200 border border-[#B8963E]/30 px-3 py-1 flex items-center gap-1 ${
+                  className={`text-sm uppercase tracking-[0.15em] font-sans transition-colors duration-200 border border-[var(--brand-accent)]/30 px-3 py-1 flex items-center gap-1 ${
                     location === "/admin/bulk-upload"
-                      ? "text-[#B8963E] border-[#B8963E]"
-                      : "text-[#B8963E]/60 hover:text-[#B8963E] hover:border-[#B8963E]"
+                      ? "text-[var(--brand-accent)] border-[var(--brand-accent)]"
+                      : "text-[var(--brand-accent)]/60 hover:text-[var(--brand-accent)] hover:border-[var(--brand-accent)]"
                   }`}
                 >
                   {t("nav.upload")}
@@ -146,11 +156,11 @@ export default function Navbar() {
             )}
             <LanguageSwitcher />
             <a
-              href="https://www.instagram.com/kalakoshzurich"
+              href={igHref ?? "#"}
               target="_blank"
               rel="noopener noreferrer"
-              aria-label="Kalakosh Zürich on Instagram"
-              className="text-[#1C1714]/40 hover:text-[#B8963E] transition-colors duration-200"
+              aria-label={`${branding.storeName} on Instagram`}
+              className="text-[var(--brand-text)]/40 hover:text-[var(--brand-accent)] transition-colors duration-200"
             >
               <InstagramIcon />
             </a>
@@ -162,7 +172,7 @@ export default function Navbar() {
             <CartButton compact />
             <button
               type="button"
-              className="flex flex-col gap-1.5 p-2 text-[#1C1714]/70"
+              className="flex flex-col gap-1.5 p-2 text-[var(--brand-text)]/70"
               onClick={() => setMenuOpen((v) => !v)}
               aria-label="Toggle menu"
             >
@@ -177,16 +187,16 @@ export default function Navbar() {
       {/* Mobile menu — dark panel that drops below the light bar */}
       <div
         className={`md:hidden overflow-hidden transition-all duration-300 ${
-          menuOpen ? "max-h-96 border-t border-[#DDD4C9]" : "max-h-0"
+          menuOpen ? "max-h-96 border-t border-[var(--brand-border-2)]" : "max-h-0"
         }`}
       >
-        <nav className="container bg-[#F7F3EE] py-4 flex flex-col gap-1">
+        <nav className="container bg-[var(--brand-ground)] py-4 flex flex-col gap-1">
           {NAV_LINKS.map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              className={`py-3 text-sm uppercase tracking-[0.15em] font-sans border-b border-[#DDD4C9] transition-colors ${
-                location === link.href ? "text-[#B8963E]" : "text-[#1C1714]/60"
+              className={`py-3 text-sm uppercase tracking-[0.15em] font-sans border-b border-[var(--brand-border-2)] transition-colors ${
+                location === link.href ? "text-[var(--brand-accent)]" : "text-[var(--brand-text)]/60"
               }`}
             >
               {link.label}
@@ -196,26 +206,26 @@ export default function Navbar() {
             <>
               <Link
                 href="/admin"
-                className="py-3 text-sm uppercase tracking-[0.15em] font-sans text-[#B8963E] border-b border-[#DDD4C9]"
+                className="py-3 text-sm uppercase tracking-[0.15em] font-sans text-[var(--brand-accent)] border-b border-[var(--brand-border-2)]"
               >
                 {t("nav.admin")}
               </Link>
               <Link
                 href="/admin/bulk-upload"
-                className="py-3 text-sm uppercase tracking-[0.15em] font-sans text-[#B8963E]/70 border-b border-[#DDD4C9] flex items-center gap-2"
+                className="py-3 text-sm uppercase tracking-[0.15em] font-sans text-[var(--brand-accent)]/70 border-b border-[var(--brand-border-2)] flex items-center gap-2"
               >
                 {t("nav.bulkUpload")}
               </Link>
             </>
           )}
-          <div className="py-3 border-b border-[#DDD4C9]">
+          <div className="py-3 border-b border-[var(--brand-border-2)]">
             <LanguageSwitcher />
           </div>
           <a
-            href="https://www.instagram.com/kalakoshzurich"
+            href={igHref ?? "#"}
             target="_blank"
             rel="noopener noreferrer"
-            className="py-3 flex items-center gap-2 text-sm uppercase tracking-[0.15em] font-sans text-[#1C1714]/40 border-b border-[#DDD4C9]"
+            className="py-3 flex items-center gap-2 text-sm uppercase tracking-[0.15em] font-sans text-[var(--brand-text)]/40 border-b border-[var(--brand-border-2)]"
           >
             <InstagramIcon />
             Instagram

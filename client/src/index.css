@@ -43,6 +43,29 @@
   --font-sans: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
 
+/* ─── Tenant-themeable brand palette ─────────────────────────────────────────── */
+/* These custom properties are the storefront's brand colors. The defaults below   */
+/* are Kalakosh's (tenant #1) — TenantProvider overrides --brand-ink (and, where    */
+/* provided, the accent) at runtime from tenant_settings.primaryColor so every      */
+/* tenant's storefront themes itself. Functional colors (WhatsApp/Instagram/        */
+/* category badges) are intentionally NOT variables — they are brand-neutral.       */
+:root {
+  --brand-ink: #2d2620; /* dominant dark: hero, footer, primary buttons */
+  --brand-ink-hover: #3a3028;
+  --brand-ink-deep: #231e19;
+  --brand-text: #1c1714; /* headings / near-black ink */
+  --brand-accent: #b8963e; /* gold accent */
+  --brand-accent-light: #d4b060;
+  --brand-muted: #7a6d65;
+  --brand-muted-2: #6b5e52;
+  --brand-ground: #f7f3ee;
+  --brand-surface: #ede7df;
+  --brand-surface-2: #faf8f4;
+  --brand-surface-3: #f0ebe3;
+  --brand-border: #e0d8cc;
+  --brand-border-2: #ddd4c9;
+}
+
 /* ─── Base Styles ────────────────────────────────────────────────────────────── */
 
 @layer base {
@@ -65,7 +88,7 @@
     font-weight: 400;
     line-height: 1.2;
     letter-spacing: 0.01em;
-    color: #1C1714;
+    color: var(--brand-text);
   }
 
   h1 { font-size: clamp(2.2rem, 5vw, 3.8rem); }
@@ -115,25 +138,25 @@
 
 /* Gold gradient text */
 .text-gold-gradient {
-  background: linear-gradient(135deg, #B8963E 0%, #D4B060 50%, #B8963E 100%);
+  background: linear-gradient(135deg, var(--brand-accent) 0%, var(--brand-accent-light) 50%, var(--brand-accent) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
 /* Brand utilities */
-.text-gold    { color: #B8963E; }
-.bg-gold      { background-color: #B8963E; }
-.border-gold  { border-color: #B8963E; }
+.text-gold    { color: var(--brand-accent); }
+.bg-gold      { background-color: var(--brand-accent); }
+.border-gold  { border-color: var(--brand-accent); }
 
 /* Warm mahogany dark — used for hero, footer; never cold charcoal */
-.bg-mahogany  { background-color: #2D2620; }
-.bg-warm-dark { background-color: #231E19; }
+.bg-mahogany  { background-color: var(--brand-ink); }
+.bg-warm-dark { background-color: var(--brand-ink-deep); }
 
 /* Hairline divider with gold accent */
 .divider-gold {
   height: 1px;
-  background: linear-gradient(90deg, transparent, #B8963E, transparent);
+  background: linear-gradient(90deg, transparent, var(--brand-accent), transparent);
 }
 
 /* Card hover lift */

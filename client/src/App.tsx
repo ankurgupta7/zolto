@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
@@ -25,7 +25,10 @@ import Footer from "./components/Footer";
 import WhatsAppButton from "./components/WhatsAppButton";
 import CartDrawer from "./components/CartDrawer";
 import { CartProvider } from "./contexts/CartContext";
+import { TenantProvider } from "./contexts/TenantContext";
 import { useSmoothScroll, lenisRef } from "./hooks/useSmoothScroll";
+import { resolveSurface, type SurfaceResolution } from "./lib/surface";
+import MarketingApp from "./marketing/MarketingApp";
 
 function ScrollToTop() {
   const [location] = useLocation();
@@ -41,7 +44,19 @@ function ScrollToTop() {
   return null;
 }
 
-function Router() {
+/** Resolve the surface once from the current hostname (+ dev overrides). */
+function useSurface(): SurfaceResolution {
+  const [surface] = useState<SurfaceResolution>(() =>
+    resolveSurface({
+      hostname: window.location.hostname,
+      search: window.location.search,
+      defaultTenantSlug: import.meta.env.VITE_DEFAULT_TENANT_SLUG || "kalakosh",
+    }),
+  );
+  return surface;
+}
+
+function StorefrontRouter() {
   useSmoothScroll();
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -76,15 +91,26 @@ function Router() {
 }
 
 function App() {
+  const surface = useSurface();
+
   return (
     <ErrorBoundary>
       <ThemeProvider defaultTheme="light">
-        <CartProvider>
+        {surface.surface === "marketing" ? (
           <TooltipProvider>
             <Toaster />
-            <Router />
+            <MarketingApp />
           </TooltipProvider>
-        </CartProvider>
+        ) : (
+          <TenantProvider slug={surface.tenantSlug}>
+            <CartProvider>
+              <TooltipProvider>
+                <Toaster />
+                <StorefrontRouter />
+              </TooltipProvider>
+            </CartProvider>
+          </TenantProvider>
+        )}
       </ThemeProvider>
     </ErrorBoundary>
   );

@@ -80,14 +80,14 @@ export default function ProductImageManager({ productId, productName }: Props) {
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}
-        className="flex items-center gap-1.5 text-xs uppercase tracking-[0.12em] font-sans text-[#2D2620] hover:text-[#B8963E] transition-colors"
+        className="flex items-center gap-1.5 text-xs uppercase tracking-[0.12em] font-sans text-[var(--brand-ink)] hover:text-[var(--brand-accent)] transition-colors"
       >
         {expanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
         {expanded ? "Hide" : "Manage"} Extra Images
       </button>
 
       {expanded && (
-        <div className="mt-3 p-4 bg-[#FAF8F4] border border-[#E0D8CC]">
+        <div className="mt-3 p-4 bg-[var(--brand-surface-2)] border border-[var(--brand-border)]">
           <p className="text-xs text-muted-foreground font-sans mb-3">
             Extra images for <span className="font-medium text-foreground">{productName}</span> — swipeable in the product modal.
           </p>
@@ -103,7 +103,7 @@ export default function ProductImageManager({ productId, productName }: Props) {
                   <img
                     src={img.imageUrl}
                     alt="Product piece"
-                    className="w-full h-full object-cover border border-[#E0D8CC]"
+                    className="w-full h-full object-cover border border-[var(--brand-border)]"
                   />
                   <button
                     type="button"
@@ -118,7 +118,7 @@ export default function ProductImageManager({ productId, productName }: Props) {
               ))}
 
               {/* Upload button */}
-              <label className="w-16 h-16 flex flex-col items-center justify-center border border-dashed border-[#B8963E]/40 bg-white cursor-pointer hover:bg-[#EDE7DF] transition-colors text-[#B8963E]">
+              <label className="w-16 h-16 flex flex-col items-center justify-center border border-dashed border-[var(--brand-accent)]/40 bg-white cursor-pointer hover:bg-[var(--brand-surface)] transition-colors text-[var(--brand-accent)]">
                 {uploading ? (
                   <Loader2 size={16} className="animate-spin" />
                 ) : (

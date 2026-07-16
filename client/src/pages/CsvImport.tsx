@@ -448,7 +448,7 @@ export default function CsvImport() {
   if (loading)
     return (
       <div className="min-h-screen flex items-center justify-center pt-20">
-        <Loader2 className="animate-spin text-[#2D2620]" size={32} />
+        <Loader2 className="animate-spin text-[var(--brand-ink)]" size={32} />
       </div>
     );
 
@@ -461,7 +461,7 @@ export default function CsvImport() {
           </h2>
           <a
             href={getLoginUrl()}
-            className="inline-flex items-center gap-2 bg-[#2D2620] text-white px-8 py-3.5 text-sm uppercase tracking-[0.15em] font-sans hover:bg-[#3A3028] transition-colors"
+            className="inline-flex items-center gap-2 bg-[var(--brand-ink)] text-white px-8 py-3.5 text-sm uppercase tracking-[0.15em] font-sans hover:bg-[var(--brand-ink-hover)] transition-colors"
           >
             Sign In
           </a>
@@ -487,12 +487,12 @@ export default function CsvImport() {
   const someSelected = rows.some(r => r._selected) && !allSelected;
 
   return (
-    <div className="page-enter pt-20 min-h-screen bg-[#EDE7DF]">
+    <div className="page-enter pt-20 min-h-screen bg-[var(--brand-surface)]">
       {/* Header */}
-      <section className="bg-[#2D2620] py-10">
+      <section className="bg-[var(--brand-ink)] py-10">
         <div className="container flex items-center justify-between">
           <div>
-            <p className="text-[#B8963E] text-xs uppercase tracking-[0.3em] mb-1 font-sans">
+            <p className="text-[var(--brand-accent)] text-xs uppercase tracking-[0.3em] mb-1 font-sans">
               Admin
             </p>
             <h1 className="font-serif text-white text-2xl">
@@ -516,7 +516,7 @@ export default function CsvImport() {
         {stage === "input" && (
           <div>
             {/* Template download */}
-            <div className="bg-white border border-[#E0D8CC] p-5 mb-6 flex items-center justify-between flex-wrap gap-4">
+            <div className="bg-white border border-[var(--brand-border)] p-5 mb-6 flex items-center justify-between flex-wrap gap-4">
               <div>
                 <p className="font-serif text-foreground text-sm mb-0.5">
                   Download the template
@@ -538,7 +538,7 @@ export default function CsvImport() {
               <button
                 type="button"
                 onClick={downloadTemplate}
-                className="flex items-center gap-2 border border-[#2D2620] text-[#2D2620] px-5 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:bg-[#2D2620] hover:text-white transition-colors flex-shrink-0"
+                className="flex items-center gap-2 border border-[var(--brand-ink)] text-[var(--brand-ink)] px-5 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:bg-[var(--brand-ink)] hover:text-white transition-colors flex-shrink-0"
               >
                 <Download size={14} />
                 Download Template
@@ -547,9 +547,9 @@ export default function CsvImport() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* CSV File Upload */}
-              <div className="bg-white border border-[#E0D8CC] p-6">
+              <div className="bg-white border border-[var(--brand-border)] p-6">
                 <div className="flex items-center gap-2 mb-4">
-                  <FileSpreadsheet size={18} className="text-[#B8963E]" />
+                  <FileSpreadsheet size={18} className="text-[var(--brand-accent)]" />
                   <h2 className="font-serif text-foreground text-lg">
                     Upload CSV File
                   </h2>
@@ -561,11 +561,11 @@ export default function CsvImport() {
                 <button
                   type="button"
                   onClick={() => fileRef.current?.click()}
-                  className="w-full border-2 border-dashed border-[#2D2620]/20 hover:border-[#B8963E] transition-colors p-8 text-center group"
+                  className="w-full border-2 border-dashed border-[var(--brand-ink)]/20 hover:border-[var(--brand-accent)] transition-colors p-8 text-center group"
                 >
                   <Upload
                     size={28}
-                    className="mx-auto mb-2 text-[#2D2620]/30 group-hover:text-[#B8963E] transition-colors"
+                    className="mx-auto mb-2 text-[var(--brand-ink)]/30 group-hover:text-[var(--brand-accent)] transition-colors"
                   />
                   <p className="font-serif text-foreground text-sm mb-0.5">
                     Click to select a .csv file
@@ -585,9 +585,9 @@ export default function CsvImport() {
               </div>
 
               {/* Google Sheets */}
-              <div className="bg-white border border-[#E0D8CC] p-6">
+              <div className="bg-white border border-[var(--brand-border)] p-6">
                 <div className="flex items-center gap-2 mb-4">
-                  <ExternalLink size={18} className="text-[#B8963E]" />
+                  <ExternalLink size={18} className="text-[var(--brand-accent)]" />
                   <h2 className="font-serif text-foreground text-lg">
                     Google Sheets URL
                   </h2>
@@ -605,13 +605,13 @@ export default function CsvImport() {
                   value={sheetUrl}
                   onChange={e => setSheetUrl(e.target.value)}
                   placeholder="https://docs.google.com/spreadsheets/d/..."
-                  className="w-full border border-[#2D2620]/20 px-4 py-2.5 text-sm font-sans focus:outline-none focus:border-[#B8963E] bg-transparent mb-4"
+                  className="w-full border border-[var(--brand-ink)]/20 px-4 py-2.5 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] bg-transparent mb-4"
                 />
                 <button
                   type="button"
                   onClick={handleFetchSheet}
                   disabled={fetchSheetMutation.isPending || !sheetUrl.trim()}
-                  className="w-full flex items-center justify-center gap-2 bg-[#2D2620] text-white px-6 py-3 text-sm uppercase tracking-[0.15em] font-sans hover:bg-[#3A3028] transition-colors disabled:opacity-60"
+                  className="w-full flex items-center justify-center gap-2 bg-[var(--brand-ink)] text-white px-6 py-3 text-sm uppercase tracking-[0.15em] font-sans hover:bg-[var(--brand-ink-hover)] transition-colors disabled:opacity-60"
                 >
                   {fetchSheetMutation.isPending ? (
                     <Loader2 size={15} className="animate-spin" />
@@ -624,13 +624,13 @@ export default function CsvImport() {
             </div>
 
             {/* Handwritten Inventory Photos */}
-            <div className="mt-6 bg-white border border-[#E0D8CC] p-6">
+            <div className="mt-6 bg-white border border-[var(--brand-border)] p-6">
               <div className="flex items-center gap-2 mb-1">
-                <NotebookPen size={18} className="text-[#B8963E]" />
+                <NotebookPen size={18} className="text-[var(--brand-accent)]" />
                 <h2 className="font-serif text-foreground text-lg">
                   Handwritten Inventory Photos
                 </h2>
-                <span className="ml-2 flex items-center gap-1 text-[10px] uppercase tracking-[0.12em] text-[#B8963E] font-sans bg-[#B8963E]/10 px-2 py-0.5">
+                <span className="ml-2 flex items-center gap-1 text-[10px] uppercase tracking-[0.12em] text-[var(--brand-accent)] font-sans bg-[var(--brand-accent)]/10 px-2 py-0.5">
                   <Sparkles size={9} />
                   AI
                 </span>
@@ -646,7 +646,7 @@ export default function CsvImport() {
                 <div className="flex flex-col items-center justify-center py-12 gap-3">
                   <Sparkles
                     size={30}
-                    className="text-[#B8963E] animate-pulse"
+                    className="text-[var(--brand-accent)] animate-pulse"
                   />
                   <p className="font-serif text-foreground">
                     Reading your inventory…
@@ -668,8 +668,8 @@ export default function CsvImport() {
                           alt={`Uploaded inventory ${i + 1}`}
                           className={`h-24 w-24 object-cover border ${
                             i < handwritingProgress.done
-                              ? "border-[#B8963E]"
-                              : "border-[#E0D8CC]"
+                              ? "border-[var(--brand-accent)]"
+                              : "border-[var(--brand-border)]"
                           }`}
                         />
                       ))}
@@ -681,11 +681,11 @@ export default function CsvImport() {
                   <button
                     type="button"
                     onClick={() => handwritingRef.current?.click()}
-                    className="flex-1 border-2 border-dashed border-[#2D2620]/20 hover:border-[#B8963E] transition-colors p-8 text-center group"
+                    className="flex-1 border-2 border-dashed border-[var(--brand-ink)]/20 hover:border-[var(--brand-accent)] transition-colors p-8 text-center group"
                   >
                     <NotebookPen
                       size={28}
-                      className="mx-auto mb-2 text-[#2D2620]/30 group-hover:text-[#B8963E] transition-colors"
+                      className="mx-auto mb-2 text-[var(--brand-ink)]/30 group-hover:text-[var(--brand-accent)] transition-colors"
                     />
                     <p className="font-serif text-foreground text-sm mb-0.5">
                       Upload photos of your notes
@@ -702,7 +702,7 @@ export default function CsvImport() {
                           key={i}
                           src={src}
                           alt={`Previous upload ${i + 1}`}
-                          className="w-16 h-16 object-cover border border-[#E0D8CC]"
+                          className="w-16 h-16 object-cover border border-[var(--brand-border)]"
                         />
                       ))}
                     </div>
@@ -727,7 +727,7 @@ export default function CsvImport() {
           <div>
             {/* Summary bar */}
             <div className="flex flex-wrap items-center gap-4 mb-6">
-              <div className="flex items-center gap-2 bg-white border border-[#E0D8CC] px-4 py-2.5">
+              <div className="flex items-center gap-2 bg-white border border-[var(--brand-border)] px-4 py-2.5">
                 <CheckCircle2
                   size={16}
                   className="text-green-600 flex-shrink-0"
@@ -737,7 +737,7 @@ export default function CsvImport() {
                 </span>
               </div>
               {invalidRows.length > 0 && (
-                <div className="flex items-center gap-2 bg-white border border-[#E0D8CC] px-4 py-2.5">
+                <div className="flex items-center gap-2 bg-white border border-[var(--brand-border)] px-4 py-2.5">
                   <XCircle size={16} className="text-red-500 flex-shrink-0" />
                   <span className="text-sm font-sans">
                     <strong>{invalidRows.length}</strong> rows with errors (will
@@ -745,7 +745,7 @@ export default function CsvImport() {
                   </span>
                 </div>
               )}
-              <div className="flex items-center gap-2 bg-white border border-[#E0D8CC] px-4 py-2.5">
+              <div className="flex items-center gap-2 bg-white border border-[var(--brand-border)] px-4 py-2.5">
                 <span className="text-sm font-sans">
                   <strong>{selectedForImport.length}</strong> selected for
                   import
@@ -761,7 +761,7 @@ export default function CsvImport() {
                     setHandwritingPreviews([]);
                   }}
                   disabled={importProgress !== null}
-                  className="border border-[#2D2620]/20 text-muted-foreground px-5 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:border-[#2D2620] hover:text-foreground transition-colors disabled:opacity-60"
+                  className="border border-[var(--brand-ink)]/20 text-muted-foreground px-5 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:border-[var(--brand-ink)] hover:text-foreground transition-colors disabled:opacity-60"
                 >
                   ← Back
                 </button>
@@ -771,7 +771,7 @@ export default function CsvImport() {
                   disabled={
                     importProgress !== null || selectedForImport.length === 0
                   }
-                  className="flex items-center gap-2 bg-[#B8963E] text-[#2D2620] px-6 py-2.5 text-xs uppercase tracking-[0.15em] font-sans font-medium hover:bg-[#D4B060] transition-colors disabled:opacity-60"
+                  className="flex items-center gap-2 bg-[var(--brand-accent)] text-[var(--brand-ink)] px-6 py-2.5 text-xs uppercase tracking-[0.15em] font-sans font-medium hover:bg-[var(--brand-accent-light)] transition-colors disabled:opacity-60"
                 >
                   {importProgress ? (
                     <Loader2 size={14} className="animate-spin" />
@@ -791,11 +791,11 @@ export default function CsvImport() {
             </p>
 
             {/* Preview table */}
-            <div className="bg-white border border-[#E0D8CC] overflow-hidden">
+            <div className="bg-white border border-[var(--brand-border)] overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm font-sans">
                   <thead>
-                    <tr className="border-b border-[#E0D8CC] bg-[#EDE7DF]">
+                    <tr className="border-b border-[var(--brand-border)] bg-[var(--brand-surface)]">
                       <th className="text-left px-4 py-3 w-8">
                         <input
                           type="checkbox"
@@ -839,7 +839,7 @@ export default function CsvImport() {
                       return (
                         <tr
                           key={i}
-                          className={`border-b border-[#E0D8CC] last:border-0 ${!row._valid ? "bg-red-50/50" : ""} ${!row._selected ? "opacity-50" : ""}`}
+                          className={`border-b border-[var(--brand-border)] last:border-0 ${!row._valid ? "bg-red-50/50" : ""} ${!row._selected ? "opacity-50" : ""}`}
                         >
                           <td className="px-4 py-3">
                             <input
@@ -869,7 +869,7 @@ export default function CsvImport() {
                                 updateRow(i, { name: e.target.value })
                               }
                               placeholder="Name"
-                              className="w-full bg-transparent border-b border-transparent hover:border-[#E0D8CC] focus:border-[#B8963E] focus:outline-none font-serif text-foreground text-sm py-0.5"
+                              className="w-full bg-transparent border-b border-transparent hover:border-[var(--brand-border)] focus:border-[var(--brand-accent)] focus:outline-none font-serif text-foreground text-sm py-0.5"
                             />
                             <input
                               type="text"
@@ -878,7 +878,7 @@ export default function CsvImport() {
                                 updateRow(i, { description: e.target.value })
                               }
                               placeholder="Description"
-                              className="w-full bg-transparent border-b border-transparent hover:border-[#E0D8CC] focus:border-[#B8963E] focus:outline-none text-muted-foreground text-xs py-0.5 mt-0.5"
+                              className="w-full bg-transparent border-b border-transparent hover:border-[var(--brand-border)] focus:border-[var(--brand-accent)] focus:outline-none text-muted-foreground text-xs py-0.5 mt-0.5"
                             />
                             <input
                               type="text"
@@ -889,7 +889,7 @@ export default function CsvImport() {
                                 })
                               }
                               placeholder="Name (English)"
-                              className="w-full bg-transparent border-b border-transparent hover:border-[#E0D8CC] focus:border-[#B8963E] focus:outline-none text-muted-foreground/80 text-[11px] italic py-0.5 mt-0.5"
+                              className="w-full bg-transparent border-b border-transparent hover:border-[var(--brand-border)] focus:border-[var(--brand-accent)] focus:outline-none text-muted-foreground/80 text-[11px] italic py-0.5 mt-0.5"
                             />
                             <input
                               type="text"
@@ -900,7 +900,7 @@ export default function CsvImport() {
                                 })
                               }
                               placeholder="Description (English)"
-                              className="w-full bg-transparent border-b border-transparent hover:border-[#E0D8CC] focus:border-[#B8963E] focus:outline-none text-muted-foreground/80 text-[11px] italic py-0.5"
+                              className="w-full bg-transparent border-b border-transparent hover:border-[var(--brand-border)] focus:border-[var(--brand-accent)] focus:outline-none text-muted-foreground/80 text-[11px] italic py-0.5"
                             />
                           </td>
                           <td className="px-4 py-3">
@@ -925,7 +925,7 @@ export default function CsvImport() {
                                   category: e.target.value as ProductCategory,
                                 })
                               }
-                              className="text-[10px] uppercase tracking-[0.1em] px-2 py-1 font-sans bg-[#E8E8E8] text-[#555] border-none focus:outline-none focus:ring-1 focus:ring-[#B8963E]"
+                              className="text-[10px] uppercase tracking-[0.1em] px-2 py-1 font-sans bg-[#E8E8E8] text-[#555] border-none focus:outline-none focus:ring-1 focus:ring-[var(--brand-accent)]"
                             >
                               {VALID_CATEGORIES.map(c => (
                                 <option key={c} value={c}>
@@ -934,7 +934,7 @@ export default function CsvImport() {
                               ))}
                             </select>
                           </td>
-                          <td className="px-4 py-3 font-serif text-[#2D2620]">
+                          <td className="px-4 py-3 font-serif text-[var(--brand-ink)]">
                             <div className="flex items-center gap-1">
                               <span className="text-xs text-muted-foreground">
                                 CHF
@@ -950,7 +950,7 @@ export default function CsvImport() {
                                   })
                                 }
                                 placeholder="0.00"
-                                className="w-20 bg-transparent border-b border-transparent hover:border-[#E0D8CC] focus:border-[#B8963E] focus:outline-none font-serif text-sm py-0.5"
+                                className="w-20 bg-transparent border-b border-transparent hover:border-[var(--brand-border)] focus:border-[var(--brand-accent)] focus:outline-none font-serif text-sm py-0.5"
                               />
                             </div>
                           </td>
@@ -969,7 +969,7 @@ export default function CsvImport() {
                                       : quantity,
                                 });
                               }}
-                              className="w-14 bg-transparent border-b border-transparent hover:border-[#E0D8CC] focus:border-[#B8963E] focus:outline-none text-sm py-0.5"
+                              className="w-14 bg-transparent border-b border-transparent hover:border-[var(--brand-border)] focus:border-[var(--brand-accent)] focus:outline-none text-sm py-0.5"
                             />
                           </td>
                           <td className="px-4 py-3 hidden lg:table-cell">
@@ -983,7 +983,7 @@ export default function CsvImport() {
                               }
                               placeholder="https://…"
                               title={row.imageUrl}
-                              className="w-full max-w-[180px] bg-transparent border-b border-transparent hover:border-[#E0D8CC] focus:border-[#B8963E] focus:outline-none text-xs font-mono text-muted-foreground py-0.5"
+                              className="w-full max-w-[180px] bg-transparent border-b border-transparent hover:border-[var(--brand-border)] focus:border-[var(--brand-accent)] focus:outline-none text-xs font-mono text-muted-foreground py-0.5"
                             />
                           </td>
                           <td className="px-4 py-3">
@@ -1018,8 +1018,8 @@ export default function CsvImport() {
         {/* ── Stage: Done ── */}
         {stage === "done" && importResult && (
           <div className="text-center py-16">
-            <div className="w-20 h-20 bg-[#2D2620] rounded-full flex items-center justify-center mx-auto mb-6">
-              <CheckCircle2 size={40} className="text-[#B8963E]" />
+            <div className="w-20 h-20 bg-[var(--brand-ink)] rounded-full flex items-center justify-center mx-auto mb-6">
+              <CheckCircle2 size={40} className="text-[var(--brand-accent)]" />
             </div>
             <h2 className="font-serif text-foreground text-3xl mb-3">
               {importResult.created} product
@@ -1049,14 +1049,14 @@ export default function CsvImport() {
                   setSheetUrl("");
                   setHandwritingPreviews([]);
                 }}
-                className="flex items-center justify-center gap-2 border border-[#2D2620] text-[#2D2620] px-8 py-3 text-sm uppercase tracking-[0.15em] font-sans hover:bg-[#2D2620] hover:text-white transition-colors"
+                className="flex items-center justify-center gap-2 border border-[var(--brand-ink)] text-[var(--brand-ink)] px-8 py-3 text-sm uppercase tracking-[0.15em] font-sans hover:bg-[var(--brand-ink)] hover:text-white transition-colors"
               >
                 <Upload size={14} />
                 Import More
               </button>
               <Link
                 href="/admin"
-                className="flex items-center justify-center gap-2 bg-[#2D2620] text-white px-8 py-3 text-sm uppercase tracking-[0.15em] font-sans hover:bg-[#3A3028] transition-colors"
+                className="flex items-center justify-center gap-2 bg-[var(--brand-ink)] text-white px-8 py-3 text-sm uppercase tracking-[0.15em] font-sans hover:bg-[var(--brand-ink-hover)] transition-colors"
               >
                 Go to Admin Panel
               </Link>

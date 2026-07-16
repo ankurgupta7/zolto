@@ -37,13 +37,13 @@ export default function ProductListItem({
 
   return (
     <div
-      className="flex items-center gap-4 px-6 py-4 border-b border-[#E0D8CC] hover:bg-[#F9F7F3] transition-colors"
+      className="flex items-center gap-4 px-6 py-4 border-b border-[var(--brand-border)] hover:bg-[#F9F7F3] transition-colors"
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
     >
       {/* Product Image */}
       {product.imageUrl && (
-        <div className="flex-shrink-0 w-16 h-16 bg-[#EDE7DF] rounded overflow-hidden">
+        <div className="flex-shrink-0 w-16 h-16 bg-[var(--brand-surface)] rounded overflow-hidden">
           <img
             src={product.imageUrl}
             alt={product.name}
@@ -86,10 +86,10 @@ export default function ProductListItem({
           type="button"
           onClick={onToggleVisibility}
           title={product.visible ? "Hide from shop" : "Show in shop"}
-          className="p-2 hover:bg-[#E0D8CC] rounded transition-colors"
+          className="p-2 hover:bg-[var(--brand-border)] rounded transition-colors"
         >
           {product.visible ? (
-            <Eye size={16} className="text-[#2D2620]" />
+            <Eye size={16} className="text-[var(--brand-ink)]" />
           ) : (
             <EyeOff size={16} className="text-muted-foreground" />
           )}
@@ -98,9 +98,9 @@ export default function ProductListItem({
           type="button"
           onClick={onEdit}
           title="Edit product"
-          className="p-2 hover:bg-[#E0D8CC] rounded transition-colors"
+          className="p-2 hover:bg-[var(--brand-border)] rounded transition-colors"
         >
-          <Pencil size={16} className="text-[#2D2620]" />
+          <Pencil size={16} className="text-[var(--brand-ink)]" />
         </button>
         <button
           type="button"

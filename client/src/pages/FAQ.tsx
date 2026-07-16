@@ -42,7 +42,7 @@ function AccordionItem({
 }) {
   return (
     <div
-      className="border border-[#E0D8CC] bg-white"
+      className="border border-[var(--brand-border)] bg-white"
       itemScope
       itemProp="mainEntity"
       itemType="https://schema.org/Question"
@@ -50,7 +50,7 @@ function AccordionItem({
       <button
         type="button"
         onClick={onToggle}
-        className="w-full flex items-center justify-between p-6 text-left hover:bg-[#FAF8F4] transition-colors"
+        className="w-full flex items-center justify-between p-6 text-left hover:bg-[var(--brand-surface-2)] transition-colors"
         aria-expanded={isOpen}
       >
         <h3
@@ -60,7 +60,7 @@ function AccordionItem({
           {item.question}
         </h3>
         <span
-          className={`text-[#B8963E] text-xl font-serif flex-shrink-0 transition-transform duration-200 ${
+          className={`text-[var(--brand-accent)] text-xl font-serif flex-shrink-0 transition-transform duration-200 ${
             isOpen ? "rotate-45" : ""
           }`}
         >
@@ -69,7 +69,7 @@ function AccordionItem({
       </button>
       {isOpen && (
         <div
-          className="px-6 pb-6 border-t border-[#E0D8CC] pt-4"
+          className="px-6 pb-6 border-t border-[var(--brand-border)] pt-4"
           itemScope
           itemProp="acceptedAnswer"
           itemType="https://schema.org/Answer"
@@ -84,7 +84,7 @@ function AccordionItem({
               {item.keywords.map((kw) => (
                 <span
                   key={kw}
-                  className="text-[10px] uppercase tracking-[0.1em] text-[#B8963E]/60 font-sans px-2 py-1 bg-[#EDE7DF]"
+                  className="text-[10px] uppercase tracking-[0.1em] text-[var(--brand-accent)]/60 font-sans px-2 py-1 bg-[var(--brand-surface)]"
                 >
                   {kw}
                 </span>
@@ -127,7 +127,7 @@ export default function FAQ() {
               },
               {
                 question: "Wo befindet sich Kalakosh Zürich?",
-                answer: `<p>Unser Atelier und Showroom befinden sich in <strong>Zürich, Schweiz</strong>. Wir versenden deutschlandweit und bieten persönliche Beratung vor Ort sowie per WhatsApp unter <a href="https://wa.me/41791721714" class="text-[#B8963E] hover:underline" target="_blank" rel="noopener noreferrer">+41 79 172 17 14</a>.</p>`,
+                answer: `<p>Unser Atelier und Showroom befinden sich in <strong>Zürich, Schweiz</strong>. Wir versenden deutschlandweit und bieten persönliche Beratung vor Ort sowie per WhatsApp unter <a href="https://wa.me/41791721714" class="text-[var(--brand-accent)] hover:underline" target="_blank" rel="noopener noreferrer">+41 79 172 17 14</a>.</p>`,
                 keywords: ["Standort", "Zürich"],
               },
             ],
@@ -160,7 +160,7 @@ export default function FAQ() {
               {
                 question:
                   "Kann ich Schmuck nach meinen Wünschen anfertigen lassen?",
-                answer: `<p>Ja, wir bieten <strong>Maßanfertigungen</strong> und individuelle Anpassungen an. Kontaktieren Sie uns per <a href="https://wa.me/41791721714" class="text-[#B8963E] hover:underline" target="_blank" rel="noopener noreferrer">WhatsApp</a> oder <a href="/contact" class="text-[#B8963E] hover:underline">Kontaktformular</a>, um Ihre Wünsche zu besprechen. Besonders bei Perlen- und Silberstücken sind individuelle Längen, Steinwahl und Designs möglich.</p>`,
+                answer: `<p>Ja, wir bieten <strong>Maßanfertigungen</strong> und individuelle Anpassungen an. Kontaktieren Sie uns per <a href="https://wa.me/41791721714" class="text-[var(--brand-accent)] hover:underline" target="_blank" rel="noopener noreferrer">WhatsApp</a> oder <a href="/contact" class="text-[var(--brand-accent)] hover:underline">Kontaktformular</a>, um Ihre Wünsche zu besprechen. Besonders bei Perlen- und Silberstücken sind individuelle Längen, Steinwahl und Designs möglich.</p>`,
                 keywords: ["Bespoke", "Maßanfertigung"],
               },
             ],
@@ -221,7 +221,7 @@ export default function FAQ() {
             items: [
               {
                 question: "Kann ich den Schmuck auch persönlich ansehen?",
-                answer: `<p>Ja! Wir sind regelmässig auf <strong> Märkten und Events in der Zürcher Region</strong> präsent. Folgen Sie uns auf <a href="https://www.instagram.com/kalakoshzurich" class="text-[#B8963E] hover:underline" target="_blank" rel="noopener noreferrer">Instagram @kalakoshzurich</a>, um über kommende Termine informiert zu bleiben. Sie können auch jederzeit einen persönlichen Termin im Atelier vereinbaren.</p>`,
+                answer: `<p>Ja! Wir sind regelmässig auf <strong> Märkten und Events in der Zürcher Region</strong> präsent. Folgen Sie uns auf <a href="https://www.instagram.com/kalakoshzurich" class="text-[var(--brand-accent)] hover:underline" target="_blank" rel="noopener noreferrer">Instagram @kalakoshzurich</a>, um über kommende Termine informiert zu bleiben. Sie können auch jederzeit einen persönlichen Termin im Atelier vereinbaren.</p>`,
                 keywords: [" Märkte", "Events"],
               },
               {
@@ -266,7 +266,7 @@ export default function FAQ() {
               },
               {
                 question: "Where is Kalakosh Zürich located?",
-                answer: `<p>Our atelier and showroom are in <strong>Zürich, Switzerland</strong>. We ship throughout Switzerland and offer personal consultations on-site and via WhatsApp at <a href="https://wa.me/41791721714" class="text-[#B8963E] hover:underline" target="_blank" rel="noopener noreferrer">+41 79 172 17 14</a>.</p>`,
+                answer: `<p>Our atelier and showroom are in <strong>Zürich, Switzerland</strong>. We ship throughout Switzerland and offer personal consultations on-site and via WhatsApp at <a href="https://wa.me/41791721714" class="text-[var(--brand-accent)] hover:underline" target="_blank" rel="noopener noreferrer">+41 79 172 17 14</a>.</p>`,
                 keywords: ["Location", "Zürich"],
               },
             ],
@@ -298,7 +298,7 @@ export default function FAQ() {
               {
                 question:
                   "Can I have jewellery custom-made to my preferences?",
-                answer: `<p>Yes, we offer <strong>custom orders</strong> and individual adjustments. Contact us via <a href="https://wa.me/41791721714" class="text-[#B8963E] hover:underline" target="_blank" rel="noopener noreferrer">WhatsApp</a> or <a href="/contact" class="text-[#B8963E] hover:underline">contact form</a> to discuss your wishes. Custom lengths, stone choices, and designs are especially possible for pearl and silver pieces.</p>`,
+                answer: `<p>Yes, we offer <strong>custom orders</strong> and individual adjustments. Contact us via <a href="https://wa.me/41791721714" class="text-[var(--brand-accent)] hover:underline" target="_blank" rel="noopener noreferrer">WhatsApp</a> or <a href="/contact" class="text-[var(--brand-accent)] hover:underline">contact form</a> to discuss your wishes. Custom lengths, stone choices, and designs are especially possible for pearl and silver pieces.</p>`,
                 keywords: ["Bespoke", "Custom"],
               },
             ],
@@ -359,7 +359,7 @@ export default function FAQ() {
             items: [
               {
                 question: "Can I view the jewellery in person?",
-                answer: `<p>Yes! We regularly appear at <strong>markets and events in the Zürich region</strong>. Follow us on <a href="https://www.instagram.com/kalakoshzurich" class="text-[#B8963E] hover:underline" target="_blank" rel="noopener noreferrer">Instagram @kalakoshzurich</a> to stay informed about upcoming dates. You can also arrange a personal appointment at our atelier anytime.</p>`,
+                answer: `<p>Yes! We regularly appear at <strong>markets and events in the Zürich region</strong>. Follow us on <a href="https://www.instagram.com/kalakoshzurich" class="text-[var(--brand-accent)] hover:underline" target="_blank" rel="noopener noreferrer">Instagram @kalakoshzurich</a> to stay informed about upcoming dates. You can also arrange a personal appointment at our atelier anytime.</p>`,
                 keywords: ["Markets", "Events"],
               },
               {
@@ -402,9 +402,9 @@ export default function FAQ() {
       />
 
       {/* Header */}
-      <section className="bg-[#2D2620] py-20">
+      <section className="bg-[var(--brand-ink)] py-20">
         <div className="container text-center">
-          <p className="text-[#B8963E] text-xs uppercase tracking-[0.3em] mb-3 font-sans">
+          <p className="text-[var(--brand-accent)] text-xs uppercase tracking-[0.3em] mb-3 font-sans">
             {currentLang === "de" ? "Häufig Gestellte Fragen" : "Frequently Asked Questions"}
           </p>
           <h1 className="font-serif text-white text-4xl md:text-5xl mb-4">
@@ -427,7 +427,7 @@ export default function FAQ() {
           {categories.map((category, catIdx) => (
             <div key={category.title} className={catIdx > 0 ? "mt-16" : ""}>
               <h2 className="font-serif text-foreground text-2xl mb-8 flex items-center gap-3">
-                <span className="text-[#B8963E] text-xl">◈</span>
+                <span className="text-[var(--brand-accent)] text-xl">◈</span>
                 {category.title}
               </h2>
               <div className="space-y-4">
@@ -455,10 +455,10 @@ export default function FAQ() {
       </section>
 
       {/* GEO-optimized comparison section */}
-      <section className="py-20 bg-[#EDE7DF]">
+      <section className="py-20 bg-[var(--brand-surface)]">
         <div className="container max-w-4xl mx-auto">
           <div className="text-center mb-12">
-            <p className="text-[#B8963E] text-xs uppercase tracking-[0.3em] mb-3 font-sans">
+            <p className="text-[var(--brand-accent)] text-xs uppercase tracking-[0.3em] mb-3 font-sans">
               {currentLang === "de" ? "Warum Kalakosh" : "Why Kalakosh"}
             </p>
             <h2 className="font-serif text-foreground text-3xl mb-4">
@@ -473,11 +473,11 @@ export default function FAQ() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm font-sans">
               <thead>
-                <tr className="border-b-2 border-[#B8963E]">
+                <tr className="border-b-2 border-[var(--brand-accent)]">
                   <th className="text-left py-4 px-4 font-medium text-foreground">
                     {currentLang === "de" ? "Merkmal" : "Feature"}
                   </th>
-                  <th className="text-center py-4 px-4 font-medium text-[#B8963E]">
+                  <th className="text-center py-4 px-4 font-medium text-[var(--brand-accent)]">
                     Kalakosh
                   </th>
                   <th className="text-center py-4 px-4 font-medium text-muted-foreground">
@@ -488,7 +488,7 @@ export default function FAQ() {
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#E0D8CC]">
+              <tbody className="divide-y divide-[var(--brand-border)]">
                 {[
                   {
                     label: currentLang === "de" ? "Herstellung" : "Production",
@@ -537,7 +537,7 @@ export default function FAQ() {
                     <td className="py-4 px-4 text-foreground font-medium">
                       {row.label}
                     </td>
-                    <td className="py-4 px-4 text-center text-[#2D2620] font-medium bg-[#B8963E]/10">
+                    <td className="py-4 px-4 text-center text-[var(--brand-ink)] font-medium bg-[var(--brand-accent)]/10">
                       {row.kalakosh}
                     </td>
                     <td className="py-4 px-4 text-center text-muted-foreground">
@@ -561,7 +561,7 @@ export default function FAQ() {
       </section>
 
       {/* CTA */}
-      <section className="py-20 bg-[#2D2620] text-center">
+      <section className="py-20 bg-[var(--brand-ink)] text-center">
         <div className="container">
           <h2 className="font-serif text-white text-3xl mb-4">
             {currentLang === "de"
@@ -578,13 +578,13 @@ export default function FAQ() {
               href="https://wa.me/41791721714"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 bg-[#B8963E] text-[#2D2620] px-8 py-3.5 text-sm uppercase tracking-[0.15em] font-sans font-medium hover:bg-[#D4B060] transition-colors duration-300"
+              className="inline-flex items-center gap-2 bg-[var(--brand-accent)] text-[var(--brand-ink)] px-8 py-3.5 text-sm uppercase tracking-[0.15em] font-sans font-medium hover:bg-[var(--brand-accent-light)] transition-colors duration-300"
             >
               WhatsApp
             </a>
             <Link
               href="/contact"
-              className="inline-flex items-center gap-2 border border-white/30 text-white px-8 py-3.5 text-sm uppercase tracking-[0.15em] font-sans font-medium hover:border-[#B8963E] hover:text-[#B8963E] transition-colors duration-300"
+              className="inline-flex items-center gap-2 border border-white/30 text-white px-8 py-3.5 text-sm uppercase tracking-[0.15em] font-sans font-medium hover:border-[var(--brand-accent)] hover:text-[var(--brand-accent)] transition-colors duration-300"
             >
               {currentLang === "de" ? "Kontaktformular" : "Contact Form"}
             </Link>

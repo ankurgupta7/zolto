@@ -84,7 +84,7 @@ export default function DuplicateCleanup() {
   if (loading)
     return (
       <div className="min-h-screen flex items-center justify-center pt-20">
-        <Loader2 className="animate-spin text-[#2D2620]" size={32} />
+        <Loader2 className="animate-spin text-[var(--brand-ink)]" size={32} />
       </div>
     );
 
@@ -97,7 +97,7 @@ export default function DuplicateCleanup() {
           </h2>
           <a
             href={getLoginUrl()}
-            className="inline-flex items-center gap-2 bg-[#2D2620] text-white px-8 py-3.5 text-sm uppercase tracking-[0.15em] font-sans hover:bg-[#3A3028] transition-colors"
+            className="inline-flex items-center gap-2 bg-[var(--brand-ink)] text-white px-8 py-3.5 text-sm uppercase tracking-[0.15em] font-sans hover:bg-[var(--brand-ink-hover)] transition-colors"
           >
             Sign In
           </a>
@@ -117,12 +117,12 @@ export default function DuplicateCleanup() {
     );
 
   return (
-    <div className="page-enter pt-20 min-h-screen bg-[#EDE7DF]">
+    <div className="page-enter pt-20 min-h-screen bg-[var(--brand-surface)]">
       {/* Header */}
-      <section className="bg-[#2D2620] py-10">
+      <section className="bg-[var(--brand-ink)] py-10">
         <div className="container flex items-center justify-between flex-wrap gap-4">
           <div>
-            <p className="text-[#B8963E] text-xs uppercase tracking-[0.3em] mb-1 font-sans">
+            <p className="text-[var(--brand-accent)] text-xs uppercase tracking-[0.3em] mb-1 font-sans">
               Admin
             </p>
             <h1 className="font-serif text-white text-2xl">
@@ -145,10 +145,10 @@ export default function DuplicateCleanup() {
       <div className="container py-8 max-w-5xl">
         {isLoading ? (
           <div className="flex items-center justify-center py-20">
-            <Loader2 className="animate-spin text-[#2D2620]" size={28} />
+            <Loader2 className="animate-spin text-[var(--brand-ink)]" size={28} />
           </div>
         ) : !groups || groups.length === 0 ? (
-          <div className="bg-white border border-[#E0D8CC] p-10 text-center">
+          <div className="bg-white border border-[var(--brand-border)] p-10 text-center">
             <CheckCircle2 size={32} className="mx-auto mb-3 text-green-600" />
             <p className="font-serif text-foreground text-lg">
               No duplicate product names found
@@ -157,8 +157,8 @@ export default function DuplicateCleanup() {
         ) : (
           <div>
             <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-              <div className="flex items-center gap-2 bg-white border border-[#E0D8CC] px-4 py-2.5">
-                <Copy size={16} className="text-[#B8963E] flex-shrink-0" />
+              <div className="flex items-center gap-2 bg-white border border-[var(--brand-border)] px-4 py-2.5">
+                <Copy size={16} className="text-[var(--brand-accent)] flex-shrink-0" />
                 <span className="text-sm font-sans">
                   <strong>{groups.length}</strong> duplicate group
                   {groups.length !== 1 ? "s" : ""} found
@@ -168,7 +168,7 @@ export default function DuplicateCleanup() {
                 <button
                   type="button"
                   onClick={() => refetch()}
-                  className="flex items-center gap-2 border border-[#2D2620]/20 text-muted-foreground px-4 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:border-[#2D2620] hover:text-foreground transition-colors"
+                  className="flex items-center gap-2 border border-[var(--brand-ink)]/20 text-muted-foreground px-4 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:border-[var(--brand-ink)] hover:text-foreground transition-colors"
                 >
                   <RefreshCw size={14} />
                   Refresh
@@ -193,9 +193,9 @@ export default function DuplicateCleanup() {
               {groups.map(group => (
                 <div
                   key={group.key}
-                  className="bg-white border border-[#E0D8CC] overflow-hidden"
+                  className="bg-white border border-[var(--brand-border)] overflow-hidden"
                 >
-                  <div className="px-5 py-3 bg-[#EDE7DF] border-b border-[#E0D8CC] flex items-center justify-between">
+                  <div className="px-5 py-3 bg-[var(--brand-surface)] border-b border-[var(--brand-border)] flex items-center justify-between">
                     <p className="font-serif text-foreground text-sm">
                       {group.products[0].name}{" "}
                       <span className="text-muted-foreground text-xs font-sans">
@@ -215,7 +215,7 @@ export default function DuplicateCleanup() {
                       {group.products.map((p: DuplicateProduct) => (
                         <tr
                           key={p.id}
-                          className="border-b border-[#E0D8CC] last:border-0"
+                          className="border-b border-[var(--brand-border)] last:border-0"
                         >
                           <td className="px-5 py-3 w-8">
                             <input

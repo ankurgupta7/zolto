@@ -1,12 +1,15 @@
+import { useTenant } from "@/contexts/TenantContext";
+import { whatsappHref } from "@/lib/branding";
+
 /**
- * Floating WhatsApp contact button — appears on every page (bottom-right corner).
- * Links to +41 791721714 with a generic greeting that mentions Instagram.
+ * Floating WhatsApp contact button — appears on every storefront page
+ * (bottom-right corner). Number and greeting come from the current tenant's
+ * branding; hidden when the tenant has no WhatsApp number configured.
  */
 export default function WhatsAppButton() {
-  const message = encodeURIComponent(
-    "Hi, I found Kalakosh Zurich on Instagram (@kalakoshzurich) and I'd love to know more about your jewelry!"
-  );
-  const href = `https://wa.me/41791721714?text=${message}`;
+  const { branding } = useTenant();
+  const href = whatsappHref(branding);
+  if (!href) return null;
 
   return (
     <a

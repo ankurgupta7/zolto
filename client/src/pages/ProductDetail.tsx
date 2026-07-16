@@ -63,7 +63,7 @@ export default function ProductDetail() {
   if (isLoading) {
     return (
       <div className="page-enter pt-20">
-        <section className="bg-[#2D2620] py-20">
+        <section className="bg-[var(--brand-ink)] py-20">
           <div className="container">
             <div className="h-4 bg-white/10 rounded w-48 mb-4 animate-pulse" />
             <div className="h-9 bg-white/10 rounded w-72 animate-pulse" />
@@ -92,22 +92,22 @@ export default function ProductDetail() {
   if (error || !product || Number.isNaN(productId)) {
     return (
       <div className="page-enter pt-20">
-        <section className="bg-[#2D2620] py-20">
+        <section className="bg-[var(--brand-ink)] py-20">
           <div className="container text-center">
-            <p className="text-[#B8963E] text-xs uppercase tracking-[0.3em] mb-3 font-sans">Not Found</p>
+            <p className="text-[var(--brand-accent)] text-xs uppercase tracking-[0.3em] mb-3 font-sans">Not Found</p>
             <h1 className="font-serif text-white">This piece is unavailable</h1>
             <div className="divider-gold w-16 mx-auto mt-6" />
           </div>
         </section>
         <section className="py-16 bg-background">
           <div className="container text-center">
-            <div className="text-6xl text-[#B8963E]/20 font-serif mb-6">◇</div>
+            <div className="text-6xl text-[var(--brand-accent)]/20 font-serif mb-6">◇</div>
             <p className="text-muted-foreground font-sans mb-8">
               This piece may have been removed or is no longer available.
             </p>
             <Link
               href="/shop"
-              className="inline-flex items-center gap-2 bg-[#2D2620] text-[#B8963E] px-8 py-3.5 text-sm uppercase tracking-[0.15em] font-sans hover:bg-[#3A3028] transition-colors"
+              className="inline-flex items-center gap-2 bg-[var(--brand-ink)] text-[var(--brand-accent)] px-8 py-3.5 text-sm uppercase tracking-[0.15em] font-sans hover:bg-[var(--brand-ink-hover)] transition-colors"
             >
               <ArrowLeft size={14} />
               Back to Shop
@@ -194,19 +194,19 @@ export default function ProductDetail() {
       )}
 
       {/* Header */}
-      <section className="bg-[#2D2620] py-16">
+      <section className="bg-[var(--brand-ink)] py-16">
         <div className="container">
           {/* Breadcrumb */}
           <nav className="flex items-center gap-2 text-xs font-sans mb-5" aria-label="Breadcrumb">
-            <Link href="/" className="text-[#B8963E]/60 hover:text-[#B8963E] transition-colors">
+            <Link href="/" className="text-[var(--brand-accent)]/60 hover:text-[var(--brand-accent)] transition-colors">
               Home
             </Link>
-            <span className="text-[#B8963E]/40">/</span>
-            <Link href="/shop" className="text-[#B8963E]/60 hover:text-[#B8963E] transition-colors">
+            <span className="text-[var(--brand-accent)]/40">/</span>
+            <Link href="/shop" className="text-[var(--brand-accent)]/60 hover:text-[var(--brand-accent)] transition-colors">
               Shop
             </Link>
-            <span className="text-[#B8963E]/40">/</span>
-            <span className="text-[#B8963E] truncate max-w-[200px]">{displayName}</span>
+            <span className="text-[var(--brand-accent)]/40">/</span>
+            <span className="text-[var(--brand-accent)] truncate max-w-[200px]">{displayName}</span>
           </nav>
 
           <span
@@ -232,13 +232,13 @@ export default function ProductDetail() {
             {/* Image gallery */}
             <div>
               {total === 0 ? (
-                <div className="aspect-square bg-[#F0EBE3] flex items-center justify-center">
-                  <span className="text-8xl text-[#B8963E]/20 font-serif">◇</span>
+                <div className="aspect-square bg-[var(--brand-surface-3)] flex items-center justify-center">
+                  <span className="text-8xl text-[var(--brand-accent)]/20 font-serif">◇</span>
                 </div>
               ) : total === 1 ? (
                 <button
                   type="button"
-                  className="relative aspect-square bg-[#F0EBE3] overflow-hidden group cursor-zoom-in block w-full p-0 border-0 text-left"
+                  className="relative aspect-square bg-[var(--brand-surface-3)] overflow-hidden group cursor-zoom-in block w-full p-0 border-0 text-left"
                   onClick={() => setLightboxIdx(0)}
                 >
                   <img
@@ -253,14 +253,14 @@ export default function ProductDetail() {
                   </div>
                   {product.sold && (
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                      <div className="bg-[#2D2620]/80 text-[#B8963E] text-sm uppercase tracking-[0.3em] font-sans px-6 py-3 backdrop-blur-sm border border-[#B8963E]/40">
+                      <div className="bg-[var(--brand-ink)]/80 text-[var(--brand-accent)] text-sm uppercase tracking-[0.3em] font-sans px-6 py-3 backdrop-blur-sm border border-[var(--brand-accent)]/40">
                         {t("product.sold")}
                       </div>
                     </div>
                   )}
                 </button>
               ) : (
-                <div className="relative aspect-square bg-[#F0EBE3] overflow-hidden">
+                <div className="relative aspect-square bg-[var(--brand-surface-3)] overflow-hidden">
                   <Carousel
                     setApi={setCarouselApi}
                     opts={{ loop: true, align: "start" }}
@@ -294,7 +294,7 @@ export default function ProductDetail() {
 
                   {product.sold && (
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-                      <div className="bg-[#2D2620]/80 text-[#B8963E] text-sm uppercase tracking-[0.3em] font-sans px-6 py-3 backdrop-blur-sm border border-[#B8963E]/40">
+                      <div className="bg-[var(--brand-ink)]/80 text-[var(--brand-accent)] text-sm uppercase tracking-[0.3em] font-sans px-6 py-3 backdrop-blur-sm border border-[var(--brand-accent)]/40">
                         {t("product.sold")}
                       </div>
                     </div>
@@ -308,7 +308,7 @@ export default function ProductDetail() {
                         key={i}
                         onClick={() => carouselApi?.scrollTo(i)}
                         className={`h-1.5 rounded-full transition-all duration-200 ${
-                          i === activeIdx ? "bg-[#B8963E] w-5" : "bg-white/50 hover:bg-white/80 w-1.5"
+                          i === activeIdx ? "bg-[var(--brand-accent)] w-5" : "bg-white/50 hover:bg-white/80 w-1.5"
                         }`}
                         aria-label={`Go to image ${i + 1}`}
                       />
@@ -356,7 +356,7 @@ export default function ProductDetail() {
                 {displayDescription}
               </p>
 
-              <p className={`font-serif text-3xl mb-8 ${product.sold ? "text-muted-foreground line-through" : "text-[#2D2620]"}`}>
+              <p className={`font-serif text-3xl mb-8 ${product.sold ? "text-muted-foreground line-through" : "text-[var(--brand-ink)]"}`}>
                 CHF {Number(product.price).toFixed(2)}
               </p>
 
@@ -381,7 +381,7 @@ export default function ProductDetail() {
                     <button
                       type="button"
                       onClick={openCart}
-                      className="inline-flex items-center justify-center gap-2 bg-[#2D2620] text-[#B8963E] px-8 py-3.5 text-sm uppercase tracking-[0.15em] font-sans hover:bg-[#3A3028] transition-colors duration-200"
+                      className="inline-flex items-center justify-center gap-2 bg-[var(--brand-ink)] text-[var(--brand-accent)] px-8 py-3.5 text-sm uppercase tracking-[0.15em] font-sans hover:bg-[var(--brand-ink-hover)] transition-colors duration-200"
                     >
                       <Check size={16} />
                       {t("product.inBag")}
@@ -390,7 +390,7 @@ export default function ProductDetail() {
                     <button
                       type="button"
                       onClick={handleAddToCart}
-                      className="inline-flex items-center justify-center gap-2 bg-[#2D2620] text-[#B8963E] px-8 py-3.5 text-sm uppercase tracking-[0.15em] font-sans hover:bg-[#3A3028] transition-colors duration-200"
+                      className="inline-flex items-center justify-center gap-2 bg-[var(--brand-ink)] text-[var(--brand-accent)] px-8 py-3.5 text-sm uppercase tracking-[0.15em] font-sans hover:bg-[var(--brand-ink-hover)] transition-colors duration-200"
                     >
                       <ShoppingBag size={16} />
                       {t("product.addToBag")}
@@ -413,10 +413,10 @@ export default function ProductDetail() {
               </p>
 
               {/* Back to shop */}
-              <div className="mt-10 pt-6 border-t border-[#E0D8CC]">
+              <div className="mt-10 pt-6 border-t border-[var(--brand-border)]">
                 <Link
                   href="/shop"
-                  className="inline-flex items-center gap-2 text-sm text-[#2D2620] font-sans hover:text-[#B8963E] transition-colors"
+                  className="inline-flex items-center gap-2 text-sm text-[var(--brand-ink)] font-sans hover:text-[var(--brand-accent)] transition-colors"
                 >
                   <ArrowLeft size={14} />
                   Back to Shop

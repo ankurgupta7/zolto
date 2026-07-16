@@ -32,7 +32,7 @@ export default function ProductDiscoveryControls({
   totalProducts,
 }: ProductDiscoveryControlsProps) {
   return (
-    <div className="bg-white border border-[#E0D8CC] p-6 mb-6">
+    <div className="bg-white border border-[var(--brand-border)] p-6 mb-6">
       <div className="flex flex-col gap-4">
         {/* Top row: Sort and View Mode */}
         <div className="flex items-center justify-between flex-wrap gap-4">
@@ -71,13 +71,13 @@ export default function ProductDiscoveryControls({
                 onValueChange={(v) => {
                   if (v) onViewModeChange(v as ViewMode);
                 }}
-                className="border border-[#E0D8CC]"
+                className="border border-[var(--brand-border)]"
               >
                 <ToggleGroupItem
                   value="grid"
                   aria-label="Grid view"
                   title="Grid view with thumbnails"
-                  className="data-[state=on]:bg-[#2D2620] data-[state=on]:text-white"
+                  className="data-[state=on]:bg-[var(--brand-ink)] data-[state=on]:text-white"
                 >
                   <LayoutGrid size={16} />
                 </ToggleGroupItem>
@@ -85,7 +85,7 @@ export default function ProductDiscoveryControls({
                   value="list"
                   aria-label="List view"
                   title="List view with details"
-                  className="data-[state=on]:bg-[#2D2620] data-[state=on]:text-white"
+                  className="data-[state=on]:bg-[var(--brand-ink)] data-[state=on]:text-white"
                 >
                   <List size={16} />
                 </ToggleGroupItem>
@@ -101,7 +101,7 @@ export default function ProductDiscoveryControls({
 
         {/* Category collapse/expand all buttons (shown when sorting by category) */}
         {sortBy === "category" && (
-          <div className="flex items-center gap-2 pt-2 border-t border-[#E0D8CC]">
+          <div className="flex items-center gap-2 pt-2 border-t border-[var(--brand-border)]">
             <span className="text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans">
               Categories:
             </span>
@@ -111,7 +111,7 @@ export default function ProductDiscoveryControls({
                 // This will be handled by parent component
                 onToggleCategory("__expand_all__");
               }}
-              className="flex items-center gap-1 text-xs uppercase tracking-[0.15em] text-[#2D2620] font-sans hover:text-[#B8963E] transition-colors"
+              className="flex items-center gap-1 text-xs uppercase tracking-[0.15em] text-[var(--brand-ink)] font-sans hover:text-[var(--brand-accent)] transition-colors"
             >
               <ChevronDown size={14} />
               Expand All
@@ -122,7 +122,7 @@ export default function ProductDiscoveryControls({
                 // This will be handled by parent component
                 onToggleCategory("__collapse_all__");
               }}
-              className="flex items-center gap-1 text-xs uppercase tracking-[0.15em] text-[#2D2620] font-sans hover:text-[#B8963E] transition-colors"
+              className="flex items-center gap-1 text-xs uppercase tracking-[0.15em] text-[var(--brand-ink)] font-sans hover:text-[var(--brand-accent)] transition-colors"
             >
               <ChevronUp size={14} />
               Collapse All

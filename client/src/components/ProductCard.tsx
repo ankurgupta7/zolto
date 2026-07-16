@@ -151,7 +151,7 @@ export default function ProductCard({ product, onMutated }: Props) {
               onClick={handleHide}
               disabled={toggleMutation.isPending}
               title={product.visible ? "Hide from shop" : "Show in shop"}
-              className="flex items-center justify-center w-8 h-8 bg-[#2D2620]/90 text-white hover:bg-[#3A3028] transition-colors rounded-sm backdrop-blur-sm disabled:opacity-50"
+              className="flex items-center justify-center w-8 h-8 bg-[var(--brand-ink)]/90 text-white hover:bg-[var(--brand-ink-hover)] transition-colors rounded-sm backdrop-blur-sm disabled:opacity-50"
             >
               {product.visible ? <EyeOff size={13} /> : <Eye size={13} />}
             </button>
@@ -168,7 +168,7 @@ export default function ProductCard({ product, onMutated }: Props) {
         )}
 
         {/* ── Image carousel ─────────────────────────────────────────────────── */}
-        <div className="img-overlay aspect-[3/4] bg-[#F0EBE3] overflow-hidden relative">
+        <div className="img-overlay aspect-[3/4] bg-[var(--brand-surface-3)] overflow-hidden relative">
           {product.imageUrl ? (
             <>
               {/* All images stacked; active shown via opacity crossfade */}
@@ -231,7 +231,7 @@ export default function ProductCard({ product, onMutated }: Props) {
                         width: i === activeImg ? "14px" : "5px",
                         height: "4px",
                         borderRadius: "2px",
-                        background: i === activeImg ? "#B8963E" : "rgba(255,255,255,0.6)",
+                        background: i === activeImg ? "var(--brand-accent)" : "rgba(255,255,255,0.6)",
                         transition: "width 300ms cubic-bezier(0.22,1,0.36,1), background 200ms ease",
                         border: "none",
                         padding: 0,
@@ -245,7 +245,7 @@ export default function ProductCard({ product, onMutated }: Props) {
               {/* SOLD badge */}
               {product.sold && (
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-                  <div className="bg-[#2D2620]/80 text-[#B8963E] text-xs uppercase tracking-[0.3em] font-sans px-4 py-2 backdrop-blur-sm border border-[#B8963E]/40">
+                  <div className="bg-[var(--brand-ink)]/80 text-[var(--brand-accent)] text-xs uppercase tracking-[0.3em] font-sans px-4 py-2 backdrop-blur-sm border border-[var(--brand-accent)]/40">
                     {t("product.sold")}
                   </div>
                 </div>
@@ -253,7 +253,7 @@ export default function ProductCard({ product, onMutated }: Props) {
             </>
           ) : (
             <div className="w-full h-full flex items-center justify-center">
-              <span className="text-5xl text-[#B8963E]/30 font-serif">◇</span>
+              <span className="text-5xl text-[var(--brand-accent)]/30 font-serif">◇</span>
             </div>
           )}
         </div>
@@ -261,7 +261,7 @@ export default function ProductCard({ product, onMutated }: Props) {
         {/* ── Product info ───────────────────────────────────────────────────── */}
         <div className="p-4">
           <div className="flex items-start justify-between gap-2 mb-1">
-            <h3 className="font-serif text-foreground text-lg leading-tight group-hover:text-[#2D2620] transition-colors">
+            <h3 className="font-serif text-foreground text-lg leading-tight group-hover:text-[var(--brand-ink)] transition-colors">
               {displayName}
             </h3>
           </div>
@@ -276,7 +276,7 @@ export default function ProductCard({ product, onMutated }: Props) {
             {displayDescription}
           </p>
           <div className="flex items-center gap-3">
-            <p className={`font-serif text-xl ${product.sold ? "text-muted-foreground line-through" : "text-[#2D2620]"}`}>
+            <p className={`font-serif text-xl ${product.sold ? "text-muted-foreground line-through" : "text-[var(--brand-ink)]"}`}>
               CHF {Number(product.price).toFixed(2)}
             </p>
             {product.sold && (
