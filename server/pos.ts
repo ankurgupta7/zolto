@@ -44,20 +44,9 @@ async function requirePosKey(req: Request, res: Response, next: NextFunction): P
     where: eq(tenants.posApiKey, apiKey),
   });
 
+  // No fallback. Zolto is a separate product from Kalakosh.
+  // Each tenant must have their own valid POS API key.
   if (!tenant) {
-    // Fallback: check legacy env key for migration period
-    const legacyKey = process.env.POS_API_KEY;
-    if (legacyKey && apiKey === legacyKey) {
-      // Legacy mode: find Kalakosh tenant
-      const kalakosh = await db.query.tenants.findFirst({
-        where: eq(tenants.slug, "kalakosh"),
-      });
-      if (kalakosh) {
-        req.posContext = { tenantId: kalakosh.id, tenantSlug: kalakosh.slug };
-        next();
-        return;
-      }
-    }
     res.status(401).json({ error: "Invalid POS API key" });
     return;
   }
@@ -334,7 +323,7 @@ interface ReceiptOrder {
   items: ReceiptItem[];
 }
 
-function generateReceiptHtml(order: ReceiptOrder, tenantName: string = "Zolto", tenantDomain: string = ""): string {
+function generateReceiptHtml(order: ReceiptOrder, tenantName: string = "Zolto Store", tenantDomain: string = ""): string {
   const orderRef = String(order.id).padStart(5, "0");
   const date = new Date(order.createdAt).toLocaleDateString("en-GB", {
     day: "numeric", month: "long", year: "numeric",

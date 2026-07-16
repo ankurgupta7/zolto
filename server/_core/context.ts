@@ -14,9 +14,10 @@ export type TrpcContext = {
 
 // Resolve tenant from request:
 // 1. X-Tenant-Slug header (for API/POS clients)
-// 2. Host header subdomain (tenant.yourdomain.com)
-// 3. Path cookie (for web)
-// 4. Default to Kalakosh (slug="kalakosh") for backward compatibility during migration
+// 2. Host header subdomain (tenant.zolto.ch)
+// 3. No fallback — if no tenant resolved, context.tenant is null
+//    This is intentional: Zolto is a fresh product, not Kalakosh.
+//    Kalakosh remains separate on kalakosh.ch.
 async function resolveTenant(req: CreateExpressContextOptions["req"]): Promise<Tenant | null> {
   try {
     // Check header first (POS apps, API clients)
@@ -28,7 +29,7 @@ async function resolveTenant(req: CreateExpressContextOptions["req"]): Promise<T
       if (tenant) return tenant;
     }
 
-    // Check subdomain (kalakosh.zolto.ch)
+    // Check subdomain (tenant.zolto.ch)
     const host = req.headers.host || "";
     const subdomain = host.split(".")[0];
     if (subdomain && subdomain !== "www" && subdomain !== "zolto") {
@@ -38,12 +39,8 @@ async function resolveTenant(req: CreateExpressContextOptions["req"]): Promise<T
       if (tenant) return tenant;
     }
 
-    // During migration: default to Kalakosh if no tenant resolved
-    // TODO: Remove this fallback once all clients send tenant context
-    const defaultTenant = await db.query.tenants.findFirst({
-      where: eq(tenants.slug, "kalakosh"),
-    });
-    return defaultTenant || null;
+    // No fallback. Zolto is a separate product.
+    return null;
   } catch (_error) {
     return null;
   }

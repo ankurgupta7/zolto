@@ -1,6 +1,16 @@
-# Kalakosh Zurich — Jewellery Store
+# Zolto — Multi-Tenant POS + E-commerce Platform for Artisan Sellers
 
-Online jewellery boutique for Kalakosh Zurich. React 19 + Tailwind 4 + Express 4 + tRPC 11 stack with Google OAuth for admin access, Stripe checkout (cards + TWINT), a Discord bot that auto-creates products from messages, and a POS terminal API for market-stall Tap to Pay.
+Zolto is a multi-tenant platform that powers online stores + in-person POS for artisan sellers (jewelry, crafts, boutiques). Built from the ground up based on real-world feedback from running a jewelry store in Zurich.
+
+Each tenant gets:
+- **Online store** — Product catalog, cart, Stripe Checkout (cards + TWINT)
+- **POS system** — Android/iOS Tap to Pay, cash, TWINT QR
+- **AI tools** — Bulk product creation from photos, Discord bot integration
+- **Admin dashboard** — Inventory, analytics, staff management
+
+**Stack:** React 19 + Tailwind 4 + Express 4 + tRPC 11 + Drizzle ORM + MySQL
+
+> **Note:** Zolto is a fresh product built from scratch, inspired by real-world experience running a jewelry store in Zurich. Kalakosh (kalakosh.ch) remains a separate, independent business with its own repositories. Learnings from operating Kalakosh inform Zolto's design, but the codebases are entirely separate. Kalakosh has no special fallback or hardcoded references in Zolto — if they choose to migrate later, they'd be onboarded as a regular tenant like anyone else.
 
 ---
 
