@@ -14,6 +14,7 @@ import {
   getProductById,
   getOrderBySessionId,
   getBulkUploadLogs,
+  getTenantByPosApiKey,
   createProduct,
   deleteProduct,
   addInstagramPost,
@@ -30,6 +31,8 @@ describe("db helpers when the database is unavailable", () => {
   it("single-row read helpers return undefined", async () => {
     await expect(getProductById(1)).resolves.toBeUndefined();
     await expect(getOrderBySessionId("cs_missing")).resolves.toBeUndefined();
+    // POS auth must fail closed when the DB is down (→ undefined → 401, not a crash).
+    await expect(getTenantByPosApiKey("any-key")).resolves.toBeUndefined();
   });
 
   it("write helpers throw", async () => {

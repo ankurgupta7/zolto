@@ -652,3 +652,19 @@ export async function getTenantById(
     return result.length > 0 ? result[0] : undefined;
   }, undefined);
 }
+
+// Resolve the tenant that owns a POS API key. POS clients authenticate purely by
+// this key (see server/pos.ts requirePosKey); returns undefined for an unknown
+// key or when the database is unavailable.
+export async function getTenantByPosApiKey(
+  apiKey: string
+): Promise<Tenant | undefined> {
+  return withDb(async db => {
+    const result = await db
+      .select()
+      .from(tenants)
+      .where(eq(tenants.posApiKey, apiKey))
+      .limit(1);
+    return result.length > 0 ? result[0] : undefined;
+  }, undefined);
+}

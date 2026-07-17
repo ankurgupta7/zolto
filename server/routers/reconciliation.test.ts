@@ -1,4 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
+import { NOT_ADMIN_ERR_MSG } from "@shared/const";
 
 const runStripeReconciliation = vi.fn();
 
@@ -54,7 +55,7 @@ describe("reconciliation.run", () => {
 
   it("rejects non-admin users", async () => {
     const caller = reconciliationRouter.createCaller(makeCtx("user"));
-    await expect(caller.run({})).rejects.toThrow(/Admin access required/);
+    await expect(caller.run({})).rejects.toThrow(NOT_ADMIN_ERR_MSG);
     expect(runStripeReconciliation).not.toHaveBeenCalled();
   });
 

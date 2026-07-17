@@ -4,11 +4,18 @@ import request from "supertest";
 
 // The categories endpoint doesn't touch the DB or Stripe, but registerPosRoutes
 // imports both, so mock them to keep this a pure unit test of the route.
+// POS auth is now tenant-based: requirePosKey resolves the tenant that owns the
+// X-POS-Key via getTenantByPosApiKey. Mock it key-aware so "test-pos-key" maps to
+// a tenant and anything else is rejected — this drives auth for every test below.
+const TEST_TENANT = { id: 1, slug: "test-store", posApiKey: "test-pos-key" };
 vi.mock("./db", () => ({
   getDb: vi.fn().mockResolvedValue(null),
   getAllProducts: vi.fn().mockResolvedValue([]),
   updateProduct: vi.fn(),
   markProductsSold: vi.fn(),
+  getTenantByPosApiKey: vi.fn(async (key: string) =>
+    key === "test-pos-key" ? TEST_TENANT : undefined
+  ),
 }));
 
 vi.mock("./stripe", () => ({

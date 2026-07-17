@@ -2,8 +2,14 @@ import type { Express, Request, Response, NextFunction } from "express";
 import express from "express";
 import type Stripe from "stripe";
 import { and, desc, eq, gt, inArray } from "drizzle-orm";
-import { getDb, getAllProducts, updateProduct, markProductsSold } from "./db";
-import { posOrders, posOrderItems, products, tenants } from "../drizzle/schema";
+import {
+  getDb,
+  getAllProducts,
+  updateProduct,
+  markProductsSold,
+  getTenantByPosApiKey,
+} from "./db";
+import { posOrders, posOrderItems, products } from "../drizzle/schema";
 import { getStripe, isStripeConfigured } from "./stripe";
 import { sendOrderReceipt, escapeHtml } from "./_core/email";
 import { storagePut } from "./storage";
@@ -33,19 +39,10 @@ async function requirePosKey(req: Request, res: Response, next: NextFunction): P
     return;
   }
 
-  const db = await getDb();
-  if (!db) {
-    res.status(503).json({ error: "Database unavailable" });
-    return;
-  }
-
-  // Look up tenant by POS API key
-  const tenant = await db.query.tenants.findFirst({
-    where: eq(tenants.posApiKey, apiKey),
-  });
-
-  // No fallback. Zolto is a separate product from Kalakosh.
-  // Each tenant must have their own valid POS API key.
+  // Look up tenant by POS API key. No env fallback — each tenant has its own key.
+  // A missing/unknown key (or an unavailable DB) is an auth failure, not a 503,
+  // so a stale terminal gets a clear "invalid key" rather than a retryable error.
+  const tenant = await getTenantByPosApiKey(apiKey);
   if (!tenant) {
     res.status(401).json({ error: "Invalid POS API key" });
     return;
@@ -474,11 +471,209 @@ export function registerPosRoutes(app: Express): void {
     });
   });
 
-  // All other routes follow the same pattern: add tenantId from req.posContext
-  // and scope queries to that tenant...
-  // (The rest of the routes would be updated similarly — each gets tenantId
-  // from getPosTenant(req) and passes it to resolveSaleLineItems, createPosOrder, etc.)
-  
-  // For brevity, I'm showing the pattern. The full implementation would update
-  // every route similarly.
+  // Card (Terminal / Tap to Pay): create a card_present PaymentIntent and a
+  // pending pos_order; the app confirms on the reader, then calls /api/pos/sale.
+  app.post("/api/pos/payment-intent", requirePosKey, async (req: Request, res: Response) => {
+    try {
+      const stripe = getStripe();
+      const db = await getDb();
+      if (!stripe) { res.status(503).json({ error: "Stripe not configured" }); return; }
+      if (!db) { res.status(503).json({ error: "Database unavailable" }); return; }
+
+      const { tenantId } = getPosTenant(req);
+      const { productIds, allowHidden, priceOverrides, customItems, customerName, customerEmail, customerPhone } = req.body as SaleRequestBody;
+
+      const resolved = await resolveSaleLineItems(db, tenantId, { productIds, allowHidden, priceOverrides, customItems });
+      if (!resolved.ok) { res.status(resolved.status).json({ error: resolved.error }); return; }
+      const { lineItems, totalRappen } = resolved;
+
+      // Attach a Stripe Customer so in-person sales show up under Customers,
+      // not just Payments, in the dashboard.
+      const stripeCustomer = await stripe.customers.create({
+        name: customerName || undefined,
+        email: customerEmail || undefined,
+        phone: customerPhone || undefined,
+      });
+
+      const intent = await stripe.paymentIntents.create({
+        amount: totalRappen,
+        currency: "chf",
+        customer: stripeCustomer.id,
+        receipt_email: customerEmail || undefined,
+        payment_method_types: ["card_present"],
+        capture_method: "automatic",
+        metadata: {
+          tenantId: String(tenantId),
+          productIds: (Array.isArray(productIds) ? productIds : []).join(","),
+          hasCustomItems: lineItems.some(i => i.productId === null) ? "true" : "false",
+        },
+      });
+
+      const posOrderId = await createPosOrder(db, tenantId, {
+        stripePaymentIntentId: intent.id,
+        status: "pending",
+        paymentMethod: "card",
+        totalRappen,
+        lineItems,
+        customerName,
+        customerEmail,
+        customerPhone,
+      });
+
+      res.json({ clientSecret: intent.client_secret, paymentIntentId: intent.id, posOrderId, totalRappen });
+    } catch (err) {
+      console.error("[POS] POST /api/pos/payment-intent error:", err);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // TWINT: create + confirm a `twint` PaymentIntent and hand back the redirect
+  // URL Stripe returns (rendered as a QR code by the app). Order stays pending
+  // until the webhook or /api/pos/sale confirms it.
+  app.post("/api/pos/twint-intent", requirePosKey, async (req: Request, res: Response) => {
+    try {
+      const stripe = getStripe();
+      const db = await getDb();
+      if (!stripe) { res.status(503).json({ error: "Stripe not configured" }); return; }
+      if (!db) { res.status(503).json({ error: "Database unavailable" }); return; }
+
+      const { tenantId, tenantSlug } = getPosTenant(req);
+      const { productIds, allowHidden, priceOverrides, customItems, customerName, customerEmail, customerPhone } = req.body as SaleRequestBody;
+
+      const resolved = await resolveSaleLineItems(db, tenantId, { productIds, allowHidden, priceOverrides, customItems });
+      if (!resolved.ok) { res.status(resolved.status).json({ error: resolved.error }); return; }
+      const { lineItems, totalRappen } = resolved;
+
+      const stripeCustomer = await stripe.customers.create({
+        name: customerName || undefined,
+        email: customerEmail || undefined,
+        phone: customerPhone || undefined,
+      });
+
+      const intent = await stripe.paymentIntents.create({
+        amount: totalRappen,
+        currency: "chf",
+        customer: stripeCustomer.id,
+        receipt_email: customerEmail || undefined,
+        payment_method_types: ["twint"],
+        payment_method_data: { type: "twint" },
+        confirm: true,
+        return_url: `${resolveBaseUrl(tenantSlug)}/pos/twint-return`,
+        // Merchant name shown in the TWINT app (22-char max). Stripe also reads
+        // the account business-profile name; keep it set per tenant there.
+        statement_descriptor: posStatementDescriptor(tenantSlug),
+        metadata: {
+          tenantId: String(tenantId),
+          productIds: (Array.isArray(productIds) ? productIds : []).join(","),
+          hasCustomItems: lineItems.some(i => i.productId === null) ? "true" : "false",
+        },
+      });
+
+      const redirectUrl = intent.next_action?.redirect_to_url?.url;
+      if (!redirectUrl) {
+        console.error(`[POS] TWINT intent ${intent.id} has no redirect_to_url`, intent.next_action);
+        res.status(502).json({ error: "TWINT did not return a redirect URL" });
+        return;
+      }
+
+      const posOrderId = await createPosOrder(db, tenantId, {
+        stripePaymentIntentId: intent.id,
+        status: "pending",
+        paymentMethod: "twint",
+        totalRappen,
+        lineItems,
+        customerName,
+        customerEmail,
+        customerPhone,
+      });
+
+      res.json({ redirectUrl, paymentIntentId: intent.id, posOrderId, totalRappen });
+    } catch (err) {
+      console.error("[POS] POST /api/pos/twint-intent error:", err);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Cash never touches Stripe — the cashier takes the money, so this records the
+  // sale and decrements stock immediately (no async confirmation to wait for).
+  app.post("/api/pos/manual-sale", requirePosKey, async (req: Request, res: Response) => {
+    try {
+      const db = await getDb();
+      if (!db) { res.status(503).json({ error: "Database unavailable" }); return; }
+
+      const { tenantId } = getPosTenant(req);
+      const { productIds, allowHidden, priceOverrides, customItems, customerName, customerEmail, customerPhone } = req.body as SaleRequestBody;
+
+      const resolved = await resolveSaleLineItems(db, tenantId, { productIds, allowHidden, priceOverrides, customItems });
+      if (!resolved.ok) { res.status(resolved.status).json({ error: resolved.error }); return; }
+      const { lineItems, totalRappen } = resolved;
+
+      const posOrderId = await createPosOrder(db, tenantId, {
+        stripePaymentIntentId: null,
+        status: "paid",
+        paymentMethod: "cash",
+        totalRappen,
+        lineItems,
+        customerName,
+        customerEmail,
+        customerPhone,
+      });
+
+      const productIdsSold = lineItems
+        .map(i => i.productId)
+        .filter((id): id is number => id !== null);
+      await markProductsSold(productIdsSold);
+
+      res.json({ success: true, posOrderId, totalRappen });
+    } catch (err) {
+      console.error("[POS] POST /api/pos/manual-sale error:", err);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Confirm a card/TWINT sale: verify the PaymentIntent succeeded, then fulfil
+  // the matching pos_order (mark paid + decrement stock). Idempotent.
+  app.post("/api/pos/sale", requirePosKey, async (req: Request, res: Response) => {
+    try {
+      const stripe = getStripe();
+      if (!stripe) { res.status(503).json({ error: "Stripe not configured" }); return; }
+      const db = await getDb();
+      if (!db) { res.status(503).json({ error: "Database unavailable" }); return; }
+
+      const { paymentIntentId } = req.body as { paymentIntentId?: string };
+      if (!paymentIntentId) { res.status(400).json({ error: "paymentIntentId required" }); return; }
+
+      const intent = await stripe.paymentIntents.retrieve(paymentIntentId);
+      if (intent.status !== "succeeded") {
+        res.status(400).json({ error: `Payment not succeeded (status: ${intent.status})` });
+        return;
+      }
+
+      const result = await fulfillPosOrder(db, intent);
+      if (!result) { res.status(404).json({ error: "No matching pos_order for this PaymentIntent" }); return; }
+
+      res.json({ success: true, posOrderId: result.posOrderId, alreadyFulfilled: result.alreadyFulfilled });
+    } catch (err) {
+      console.error("[POS] POST /api/pos/sale error:", err);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+}
+
+// Shared request shape for the sale-building POS endpoints.
+interface SaleRequestBody {
+  productIds?: number[];
+  allowHidden?: boolean;
+  priceOverrides?: Record<string, number>;
+  customItems?: { name: string; priceRappen: number }[];
+  customerName?: string;
+  customerEmail?: string;
+  customerPhone?: string;
+}
+
+// Stripe statement_descriptor allows letters/numbers/spaces only, 5–22 chars.
+// Derive a neutral, tenant-scoped descriptor from the slug; fall back to ZOLTO.
+function posStatementDescriptor(tenantSlug: string): string {
+  const cleaned = tenantSlug.replace(/[^A-Za-z0-9 ]/g, "").toUpperCase().slice(0, 22);
+  return cleaned.length >= 5 ? cleaned : "ZOLTO";
 }
