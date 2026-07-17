@@ -77,15 +77,16 @@ tenant_scoped_tables() {
 #
 # Brings the database in line with drizzle/schema.ts's multi-tenancy, which was
 # authored in the schema but never migrated. Creates the tenant tables, seeds
-# tenant #1 (the store this deployment operates as — Kalakosh in production),
-# then adds tenant_id to every tenant-scoped table (nullable -> backfill = 1 ->
-# NOT NULL). Fully idempotent: on an already-migrated DB it performs no writes.
-# No FK constraints or secondary indexes are added because schema.ts declares
-# none (no .references()).
+# tenant #1 (a neutral platform tenant — the fallback for context-free writes;
+# override with SEED_TENANT_SLUG/SEED_TENANT_NAME), then adds tenant_id to every
+# tenant-scoped table (nullable -> backfill = 1 -> NOT NULL). Fully idempotent:
+# on an already-migrated DB it performs no writes. No FK constraints or secondary
+# indexes are added because schema.ts declares none (no .references()).
 #
-# IMPORTANT: tenant #1's pos_api_key is seeded from $POS_API_KEY so the live POS
-# terminal — which authenticates purely by that key, with no env fallback
-# (see server/pos.ts requirePosKey) — keeps working after the migration.
+# tenant #1's pos_api_key is seeded from $POS_API_KEY when set, else generated.
+# For a cutover that imports an existing store as tenant #1, set POS_API_KEY so
+# that store's POS terminal — which authenticates purely by that key, with no
+# fallback (server/pos.ts requirePosKey) — keeps working after the migration.
 migrate_0019_multitenant() {
   run_sql "0019 tenants table" "
     CREATE TABLE IF NOT EXISTS \`tenants\` (
@@ -191,28 +192,35 @@ migrate_0019_multitenant() {
       CONSTRAINT \`add_ons_id\` PRIMARY KEY(\`id\`)
     );"
 
-  # ── Seed tenant #1 (the store this deployment operates as) ──────────────────
+  # ── Seed tenant #1 (the platform's system tenant) ───────────────────────────
+  # Zolto is a standalone multi-tenant product; tenant #1 is a neutral platform
+  # tenant, NOT any specific store. It exists because context-free server writes
+  # (webhooks, jobs) fall back to DEFAULT_TENANT_ID=1. Real stores are created via
+  # self-serve signup. Override the identity per deployment with SEED_TENANT_SLUG
+  # / SEED_TENANT_NAME (e.g. a cutover that imports an existing store as tenant 1).
+  local seed_slug="${SEED_TENANT_SLUG:-platform}"
+  local seed_name="${SEED_TENANT_NAME:-Zolto Platform}"
   if [ "$(row_count tenants 'id=1')" = "0" ]; then
     local pos_key="${POS_API_KEY:-}"
     if [ -z "$pos_key" ]; then
-      warn "0019 POS_API_KEY not set in .env — seeding tenant #1 with a placeholder POS key."
-      warn "     The live POS terminal will reject sales until a real key is set"
-      warn "     (see deploy/rotate-pos-key.sh). Set POS_API_KEY in .env and re-run."
-      pos_key="PLACEHOLDER_SET_POS_API_KEY"
+      # A fresh standalone deploy has no POS terminal yet, so a generated key is
+      # fine; a cutover should set POS_API_KEY so the existing terminal keeps working.
+      pos_key="pos_$(head -c 24 /dev/urandom 2>/dev/null | od -An -tx1 | tr -d ' \n' || date +%s%N)"
+      warn "0019 POS_API_KEY not set — seeded tenant #1 with a generated POS key."
+      warn "     If a POS terminal must authenticate against tenant #1, set POS_API_KEY"
+      warn "     in .env (see deploy/rotate-pos-key.sh) before connecting it."
     fi
-    run_sql "0019 seed tenant #1" "
+    run_sql "0019 seed tenant #1 (${seed_slug})" "
       INSERT INTO \`tenants\` (\`id\`,\`slug\`,\`name\`,\`plan\`,\`status\`,\`pos_api_key\`)
-      VALUES (1,'kalakosh','Kalakosh','starter','active','${pos_key}');"
+      VALUES (1,'${seed_slug}','${seed_name}','starter','active','${pos_key}');"
   else
     ok "0019 tenant #1 already seeded"
   fi
 
   if [ "$(row_count tenant_settings 'tenant_id=1')" = "0" ]; then
     run_sql "0019 seed tenant #1 settings" "
-      INSERT INTO \`tenant_settings\`
-        (\`tenant_id\`,\`currency\`,\`primary_color\`,\`white_label_name\`,\`public_domain\`,\`contact_email\`,\`whatsapp_number\`,\`instagram_handle\`)
-      VALUES
-        (1,'chf','#2D2620','Kalakosh Zürich','kalakosh.ch','info@kalakosh.ch','41791721714','kalakoshzurich');"
+      INSERT INTO \`tenant_settings\` (\`tenant_id\`,\`currency\`,\`white_label_name\`)
+      VALUES (1,'chf','${seed_name}');"
   else
     ok "0019 tenant #1 settings already seeded"
   fi

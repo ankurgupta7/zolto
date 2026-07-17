@@ -64,7 +64,7 @@ export interface ResolveOptions {
 export function resolveSurface({
   hostname,
   search = "",
-  defaultTenantSlug = "kalakosh",
+  defaultTenantSlug = "demo",
 }: ResolveOptions): SurfaceResolution {
   const params = new URLSearchParams(search);
   const forcedSurface = params.get("surface");

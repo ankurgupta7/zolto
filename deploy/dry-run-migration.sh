@@ -116,9 +116,10 @@ for t in $TABLES; do
   if [ "$orphans" = "0" ]; then pass "${t} rows all backfilled to tenant 1"; else failed "${t} has ${orphans} rows not on tenant 1"; fi
 done
 
-# Seed checks.
-tcount=$(MYSQLC -N -s "$DB" -e "SELECT COUNT(*) FROM tenants WHERE id=1 AND slug='kalakosh';" 2>/dev/null || echo 0)
-[ "$tcount" = "1" ] && pass "tenant #1 (kalakosh) seeded" || failed "tenant #1 not seeded (got ${tcount})"
+# Seed checks. (slug is configurable via SEED_TENANT_SLUG; default 'platform'.)
+tcount=$(MYSQLC -N -s "$DB" -e "SELECT COUNT(*) FROM tenants WHERE id=1;" 2>/dev/null || echo 0)
+seed_slug=$(MYSQLC -N -s "$DB" -e "SELECT slug FROM tenants WHERE id=1;" 2>/dev/null || echo "?")
+[ "$tcount" = "1" ] && pass "tenant #1 seeded (slug='${seed_slug}')" || failed "tenant #1 not seeded (got ${tcount})"
 scount=$(MYSQLC -N -s "$DB" -e "SELECT COUNT(*) FROM tenant_settings WHERE tenant_id=1;" 2>/dev/null || echo 0)
 [ "$scount" = "1" ] && pass "tenant #1 settings seeded" || failed "tenant #1 settings not seeded (got ${scount})"
 dupe=$(MYSQLC -N -s "$DB" -e "SELECT COUNT(*) FROM tenants;" 2>/dev/null || echo 0)

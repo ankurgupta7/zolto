@@ -50,7 +50,7 @@ function useSurface(): SurfaceResolution {
     resolveSurface({
       hostname: window.location.hostname,
       search: window.location.search,
-      defaultTenantSlug: import.meta.env.VITE_DEFAULT_TENANT_SLUG || "kalakosh",
+      defaultTenantSlug: import.meta.env.VITE_DEFAULT_TENANT_SLUG || "demo",
     }),
   );
   return surface;

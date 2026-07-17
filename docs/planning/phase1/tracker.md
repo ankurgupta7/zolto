@@ -248,6 +248,16 @@ Copy this template daily. Keep it in `memory/2026-07-17.md` or a new daily file.
 | Chatbot metrics dashboard | Sprint 4 | ❌ Not built | — |
 | `feature_usage`, `chatbot_conversations` tables | Sprint 1 | ❌ Not built | Verified absent from `drizzle/schema.ts`; required before the chatbot metrics dashboard |
 
+**Deployment direction (decided 2026-07-16): Option A — standalone Zolto.**
+Zolto runs as its own deployment (own server + DB) onboarding new stores; the live
+Kalakosh store stays on the separate Kalakosh-ch codebase, untouched. Kalakosh-ch
+is single-tenant (no `tenant_id`) — running 0019 against its DB while it runs
+single-tenant code would break every insert, so that is explicitly out of scope.
+A future Kalakosh→Zolto cutover is possible later via 0019's `SEED_TENANT_SLUG`/
+`POS_API_KEY` path (see `deploy/MIGRATION-0019-RUNBOOK.md` Case B). Consequent changes:
+migration 0019 now seeds tenant #1 as a neutral `platform` tenant (not Kalakosh);
+client default tenant slug is `demo` (was `kalakosh`).
+
 **Resolved blocker (was: Kalakosh-forked client):** the marketing-vs-storefront split is now built (hostname-aware, same app). The storefront themes itself from `tenant_settings`; the Zolto marketing surface (`/`, `/pricing`, `/signup`, `/onboarding`, `/legal/*`) has its own slate+violet identity. Kalakosh stays pixel-identical via per-tenant defaults.
 
 **Follow-ups (tracked, not yet done):**

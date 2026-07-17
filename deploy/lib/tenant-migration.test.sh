@@ -68,6 +68,8 @@ assert_contains "$A_LOG" "CREATE TABLE IF NOT EXISTS \`tenants\`" "creates tenan
 assert_contains "$A_LOG" "CREATE TABLE IF NOT EXISTS \`tenant_settings\`" "creates tenant_settings table"
 assert_contains "$A_LOG" "CREATE TABLE IF NOT EXISTS \`iteration_logs\`" "creates iteration_logs table"
 assert_contains "$A_LOG" "INSERT INTO \`tenants\`" "seeds tenant #1"
+assert_contains "$A_LOG" "'platform'" "seeds tenant #1 as the neutral platform tenant by default"
+assert_not_contains "$A_LOG" "'kalakosh'" "does NOT hardcode Kalakosh as tenant #1"
 assert_contains "$A_LOG" "INSERT INTO \`tenant_settings\`" "seeds tenant #1 settings"
 for t in users products product_images instagram_posts orders bulk_upload_logs pos_orders pos_order_items returns stripe_reconciliations; do
   assert_contains "$A_LOG" "ALTER TABLE \`${t}\` ADD \`tenant_id\` int NULL" "adds ${t}.tenant_id"
@@ -75,12 +77,21 @@ for t in users products product_images instagram_posts orders bulk_upload_logs p
   assert_contains "$A_LOG" "ALTER TABLE \`${t}\` MODIFY \`tenant_id\` int NOT NULL" "enforces ${t}.tenant_id NOT NULL"
 done
 
-# ── Scenario A2: fresh DB seeds pos key from POS_API_KEY (live POS keeps working)
+# ── Scenario A2: fresh DB seeds pos key from POS_API_KEY (cutover: existing POS keeps working)
 echo "Scenario A2 — seed uses POS_API_KEY:"
 FAKE_COL_EXISTS=0 FAKE_NULLABLE="YES" FAKE_TENANT_COUNT=0 FAKE_SETTINGS_COUNT=0 FAKE_TBL_EXISTS=0
 : > "$MUT_LOG_FILE"
 POS_API_KEY="live-pos-secret-123" migrate_0019_multitenant
 assert_contains "$(cat "$MUT_LOG_FILE")" "'live-pos-secret-123'" "seeds tenant #1 with the deployment's POS_API_KEY"
+
+# ── Scenario A3: SEED_TENANT_SLUG/NAME override (cutover imports a named store)
+echo "Scenario A3 — seed identity is configurable:"
+FAKE_COL_EXISTS=0 FAKE_NULLABLE="YES" FAKE_TENANT_COUNT=0 FAKE_SETTINGS_COUNT=0 FAKE_TBL_EXISTS=0
+: > "$MUT_LOG_FILE"
+SEED_TENANT_SLUG="kalakosh" SEED_TENANT_NAME="Kalakosh Zürich" migrate_0019_multitenant
+A3_LOG="$(cat "$MUT_LOG_FILE")"
+assert_contains "$A3_LOG" "'kalakosh'" "honors SEED_TENANT_SLUG for a cutover"
+assert_contains "$A3_LOG" "Kalakosh Zürich" "honors SEED_TENANT_NAME for a cutover"
 
 # ── Scenario B: already migrated (re-run must be a no-op) ──────────────────────
 echo "Scenario B — already migrated (idempotency):"
