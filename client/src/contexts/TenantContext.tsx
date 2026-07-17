@@ -12,6 +12,7 @@ import {
   NEUTRAL_BRANDING,
   type Branding,
 } from "@/lib/branding";
+import { derivePalette } from "@/lib/palette";
 
 interface TenantContextValue {
   slug: string | null;
@@ -25,24 +26,31 @@ interface TenantContextValue {
 const TenantContext = createContext<TenantContextValue | null>(null);
 
 /**
- * Applies the tenant's brand color to the document as the --brand-ink custom
- * property. Every storefront brand class (`bg-[var(--brand-ink)]` etc.) reads
- * this, so setting it here re-themes the whole storefront. We only override the
- * dominant dark; the warm neutral tints keep their defaults for now (full palette
- * derivation from a single primaryColor is a follow-up).
+ * Applies the tenant's brand color to the document. From the single
+ * `primary_color` we derive the whole dark half of the palette — the ink family
+ * plus a same-hue accent (see `derivePalette`) — and write each as a `--brand-*`
+ * custom property. Every storefront brand class (`bg-[var(--brand-ink)]`,
+ * `text-[var(--brand-accent)]`, …) reads these, so a tenant picks one color and
+ * the whole storefront re-themes to "<color> + cream". The cream surfaces keep
+ * their CSS defaults; we only touch the swatches `derivePalette` returns.
  */
 function useApplyBrandColor(primaryColor: string | null) {
   useEffect(() => {
     if (typeof document === "undefined") return;
     const root = document.documentElement;
-    // The CSS default for --brand-ink is Kalakosh's #2D2620; only override when a
-    // tenant provides a different color.
-    if (primaryColor && primaryColor.toLowerCase() !== "#2d2620") {
-      root.style.setProperty("--brand-ink", primaryColor);
-      return () => {
-        root.style.removeProperty("--brand-ink");
-      };
+    // The CSS default ink is Kalakosh's #2D2620; only override when a tenant
+    // supplies a different, parseable color.
+    if (!primaryColor || primaryColor.toLowerCase() === "#2d2620") return;
+    const palette = derivePalette(primaryColor);
+    if (!palette) return;
+    for (const [prop, value] of Object.entries(palette)) {
+      root.style.setProperty(prop, value);
     }
+    return () => {
+      for (const prop of Object.keys(palette)) {
+        root.style.removeProperty(prop);
+      }
+    };
   }, [primaryColor]);
 }
 
