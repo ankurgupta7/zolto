@@ -229,7 +229,20 @@ Copy this template daily. Keep it in `memory/2026-07-17.md` or a new daily file.
 ## Repo Implementation Status (zolto — branch `claude/agent-context-migration-c2v8mx`)
 
 > Actual state of the code, verified against the repo. This is the ground truth; the checklists above are the plan.
-> Last verified: 2026-07-16 (frontend refactor landed).
+> Last verified: 2026-07-17 (stood the app up locally — MariaDB + all migrations 0000–0019 + server — and drove every surface in a headless browser).
+
+**Local run-through (2026-07-17):** brought Zolto up end-to-end in the sandbox
+(host MariaDB, `.env` with neutral `demo` seed tenant, migrations 0000–0019 applied
+cleanly via a local driver over `deploy/lib/db.sh`, a few seeded demo products, dev
+server) and screenshotted marketing + storefront + product surfaces. Migration 0019
+ran green against a real MySQL for the first time (nullable → backfill → NOT NULL on
+all 10 tables, neutral tenant #1). The run surfaced Kalakosh branding still leaking
+through the shared chrome the content pass hadn't reached — **now fixed** (commit
+`9e60e57`): static `index.html` `<head>` (title/OG/JSON-LD w/ Kalakosh phone+address)
+neutralised to Zolto defaults; footer copyright + Instagram now branding-driven and
+hidden when a tenant has no handle; shop eyebrow from `branding.storeName`; residual
+en/de strings (footer tagline/copyright/swissQuality, product trust-line) genericised.
+Verified in-browser: zero Kalakosh strings on any surface.
 
 | Plan item | Planned in | Status in code | Notes |
 |-----------|-----------|----------------|-------|
@@ -264,13 +277,14 @@ client default tenant slug is `demo` (was `kalakosh`).
 - **Signup claim UI (frontend):** the backend is done but the client only stashes the claim token (`sessionStorage`). Wire the sign-in → `tenant.claimAdmin({ token })` round-trip so a new maker actually becomes admin. Also: on first OAuth login a new user still gets `tenantId = 1` (platform) until they claim — fine, but worth revisiting.
 - Persist onboarding progress (add a `tenant.updateOnboardingStep` mutation; wire the wizard to it).
 - Derive the full warm-neutral palette from a single tenant `primaryColor` (today only `--brand-ink` is tenant-driven; tints keep Kalakosh defaults).
-- Storefront content is now generic templates (done), but i18n locale JSON still holds the old Kalakosh copy for unused keys → rewritten pages are English-only; re-add DE translations for the new copy. Deep per-tenant *authored* content (a CMS) remains out of scope.
+- Storefront content is now generic templates (done), and the shared chrome + static SEO shell were de-Kalakosh'd on 2026-07-17 (commit `9e60e57`). Remaining: the `home.*`/`about.*`/`contact.*`/`shop.*` locale keys with Kalakosh copy are now **dead** (their pages were rewritten to `storefrontContent.ts`/branding and no longer read them) — cosmetic cleanup, not a leak. Deep per-tenant *authored* content (a CMS) remains out of scope.
 - POS routes still missing from the multi-tenant refactor (receipts, sales list, invoices, send/save-receipt, recategorize, connection-token) — reference impls in Kalakosh-ch.
 
 **Infra gaps discovered during the server tsc fix (2026-07-16):**
 - ✅ **Multi-tenant DB migration — WRITTEN (migration 0019).** `tenant_id` and the tenant tables existed only in `drizzle/schema.ts`, never in any migration. Fixed: `migrate_0019_multitenant()` in `deploy/lib/db.sh` (called from `update.sh` after 0018) creates `tenants`/`tenant_settings`/`iteration_logs` (+ enterprise stubs `audit_logs`/`api_keys`/`add_ons`), seeds tenant #1, and adds `tenant_id` to all 10 tenant-scoped tables (nullable → backfill `=1` → NOT NULL). Idempotent; no FK/index (schema declares none). Tested without a DB via `deploy/lib/tenant-migration.test.sh` (fresh + already-migrated + POS-key scenarios, 41 assertions), wired into `npm run test:deploy-scripts`.
   - **Dry-run tooling ready:** `deploy/inspect-db.sh` (read-only pre-flight for the live server) + `deploy/dry-run-migration.sh` (runs 0019 twice against a mysqldump in a throwaway container, verifies NOT NULL/backfill/row-counts/idempotency). Operator steps in `deploy/MIGRATION-0019-RUNBOOK.md`.
-  - ⚠️ **Not yet deployed. Must run against a copy of the production DB first.** It touches the LIVE store's payment/inventory tables. Two live-store notes baked into the migration: (1) tenant #1's `pos_api_key` is seeded from `$POS_API_KEY` so the POS terminal (which authenticates purely by that key, no fallback) keeps working — if `POS_API_KEY` is unset the seed uses a placeholder and warns; (2) `drizzle/*.sql` (the `db:push` path) is a *separate* migration history that also lacks these changes — `update.sh` is authoritative per `.tasks.json`, so `db:push` should not be used on this DB.
+  - ✅ **Dry-run executed (2026-07-17):** 0019 ran cleanly against a real MariaDB in the sandbox (fresh DB, not a prod dump) — all six tenant tables created, `tenant_id` added + backfilled + set NOT NULL on all 10 tables, neutral tenant #1 seeded, re-run idempotent. Confirms the SQL is valid MySQL; a prod-dump dry-run per the runbook is still the gate before touching a live DB.
+  - ⚠️ **Not yet deployed to any live store. Must run against a copy of the production DB first.** It touches the LIVE store's payment/inventory tables. Two live-store notes baked into the migration: (1) tenant #1's `pos_api_key` is seeded from `$POS_API_KEY` so the POS terminal (which authenticates purely by that key, no fallback) keeps working — if `POS_API_KEY` is unset the seed uses a placeholder and warns; (2) `drizzle/*.sql` (the `db:push` path) is a *separate* migration history that also lacks these changes — `update.sh` is authoritative per `.tasks.json`, so `db:push` should not be used on this DB.
 - ✅ **34 server test failures — FIXED.** Root cause was deeper than mocks: the multi-tenant refactor had **gutted `pos.ts`**, deleting the payment-intent / twint-intent / manual-sale / sale routes and leaving a "the rest would be updated similarly" stub — so the POS backend literally couldn't take a payment (all those routes 404'd). Fixed by (a) extracting POS auth into `getTenantByPosApiKey()` in `db.ts` and mocking that (fixes the auth path cleanly), and (b) **re-implementing the 4 deleted routes**, tenant-scoped, using the surviving helpers (`resolveSaleLineItems`/`createPosOrder`/`fulfillPosOrder`). Reconciliation test updated to the real admin-guard message (`NOT_ADMIN_ERR_MSG`). Full suite: **305 passed, 0 failed**.
   - ⚠️ **`pos.ts` is still missing routes the refactor also deleted** (not test-covered, so left for later): sales list, invoices, send-receipt, save-receipt, receipt view, recategorize, connection-token. The orphaned `generateReceiptHtml` + unused imports in `pos.ts` are the remnants of these. Reference implementations exist in the Kalakosh-ch repo (`server/pos.ts`) to port when prioritized. No CI runs biome, so the dead-code lint warnings don't block.
 
