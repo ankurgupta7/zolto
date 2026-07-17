@@ -176,7 +176,7 @@
     "enquireWhatsApp": "Per WhatsApp anfragen",
     "addToBag": "In den Warenkorb",
     "inBag": "Im Warenkorb",
-    "uniqueCaption": "Jedes Stück ist handgefertigt und wird in unserem Zürcher Atelier qualitätsgeprüft",
+    "uniqueCaption": "Mit Sorgfalt ausgewählt",
     "enquirySimilar": "Guten Tag, ich interessiere mich für ein ähnliches Stück wie \"{{name}}\" – könnten Sie mir mitteilen, ob etwas Ähnliches verfügbar ist? Ich habe Sie über den Website-Button erreicht: {{link}}",
     "enquiryAvailable": "Guten Tag, ich interessiere mich für \"{{name}}\" – könnten Sie mir mehr dazu sagen? Ich habe Sie über den Website-Button erreicht: {{link}}"
   },
@@ -240,14 +240,13 @@
   },
   "footer": {
     "instagramBanner": "Folgen Sie unserer Reise auf Instagram",
-    "instagramHandle": "@kalakoshzurich — neue Stücke, Blicke hinter die Kulissen & mehr",
     "instagramFollow": "Folgen",
-    "tagline": "Feinschmuck von Meisterhandwerkern – in unserem Zürcher Atelier kuratiert und qualitätsgeprüft.",
+    "tagline": "Sorgfältig ausgewählte Stücke.",
     "navigation": "Navigation",
     "collections": "Kollektionen",
     "followUs": "Folgen Sie uns",
-    "copyright": "© {{year}} Kalakosh Zürich. Alle Rechte vorbehalten.",
-    "swissQuality": "Kuratiert in Zürich · Schweizer Qualitätsstandards",
+    "copyright": "© {{year}} {{store}}. Alle Rechte vorbehalten.",
+    "swissQuality": "Mit Sorgfalt kuratiert",
     "policy": "Verkaufs- & Rückgabebedingungen",
     "impressum": "Impressum"
   },

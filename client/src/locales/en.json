@@ -176,7 +176,7 @@
     "enquireWhatsApp": "Enquire via WhatsApp",
     "addToBag": "Add to Bag",
     "inBag": "In Your Bag",
-    "uniqueCaption": "Each piece is handcrafted and quality-reviewed at our Zürich atelier",
+    "uniqueCaption": "Handpicked with care",
     "enquirySimilar": "Hi, I'm interested in a piece similar to \"{{name}}\" — could you let me know if something similar is available? I reached you via the website button: {{link}}",
     "enquiryAvailable": "Hi, I'm interested in \"{{name}}\" — could you tell me more? I reached you via the website button: {{link}}"
   },
@@ -240,14 +240,13 @@
   },
   "footer": {
     "instagramBanner": "Follow our journey on Instagram",
-    "instagramHandle": "@kalakoshzurich — new pieces, behind the scenes & more",
     "instagramFollow": "Follow",
-    "tagline": "Fine jewellery sourced from master artisans, quality-curated at our Zürich atelier.",
+    "tagline": "Curated pieces, chosen with care.",
     "navigation": "Navigation",
     "collections": "Collections",
     "followUs": "Follow Us",
-    "copyright": "© {{year}} Kalakosh Zurich. All rights reserved.",
-    "swissQuality": "Curated in Zürich · Swiss Quality Standards",
+    "copyright": "© {{year}} {{store}}. All rights reserved.",
+    "swissQuality": "Curated with care",
     "policy": "Sales & Returns Policy",
     "impressum": "Legal Notice"
   },

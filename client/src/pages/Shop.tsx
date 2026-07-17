@@ -8,6 +8,7 @@ import {
   type ProductCategory,
 } from "@shared/types";
 import { useTranslation } from "react-i18next";
+import { useTenant } from "@/contexts/TenantContext";
 
 const CATEGORY_VALUES: (ProductCategory | "All")[] = [
   "All",
@@ -25,6 +26,7 @@ const extraIncludesFor = (
 
 export default function Shop() {
   const { t } = useTranslation();
+  const { branding } = useTenant();
   const [_location] = useLocation();
   const [activeCategory, setActiveCategory] = useState<ProductCategory | "All">(
     "All"
@@ -78,7 +80,7 @@ export default function Shop() {
       <section className="bg-[var(--brand-ink)] py-20">
         <div className="container text-center">
           <p className="text-[var(--brand-accent)] text-xs uppercase tracking-[0.3em] mb-3 font-sans">
-            {t("shop.badge")}
+            {branding.storeName}
           </p>
           <h1 className="font-serif text-white">{t("shop.title")}</h1>
           <div className="divider-gold w-16 mx-auto mt-6" />
