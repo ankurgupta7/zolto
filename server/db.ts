@@ -423,37 +423,53 @@ export async function deleteAllProductImages(
 
 // ─── Instagram Posts ──────────────────────────────────────────────────────────
 
-export async function getInstagramPosts() {
+// Instagram posts are tenant-owned: every read/write is scoped to a tenant so a
+// store's curated grid can only ever contain — and be edited through — its own
+// posts.
+export async function getInstagramPosts(tenantId: number) {
   return withDb(
     db =>
       db
         .select()
         .from(instagramPosts)
+        .where(eq(instagramPosts.tenantId, tenantId))
         .orderBy(asc(instagramPosts.sortOrder), asc(instagramPosts.createdAt)),
     []
   );
 }
 
-export async function addInstagramPost(postUrl: string, sortOrder: number) {
+export async function addInstagramPost(
+  tenantId: number,
+  postUrl: string,
+  sortOrder: number
+) {
+  await withDbOrThrow(db =>
+    db.insert(instagramPosts).values({ postUrl, sortOrder, tenantId })
+  );
+}
+
+export async function deleteInstagramPost(tenantId: number, id: number) {
   await withDbOrThrow(db =>
     db
-      .insert(instagramPosts)
-      .values({ postUrl, sortOrder, tenantId: DEFAULT_TENANT_ID })
+      .delete(instagramPosts)
+      .where(
+        and(eq(instagramPosts.tenantId, tenantId), eq(instagramPosts.id, id))
+      )
   );
 }
 
-export async function deleteInstagramPost(id: number) {
-  await withDbOrThrow(db =>
-    db.delete(instagramPosts).where(eq(instagramPosts.id, id))
-  );
-}
-
-export async function reorderInstagramPost(id: number, sortOrder: number) {
+export async function reorderInstagramPost(
+  tenantId: number,
+  id: number,
+  sortOrder: number
+) {
   await withDbOrThrow(db =>
     db
       .update(instagramPosts)
       .set({ sortOrder })
-      .where(eq(instagramPosts.id, id))
+      .where(
+        and(eq(instagramPosts.tenantId, tenantId), eq(instagramPosts.id, id))
+      )
   );
 }
 
@@ -463,6 +479,11 @@ export async function createOrder(data: WithOptionalTenant<InsertOrder>) {
   await withDbOrThrow(db => db.insert(orders).values(withTenant(data)));
 }
 
+// Looked up by the globally-unique Stripe session id (the order carries its own
+// tenant_id). Not tenant-scoped on purpose: the webhook fulfillment path has no
+// tenant in context yet, and the session id is unguessable, so this can only
+// ever return the one order that owns that session. Callers that go on to read
+// related rows (e.g. products) scope those by the returned order's tenant_id.
 export async function getOrderBySessionId(
   stripeSessionId: string
 ): Promise<Order | undefined> {
@@ -520,25 +541,32 @@ export async function getProductsMissingTranslation(tenantId: number) {
   );
 }
 
-export async function getPaidOrders(limit = 200): Promise<Order[]> {
+export async function getPaidOrders(
+  tenantId: number,
+  limit = 200
+): Promise<Order[]> {
   return withDb(
     db =>
       db
         .select()
         .from(orders)
-        .where(eq(orders.status, "paid"))
+        .where(and(eq(orders.tenantId, tenantId), eq(orders.status, "paid")))
         .orderBy(desc(orders.createdAt))
         .limit(limit),
     []
   );
 }
 
-export async function getBulkUploadLogs(limit = 100): Promise<BulkUploadLog[]> {
+export async function getBulkUploadLogs(
+  tenantId: number,
+  limit = 100
+): Promise<BulkUploadLog[]> {
   return withDb(
     db =>
       db
         .select()
         .from(bulkUploadLogs)
+        .where(eq(bulkUploadLogs.tenantId, tenantId))
         .orderBy(desc(bulkUploadLogs.createdAt))
         .limit(limit),
     []

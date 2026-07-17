@@ -820,7 +820,7 @@ Return ONLY valid JSON, no markdown.`,
     const { invokeLLM } = await import("../_core/llm");
     const [allProducts, paidOrders] = await Promise.all([
       getAllProducts(ctx.user.tenantId),
-      getPaidOrders(200),
+      getPaidOrders(ctx.user.tenantId, 200),
     ]);
 
     const productSalesMap: Record<number, number> = {};
@@ -1149,8 +1149,8 @@ Return ONLY valid JSON, no markdown.`,
     }),
 
   // Admin: retrieve recent bulk upload AI error logs
-  getBulkLogs: adminProcedure.query(async () => {
-    return getBulkUploadLogs(200);
+  getBulkLogs: adminProcedure.query(async ({ ctx }) => {
+    return getBulkUploadLogs(ctx.user.tenantId, 200);
   }),
 
   // Admin: manually create a product
