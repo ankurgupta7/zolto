@@ -256,6 +256,12 @@ Copy this template daily. Keep it in `memory/2026-07-17.md` or a new daily file.
 - Derive the full warm-neutral palette from a single tenant `primaryColor` (today only `--brand-ink` is tenant-driven; tints keep Kalakosh defaults).
 - Deep tenant *content* (FAQ/About/AGB prose) is still Kalakosh-specific by design — a tenant CMS is out of current scope.
 
+**🔴 Critical infra gaps discovered (2026-07-16, during the server tsc fix):**
+- **The multi-tenant DB migration was never written.** `tenant_id` and the `tenants`/`tenant_settings`/`iteration_logs` tables exist only in `drizzle/schema.ts` — there is **no** migration for them in `update.sh` (stops at 0018) or in `drizzle/*.sql`. The live DB has none of these columns/tables. Consequences: every write would fail at runtime with "unknown column tenant_id", and `TenantContext`/signup queries hit non-existent tables. **Needed:** an idempotent migration (create the 3 tables; add `tenant_id` nullable → backfill `= 1` → set NOT NULL + FKs across users, products, product_images, instagram_posts, orders, bulk_upload_logs, pos_orders, pos_order_items, stripe_reconciliations, returns, iteration_logs). This touches the LIVE store's payment/inventory tables — author carefully and test against a copy before deploying.
+- **34 pre-existing server test failures** from the same incomplete multi-tenant work: `server/pos.test.ts` (33 — its `./db` mock predates `pos.ts` using `db.query.tenants` for per-tenant POS keys) and `server/routers/reconciliation.test.ts` (1 — an error-message-string assertion mismatch, unrelated to tenancy). Not introduced by the tsc fix (confirmed by stashed baseline). **Needed:** update the pos test's db mock to provide `query.tenants` + a POS-key/tenant header, and fix the reconciliation test's expected string.
+
+**Server tsc: 21 → 0 (done).** Root cause was the schema making `tenant_id` NOT NULL while insert callsites never supplied it. Fixed by threading a configurable `DEFAULT_TENANT_ID` (env-overridable, default 1) through the `db.ts` helper layer (`server/_core/tenant.ts`); request-scoped/tenant-aware callers can still pass an explicit id. Also added `upsert_images` to the `bulk_upload_logs.operation` enum (+ `update.sh` migration 0018).
+
 ---
 
 > Keep this file current: when a plan item ships, move it from ❌/⚠️ to ✅ and note the commit. The tracker is only useful if it matches the code.

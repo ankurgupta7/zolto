@@ -504,7 +504,7 @@ Return ONLY valid JSON, no markdown, no explanation.`,
           };
         }
         // Partial match: existing name contains query or vice-versa
-        for (const [existingName, product] of byName.entries()) {
+        for (const [existingName, product] of Array.from(byName.entries())) {
           if (
             existingName.includes(normalizedName) ||
             normalizedName.includes(existingName)

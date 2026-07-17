@@ -39,6 +39,11 @@ import {
   type TenantSetting,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
+import {
+  DEFAULT_TENANT_ID,
+  withTenant,
+  type WithOptionalTenant,
+} from "./_core/tenant";
 
 let _db: ReturnType<typeof drizzle<typeof schema>> | null = null;
 
@@ -130,7 +135,9 @@ async function withDbOrThrow<T>(fn: (db: Db) => Promise<T>): Promise<T> {
 
 // ─── Users ────────────────────────────────────────────────────────────────────
 
-export async function upsertUser(user: InsertUser): Promise<void> {
+export async function upsertUser(
+  user: WithOptionalTenant<InsertUser>
+): Promise<void> {
   if (!user.openId) throw new Error("User openId is required for upsert");
   const db = await getDb();
   if (!db) {
@@ -138,7 +145,10 @@ export async function upsertUser(user: InsertUser): Promise<void> {
     return;
   }
 
-  const values: InsertUser = { openId: user.openId };
+  const values: InsertUser = {
+    openId: user.openId,
+    tenantId: user.tenantId ?? DEFAULT_TENANT_ID,
+  };
   const updateSet: Record<string, unknown> = {};
   const textFields = ["name", "email", "loginMethod"] as const;
   type TextField = (typeof textFields)[number];
@@ -242,8 +252,8 @@ export async function getProductByDiscordMessageId(discordMessageId: string) {
   }, undefined);
 }
 
-export async function createProduct(data: InsertProduct) {
-  return withDbOrThrow(db => db.insert(products).values(data));
+export async function createProduct(data: WithOptionalTenant<InsertProduct>) {
+  return withDbOrThrow(db => db.insert(products).values(withTenant(data)));
 }
 
 export async function setProductVisibility(id: number, visible: boolean) {
@@ -319,8 +329,10 @@ export async function getProductImages(productId: number) {
   );
 }
 
-export async function addProductImage(data: InsertProductImage) {
-  return withDbOrThrow(db => db.insert(productImages).values(data));
+export async function addProductImage(
+  data: WithOptionalTenant<InsertProductImage>
+) {
+  return withDbOrThrow(db => db.insert(productImages).values(withTenant(data)));
 }
 
 export async function deleteProductImage(id: number) {
@@ -350,7 +362,9 @@ export async function getInstagramPosts() {
 
 export async function addInstagramPost(postUrl: string, sortOrder: number) {
   await withDbOrThrow(db =>
-    db.insert(instagramPosts).values({ postUrl, sortOrder })
+    db
+      .insert(instagramPosts)
+      .values({ postUrl, sortOrder, tenantId: DEFAULT_TENANT_ID })
   );
 }
 
@@ -371,8 +385,8 @@ export async function reorderInstagramPost(id: number, sortOrder: number) {
 
 // ─── Orders ───────────────────────────────────────────────────────────────────
 
-export async function createOrder(data: InsertOrder) {
-  await withDbOrThrow(db => db.insert(orders).values(data));
+export async function createOrder(data: WithOptionalTenant<InsertOrder>) {
+  await withDbOrThrow(db => db.insert(orders).values(withTenant(data)));
 }
 
 export async function getOrderBySessionId(
@@ -403,7 +417,7 @@ export async function updateOrderBySessionId(
 // ─── Bulk Upload Logs ─────────────────────────────────────────────────────────
 
 export async function insertBulkUploadLog(
-  data: InsertBulkUploadLog
+  data: WithOptionalTenant<InsertBulkUploadLog>
 ): Promise<void> {
   const db = await getDb();
   if (!db) {
@@ -412,7 +426,7 @@ export async function insertBulkUploadLog(
     );
     return;
   }
-  await db.insert(bulkUploadLogs).values(data);
+  await db.insert(bulkUploadLogs).values(withTenant(data));
 }
 
 export async function getProductsMissingTranslation() {
@@ -505,9 +519,11 @@ export async function getKnownReconciliationPaymentIntentIds(): Promise<
 }
 
 export async function createStripeReconciliation(
-  data: InsertStripeReconciliation
+  data: WithOptionalTenant<InsertStripeReconciliation>
 ): Promise<void> {
-  await withDbOrThrow(db => db.insert(stripeReconciliations).values(data));
+  await withDbOrThrow(db =>
+    db.insert(stripeReconciliations).values(withTenant(data))
+  );
 }
 
 export async function getStripeReconciliationByToken(
@@ -549,6 +565,7 @@ export async function resolveStripeReconciliationConfirmed(
         stripePaymentIntentId,
         status: "paid",
         totalRappen: amountRappen,
+        tenantId: DEFAULT_TENANT_ID,
       });
       const posOrderId =
         (inserted as unknown as { insertId?: number }).insertId ?? 0;
@@ -557,6 +574,7 @@ export async function resolveStripeReconciliationConfirmed(
         posOrderId,
         productId,
         priceRappen: amountRappen,
+        tenantId: DEFAULT_TENANT_ID,
       });
 
       await tx

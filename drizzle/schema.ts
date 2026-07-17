@@ -207,8 +207,12 @@ export type InsertOrder = typeof orders.$inferInsert;
 export const bulkUploadLogs = mysqlTable("bulk_upload_logs", {
   id: int("id").autoincrement().primaryKey(),
   tenantId: int("tenant_id").notNull(), // ← NEW
-  operation: mysqlEnum("operation", ["analyze", "create", "extra_image"])
-    .notNull(),
+  operation: mysqlEnum("operation", [
+    "analyze",
+    "create",
+    "extra_image",
+    "upsert_images",
+  ]).notNull(),
   ref: varchar("ref", { length: 512 }).notNull(),
   errorMessage: text("errorMessage").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),

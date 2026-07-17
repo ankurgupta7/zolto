@@ -458,6 +458,19 @@ else
   ok "0017 pos_orders.receiptUrl column already exists"
 fi
 
+# ── 0018: bulk_upload_logs.operation adds 'upsert_images' value ───────────────
+# The bulk image-upsert flow logs an 'upsert_images' operation on failure; the
+# enum predated that value. Idempotent: only widen the enum if it's missing.
+CURRENT_BULK_OP_ENUM=$($MYSQL -se "${MYSQL_LOCK_TIMEOUT_SQL}SELECT COLUMN_TYPE FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA='${MYSQL_DATABASE}' AND TABLE_NAME='bulk_upload_logs' AND COLUMN_NAME='operation';" 2>/dev/null || echo "")
+
+if echo "$CURRENT_BULK_OP_ENUM" | grep -q "'upsert_images'"; then
+  ok "0018 bulk_upload_logs.operation already has 'upsert_images'"
+else
+  run_sql "0018 add 'upsert_images' to bulk_upload_logs.operation" \
+    "ALTER TABLE \`bulk_upload_logs\` MODIFY COLUMN \`operation\` enum('analyze','create','extra_image','upsert_images') NOT NULL;"
+fi
+
 # ── Shared helper: run a script inside the builder container ──────────────────
 # Usage: run_in_builder <tag> <script-path> [extra docker args...]
 run_in_builder() {

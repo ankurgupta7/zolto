@@ -22,6 +22,7 @@ import { invokeLLM } from "./_core/llm";
 import { notifyOwner } from "./_core/notification";
 import { createProduct, getProductByDiscordMessageId, getTenantByDiscordChannelId, getTenantSettings } from "./db";
 import { storagePut } from "./storage";
+import { DEFAULT_TENANT_ID } from "./_core/tenant";
 import type { TenantBranding } from "./_core/email";
 
 // These AI extractors describe a single photographed/described piece, so "Sets"
@@ -248,7 +249,7 @@ export async function handleDiscordMessage(
     visible: true,
     source: "whatsapp",
     discordMessageId: message.id,
-    tenantId: tenant?.id,
+    tenantId: tenant?.id ?? DEFAULT_TENANT_ID,
   });
 
   // Notify the owner with tenant branding
