@@ -248,7 +248,7 @@ async function fulfillPosOrder(
     .set({ status: "paid" })
     .where(eq(posOrders.id, order.id));
 
-  await markProductsSold(productIds);
+  await markProductsSold(order.tenantId, productIds);
 
   return { posOrderId: order.id, alreadyFulfilled: false };
 }
@@ -622,7 +622,7 @@ export function registerPosRoutes(app: Express): void {
       const productIdsSold = lineItems
         .map(i => i.productId)
         .filter((id): id is number => id !== null);
-      await markProductsSold(productIdsSold);
+      await markProductsSold(tenantId, productIdsSold);
 
       res.json({ success: true, posOrderId, totalRappen });
     } catch (err) {

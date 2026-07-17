@@ -68,6 +68,8 @@ import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
 import {
   getAllProducts,
+  getVisibleProducts,
+  getVisibleProductById,
   createProduct,
   updateProduct,
   setProductVisibility,
@@ -104,11 +106,14 @@ function makeProduct(overrides: Record<string, unknown> = {}) {
   };
 }
 
+const TEST_TENANT_ID = 7;
+
 function makeCtx(role: "admin" | "user" | null = null): TrpcContext {
   const user =
     role !== null
       ? {
           id: 1,
+          tenantId: TEST_TENANT_ID,
           openId: "test-user",
           email: "test@example.com",
           name: "Test User",
@@ -122,6 +127,8 @@ function makeCtx(role: "admin" | "user" | null = null): TrpcContext {
 
   return {
     user,
+    // Storefront reads are scoped to the tenant resolved from the request.
+    tenant: { id: TEST_TENANT_ID } as TrpcContext["tenant"],
     req: { protocol: "https", headers: {} } as TrpcContext["req"],
     res: { clearCookie: vi.fn() } as unknown as TrpcContext["res"],
   };
@@ -135,6 +142,19 @@ describe("products.list", () => {
     expect(result.length).toBeGreaterThan(0);
     expect(result[0].name).toBe("Silver Moonstone Ring");
   });
+
+  it("scopes the read to the request's tenant", async () => {
+    const caller = appRouter.createCaller(makeCtx());
+    await caller.products.list({});
+    expect(getVisibleProducts).toHaveBeenCalledWith(TEST_TENANT_ID);
+  });
+
+  it("throws NOT_FOUND when no tenant is resolved (no cross-tenant leak)", async () => {
+    const ctx = makeCtx();
+    ctx.tenant = null;
+    const caller = appRouter.createCaller(ctx);
+    await expect(caller.products.list({})).rejects.toThrow(/not found/i);
+  });
 });
 
 describe("products.getById", () => {
@@ -143,6 +163,24 @@ describe("products.getById", () => {
     const result = await caller.products.getById({ id: 1 });
     expect(result.id).toBe(1);
     expect(result.category).toBe("Rings");
+    expect(getVisibleProductById).toHaveBeenCalledWith(TEST_TENANT_ID, 1);
+  });
+
+  it("throws NOT_FOUND when no tenant is resolved", async () => {
+    const ctx = makeCtx();
+    ctx.tenant = null;
+    const caller = appRouter.createCaller(ctx);
+    await expect(caller.products.getById({ id: 1 })).rejects.toThrow(
+      /not found/i
+    );
+  });
+});
+
+describe("products.adminList tenant scoping", () => {
+  it("lists only the admin's own tenant's products", async () => {
+    const caller = appRouter.createCaller(makeCtx("admin"));
+    await caller.products.adminList();
+    expect(getAllProducts).toHaveBeenCalledWith(TEST_TENANT_ID);
   });
 });
 
@@ -242,10 +280,10 @@ describe("products.mergeDuplicates", () => {
 
     expect(result.removed).toBe(2);
     expect(deleteProduct).toHaveBeenCalledTimes(2);
-    expect(deleteProduct).toHaveBeenCalledWith(11);
-    expect(deleteProduct).toHaveBeenCalledWith(12);
-    expect(deleteAllProductImages).toHaveBeenCalledWith(11);
-    expect(deleteAllProductImages).toHaveBeenCalledWith(12);
+    expect(deleteProduct).toHaveBeenCalledWith(TEST_TENANT_ID, 11);
+    expect(deleteProduct).toHaveBeenCalledWith(TEST_TENANT_ID, 12);
+    expect(deleteAllProductImages).toHaveBeenCalledWith(TEST_TENANT_ID, 11);
+    expect(deleteAllProductImages).toHaveBeenCalledWith(TEST_TENANT_ID, 12);
     expect(setProductVisibility).not.toHaveBeenCalled();
   });
 });
@@ -308,7 +346,7 @@ describe("products.previewAutoTranslateAll / applyAutoTranslateAll", () => {
     });
 
     expect(result.updated).toBe(1);
-    expect(updateProduct).toHaveBeenCalledWith(20, {
+    expect(updateProduct).toHaveBeenCalledWith(TEST_TENANT_ID, 20, {
       nameEn: "Silver Ring",
       descriptionEn: "A delicate ring.",
     });
@@ -356,7 +394,9 @@ describe("products.previewRecategorizeAll / applyRecategorizeAll", () => {
     });
 
     expect(result.updated).toBe(1);
-    expect(updateProduct).toHaveBeenCalledWith(30, { category: "Earrings" });
+    expect(updateProduct).toHaveBeenCalledWith(TEST_TENANT_ID, 30, {
+      category: "Earrings",
+    });
   });
 });
 
@@ -447,6 +487,7 @@ describe("products.csvImport", () => {
     expect(result.updated).toBe(1);
     expect(createProduct).not.toHaveBeenCalled();
     expect(updateProduct).toHaveBeenCalledWith(
+      TEST_TENANT_ID,
       42,
       expect.objectContaining({
         description: validRow.description,

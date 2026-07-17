@@ -105,7 +105,7 @@ describe("findCandidateProducts", () => {
       makeProduct({ id: 3, price: "500.00" }),
     ]);
 
-    const result = await findCandidateProducts(10000); // CHF 100.00
+    const result = await findCandidateProducts(1, 10000); // CHF 100.00
     expect(result.map(p => p.id)).toEqual([2, 1, 3]);
   });
 
@@ -115,7 +115,7 @@ describe("findCandidateProducts", () => {
       makeProduct({ id: 2, price: "100.00", createdAt: new Date("2026-06-01") }),
     ]);
 
-    const result = await findCandidateProducts(10000);
+    const result = await findCandidateProducts(1, 10000);
     expect(result.map(p => p.id)).toEqual([2, 1]);
   });
 
@@ -126,13 +126,13 @@ describe("findCandidateProducts", () => {
       )
     );
 
-    const result = await findCandidateProducts(10000);
+    const result = await findCandidateProducts(1, 10000);
     expect(result).toHaveLength(MAX_CANDIDATES);
   });
 
   it("returns an empty list when nothing is in stock", async () => {
     getAvailableProductsForMatching.mockResolvedValue([]);
-    expect(await findCandidateProducts(10000)).toEqual([]);
+    expect(await findCandidateProducts(1, 10000)).toEqual([]);
   });
 });
 

@@ -135,12 +135,12 @@ export async function fulfillOrder(
     paymentMethod: paymentMethod ?? order.paymentMethod ?? null,
   });
 
-  await markProductsSold(productIds);
+  await markProductsSold(order.tenantId, productIds);
 
   const customerEmail =
     session.customer_details?.email ?? order.customerEmail ?? null;
   if (customerEmail) {
-    const purchasedProducts = await getProductsByIds(productIds);
+    const purchasedProducts = await getProductsByIds(order.tenantId, productIds);
     sendOrderReceipt({
       to: customerEmail,
       customerName:

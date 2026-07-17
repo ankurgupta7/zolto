@@ -25,6 +25,7 @@ import {
   sendReconciliationReviewEmail,
 } from "./_core/email";
 import { getStripe } from "./stripe";
+import { DEFAULT_TENANT_ID } from "./_core/tenant";
 import type { Product } from "../drizzle/schema";
 
 export const RECONCILIATION_LOOKBACK_DAYS_DEFAULT = 30;
@@ -42,9 +43,10 @@ export function generateConfirmationToken(): string {
  * candidates.
  */
 export async function findCandidateProducts(
+  tenantId: number,
   amountRappen: number
 ): Promise<Product[]> {
-  const available = await getAvailableProductsForMatching();
+  const available = await getAvailableProductsForMatching(tenantId);
   const priceDiff = (p: Product) =>
     Math.abs(Math.round(Number(p.price) * 100) - amountRappen);
 
@@ -117,7 +119,13 @@ export async function runStripeReconciliation(
   const reviewItems: ReconciliationReviewItem[] = [];
 
   for (const intent of unmatched) {
-    const candidates = await findCandidateProducts(intent.amount);
+    // NOTE: the reconciliation job scans a single Stripe account globally; it
+    // is not yet per-tenant. Until per-tenant Stripe reconciliation exists it
+    // matches against the default tenant's catalogue. See tracker follow-ups.
+    const candidates = await findCandidateProducts(
+      DEFAULT_TENANT_ID,
+      intent.amount
+    );
     const token = generateConfirmationToken();
     const status = candidates.length > 0 ? "pending_review" : "no_candidates";
     const paymentMethodType = Array.isArray(intent.payment_method_types)

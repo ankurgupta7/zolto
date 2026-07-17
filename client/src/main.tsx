@@ -1,6 +1,7 @@
 import "@/lib/i18n";
 import { trpc } from "@/lib/trpc";
 import { createFetchWithTimeout } from "@/lib/fetchWithTimeout";
+import { resolveSurface } from "@/lib/surface";
 import { UNAUTHED_ERR_MSG } from "@shared/const";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { httpBatchLink, TRPCClientError } from "@trpc/client";
@@ -45,6 +46,20 @@ const trpcClient = trpc.createClient({
       url: "/api/trpc",
       transformer: superjson,
       fetch: createFetchWithTimeout(),
+      // Tell the server which storefront tenant this request is for. The server
+      // resolves ctx.tenant from this header (or the host subdomain), and scopes
+      // every storefront read to it — so a store only ever sees its own data.
+      // Admin procedures ignore this and use the signed-in admin's own tenant.
+      headers() {
+        if (typeof window === "undefined") return {};
+        const { surface, tenantSlug } = resolveSurface({
+          hostname: window.location.hostname,
+          search: window.location.search,
+        });
+        return surface === "storefront" && tenantSlug
+          ? { "x-tenant-slug": tenantSlug }
+          : {};
+      },
     }),
   ],
 });

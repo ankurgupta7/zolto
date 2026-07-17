@@ -49,11 +49,14 @@ vi.mock("./stripe", () => ({
 import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
 
+const TEST_TENANT_ID = 7;
+
 function makeCtx(role: "admin" | "user" | null = null): TrpcContext {
   const user =
     role !== null
       ? {
           id: 1,
+          tenantId: TEST_TENANT_ID,
           openId: "test-user",
           email: "test@example.com",
           name: "Test User",
@@ -67,6 +70,9 @@ function makeCtx(role: "admin" | "user" | null = null): TrpcContext {
 
   return {
     user,
+    // The storefront tenant is resolved from the request; checkout scopes all
+    // product/order lookups to it.
+    tenant: { id: TEST_TENANT_ID } as TrpcContext["tenant"],
     req: { protocol: "https", headers: {} } as TrpcContext["req"],
     res: { clearCookie: vi.fn() } as unknown as TrpcContext["res"],
   };
@@ -156,7 +162,7 @@ describe("checkout.createSession", () => {
     const caller = appRouter.createCaller(makeCtx());
     const result = await caller.checkout.createSession({ productIds: [1, 1] });
 
-    expect(getProductsByIds).toHaveBeenCalledWith([1]);
+    expect(getProductsByIds).toHaveBeenCalledWith(TEST_TENANT_ID, [1]);
     expect(checkoutSessionsCreate).toHaveBeenCalledTimes(1);
     const sessionArgs = checkoutSessionsCreate.mock.calls[0][0];
     expect(sessionArgs.line_items).toHaveLength(1);
@@ -164,6 +170,7 @@ describe("checkout.createSession", () => {
 
     expect(createOrder).toHaveBeenCalledWith(
       expect.objectContaining({
+        tenantId: TEST_TENANT_ID,
         stripeSessionId: "cs_test_new",
         status: "pending",
         amountTotal: 18500,

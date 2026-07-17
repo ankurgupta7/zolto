@@ -196,43 +196,60 @@ export async function getUserByOpenId(openId: string) {
 
 // ─── Products ─────────────────────────────────────────────────────────────────
 
-export async function getVisibleProducts() {
+// Every product read/write is scoped to a tenant. `tenantId` is the FIRST
+// argument on purpose — it is not optional and every WHERE clause includes it,
+// so a caller can never touch another tenant's catalogue (a mismatched id
+// simply matches no rows). Storefront callers pass `ctx.tenant.id`; admin
+// callers pass `ctx.user.tenantId`.
+export async function getVisibleProducts(tenantId: number) {
   return withDb(
     db =>
       db
         .select()
         .from(products)
-        .where(and(eq(products.visible, true), isNotNull(products.imageUrl)))
+        .where(
+          and(
+            eq(products.tenantId, tenantId),
+            eq(products.visible, true),
+            isNotNull(products.imageUrl)
+          )
+        )
         .orderBy(desc(products.createdAt)),
     []
   );
 }
 
-export async function getAllProducts() {
+export async function getAllProducts(tenantId: number) {
   return withDb(
-    db => db.select().from(products).orderBy(desc(products.createdAt)),
+    db =>
+      db
+        .select()
+        .from(products)
+        .where(eq(products.tenantId, tenantId))
+        .orderBy(desc(products.createdAt)),
     []
   );
 }
 
-export async function getProductById(id: number) {
+export async function getProductById(tenantId: number, id: number) {
   return withDb(async db => {
     const result = await db
       .select()
       .from(products)
-      .where(eq(products.id, id))
+      .where(and(eq(products.tenantId, tenantId), eq(products.id, id)))
       .limit(1);
     return result.length > 0 ? result[0] : undefined;
   }, undefined);
 }
 
-export async function getVisibleProductById(id: number) {
+export async function getVisibleProductById(tenantId: number, id: number) {
   return withDb(async db => {
     const result = await db
       .select()
       .from(products)
       .where(
         and(
+          eq(products.tenantId, tenantId),
           eq(products.id, id),
           eq(products.visible, true),
           isNotNull(products.imageUrl)
@@ -243,12 +260,20 @@ export async function getVisibleProductById(id: number) {
   }, undefined);
 }
 
-export async function getProductByDiscordMessageId(discordMessageId: string) {
+export async function getProductByDiscordMessageId(
+  tenantId: number,
+  discordMessageId: string
+) {
   return withDb(async db => {
     const result = await db
       .select()
       .from(products)
-      .where(eq(products.discordMessageId, discordMessageId))
+      .where(
+        and(
+          eq(products.tenantId, tenantId),
+          eq(products.discordMessageId, discordMessageId)
+        )
+      )
       .limit(1);
     return result.length > 0 ? result[0] : undefined;
   }, undefined);
@@ -258,49 +283,79 @@ export async function createProduct(data: WithOptionalTenant<InsertProduct>) {
   return withDbOrThrow(db => db.insert(products).values(withTenant(data)));
 }
 
-export async function setProductVisibility(id: number, visible: boolean) {
+export async function setProductVisibility(
+  tenantId: number,
+  id: number,
+  visible: boolean
+) {
   await withDbOrThrow(db =>
-    db.update(products).set({ visible }).where(eq(products.id, id))
+    db
+      .update(products)
+      .set({ visible })
+      .where(and(eq(products.tenantId, tenantId), eq(products.id, id)))
   );
 }
 
-export async function deleteProduct(id: number) {
-  await withDbOrThrow(db => db.delete(products).where(eq(products.id, id)));
+export async function deleteProduct(tenantId: number, id: number) {
+  await withDbOrThrow(db =>
+    db
+      .delete(products)
+      .where(and(eq(products.tenantId, tenantId), eq(products.id, id)))
+  );
 }
 
-export async function setProductSold(id: number, sold: boolean) {
+export async function setProductSold(
+  tenantId: number,
+  id: number,
+  sold: boolean
+) {
   await withDbOrThrow(db =>
-    db.update(products).set({ sold }).where(eq(products.id, id))
+    db
+      .update(products)
+      .set({ sold })
+      .where(and(eq(products.tenantId, tenantId), eq(products.id, id)))
   );
 }
 
 export async function updateProduct(
+  tenantId: number,
   id: number,
   data: Partial<Omit<InsertProduct, "id">>
 ) {
   await withDbOrThrow(db =>
-    db.update(products).set(data).where(eq(products.id, id))
+    db
+      .update(products)
+      .set(data)
+      .where(and(eq(products.tenantId, tenantId), eq(products.id, id)))
   );
 }
 
-export async function setProductQuantity(id: number, quantity: number) {
+export async function setProductQuantity(
+  tenantId: number,
+  id: number,
+  quantity: number
+) {
   await withDbOrThrow(db =>
     db
       .update(products)
       .set({ quantity, sold: quantity <= 0 })
-      .where(eq(products.id, id))
+      .where(and(eq(products.tenantId, tenantId), eq(products.id, id)))
   );
 }
 
-export async function getProductsByIds(ids: number[]) {
+export async function getProductsByIds(tenantId: number, ids: number[]) {
   if (ids.length === 0) return [];
   return withDb(
-    db => db.select().from(products).where(inArray(products.id, ids)),
+    db =>
+      db
+        .select()
+        .from(products)
+        .where(and(eq(products.tenantId, tenantId), inArray(products.id, ids))),
     []
   );
 }
 
-export async function markProductsSold(ids: number[]) {
+export async function markProductsSold(tenantId: number, ids: number[]) {
   if (ids.length === 0) return;
   const db = await getDb();
   if (!db) return;
@@ -314,18 +369,23 @@ export async function markProductsSold(ids: number[]) {
       quantity: sql`GREATEST(0, \`quantity\` - 1)`,
       sold: sql`CASE WHEN \`quantity\` <= 1 THEN TRUE ELSE \`sold\` END`,
     })
-    .where(inArray(products.id, ids));
+    .where(and(eq(products.tenantId, tenantId), inArray(products.id, ids)));
 }
 
 // ─── Product Images ───────────────────────────────────────────────────────────
 
-export async function getProductImages(productId: number) {
+export async function getProductImages(tenantId: number, productId: number) {
   return withDb(
     db =>
       db
         .select()
         .from(productImages)
-        .where(eq(productImages.productId, productId))
+        .where(
+          and(
+            eq(productImages.tenantId, tenantId),
+            eq(productImages.productId, productId)
+          )
+        )
         .orderBy(asc(productImages.sortOrder), asc(productImages.createdAt)),
     []
   );
@@ -337,15 +397,27 @@ export async function addProductImage(
   return withDbOrThrow(db => db.insert(productImages).values(withTenant(data)));
 }
 
-export async function deleteProductImage(id: number) {
+export async function deleteProductImage(tenantId: number, id: number) {
   await withDbOrThrow(db =>
-    db.delete(productImages).where(eq(productImages.id, id))
+    db
+      .delete(productImages)
+      .where(and(eq(productImages.tenantId, tenantId), eq(productImages.id, id)))
   );
 }
 
-export async function deleteAllProductImages(productId: number) {
+export async function deleteAllProductImages(
+  tenantId: number,
+  productId: number
+) {
   await withDbOrThrow(db =>
-    db.delete(productImages).where(eq(productImages.productId, productId))
+    db
+      .delete(productImages)
+      .where(
+        and(
+          eq(productImages.tenantId, tenantId),
+          eq(productImages.productId, productId)
+        )
+      )
   );
 }
 
@@ -431,13 +503,18 @@ export async function insertBulkUploadLog(
   await db.insert(bulkUploadLogs).values(withTenant(data));
 }
 
-export async function getProductsMissingTranslation() {
+export async function getProductsMissingTranslation(tenantId: number) {
   return withDb(
     db =>
       db
         .select()
         .from(products)
-        .where(or(isNull(products.nameEn), isNull(products.descriptionEn)))
+        .where(
+          and(
+            eq(products.tenantId, tenantId),
+            or(isNull(products.nameEn), isNull(products.descriptionEn))
+          )
+        )
         .orderBy(desc(products.createdAt)),
     []
   );
@@ -472,7 +549,9 @@ export async function getBulkUploadLogs(limit = 100): Promise<BulkUploadLog[]> {
 
 // In-stock products a customer could plausibly have paid for, used as the
 // candidate pool when guessing which piece an orphaned Stripe payment was for.
-export async function getAvailableProductsForMatching(): Promise<Product[]> {
+export async function getAvailableProductsForMatching(
+  tenantId: number
+): Promise<Product[]> {
   return withDb(
     db =>
       db
@@ -480,6 +559,7 @@ export async function getAvailableProductsForMatching(): Promise<Product[]> {
         .from(products)
         .where(
           and(
+            eq(products.tenantId, tenantId),
             eq(products.visible, true),
             eq(products.sold, false),
             gt(products.quantity, 0)

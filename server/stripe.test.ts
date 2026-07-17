@@ -52,6 +52,7 @@ function makeSession(
 
 const baseOrder = {
   id: 1,
+  tenantId: 3,
   stripeSessionId: "cs_test_123",
   stripePaymentIntentId: null,
   status: "pending" as const,
@@ -100,7 +101,7 @@ describe("fulfillOrder", () => {
         productIds: "1,2",
       })
     );
-    expect(markProductsSold).toHaveBeenCalledWith([1, 2]);
+    expect(markProductsSold).toHaveBeenCalledWith(3, [1, 2]);
   });
 
   it("gives up when order reconstruction fails to produce an order", async () => {
@@ -134,7 +135,7 @@ describe("fulfillOrder", () => {
       customerName: "Jane Buyer",
       paymentMethod: "card",
     });
-    expect(markProductsSold).toHaveBeenCalledWith([1, 2]);
+    expect(markProductsSold).toHaveBeenCalledWith(3, [1, 2]);
     expect(notifyOwner).toHaveBeenCalledTimes(1);
     expect(notifyOwner.mock.calls[0][0].content).toContain("CHF 185.00");
   });
@@ -148,7 +149,7 @@ describe("fulfillOrder", () => {
 
     await fulfillOrder(makeSession());
 
-    expect(getProductsByIds).toHaveBeenCalledWith([1, 2]);
+    expect(getProductsByIds).toHaveBeenCalledWith(3, [1, 2]);
     expect(sendOrderReceipt).toHaveBeenCalledWith(
       expect.objectContaining({
         to: "buyer@example.com",
@@ -295,7 +296,7 @@ describe("registerStripeWebhook", () => {
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ received: true });
-    expect(markProductsSold).toHaveBeenCalledWith([1, 2]);
+    expect(markProductsSold).toHaveBeenCalledWith(3, [1, 2]);
   });
 
   it("marks the order expired on checkout.session.expired", async () => {

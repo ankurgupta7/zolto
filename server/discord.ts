@@ -211,7 +211,11 @@ export async function handleDiscordMessage(
   };
 
   // ── Deduplication: skip if this Discord message was already processed ──────
-  const existing = await getProductByDiscordMessageId(message.id);
+  const discordTenantId = tenant?.id ?? DEFAULT_TENANT_ID;
+  const existing = await getProductByDiscordMessageId(
+    discordTenantId,
+    message.id
+  );
   if (existing) {
     console.log(`[Discord] Message ${message.id} already processed, skipping`);
     return;

@@ -601,7 +601,7 @@ describe("fulfillment via POST /api/pos/sale", () => {
   });
 
   it("marks stock sold using the productIds recorded on pos_order_items, not Stripe metadata (custom items are skipped since they have no product row)", async () => {
-    const { db, updateWhereSpy } = makeFulfillFakeDb({ id: 7, status: "pending" }, [
+    const { db, updateWhereSpy } = makeFulfillFakeDb({ id: 7, status: "pending", tenantId: 1 }, [
       { posOrderId: 7, productId: 1, priceRappen: 3000, name: null },
       { posOrderId: 7, productId: null, priceRappen: 1500, name: "Custom repair fee" },
     ]);
@@ -624,7 +624,7 @@ describe("fulfillment via POST /api/pos/sale", () => {
     // decoding error client-side and report a successful charge as "Payment
     // Failed" to the cashier.
     expect(res.body).toEqual({ success: true, posOrderId: 7, alreadyFulfilled: false });
-    expect(markProductsSold).toHaveBeenCalledWith([1]);
+    expect(markProductsSold).toHaveBeenCalledWith(1, [1]);
     expect(updateWhereSpy).toHaveBeenCalled();
   });
 
@@ -701,7 +701,7 @@ describe("POST /api/pos/manual-sale (cash)", () => {
         totalRappen: 5000,
       })
     );
-    expect(markProductsSold).toHaveBeenCalledWith([1]);
+    expect(markProductsSold).toHaveBeenCalledWith(1, [1]);
   });
 
   it("honors a bargained price override and a custom item, same as payment-intent", async () => {

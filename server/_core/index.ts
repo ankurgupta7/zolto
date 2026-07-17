@@ -11,6 +11,7 @@ import { serveStatic, setupVite } from "./vite";
 import { registerStripeWebhook } from "../stripe";
 import { registerPosWebhook, registerPosRoutes } from "../pos";
 import { registerReconciliationRoutes } from "../reconciliationRoutes";
+import { getDb } from "../db";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -32,6 +33,12 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 }
 
 async function startServer() {
+  // Initialize the DB connection at boot. Tenant resolution (createContext) reads
+  // the `db` query proxy directly, which throws until getDb() has run once — and
+  // since storefront reads now require a resolved tenant, a cold DB would fail
+  // every request. Warming it here makes the proxy usable from the first request.
+  await getDb();
+
   const app = express();
   const server = createServer(app);
   // Both webhook handlers need the raw request body for signature verification,

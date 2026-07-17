@@ -215,7 +215,7 @@ describe("updateOrderBySessionId", () => {
 
 describe("markProductsSold", () => {
   it("does nothing for an empty id list", async () => {
-    await markProductsSold([]);
+    await markProductsSold(1, []);
     expect(dbMock.update).not.toHaveBeenCalled();
   });
 
@@ -223,7 +223,7 @@ describe("markProductsSold", () => {
     const updateChain = makeChain(undefined);
     dbMock.update.mockReturnValue(updateChain);
 
-    await markProductsSold([1, 2, 3]);
+    await markProductsSold(1, [1, 2, 3]);
 
     expect(dbMock.update).toHaveBeenCalledTimes(1);
     const [setArg] = updateChain.__calls.set[0];

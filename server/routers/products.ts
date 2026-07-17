@@ -28,6 +28,16 @@ import {
 
 // ─── Products router ──────────────────────────────────────────────────────────
 
+// Storefront reads are scoped to the tenant resolved from the request (host /
+// X-Tenant-Slug). No tenant → no store, so return NOT_FOUND rather than leaking
+// another tenant's catalogue.
+function storefrontTenantId(ctx: { tenant: { id: number } | null }): number {
+  if (!ctx.tenant) {
+    throw new TRPCError({ code: "NOT_FOUND", message: "Store not found" });
+  }
+  return ctx.tenant.id;
+}
+
 export const productsRouter = router({
   // Public: list all visible products
   list: publicProcedure
@@ -38,8 +48,8 @@ export const productsRouter = router({
         })
         .optional()
     )
-    .query(async ({ input }) => {
-      const all = await getVisibleProducts();
+    .query(async ({ input, ctx }) => {
+      const all = await getVisibleProducts(storefrontTenantId(ctx));
       if (input?.category) {
         return all.filter(p => p.category === input.category);
       }
@@ -49,22 +59,25 @@ export const productsRouter = router({
   // Public: get single visible product
   getById: publicProcedure
     .input(z.object({ id: z.number() }))
-    .query(async ({ input }) => {
-      const product = await getVisibleProductById(input.id);
+    .query(async ({ input, ctx }) => {
+      const product = await getVisibleProductById(
+        storefrontTenantId(ctx),
+        input.id
+      );
       if (!product) throw new TRPCError({ code: "NOT_FOUND" });
       return product;
     }),
 
   // Admin: list all products (including hidden)
-  adminList: adminProcedure.query(async () => {
-    return getAllProducts();
+  adminList: adminProcedure.query(async ({ ctx }) => {
+    return getAllProducts(ctx.user.tenantId);
   }),
 
   // Admin: preview groups of products sharing the same (normalized) name —
   // the fingerprint left by the CSV/Sheets re-import bug that used to create
   // a fresh duplicate row for every already-imported item.
-  findDuplicates: adminProcedure.query(async () => {
-    const all = await getAllProducts();
+  findDuplicates: adminProcedure.query(async ({ ctx }) => {
+    const all = await getAllProducts(ctx.user.tenantId);
     const groups = new Map<string, typeof all>();
     for (const p of all) {
       const key = p.name.trim().toLowerCase();
@@ -98,14 +111,15 @@ export const productsRouter = router({
   // This is a hard delete, not a visibility toggle — it's irreversible.
   mergeDuplicates: adminProcedure
     .input(z.object({ ids: z.array(z.number()).min(1) }))
-    .mutation(async ({ input }) => {
-      const all = await getAllProducts();
+    .mutation(async ({ input, ctx }) => {
+      const tid = ctx.user.tenantId;
+      const all = await getAllProducts(tid);
       const existingIds = new Set(all.map(p => p.id));
       let removed = 0;
       for (const id of input.ids) {
         if (!existingIds.has(id)) continue; // already removed, or never existed
-        await deleteAllProductImages(id);
-        await deleteProduct(id);
+        await deleteAllProductImages(tid, id);
+        await deleteProduct(tid, id);
         removed++;
       }
       return { removed };
@@ -114,40 +128,40 @@ export const productsRouter = router({
   // Admin: toggle visibility
   toggleVisibility: adminProcedure
     .input(z.object({ id: z.number(), visible: z.boolean() }))
-    .mutation(async ({ input }) => {
-      await setProductVisibility(input.id, input.visible);
+    .mutation(async ({ input, ctx }) => {
+      await setProductVisibility(ctx.user.tenantId, input.id, input.visible);
       return { success: true };
     }),
 
   // Admin: toggle sold status
   toggleSold: adminProcedure
     .input(z.object({ id: z.number(), sold: z.boolean() }))
-    .mutation(async ({ input }) => {
-      await setProductSold(input.id, input.sold);
+    .mutation(async ({ input, ctx }) => {
+      await setProductSold(ctx.user.tenantId, input.id, input.sold);
       return { success: true };
     }),
 
   // Admin: set stock quantity (also flips sold when quantity reaches 0)
   setQuantity: adminProcedure
     .input(z.object({ id: z.number(), quantity: z.number().int().min(0) }))
-    .mutation(async ({ input }) => {
-      await setProductQuantity(input.id, input.quantity);
+    .mutation(async ({ input, ctx }) => {
+      await setProductQuantity(ctx.user.tenantId, input.id, input.quantity);
       return { success: true };
     }),
 
   // Admin: delete product
   delete: adminProcedure
     .input(z.object({ id: z.number() }))
-    .mutation(async ({ input }) => {
-      await deleteProduct(input.id);
+    .mutation(async ({ input, ctx }) => {
+      await deleteProduct(ctx.user.tenantId, input.id);
       return { success: true };
     }),
 
   // Public: get images for a product
   getImages: publicProcedure
     .input(z.object({ productId: z.number() }))
-    .query(async ({ input }) => {
-      return getProductImages(input.productId);
+    .query(async ({ input, ctx }) => {
+      return getProductImages(storefrontTenantId(ctx), input.productId);
     }),
 
   // Admin: add an image to a product (base64 upload)
@@ -160,7 +174,11 @@ export const productsRouter = router({
         sortOrder: z.number().default(0),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      const tid = ctx.user.tenantId;
+      // Reject an image upload aimed at another tenant's product.
+      const target = await getProductById(tid, input.productId);
+      if (!target) throw new TRPCError({ code: "NOT_FOUND" });
       // Strip data URL prefix if present
       const base64 = input.imageData.replace(/^data:[^;]+;base64,/, "");
       const buffer = Buffer.from(base64, "base64");
@@ -168,15 +186,18 @@ export const productsRouter = router({
       const key = `product-images/${input.productId}/${Date.now()}.${ext}`;
       const { url } = await storagePut(key, buffer, input.mimeType);
       await addProductImage({
+        tenantId: tid,
         productId: input.productId,
         imageKey: key,
         imageUrl: url,
         sortOrder: input.sortOrder,
       });
       // If product has no primary image yet, promote this one so it appears in the shop
-      const product = await getProductById(input.productId);
-      if (product && !product.imageUrl) {
-        await updateProduct(input.productId, { imageKey: key, imageUrl: url });
+      if (!target.imageUrl) {
+        await updateProduct(tid, input.productId, {
+          imageKey: key,
+          imageUrl: url,
+        });
       }
       return { success: true, url };
     }),
@@ -184,8 +205,8 @@ export const productsRouter = router({
   // Admin: delete a specific product image
   deleteImage: adminProcedure
     .input(z.object({ imageId: z.number() }))
-    .mutation(async ({ input }) => {
-      await deleteProductImage(input.imageId);
+    .mutation(async ({ input, ctx }) => {
+      await deleteProductImage(ctx.user.tenantId, input.imageId);
       return { success: true };
     }),
 
@@ -376,7 +397,8 @@ Return ONLY valid JSON, no markdown, no explanation.`,
           .max(20),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      const tid = ctx.user.tenantId;
       const created: number[] = [];
       const failed: string[] = [];
       const extraImageWarnings: string[] = [];
@@ -402,6 +424,7 @@ Return ONLY valid JSON, no markdown, no explanation.`,
 
           // Create the product row
           const result = await createProduct({
+            tenantId: tid,
             name: item.name,
             nameEn: item.nameEn ?? null,
             description: item.description,
@@ -424,6 +447,7 @@ Return ONLY valid JSON, no markdown, no explanation.`,
             err
           );
           await insertBulkUploadLog({
+            tenantId: tid,
             operation: "create",
             ref: item.name,
             errorMessage: msg,
@@ -443,6 +467,7 @@ Return ONLY valid JSON, no markdown, no explanation.`,
             const key = `product-images/${newId}/${Date.now()}-${i}.${ext}`;
             const { url } = await storagePut(key, buffer, img.mimeType);
             await addProductImage({
+              tenantId: tid,
               productId: newId,
               imageKey: key,
               imageUrl: url,
@@ -456,6 +481,7 @@ Return ONLY valid JSON, no markdown, no explanation.`,
               imgErr
             );
             await insertBulkUploadLog({
+              tenantId: tid,
               operation: "extra_image",
               ref: `${item.name} (image ${i + 1})`,
               errorMessage: msg,
@@ -486,8 +512,8 @@ Return ONLY valid JSON, no markdown, no explanation.`,
           .max(20),
       })
     )
-    .mutation(async ({ input }) => {
-      const existing = await getAllProducts();
+    .mutation(async ({ input, ctx }) => {
+      const existing = await getAllProducts(ctx.user.tenantId);
       const byName = new Map(
         existing.map(p => [p.name.trim().toLowerCase(), p])
       );
@@ -555,15 +581,16 @@ Return ONLY valid JSON, no markdown, no explanation.`,
           .max(20),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      const tid = ctx.user.tenantId;
       const updated: number[] = [];
       const failed: string[] = [];
       const extraImageWarnings: string[] = [];
 
       for (const item of input.items) {
         try {
-          // Verify product exists
-          const product = await getProductById(item.productId);
+          // Verify product exists and belongs to this tenant
+          const product = await getProductById(tid, item.productId);
           if (!product) {
             throw new Error(`Product ${item.productId} not found`);
           }
@@ -575,8 +602,9 @@ Return ONLY valid JSON, no markdown, no explanation.`,
             };
             if (item.descriptionEn) patch.descriptionEn = item.descriptionEn;
             await updateProduct(
+              tid,
               item.productId,
-              patch as Parameters<typeof updateProduct>[1]
+              patch as Parameters<typeof updateProduct>[2]
             );
           }
 
@@ -592,6 +620,7 @@ Return ONLY valid JSON, no markdown, no explanation.`,
               const key = `product-images/${item.productId}/${Date.now()}-${i}.${ext}`;
               const { url } = await storagePut(key, buffer, img.mimeType);
               await addProductImage({
+                tenantId: tid,
                 productId: item.productId,
                 imageKey: key,
                 imageUrl: url,
@@ -600,7 +629,7 @@ Return ONLY valid JSON, no markdown, no explanation.`,
 
               // If product has no primary image yet, promote the first uploaded one
               if (!primarySet && !product.imageUrl) {
-                await updateProduct(item.productId, {
+                await updateProduct(tid, item.productId, {
                   imageKey: key,
                   imageUrl: url,
                 });
@@ -614,6 +643,7 @@ Return ONLY valid JSON, no markdown, no explanation.`,
                 imgErr
               );
               await insertBulkUploadLog({
+                tenantId: tid,
                 operation: "extra_image",
                 ref: `Product ${item.productId} (image ${i + 1})`,
                 errorMessage: msg,
@@ -631,6 +661,7 @@ Return ONLY valid JSON, no markdown, no explanation.`,
             `[BulkUpsertImages] Failed for product ${item.productId}:`
           );
           await insertBulkUploadLog({
+            tenantId: tid,
             operation: "upsert_images",
             ref: String(item.productId),
             errorMessage: msg,
@@ -646,9 +677,9 @@ Return ONLY valid JSON, no markdown, no explanation.`,
   // Admin: compute AI translation suggestions for products missing English
   // copy, WITHOUT writing anything — the admin reviews/amends the proposed
   // list and only applyAutoTranslateAll persists the approved subset.
-  previewAutoTranslateAll: adminProcedure.mutation(async () => {
+  previewAutoTranslateAll: adminProcedure.mutation(async ({ ctx }) => {
     const { invokeLLM } = await import("../_core/llm");
-    const missing = await getProductsMissingTranslation();
+    const missing = await getProductsMissingTranslation(ctx.user.tenantId);
     if (missing.length === 0) return { proposals: [], total: 0 };
 
     const BATCH_SIZE = 10;
@@ -766,7 +797,8 @@ Return ONLY valid JSON, no markdown.`,
           .min(1),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      const tid = ctx.user.tenantId;
       let updated = 0;
       for (const item of input.items) {
         const patch: Record<string, string> = {};
@@ -774,8 +806,9 @@ Return ONLY valid JSON, no markdown.`,
         if (item.descriptionEn) patch.descriptionEn = item.descriptionEn;
         if (Object.keys(patch).length === 0) continue;
         await updateProduct(
+          tid,
           item.id,
-          patch as Parameters<typeof updateProduct>[1]
+          patch as Parameters<typeof updateProduct>[2]
         );
         updated++;
       }
@@ -783,10 +816,10 @@ Return ONLY valid JSON, no markdown.`,
     }),
 
   // Admin: AI-generated insights from sales and inventory data
-  insights: adminProcedure.mutation(async () => {
+  insights: adminProcedure.mutation(async ({ ctx }) => {
     const { invokeLLM } = await import("../_core/llm");
     const [allProducts, paidOrders] = await Promise.all([
-      getAllProducts(),
+      getAllProducts(ctx.user.tenantId),
       getPaidOrders(200),
     ]);
 
@@ -907,9 +940,9 @@ Be specific with numbers. Each insight must be exactly one clear sentence.`,
         category: z.enum(PRODUCT_CATEGORIES),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const { invokeLLM } = await import("../_core/llm");
-      const existing = await getAllProducts();
+      const existing = await getAllProducts(ctx.user.tenantId);
       if (existing.length === 0) return { duplicates: [] };
 
       const sameCat = existing.filter(p => p.category === input.category);
@@ -984,9 +1017,9 @@ Return only genuine near-duplicates. Return an empty duplicates array if there a
   // Admin: compute AI category suggestions for products still in 'Other',
   // WITHOUT writing anything — the admin reviews/amends the proposed list
   // and only applyRecategorizeAll persists the approved subset.
-  previewRecategorizeAll: adminProcedure.mutation(async () => {
+  previewRecategorizeAll: adminProcedure.mutation(async ({ ctx }) => {
     const { invokeLLM } = await import("../_core/llm");
-    const all = await getAllProducts();
+    const all = await getAllProducts(ctx.user.tenantId);
     const uncategorised = all.filter(p => p.category === "Other");
     if (uncategorised.length === 0) return { proposals: [], total: 0 };
 
@@ -1105,10 +1138,11 @@ Return ONLY valid JSON, no markdown.`,
           .min(1),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      const tid = ctx.user.tenantId;
       let updated = 0;
       for (const item of input.items) {
-        await updateProduct(item.id, { category: item.category });
+        await updateProduct(tid, item.id, { category: item.category });
         updated++;
       }
       return { updated };
@@ -1133,8 +1167,9 @@ Return ONLY valid JSON, no markdown.`,
         imageUrl: z.string().optional(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       await createProduct({
+        tenantId: ctx.user.tenantId,
         name: input.name,
         nameEn: input.nameEn ?? null,
         description: input.description,
@@ -1162,11 +1197,15 @@ Return ONLY valid JSON, no markdown.`,
         category: z.enum(PRODUCT_CATEGORIES).optional(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const { id, price, ...rest } = input;
       const data: Record<string, unknown> = { ...rest };
       if (price !== undefined) data.price = String(price);
-      await updateProduct(id, data as Parameters<typeof updateProduct>[1]);
+      await updateProduct(
+        ctx.user.tenantId,
+        id,
+        data as Parameters<typeof updateProduct>[2]
+      );
       return { success: true };
     }),
 
@@ -1191,11 +1230,12 @@ Return ONLY valid JSON, no markdown.`,
           .max(500),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      const tid = ctx.user.tenantId;
       // Match rows against existing products by name so re-importing the same
       // sheet (the normal workflow after editing it) updates in place instead
       // of creating a fresh duplicate row for every already-imported item.
-      const existing = await getAllProducts();
+      const existing = await getAllProducts(tid);
       const byName = new Map(
         existing.map(p => [p.name.trim().toLowerCase(), p])
       );
@@ -1217,12 +1257,14 @@ Return ONLY valid JSON, no markdown.`,
             if (row.descriptionEn) patch.descriptionEn = row.descriptionEn;
             if (row.imageUrl) patch.imageUrl = row.imageUrl;
             await updateProduct(
+              tid,
               match.id,
-              patch as Parameters<typeof updateProduct>[1]
+              patch as Parameters<typeof updateProduct>[2]
             );
             updated.push(row.name);
           } else {
             await createProduct({
+              tenantId: tid,
               name: row.name,
               nameEn: row.nameEn ?? null,
               description: row.description,

@@ -38,7 +38,7 @@ export const checkoutRouter = router({
         productIds: z.array(z.number().int().positive()).min(1).max(50),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const stripe = getStripe();
       if (!stripe) {
         throw new TRPCError({
@@ -48,9 +48,16 @@ export const checkoutRouter = router({
         });
       }
 
+      // Checkout is scoped to the storefront's tenant — a cart can only ever
+      // contain that store's pieces.
+      if (!ctx.tenant) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Store not found" });
+      }
+      const tenantId = ctx.tenant.id;
+
       // De-duplicate — each piece is unique and can only be bought once.
       const uniqueIds = Array.from(new Set(input.productIds));
-      const items = await getProductsByIds(uniqueIds);
+      const items = await getProductsByIds(tenantId, uniqueIds);
 
       const found = new Set(items.map(p => p.id));
       const missing = uniqueIds.filter(id => !found.has(id));
@@ -151,6 +158,7 @@ export const checkoutRouter = router({
         items.reduce((sum, p) => sum + Math.round(Number(p.price) * 100), 0);
 
       await createOrder({
+        tenantId,
         stripeSessionId: session.id,
         status: "pending",
         amountTotal,
@@ -193,7 +201,8 @@ export const checkoutRouter = router({
         .split(",")
         .map(s => parseInt(s.trim(), 10))
         .filter(n => Number.isFinite(n));
-      const products = await getProductsByIds(productIds);
+      // Scope the product lookup to the order's own tenant.
+      const products = await getProductsByIds(order.tenantId, productIds);
 
       const items = products.map(p => ({
         id: p.id,

@@ -102,7 +102,10 @@ export function registerReconciliationRoutes(app: Express): void {
       const amount = (reconciliation.amountRappen / 100).toFixed(2);
       let actionLabel = "mark this payment for manual review";
       if ("index" in choice) {
-        const product = await getProductById(candidateIds[choice.index]);
+        const product = await getProductById(
+          reconciliation.tenantId,
+          candidateIds[choice.index]
+        );
         if (!product) {
           res
             .status(404)
@@ -202,7 +205,7 @@ export function registerReconciliationRoutes(app: Express): void {
       }
 
       const productId = candidateIds[choice.index];
-      const product = await getProductById(productId);
+      const product = await getProductById(reconciliation.tenantId, productId);
       if (!product || product.sold || product.quantity <= 0) {
         res
           .status(409)
