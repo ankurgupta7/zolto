@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Printer } from "lucide-react";
+import { useTenant } from "@/contexts/TenantContext";
 
 interface OrderItem {
   id: number;
@@ -34,6 +35,10 @@ export default function OrderReceipt({
   items,
 }: OrderReceiptProps) {
   const { t } = useTranslation();
+  const { branding } = useTenant();
+  // Full store name under the short brand mark; omit if they're the same.
+  const receiptSubtitle =
+    branding.storeName !== branding.shortName ? branding.storeName : "";
 
   const orderRef = String(reference).padStart(5, "0");
   const date = new Date(createdAt).toLocaleDateString(undefined, {
@@ -88,11 +93,13 @@ export default function OrderReceipt({
         {/* Letterhead */}
         <div className="bg-[var(--brand-ink)] px-8 py-7 text-center">
           <p className="text-[var(--brand-accent)] text-xl tracking-[0.22em] uppercase font-serif mb-1">
-            Kalakosh
+            {branding.shortName}
           </p>
-          <p className="text-[#8A7865] text-xs tracking-[0.1em] font-sans">
-            Handcrafted Jewellery · Zurich · kalakosh.ch
-          </p>
+          {receiptSubtitle && (
+            <p className="text-[#8A7865] text-xs tracking-[0.1em] font-sans">
+              {receiptSubtitle}
+            </p>
+          )}
         </div>
 
         <div className="px-8 py-7">
@@ -196,7 +203,9 @@ export default function OrderReceipt({
         {/* Footer */}
         <div className="border-t border-[var(--brand-border)] px-8 py-4 text-center">
           <p className="text-[#A09080] text-xs font-sans leading-relaxed">
-            return@kalakosh.ch · 14-day returns on unworn, undamaged pieces
+            {branding.contactEmail
+              ? `${branding.contactEmail} · Thank you for your order`
+              : "Thank you for your order"}
           </p>
         </div>
       </div>

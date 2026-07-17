@@ -6,6 +6,8 @@ import { ArrowLeft, ShoppingBag, Check } from "lucide-react";
 import { toast } from "sonner";
 import ImageLightbox from "@/components/ImageLightbox";
 import { useCart } from "@/contexts/CartContext";
+import { useTenant } from "@/contexts/TenantContext";
+import { whatsappHref } from "@/lib/branding";
 import {
   Carousel,
   CarouselContent,
@@ -39,6 +41,7 @@ export default function ProductDetail() {
   const productId = Number(id);
   const { t, i18n } = useTranslation();
   const { addItem, has, openCart } = useCart();
+  const { branding } = useTenant();
   const [activeIdx, setActiveIdx] = useState(0);
   const [carouselApi, setCarouselApi] = useState<CarouselApi>();
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
@@ -135,12 +138,15 @@ export default function ProductDetail() {
 
   const total = allImages.length;
 
-  const productUrl = typeof window !== "undefined" ? window.location.href : `https://kalakosh.ch/product/${productId}`;
+  const productUrl = typeof window !== "undefined" ? window.location.href : `/product/${productId}`;
   const enquiryText = product.sold
     ? t("product.enquirySimilar", { name: displayName, link: productUrl })
     : t("product.enquiryAvailable", { name: displayName, link: productUrl });
 
-  const whatsappUrl = `https://wa.me/41791721714?text=${encodeURIComponent(enquiryText)}`;
+  const currencyCode = branding.currency.toUpperCase();
+  const whatsappUrl = branding.whatsappNumber
+    ? `https://wa.me/${branding.whatsappNumber}?text=${encodeURIComponent(enquiryText)}`
+    : whatsappHref(branding);
 
   const productSchema = product ? {
     "@context": "https://schema.org",
@@ -148,33 +154,32 @@ export default function ProductDetail() {
     "name": displayName,
     "description": displayDescription,
     "image": allImages.map((img) => img.imageUrl),
-    "sku": `KALA-${product.id}`,
+    "sku": `SKU-${product.id}`,
     "brand": {
       "@type": "Brand",
-      "name": "Kalakosh Zürich"
+      "name": branding.storeName
     },
     "category": product.category,
     "offers": {
       "@type": "Offer",
       "url": productUrl,
-      "priceCurrency": "CHF",
+      "priceCurrency": currencyCode,
       "price": Number(product.price).toFixed(2),
       "availability": product.sold ? "https://schema.org/OutOfStock" : "https://schema.org/InStock",
       "itemCondition": "https://schema.org/NewCondition",
       "seller": {
         "@type": "Organization",
-        "name": "Kalakosh Zürich"
+        "name": branding.storeName
       },
       "shippingDetails": {
         "@type": "OfferShippingDetails",
         "shippingRate": {
           "@type": "MonetaryAmount",
           "value": "0",
-          "currency": "CHF"
+          "currency": currencyCode
         },
         "shippingDestination": {
-          "@type": "DefinedRegion",
-          "addressCountry": "CH"
+          "@type": "DefinedRegion"
         }
       }
     },
@@ -327,13 +332,13 @@ export default function ProductDetail() {
             <div className="flex flex-col justify-center" itemScope itemType="https://schema.org/Product">
               <meta itemProp="name" content={displayName} />
               <meta itemProp="description" content={displayDescription} />
-              <meta itemProp="sku" content={`KALA-${product.id}`} />
+              <meta itemProp="sku" content={`SKU-${product.id}`} />
               <link itemProp="image" href={allImages[0]?.imageUrl ?? ""} />
               <div itemProp="brand" itemScope itemType="https://schema.org/Brand">
-                <meta itemProp="name" content="Kalakosh Zürich" />
+                <meta itemProp="name" content={branding.storeName} />
               </div>
               <div itemProp="offers" itemScope itemType="https://schema.org/Offer">
-                <meta itemProp="priceCurrency" content="CHF" />
+                <meta itemProp="priceCurrency" content={currencyCode} />
                 <meta itemProp="price" content={Number(product.price).toFixed(2)} />
                 <meta itemProp="availability" content={product.sold ? "https://schema.org/OutOfStock" : "https://schema.org/InStock"} />
                 <link itemProp="url" href={productUrl} />
@@ -357,7 +362,7 @@ export default function ProductDetail() {
               </p>
 
               <p className={`font-serif text-3xl mb-8 ${product.sold ? "text-muted-foreground line-through" : "text-[var(--brand-ink)]"}`}>
-                CHF {Number(product.price).toFixed(2)}
+                {currencyCode} {Number(product.price).toFixed(2)}
               </p>
 
               {product.sold ? (
@@ -365,15 +370,17 @@ export default function ProductDetail() {
                   <div className="inline-flex items-center justify-center gap-2 bg-amber-50 text-amber-800 border border-amber-200 px-8 py-3.5 text-sm uppercase tracking-[0.1em] font-sans">
                     {t("product.sold")}
                   </div>
-                  <a
-                    href={whatsappUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center gap-2 bg-[#25D366] text-white px-8 py-3.5 text-sm uppercase tracking-[0.15em] font-sans hover:bg-[#1ebe5d] transition-colors duration-200"
-                  >
-                    <WhatsAppIcon />
-                    {t("product.enquireWhatsApp")}
-                  </a>
+                  {whatsappUrl && (
+                    <a
+                      href={whatsappUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center gap-2 bg-[#25D366] text-white px-8 py-3.5 text-sm uppercase tracking-[0.15em] font-sans hover:bg-[#1ebe5d] transition-colors duration-200"
+                    >
+                      <WhatsAppIcon />
+                      {t("product.enquireWhatsApp")}
+                    </a>
+                  )}
                 </div>
               ) : (
                 <div className="flex flex-col gap-3">
@@ -396,15 +403,17 @@ export default function ProductDetail() {
                       {t("product.addToBag")}
                     </button>
                   )}
-                  <a
-                    href={whatsappUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center gap-2 bg-white border border-[#25D366] text-[#1ebe5d] px-8 py-3 text-sm uppercase tracking-[0.15em] font-sans hover:bg-[#25D366] hover:text-white transition-colors duration-200"
-                  >
-                    <WhatsAppIcon />
-                    {t("product.enquireWhatsApp")}
-                  </a>
+                  {whatsappUrl && (
+                    <a
+                      href={whatsappUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center gap-2 bg-white border border-[#25D366] text-[#1ebe5d] px-8 py-3 text-sm uppercase tracking-[0.15em] font-sans hover:bg-[#25D366] hover:text-white transition-colors duration-200"
+                    >
+                      <WhatsAppIcon />
+                      {t("product.enquireWhatsApp")}
+                    </a>
+                  )}
                 </div>
               )}
 

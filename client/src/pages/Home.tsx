@@ -1,8 +1,9 @@
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import ProductCard from "@/components/ProductCard";
-import { useTranslation } from "react-i18next";
-import type { ProductCategory } from "@shared/types";
+import { useTenant } from "@/contexts/TenantContext";
+import { instagramHref } from "@/lib/branding";
+import { heroCopy, valueProps } from "@/lib/storefrontContent";
 import {
   Carousel,
   CarouselContent,
@@ -42,120 +43,76 @@ function fadeInProps(delay = 0) {
 }
 
 export default function Home() {
-  const { t } = useTranslation();
+  const { branding } = useTenant();
   const { data: products } = trpc.products.list.useQuery({});
   const featured = products?.slice(0, 6) ?? [];
+  const hero = heroCopy(branding);
+  const pillars = valueProps();
+  const igHref = instagramHref(branding);
 
-  const availableCategories = useMemo(
-    () => new Set(products?.map((p) => p.category) ?? []),
-    [products]
-  );
+  // Categories are derived from the tenant's own catalogue — no hardcoded list,
+  // so a store only ever shows the categories it actually stocks.
+  const categories = useMemo(() => {
+    const seen = new Set<string>();
+    for (const p of products ?? []) if (p.category) seen.add(p.category);
+    return Array.from(seen);
+  }, [products]);
 
   const heroRef = useRef<HTMLElement>(null);
   const { scrollY } = useScroll();
 
-  /* Hero background drifts at ~30 % of scroll speed */
   const rawHeroY = useTransform(scrollY, [0, 800], [0, 160]);
   const heroY = useSpring(rawHeroY, { stiffness: 60, damping: 20 });
-
-  /* Hero text content fades and rises as the user scrolls away */
   const heroContentOpacity = useTransform(scrollY, [0, 360], [1, 0]);
   const heroContentY = useTransform(scrollY, [0, 360], [0, 40]);
-
-  /* Scroll-indicator vanishes early */
   const scrollIndicatorOpacity = useTransform(scrollY, [0, 180], [1, 0]);
-
-  const CATEGORIES = [
-    { key: "necklaces",        name: "Necklaces",         displayName: t("categories.necklaces"),        icon: "◎" },
-    { key: "earrings",         name: "Earrings",           displayName: t("categories.earrings"),         icon: "◉" },
-    { key: "sets",             name: "Sets",               displayName: t("categories.sets"),             icon: "✦" },
-    { key: "rings",            name: "Rings",              displayName: t("categories.rings"),            icon: "○" },
-    { key: "bracelets",        name: "Bracelets",          displayName: t("categories.bracelets"),        icon: "◈" },
-    { key: "bangles",          name: "Bangles",            displayName: t("categories.bangles"),          icon: "◇" },
-    { key: "anklets",          name: "Anklets",            displayName: t("categories.anklets"),          icon: "◆" },
-    { key: "brooches",         name: "Brooches",           displayName: t("categories.brooches"),         icon: "✦" },
-    { key: "hairAccessories",  name: "Hair Accessories",   displayName: t("categories.hairAccessories"),  icon: "✧" },
-    { key: "other",            name: "Other",              displayName: t("categories.other"),            icon: "◻" },
-  ];
 
   return (
     <div className="page-enter">
-
       {/* ── Hero ───────────────────────────────────────────────────────────────── */}
       <section ref={heroRef} className="relative min-h-screen flex items-center overflow-hidden pt-24">
-
-        {/* Parallax background */}
-        <motion.div
-          style={{ y: heroY }}
-          className="absolute inset-0 will-change-transform"
-          aria-hidden="true"
-        >
-          <img
-            src="/hero-bg.svg"
-            alt=""
-            className="w-full h-full object-cover object-center scale-110"
-            loading="eager"
-          />
+        <motion.div style={{ y: heroY }} className="absolute inset-0 will-change-transform" aria-hidden="true">
+          <img src="/hero-bg.svg" alt="" className="w-full h-full object-cover object-center scale-110" loading="eager" />
         </motion.div>
 
-        {/* Colour wash — static, above parallax */}
         <div className="absolute inset-0 bg-[var(--brand-ink)]/70 pointer-events-none" />
         <div className="absolute inset-0 bg-gradient-to-r from-[var(--brand-ink)]/80 via-[var(--brand-ink)]/40 to-transparent pointer-events-none" />
 
-        {/* Hero text — drifts and fades as user scrolls */}
-        <motion.div
-          style={{ opacity: heroContentOpacity, y: heroContentY }}
-          className="container relative z-10 py-24"
-        >
+        <motion.div style={{ opacity: heroContentOpacity, y: heroContentY }} className="container relative z-10 py-24">
           <div className="max-w-2xl">
-            <motion.p
-              {...fadeUpProps(0.1)}
-              className="text-[var(--brand-accent)] text-xs uppercase tracking-[0.3em] mb-6 font-sans"
-            >
-              {t("home.badge")}
+            <motion.p {...fadeUpProps(0.1)} className="text-[var(--brand-accent)] text-xs uppercase tracking-[0.3em] mb-6 font-sans">
+              {hero.badge}
             </motion.p>
-            <motion.h1
-              {...fadeUpProps(0.22)}
-              className="font-serif text-white mb-6 leading-[1.1]"
-            >
-              {t("home.heroTitle")}{" "}
-              <span className="text-gold-gradient italic">{t("home.heroTitleItalic")}</span>
+            <motion.h1 {...fadeUpProps(0.22)} className="font-serif text-white mb-6 leading-[1.1]">
+              {hero.title}
             </motion.h1>
-            <motion.p
-              {...fadeUpProps(0.34)}
-              className="text-white/60 text-lg mb-10 leading-relaxed max-w-lg font-sans font-light"
-            >
-              {t("home.heroSubtitle")}
+            <motion.p {...fadeUpProps(0.34)} className="text-white/60 text-lg mb-10 leading-relaxed max-w-lg font-sans font-light">
+              {hero.subtitle}
             </motion.p>
-            <motion.div
-              {...fadeUpProps(0.46)}
-              className="flex flex-wrap gap-4"
-            >
+            <motion.div {...fadeUpProps(0.46)} className="flex flex-wrap gap-4">
               <Link
                 href="/shop"
                 className="inline-flex items-center gap-2 bg-[var(--brand-accent)] text-[var(--brand-ink)] px-8 py-3.5 text-sm uppercase tracking-[0.15em] font-sans font-medium hover:bg-[var(--brand-accent-light)] transition-colors duration-300"
               >
-                {t("home.exploreCollection")}
+                Explore the shop
               </Link>
-              <a
-                href="https://www.instagram.com/kalakoshzurich"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 border border-white/30 text-white px-8 py-3.5 text-sm uppercase tracking-[0.15em] font-sans font-medium hover:border-[var(--brand-accent)] hover:text-[var(--brand-accent)] transition-colors duration-300"
-              >
-                <InstagramIcon />
-                @kalakoshzurich
-              </a>
+              {igHref && (
+                <a
+                  href={igHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 border border-white/30 text-white px-8 py-3.5 text-sm uppercase tracking-[0.15em] font-sans font-medium hover:border-[var(--brand-accent)] hover:text-[var(--brand-accent)] transition-colors duration-300"
+                >
+                  <InstagramIcon />
+                  {branding.instagramHandle ? `@${branding.instagramHandle}` : "Instagram"}
+                </a>
+              )}
             </motion.div>
           </div>
         </motion.div>
 
-        {/* Scroll indicator */}
-        <motion.div
-          style={{ opacity: scrollIndicatorOpacity }}
-          className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-white/30"
-        >
-          <span className="text-[10px] uppercase tracking-[0.2em] font-sans">{t("home.scroll")}</span>
+        <motion.div style={{ opacity: scrollIndicatorOpacity }} className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-white/30">
+          <span className="text-[10px] uppercase tracking-[0.2em] font-sans">Scroll</span>
           <motion.div
             animate={{ scaleY: [1, 1.35, 1], opacity: [0.3, 0.7, 0.3] }}
             transition={{ duration: 1.9, repeat: Infinity, ease: "easeInOut" }}
@@ -164,132 +121,69 @@ export default function Home() {
         </motion.div>
       </section>
 
-      {/* ── Founder Story Strip ────────────────────────────────────────────────── */}
+      {/* ── Value props ────────────────────────────────────────────────────────── */}
       <section className="py-20 bg-[var(--brand-surface)] overflow-hidden">
         <div className="container">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center max-w-5xl mx-auto">
-
-            {/* Left: story text — slides in from left */}
-            <motion.div
-              initial={{ opacity: 0, x: -40 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={VIEWPORT_OPTS}
-              transition={{ duration: 1.0, ease: EASE_VISCOUS }}
-            >
-              <motion.p {...fadeUpProps(0)} className="text-[var(--brand-accent)] text-xs uppercase tracking-[0.3em] mb-4 font-sans">
-                {t("home.founderBadge")}
-              </motion.p>
-              <motion.h2 {...fadeUpProps(0.1)} className="font-serif text-foreground text-2xl md:text-3xl mb-6 leading-snug">
-                {t("home.founderTitle")}
-              </motion.h2>
-
-              {/* Gold divider animates its width */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-4xl mx-auto">
+            {pillars.map((p, i) => (
               <motion.div
-                initial={{ scaleX: 0 }}
-                whileInView={{ scaleX: 1 }}
-                viewport={VIEWPORT_OPTS}
-                transition={{ duration: 0.9, delay: 0.2, ease: EASE_VISCOUS }}
-                style={{ originX: 0 }}
-                className="divider-gold w-12 mb-6"
-              />
-
-              <motion.p {...fadeUpProps(0.2)} className="text-muted-foreground font-sans font-light leading-relaxed text-base mb-8">
-                {t("home.founderText")}
-              </motion.p>
-              <motion.div {...fadeUpProps(0.3)}>
-                <Link
-                  href="/about"
-                  className="inline-flex items-center gap-2 text-sm text-[var(--brand-ink)] uppercase tracking-[0.15em] font-sans hover:text-[var(--brand-accent)] transition-colors border-b border-[var(--brand-ink)]/30 hover:border-[var(--brand-accent)] pb-0.5"
-                >
-                  {t("home.founderLink")} →
-                </Link>
-              </motion.div>
-            </motion.div>
-
-            {/* Right: three pillars — slide in from right, staggered */}
-            <motion.div
-              initial={{ opacity: 0, x: 40 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={VIEWPORT_OPTS}
-              transition={{ duration: 1.0, ease: EASE_VISCOUS }}
-              className="grid grid-cols-3 gap-4"
-            >
-              {[
-                { title: t("home.pillar1Title"), desc: t("home.pillar1Desc"), icon: "◈" },
-                { title: t("home.pillar2Title"), desc: t("home.pillar2Desc"), icon: "◇" },
-                { title: t("home.pillar3Title"), desc: t("home.pillar3Desc"), icon: "○" },
-              ].map((p, i) => (
-                <motion.div
-                  key={p.title}
-                  initial={{ opacity: 0, y: 28 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={VIEWPORT_OPTS}
-                  transition={{ duration: 0.75, ease: EASE_VISCOUS, delay: i * 0.12 }}
-                  whileHover={{
-                    y: -6,
-                    boxShadow: "0 16px 40px rgba(26,74,46,0.10)",
-                    transition: { duration: 0.4, ease: EASE_VISCOUS },
-                  }}
-                  className="text-center py-8 px-4 bg-white border border-[var(--brand-border)]"
-                >
-                  <div className="text-2xl text-[var(--brand-accent)] font-serif mb-3">{p.icon}</div>
-                  <p className="font-serif text-foreground text-lg mb-1">{p.title}</p>
-                  <p className="text-muted-foreground text-xs font-sans uppercase tracking-[0.12em]">{p.desc}</p>
-                </motion.div>
-              ))}
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Collection Strip ───────────────────────────────────────────────────── */}
-      <section className="py-8 bg-background border-b border-[var(--brand-border)] overflow-hidden">
-        <div className="container">
-          <div className="flex items-center gap-3 overflow-x-auto pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-            <motion.span
-              {...fadeInProps(0)}
-              className="text-[var(--brand-accent)] text-[10px] uppercase tracking-[0.25em] font-sans whitespace-nowrap shrink-0 mr-1"
-            >
-              {t("home.ourCollections")}
-            </motion.span>
-            {CATEGORIES.filter((cat) => availableCategories.has(cat.name as ProductCategory)).map((cat, i) => (
-              <motion.div
-                key={cat.name}
-                initial={{ opacity: 0, y: 16 }}
+                key={p.title}
+                initial={{ opacity: 0, y: 28 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={VIEWPORT_OPTS}
-                transition={{ duration: 0.6, ease: EASE_VISCOUS, delay: (i + 1) * 0.1 }}
+                transition={{ duration: 0.75, ease: EASE_VISCOUS, delay: i * 0.12 }}
+                className="text-center py-8 px-4 bg-white border border-[var(--brand-border)]"
               >
-                <Link
-                  href={`/shop?category=${encodeURIComponent(cat.name)}`}
-                  className="group inline-flex items-center gap-2 bg-[var(--brand-ink)] text-white hover:bg-[var(--brand-ink-hover)] transition-colors duration-300 px-5 py-2.5 text-xs font-sans uppercase tracking-[0.12em] whitespace-nowrap shrink-0"
-                >
-                  <span className="text-[var(--brand-accent)] font-serif text-base leading-none">{cat.icon}</span>
-                  {cat.displayName}
-                  <span className="text-[var(--brand-accent)]/60 group-hover:text-[var(--brand-accent)] transition-colors">→</span>
-                </Link>
+                <div className="text-2xl text-[var(--brand-accent)] font-serif mb-3">{p.icon}</div>
+                <p className="font-serif text-foreground text-lg mb-1">{p.title}</p>
+                <p className="text-muted-foreground text-xs font-sans uppercase tracking-[0.12em]">{p.desc}</p>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── Featured Products Carousel ─────────────────────────────────────────── */}
+      {/* ── Category strip (derived from the catalogue) ────────────────────────── */}
+      {categories.length > 0 && (
+        <section className="py-8 bg-background border-b border-[var(--brand-border)] overflow-hidden">
+          <div className="container">
+            <div className="flex items-center gap-3 overflow-x-auto pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+              <motion.span {...fadeInProps(0)} className="text-[var(--brand-accent)] text-[10px] uppercase tracking-[0.25em] font-sans whitespace-nowrap shrink-0 mr-1">
+                Shop by category
+              </motion.span>
+              {categories.map((cat, i) => (
+                <motion.div
+                  key={cat}
+                  initial={{ opacity: 0, y: 16 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={VIEWPORT_OPTS}
+                  transition={{ duration: 0.6, ease: EASE_VISCOUS, delay: (i + 1) * 0.1 }}
+                >
+                  <Link
+                    href={`/shop?category=${encodeURIComponent(cat)}`}
+                    className="group inline-flex items-center gap-2 bg-[var(--brand-ink)] text-white hover:bg-[var(--brand-ink-hover)] transition-colors duration-300 px-5 py-2.5 text-xs font-sans uppercase tracking-[0.12em] whitespace-nowrap shrink-0"
+                  >
+                    {cat}
+                    <span className="text-[var(--brand-accent)]/60 group-hover:text-[var(--brand-accent)] transition-colors">→</span>
+                  </Link>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ── Featured products ──────────────────────────────────────────────────── */}
       {featured.length > 0 && (
         <section className="py-16 bg-[var(--brand-surface)] overflow-hidden">
           <div className="container">
             <div className="flex items-end justify-between mb-10">
-              <motion.div
-                initial={{ opacity: 0, x: -32 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={VIEWPORT_OPTS}
-                transition={{ duration: 0.9, ease: EASE_VISCOUS }}
-              >
+              <motion.div initial={{ opacity: 0, x: -32 }} whileInView={{ opacity: 1, x: 0 }} viewport={VIEWPORT_OPTS} transition={{ duration: 0.9, ease: EASE_VISCOUS }}>
                 <motion.p {...fadeUpProps(0.05)} className="text-[var(--brand-accent)] text-xs uppercase tracking-[0.3em] mb-3 font-sans">
-                  {t("home.latestArrivals")}
+                  Latest arrivals
                 </motion.p>
                 <motion.h2 {...fadeUpProps(0.15)} className="font-serif text-foreground">
-                  {t("home.newInCollection")}
+                  New in the shop
                 </motion.h2>
               </motion.div>
               <motion.div {...fadeInProps(0.25)}>
@@ -297,7 +191,7 @@ export default function Home() {
                   href="/shop"
                   className="inline-flex items-center gap-2 text-sm text-[var(--brand-ink)] uppercase tracking-[0.15em] font-sans hover:text-[var(--brand-accent)] transition-colors border-b border-[var(--brand-ink)]/30 hover:border-[var(--brand-accent)] pb-0.5"
                 >
-                  {t("home.viewAll")}
+                  View all
                 </Link>
               </motion.div>
             </div>
