@@ -18,8 +18,30 @@
 import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 import type { Express, Request, Response } from "express";
 import { SignJWT, jwtVerify } from "jose";
+import { parse as parseCookieHeader } from "cookie";
 import * as db from "../db";
 import { getSessionCookieOptions } from "./cookies";
+
+// Cookie that carries the post-login redirect target across the OAuth round-trip
+// (set on /login, consumed on /callback). Kept separate from the session cookie.
+const NEXT_COOKIE = "oauth_next";
+
+// Validate a post-login redirect target. Only same-origin absolute paths are
+// allowed, so a crafted `?next=` can't turn login into an open redirect to an
+// attacker's site. Returns the safe path or null.
+export function sanitizeNextPath(raw: unknown): string | null {
+  if (typeof raw !== "string") return null;
+  if (raw.length === 0 || raw.length > 512) return null;
+  // Must start with a single "/" (a rooted path), never "//" or "/\" (which
+  // browsers treat as protocol-relative → another origin).
+  if (!raw.startsWith("/")) return null;
+  if (raw.startsWith("//") || raw.startsWith("/\\")) return null;
+  // No control chars or whitespace (defends against header/redirect smuggling).
+  for (let i = 0; i < raw.length; i++) {
+    if (raw.charCodeAt(i) <= 0x20) return null;
+  }
+  return raw;
+}
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
@@ -147,6 +169,18 @@ export function registerOAuthRoutes(app: Express) {
       return;
     }
 
+    // Remember where to send the user back after login (e.g. the signup claim
+    // page). Stashed in a short-lived cookie and consumed on the callback.
+    const next = sanitizeNextPath(req.query.next);
+    if (next) {
+      res.cookie(NEXT_COOKIE, next, {
+        ...getSessionCookieOptions(req),
+        maxAge: 10 * 60 * 1000, // 10 minutes — just long enough to finish OAuth
+      });
+    } else {
+      res.clearCookie(NEXT_COOKIE);
+    }
+
     const redirectUri = getRedirectUri(req);
     const url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
     url.searchParams.set("client_id", clientId);
@@ -185,22 +219,24 @@ export function registerOAuthRoutes(app: Express) {
       const tokens = await exchangeCodeForTokens(code, redirectUri, clientId, clientSecret);
       const userInfo = await fetchGoogleUserInfo(tokens.access_token);
 
-      // Only allow the designated admin email
-      if (userInfo.email.toLowerCase() !== adminEmail.toLowerCase()) {
-        res.status(403).send(
-          `Access denied. Only ${adminEmail} is authorised to log in.`
-        );
-        return;
-      }
+      // Zolto is multi-tenant self-serve: any Google account can sign in. The
+      // configured ADMIN_EMAIL is the platform admin and is granted the admin
+      // role directly; everyone else signs in as a regular user and becomes an
+      // admin only by claiming a store they created (tenant.claimAdmin).
+      const isPlatformAdmin =
+        userInfo.email.toLowerCase() === adminEmail.toLowerCase();
 
-      // Upsert user in DB — always admin role for the allowed email
+      // Upsert the user. Only force the role for the platform admin — leaving it
+      // undefined otherwise means a returning store admin keeps the admin role
+      // they earned by claiming, instead of being demoted back to "user" on
+      // every login (upsertUser only overwrites role when one is supplied).
       const openId = `google:${userInfo.sub}`;
       await db.upsertUser({
         openId,
         name: userInfo.name,
         email: userInfo.email,
         loginMethod: "google",
-        role: "admin",
+        ...(isPlatformAdmin ? { role: "admin" as const } : {}),
         lastSignedIn: new Date(),
       });
 
@@ -208,7 +244,13 @@ export function registerOAuthRoutes(app: Express) {
       const cookieOptions = getSessionCookieOptions(req);
       res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
 
-      res.redirect(302, "/admin");
+      // Send the user back where they started (the claim page), if a safe next
+      // was stashed on login; otherwise the platform admin lands on /admin and a
+      // fresh self-serve user on the home page.
+      const cookies = parseCookieHeader(req.headers.cookie ?? "");
+      const next = sanitizeNextPath(cookies[NEXT_COOKIE]);
+      res.clearCookie(NEXT_COOKIE);
+      res.redirect(302, next ?? (isPlatformAdmin ? "/admin" : "/"));
     } catch (err) {
       console.error("[GoogleOAuth] Callback error:", err);
       res.status(500).send("Authentication failed. Please try again.");

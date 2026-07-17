@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { SignJWT } from "jose";
-import { verifySessionJwt } from "./oauth";
+import { verifySessionJwt, sanitizeNextPath } from "./oauth";
 
 const SECRET = "test-jwt-secret-at-least-32-characters-long";
 const OTHER_SECRET = "different-jwt-secret-also-32-characters-plus";
@@ -70,5 +70,41 @@ describe("verifySessionJwt", () => {
       SECRET
     );
     expect(await verifySessionJwt(wrongType, SECRET)).toBeNull();
+  });
+});
+
+describe("sanitizeNextPath", () => {
+  it("accepts a rooted same-origin path (with query)", () => {
+    expect(sanitizeNextPath("/onboarding")).toBe("/onboarding");
+    expect(sanitizeNextPath("/onboarding?store=aurora")).toBe(
+      "/onboarding?store=aurora"
+    );
+  });
+
+  it("rejects protocol-relative and absolute URLs (open-redirect guard)", () => {
+    expect(sanitizeNextPath("//evil.example.com")).toBeNull();
+    expect(sanitizeNextPath("/\\evil.example.com")).toBeNull();
+    expect(sanitizeNextPath("https://evil.example.com")).toBeNull();
+    expect(sanitizeNextPath("http://evil.example.com")).toBeNull();
+  });
+
+  it("rejects non-rooted paths and non-strings", () => {
+    expect(sanitizeNextPath("onboarding")).toBeNull();
+    expect(sanitizeNextPath("")).toBeNull();
+    expect(sanitizeNextPath(undefined)).toBeNull();
+    expect(sanitizeNextPath(null)).toBeNull();
+    expect(sanitizeNextPath(42)).toBeNull();
+    expect(sanitizeNextPath(["/a"])).toBeNull();
+  });
+
+  it("rejects control characters and whitespace (redirect smuggling)", () => {
+    expect(sanitizeNextPath("/a\nb")).toBeNull();
+    expect(sanitizeNextPath("/a b")).toBeNull();
+    expect(sanitizeNextPath("/a\tb")).toBeNull();
+    expect(sanitizeNextPath("/a\r\nSet-Cookie: x")).toBeNull();
+  });
+
+  it("rejects an over-long path", () => {
+    expect(sanitizeNextPath(`/${"a".repeat(600)}`)).toBeNull();
   });
 });

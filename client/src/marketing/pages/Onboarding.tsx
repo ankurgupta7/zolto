@@ -1,5 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useSearch } from "wouter";
+import { trpc } from "@/lib/trpc";
+import { getLoginUrl } from "@/const";
 
 /**
  * Post-signup onboarding wizard. Currently a client-side guided checklist — the
@@ -7,6 +9,117 @@ import { Link, useSearch } from "wouter";
  * yet, so progress here is not saved across reloads. Wiring it to a
  * tenant.updateOnboardingStep mutation is a tracked follow-up.
  */
+
+const CLAIM_TOKEN_KEY = "zolto_claim_token";
+
+/**
+ * The "become your store's admin" step. Signup stashes a one-time claim token in
+ * sessionStorage; the owner then signs in (any Google account) and this redeems
+ * the token via tenant.claimAdmin, linking their account to the store as admin.
+ * The token — not the email — authorizes the claim, so a signup can't attach
+ * itself to someone else's login.
+ */
+function ClaimStep({ store }: { store: string | null }) {
+  const claimToken = useMemo(() => {
+    try {
+      return sessionStorage.getItem(CLAIM_TOKEN_KEY);
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const me = trpc.auth.me.useQuery(undefined, { retry: false });
+  const isAuthed = !!me.data;
+  const claim = trpc.tenant.claimAdmin.useMutation();
+  const [state, setState] = useState<
+    "idle" | "claiming" | "done" | "error"
+  >("idle");
+  const [claimedSlug, setClaimedSlug] = useState<string | null>(null);
+
+  // Once the owner is signed in and a token is present, redeem it exactly once.
+  useEffect(() => {
+    if (!claimToken || !isAuthed || state !== "idle") return;
+    setState("claiming");
+    claim.mutate(
+      { token: claimToken },
+      {
+        onSuccess: (data) => {
+          try {
+            sessionStorage.removeItem(CLAIM_TOKEN_KEY);
+          } catch {
+            /* storage disabled — token stays, but the claim already succeeded */
+          }
+          setClaimedSlug(data.slug ?? store);
+          setState("done");
+        },
+        onError: () => setState("error"),
+      },
+    );
+  }, [claimToken, isAuthed, state, claim, store]);
+
+  // No pending claim (reached onboarding without a fresh signup) — nothing to do.
+  if (!claimToken && state === "idle") return null;
+
+  const adminHref = (slug: string | null) =>
+    slug ? `/admin?surface=storefront&tenant=${encodeURIComponent(slug)}` : "/";
+
+  let inner: React.ReactNode;
+  if (state === "done") {
+    inner = (
+      <div>
+        <p className="font-medium text-white">You're the store admin. 🎉</p>
+        <p className="mt-1 text-sm text-slate-300">
+          Your account now manages this store.
+        </p>
+        <Link
+          href={adminHref(claimedSlug)}
+          className="mt-3 inline-block rounded-lg bg-violet-500 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-violet-400"
+        >
+          Go to your dashboard →
+        </Link>
+      </div>
+    );
+  } else if (state === "error") {
+    inner = (
+      <div>
+        <p className="font-medium text-white">
+          We couldn't finish setting you up.
+        </p>
+        <p className="mt-1 text-sm text-slate-300">
+          This claim link is invalid or has already been used. If you already
+          signed in on another device, you're all set.
+        </p>
+      </div>
+    );
+  } else if (isAuthed || state === "claiming") {
+    inner = (
+      <p className="text-sm text-slate-300">Finishing your setup…</p>
+    );
+  } else {
+    inner = (
+      <div>
+        <p className="font-medium text-white">One more step</p>
+        <p className="mt-1 text-sm text-slate-300">
+          Sign in to become the admin of your new store.
+        </p>
+        <a
+          href={getLoginUrl(
+            `/onboarding${store ? `?store=${encodeURIComponent(store)}` : ""}`,
+          )}
+          className="mt-3 inline-block rounded-lg bg-violet-500 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-violet-400"
+        >
+          Sign in with Google
+        </a>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mb-8 rounded-2xl border border-violet-500/40 bg-violet-500/5 p-5">
+      {inner}
+    </div>
+  );
+}
 
 const STEPS = [
   {
@@ -52,6 +165,10 @@ export default function Onboarding() {
       <p className="mt-3 text-slate-300">
         Four steps. You can do them now or come back anytime.
       </p>
+
+      <div className="mt-8">
+        <ClaimStep store={store} />
+      </div>
 
       <div className="mt-6 h-2 w-full overflow-hidden rounded-full bg-slate-800">
         <div
