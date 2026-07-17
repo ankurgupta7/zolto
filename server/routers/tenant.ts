@@ -125,7 +125,10 @@ export const tenantRouter = router({
       }
 
       // 6. Pending admin + one-time claim token (see claimAdmin below).
-      const claimToken = crypto.randomBytes(32).toString("hex");
+      // The token is stored as `pending:<token>` in users.openId, which is
+      // varchar(64). "pending:" is 8 chars, so the token must be ≤ 56 chars —
+      // 24 bytes of hex is 48 chars (192 bits of entropy) and leaves margin.
+      const claimToken = crypto.randomBytes(24).toString("hex");
       await createPendingTenantAdmin(tenantId, input.email, claimToken);
 
       return {

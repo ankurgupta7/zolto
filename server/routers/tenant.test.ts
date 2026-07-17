@@ -66,6 +66,15 @@ describe("tenant.create", () => {
     expect(res.slug).toBe("aurora");
     expect(res.claimToken).toEqual(expect.any(String));
     expect(res.claimToken.length).toBeGreaterThan(20);
+    // The token is stored as `pending:<token>` in users.openId (varchar(64)),
+    // so the whole thing must fit in 64 chars — guards the overflow that made
+    // signup fail against a strict-mode MySQL.
+    expect(`pending:${res.claimToken}`.length).toBeLessThanOrEqual(64);
+    expect(dbMock.createPendingTenantAdmin).toHaveBeenCalledWith(
+      42,
+      "owner@aurora.example",
+      res.claimToken,
+    );
   });
 
   it("rejects a taken slug", async () => {
