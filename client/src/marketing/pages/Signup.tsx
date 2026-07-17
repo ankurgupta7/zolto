@@ -10,13 +10,19 @@ export default function Signup() {
   const [slugTouched, setSlugTouched] = useState(false);
   const [slug, setSlug] = useState("");
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
 
   // Auto-derive slug from the store name until the user edits the slug directly.
   const effectiveSlug = slugTouched ? slug : slugify(name);
 
   const createTenant = trpc.tenant.create.useMutation({
     onSuccess: (data) => {
+      // Auth is via the identity provider: stash the one-time claim token so the
+      // owner can take ownership (tenant.claimAdmin) once they've signed in.
+      try {
+        sessionStorage.setItem("zolto_claim_token", data.claimToken);
+      } catch {
+        /* private-mode / storage disabled — claim can still be re-issued */
+      }
       toast.success("Store created — let's set it up.");
       navigate(`/onboarding?store=${encodeURIComponent(data.slug)}`);
     },
@@ -32,9 +38,8 @@ export default function Signup() {
       e.slug = "Use 3–64 lowercase letters, numbers, or hyphens.";
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))
       e.email = "Enter a valid email.";
-    if (password.length < 8) e.password = "At least 8 characters.";
     return e;
-  }, [name, effectiveSlug, email, password]);
+  }, [name, effectiveSlug, email]);
 
   const canSubmit = Object.keys(errors).length === 0 && !createTenant.isPending;
 
@@ -45,7 +50,6 @@ export default function Signup() {
       name: name.trim(),
       slug: effectiveSlug,
       email: email.trim(),
-      password,
     });
   };
 
@@ -64,7 +68,7 @@ export default function Signup() {
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Kalakosh Zürich"
+            placeholder="Your store name"
             className="w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-2.5 text-white outline-none focus:border-violet-500"
           />
         </Field>
@@ -88,22 +92,16 @@ export default function Signup() {
           />
         </Field>
 
-        <Field label="Email" error={email ? errors.email : undefined}>
+        <Field
+          label="Email"
+          error={email ? errors.email : undefined}
+          hint="You'll finish setup by signing in with this email."
+        >
           <input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="you@example.com"
-            className="w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-2.5 text-white outline-none focus:border-violet-500"
-          />
-        </Field>
-
-        <Field label="Password" error={password ? errors.password : undefined}>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="At least 8 characters"
             className="w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-2.5 text-white outline-none focus:border-violet-500"
           />
         </Field>

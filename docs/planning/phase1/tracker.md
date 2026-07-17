@@ -237,7 +237,7 @@ Copy this template daily. Keep it in `memory/2026-07-17.md` or a new daily file.
 | `tenant_settings` (branding) | Phase 2.6 | ✅ Implemented | incl. `whiteLabelName`, `publicDomain`, `contactEmail`, Discord/Slack channel IDs |
 | `iteration_logs` table | Sprint 1 | ✅ Implemented | `drizzle/schema.ts` |
 | Tenant context resolution (server) | Sprint 2.3 | ✅ Implemented | `server/_core/context.ts` |
-| Self-serve signup **backend** | Sprint 3.1 | ✅ Implemented | `server/routers/tenant.ts` → `tenantRouter.create` (14-day trial, referral codes, POS key gen). NOTE: admin-user creation + Stripe still stubbed (TODOs in file). |
+| Self-serve signup **backend** | Sprint 3.1 | ✅ Implemented | `server/routers/tenant.ts`: `create` provisions tenant + settings + Stripe customer + a pending admin, returns a one-time claim token; `claimAdmin` (auth-required) links the signed-in user as admin. Tested (`tenant.test.ts`, 9 cases). Auth is OAuth-only (no password), so the token — not the email — authorizes the claim. |
 | Tenant-aware branding (Discord/Slack/WhatsApp/email) | Phase 2.6 | ✅ Implemented | commit `1c5db74`; beyond original Phase 1 scope |
 | **Hostname surface split** (marketing vs storefront) | new | ✅ Implemented | `client/src/lib/surface.ts` + `App.tsx`; apex→marketing, subdomain→storefront, `?surface`/`?tenant` dev overrides |
 | **Storefront theming from `tenant_settings`** | Phase 2.6 | ✅ Implemented | Kalakosh palette → CSS vars (`--brand-*` in `index.css`); `TenantContext` injects `--brand-ink` from `primaryColor`; chrome (Navbar/Footer/WhatsApp) reads name/contacts/logo from branding. Non-Kalakosh tenants get neutral defaults (no borrowed contacts). |
@@ -261,10 +261,11 @@ client default tenant slug is `demo` (was `kalakosh`).
 **Resolved blocker (was: Kalakosh-forked client):** the marketing-vs-storefront split is now built (hostname-aware, same app). The storefront themes itself from `tenant_settings`; the Zolto marketing surface (`/`, `/pricing`, `/signup`, `/onboarding`, `/legal/*`) has its own slate+violet identity. Kalakosh stays pixel-identical via per-tenant defaults.
 
 **Follow-ups (tracked, not yet done):**
+- **Signup claim UI (frontend):** the backend is done but the client only stashes the claim token (`sessionStorage`). Wire the sign-in → `tenant.claimAdmin({ token })` round-trip so a new maker actually becomes admin. Also: on first OAuth login a new user still gets `tenantId = 1` (platform) until they claim — fine, but worth revisiting.
 - Persist onboarding progress (add a `tenant.updateOnboardingStep` mutation; wire the wizard to it).
-- Finish signup backend: create the admin user (currently commented out) and the Stripe customer.
 - Derive the full warm-neutral palette from a single tenant `primaryColor` (today only `--brand-ink` is tenant-driven; tints keep Kalakosh defaults).
-- Deep tenant *content* (FAQ/About/AGB prose) is still Kalakosh-specific by design — a tenant CMS is out of current scope.
+- Storefront content is now generic templates (done), but i18n locale JSON still holds the old Kalakosh copy for unused keys → rewritten pages are English-only; re-add DE translations for the new copy. Deep per-tenant *authored* content (a CMS) remains out of scope.
+- POS routes still missing from the multi-tenant refactor (receipts, sales list, invoices, send/save-receipt, recategorize, connection-token) — reference impls in Kalakosh-ch.
 
 **Infra gaps discovered during the server tsc fix (2026-07-16):**
 - ✅ **Multi-tenant DB migration — WRITTEN (migration 0019).** `tenant_id` and the tenant tables existed only in `drizzle/schema.ts`, never in any migration. Fixed: `migrate_0019_multitenant()` in `deploy/lib/db.sh` (called from `update.sh` after 0018) creates `tenants`/`tenant_settings`/`iteration_logs` (+ enterprise stubs `audit_logs`/`api_keys`/`add_ons`), seeds tenant #1, and adds `tenant_id` to all 10 tenant-scoped tables (nullable → backfill `=1` → NOT NULL). Idempotent; no FK/index (schema declares none). Tested without a DB via `deploy/lib/tenant-migration.test.sh` (fresh + already-migrated + POS-key scenarios, 41 assertions), wired into `npm run test:deploy-scripts`.

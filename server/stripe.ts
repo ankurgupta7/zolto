@@ -45,6 +45,24 @@ export function isStripeConfigured(): boolean {
 }
 
 /**
+ * Create a Stripe Customer for a new tenant so their subscription/billing can be
+ * attached later. Returns the customer id, or null when Stripe isn't configured
+ * (self-serve signup still works without billing wired up).
+ */
+export async function createStripeCustomer(params: {
+  name?: string;
+  email?: string;
+}): Promise<string | null> {
+  const stripe = getStripe();
+  if (!stripe) return null;
+  const customer = await stripe.customers.create({
+    name: params.name || undefined,
+    email: params.email || undefined,
+  });
+  return customer.id;
+}
+
+/**
  * Fulfil a successfully paid Checkout Session: mark the order paid, flag the
  * purchased pieces as sold so they leave the shop, and notify the owner.
  * Idempotent — safe to call more than once for the same session.

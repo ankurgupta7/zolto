@@ -21,6 +21,8 @@ import {
   type InsertProduct,
   type InsertProductImage,
   type InsertStripeReconciliation,
+  type InsertTenant,
+  type InsertTenantSetting,
   type InsertUser,
   instagramPosts,
   type Order,
@@ -667,4 +669,99 @@ export async function getTenantByPosApiKey(
       .limit(1);
     return result.length > 0 ? result[0] : undefined;
   }, undefined);
+}
+
+export async function getTenantBySlug(slug: string): Promise<Tenant | undefined> {
+  return withDb(async db => {
+    const result = await db
+      .select()
+      .from(tenants)
+      .where(eq(tenants.slug, slug))
+      .limit(1);
+    return result.length > 0 ? result[0] : undefined;
+  }, undefined);
+}
+
+export async function getTenantByReferralCode(
+  code: string
+): Promise<Tenant | undefined> {
+  return withDb(async db => {
+    const result = await db
+      .select()
+      .from(tenants)
+      .where(eq(tenants.referralCode, code))
+      .limit(1);
+    return result.length > 0 ? result[0] : undefined;
+  }, undefined);
+}
+
+// ─── Self-serve signup ────────────────────────────────────────────────────────
+
+export async function createTenant(data: InsertTenant): Promise<number> {
+  return withDbOrThrow(async db => {
+    const [row] = await db.insert(tenants).values(data).$returningId();
+    return row.id;
+  });
+}
+
+export async function createTenantSettings(
+  data: InsertTenantSetting
+): Promise<void> {
+  await withDbOrThrow(db => db.insert(tenantSettings).values(data));
+}
+
+export async function setTenantStripeCustomer(
+  tenantId: number,
+  stripeCustomerId: string
+): Promise<void> {
+  await withDbOrThrow(db =>
+    db.update(tenants).set({ stripeCustomerId }).where(eq(tenants.id, tenantId))
+  );
+}
+
+export async function setTenantReferrer(
+  tenantId: number,
+  referrerId: number
+): Promise<void> {
+  await withDbOrThrow(db =>
+    db
+      .update(tenants)
+      .set({ referredBy: referrerId, referralDiscountApplied: true })
+      .where(eq(tenants.id, tenantId))
+  );
+}
+
+// A pending admin holds the tenant's admin slot until the owner signs in (via
+// OAuth) and claims it with the token. Keyed by `pending:<token>` so it can't be
+// confused with a real login (`google:<sub>`), and never grants access on its own.
+export async function createPendingTenantAdmin(
+  tenantId: number,
+  email: string,
+  claimToken: string
+): Promise<void> {
+  await withDbOrThrow(db =>
+    db.insert(users).values({
+      tenantId,
+      openId: `pending:${claimToken}`,
+      email,
+      role: "admin",
+      loginMethod: "pending",
+    })
+  );
+}
+
+export async function assignUserToTenantAsAdmin(
+  openId: string,
+  tenantId: number
+): Promise<void> {
+  await withDbOrThrow(db =>
+    db
+      .update(users)
+      .set({ tenantId, role: "admin" })
+      .where(eq(users.openId, openId))
+  );
+}
+
+export async function deleteUserById(id: number): Promise<void> {
+  await withDbOrThrow(db => db.delete(users).where(eq(users.id, id)));
 }
