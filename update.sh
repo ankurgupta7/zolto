@@ -471,6 +471,12 @@ else
     "ALTER TABLE \`bulk_upload_logs\` MODIFY COLUMN \`operation\` enum('analyze','create','extra_image','upsert_images') NOT NULL;"
 fi
 
+# ── 0019: multi-tenant foundation ─────────────────────────────────────────────
+# Creates the tenant tables, seeds tenant #1, and adds tenant_id to every
+# tenant-scoped table. Idempotent; see migrate_0019_multitenant in deploy/lib/db.sh
+# (kept there so it can be exercised by deploy/lib/db.test.sh without a live DB).
+migrate_0019_multitenant
+
 # ── Shared helper: run a script inside the builder container ──────────────────
 # Usage: run_in_builder <tag> <script-path> [extra docker args...]
 run_in_builder() {

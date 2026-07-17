@@ -53,3 +53,185 @@ idx_exists() { # idx_exists TABLE INDEX_NAME
     WHERE TABLE_SCHEMA='${MYSQL_DATABASE}' AND TABLE_NAME='$1'
     AND CONSTRAINT_NAME='$2';" 2>/dev/null || echo 0
 }
+
+# Helper: is a column currently nullable? (prints YES / NO / empty if absent)
+col_nullable() { # col_nullable TABLE COLUMN
+  $MYSQL -se "${MYSQL_LOCK_TIMEOUT_SQL}SELECT IS_NULLABLE FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA='${MYSQL_DATABASE}' AND TABLE_NAME='$1' AND COLUMN_NAME='$2';" 2>/dev/null || echo ""
+}
+
+# Helper: number of rows matching a WHERE on a table (prints an integer, 0 on error)
+row_count() { # row_count TABLE WHERE_CLAUSE
+  $MYSQL -se "${MYSQL_LOCK_TIMEOUT_SQL}SELECT COUNT(*) FROM \`$1\` WHERE $2;" 2>/dev/null || echo 0
+}
+
+# Tables that carry a NOT NULL tenant_id in drizzle/schema.ts. Kept as a function
+# (not a global) so db.test.sh can call it without side effects.
+tenant_scoped_tables() {
+  echo users products product_images instagram_posts orders bulk_upload_logs \
+       pos_orders pos_order_items returns stripe_reconciliations
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Migration 0019: multi-tenant foundation.
+#
+# Brings the database in line with drizzle/schema.ts's multi-tenancy, which was
+# authored in the schema but never migrated. Creates the tenant tables, seeds
+# tenant #1 (the store this deployment operates as — Kalakosh in production),
+# then adds tenant_id to every tenant-scoped table (nullable -> backfill = 1 ->
+# NOT NULL). Fully idempotent: on an already-migrated DB it performs no writes.
+# No FK constraints or secondary indexes are added because schema.ts declares
+# none (no .references()).
+#
+# IMPORTANT: tenant #1's pos_api_key is seeded from $POS_API_KEY so the live POS
+# terminal — which authenticates purely by that key, with no env fallback
+# (see server/pos.ts requirePosKey) — keeps working after the migration.
+migrate_0019_multitenant() {
+  run_sql "0019 tenants table" "
+    CREATE TABLE IF NOT EXISTS \`tenants\` (
+      \`id\`                        int AUTO_INCREMENT NOT NULL,
+      \`slug\`                      varchar(64) NOT NULL,
+      \`name\`                      varchar(255) NOT NULL,
+      \`domain\`                    varchar(255),
+      \`plan\`                      enum('starter','growth','enterprise') NOT NULL DEFAULT 'starter',
+      \`stripe_customer_id\`        varchar(255),
+      \`stripe_subscription_id\`    varchar(255),
+      \`status\`                    enum('trialing','active','past_due','canceled') DEFAULT 'trialing',
+      \`trial_ends_at\`             timestamp NULL,
+      \`pos_api_key\`               varchar(64) NOT NULL,
+      \`onboarding_step\`           int DEFAULT 0,
+      \`onboarding_completed_at\`   timestamp NULL,
+      \`referred_by\`               int,
+      \`referral_code\`             varchar(16),
+      \`referral_discount_applied\` boolean DEFAULT false,
+      \`plan_price_override\`       decimal(10,2),
+      \`price_lock_expires_at\`     timestamp NULL,
+      \`createdAt\`                 timestamp NOT NULL DEFAULT (now()),
+      \`updatedAt\`                 timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+      CONSTRAINT \`tenants_id\` PRIMARY KEY(\`id\`),
+      CONSTRAINT \`tenants_slug_unique\` UNIQUE(\`slug\`),
+      CONSTRAINT \`tenants_pos_api_key_unique\` UNIQUE(\`pos_api_key\`),
+      CONSTRAINT \`tenants_referral_code_unique\` UNIQUE(\`referral_code\`)
+    );"
+
+  run_sql "0019 tenant_settings table" "
+    CREATE TABLE IF NOT EXISTS \`tenant_settings\` (
+      \`id\`                 int AUTO_INCREMENT NOT NULL,
+      \`tenant_id\`          int NOT NULL,
+      \`logo_url\`           varchar(1024),
+      \`primary_color\`      varchar(7) DEFAULT '#000000',
+      \`favicon_url\`        varchar(1024),
+      \`whatsapp_number\`    varchar(32),
+      \`instagram_handle\`   varchar(64),
+      \`currency\`           varchar(10) DEFAULT 'chf',
+      \`meta_title\`         varchar(255),
+      \`meta_description\`   text,
+      \`white_label_name\`   varchar(255),
+      \`public_domain\`      varchar(255),
+      \`discord_channel_id\` varchar(64),
+      \`slack_channel_id\`   varchar(64),
+      \`contact_email\`      varchar(320),
+      \`contact_phone\`      varchar(32),
+      \`facebook_url\`       varchar(1024),
+      \`sso_provider\`       enum('google_workspace','microsoft','okta','custom'),
+      \`sso_metadata_url\`   text,
+      \`createdAt\`          timestamp NOT NULL DEFAULT (now()),
+      \`updatedAt\`          timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+      CONSTRAINT \`tenant_settings_id\` PRIMARY KEY(\`id\`),
+      CONSTRAINT \`tenant_settings_tenant_id_unique\` UNIQUE(\`tenant_id\`)
+    );"
+
+  run_sql "0019 iteration_logs table" "
+    CREATE TABLE IF NOT EXISTS \`iteration_logs\` (
+      \`id\`          int AUTO_INCREMENT NOT NULL,
+      \`tenant_id\`   int NOT NULL,
+      \`request\`     text NOT NULL,
+      \`solution\`    text NOT NULL,
+      \`deployed_at\` timestamp NULL,
+      \`validated\`   boolean DEFAULT false,
+      \`impact\`      enum('critical','high','medium','low'),
+      \`createdAt\`   timestamp NOT NULL DEFAULT (now()),
+      CONSTRAINT \`iteration_logs_id\` PRIMARY KEY(\`id\`)
+    );"
+
+  run_sql "0019 audit_logs table" "
+    CREATE TABLE IF NOT EXISTS \`audit_logs\` (
+      \`id\`            int AUTO_INCREMENT NOT NULL,
+      \`tenant_id\`     int NOT NULL,
+      \`user_id\`       int,
+      \`action\`        varchar(64) NOT NULL,
+      \`resource_type\` varchar(64),
+      \`resource_id\`   int,
+      \`metadata\`      json,
+      \`ip\`            varchar(45),
+      \`createdAt\`     timestamp NOT NULL DEFAULT (now()),
+      CONSTRAINT \`audit_logs_id\` PRIMARY KEY(\`id\`)
+    );"
+
+  run_sql "0019 api_keys table" "
+    CREATE TABLE IF NOT EXISTS \`api_keys\` (
+      \`id\`           int AUTO_INCREMENT NOT NULL,
+      \`tenant_id\`    int NOT NULL,
+      \`name\`         varchar(255),
+      \`key_hash\`     varchar(64) NOT NULL,
+      \`scopes\`       json,
+      \`last_used_at\` timestamp NULL,
+      \`createdAt\`    timestamp NOT NULL DEFAULT (now()),
+      CONSTRAINT \`api_keys_id\` PRIMARY KEY(\`id\`)
+    );"
+
+  run_sql "0019 add_ons table" "
+    CREATE TABLE IF NOT EXISTS \`add_ons\` (
+      \`id\`                    int AUTO_INCREMENT NOT NULL,
+      \`tenant_id\`             int NOT NULL,
+      \`type\`                  enum('extra_staff','extra_products','api_access','priority_support') NOT NULL,
+      \`quantity\`              int NOT NULL DEFAULT 1,
+      \`stripe_sub_item_id\`    varchar(255),
+      \`createdAt\`             timestamp NOT NULL DEFAULT (now()),
+      CONSTRAINT \`add_ons_id\` PRIMARY KEY(\`id\`)
+    );"
+
+  # ── Seed tenant #1 (the store this deployment operates as) ──────────────────
+  if [ "$(row_count tenants 'id=1')" = "0" ]; then
+    local pos_key="${POS_API_KEY:-}"
+    if [ -z "$pos_key" ]; then
+      warn "0019 POS_API_KEY not set in .env — seeding tenant #1 with a placeholder POS key."
+      warn "     The live POS terminal will reject sales until a real key is set"
+      warn "     (see deploy/rotate-pos-key.sh). Set POS_API_KEY in .env and re-run."
+      pos_key="PLACEHOLDER_SET_POS_API_KEY"
+    fi
+    run_sql "0019 seed tenant #1" "
+      INSERT INTO \`tenants\` (\`id\`,\`slug\`,\`name\`,\`plan\`,\`status\`,\`pos_api_key\`)
+      VALUES (1,'kalakosh','Kalakosh','starter','active','${pos_key}');"
+  else
+    ok "0019 tenant #1 already seeded"
+  fi
+
+  if [ "$(row_count tenant_settings 'tenant_id=1')" = "0" ]; then
+    run_sql "0019 seed tenant #1 settings" "
+      INSERT INTO \`tenant_settings\`
+        (\`tenant_id\`,\`currency\`,\`primary_color\`,\`white_label_name\`,\`public_domain\`,\`contact_email\`,\`whatsapp_number\`,\`instagram_handle\`)
+      VALUES
+        (1,'chf','#2D2620','Kalakosh Zürich','kalakosh.ch','info@kalakosh.ch','41791721714','kalakoshzurich');"
+  else
+    ok "0019 tenant #1 settings already seeded"
+  fi
+
+  # ── Add tenant_id to every tenant-scoped table (nullable -> backfill -> NOT NULL) ──
+  local tbl nullable
+  for tbl in $(tenant_scoped_tables); do
+    if [ "$(col_exists "$tbl" tenant_id)" = "0" ]; then
+      run_sql "0019 add ${tbl}.tenant_id (nullable)" \
+        "ALTER TABLE \`${tbl}\` ADD \`tenant_id\` int NULL;"
+    fi
+    nullable="$(col_nullable "$tbl" tenant_id)"
+    if [ "$nullable" = "YES" ]; then
+      run_sql "0019 backfill ${tbl}.tenant_id = 1" \
+        "UPDATE \`${tbl}\` SET \`tenant_id\` = 1 WHERE \`tenant_id\` IS NULL;"
+      run_sql "0019 enforce ${tbl}.tenant_id NOT NULL" \
+        "ALTER TABLE \`${tbl}\` MODIFY \`tenant_id\` int NOT NULL;"
+    else
+      ok "0019 ${tbl}.tenant_id already NOT NULL"
+    fi
+  done
+}
