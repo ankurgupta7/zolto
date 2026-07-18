@@ -88,9 +88,15 @@ services:
   caddy:
     image: caddy:2-alpine
     restart: unless-stopped
+    # Host ports are overridable so this stack can run alongside another
+    # instance (e.g. Kalakosh-ch) on the same server without a port clash.
+    # Defaults deliberately differ from the standard 80/443.
     ports:
-      - "80:80"
-      - "443:443"
+      - "${HTTP_PORT:-8080}:80"
+      - "${HTTPS_PORT:-8443}:443"
+    environment:
+      # Caddyfile reads this to pick which domain(s) to serve — see Caddyfile.
+      SITE_DOMAIN: ${SITE_DOMAIN:-zolto.example.com}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data

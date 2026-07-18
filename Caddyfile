@@ -1,11 +1,14 @@
 # ─────────────────────────────────────────────────────────────────────────────
-# Caddyfile — Kalakosh Zurich self-hosted
+# Caddyfile — Zolto self-hosted
 #
-# Replace "yourdomain.com" with your actual domain.
+# Domain comes from the SITE_DOMAIN env var (see docker-compose.yml), so this
+# stack can run on the same server as another instance (e.g. Kalakosh-ch)
+# without both Caddyfiles fighting over the same domain. Set SITE_DOMAIN in
+# your .env to your actual domain — it defaults to a placeholder otherwise.
 # Caddy will automatically obtain and renew an SSL certificate via Let's Encrypt.
 # ─────────────────────────────────────────────────────────────────────────────
 
-kalakosh.ch {
+{$SITE_DOMAIN} {
     # Reverse proxy all traffic to the Node.js app
     reverse_proxy app:3000
 
@@ -27,6 +30,6 @@ kalakosh.ch {
 }
 
 # Redirect www → apex
-www.kalakosh.ch {
-    redir https://kalakosh.ch{uri} permanent
+www.{$SITE_DOMAIN} {
+    redir https://{$SITE_DOMAIN}{uri} permanent
 }
