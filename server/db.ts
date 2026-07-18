@@ -7,10 +7,12 @@ import {
   inArray,
   isNotNull,
   isNull,
+  lt,
   or,
   sql,
 } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
+import crypto from "crypto";
 import type { Pool as MySqlPool, PoolConnection } from "mysql2";
 import * as schema from "../drizzle/schema";
 import {
@@ -363,12 +365,102 @@ export async function markProductsSold(tenantId: number, ids: number[]) {
   // Uses GREATEST(0, ...) to prevent negative stock.
   // Evaluates current `quantity` before the SET, so `quantity <= 1` means
   // it will become 0 after decrement — that is when sold flips to true.
+  // Also clears any checkout hold — the piece is definitively sold now, so
+  // there's nothing left to reserve.
   await db
     .update(products)
     .set({
       quantity: sql`GREATEST(0, \`quantity\` - 1)`,
       sold: sql`CASE WHEN \`quantity\` <= 1 THEN TRUE ELSE \`sold\` END`,
+      reservedUntil: null,
+      reservedToken: null,
     })
+    .where(and(eq(products.tenantId, tenantId), inArray(products.id, ids)));
+}
+
+// Matches the minimum lifetime Stripe allows for a Checkout Session's
+// `expires_at` (30 minutes) — see server/routers/checkout.ts — so a hold
+// never outlives the session that placed it, and a session that never
+// completes self-heals without depending on a webhook firing.
+export const PRODUCT_RESERVATION_TTL_MS = 30 * 60 * 1000;
+
+/**
+ * Places a short-lived hold on the given pieces (POS <-> online inventory
+ * sync — see docs/planning/phase1/tracker.md "Configure POS ↔ online
+ * inventory sync"). Only pieces that are unsold, in stock, and not already
+ * held by someone else's still-live reservation are claimed.
+ *
+ * Uses a random per-call token (not just the expiry timestamp) so the
+ * follow-up read can tell "rows we just reserved" apart from "rows already
+ * held by a concurrent caller whose reservedUntil happens to land in the
+ * same instant" — a bare timestamp comparison can't disambiguate two
+ * reservations issued in the same clock tick.
+ *
+ * Returns the ids that could NOT be reserved (empty array = full success).
+ * Callers must release whatever DID succeed if they end up not using it
+ * (Stripe API failure, or another id in the batch failed).
+ */
+export async function reserveProducts(
+  tenantId: number,
+  ids: number[],
+): Promise<number[]> {
+  if (ids.length === 0) return [];
+  const db = await getDb();
+  if (!db) return ids;
+
+  const token = crypto.randomBytes(12).toString("hex");
+  const until = new Date(Date.now() + PRODUCT_RESERVATION_TTL_MS);
+  const now = new Date();
+
+  await db
+    .update(products)
+    .set({ reservedUntil: until, reservedToken: token })
+    .where(
+      and(
+        eq(products.tenantId, tenantId),
+        inArray(products.id, ids),
+        eq(products.sold, false),
+        gt(products.quantity, 0),
+        or(isNull(products.reservedUntil), lt(products.reservedUntil, now)),
+      ),
+    );
+
+  const claimed = await db
+    .select({ id: products.id })
+    .from(products)
+    .where(
+      and(
+        eq(products.tenantId, tenantId),
+        inArray(products.id, ids),
+        eq(products.reservedToken, token),
+      ),
+    );
+
+  const claimedIds = new Set(claimed.map((row) => row.id));
+  return ids.filter((id) => !claimedIds.has(id));
+}
+
+/**
+ * Releases a hold placed by reserveProducts — e.g. a Checkout Session
+ * expired or failed, or one piece in a batch reservation didn't clear so the
+ * rest of the batch must be given back. Unconditional: it clears
+ * reservedUntil/reservedToken regardless of the current token, on the
+ * (accepted) assumption that by the time a release runs, the reservation
+ * this order placed has either already expired on its own or is still the
+ * live one — the reservation TTL is short enough that a third party
+ * re-reserving the exact same piece in that narrow window is not worth
+ * guarding against with per-order token tracking.
+ */
+export async function releaseProductReservations(
+  tenantId: number,
+  ids: number[],
+): Promise<void> {
+  if (ids.length === 0) return;
+  const db = await getDb();
+  if (!db) return;
+  await db
+    .update(products)
+    .set({ reservedUntil: null, reservedToken: null })
     .where(and(eq(products.tenantId, tenantId), inArray(products.id, ids)));
 }
 

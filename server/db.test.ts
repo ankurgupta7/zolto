@@ -66,7 +66,7 @@ const dbMock = {
   delete: vi.fn(),
   $client: {
     getConnection: vi.fn((cb: (err: unknown, conn: unknown) => void) =>
-      cb(null, mockConnection)
+      cb(null, mockConnection),
     ),
   },
 };
@@ -81,6 +81,8 @@ import {
   createOrder,
   updateOrderBySessionId,
   markProductsSold,
+  reserveProducts,
+  releaseProductReservations,
   insertBulkUploadLog,
   createProduct,
 } from "./db";
@@ -113,14 +115,14 @@ beforeEach(() => {
   mockConnection.destroy.mockReset();
   dbMock.$client.getConnection.mockClear();
   dbMock.$client.getConnection.mockImplementation(
-    (cb: (err: unknown, conn: unknown) => void) => cb(null, mockConnection)
+    (cb: (err: unknown, conn: unknown) => void) => cb(null, mockConnection),
   );
 });
 
 describe("upsertUser", () => {
   it("throws when openId is missing", async () => {
     await expect(upsertUser({ openId: "" })).rejects.toThrow(
-      "openId is required"
+      "openId is required",
     );
   });
 
@@ -231,6 +233,81 @@ describe("markProductsSold", () => {
     expect(setArg).toHaveProperty("sold");
     expect(updateChain.__calls.where).toHaveLength(1);
   });
+
+  it("clears any checkout hold on the sold pieces", async () => {
+    const updateChain = makeChain(undefined);
+    dbMock.update.mockReturnValue(updateChain);
+
+    await markProductsSold(1, [1]);
+
+    const [setArg] = updateChain.__calls.set[0];
+    expect(setArg).toMatchObject({ reservedUntil: null, reservedToken: null });
+  });
+});
+
+describe("reserveProducts", () => {
+  it("does nothing for an empty id list", async () => {
+    const result = await reserveProducts(1, []);
+    expect(result).toEqual([]);
+    expect(dbMock.update).not.toHaveBeenCalled();
+  });
+
+  it("returns no failures when every id comes back claimed with our token", async () => {
+    const updateChain = makeChain(undefined);
+    dbMock.update.mockReturnValue(updateChain);
+    // The follow-up SELECT reflects rows matching the token this call wrote —
+    // simulate all three ids having been successfully claimed.
+    dbMock.select.mockReturnValue(makeChain([{ id: 1 }, { id: 2 }, { id: 3 }]));
+
+    const failed = await reserveProducts(1, [1, 2, 3]);
+
+    expect(failed).toEqual([]);
+    expect(dbMock.update).toHaveBeenCalledTimes(1);
+    const [setArg] = updateChain.__calls.set[0];
+    expect(setArg).toHaveProperty("reservedUntil");
+    expect(setArg).toHaveProperty("reservedToken");
+  });
+
+  it("reports ids that didn't come back with our token as failed", async () => {
+    dbMock.update.mockReturnValue(makeChain(undefined));
+    // Only id 1 matched our token in the follow-up read — id 2 is held by
+    // someone else's still-live reservation (or already sold out).
+    dbMock.select.mockReturnValue(makeChain([{ id: 1 }]));
+
+    const failed = await reserveProducts(1, [1, 2]);
+
+    expect(failed).toEqual([2]);
+  });
+
+  it("treats a missing database as a total failure to reserve", async () => {
+    const originalUrl = process.env.DATABASE_URL;
+    delete process.env.DATABASE_URL;
+    vi.resetModules();
+    const fresh = await import("./db");
+
+    const failed = await fresh.reserveProducts(1, [1, 2]);
+    expect(failed).toEqual([1, 2]);
+
+    process.env.DATABASE_URL = originalUrl;
+  });
+});
+
+describe("releaseProductReservations", () => {
+  it("does nothing for an empty id list", async () => {
+    await releaseProductReservations(1, []);
+    expect(dbMock.update).not.toHaveBeenCalled();
+  });
+
+  it("clears reservedUntil/reservedToken for the given ids", async () => {
+    const updateChain = makeChain(undefined);
+    dbMock.update.mockReturnValue(updateChain);
+
+    await releaseProductReservations(1, [1, 2]);
+
+    expect(dbMock.update).toHaveBeenCalledTimes(1);
+    const [setArg] = updateChain.__calls.set[0];
+    expect(setArg).toEqual({ reservedUntil: null, reservedToken: null });
+  });
 });
 
 describe("getVisibleProducts", () => {
@@ -288,7 +365,7 @@ describe("DB operation timeout", () => {
       source: "manual",
     } as Parameters<typeof createProduct>[0]);
     const assertion = expect(promise).rejects.toThrow(
-      "Database operation timed out"
+      "Database operation timed out",
     );
 
     await vi.advanceTimersByTimeAsync(10_000);

@@ -14,7 +14,7 @@
     "test": "vitest run",
     "test:integration": "vitest run server/stripe.integration.test.ts",
     "test:coverage": "vitest run --coverage",
-    "test:deploy-scripts": "bash deploy/lib/db.test.sh && bash deploy/lib/tenant-migration.test.sh && bash deploy/lib/stripe-connect-migration.test.sh",
+    "test:deploy-scripts": "bash deploy/lib/db.test.sh && bash deploy/lib/tenant-migration.test.sh && bash deploy/lib/stripe-connect-migration.test.sh && bash deploy/lib/product-reservation-migration.test.sh",
     "db:push": "drizzle-kit generate && drizzle-kit migrate"
   },
   "dependencies": {

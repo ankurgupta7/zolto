@@ -482,6 +482,11 @@ migrate_0019_multitenant
 # migrate_0020_stripe_connect in deploy/lib/db.sh.
 migrate_0020_stripe_connect
 
+# ── 0021: POS <-> online inventory sync (checkout holds) ─────────────────────
+# Adds products.reserved_until / products.reserved_token. Idempotent; see
+# migrate_0021_product_reservations in deploy/lib/db.sh.
+migrate_0021_product_reservations
+
 # ── Shared helper: run a script inside the builder container ──────────────────
 # Usage: run_in_builder <tag> <script-path> [extra docker args...]
 run_in_builder() {

@@ -4,6 +4,8 @@ const getProductsByIds = vi.fn();
 const createOrder = vi.fn();
 const getOrderBySessionId = vi.fn();
 const getTenantById = vi.fn();
+const reserveProducts = vi.fn();
+const releaseProductReservations = vi.fn();
 
 vi.mock("./db", () => ({
   createProduct: vi.fn(),
@@ -30,6 +32,10 @@ vi.mock("./db", () => ({
   createOrder: (...args: unknown[]) => createOrder(...args),
   getOrderBySessionId: (...args: unknown[]) => getOrderBySessionId(...args),
   getTenantById: (...args: unknown[]) => getTenantById(...args),
+  reserveProducts: (...args: unknown[]) => reserveProducts(...args),
+  releaseProductReservations: (...args: unknown[]) =>
+    releaseProductReservations(...args),
+  PRODUCT_RESERVATION_TTL_MS: 30 * 60 * 1000,
   getProductsMissingTranslation: vi.fn(),
   getPaidOrders: vi.fn(),
 }));
@@ -120,6 +126,11 @@ beforeEach(() => {
     name: "Test Store",
     stripeConnectedAccountId: TEST_CONNECTED_ACCOUNT_ID,
   });
+  // Default: every requested piece gets reserved successfully (empty array =
+  // no failures). Tests exercising the "someone else is already buying" path
+  // override this.
+  reserveProducts.mockResolvedValue([]);
+  releaseProductReservations.mockResolvedValue(undefined);
 });
 
 describe("checkout.config", () => {
@@ -189,6 +200,99 @@ describe("checkout.createSession", () => {
     await expect(
       caller.checkout.createSession({ productIds: [1] }),
     ).rejects.toThrow(/Already sold/);
+  });
+
+  // ─── POS <-> online inventory sync (checkout holds) ────────────────────────
+
+  it("reserves the requested products before creating the Stripe session", async () => {
+    getProductsByIds.mockResolvedValue([sampleProduct]);
+    checkoutSessionsCreate.mockResolvedValue({
+      id: "cs_test_reserve",
+      url: "https://checkout.stripe.com/cs_test_reserve",
+      amount_total: 18500,
+    });
+
+    const caller = appRouter.createCaller(makeCtx());
+    await caller.checkout.createSession({ productIds: [1] });
+
+    expect(reserveProducts).toHaveBeenCalledWith(TEST_TENANT_ID, [1]);
+  });
+
+  it("sets the Stripe session's expires_at to match the reservation TTL", async () => {
+    getProductsByIds.mockResolvedValue([sampleProduct]);
+    checkoutSessionsCreate.mockResolvedValue({
+      id: "cs_test_expiry",
+      url: "https://checkout.stripe.com/cs_test_expiry",
+      amount_total: 18500,
+    });
+
+    const before = Date.now();
+    const caller = appRouter.createCaller(makeCtx());
+    await caller.checkout.createSession({ productIds: [1] });
+    const after = Date.now();
+
+    const sessionArgs = checkoutSessionsCreate.mock.calls[0][0];
+    const expiresAtMs = sessionArgs.expires_at * 1000;
+    // Stripe's minimum expires_at is 30 minutes from creation — the hold
+    // must never outlive the session, so these need to line up.
+    expect(expiresAtMs).toBeGreaterThanOrEqual(before + 30 * 60 * 1000 - 2000);
+    expect(expiresAtMs).toBeLessThanOrEqual(after + 30 * 60 * 1000 + 2000);
+  });
+
+  it("throws CONFLICT and releases any partial hold when another sale already claimed a piece", async () => {
+    const second = { ...sampleProduct, id: 2, name: "Baroque Pearl Drops" };
+    getProductsByIds.mockResolvedValue([sampleProduct, second]);
+    // Product 2 lost the race — someone else (POS, or another checkout) is
+    // already buying it.
+    reserveProducts.mockResolvedValue([2]);
+
+    const caller = appRouter.createCaller(makeCtx());
+    await expect(
+      caller.checkout.createSession({ productIds: [1, 2] }),
+    ).rejects.toThrow(/Someone else is already buying.*Baroque Pearl Drops/);
+
+    // The hold this call DID win (on product 1) must be given back since
+    // we're not proceeding with this checkout at all.
+    expect(releaseProductReservations).toHaveBeenCalledWith(
+      TEST_TENANT_ID,
+      [1],
+    );
+    expect(checkoutSessionsCreate).not.toHaveBeenCalled();
+  });
+
+  it("releases the reservation if Stripe session creation fails", async () => {
+    getProductsByIds.mockResolvedValue([sampleProduct]);
+    checkoutSessionsCreate.mockRejectedValueOnce(new Error("Stripe is down"));
+
+    const caller = appRouter.createCaller(makeCtx());
+    await expect(
+      caller.checkout.createSession({ productIds: [1] }),
+    ).rejects.toThrow("Stripe is down");
+
+    expect(releaseProductReservations).toHaveBeenCalledWith(
+      TEST_TENANT_ID,
+      [1],
+    );
+  });
+
+  it("releases the reservation if persisting the order fails", async () => {
+    getProductsByIds.mockResolvedValue([sampleProduct]);
+    checkoutSessionsCreate.mockResolvedValue({
+      id: "cs_test_order_fail",
+      url: "https://checkout.stripe.com/cs_test_order_fail",
+      amount_total: 18500,
+    });
+    createOrder.mockRejectedValueOnce(new Error("DB unavailable"));
+
+    const caller = appRouter.createCaller(makeCtx());
+    await expect(
+      caller.checkout.createSession({ productIds: [1] }),
+    ).rejects.toThrow("DB unavailable");
+
+    expect(releaseProductReservations).toHaveBeenCalledWith(
+      TEST_TENANT_ID,
+      [1],
+    );
   });
 
   it("creates a Stripe session and a pending order for available products", async () => {

@@ -141,6 +141,13 @@ export const products = mysqlTable("products", {
   visible: boolean("visible").default(true).notNull(),
   sold: boolean("sold").default(false).notNull(),
   quantity: int("quantity").default(1).notNull(),
+  // Short-lived hold placed while an online Checkout Session for this piece
+  // is in flight, so a POS sale (or a second online checkout) can't sell the
+  // same one-of-a-kind piece out from under it. reservedToken disambiguates
+  // concurrent holds so a stale release can't clear a newer one. See
+  // server/db.ts reserveProducts/releaseProductReservations.
+  reservedUntil: timestamp("reserved_until"),
+  reservedToken: varchar("reserved_token", { length: 32 }),
   source: mysqlEnum("source", ["whatsapp", "manual"])
     .default("manual")
     .notNull(),

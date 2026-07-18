@@ -1,7 +1,7 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import express from "express";
 import type Stripe from "stripe";
-import { and, desc, eq, gt, inArray } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, isNull, lt, or } from "drizzle-orm";
 import {
   getDb,
   getAllProducts,
@@ -67,6 +67,15 @@ function resolveBaseUrl(tenantSlug: string): string {
   return process.env.NODE_ENV === "production"
     ? `https://${tenantSlug}.zolto.ch`
     : "http://localhost:3000";
+}
+
+// POS <-> online inventory sync: a piece with a live reservedUntil hold is
+// mid-checkout on the storefront (see server/db.ts reserveProducts /
+// server/routers/checkout.ts) and must not be sellable at the register until
+// that hold clears — otherwise the same one-of-a-kind piece could be sold
+// twice.
+function isActivelyReserved(p: { reservedUntil?: Date | null }): boolean {
+  return p.reservedUntil != null && p.reservedUntil.getTime() > Date.now();
 }
 
 type Db = NonNullable<Awaited<ReturnType<typeof getDb>>>;
@@ -139,7 +148,11 @@ async function resolveSaleLineItems(
     : [];
 
   const available = rows.filter(
-    p => (params.allowHidden === true || p.visible) && !p.sold && p.quantity > 0
+    p =>
+      (params.allowHidden === true || p.visible) &&
+      !p.sold &&
+      p.quantity > 0 &&
+      !isActivelyReserved(p)
   );
   if (available.length !== ids.length) {
     return {
@@ -428,6 +441,12 @@ export function registerPosRoutes(app: Express): void {
 
       const { tenantId } = getPosTenant(req);
       const includeHidden = req.query.includeHidden === "true";
+      // Excludes pieces with a live checkout hold (POS <-> online inventory
+      // sync) so the register doesn't even list something mid-online-checkout.
+      const notActivelyReserved = or(
+        isNull(products.reservedUntil),
+        lt(products.reservedUntil, new Date())
+      );
       const rows = await db
         .select()
         .from(products)
@@ -435,11 +454,12 @@ export function registerPosRoutes(app: Express): void {
           and(
             eq(products.tenantId, tenantId),
             includeHidden
-              ? and(eq(products.sold, false), gt(products.quantity, 0))
+              ? and(eq(products.sold, false), gt(products.quantity, 0), notActivelyReserved)
               : and(
                   eq(products.visible, true),
                   eq(products.sold, false),
-                  gt(products.quantity, 0)
+                  gt(products.quantity, 0),
+                  notActivelyReserved
                 )
           )
         );
