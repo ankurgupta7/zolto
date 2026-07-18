@@ -24,13 +24,17 @@ import {
   Tag,
   Copy,
   CreditCard,
+  CheckCircle2,
 } from "lucide-react";
 import { getLoginUrl } from "@/const";
 import { PRODUCT_CATEGORIES, type ProductCategory } from "@shared/types";
 import ProductImageManager from "@/components/ProductImageManager";
 import InstagramManager from "@/components/InstagramManager";
 import BulkChangeReviewDialog from "@/components/BulkChangeReviewDialog";
-import ProductDiscoveryControls, { type SortOption, type ViewMode } from "@/components/ProductDiscoveryControls";
+import ProductDiscoveryControls, {
+  type SortOption,
+  type ViewMode,
+} from "@/components/ProductDiscoveryControls";
 import ProductCategoryGroup from "@/components/ProductCategoryGroup";
 import ProductListItem from "@/components/ProductListItem";
 import { Link } from "wouter";
@@ -205,7 +209,9 @@ function ProductRow({ product, onRefetch }: ProductRowProps) {
               />
             ) : (
               <div className="w-10 h-10 bg-[var(--brand-surface-3)] flex items-center justify-center flex-shrink-0">
-                <span className="text-[var(--brand-accent)]/40 font-serif">◇</span>
+                <span className="text-[var(--brand-accent)]/40 font-serif">
+                  ◇
+                </span>
               </div>
             )}
             <div>
@@ -260,9 +266,9 @@ function ProductRow({ product, onRefetch }: ProductRowProps) {
               type="number"
               min="0"
               value={qtyValue}
-              onChange={e => setQtyValue(e.target.value)}
+              onChange={(e) => setQtyValue(e.target.value)}
               onBlur={commitQty}
-              onKeyDown={e => {
+              onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   (e.target as HTMLInputElement).blur();
                 }
@@ -375,35 +381,44 @@ function ProductRow({ product, onRefetch }: ProductRowProps) {
           <td colSpan={6} className="px-6 py-5">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
               <div>
-                <label htmlFor={`edit-name-${product.id}`} className="block text-[10px] uppercase tracking-[0.12em] text-foreground font-sans mb-1">
+                <label
+                  htmlFor={`edit-name-${product.id}`}
+                  className="block text-[10px] uppercase tracking-[0.12em] text-foreground font-sans mb-1"
+                >
                   Name (DE) *
                 </label>
                 <input
                   id={`edit-name-${product.id}`}
                   type="text"
                   value={editForm.name}
-                  onChange={e =>
-                    setEditForm(f => ({ ...f, name: e.target.value }))
+                  onChange={(e) =>
+                    setEditForm((f) => ({ ...f, name: e.target.value }))
                   }
                   className="w-full border border-[var(--brand-ink)]/20 px-3 py-2 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] bg-white"
                 />
               </div>
               <div>
-                <label htmlFor={`edit-nameEn-${product.id}`} className="block text-[10px] uppercase tracking-[0.12em] text-foreground font-sans mb-1">
+                <label
+                  htmlFor={`edit-nameEn-${product.id}`}
+                  className="block text-[10px] uppercase tracking-[0.12em] text-foreground font-sans mb-1"
+                >
                   Name (EN)
                 </label>
                 <input
                   id={`edit-nameEn-${product.id}`}
                   type="text"
                   value={editForm.nameEn}
-                  onChange={e =>
-                    setEditForm(f => ({ ...f, nameEn: e.target.value }))
+                  onChange={(e) =>
+                    setEditForm((f) => ({ ...f, nameEn: e.target.value }))
                   }
                   className="w-full border border-[var(--brand-ink)]/20 px-3 py-2 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] bg-white"
                 />
               </div>
               <div>
-                <label htmlFor={`edit-price-${product.id}`} className="block text-[10px] uppercase tracking-[0.12em] text-foreground font-sans mb-1">
+                <label
+                  htmlFor={`edit-price-${product.id}`}
+                  className="block text-[10px] uppercase tracking-[0.12em] text-foreground font-sans mb-1"
+                >
                   Price (CHF) *
                 </label>
                 <input
@@ -412,28 +427,31 @@ function ProductRow({ product, onRefetch }: ProductRowProps) {
                   step="0.01"
                   min="0"
                   value={editForm.price}
-                  onChange={e =>
-                    setEditForm(f => ({ ...f, price: e.target.value }))
+                  onChange={(e) =>
+                    setEditForm((f) => ({ ...f, price: e.target.value }))
                   }
                   className="w-full border border-[var(--brand-ink)]/20 px-3 py-2 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] bg-white"
                 />
               </div>
               <div>
-                <label htmlFor={`edit-category-${product.id}`} className="block text-[10px] uppercase tracking-[0.12em] text-foreground font-sans mb-1">
+                <label
+                  htmlFor={`edit-category-${product.id}`}
+                  className="block text-[10px] uppercase tracking-[0.12em] text-foreground font-sans mb-1"
+                >
                   Category *
                 </label>
                 <select
                   id={`edit-category-${product.id}`}
                   value={editForm.category}
-                  onChange={e =>
-                    setEditForm(f => ({
+                  onChange={(e) =>
+                    setEditForm((f) => ({
                       ...f,
                       category: e.target.value as ProductCategory,
                     }))
                   }
                   className="w-full border border-[var(--brand-ink)]/20 px-3 py-2 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] bg-white"
                 >
-                  {CATEGORIES.map(c => (
+                  {CATEGORIES.map((c) => (
                     <option key={c} value={c}>
                       {c}
                     </option>
@@ -441,28 +459,37 @@ function ProductRow({ product, onRefetch }: ProductRowProps) {
                 </select>
               </div>
               <div>
-                <label htmlFor={`edit-description-${product.id}`} className="block text-[10px] uppercase tracking-[0.12em] text-foreground font-sans mb-1">
+                <label
+                  htmlFor={`edit-description-${product.id}`}
+                  className="block text-[10px] uppercase tracking-[0.12em] text-foreground font-sans mb-1"
+                >
                   Description (DE) *
                 </label>
                 <textarea
                   id={`edit-description-${product.id}`}
                   value={editForm.description}
-                  onChange={e =>
-                    setEditForm(f => ({ ...f, description: e.target.value }))
+                  onChange={(e) =>
+                    setEditForm((f) => ({ ...f, description: e.target.value }))
                   }
                   rows={3}
                   className="w-full border border-[var(--brand-ink)]/20 px-3 py-2 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] bg-white resize-none"
                 />
               </div>
               <div>
-                <label htmlFor={`edit-descriptionEn-${product.id}`} className="block text-[10px] uppercase tracking-[0.12em] text-foreground font-sans mb-1">
+                <label
+                  htmlFor={`edit-descriptionEn-${product.id}`}
+                  className="block text-[10px] uppercase tracking-[0.12em] text-foreground font-sans mb-1"
+                >
                   Description (EN)
                 </label>
                 <textarea
                   id={`edit-descriptionEn-${product.id}`}
                   value={editForm.descriptionEn}
-                  onChange={e =>
-                    setEditForm(f => ({ ...f, descriptionEn: e.target.value }))
+                  onChange={(e) =>
+                    setEditForm((f) => ({
+                      ...f,
+                      descriptionEn: e.target.value,
+                    }))
                   }
                   rows={3}
                   className="w-full border border-[var(--brand-ink)]/20 px-3 py-2 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] bg-white resize-none"
@@ -521,12 +548,12 @@ export default function Admin() {
   const [sortBy, setSortBy] = useState<SortOption>("newest");
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
-    new Set(CATEGORIES.map(c => c))
+    new Set(CATEGORIES.map((c) => c)),
   );
 
   // Duplicate detection state
   const [dupState, setDupState] = useState<"idle" | "checking" | "found">(
-    "idle"
+    "idle",
   );
   const [dupResults, setDupResults] = useState<DupResult[]>([]);
 
@@ -538,6 +565,43 @@ export default function Admin() {
   const refetch = () => {
     utils.products.adminList.invalidate();
     utils.products.list.invalidate();
+  };
+
+  // Stripe Connect: link this store's own Stripe account for storefront
+  // checkout (separate from Zolto's own subscription billing).
+  const stripeConnectQuery = trpc.tenant.getStripeConnectUrl.useQuery();
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const status = params.get("stripeConnect");
+    if (!status) return;
+    if (status === "success") {
+      toast.success("Stripe account connected — online payments are live.");
+      utils.tenant.getStripeConnectUrl.invalidate();
+    } else if (status === "error") {
+      toast.error(
+        params.get("reason")
+          ? `Stripe connection failed: ${params.get("reason")}`
+          : "Stripe connection failed. Please try again.",
+      );
+    }
+    params.delete("stripeConnect");
+    params.delete("reason");
+    const query = params.toString();
+    window.history.replaceState(
+      {},
+      "",
+      window.location.pathname + (query ? `?${query}` : ""),
+    );
+  }, [utils]);
+
+  const handleConnectStripe = () => {
+    if (stripeConnectQuery.data?.url) {
+      window.location.href = stripeConnectQuery.data.url;
+    } else {
+      toast.error(
+        "Stripe Connect isn't set up on the platform yet. Contact support.",
+      );
+    }
   };
 
   const { data: products, isLoading: productsLoading } =
@@ -554,8 +618,12 @@ export default function Admin() {
     }
     if (sortBy === "category") {
       return copy.sort((a, b) => {
-        const ai = CATEGORIES.indexOf(a.category as typeof CATEGORIES[number]);
-        const bi = CATEGORIES.indexOf(b.category as typeof CATEGORIES[number]);
+        const ai = CATEGORIES.indexOf(
+          a.category as (typeof CATEGORIES)[number],
+        );
+        const bi = CATEGORIES.indexOf(
+          b.category as (typeof CATEGORIES)[number],
+        );
         const catCmp = (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
         if (catCmp !== 0) return catCmp;
         return a.name.localeCompare(b.name);
@@ -592,7 +660,7 @@ export default function Admin() {
 
   const previewTranslateMutation =
     trpc.products.previewAutoTranslateAll.useMutation({
-      onSuccess: data => {
+      onSuccess: (data) => {
         if (data.proposals.length === 0) {
           toast.success("All products already have English translations.");
           return;
@@ -604,16 +672,17 @@ export default function Admin() {
         toast.error("Auto-translation preview failed. Please try again."),
     });
 
-  const applyTranslateMutation = trpc.products.applyAutoTranslateAll.useMutation({
-    onSuccess: data => {
-      refetch();
-      setShowTranslateReview(false);
-      toast.success(
-        `${data.updated} product${data.updated !== 1 ? "s" : ""} translated to English.`
-      );
-    },
-    onError: () => toast.error("Auto-translation failed. Please try again."),
-  });
+  const applyTranslateMutation =
+    trpc.products.applyAutoTranslateAll.useMutation({
+      onSuccess: (data) => {
+        refetch();
+        setShowTranslateReview(false);
+        toast.success(
+          `${data.updated} product${data.updated !== 1 ? "s" : ""} translated to English.`,
+        );
+      },
+      onError: () => toast.error("Auto-translation failed. Please try again."),
+    });
 
   // Re-categorise: same preview → review → apply shape as auto-translate.
   const [recategorizeProposals, setRecategorizeProposals] = useState<
@@ -623,7 +692,7 @@ export default function Admin() {
 
   const previewRecategoriseMutation =
     trpc.products.previewRecategorizeAll.useMutation({
-      onSuccess: data => {
+      onSuccess: (data) => {
         if (data.proposals.length === 0) {
           toast.success("All uncategorised products were already classified.");
           return;
@@ -637,39 +706,40 @@ export default function Admin() {
 
   const applyRecategoriseMutation =
     trpc.products.applyRecategorizeAll.useMutation({
-      onSuccess: data => {
+      onSuccess: (data) => {
         refetch();
         setShowRecategorizeReview(false);
         toast.success(
-          `${data.updated} product${data.updated !== 1 ? "s" : ""} re-categorised by body part.`
+          `${data.updated} product${data.updated !== 1 ? "s" : ""} re-categorised by body part.`,
         );
       },
-      onError: () =>
-        toast.error("Re-categorisation failed. Please try again."),
+      onError: () => toast.error("Re-categorisation failed. Please try again."),
     });
 
   const reconciliationMutation = trpc.reconciliation.run.useMutation({
-    onSuccess: data => {
+    onSuccess: (data) => {
       if (data.newPendingReview > 0) {
         toast.success(
-          `${data.newPendingReview} unmatched payment${data.newPendingReview === 1 ? "" : "s"} found — ${data.emailSent ? "review email sent." : "review email could not be sent, check server logs."}`
+          `${data.newPendingReview} unmatched payment${data.newPendingReview === 1 ? "" : "s"} found — ${data.emailSent ? "review email sent." : "review email could not be sent, check server logs."}`,
         );
       } else if (data.newNoCandidates > 0) {
         toast.success(
-          `${data.newNoCandidates} unmatched payment${data.newNoCandidates === 1 ? "" : "s"} found, but no in-stock product was close enough in price to guess.`
+          `${data.newNoCandidates} unmatched payment${data.newNoCandidates === 1 ? "" : "s"} found, but no in-stock product was close enough in price to guess.`,
         );
       } else {
         toast.success(
-          `No unmatched Stripe payments found (${data.scannedSucceededPayments} checked).`
+          `No unmatched Stripe payments found (${data.scannedSucceededPayments} checked).`,
         );
       }
     },
-    onError: err =>
-      toast.error(err.message || "Stripe reconciliation failed. Please try again."),
+    onError: (err) =>
+      toast.error(
+        err.message || "Stripe reconciliation failed. Please try again.",
+      ),
   });
 
   const insightsMutation = trpc.products.insights.useMutation({
-    onSuccess: data => {
+    onSuccess: (data) => {
       setInsightsData(data);
       setShowInsights(true);
     },
@@ -737,7 +807,9 @@ export default function Admin() {
     return (
       <div className="min-h-screen flex items-center justify-center pt-20 bg-background">
         <div className="text-center max-w-sm">
-          <div className="text-5xl text-[var(--brand-accent)]/30 font-serif mb-6">◇</div>
+          <div className="text-5xl text-[var(--brand-accent)]/30 font-serif mb-6">
+            ◇
+          </div>
           <h2 className="font-serif text-foreground text-2xl mb-4">
             Admin Access
           </h2>
@@ -758,7 +830,9 @@ export default function Admin() {
     return (
       <div className="min-h-screen flex items-center justify-center pt-20 bg-background">
         <div className="text-center max-w-sm">
-          <div className="text-5xl text-[var(--brand-accent)]/30 font-serif mb-6">✕</div>
+          <div className="text-5xl text-[var(--brand-accent)]/30 font-serif mb-6">
+            ✕
+          </div>
           <h2 className="font-serif text-foreground text-2xl mb-4">
             Access Denied
           </h2>
@@ -768,11 +842,12 @@ export default function Admin() {
 
   // Derived stats
   const inStock =
-    products?.filter(p => p.visible && !p.sold && p.quantity > 0).length ?? 0;
-  const soldOut = products?.filter(p => p.sold || p.quantity <= 0).length ?? 0;
+    products?.filter((p) => p.visible && !p.sold && p.quantity > 0).length ?? 0;
+  const soldOut =
+    products?.filter((p) => p.sold || p.quantity <= 0).length ?? 0;
   const inventoryValue =
     products
-      ?.filter(p => !p.sold && p.quantity > 0)
+      ?.filter((p) => !p.sold && p.quantity > 0)
       .reduce((sum, p) => sum + Number(p.price) * p.quantity, 0) ?? 0;
 
   return (
@@ -851,9 +926,33 @@ export default function Admin() {
               )}
               Reconcile Stripe Payments
             </button>
+            {stripeConnectQuery.data?.connected ? (
+              <span
+                title="This store's own Stripe account is linked — checkout pays out directly to you"
+                className="flex items-center gap-2 border border-emerald-400/40 text-emerald-300 px-4 py-2.5 text-xs uppercase tracking-[0.15em] font-sans"
+              >
+                <CheckCircle2 size={14} />
+                Stripe Connected
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={handleConnectStripe}
+                disabled={stripeConnectQuery.isLoading}
+                title="Link your OWN Stripe account so your storefront's customers pay directly into it"
+                className="flex items-center gap-2 border border-white/20 text-white/80 px-4 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:border-white hover:text-white transition-colors disabled:opacity-50"
+              >
+                {stripeConnectQuery.isLoading ? (
+                  <Loader2 size={14} className="animate-spin" />
+                ) : (
+                  <CreditCard size={14} />
+                )}
+                Connect Stripe
+              </button>
+            )}
             <button
               type="button"
-              onClick={() => setShowAddForm(v => !v)}
+              onClick={() => setShowAddForm((v) => !v)}
               className="flex items-center gap-2 bg-[var(--brand-accent)] text-[var(--brand-ink)] px-5 py-2.5 text-xs uppercase tracking-[0.15em] font-sans font-medium hover:bg-[var(--brand-accent-light)] transition-colors"
             >
               <Plus size={14} />
@@ -875,14 +974,19 @@ export default function Admin() {
               className="grid grid-cols-1 md:grid-cols-2 gap-6"
             >
               <div>
-                <label htmlFor="create-name" className="block text-xs uppercase tracking-[0.15em] text-foreground font-sans mb-2">
+                <label
+                  htmlFor="create-name"
+                  className="block text-xs uppercase tracking-[0.15em] text-foreground font-sans mb-2"
+                >
                   Name <span className="text-[var(--brand-accent)]">*</span>
                 </label>
                 <input
                   id="create-name"
                   type="text"
                   value={form.name}
-                  onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, name: e.target.value }))
+                  }
                   required
                   className="w-full border border-[var(--brand-ink)]/20 px-4 py-2.5 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] transition-colors bg-transparent"
                   placeholder="e.g. Moonstone Drop Earrings"
@@ -890,8 +994,12 @@ export default function Admin() {
               </div>
 
               <div>
-                <label htmlFor="create-price" className="block text-xs uppercase tracking-[0.15em] text-foreground font-sans mb-2">
-                  Price (CHF) <span className="text-[var(--brand-accent)]">*</span>
+                <label
+                  htmlFor="create-price"
+                  className="block text-xs uppercase tracking-[0.15em] text-foreground font-sans mb-2"
+                >
+                  Price (CHF){" "}
+                  <span className="text-[var(--brand-accent)]">*</span>
                 </label>
                 <input
                   id="create-price"
@@ -899,8 +1007,8 @@ export default function Admin() {
                   step="0.01"
                   min="0"
                   value={form.price}
-                  onChange={e =>
-                    setForm(p => ({ ...p, price: e.target.value }))
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, price: e.target.value }))
                   }
                   required
                   className="w-full border border-[var(--brand-ink)]/20 px-4 py-2.5 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] transition-colors bg-transparent"
@@ -909,21 +1017,24 @@ export default function Admin() {
               </div>
 
               <div>
-                <label htmlFor="create-category" className="block text-xs uppercase tracking-[0.15em] text-foreground font-sans mb-2">
+                <label
+                  htmlFor="create-category"
+                  className="block text-xs uppercase tracking-[0.15em] text-foreground font-sans mb-2"
+                >
                   Category <span className="text-[var(--brand-accent)]">*</span>
                 </label>
                 <select
                   id="create-category"
                   value={form.category}
-                  onChange={e =>
-                    setForm(p => ({
+                  onChange={(e) =>
+                    setForm((p) => ({
                       ...p,
                       category: e.target.value as ProductCategory,
                     }))
                   }
                   className="w-full border border-[var(--brand-ink)]/20 px-4 py-2.5 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] transition-colors bg-white"
                 >
-                  {CATEGORIES.map(c => (
+                  {CATEGORIES.map((c) => (
                     <option key={c} value={c}>
                       {c}
                     </option>
@@ -932,7 +1043,10 @@ export default function Admin() {
               </div>
 
               <div>
-                <label htmlFor="create-quantity" className="block text-xs uppercase tracking-[0.15em] text-foreground font-sans mb-2">
+                <label
+                  htmlFor="create-quantity"
+                  className="block text-xs uppercase tracking-[0.15em] text-foreground font-sans mb-2"
+                >
                   Quantity
                 </label>
                 <input
@@ -940,8 +1054,8 @@ export default function Admin() {
                   type="number"
                   min="0"
                   value={form.quantity}
-                  onChange={e =>
-                    setForm(p => ({ ...p, quantity: e.target.value }))
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, quantity: e.target.value }))
                   }
                   className="w-full border border-[var(--brand-ink)]/20 px-4 py-2.5 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] transition-colors bg-transparent"
                   placeholder="1"
@@ -949,15 +1063,18 @@ export default function Admin() {
               </div>
 
               <div>
-                <label htmlFor="create-imageUrl" className="block text-xs uppercase tracking-[0.15em] text-foreground font-sans mb-2">
+                <label
+                  htmlFor="create-imageUrl"
+                  className="block text-xs uppercase tracking-[0.15em] text-foreground font-sans mb-2"
+                >
                   Image URL
                 </label>
                 <input
                   id="create-imageUrl"
                   type="url"
                   value={form.imageUrl}
-                  onChange={e =>
-                    setForm(p => ({ ...p, imageUrl: e.target.value }))
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, imageUrl: e.target.value }))
                   }
                   className="w-full border border-[var(--brand-ink)]/20 px-4 py-2.5 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] transition-colors bg-transparent"
                   placeholder="https://..."
@@ -965,14 +1082,18 @@ export default function Admin() {
               </div>
 
               <div className="md:col-span-2">
-                <label htmlFor="create-description" className="block text-xs uppercase tracking-[0.15em] text-foreground font-sans mb-2">
-                  Description <span className="text-[var(--brand-accent)]">*</span>
+                <label
+                  htmlFor="create-description"
+                  className="block text-xs uppercase tracking-[0.15em] text-foreground font-sans mb-2"
+                >
+                  Description{" "}
+                  <span className="text-[var(--brand-accent)]">*</span>
                 </label>
                 <textarea
                   id="create-description"
                   value={form.description}
-                  onChange={e =>
-                    setForm(p => ({ ...p, description: e.target.value }))
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, description: e.target.value }))
                   }
                   required
                   rows={3}
@@ -1000,7 +1121,7 @@ export default function Admin() {
                     </div>
                   </div>
                   <ul className="space-y-1 mb-3 ml-7">
-                    {dupResults.map(d => (
+                    {dupResults.map((d) => (
                       <li
                         key={d.id}
                         className="text-xs font-sans text-amber-800"
@@ -1087,7 +1208,7 @@ export default function Admin() {
                 label: "Inventory Value",
                 value: `CHF ${inventoryValue.toFixed(0)}`,
               },
-            ].map(stat => (
+            ].map((stat) => (
               <div
                 key={stat.label}
                 className="bg-white border border-[var(--brand-border)] p-5 text-center"
@@ -1121,7 +1242,7 @@ export default function Admin() {
               {insightsData && (
                 <button
                   type="button"
-                  onClick={() => setShowInsights(v => !v)}
+                  onClick={() => setShowInsights((v) => !v)}
                   className="text-xs font-sans text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2"
                 >
                   {showInsights ? "Hide" : "Show"}
@@ -1147,7 +1268,10 @@ export default function Admin() {
 
           {insightsMutation.isPending && (
             <div className="flex items-center justify-center gap-3 py-10 text-muted-foreground">
-              <Loader2 size={20} className="animate-spin text-[var(--brand-accent)]" />
+              <Loader2
+                size={20}
+                className="animate-spin text-[var(--brand-accent)]"
+              />
               <p className="text-sm font-sans">
                 Analysing your catalogue and sales data…
               </p>
@@ -1159,7 +1283,10 @@ export default function Admin() {
               {/* Highlights */}
               <div>
                 <div className="flex items-center gap-2 mb-4">
-                  <TrendingUp size={14} className="text-[var(--brand-accent)]" />
+                  <TrendingUp
+                    size={14}
+                    className="text-[var(--brand-accent)]"
+                  />
                   <h3 className="text-xs uppercase tracking-[0.2em] text-muted-foreground font-sans">
                     Highlights
                   </h3>
@@ -1236,7 +1363,10 @@ export default function Admin() {
 
           {!insightsData && !insightsMutation.isPending && (
             <div className="text-center py-10 text-muted-foreground">
-              <BarChart3 size={32} className="mx-auto mb-3 text-[var(--brand-accent)]/30" />
+              <BarChart3
+                size={32}
+                className="mx-auto mb-3 text-[var(--brand-accent)]/30"
+              />
               <p className="text-sm font-sans">
                 Click "Generate Insights" to get AI-powered analysis of your
                 sales and inventory.
@@ -1248,7 +1378,10 @@ export default function Admin() {
         {/* Product Table */}
         {productsLoading ? (
           <div className="flex items-center justify-center py-24">
-            <Loader2 className="animate-spin text-[var(--brand-ink)]" size={32} />
+            <Loader2
+              className="animate-spin text-[var(--brand-ink)]"
+              size={32}
+            />
           </div>
         ) : products && products.length > 0 ? (
           <div className="space-y-6">
@@ -1260,11 +1393,11 @@ export default function Admin() {
               expandedCategories={expandedCategories}
               onToggleCategory={(cat) => {
                 if (cat === "__expand_all__") {
-                  setExpandedCategories(new Set(CATEGORIES.map(c => c)));
+                  setExpandedCategories(new Set(CATEGORIES.map((c) => c)));
                 } else if (cat === "__collapse_all__") {
                   setExpandedCategories(new Set());
                 } else {
-                  setExpandedCategories(prev => {
+                  setExpandedCategories((prev) => {
                     const next = new Set(prev);
                     if (next.has(cat)) next.delete(cat);
                     else next.add(cat);
@@ -1277,10 +1410,12 @@ export default function Admin() {
             {sortBy === "category" ? (
               /* ── Category-grouped view ── */
               <div className="space-y-2">
-                {CATEGORIES.filter(cat =>
-                  sortedProducts.some(p => p.category === cat)
-                ).map(cat => {
-                  const catProducts = sortedProducts.filter(p => p.category === cat);
+                {CATEGORIES.filter((cat) =>
+                  sortedProducts.some((p) => p.category === cat),
+                ).map((cat) => {
+                  const catProducts = sortedProducts.filter(
+                    (p) => p.category === cat,
+                  );
                   const isExpanded = expandedCategories.has(cat);
                   return (
                     <ProductCategoryGroup
@@ -1288,7 +1423,7 @@ export default function Admin() {
                       category={cat}
                       isExpanded={isExpanded}
                       onToggle={() =>
-                        setExpandedCategories(prev => {
+                        setExpandedCategories((prev) => {
                           const next = new Set(prev);
                           if (next.has(cat)) next.delete(cat);
                           else next.add(cat);
@@ -1300,7 +1435,7 @@ export default function Admin() {
                       <div className="overflow-x-auto">
                         <table className="w-full">
                           <tbody>
-                            {catProducts.map(product => (
+                            {catProducts.map((product) => (
                               <ProductRow
                                 key={product.id}
                                 product={product}
@@ -1319,45 +1454,47 @@ export default function Admin() {
               <div className="bg-white border border-[var(--brand-border)] overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-[var(--brand-border)] bg-[var(--brand-surface)]">
-                      <th className="text-left px-6 py-4 text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans font-normal">
-                        Product
-                      </th>
-                      <th className="text-left px-4 py-4 text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans font-normal hidden md:table-cell">
-                        Category
-                      </th>
-                      <th className="text-left px-4 py-4 text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans font-normal">
-                        Price
-                      </th>
-                      <th className="text-left px-4 py-4 text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans font-normal">
-                        Qty
-                      </th>
-                      <th className="text-left px-4 py-4 text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans font-normal hidden sm:table-cell">
-                        Status
-                      </th>
-                      <th className="text-right px-6 py-4 text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans font-normal">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {sortedProducts.map(product => (
-                      <ProductRow
-                        key={product.id}
-                        product={product}
-                        onRefetch={refetch}
-                      />
-                    ))}
-                  </tbody>
-                </table>
+                    <thead>
+                      <tr className="border-b border-[var(--brand-border)] bg-[var(--brand-surface)]">
+                        <th className="text-left px-6 py-4 text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans font-normal">
+                          Product
+                        </th>
+                        <th className="text-left px-4 py-4 text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans font-normal hidden md:table-cell">
+                          Category
+                        </th>
+                        <th className="text-left px-4 py-4 text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans font-normal">
+                          Price
+                        </th>
+                        <th className="text-left px-4 py-4 text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans font-normal">
+                          Qty
+                        </th>
+                        <th className="text-left px-4 py-4 text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans font-normal hidden sm:table-cell">
+                          Status
+                        </th>
+                        <th className="text-right px-6 py-4 text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans font-normal">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sortedProducts.map((product) => (
+                        <ProductRow
+                          key={product.id}
+                          product={product}
+                          onRefetch={refetch}
+                        />
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             )}
           </div>
         ) : (
           <div className="bg-white border border-[var(--brand-border)] text-center py-24">
-            <div className="text-5xl text-[var(--brand-accent)]/20 font-serif mb-6">◇</div>
+            <div className="text-5xl text-[var(--brand-accent)]/20 font-serif mb-6">
+              ◇
+            </div>
             <h3 className="font-serif text-foreground text-xl mb-3">
               No products yet
             </h3>
@@ -1400,7 +1537,10 @@ export default function Admin() {
                 embedded posts on the home page.
               </p>
             </div>
-            <Instagram size={28} className="text-[var(--brand-accent)] flex-shrink-0" />
+            <Instagram
+              size={28}
+              className="text-[var(--brand-accent)] flex-shrink-0"
+            />
           </div>
           <InstagramManager />
         </div>
@@ -1424,7 +1564,10 @@ export default function Admin() {
           </div>
           {bulkLogsLoading ? (
             <div className="flex items-center justify-center py-12">
-              <Loader2 className="animate-spin text-[var(--brand-ink)]" size={24} />
+              <Loader2
+                className="animate-spin text-[var(--brand-ink)]"
+                size={24}
+              />
             </div>
           ) : !bulkLogs || bulkLogs.length === 0 ? (
             <div className="text-center py-12">
@@ -1452,7 +1595,7 @@ export default function Admin() {
                   </tr>
                 </thead>
                 <tbody>
-                  {bulkLogs.map(log => (
+                  {bulkLogs.map((log) => (
                     <tr
                       key={log.id}
                       className="border-b border-[var(--brand-border)] last:border-0 hover:bg-[var(--brand-surface-2)]"
@@ -1508,7 +1651,9 @@ export default function Admin() {
                 to the catalogue.
               </p>
               <div className="bg-white/5 border border-white/10 p-4 font-mono text-xs text-white/70 leading-relaxed">
-                <p className="text-[var(--brand-accent)] mb-1">Example Discord message:</p>
+                <p className="text-[var(--brand-accent)] mb-1">
+                  Example Discord message:
+                </p>
                 <p>
                   Sterling silver moonstone ring. Delicate band with a 8mm round
                   moonstone, oxidised finish. Price: CHF 220
@@ -1527,17 +1672,17 @@ export default function Admin() {
         open={showRecategorizeReview}
         title="Review category changes"
         description="These products will move out of 'Other' into the category shown. Uncheck anything you don't want changed."
-        items={recategorizeProposals.map(p => ({
+        items={recategorizeProposals.map((p) => ({
           id: p.id,
           label: `${p.name}: ${p.from} → ${p.to}`,
         }))}
         isApplying={applyRecategoriseMutation.isPending}
         onCancel={() => setShowRecategorizeReview(false)}
-        onConfirm={selectedIds =>
+        onConfirm={(selectedIds) =>
           applyRecategoriseMutation.mutate({
             items: recategorizeProposals
-              .filter(p => selectedIds.includes(p.id))
-              .map(p => ({ id: p.id, category: p.to as ProductCategory })),
+              .filter((p) => selectedIds.includes(p.id))
+              .map((p) => ({ id: p.id, category: p.to as ProductCategory })),
           })
         }
       />
@@ -1546,17 +1691,17 @@ export default function Admin() {
         open={showTranslateReview}
         title="Review translations"
         description="These English translations will be filled in. Uncheck anything you don't want applied."
-        items={translateProposals.map(p => ({
+        items={translateProposals.map((p) => ({
           id: p.id,
           label: `${p.name} → "${p.nameEn}"`,
         }))}
         isApplying={applyTranslateMutation.isPending}
         onCancel={() => setShowTranslateReview(false)}
-        onConfirm={selectedIds =>
+        onConfirm={(selectedIds) =>
           applyTranslateMutation.mutate({
             items: translateProposals
-              .filter(p => selectedIds.includes(p.id))
-              .map(p => ({
+              .filter((p) => selectedIds.includes(p.id))
+              .map((p) => ({
                 id: p.id,
                 nameEn: p.nameEn,
                 descriptionEn: p.descriptionEn,
