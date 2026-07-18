@@ -96,7 +96,9 @@ services:
       - "${HTTPS_PORT:-8443}:443"
     environment:
       # Caddyfile reads this to pick which domain(s) to serve — see Caddyfile.
-      SITE_DOMAIN: ${SITE_DOMAIN:-zolto.example.com}
+      # Defaults to ":80" (plain HTTP, no domain needed) for testing by IP;
+      # set to a real domain in .env once you're ready for HTTPS.
+      SITE_DOMAIN: ${SITE_DOMAIN:-:80}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
