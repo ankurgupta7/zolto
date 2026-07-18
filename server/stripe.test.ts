@@ -9,8 +9,11 @@ const releaseProductReservations = vi.fn();
 const updateOrderBySessionId = vi.fn();
 const createOrder = vi.fn();
 const getProductsByIds = vi.fn();
+const getTenantAdminContact = vi.fn();
+const getTenantById = vi.fn();
 const notifyOwner = vi.fn();
 const sendOrderReceipt = vi.fn();
+const sendOwnerOrderEmail = vi.fn();
 
 vi.mock("./db", () => ({
   getOrderBySessionId: (...args: unknown[]) => getOrderBySessionId(...args),
@@ -21,6 +24,9 @@ vi.mock("./db", () => ({
     updateOrderBySessionId(...args),
   createOrder: (...args: unknown[]) => createOrder(...args),
   getProductsByIds: (...args: unknown[]) => getProductsByIds(...args),
+  getTenantAdminContact: (...args: unknown[]) =>
+    getTenantAdminContact(...args),
+  getTenantById: (...args: unknown[]) => getTenantById(...args),
 }));
 
 vi.mock("./_core/notification", () => ({
@@ -29,6 +35,7 @@ vi.mock("./_core/notification", () => ({
 
 vi.mock("./_core/email", () => ({
   sendOrderReceipt: (...args: unknown[]) => sendOrderReceipt(...args),
+  sendOwnerOrderEmail: (...args: unknown[]) => sendOwnerOrderEmail(...args),
 }));
 
 import {
@@ -77,6 +84,11 @@ describe("fulfillOrder", () => {
     markProductsSold.mockResolvedValue(undefined);
     getProductsByIds.mockResolvedValue([]);
     sendOrderReceipt.mockResolvedValue(undefined);
+    // No admin on file by default — tests that exercise the owner-email path
+    // set this explicitly.
+    getTenantAdminContact.mockResolvedValue(undefined);
+    getTenantById.mockResolvedValue(undefined);
+    sendOwnerOrderEmail.mockResolvedValue(undefined);
   });
 
   it("does nothing when no order is found and the session has no productIds metadata", async () => {
@@ -141,6 +153,69 @@ describe("fulfillOrder", () => {
     expect(markProductsSold).toHaveBeenCalledWith(3, [1, 2]);
     expect(notifyOwner).toHaveBeenCalledTimes(1);
     expect(notifyOwner.mock.calls[0][0].content).toContain("CHF 185.00");
+  });
+
+  it("emails the tenant's own admin (not just the platform Discord DM) when one is on file", async () => {
+    getOrderBySessionId.mockResolvedValue({ ...baseOrder });
+    getTenantAdminContact.mockResolvedValue({
+      name: "Sheena Arora",
+      email: "sheena@example.com",
+    });
+    getTenantById.mockResolvedValue({ id: 3, name: "Kalakosh" });
+    getProductsByIds.mockResolvedValue([
+      { id: 1, name: "Ring", nameEn: null, price: "100.00" },
+      { id: 2, name: "Earrings", nameEn: null, price: "85.00" },
+    ]);
+
+    await fulfillOrder(makeSession());
+
+    expect(sendOwnerOrderEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: "sheena@example.com",
+        ownerName: "Sheena Arora",
+        orderRef: baseOrder.id,
+        amountTotal: baseOrder.amountTotal,
+        items: [
+          { name: "Ring", nameEn: null, price: "100.00" },
+          { name: "Earrings", nameEn: null, price: "85.00" },
+        ],
+      }),
+    );
+  });
+
+  it("falls back to the store name when the admin has no name yet (pending claim)", async () => {
+    getOrderBySessionId.mockResolvedValue({ ...baseOrder });
+    getTenantAdminContact.mockResolvedValue({
+      name: null,
+      email: "sheena@example.com",
+    });
+    getTenantById.mockResolvedValue({ id: 3, name: "Kalakosh" });
+
+    await fulfillOrder(makeSession());
+
+    expect(sendOwnerOrderEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ ownerName: "Kalakosh" }),
+    );
+  });
+
+  it("does not attempt an owner email when the tenant has no admin on file", async () => {
+    getOrderBySessionId.mockResolvedValue({ ...baseOrder });
+    getTenantAdminContact.mockResolvedValue(undefined);
+
+    await fulfillOrder(makeSession());
+
+    expect(sendOwnerOrderEmail).not.toHaveBeenCalled();
+  });
+
+  it("does not throw when the owner email fails to send", async () => {
+    getOrderBySessionId.mockResolvedValue({ ...baseOrder });
+    getTenantAdminContact.mockResolvedValue({
+      name: "Sheena Arora",
+      email: "sheena@example.com",
+    });
+    sendOwnerOrderEmail.mockRejectedValue(new Error("resend down"));
+
+    await expect(fulfillOrder(makeSession())).resolves.toBeUndefined();
   });
 
   it("emails a receipt to the customer when an email address is available", async () => {
@@ -247,6 +322,9 @@ describe("registerStripeWebhook", () => {
     releaseProductReservations.mockResolvedValue(undefined);
     getProductsByIds.mockResolvedValue([]);
     sendOrderReceipt.mockResolvedValue(undefined);
+    getTenantAdminContact.mockResolvedValue(undefined);
+    getTenantById.mockResolvedValue(undefined);
+    sendOwnerOrderEmail.mockResolvedValue(undefined);
     process.env.STRIPE_SECRET_KEY = "sk_test_123";
     process.env.STRIPE_WEBHOOK_SECRET = webhookSecret;
   });
@@ -425,6 +503,9 @@ describe("registerStripeWebhook — Connect endpoint", () => {
     releaseProductReservations.mockResolvedValue(undefined);
     getProductsByIds.mockResolvedValue([]);
     sendOrderReceipt.mockResolvedValue(undefined);
+    getTenantAdminContact.mockResolvedValue(undefined);
+    getTenantById.mockResolvedValue(undefined);
+    sendOwnerOrderEmail.mockResolvedValue(undefined);
     process.env.STRIPE_SECRET_KEY = "sk_test_123";
     process.env.STRIPE_CONNECT_WEBHOOK_SECRET = connectWebhookSecret;
   });

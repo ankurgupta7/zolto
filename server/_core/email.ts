@@ -219,6 +219,102 @@ export async function sendOrderReceipt(opts: OrderReceiptOptions): Promise<void>
   }
 }
 
+// ── Owner order notification ─────────────────────────────────────────────────
+// Task 8 (docs/planning/phase1/tracker.md "Set up order notifications"): an
+// internal, unbranded alert to the store's own owner/admin when a piece
+// sells online — separate from buildReceiptHtml above, which is the
+// customer-facing purchase confirmation.
+
+export interface OwnerOrderNotificationItem {
+  name: string;
+  nameEn: string | null;
+  price: string;
+}
+
+export interface OwnerOrderNotificationOptions {
+  to: string;
+  ownerName: string | null;
+  orderRef: number;
+  amountTotal: number;
+  customerName: string | null;
+  customerEmail: string | null;
+  paymentMethod: string | null;
+  items: OwnerOrderNotificationItem[];
+  branding?: Partial<TenantBranding>;
+}
+
+export function buildOwnerOrderNotificationHtml(
+  opts: OwnerOrderNotificationOptions,
+): string {
+  const branding = resolveBranding(opts.branding);
+  const ref = String(opts.orderRef).padStart(5, "0");
+  const greeting = opts.ownerName ? escapeHtml(opts.ownerName) : "there";
+
+  const itemRows = opts.items
+    .map(
+      (item) =>
+        `<li style="margin:0 0 4px;font-family:Arial,sans-serif;font-size:13px;color:${C.brown}">${escapeHtml(item.nameEn ?? item.name)} — CHF ${Number(item.price).toFixed(2)}</li>`,
+    )
+    .join("");
+
+  const customerLine =
+    opts.customerName || opts.customerEmail
+      ? `<p style="margin:0 0 4px;font-family:Arial,sans-serif;font-size:13px;color:${C.mid}">Customer: ${escapeHtml(opts.customerName ?? "—")} (${escapeHtml(opts.customerEmail ?? "—")})</p>`
+      : "";
+
+  const paymentLine = opts.paymentMethod
+    ? `<p style="margin:0;font-family:Arial,sans-serif;font-size:13px;color:${C.mid}">Payment: ${escapeHtml(opts.paymentMethod)}</p>`
+    : "";
+
+  return `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#FAF8F5;font-family:Arial,sans-serif">
+  <div style="max-width:520px;margin:40px auto;background:#fff;border:1px solid ${C.divider};padding:32px">
+    <p style="margin:0 0 16px;font-family:Arial,sans-serif;font-size:14px;color:${C.brown}">Hi ${greeting},</p>
+    <p style="margin:0 0 16px;font-family:Arial,sans-serif;font-size:14px;color:${C.brown}">
+      New order <strong>#${ref}</strong> just came in on ${escapeHtml(branding.tenantName)} — <strong>CHF ${(opts.amountTotal / 100).toFixed(2)}</strong>.
+    </p>
+    <ul style="margin:0 0 16px;padding-left:18px">${itemRows}</ul>
+    ${customerLine}
+    ${paymentLine}
+  </div>
+</body>
+</html>`;
+}
+
+export async function sendOwnerOrderEmail(
+  opts: OwnerOrderNotificationOptions,
+): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey || !opts.to) return;
+
+  const branding = resolveBranding(opts.branding);
+  const from =
+    branding.contactEmail ??
+    `orders@${branding.tenantDomain.replace(/^https?:\/\//, "")}`;
+  const ref = String(opts.orderRef).padStart(5, "0");
+
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from,
+      to: opts.to,
+      subject: `New order #${ref} — CHF ${(opts.amountTotal / 100).toFixed(2)}`,
+      html: buildOwnerOrderNotificationHtml(opts),
+    }),
+  });
+
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Resend API ${res.status}: ${body}`);
+  }
+}
+
 // ── Stripe reconciliation review email ──────────────────────────────────────
 export interface ReconciliationCandidate {
   id: number;

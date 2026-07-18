@@ -37,11 +37,13 @@ import {
   createOrder,
   getOrderBySessionId,
   getProductsByIds,
+  getTenantAdminContact,
+  getTenantById,
   markProductsSold,
   releaseProductReservations,
   updateOrderBySessionId,
 } from "./db";
-import { sendOrderReceipt } from "./_core/email";
+import { sendOrderReceipt, sendOwnerOrderEmail } from "./_core/email";
 import { notifyOwner } from "./_core/notification";
 
 let _stripe: Stripe | null = null;
@@ -189,6 +191,32 @@ export async function fulfillOrder(
       `Payment method: ${paymentMethod ?? "—"}\n` +
       `These pieces have been marked as sold.`,
   }).catch((err) => console.error("[Stripe] Owner notification failed:", err));
+
+  // Task 8 (POS ↔ online inventory sync's sibling task, "order notifications"):
+  // email the store's own admin, not just the platform's global Discord DM
+  // above — the two can be different people once other tenants exist.
+  const adminContact = await getTenantAdminContact(order.tenantId);
+  if (adminContact?.email) {
+    const tenant = await getTenantById(order.tenantId);
+    const ownerProducts = await getProductsByIds(order.tenantId, productIds);
+    sendOwnerOrderEmail({
+      to: adminContact.email,
+      ownerName: adminContact.name ?? tenant?.name ?? null,
+      orderRef: order.id,
+      amountTotal: order.amountTotal,
+      customerName:
+        session.customer_details?.name ?? order.customerName ?? null,
+      customerEmail:
+        session.customer_details?.email ?? order.customerEmail ?? null,
+      paymentMethod: paymentMethod ?? null,
+      items: ownerProducts.map((p) => ({
+        name: p.name,
+        nameEn: p.nameEn ?? null,
+        price: p.price,
+      })),
+      branding: tenant ? { tenantName: tenant.name } : undefined,
+    }).catch((err) => console.error("[Stripe] Owner order email failed:", err));
+  }
 }
 
 /**
