@@ -77,5 +77,24 @@ Build notes for when it's implemented:
 
 ---
 
+## 4. Material / gem-type filter on the shop page
+
+**Goal:** let shoppers filter products by material/gem (pearl, silver, gemstone
+colour), alongside the existing category filter (Necklaces/Earrings/Rings/
+Bracelets/etc.). Raised by the founder while confirming Kalakosh's category
+list matches `shared/const.ts` (already correct — Necklaces, Earrings, Rings,
+Bracelets, plus Sets/Bangles/Anklets/Brooches/Hair Accessories/Other, no
+changes needed there).
+
+**Scope (when it's built):**
+- New `products` column (enum or free-text) for material/gem — needs a migration.
+- Wire into the admin product form, CSV importer, and the WhatsApp/Slack/Discord
+  auto-listing LLM parsers (so material is extracted alongside name/price/category).
+- Filter control on the Shop page next to the category filter.
+- Tests for all of the above per this repo's testing rule (new server logic +
+  client hooks need coverage in the same change).
+
+---
+
 _Add new backlog items above this line with a short goal + scope note. Promote to
 a real plan section once it's being designed._
