@@ -7,13 +7,20 @@ import { fulfillOrder, getStripe, isStripeConfigured } from "../stripe";
 
 // ─── Checkout router ────────────────────────────────────────────────────────
 
-// We ship within Switzerland only.
-const SHIPPING_COUNTRIES = ["CH"] as const;
+// We ship within Switzerland and the EU.
+const EU_COUNTRIES = [
+  "AT", "BE", "BG", "HR", "CY", "CZ", "DK", "EE", "FI", "FR", "DE", "GR",
+  "HU", "IE", "IT", "LV", "LT", "LU", "MT", "NL", "PL", "PT", "RO", "SK",
+  "SI", "ES", "SE",
+] as const;
+const SHIPPING_COUNTRIES = ["CH", ...EU_COUNTRIES] as const;
 
-// Shipping is free for orders at or above this subtotal (in Rappen),
-// otherwise a flat fee applies.
+// Shipping is free within Switzerland for orders at or above this subtotal
+// (in Rappen), otherwise a flat fee applies. EU shipping is always flat —
+// no free-shipping threshold there.
 const FREE_SHIPPING_THRESHOLD_RAPPEN = 5000; // CHF 50.00
-const FLAT_SHIPPING_FEE_RAPPEN = 200; // CHF 2.00
+const CH_FLAT_SHIPPING_FEE_RAPPEN = 800; // CHF 8.00
+const EU_FLAT_SHIPPING_FEE_RAPPEN = 1500; // CHF 15.00
 
 // Deliberately does NOT trust client-supplied origin (request body or Origin
 // header) — those are attacker-controllable and would let a direct API
@@ -100,15 +107,16 @@ export const checkoutRouter = router({
         };
       });
 
-      // Shipping: free at/above the threshold, otherwise a flat fee (CH only).
+      // Shipping: CH is free at/above the threshold, otherwise a flat fee.
+      // EU is always a flat fee (no free-shipping threshold there).
       const subtotalRappen = items.reduce(
         (sum, p) => sum + Math.round(Number(p.price) * 100),
         0
       );
-      const shippingFeeRappen =
+      const chShippingFeeRappen =
         subtotalRappen >= FREE_SHIPPING_THRESHOLD_RAPPEN
           ? 0
-          : FLAT_SHIPPING_FEE_RAPPEN;
+          : CH_FLAT_SHIPPING_FEE_RAPPEN;
 
       const session = await stripe.checkout.sessions.create({
         mode: "payment",
@@ -122,18 +130,38 @@ export const checkoutRouter = router({
         shipping_address_collection: {
           allowed_countries: [...SHIPPING_COUNTRIES],
         },
+        // Stripe Checkout shows every option to every customer regardless of
+        // the address they enter — it doesn't filter shipping_options by
+        // destination country within a single session config. The customer
+        // picks the option matching their own country from the two labeled
+        // choices below; this is the standard workaround for per-country
+        // flat rates without a custom shipping-rate lookup.
         shipping_options: [
           {
             shipping_rate_data: {
               type: "fixed_amount",
-              fixed_amount: { amount: shippingFeeRappen, currency: "chf" },
+              fixed_amount: { amount: chShippingFeeRappen, currency: "chf" },
               display_name:
-                shippingFeeRappen === 0
+                chShippingFeeRappen === 0
                   ? "Free shipping (Switzerland)"
                   : "Standard shipping (Switzerland)",
               delivery_estimate: {
                 minimum: { unit: "business_day", value: 2 },
                 maximum: { unit: "business_day", value: 3 },
+              },
+            },
+          },
+          {
+            shipping_rate_data: {
+              type: "fixed_amount",
+              fixed_amount: {
+                amount: EU_FLAT_SHIPPING_FEE_RAPPEN,
+                currency: "chf",
+              },
+              display_name: "Standard shipping (EU)",
+              delivery_estimate: {
+                minimum: { unit: "business_day", value: 4 },
+                maximum: { unit: "business_day", value: 7 },
               },
             },
           },
