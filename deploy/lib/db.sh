@@ -87,6 +87,23 @@ tenant_scoped_tables() {
 # For a cutover that imports an existing store as tenant #1, set POS_API_KEY so
 # that store's POS terminal — which authenticates purely by that key, with no
 # fallback (server/pos.ts requirePosKey) — keeps working after the migration.
+# ─────────────────────────────────────────────────────────────────────────────
+# Migration 0020: Stripe Connect for tenant storefronts.
+#
+# Adds tenants.stripe_connected_account_id — the Standard Connect account a
+# tenant links so THEIR storefront checkout pays out directly to them,
+# separate from stripe_customer_id/stripe_subscription_id (Zolto's own
+# billing relationship with the tenant, added in 0019). Idempotent: a no-op
+# if the column already exists.
+migrate_0020_stripe_connect() {
+  if [ "$(col_exists tenants stripe_connected_account_id)" = "0" ]; then
+    run_sql "0020 add tenants.stripe_connected_account_id" \
+      "ALTER TABLE \`tenants\` ADD \`stripe_connected_account_id\` varchar(255) NULL;"
+  else
+    ok "0020 tenants.stripe_connected_account_id already exists"
+  fi
+}
+
 migrate_0019_multitenant() {
   run_sql "0019 tenants table" "
     CREATE TABLE IF NOT EXISTS \`tenants\` (

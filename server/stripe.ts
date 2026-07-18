@@ -6,15 +6,28 @@
  * (Switzerland's most popular mobile payment method). All prices are in CHF.
  *
  * Required env vars:
- *   STRIPE_SECRET_KEY       – Secret API key (sk_live_... or sk_test_...)
- *   STRIPE_WEBHOOK_SECRET   – Signing secret for the /api/stripe/webhook endpoint
+ *   STRIPE_SECRET_KEY       – Zolto's own (platform) secret API key
+ *                             (sk_live_... or sk_test_...). Used for Zolto's
+ *                             own subscription billing of tenants AND as the
+ *                             platform key for Connect API calls — it never
+ *                             directly processes a tenant's storefront
+ *                             payments; see server/stripeConnect.ts for that.
+ *   STRIPE_WEBHOOK_SECRET   – Signing secret for /api/stripe/webhook (events
+ *                             on Zolto's own account)
+ *
+ * Optional (Stripe Connect — see server/stripeConnect.ts):
+ *   STRIPE_CONNECT_CLIENT_ID        – Platform's Connect OAuth client id (ca_...)
+ *   STRIPE_CONNECT_WEBHOOK_SECRET   – Signing secret for /api/stripe/connect-webhook
+ *                                     (events on tenants' connected accounts)
  *
  * Optional:
  *   PUBLIC_BASE_URL         – Canonical site URL used for success/cancel redirects
  *                             (falls back to the request Origin if unset)
  *
  * If STRIPE_SECRET_KEY is not set, the checkout flow is disabled and the
- * frontend falls back to the WhatsApp enquiry path.
+ * frontend falls back to the WhatsApp enquiry path. If a tenant hasn't
+ * connected their own Stripe account via Connect, their storefront falls
+ * back the same way even when the platform key is set.
  */
 
 import type { Express, Request, Response } from "express";
@@ -68,7 +81,7 @@ export async function createStripeCustomer(params: {
  * Idempotent — safe to call more than once for the same session.
  */
 export async function fulfillOrder(
-  session: Stripe.Checkout.Session
+  session: Stripe.Checkout.Session,
 ): Promise<void> {
   let order = await getOrderBySessionId(session.id);
 
@@ -79,12 +92,12 @@ export async function fulfillOrder(
       ?.productIds;
     if (!productIdsStr) {
       console.warn(
-        `[Stripe] No order or productIds metadata for session ${session.id} — cannot fulfil`
+        `[Stripe] No order or productIds metadata for session ${session.id} — cannot fulfil`,
       );
       return;
     }
     console.info(
-      `[Stripe] Reconstructing missing order for session ${session.id}`
+      `[Stripe] Reconstructing missing order for session ${session.id}`,
     );
     try {
       await createOrder({
@@ -99,14 +112,14 @@ export async function fulfillOrder(
     } catch (err) {
       console.error(
         `[Stripe] Failed to reconstruct order for session ${session.id}:`,
-        err
+        err,
       );
       return;
     }
     order = await getOrderBySessionId(session.id);
     if (!order) {
       console.error(
-        `[Stripe] Order still missing after reconstruction for session ${session.id}`
+        `[Stripe] Order still missing after reconstruction for session ${session.id}`,
       );
       return;
     }
@@ -116,8 +129,8 @@ export async function fulfillOrder(
 
   const productIds = order.productIds
     .split(",")
-    .map(s => parseInt(s.trim(), 10))
-    .filter(n => Number.isFinite(n));
+    .map((s) => parseInt(s.trim(), 10))
+    .filter((n) => Number.isFinite(n));
 
   const paymentMethod = Array.isArray(session.payment_method_types)
     ? session.payment_method_types[0]
@@ -140,14 +153,17 @@ export async function fulfillOrder(
   const customerEmail =
     session.customer_details?.email ?? order.customerEmail ?? null;
   if (customerEmail) {
-    const purchasedProducts = await getProductsByIds(order.tenantId, productIds);
+    const purchasedProducts = await getProductsByIds(
+      order.tenantId,
+      productIds,
+    );
     sendOrderReceipt({
       to: customerEmail,
       customerName:
         session.customer_details?.name ?? order.customerName ?? null,
       orderRef: order.id,
       createdAt: order.createdAt,
-      items: purchasedProducts.map(p => ({
+      items: purchasedProducts.map((p) => ({
         id: p.id,
         name: p.name,
         nameEn: p.nameEn ?? null,
@@ -156,8 +172,8 @@ export async function fulfillOrder(
       })),
       amountTotal: order.amountTotal,
       paymentMethod: paymentMethod ?? null,
-    }).catch(err =>
-      console.error("[Stripe] Customer receipt email failed:", err)
+    }).catch((err) =>
+      console.error("[Stripe] Customer receipt email failed:", err),
     );
   }
 
@@ -171,13 +187,57 @@ export async function fulfillOrder(
       `Pieces: ${order.productIds}\n` +
       `Payment method: ${paymentMethod ?? "—"}\n` +
       `These pieces have been marked as sold.`,
-  }).catch(err => console.error("[Stripe] Owner notification failed:", err));
+  }).catch((err) => console.error("[Stripe] Owner notification failed:", err));
 }
 
 /**
- * Registers the Stripe webhook route. MUST be called before the global
+ * Shared event handling for both the platform webhook and the Connect
+ * webhook below — a checkout.session.completed means the same thing
+ * regardless of which Stripe account it came from, since the order row
+ * already carries its own tenantId (set when the session was created).
+ */
+async function handleStripeEvent(event: Stripe.Event): Promise<void> {
+  switch (event.type) {
+    case "checkout.session.completed":
+    case "checkout.session.async_payment_succeeded": {
+      await fulfillOrder(event.data.object as Stripe.Checkout.Session);
+      break;
+    }
+    case "checkout.session.expired": {
+      const session = event.data.object as Stripe.Checkout.Session;
+      await updateOrderBySessionId(session.id, {
+        status: "expired",
+      }).catch(() => {});
+      break;
+    }
+    case "checkout.session.async_payment_failed": {
+      const session = event.data.object as Stripe.Checkout.Session;
+      await updateOrderBySessionId(session.id, {
+        status: "failed",
+      }).catch(() => {});
+      break;
+    }
+    default:
+      // Unhandled event types are acknowledged but ignored.
+      break;
+  }
+}
+
+/**
+ * Registers the Stripe webhook routes. MUST be called before the global
  * express.json() body parser so the raw body is available for signature
  * verification.
+ *
+ * Two separate endpoints, because they're signed with two separate secrets
+ * in the Stripe Dashboard:
+ *   /api/stripe/webhook          — events on Zolto's own (platform) account
+ *                                   (STRIPE_WEBHOOK_SECRET)
+ *   /api/stripe/connect-webhook  — events on tenants' connected accounts
+ *                                   (STRIPE_CONNECT_WEBHOOK_SECRET), e.g. a
+ *                                   Kalakosh customer's checkout completing.
+ *                                   [PLACEHOLDER — register this endpoint in
+ *                                   the Stripe Dashboard's Connect webhook
+ *                                   settings once a Connect app exists.]
  */
 export function registerStripeWebhook(app: Express): void {
   app.post(
@@ -198,7 +258,7 @@ export function registerStripeWebhook(app: Express): void {
         event = stripe.webhooks.constructEvent(
           req.body as Buffer,
           signature as string,
-          webhookSecret
+          webhookSecret,
         );
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
@@ -208,30 +268,7 @@ export function registerStripeWebhook(app: Express): void {
       }
 
       try {
-        switch (event.type) {
-          case "checkout.session.completed":
-          case "checkout.session.async_payment_succeeded": {
-            await fulfillOrder(event.data.object as Stripe.Checkout.Session);
-            break;
-          }
-          case "checkout.session.expired": {
-            const session = event.data.object as Stripe.Checkout.Session;
-            await updateOrderBySessionId(session.id, {
-              status: "expired",
-            }).catch(() => {});
-            break;
-          }
-          case "checkout.session.async_payment_failed": {
-            const session = event.data.object as Stripe.Checkout.Session;
-            await updateOrderBySessionId(session.id, {
-              status: "failed",
-            }).catch(() => {});
-            break;
-          }
-          default:
-            // Unhandled event types are acknowledged but ignored.
-            break;
-        }
+        await handleStripeEvent(event);
       } catch (err) {
         console.error(`[Stripe] Error handling ${event.type}:`, err);
         res.status(500).send("Webhook handler failed");
@@ -239,6 +276,50 @@ export function registerStripeWebhook(app: Express): void {
       }
 
       res.json({ received: true });
-    }
+    },
+  );
+
+  app.post(
+    "/api/stripe/connect-webhook",
+    express.raw({ type: "application/json" }),
+    async (req: Request, res: Response) => {
+      const stripe = getStripe();
+      const webhookSecret = process.env.STRIPE_CONNECT_WEBHOOK_SECRET;
+      if (!stripe || !webhookSecret) {
+        console.warn(
+          "[Stripe] Connect webhook received but Connect is not configured",
+        );
+        res.status(400).send("Stripe Connect not configured");
+        return;
+      }
+
+      const signature = req.headers["stripe-signature"];
+      let event: Stripe.Event;
+      try {
+        event = stripe.webhooks.constructEvent(
+          req.body as Buffer,
+          signature as string,
+          webhookSecret,
+        );
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error(
+          "[Stripe] Connect webhook signature verification failed:",
+          msg,
+        );
+        res.status(400).send(`Webhook Error: ${msg}`);
+        return;
+      }
+
+      try {
+        await handleStripeEvent(event);
+      } catch (err) {
+        console.error(`[Stripe] Error handling Connect ${event.type}:`, err);
+        res.status(500).send("Webhook handler failed");
+        return;
+      }
+
+      res.json({ received: true });
+    },
   );
 }

@@ -3,6 +3,7 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 const getProductsByIds = vi.fn();
 const createOrder = vi.fn();
 const getOrderBySessionId = vi.fn();
+const getTenantById = vi.fn();
 
 vi.mock("./db", () => ({
   createProduct: vi.fn(),
@@ -28,6 +29,7 @@ vi.mock("./db", () => ({
   getProductsByIds: (...args: unknown[]) => getProductsByIds(...args),
   createOrder: (...args: unknown[]) => createOrder(...args),
   getOrderBySessionId: (...args: unknown[]) => getOrderBySessionId(...args),
+  getTenantById: (...args: unknown[]) => getTenantById(...args),
   getProductsMissingTranslation: vi.fn(),
   getPaidOrders: vi.fn(),
 }));
@@ -40,16 +42,19 @@ const checkoutSessionsCreate = vi.fn();
 const sessionsRetrieve = vi.fn();
 const getStripe = vi.fn();
 const isStripeConfigured = vi.fn();
+const fulfillOrder = vi.fn();
 
 vi.mock("./stripe", () => ({
   getStripe: (...args: unknown[]) => getStripe(...args),
   isStripeConfigured: (...args: unknown[]) => isStripeConfigured(...args),
+  fulfillOrder: (...args: unknown[]) => fulfillOrder(...args),
 }));
 
 import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
 
 const TEST_TENANT_ID = 7;
+const TEST_CONNECTED_ACCOUNT_ID = "acct_test_connected";
 
 function makeCtx(role: "admin" | "user" | null = null): TrpcContext {
   const user =
@@ -71,8 +76,13 @@ function makeCtx(role: "admin" | "user" | null = null): TrpcContext {
   return {
     user,
     // The storefront tenant is resolved from the request; checkout scopes all
-    // product/order lookups to it.
-    tenant: { id: TEST_TENANT_ID } as TrpcContext["tenant"],
+    // product/order lookups to it. Has a connected Stripe account by default
+    // (tests that need the "not connected" case override this).
+    tenant: {
+      id: TEST_TENANT_ID,
+      name: "Test Store",
+      stripeConnectedAccountId: TEST_CONNECTED_ACCOUNT_ID,
+    } as TrpcContext["tenant"],
     req: { protocol: "https", headers: {} } as TrpcContext["req"],
     res: { clearCookie: vi.fn() } as unknown as TrpcContext["res"],
   };
@@ -105,16 +115,32 @@ beforeEach(() => {
     },
   });
   isStripeConfigured.mockReturnValue(true);
+  getTenantById.mockResolvedValue({
+    id: TEST_TENANT_ID,
+    name: "Test Store",
+    stripeConnectedAccountId: TEST_CONNECTED_ACCOUNT_ID,
+  });
 });
 
 describe("checkout.config", () => {
-  it("reflects whether Stripe is configured", async () => {
+  it("reflects whether the platform Stripe key is configured", async () => {
     isStripeConfigured.mockReturnValue(false);
     const caller = appRouter.createCaller(makeCtx());
     expect(await caller.checkout.config()).toEqual({ enabled: false });
 
     isStripeConfigured.mockReturnValue(true);
     expect(await caller.checkout.config()).toEqual({ enabled: true });
+  });
+
+  it("is disabled when this tenant hasn't connected their own Stripe account", async () => {
+    isStripeConfigured.mockReturnValue(true);
+    const ctx = makeCtx();
+    ctx.tenant = {
+      id: TEST_TENANT_ID,
+      stripeConnectedAccountId: null,
+    } as TrpcContext["tenant"];
+    const caller = appRouter.createCaller(ctx);
+    expect(await caller.checkout.config()).toEqual({ enabled: false });
   });
 });
 
@@ -123,15 +149,29 @@ describe("checkout.createSession", () => {
     getStripe.mockReturnValue(null);
     const caller = appRouter.createCaller(makeCtx());
     await expect(
-      caller.checkout.createSession({ productIds: [1] })
+      caller.checkout.createSession({ productIds: [1] }),
     ).rejects.toThrow(/not configured/);
+  });
+
+  it("throws PRECONDITION_FAILED when this store hasn't connected Stripe (Connect)", async () => {
+    const ctx = makeCtx();
+    ctx.tenant = {
+      id: TEST_TENANT_ID,
+      name: "Test Store",
+      stripeConnectedAccountId: null,
+    } as TrpcContext["tenant"];
+    const caller = appRouter.createCaller(ctx);
+    await expect(
+      caller.checkout.createSession({ productIds: [1] }),
+    ).rejects.toThrow(/hasn't connected online payments/);
+    expect(checkoutSessionsCreate).not.toHaveBeenCalled();
   });
 
   it("throws NOT_FOUND when a requested product no longer exists", async () => {
     getProductsByIds.mockResolvedValue([sampleProduct]);
     const caller = appRouter.createCaller(makeCtx());
     await expect(
-      caller.checkout.createSession({ productIds: [1, 2] })
+      caller.checkout.createSession({ productIds: [1, 2] }),
     ).rejects.toThrow(/no longer available/);
   });
 
@@ -139,7 +179,7 @@ describe("checkout.createSession", () => {
     getProductsByIds.mockResolvedValue([{ ...sampleProduct, sold: true }]);
     const caller = appRouter.createCaller(makeCtx());
     await expect(
-      caller.checkout.createSession({ productIds: [1] })
+      caller.checkout.createSession({ productIds: [1] }),
     ).rejects.toThrow(/Already sold/);
   });
 
@@ -147,7 +187,7 @@ describe("checkout.createSession", () => {
     getProductsByIds.mockResolvedValue([{ ...sampleProduct, quantity: 0 }]);
     const caller = appRouter.createCaller(makeCtx());
     await expect(
-      caller.checkout.createSession({ productIds: [1] })
+      caller.checkout.createSession({ productIds: [1] }),
     ).rejects.toThrow(/Already sold/);
   });
 
@@ -175,12 +215,16 @@ describe("checkout.createSession", () => {
         status: "pending",
         amountTotal: 18500,
         productIds: "1",
-      })
+      }),
     );
     expect(result).toEqual({
       url: "https://checkout.stripe.com/cs_test_new",
       sessionId: "cs_test_new",
     });
+
+    // Runs on the tenant's own connected account — never Zolto's own.
+    const options = checkoutSessionsCreate.mock.calls[0][1];
+    expect(options).toEqual({ stripeAccount: TEST_CONNECTED_ACCOUNT_ID });
   });
 
   it("ignores a client-controlled Origin header when building success/cancel URLs", async () => {
@@ -207,7 +251,7 @@ describe("checkout.createSession", () => {
   //   "Received unknown parameter: statement_descriptor"
   // See: https://github.com/ankurgupta7/Kalakosh-ch/pull/85
 
-  it("places statement_descriptor inside payment_intent_data (regression guard)", async () => {
+  it("places statement_descriptor (derived from the tenant's name) inside payment_intent_data", async () => {
     getProductsByIds.mockResolvedValue([sampleProduct]);
     checkoutSessionsCreate.mockResolvedValue({
       id: "cs_test_descriptor",
@@ -223,17 +267,41 @@ describe("checkout.createSession", () => {
     // Must NOT be at the top level — newer Stripe API versions reject this.
     expect(sessionArgs).not.toHaveProperty("statement_descriptor");
 
-    // Must be nested inside payment_intent_data.
+    // Must be nested inside payment_intent_data, and per-tenant — not a
+    // hardcoded brand name (this router serves every tenant's storefront).
     expect(sessionArgs).toHaveProperty("payment_intent_data");
-    expect(sessionArgs.payment_intent_data.statement_descriptor).toBe("KALAKOSH");
+    expect(sessionArgs.payment_intent_data.statement_descriptor).toBe(
+      "TEST STORE",
+    );
+  });
+
+  it("truncates statement_descriptor to Stripe's 22-char limit", async () => {
+    getProductsByIds.mockResolvedValue([sampleProduct]);
+    checkoutSessionsCreate.mockResolvedValue({
+      id: "cs_test_long_name",
+      url: "https://checkout.stripe.com/cs_test",
+      amount_total: 18500,
+    });
+
+    const ctx = makeCtx();
+    ctx.tenant = {
+      id: TEST_TENANT_ID,
+      name: "A Very Long Jewelry Store Name Indeed",
+      stripeConnectedAccountId: TEST_CONNECTED_ACCOUNT_ID,
+    } as TrpcContext["tenant"];
+    const caller = appRouter.createCaller(ctx);
+    await caller.checkout.createSession({ productIds: [1] });
+
+    const sessionArgs = checkoutSessionsCreate.mock.calls[0][0];
+    expect(
+      sessionArgs.payment_intent_data.statement_descriptor.length,
+    ).toBeLessThanOrEqual(22);
   });
 
   // ─── Shipping fee logic ───────────────────────────────────────────────────
 
   it("adds free CH shipping when the subtotal is at or above CHF 50", async () => {
-    getProductsByIds.mockResolvedValue([
-      { ...sampleProduct, price: "65.00" },
-    ]);
+    getProductsByIds.mockResolvedValue([{ ...sampleProduct, price: "65.00" }]);
     checkoutSessionsCreate.mockResolvedValue({
       id: "cs_test_ship",
       url: "https://checkout.stripe.com/cs_test_ship",
@@ -250,9 +318,7 @@ describe("checkout.createSession", () => {
   });
 
   it("adds a CHF 8 CH shipping fee when the subtotal is below CHF 50", async () => {
-    getProductsByIds.mockResolvedValue([
-      { ...sampleProduct, price: "35.00" },
-    ]);
+    getProductsByIds.mockResolvedValue([{ ...sampleProduct, price: "35.00" }]);
     checkoutSessionsCreate.mockResolvedValue({
       id: "cs_test_ship2",
       url: "https://checkout.stripe.com/cs_test_ship2",
@@ -269,9 +335,7 @@ describe("checkout.createSession", () => {
   });
 
   it("always offers a flat CHF 15 EU shipping option alongside the CH one", async () => {
-    getProductsByIds.mockResolvedValue([
-      { ...sampleProduct, price: "65.00" },
-    ]);
+    getProductsByIds.mockResolvedValue([{ ...sampleProduct, price: "65.00" }]);
     checkoutSessionsCreate.mockResolvedValue({
       id: "cs_test_ship3",
       url: "https://checkout.stripe.com/cs_test_ship3",
@@ -306,6 +370,68 @@ describe("checkout.createSession", () => {
     expect(allowedCountries).toContain("DE");
     expect(allowedCountries).toContain("FR");
     expect(allowedCountries.length).toBe(28); // CH + 27 EU member states
+  });
+});
+
+describe("checkout.fulfillSession", () => {
+  it("throws NOT_FOUND when no order matches the session id", async () => {
+    getOrderBySessionId.mockResolvedValue(undefined);
+    const caller = appRouter.createCaller(makeCtx("admin"));
+    await expect(
+      caller.checkout.fulfillSession({ sessionId: "cs_missing" }),
+    ).rejects.toThrow(/Order not found/);
+  });
+
+  it("throws NOT_FOUND when the order belongs to a different tenant", async () => {
+    getOrderBySessionId.mockResolvedValue({
+      id: 1,
+      tenantId: TEST_TENANT_ID + 1,
+      productIds: "1",
+    });
+    const caller = appRouter.createCaller(makeCtx("admin"));
+    await expect(
+      caller.checkout.fulfillSession({ sessionId: "cs_test" }),
+    ).rejects.toThrow(/Order not found/);
+    expect(sessionsRetrieve).not.toHaveBeenCalled();
+  });
+
+  it("throws PRECONDITION_FAILED when the store has no connected Stripe account", async () => {
+    getOrderBySessionId.mockResolvedValue({
+      id: 1,
+      tenantId: TEST_TENANT_ID,
+      productIds: "1",
+    });
+    getTenantById.mockResolvedValue({
+      id: TEST_TENANT_ID,
+      stripeConnectedAccountId: null,
+    });
+    const caller = appRouter.createCaller(makeCtx("admin"));
+    await expect(
+      caller.checkout.fulfillSession({ sessionId: "cs_test" }),
+    ).rejects.toThrow(/no connected Stripe account/);
+  });
+
+  it("retrieves the session on the tenant's connected account and fulfills it", async () => {
+    getOrderBySessionId.mockResolvedValue({
+      id: 1,
+      tenantId: TEST_TENANT_ID,
+      productIds: "1",
+    });
+    sessionsRetrieve.mockResolvedValue({
+      id: "cs_test",
+      payment_status: "paid",
+    });
+    const caller = appRouter.createCaller(makeCtx("admin"));
+    const result = await caller.checkout.fulfillSession({
+      sessionId: "cs_test",
+    });
+
+    expect(sessionsRetrieve).toHaveBeenCalledWith(
+      "cs_test",
+      {},
+      { stripeAccount: TEST_CONNECTED_ACCOUNT_ID },
+    );
+    expect(result).toEqual({ success: true });
   });
 });
 
@@ -386,6 +512,39 @@ describe("checkout.orderStatus", () => {
     expect(result?.status).toBe("paid");
     expect(result?.customerEmail).toBe("buyer@example.com");
     expect(result?.paymentMethod).toBe("twint");
+    expect(sessionsRetrieve).toHaveBeenCalledWith(
+      "cs_test_new",
+      {},
+      { stripeAccount: TEST_CONNECTED_ACCOUNT_ID },
+    );
+  });
+
+  it("does not poll Stripe when the order's tenant has no connected account", async () => {
+    getOrderBySessionId.mockResolvedValue({
+      id: 9,
+      tenantId: TEST_TENANT_ID,
+      status: "pending",
+      amountTotal: 9900,
+      currency: "chf",
+      customerEmail: null,
+      customerName: null,
+      paymentMethod: null,
+      productIds: "1",
+      createdAt: new Date("2026-01-01T00:00:00.000Z"),
+    });
+    getProductsByIds.mockResolvedValue([sampleProduct]);
+    getTenantById.mockResolvedValue({
+      id: TEST_TENANT_ID,
+      stripeConnectedAccountId: null,
+    });
+
+    const caller = appRouter.createCaller(makeCtx());
+    const result = await caller.checkout.orderStatus({
+      sessionId: "cs_test_new",
+    });
+
+    expect(sessionsRetrieve).not.toHaveBeenCalled();
+    expect(result?.status).toBe("pending");
   });
 });
 

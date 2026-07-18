@@ -2,33 +2,39 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // Mock the data + stripe layers so the router is exercised in isolation.
 // vi.hoisted lets the mock objects exist before the hoisted vi.mock factories run.
-const { dbMock, createStripeCustomer } = vi.hoisted(() => ({
-  dbMock: {
-    db: { query: {} },
-    getTenantBySlug: vi.fn(),
-    getTenantById: vi.fn(),
-    getTenantByReferralCode: vi.fn(),
-    createTenant: vi.fn(),
-    createTenantSettings: vi.fn(),
-    setTenantStripeCustomer: vi.fn(),
-    setTenantReferrer: vi.fn(),
-    createPendingTenantAdmin: vi.fn(),
-    getUserByOpenId: vi.fn(),
-    assignUserToTenantAsAdmin: vi.fn(),
-    deleteUserById: vi.fn(),
-  },
-  createStripeCustomer: vi.fn(),
-}));
+const { dbMock, createStripeCustomer, buildConnectAuthorizeUrl } = vi.hoisted(
+  () => ({
+    dbMock: {
+      db: { query: {} },
+      getTenantBySlug: vi.fn(),
+      getTenantById: vi.fn(),
+      getTenantByReferralCode: vi.fn(),
+      createTenant: vi.fn(),
+      createTenantSettings: vi.fn(),
+      setTenantStripeCustomer: vi.fn(),
+      setTenantReferrer: vi.fn(),
+      createPendingTenantAdmin: vi.fn(),
+      getUserByOpenId: vi.fn(),
+      assignUserToTenantAsAdmin: vi.fn(),
+      deleteUserById: vi.fn(),
+    },
+    createStripeCustomer: vi.fn(),
+    buildConnectAuthorizeUrl: vi.fn(),
+  }),
+);
 
 vi.mock("../db", () => dbMock);
 vi.mock("../stripe", () => ({ createStripeCustomer }));
+vi.mock("../stripeConnect", () => ({ buildConnectAuthorizeUrl }));
 
 import { tenantRouter } from "./tenant";
 import type { TrpcContext } from "../_core/context";
 
-function ctx(user: { openId: string } | null = null): TrpcContext {
+function ctx(
+  user: { openId: string; role?: string; tenantId?: number } | null = null,
+): TrpcContext {
   return {
-    req: {} as never,
+    req: { protocol: "https", headers: {} } as never,
     res: {} as never,
     user: (user as never) ?? null,
     tenant: null,
@@ -54,13 +60,20 @@ describe("tenant.create", () => {
     });
 
     expect(dbMock.createTenant).toHaveBeenCalledWith(
-      expect.objectContaining({ slug: "aurora", name: "Aurora Atelier", plan: "starter" })
+      expect.objectContaining({
+        slug: "aurora",
+        name: "Aurora Atelier",
+        plan: "starter",
+      }),
     );
-    expect(dbMock.createTenantSettings).toHaveBeenCalledWith({ tenantId: 42, currency: "chf" });
+    expect(dbMock.createTenantSettings).toHaveBeenCalledWith({
+      tenantId: 42,
+      currency: "chf",
+    });
     expect(dbMock.createPendingTenantAdmin).toHaveBeenCalledWith(
       42,
       "owner@aurora.example",
-      expect.any(String)
+      expect.any(String),
     );
     expect(res.tenantId).toBe(42);
     expect(res.slug).toBe("aurora");
@@ -84,7 +97,7 @@ describe("tenant.create", () => {
         name: "Aurora",
         slug: "aurora",
         email: "o@a.example",
-      })
+      }),
     ).rejects.toThrow(/already taken/i);
     expect(dbMock.createTenant).not.toHaveBeenCalled();
   });
@@ -134,7 +147,11 @@ describe("tenant.create", () => {
 
 describe("tenant.claimAdmin", () => {
   it("links the signed-in user to the tenant and burns the pending row", async () => {
-    dbMock.getUserByOpenId.mockResolvedValue({ id: 9, tenantId: 42, role: "admin" });
+    dbMock.getUserByOpenId.mockResolvedValue({
+      id: 9,
+      tenantId: 42,
+      role: "admin",
+    });
     dbMock.getTenantById.mockResolvedValue({ id: 42, slug: "aurora" });
 
     const res = await tenantRouter
@@ -142,7 +159,10 @@ describe("tenant.claimAdmin", () => {
       .claimAdmin({ token: "tok-abc" });
 
     expect(dbMock.getUserByOpenId).toHaveBeenCalledWith("pending:tok-abc");
-    expect(dbMock.assignUserToTenantAsAdmin).toHaveBeenCalledWith("google:sub-1", 42);
+    expect(dbMock.assignUserToTenantAsAdmin).toHaveBeenCalledWith(
+      "google:sub-1",
+      42,
+    );
     expect(dbMock.deleteUserById).toHaveBeenCalledWith(9);
     expect(res).toEqual({ tenantId: 42, slug: "aurora" });
   });
@@ -150,15 +170,66 @@ describe("tenant.claimAdmin", () => {
   it("rejects an unknown/used token", async () => {
     dbMock.getUserByOpenId.mockResolvedValue(undefined);
     await expect(
-      tenantRouter.createCaller(ctx({ openId: "google:sub-1" })).claimAdmin({ token: "bad" })
+      tenantRouter
+        .createCaller(ctx({ openId: "google:sub-1" }))
+        .claimAdmin({ token: "bad" }),
     ).rejects.toThrow(/invalid or already-claimed/i);
     expect(dbMock.assignUserToTenantAsAdmin).not.toHaveBeenCalled();
   });
 
   it("requires authentication", async () => {
     await expect(
-      tenantRouter.createCaller(ctx(null)).claimAdmin({ token: "tok" })
+      tenantRouter.createCaller(ctx(null)).claimAdmin({ token: "tok" }),
     ).rejects.toThrow();
     expect(dbMock.getUserByOpenId).not.toHaveBeenCalled();
+  });
+});
+
+describe("tenant.getStripeConnectUrl", () => {
+  it("returns the authorize URL for the admin's own tenant", async () => {
+    buildConnectAuthorizeUrl.mockResolvedValue(
+      "https://connect.stripe.com/oauth/authorize?client_id=ca_test&state=signed",
+    );
+    const res = await tenantRouter
+      .createCaller(
+        ctx({ openId: "google:sub-1", role: "admin", tenantId: 42 }),
+      )
+      .getStripeConnectUrl();
+
+    expect(buildConnectAuthorizeUrl).toHaveBeenCalledWith(
+      42,
+      expect.anything(),
+    );
+    expect(res).toEqual({
+      url: "https://connect.stripe.com/oauth/authorize?client_id=ca_test&state=signed",
+    });
+  });
+
+  it("returns a null url when Connect isn't configured on the platform", async () => {
+    buildConnectAuthorizeUrl.mockResolvedValue(null);
+    const res = await tenantRouter
+      .createCaller(
+        ctx({ openId: "google:sub-1", role: "admin", tenantId: 42 }),
+      )
+      .getStripeConnectUrl();
+    expect(res).toEqual({ url: null });
+  });
+
+  it("requires admin role", async () => {
+    await expect(
+      tenantRouter
+        .createCaller(
+          ctx({ openId: "google:sub-1", role: "user", tenantId: 42 }),
+        )
+        .getStripeConnectUrl(),
+    ).rejects.toThrow();
+    expect(buildConnectAuthorizeUrl).not.toHaveBeenCalled();
+  });
+
+  it("requires authentication", async () => {
+    await expect(
+      tenantRouter.createCaller(ctx(null)).getStripeConnectUrl(),
+    ).rejects.toThrow();
+    expect(buildConnectAuthorizeUrl).not.toHaveBeenCalled();
   });
 });

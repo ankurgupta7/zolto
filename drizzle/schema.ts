@@ -25,6 +25,14 @@ export const tenants = mysqlTable("tenants", {
     .notNull(),
   stripeCustomerId: varchar("stripe_customer_id", { length: 255 }),
   stripeSubscriptionId: varchar("stripe_subscription_id", { length: 255 }),
+  // Stripe Connect (Standard) account for THIS tenant's own storefront
+  // checkout — separate from stripeCustomerId/stripeSubscriptionId above,
+  // which are Zolto's own billing relationship with the tenant. A tenant's
+  // customers pay into stripeConnectedAccountId directly; Zolto never
+  // touches that money.
+  stripeConnectedAccountId: varchar("stripe_connected_account_id", {
+    length: 255,
+  }),
   subscriptionStatus: mysqlEnum("status", [
     "trialing",
     "active",
@@ -38,7 +46,10 @@ export const tenants = mysqlTable("tenants", {
   referredBy: int("referred_by"), // tenant_id of referrer
   referralCode: varchar("referral_code", { length: 16 }).unique(),
   referralDiscountApplied: boolean("referral_discount_applied").default(false),
-  planPriceOverride: decimal("plan_price_override", { precision: 10, scale: 2 }),
+  planPriceOverride: decimal("plan_price_override", {
+    precision: 10,
+    scale: 2,
+  }),
   priceLockExpiresAt: timestamp("price_lock_expires_at"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
@@ -229,7 +240,9 @@ export const posOrders = mysqlTable("pos_orders", {
   id: int("id").autoincrement().primaryKey(),
   tenantId: int("tenant_id").notNull(), // ← NEW
   invoiceNumber: varchar("invoiceNumber", { length: 32 }).unique(),
-  stripePaymentIntentId: varchar("stripePaymentIntentId", { length: 255 }).unique(),
+  stripePaymentIntentId: varchar("stripePaymentIntentId", {
+    length: 255,
+  }).unique(),
   status: mysqlEnum("status", ["pending", "paid", "failed"])
     .default("pending")
     .notNull(),
@@ -307,7 +320,9 @@ export const stripeReconciliations = mysqlTable("stripe_reconciliations", {
   ])
     .default("pending_review")
     .notNull(),
-  candidateProductIds: varchar("candidateProductIds", { length: 512 }).notNull(),
+  candidateProductIds: varchar("candidateProductIds", {
+    length: 512,
+  }).notNull(),
   chosenProductId: int("chosenProductId"),
   confirmationToken: varchar("confirmationToken", { length: 128 })
     .notNull()

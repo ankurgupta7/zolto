@@ -36,7 +36,7 @@ import {
 } from "./stripe";
 
 function makeSession(
-  overrides: Partial<Stripe.Checkout.Session> = {}
+  overrides: Partial<Stripe.Checkout.Session> = {},
 ): Stripe.Checkout.Session {
   return {
     id: "cs_test_123",
@@ -91,7 +91,7 @@ describe("fulfillOrder", () => {
     createOrder.mockResolvedValue(undefined);
 
     await fulfillOrder(
-      makeSession({ metadata: { productIds: "1,2" } as Stripe.Metadata })
+      makeSession({ metadata: { productIds: "1,2" } as Stripe.Metadata }),
     );
 
     expect(createOrder).toHaveBeenCalledWith(
@@ -99,7 +99,7 @@ describe("fulfillOrder", () => {
         stripeSessionId: "cs_test_123",
         status: "pending",
         productIds: "1,2",
-      })
+      }),
     );
     expect(markProductsSold).toHaveBeenCalledWith(3, [1, 2]);
   });
@@ -109,7 +109,7 @@ describe("fulfillOrder", () => {
     createOrder.mockRejectedValue(new Error("db down"));
 
     await fulfillOrder(
-      makeSession({ metadata: { productIds: "1,2" } as Stripe.Metadata })
+      makeSession({ metadata: { productIds: "1,2" } as Stripe.Metadata }),
     );
 
     expect(updateOrderBySessionId).not.toHaveBeenCalled();
@@ -155,7 +155,7 @@ describe("fulfillOrder", () => {
         to: "buyer@example.com",
         orderRef: baseOrder.id,
         amountTotal: baseOrder.amountTotal,
-      })
+      }),
     );
   });
 
@@ -172,7 +172,7 @@ describe("fulfillOrder", () => {
       customerName: "Stored Name",
     });
     await fulfillOrder(
-      makeSession({ customer_details: null, payment_method_types: undefined })
+      makeSession({ customer_details: null, payment_method_types: undefined }),
     );
 
     expect(updateOrderBySessionId).toHaveBeenCalledWith(
@@ -181,7 +181,7 @@ describe("fulfillOrder", () => {
         customerEmail: "stored@example.com",
         customerName: "Stored Name",
         paymentMethod: null,
-      })
+      }),
     );
   });
 
@@ -359,5 +359,119 @@ describe("registerStripeWebhook", () => {
     expect(res.status).toBe(200);
     expect(updateOrderBySessionId).not.toHaveBeenCalled();
     expect(markProductsSold).not.toHaveBeenCalled();
+  });
+});
+
+describe("registerStripeWebhook — Connect endpoint", () => {
+  // Events on a TENANT's connected account (a customer paying for jewelry)
+  // arrive at a separate URL, signed with a separate secret, from events on
+  // Zolto's own platform account (tested above). Both share the same
+  // handling logic since the order row already carries its own tenantId.
+  const connectWebhookSecret = "whsec_test_connect_secret";
+  const originalSecretKey = process.env.STRIPE_SECRET_KEY;
+  const originalConnectWebhookSecret =
+    process.env.STRIPE_CONNECT_WEBHOOK_SECRET;
+
+  function buildApp() {
+    const app = express();
+    registerStripeWebhook(app);
+    return app;
+  }
+
+  function signedPayload(stripe: Stripe, payload: object) {
+    const body = JSON.stringify(payload);
+    const header = stripe.webhooks.generateTestHeaderString({
+      payload: body,
+      secret: connectWebhookSecret,
+    });
+    return { body, header };
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    notifyOwner.mockResolvedValue(true);
+    updateOrderBySessionId.mockResolvedValue(undefined);
+    markProductsSold.mockResolvedValue(undefined);
+    getProductsByIds.mockResolvedValue([]);
+    sendOrderReceipt.mockResolvedValue(undefined);
+    process.env.STRIPE_SECRET_KEY = "sk_test_123";
+    process.env.STRIPE_CONNECT_WEBHOOK_SECRET = connectWebhookSecret;
+  });
+
+  afterEach(() => {
+    if (originalSecretKey === undefined) delete process.env.STRIPE_SECRET_KEY;
+    else process.env.STRIPE_SECRET_KEY = originalSecretKey;
+    if (originalConnectWebhookSecret === undefined)
+      delete process.env.STRIPE_CONNECT_WEBHOOK_SECRET;
+    else
+      process.env.STRIPE_CONNECT_WEBHOOK_SECRET = originalConnectWebhookSecret;
+  });
+
+  it("rejects requests with an invalid signature", async () => {
+    const app = buildApp();
+    const res = await request(app)
+      .post("/api/stripe/connect-webhook")
+      .set("stripe-signature", "t=1,v1=invalid")
+      .set("Content-Type", "application/json")
+      .send(JSON.stringify({ id: "evt_1" }));
+
+    expect(res.status).toBe(400);
+    expect(getOrderBySessionId).not.toHaveBeenCalled();
+  });
+
+  it("returns 400 when Connect isn't configured", async () => {
+    delete process.env.STRIPE_CONNECT_WEBHOOK_SECRET;
+    const app = buildApp();
+    const res = await request(app)
+      .post("/api/stripe/connect-webhook")
+      .set("Content-Type", "application/json")
+      .send(JSON.stringify({ id: "evt_1" }));
+
+    expect(res.status).toBe(400);
+  });
+
+  it("fulfills the order on a connected account's checkout.session.completed", async () => {
+    getOrderBySessionId.mockResolvedValue({ ...baseOrder });
+    const stripe = new Stripe("sk_test_123");
+    const app = buildApp();
+    const { body, header } = signedPayload(stripe, {
+      id: "evt_1",
+      type: "checkout.session.completed",
+      account: "acct_connected_test",
+      data: { object: makeSession() },
+    });
+
+    const res = await request(app)
+      .post("/api/stripe/connect-webhook")
+      .set("stripe-signature", header)
+      .set("Content-Type", "application/json")
+      .send(body);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ received: true });
+    expect(markProductsSold).toHaveBeenCalledWith(3, [1, 2]);
+  });
+
+  it("does not accept a payload signed with the platform webhook secret", async () => {
+    const platformSignedStripe = new Stripe("sk_test_123");
+    const app = buildApp();
+    const body = JSON.stringify({
+      id: "evt_1",
+      type: "checkout.session.completed",
+      data: { object: makeSession() },
+    });
+    const wrongHeader = platformSignedStripe.webhooks.generateTestHeaderString({
+      payload: body,
+      secret: "whsec_test_secret",
+    });
+
+    const res = await request(app)
+      .post("/api/stripe/connect-webhook")
+      .set("stripe-signature", wrongHeader)
+      .set("Content-Type", "application/json")
+      .send(body);
+
+    expect(res.status).toBe(400);
+    expect(getOrderBySessionId).not.toHaveBeenCalled();
   });
 });

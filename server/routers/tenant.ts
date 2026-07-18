@@ -4,6 +4,7 @@ import {
   router,
   publicProcedure,
   protectedProcedure,
+  adminProcedure,
   requireTenant,
 } from "../_core/trpc";
 import {
@@ -21,6 +22,7 @@ import {
   deleteUserById,
 } from "../db";
 import { createStripeCustomer } from "../stripe";
+import { buildConnectAuthorizeUrl } from "../stripeConnect";
 import { tenants, tenantSettings } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
 import crypto from "crypto";
@@ -65,7 +67,8 @@ export const tenantRouter = router({
       const tenant = await db.query.tenants.findFirst({
         where: eq(tenants.slug, input.slug),
       });
-      if (!tenant) throw new TRPCError({ code: "NOT_FOUND", message: "Store not found" });
+      if (!tenant)
+        throw new TRPCError({ code: "NOT_FOUND", message: "Store not found" });
 
       const settings = await db.query.tenantSettings.findFirst({
         where: eq(tenantSettings.tenantId, tenant.id),
@@ -81,16 +84,25 @@ export const tenantRouter = router({
   // ownership. The token — not the email — is what authorizes the claim, so a
   // signup can't attach itself to someone else's login.
   create: publicProcedure
-    .input(z.object({
-      name: z.string().min(1).max(255),
-      slug: z.string().regex(/^[a-z0-9-]+$/, "Only lowercase letters, numbers, and hyphens").min(3).max(64),
-      email: z.string().email(),
-      referralCode: z.string().optional(),
-    }))
+    .input(
+      z.object({
+        name: z.string().min(1).max(255),
+        slug: z
+          .string()
+          .regex(/^[a-z0-9-]+$/, "Only lowercase letters, numbers, and hyphens")
+          .min(3)
+          .max(64),
+        email: z.string().email(),
+        referralCode: z.string().optional(),
+      }),
+    )
     .mutation(async ({ input }) => {
       // 1. Slug must be free.
       if (await getTenantBySlug(input.slug)) {
-        throw new TRPCError({ code: "CONFLICT", message: "Store URL already taken" });
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "Store URL already taken",
+        });
       }
 
       // 2. Create the tenant with a 14-day trial.
@@ -164,32 +176,36 @@ export const tenantRouter = router({
     }),
 
   // ─── Protected: Get my tenant ──────────────────────────────────────────────
-  me: publicProcedure
-    .use(requireTenant)
-    .query(async ({ ctx }) => {
-      return ctx.tenant;
-    }),
+  me: publicProcedure.use(requireTenant).query(async ({ ctx }) => {
+    return ctx.tenant;
+  }),
 
   // ─── Admin: Update tenant settings ────────────────────────────────────────
   updateSettings: publicProcedure
     .use(requireTenant)
-    .input(z.object({
-      logoUrl: z.string().url().optional(),
-      primaryColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
-      whatsappNumber: z.string().optional(),
-      instagramHandle: z.string().optional(),
-      metaTitle: z.string().optional(),
-      metaDescription: z.string().optional(),
-      contactEmail: z.string().email().optional(),
-      contactPhone: z.string().optional(),
-    }))
+    .input(
+      z.object({
+        logoUrl: z.string().url().optional(),
+        primaryColor: z
+          .string()
+          .regex(/^#[0-9A-Fa-f]{6}$/)
+          .optional(),
+        whatsappNumber: z.string().optional(),
+        instagramHandle: z.string().optional(),
+        metaTitle: z.string().optional(),
+        metaDescription: z.string().optional(),
+        contactEmail: z.string().email().optional(),
+        contactPhone: z.string().optional(),
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
       const existing = await db.query.tenantSettings.findFirst({
         where: eq(tenantSettings.tenantId, ctx.tenant.id),
       });
 
       if (existing) {
-        await db.update(tenantSettings)
+        await db
+          .update(tenantSettings)
           .set({ ...input, updatedAt: new Date() })
           .where(eq(tenantSettings.id, existing.id));
       } else {
@@ -202,10 +218,19 @@ export const tenantRouter = router({
       return { success: true };
     }),
 
+  // ─── Admin: Get this tenant's Stripe Connect authorize URL ────────────────
+  // Lets a store admin link their OWN Stripe account for storefront checkout
+  // (separate from Zolto's own subscription billing — see
+  // server/stripeConnect.ts). Returns null when Connect isn't configured on
+  // the platform yet (STRIPE_CONNECT_CLIENT_ID unset).
+  getStripeConnectUrl: adminProcedure.query(async ({ ctx }) => {
+    const url = await buildConnectAuthorizeUrl(ctx.user.tenantId, ctx.req);
+    return { url };
+  }),
+
   // ─── Superadmin: List all tenants (platform admin) ───────────────────────
-  list: publicProcedure
-    .query(async () => {
-      // TODO: Add superadmin guard
-      return db.query.tenants.findMany();
-    }),
+  list: publicProcedure.query(async () => {
+    // TODO: Add superadmin guard
+    return db.query.tenants.findMany();
+  }),
 });

@@ -477,6 +477,11 @@ fi
 # (kept there so it can be exercised by deploy/lib/db.test.sh without a live DB).
 migrate_0019_multitenant
 
+# ── 0020: Stripe Connect for tenant storefronts ───────────────────────────────
+# Adds tenants.stripe_connected_account_id. Idempotent; see
+# migrate_0020_stripe_connect in deploy/lib/db.sh.
+migrate_0020_stripe_connect
+
 # ── Shared helper: run a script inside the builder container ──────────────────
 # Usage: run_in_builder <tag> <script-path> [extra docker args...]
 run_in_builder() {
