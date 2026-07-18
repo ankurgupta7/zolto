@@ -218,14 +218,20 @@ export const tenantRouter = router({
       return { success: true };
     }),
 
-  // ─── Admin: Get this tenant's Stripe Connect authorize URL ────────────────
+  // ─── Admin: Get this tenant's Stripe Connect authorize URL + status ───────
   // Lets a store admin link their OWN Stripe account for storefront checkout
   // (separate from Zolto's own subscription billing — see
-  // server/stripeConnect.ts). Returns null when Connect isn't configured on
+  // server/stripeConnect.ts). `url` is null when Connect isn't configured on
   // the platform yet (STRIPE_CONNECT_CLIENT_ID unset).
   getStripeConnectUrl: adminProcedure.query(async ({ ctx }) => {
-    const url = await buildConnectAuthorizeUrl(ctx.user.tenantId, ctx.req);
-    return { url };
+    const [tenant, url] = await Promise.all([
+      getTenantById(ctx.user.tenantId),
+      buildConnectAuthorizeUrl(ctx.user.tenantId, ctx.req),
+    ]);
+    return {
+      url,
+      connected: Boolean(tenant?.stripeConnectedAccountId),
+    };
   }),
 
   // ─── Superadmin: List all tenants (platform admin) ───────────────────────

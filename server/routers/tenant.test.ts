@@ -186,10 +186,14 @@ describe("tenant.claimAdmin", () => {
 });
 
 describe("tenant.getStripeConnectUrl", () => {
-  it("returns the authorize URL for the admin's own tenant", async () => {
+  it("returns the authorize URL and connected:false for a not-yet-linked tenant", async () => {
     buildConnectAuthorizeUrl.mockResolvedValue(
       "https://connect.stripe.com/oauth/authorize?client_id=ca_test&state=signed",
     );
+    dbMock.getTenantById.mockResolvedValue({
+      id: 42,
+      stripeConnectedAccountId: null,
+    });
     const res = await tenantRouter
       .createCaller(
         ctx({ openId: "google:sub-1", role: "admin", tenantId: 42 }),
@@ -202,17 +206,36 @@ describe("tenant.getStripeConnectUrl", () => {
     );
     expect(res).toEqual({
       url: "https://connect.stripe.com/oauth/authorize?client_id=ca_test&state=signed",
+      connected: false,
     });
   });
 
-  it("returns a null url when Connect isn't configured on the platform", async () => {
-    buildConnectAuthorizeUrl.mockResolvedValue(null);
+  it("reports connected:true once a Stripe account is linked", async () => {
+    buildConnectAuthorizeUrl.mockResolvedValue("https://connect.stripe.com/x");
+    dbMock.getTenantById.mockResolvedValue({
+      id: 42,
+      stripeConnectedAccountId: "acct_already_linked",
+    });
     const res = await tenantRouter
       .createCaller(
         ctx({ openId: "google:sub-1", role: "admin", tenantId: 42 }),
       )
       .getStripeConnectUrl();
-    expect(res).toEqual({ url: null });
+    expect(res.connected).toBe(true);
+  });
+
+  it("returns a null url when Connect isn't configured on the platform", async () => {
+    buildConnectAuthorizeUrl.mockResolvedValue(null);
+    dbMock.getTenantById.mockResolvedValue({
+      id: 42,
+      stripeConnectedAccountId: null,
+    });
+    const res = await tenantRouter
+      .createCaller(
+        ctx({ openId: "google:sub-1", role: "admin", tenantId: 42 }),
+      )
+      .getStripeConnectUrl();
+    expect(res).toEqual({ url: null, connected: false });
   });
 
   it("requires admin role", async () => {
