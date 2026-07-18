@@ -15,10 +15,14 @@ Small makers don't skip professional photography because they don't care
 how their products look. They skip it because a photographer, a model, and
 a studio rental cost more than the jewelry they'd be photographing.
 
-Zolto removes that cost, not by cutting corners, but by being upfront about
-what AI can now do: turn one rough phone photo into a catalogue-ready shot
-or a full lifestyle image — no photographer, no model, no studio, and no
-Shopify-style monthly fee stacked on top to make it happen.
+Zolto replaces that cost with a much smaller one: turn one rough phone
+photo into a catalogue-ready shot or a full lifestyle image via an AI
+photo-styling add-on — still dramatically cheaper than booking a
+photographer, a model, or a studio, and priced competitively against the
+standalone AI photo tools makers would otherwise have to buy separately
+(see **Competitive pricing**, below). This isn't a free feature — image
+generation costs Zolto real money per image — so it's sold as a paid
+add-on, not bundled into the base subscription.
 
 **The disclosure is the point, not a caveat.** Kalakosh tells its own
 customers which images are AI-styled. Zolto tells its prospective customers
@@ -47,12 +51,42 @@ camera; the other two cost an AI generation call.
    of the actual product is the only real-world input required.
 2. **You don't need to hire a model or book a studio for lifestyle shots.**
    AI can generate those scenes directly from the product photo.
-3. **You don't need to pay Shopify-scale platform fees for any of this.**
-   The AI styling is part of what a maker gets by using Zolto, not a
-   separate paid add-on stacked on top of a subscription.
+3. **You still pay for it — just a fraction of what the alternatives cost.**
+   Photo generation isn't free to run, so it's a paid add-on. The pitch
+   isn't "free," it's "cheaper than every other way to get this shot done,"
+   including the standalone AI photo tools makers would otherwise buy.
 4. **Disclosure is built in, not bolted on.** Every AI-styled image says so.
    That's the trust argument: makers who are honest about using AI let
    customers decide for themselves how much that matters.
+
+## Competitive pricing (researched 2026-07-18)
+
+Standalone AI product-photo tools, as of writing:
+
+| Tool | Entry price | What it gets you |
+|------|-------------|-------------------|
+| Photoroom | Free tier / $9.99–13/mo Pro | Background removal + basic scenes, no bundled bot |
+| Claid.ai | Free tier / $9.99–14.99/mo | Background + light editing |
+| Pebblely | $19/mo (200 images) → $39/mo (500 images) | Backdrop generation only, no lifestyle/model scenes |
+| Flair AI | Free (5 images) / $10–55/mo | Creative scene design, no bundled bot |
+| Fashion-focused generators | $9/mo (~16 images) → $179/mo (~400 images) | Includes model/lifestyle generation |
+
+None of these bundle a WhatsApp/Telegram/Discord storefront bot — makers
+buying photo generation from them still pay separately (or not at all) for
+something to handle customer messages and auto-list products.
+
+**Proposed Zolto bundle: "Photo & Bot Studio" add-on.** Combine AI photo
+restyling (catalogue + lifestyle) with the WhatsApp/Telegram/Discord
+auto-listing bot Zolto already has built, as one paid add-on layered on
+top of the Maker/Studio/Atelier plans (see `marketing/pricing-page-copy.md`).
+Positioned at roughly **€15–19/month for an included volume of restyled
+images** (e.g. 40–60/month, in line with what Pebblely's entry tier and
+Flair AI's mid tier charge for photos *alone*), it reads as a better deal
+than buying a photo tool and a separate chatbot app individually — while
+still recovering Zolto's actual generation cost. **The exact included
+volume and margin need checking against Zolto's real per-image generation
+cost before this price is finalized** — the number above is a competitive
+anchor, not a costed quote.
 
 ## Where this can live
 

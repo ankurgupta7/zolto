@@ -62,7 +62,7 @@ Zolto handles this automatically. One inventory database, two sales channels. Wh
 1. **Start small.** 15 products, not 150. You can always add more. Launching with everything creates paralysis.
 2. **AI descriptions save time, but they need editing.** The AI captured the materials and dimensions accurately. It missed the emotional tone — the story behind why Sheena chooses pearls from a particular supplier, or how she matches stones. Sheena added that.
 3. **POS sync is non-negotiable.** For anyone selling both online and in-person, this is the feature that prevents disasters.
-4. **Photography used to be the bottleneck. AI removed it.** One rough phone photo per product, restyled by AI, disclosed as such — no photographer, no model, no studio budget. That's money a maker this size would otherwise not have spent on her store at all.
+4. **Photography used to be the bottleneck. AI removed it — at a fraction of the cost.** One rough phone photo per product, restyled by AI, disclosed as such. It's a paid add-on, not a free feature — but it's still far cheaper than booking a photographer, a model, or a studio, which is money a maker this size wouldn't have spent on her store otherwise.
 
 ## What's Next
 
