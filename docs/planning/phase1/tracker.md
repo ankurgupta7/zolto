@@ -140,7 +140,7 @@
 |------|--------|------|
 | ✅ Privacy Policy | 🤖 Ready | `phase1/legal/privacy-policy.md` |
 | ✅ Terms of Service | 🤖 Ready | `phase1/legal/terms-of-service.md` |
-| ❌ Cookie Policy | 🤖 Not yet drafted | _Planned — file not created yet. Do not mark ready until it exists._ |
+| ✅ Cookie Policy | 🤖 Ready | `phase1/legal/cookie-policy.md` — reflects actual cookie use today (one strictly-necessary session cookie); GA4 analytics cookies flagged as not-yet-installed, to be added with a consent banner when they are. |
 | ⚠️ Content Release Form | 🤝 **Get signed** | `phase1/legal/content-release-form.md` — required before publishing Kalakosh's story (see top-of-file note) |
 
 ### Search Console & SEO (👤 YOU)

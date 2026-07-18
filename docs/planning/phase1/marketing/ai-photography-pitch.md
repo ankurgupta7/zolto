@@ -99,14 +99,14 @@ based on being simple and round, not a costed quote.
 
 ## Open items before this ships
 
-- **Get the two reference images (rough original + AI-restyled version)
-  into the repo/CMS**, and decide where the visible "AI-generated" label
-  sits on the restyled ones — not drafted here since it means committing
-  real Kalakosh product photos, which needs a decision on repo/hosting
-  first.
-- Confirm the exact disclosure wording with Kalakosh before it's attributed
-  to them publicly (same content-release consideration as the rest of the
-  Launch Diary series — see `phase1/legal/content-release-form.md`).
+- ~~Get the two reference images into the repo~~ — **done.** See
+  `phase1/assets/raw-originals/RAW-earrings-original-phone-photo-gold-oblong-pearl-fringe.jpg`
+  (before) and `phase1/assets/earrings/earrings-gold-oblong-pearl-fringe-AISTYLED.jpg`
+  (after). Still need to decide where the visible "AI-generated" label sits
+  once these are actually placed on a page.
+- **Do not publish any of this until `phase1/legal/pilot-agreement-simple.md`
+  is signed** — the images are committed to the repo for drafting purposes
+  only, not cleared for public use yet.
 - This piece makes a factual claim ("no photographer, no model, no studio")
   — keep it scoped to what's actually true of Kalakosh's process, and don't
   let it drift into the same kind of invented specifics (dates, dollar
