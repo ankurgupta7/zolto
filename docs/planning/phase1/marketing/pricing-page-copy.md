@@ -87,22 +87,23 @@ Everything in Studio, plus:
 
 ---
 
-## Add-on: Photo & Bot Studio *(proposed — pricing not finalized)*
+## Add-on: AI Photo Credits *(proposed — pricing not finalized)*
 
-**€15–19** / month, add-on to any paid plan
+**$1 per image, pay-as-you-go.** Not a subscription — buy credits, use them
+whenever, no expiry.
 
-AI photo restyling (turn one rough phone photo into a catalogue shot or a
-full lifestyle image — disclosed as AI-generated) bundled with the
-WhatsApp/Telegram/Discord auto-listing bot. Includes ~40–60 restyled
-images/month.
+Each credit restyles one rough phone photo into a catalogue shot or a full
+lifestyle image (disclosed as AI-generated). No monthly commitment, no
+"use it or lose it" — a maker adding 5 products this month and 0 next month
+pays for exactly 5 credits, not a recurring add-on fee.
 
-Not a free feature — image generation costs Zolto per image — but priced
-below buying a standalone AI photo tool (Pebblely, Flair AI) and a separate
-chatbot app individually. See `marketing/ai-photography-pitch.md` for the
-competitive comparison this is anchored to.
+Not a free feature — image generation costs Zolto per image — so this
+recovers that cost directly rather than folding it into a plan price. See
+`marketing/ai-photography-pitch.md` for the competitive comparison this is
+anchored to.
 
-**Before this goes live:** confirm the included-image volume and margin
-against Zolto's actual per-image generation cost.
+**Before this goes live:** confirm $1/credit actually covers Zolto's
+per-image generation cost with healthy margin.
 
 ---
 

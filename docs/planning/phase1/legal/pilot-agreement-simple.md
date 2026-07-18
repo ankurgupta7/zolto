@@ -27,9 +27,9 @@ not be published. Kalakosh may also choose how it's credited: full name
 ("Kalakosh, Zurich"), partial ("a jewelry maker in Switzerland"), or
 anonymous.
 
-**4. What Kalakosh gets.** [Free / discounted] use of the Zolto platform
-for the pilot period, as agreed separately — no cash payment for the
-content use itself.
+**4. What Kalakosh gets.** Nothing in exchange. No payment, no free or
+discounted platform use, no other consideration — Kalakosh grants this
+license as a pilot partner, not in return for anything.
 
 **5. Ending this.** Either side can end this agreement with 30 days'
 written notice. Anything already published may stay up, but won't be
