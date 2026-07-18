@@ -9,12 +9,13 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { registerStripeWebhook } from "../stripe";
+import { registerStripeConnectRoutes } from "../stripeConnect";
 import { registerPosWebhook, registerPosRoutes } from "../pos";
 import { registerReconciliationRoutes } from "../reconciliationRoutes";
 import { getDb } from "../db";
 
 function isPortAvailable(port: number): Promise<boolean> {
-  return new Promise(resolve => {
+  return new Promise((resolve) => {
     const server = net.createServer();
     server.listen(port, () => {
       server.close(() => resolve(true));
@@ -50,6 +51,7 @@ async function startServer() {
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
   registerUploadsProxy(app);
   registerOAuthRoutes(app);
+  registerStripeConnectRoutes(app);
 
   // POS Terminal API
   registerPosRoutes(app);
@@ -63,7 +65,7 @@ async function startServer() {
     createExpressMiddleware({
       router: appRouter,
       createContext,
-    })
+    }),
   );
   // development mode uses Vite, production mode uses static files
   if (process.env.NODE_ENV === "development") {

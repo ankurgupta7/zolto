@@ -2,16 +2,45 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { publicProcedure, router } from "../_core/trpc";
 import { adminProcedure } from "../procedures";
-import { getProductsByIds, createOrder, getOrderBySessionId } from "../db";
+import {
+  getProductsByIds,
+  createOrder,
+  getOrderBySessionId,
+  getTenantById,
+} from "../db";
 import { fulfillOrder, getStripe, isStripeConfigured } from "../stripe";
 
 // ─── Checkout router ────────────────────────────────────────────────────────
 
 // We ship within Switzerland and the EU.
 const EU_COUNTRIES = [
-  "AT", "BE", "BG", "HR", "CY", "CZ", "DK", "EE", "FI", "FR", "DE", "GR",
-  "HU", "IE", "IT", "LV", "LT", "LU", "MT", "NL", "PL", "PT", "RO", "SK",
-  "SI", "ES", "SE",
+  "AT",
+  "BE",
+  "BG",
+  "HR",
+  "CY",
+  "CZ",
+  "DK",
+  "EE",
+  "FI",
+  "FR",
+  "DE",
+  "GR",
+  "HU",
+  "IE",
+  "IT",
+  "LV",
+  "LT",
+  "LU",
+  "MT",
+  "NL",
+  "PL",
+  "PT",
+  "RO",
+  "SK",
+  "SI",
+  "ES",
+  "SE",
 ] as const;
 const SHIPPING_COUNTRIES = ["CH", ...EU_COUNTRIES] as const;
 
@@ -35,15 +64,21 @@ function resolveBaseUrl(): string {
 }
 
 export const checkoutRouter = router({
-  // Public: whether online payment is available (controls UI fallback to WhatsApp)
-  config: publicProcedure.query(() => ({ enabled: isStripeConfigured() })),
+  // Public: whether online payment is available for THIS storefront (controls
+  // UI fallback to WhatsApp). Requires both the platform's own Stripe key
+  // (isStripeConfigured) and this tenant having linked their own Connect
+  // account — a tenant that hasn't connected yet falls back to WhatsApp too.
+  config: publicProcedure.query(({ ctx }) => ({
+    enabled:
+      isStripeConfigured() && Boolean(ctx.tenant?.stripeConnectedAccountId),
+  })),
 
   // Public: create a Stripe Checkout Session for the given pieces
   createSession: publicProcedure
     .input(
       z.object({
         productIds: z.array(z.number().int().positive()).min(1).max(50),
-      })
+      }),
     )
     .mutation(async ({ input, ctx }) => {
       const stripe = getStripe();
@@ -62,12 +97,24 @@ export const checkoutRouter = router({
       }
       const tenantId = ctx.tenant.id;
 
+      // This store must have linked its own Stripe account (Connect) — we
+      // never process a tenant's customer payments through Zolto's own
+      // account. See server/stripeConnect.ts.
+      const connectedAccountId = ctx.tenant.stripeConnectedAccountId;
+      if (!connectedAccountId) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message:
+            "This store hasn't connected online payments yet. Please enquire via WhatsApp.",
+        });
+      }
+
       // De-duplicate — each piece is unique and can only be bought once.
       const uniqueIds = Array.from(new Set(input.productIds));
       const items = await getProductsByIds(tenantId, uniqueIds);
 
-      const found = new Set(items.map(p => p.id));
-      const missing = uniqueIds.filter(id => !found.has(id));
+      const found = new Set(items.map((p) => p.id));
+      const missing = uniqueIds.filter((id) => !found.has(id));
       if (missing.length > 0) {
         throw new TRPCError({
           code: "NOT_FOUND",
@@ -76,18 +123,18 @@ export const checkoutRouter = router({
       }
 
       const unavailable = items.filter(
-        p => p.sold || !p.visible || p.quantity <= 0
+        (p) => p.sold || !p.visible || p.quantity <= 0,
       );
       if (unavailable.length > 0) {
         throw new TRPCError({
           code: "CONFLICT",
-          message: `Already sold: ${unavailable.map(p => p.name).join(", ")}. Please remove them from your bag.`,
+          message: `Already sold: ${unavailable.map((p) => p.name).join(", ")}. Please remove them from your bag.`,
         });
       }
 
       const baseUrl = resolveBaseUrl();
 
-      const lineItems = items.map(p => {
+      const lineItems = items.map((p) => {
         const images =
           p.imageUrl && /^https?:\/\//.test(p.imageUrl)
             ? [p.imageUrl]
@@ -111,75 +158,84 @@ export const checkoutRouter = router({
       // EU is always a flat fee (no free-shipping threshold there).
       const subtotalRappen = items.reduce(
         (sum, p) => sum + Math.round(Number(p.price) * 100),
-        0
+        0,
       );
       const chShippingFeeRappen =
         subtotalRappen >= FREE_SHIPPING_THRESHOLD_RAPPEN
           ? 0
           : CH_FLAT_SHIPPING_FEE_RAPPEN;
 
-      const session = await stripe.checkout.sessions.create({
-        mode: "payment",
-        // Credit & debit cards plus TWINT (Swiss mobile payment)
-        payment_method_types: ["card", "twint"],
-        line_items: lineItems,
-        // Without this, one-time "payment" mode sessions never create a
-        // Stripe Customer, so the dashboard's Customers count stays at 0.
-        customer_creation: "always",
-        billing_address_collection: "required",
-        shipping_address_collection: {
-          allowed_countries: [...SHIPPING_COUNTRIES],
-        },
-        // Stripe Checkout shows every option to every customer regardless of
-        // the address they enter — it doesn't filter shipping_options by
-        // destination country within a single session config. The customer
-        // picks the option matching their own country from the two labeled
-        // choices below; this is the standard workaround for per-country
-        // flat rates without a custom shipping-rate lookup.
-        shipping_options: [
-          {
-            shipping_rate_data: {
-              type: "fixed_amount",
-              fixed_amount: { amount: chShippingFeeRappen, currency: "chf" },
-              display_name:
-                chShippingFeeRappen === 0
-                  ? "Free shipping (Switzerland)"
-                  : "Standard shipping (Switzerland)",
-              delivery_estimate: {
-                minimum: { unit: "business_day", value: 2 },
-                maximum: { unit: "business_day", value: 3 },
+      // The second argument's `stripeAccount` runs this call on the tenant's
+      // own connected Standard account (a "direct charge") using Zolto's
+      // platform key — funds settle straight to the tenant, no application
+      // fee, no raw tenant Stripe key ever touches Zolto's servers.
+      const session = await stripe.checkout.sessions.create(
+        {
+          mode: "payment",
+          // Credit & debit cards plus TWINT (Swiss mobile payment)
+          payment_method_types: ["card", "twint"],
+          line_items: lineItems,
+          // Without this, one-time "payment" mode sessions never create a
+          // Stripe Customer, so the dashboard's Customers count stays at 0.
+          customer_creation: "always",
+          billing_address_collection: "required",
+          shipping_address_collection: {
+            allowed_countries: [...SHIPPING_COUNTRIES],
+          },
+          // Stripe Checkout shows every option to every customer regardless
+          // of the address they enter — it doesn't filter shipping_options
+          // by destination country within a single session config. The
+          // customer picks the option matching their own country from the
+          // two labeled choices below; this is the standard workaround for
+          // per-country flat rates without a custom shipping-rate lookup.
+          shipping_options: [
+            {
+              shipping_rate_data: {
+                type: "fixed_amount",
+                fixed_amount: { amount: chShippingFeeRappen, currency: "chf" },
+                display_name:
+                  chShippingFeeRappen === 0
+                    ? "Free shipping (Switzerland)"
+                    : "Standard shipping (Switzerland)",
+                delivery_estimate: {
+                  minimum: { unit: "business_day", value: 2 },
+                  maximum: { unit: "business_day", value: 3 },
+                },
               },
             },
-          },
-          {
-            shipping_rate_data: {
-              type: "fixed_amount",
-              fixed_amount: {
-                amount: EU_FLAT_SHIPPING_FEE_RAPPEN,
-                currency: "chf",
-              },
-              display_name: "Standard shipping (EU)",
-              delivery_estimate: {
-                minimum: { unit: "business_day", value: 4 },
-                maximum: { unit: "business_day", value: 7 },
+            {
+              shipping_rate_data: {
+                type: "fixed_amount",
+                fixed_amount: {
+                  amount: EU_FLAT_SHIPPING_FEE_RAPPEN,
+                  currency: "chf",
+                },
+                display_name: "Standard shipping (EU)",
+                delivery_estimate: {
+                  minimum: { unit: "business_day", value: 4 },
+                  maximum: { unit: "business_day", value: 7 },
+                },
               },
             },
+          ],
+          phone_number_collection: { enabled: true },
+          locale: "auto",
+          // Controls the merchant name shown on TWINT and bank statements.
+          // 22-char max. The Stripe account business profile name (on the
+          // tenant's OWN connected account) also affects TWINT display.
+          // NOTE: must be inside payment_intent_data for Checkout Sessions;
+          // top-level statement_descriptor is rejected by newer Stripe API versions.
+          payment_intent_data: {
+            statement_descriptor: (ctx.tenant.name || "ZOLTO STORE")
+              .slice(0, 22)
+              .toUpperCase(),
           },
-        ],
-        phone_number_collection: { enabled: true },
-        locale: "auto",
-        // Controls the merchant name shown on TWINT and bank statements.
-        // 22-char max. The Stripe account business profile name also
-        // affects TWINT display — make sure it is set to "Kalakosh".
-        // NOTE: must be inside payment_intent_data for Checkout Sessions;
-        // top-level statement_descriptor is rejected by newer Stripe API versions.
-        payment_intent_data: {
-          statement_descriptor: "KALAKOSH",
+          success_url: `${baseUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+          cancel_url: `${baseUrl}/checkout/cancel`,
+          metadata: { productIds: uniqueIds.join(",") },
         },
-        success_url: `${baseUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${baseUrl}/checkout/cancel`,
-        metadata: { productIds: uniqueIds.join(",") },
-      });
+        { stripeAccount: connectedAccountId },
+      );
 
       const amountTotal =
         session.amount_total ??
@@ -200,14 +256,36 @@ export const checkoutRouter = router({
   // Admin: manually re-trigger fulfillment for a Stripe session (e.g. missed webhook)
   fulfillSession: adminProcedure
     .input(z.object({ sessionId: z.string().min(1) }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const stripe = getStripe();
       if (!stripe)
         throw new TRPCError({
           code: "PRECONDITION_FAILED",
           message: "Stripe not configured",
         });
-      const session = await stripe.checkout.sessions.retrieve(input.sessionId);
+
+      const order = await getOrderBySessionId(input.sessionId);
+      if (!order) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Order not found" });
+      }
+      // An admin may only re-trigger fulfillment for their own store's orders.
+      if (order.tenantId !== ctx.user.tenantId) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Order not found" });
+      }
+
+      const tenant = await getTenantById(order.tenantId);
+      if (!tenant?.stripeConnectedAccountId) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "This store has no connected Stripe account",
+        });
+      }
+
+      const session = await stripe.checkout.sessions.retrieve(
+        input.sessionId,
+        {},
+        { stripeAccount: tenant.stripeConnectedAccountId },
+      );
       if (session.payment_status !== "paid") {
         throw new TRPCError({
           code: "BAD_REQUEST",
@@ -227,12 +305,12 @@ export const checkoutRouter = router({
 
       const productIds = order.productIds
         .split(",")
-        .map(s => parseInt(s.trim(), 10))
-        .filter(n => Number.isFinite(n));
+        .map((s) => parseInt(s.trim(), 10))
+        .filter((n) => Number.isFinite(n));
       // Scope the product lookup to the order's own tenant.
       const products = await getProductsByIds(order.tenantId, productIds);
 
-      const items = products.map(p => ({
+      const items = products.map((p) => ({
         id: p.id,
         name: p.name,
         nameEn: p.nameEn ?? null,
@@ -251,9 +329,12 @@ export const checkoutRouter = router({
       if (order.status === "pending") {
         try {
           const stripe = getStripe();
-          if (stripe) {
+          const tenant = stripe ? await getTenantById(order.tenantId) : null;
+          if (stripe && tenant?.stripeConnectedAccountId) {
             const session = await stripe.checkout.sessions.retrieve(
-              input.sessionId
+              input.sessionId,
+              {},
+              { stripeAccount: tenant.stripeConnectedAccountId },
             );
             if (session.payment_status === "paid") {
               resolvedStatus = "paid";
