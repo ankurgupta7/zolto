@@ -87,6 +87,25 @@ Everything in Studio, plus:
 
 ---
 
+## Add-on: Photo & Bot Studio *(proposed — pricing not finalized)*
+
+**€15–19** / month, add-on to any paid plan
+
+AI photo restyling (turn one rough phone photo into a catalogue shot or a
+full lifestyle image — disclosed as AI-generated) bundled with the
+WhatsApp/Telegram/Discord auto-listing bot. Includes ~40–60 restyled
+images/month.
+
+Not a free feature — image generation costs Zolto per image — but priced
+below buying a standalone AI photo tool (Pebblely, Flair AI) and a separate
+chatbot app individually. See `marketing/ai-photography-pitch.md` for the
+competitive comparison this is anchored to.
+
+**Before this goes live:** confirm the included-image volume and margin
+against Zolto's actual per-image generation cost.
+
+---
+
 ## Comparison Table
 
 | Feature | Free | Maker | Studio | Atelier |
