@@ -230,7 +230,7 @@ describe("checkout.createSession", () => {
 
   // ─── Shipping fee logic ───────────────────────────────────────────────────
 
-  it("adds free shipping when the subtotal is at or above CHF 50", async () => {
+  it("adds free CH shipping when the subtotal is at or above CHF 50", async () => {
     getProductsByIds.mockResolvedValue([
       { ...sampleProduct, price: "65.00" },
     ]);
@@ -244,12 +244,12 @@ describe("checkout.createSession", () => {
     await caller.checkout.createSession({ productIds: [1] });
 
     const sessionArgs = checkoutSessionsCreate.mock.calls[0][0];
-    const shippingRate = sessionArgs.shipping_options[0].shipping_rate_data;
-    expect(shippingRate.fixed_amount.amount).toBe(0);
-    expect(shippingRate.display_name).toBe("Free shipping (Switzerland)");
+    const chRate = sessionArgs.shipping_options[0].shipping_rate_data;
+    expect(chRate.fixed_amount.amount).toBe(0);
+    expect(chRate.display_name).toBe("Free shipping (Switzerland)");
   });
 
-  it("adds a CHF 2 shipping fee when the subtotal is below CHF 50", async () => {
+  it("adds a CHF 8 CH shipping fee when the subtotal is below CHF 50", async () => {
     getProductsByIds.mockResolvedValue([
       { ...sampleProduct, price: "35.00" },
     ]);
@@ -263,9 +263,49 @@ describe("checkout.createSession", () => {
     await caller.checkout.createSession({ productIds: [1] });
 
     const sessionArgs = checkoutSessionsCreate.mock.calls[0][0];
-    const shippingRate = sessionArgs.shipping_options[0].shipping_rate_data;
-    expect(shippingRate.fixed_amount.amount).toBe(200);
-    expect(shippingRate.display_name).toBe("Standard shipping (Switzerland)");
+    const chRate = sessionArgs.shipping_options[0].shipping_rate_data;
+    expect(chRate.fixed_amount.amount).toBe(800);
+    expect(chRate.display_name).toBe("Standard shipping (Switzerland)");
+  });
+
+  it("always offers a flat CHF 15 EU shipping option alongside the CH one", async () => {
+    getProductsByIds.mockResolvedValue([
+      { ...sampleProduct, price: "65.00" },
+    ]);
+    checkoutSessionsCreate.mockResolvedValue({
+      id: "cs_test_ship3",
+      url: "https://checkout.stripe.com/cs_test_ship3",
+      amount_total: 6500,
+    });
+
+    const caller = appRouter.createCaller(makeCtx());
+    await caller.checkout.createSession({ productIds: [1] });
+
+    const sessionArgs = checkoutSessionsCreate.mock.calls[0][0];
+    expect(sessionArgs.shipping_options).toHaveLength(2);
+    const euRate = sessionArgs.shipping_options[1].shipping_rate_data;
+    expect(euRate.fixed_amount.amount).toBe(1500);
+    expect(euRate.display_name).toBe("Standard shipping (EU)");
+  });
+
+  it("allows shipping to CH and all EU member countries", async () => {
+    getProductsByIds.mockResolvedValue([sampleProduct]);
+    checkoutSessionsCreate.mockResolvedValue({
+      id: "cs_test_countries",
+      url: "https://checkout.stripe.com/cs_test_countries",
+      amount_total: 1000,
+    });
+
+    const caller = appRouter.createCaller(makeCtx());
+    await caller.checkout.createSession({ productIds: [1] });
+
+    const sessionArgs = checkoutSessionsCreate.mock.calls[0][0];
+    const allowedCountries =
+      sessionArgs.shipping_address_collection.allowed_countries;
+    expect(allowedCountries).toContain("CH");
+    expect(allowedCountries).toContain("DE");
+    expect(allowedCountries).toContain("FR");
+    expect(allowedCountries.length).toBe(28); // CH + 27 EU member states
   });
 });
 
