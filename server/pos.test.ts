@@ -42,6 +42,7 @@ function makeFakeDb(
     visible?: boolean;
     sold?: boolean;
     quantity?: number;
+    reservedUntil?: Date | null;
   }>
 ) {
   const rows = productRows.map(p => ({
@@ -287,6 +288,20 @@ describe("GET /api/pos/products", () => {
       true
     );
   });
+
+  it("excludes pieces with a live checkout hold, POS <-> online inventory sync", async () => {
+    const { db, whereSpy } = makeSpyDb([{ id: 1, price: "50.00" }]);
+    vi.mocked(getDb).mockResolvedValueOnce(db as never);
+
+    const res = await request(makeApp())
+      .get("/api/pos/products")
+      .set("x-pos-key", "test-pos-key");
+
+    expect(res.status).toBe(200);
+    expect(
+      conditionReferencesColumn(whereSpy.mock.calls[0][0], "reserved_until")
+    ).toBe(true);
+  });
 });
 
 describe("POST /api/pos/payment-intent", () => {
@@ -368,6 +383,49 @@ describe("POST /api/pos/payment-intent", () => {
 
     expect(res.status).toBe(409);
     expect(fakeStripe.paymentIntents.create).not.toHaveBeenCalled();
+  });
+
+  it("rejects a piece that's actively held by an in-flight online checkout (POS <-> online inventory sync), even with allowHidden", async () => {
+    vi.mocked(getDb).mockResolvedValueOnce(
+      makeFakeDb([
+        {
+          id: 1,
+          price: "50.00",
+          reservedUntil: new Date(Date.now() + 10 * 60 * 1000),
+        },
+      ]) as never
+    );
+    const fakeStripe = makeFakeStripe();
+    vi.mocked(getStripe).mockReturnValueOnce(fakeStripe as never);
+
+    const res = await request(makeApp())
+      .post("/api/pos/payment-intent")
+      .set("x-pos-key", "test-pos-key")
+      .send({ productIds: [1], allowHidden: true });
+
+    expect(res.status).toBe(409);
+    expect(fakeStripe.paymentIntents.create).not.toHaveBeenCalled();
+  });
+
+  it("allows a piece through once its checkout hold has expired", async () => {
+    vi.mocked(getDb).mockResolvedValueOnce(
+      makeFakeDb([
+        {
+          id: 1,
+          price: "50.00",
+          reservedUntil: new Date(Date.now() - 60 * 1000),
+        },
+      ]) as never
+    );
+    const fakeStripe = makeFakeStripe();
+    vi.mocked(getStripe).mockReturnValueOnce(fakeStripe as never);
+
+    const res = await request(makeApp())
+      .post("/api/pos/payment-intent")
+      .set("x-pos-key", "test-pos-key")
+      .send({ productIds: [1] });
+
+    expect(res.status).toBe(200);
   });
 
   it("refuses to create a payment intent when the computed total is CHF 0.00", async () => {

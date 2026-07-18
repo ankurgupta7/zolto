@@ -5,6 +5,7 @@ import Stripe from "stripe";
 
 const getOrderBySessionId = vi.fn();
 const markProductsSold = vi.fn();
+const releaseProductReservations = vi.fn();
 const updateOrderBySessionId = vi.fn();
 const createOrder = vi.fn();
 const getProductsByIds = vi.fn();
@@ -14,6 +15,8 @@ const sendOrderReceipt = vi.fn();
 vi.mock("./db", () => ({
   getOrderBySessionId: (...args: unknown[]) => getOrderBySessionId(...args),
   markProductsSold: (...args: unknown[]) => markProductsSold(...args),
+  releaseProductReservations: (...args: unknown[]) =>
+    releaseProductReservations(...args),
   updateOrderBySessionId: (...args: unknown[]) =>
     updateOrderBySessionId(...args),
   createOrder: (...args: unknown[]) => createOrder(...args),
@@ -241,6 +244,7 @@ describe("registerStripeWebhook", () => {
     notifyOwner.mockResolvedValue(true);
     updateOrderBySessionId.mockResolvedValue(undefined);
     markProductsSold.mockResolvedValue(undefined);
+    releaseProductReservations.mockResolvedValue(undefined);
     getProductsByIds.mockResolvedValue([]);
     sendOrderReceipt.mockResolvedValue(undefined);
     process.env.STRIPE_SECRET_KEY = "sk_test_123";
@@ -299,7 +303,8 @@ describe("registerStripeWebhook", () => {
     expect(markProductsSold).toHaveBeenCalledWith(3, [1, 2]);
   });
 
-  it("marks the order expired on checkout.session.expired", async () => {
+  it("marks the order expired and releases its product hold on checkout.session.expired", async () => {
+    getOrderBySessionId.mockResolvedValue({ ...baseOrder });
     const stripe = new Stripe("sk_test_123");
     const app = buildApp();
     const { body, header } = signedPayload(stripe, {
@@ -318,9 +323,13 @@ describe("registerStripeWebhook", () => {
     expect(updateOrderBySessionId).toHaveBeenCalledWith("cs_test_123", {
       status: "expired",
     });
+    // POS <-> online inventory sync: an expired session must give back the
+    // hold it placed so the pieces are immediately sellable again.
+    expect(releaseProductReservations).toHaveBeenCalledWith(3, [1, 2]);
   });
 
-  it("marks the order failed on checkout.session.async_payment_failed", async () => {
+  it("marks the order failed and releases its product hold on checkout.session.async_payment_failed", async () => {
+    getOrderBySessionId.mockResolvedValue({ ...baseOrder });
     const stripe = new Stripe("sk_test_123");
     const app = buildApp();
     const { body, header } = signedPayload(stripe, {
@@ -339,6 +348,27 @@ describe("registerStripeWebhook", () => {
     expect(updateOrderBySessionId).toHaveBeenCalledWith("cs_test_123", {
       status: "failed",
     });
+    expect(releaseProductReservations).toHaveBeenCalledWith(3, [1, 2]);
+  });
+
+  it("does not attempt to release a hold when no matching order exists", async () => {
+    getOrderBySessionId.mockResolvedValue(undefined);
+    const stripe = new Stripe("sk_test_123");
+    const app = buildApp();
+    const { body, header } = signedPayload(stripe, {
+      id: "evt_5",
+      type: "checkout.session.expired",
+      data: { object: { id: "cs_unknown" } },
+    });
+
+    const res = await request(app)
+      .post("/api/stripe/webhook")
+      .set("stripe-signature", header)
+      .set("Content-Type", "application/json")
+      .send(body);
+
+    expect(res.status).toBe(200);
+    expect(releaseProductReservations).not.toHaveBeenCalled();
   });
 
   it("acknowledges unhandled event types without side effects", async () => {
@@ -392,6 +422,7 @@ describe("registerStripeWebhook — Connect endpoint", () => {
     notifyOwner.mockResolvedValue(true);
     updateOrderBySessionId.mockResolvedValue(undefined);
     markProductsSold.mockResolvedValue(undefined);
+    releaseProductReservations.mockResolvedValue(undefined);
     getProductsByIds.mockResolvedValue([]);
     sendOrderReceipt.mockResolvedValue(undefined);
     process.env.STRIPE_SECRET_KEY = "sk_test_123";

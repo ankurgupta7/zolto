@@ -38,6 +38,7 @@ import {
   getOrderBySessionId,
   getProductsByIds,
   markProductsSold,
+  releaseProductReservations,
   updateOrderBySessionId,
 } from "./db";
 import { sendOrderReceipt } from "./_core/email";
@@ -191,6 +192,28 @@ export async function fulfillOrder(
 }
 
 /**
+ * POS <-> online inventory sync: give back the checkout hold (see
+ * server/db.ts reserveProducts) placed on a session's pieces when that
+ * session didn't end in a sale, so they become sellable again — at the POS
+ * terminal or in a fresh online checkout — right away instead of waiting
+ * out the reservation's own TTL.
+ */
+async function releaseHeldProducts(sessionId: string): Promise<void> {
+  const order = await getOrderBySessionId(sessionId);
+  if (!order) return;
+  const productIds = order.productIds
+    .split(",")
+    .map((s) => parseInt(s.trim(), 10))
+    .filter((n) => Number.isFinite(n));
+  await releaseProductReservations(order.tenantId, productIds).catch((err) =>
+    console.error(
+      `[Stripe] Failed to release product hold for session ${sessionId}:`,
+      err,
+    ),
+  );
+}
+
+/**
  * Shared event handling for both the platform webhook and the Connect
  * webhook below — a checkout.session.completed means the same thing
  * regardless of which Stripe account it came from, since the order row
@@ -208,6 +231,7 @@ async function handleStripeEvent(event: Stripe.Event): Promise<void> {
       await updateOrderBySessionId(session.id, {
         status: "expired",
       }).catch(() => {});
+      await releaseHeldProducts(session.id);
       break;
     }
     case "checkout.session.async_payment_failed": {
@@ -215,6 +239,7 @@ async function handleStripeEvent(event: Stripe.Event): Promise<void> {
       await updateOrderBySessionId(session.id, {
         status: "failed",
       }).catch(() => {});
+      await releaseHeldProducts(session.id);
       break;
     }
     default:

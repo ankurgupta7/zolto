@@ -7,6 +7,9 @@ import {
   createOrder,
   getOrderBySessionId,
   getTenantById,
+  reserveProducts,
+  releaseProductReservations,
+  PRODUCT_RESERVATION_TTL_MS,
 } from "../db";
 import { fulfillOrder, getStripe, isStripeConfigured } from "../stripe";
 
@@ -132,6 +135,27 @@ export const checkoutRouter = router({
         });
       }
 
+      // POS <-> online inventory sync: hold these pieces for the lifetime of
+      // the Checkout Session so the POS terminal (or a second online
+      // checkout) can't sell the same one-of-a-kind piece while this
+      // customer is paying. See server/db.ts reserveProducts.
+      const failedToReserve = await reserveProducts(tenantId, uniqueIds);
+      if (failedToReserve.length > 0) {
+        // Give back whatever DID get reserved in this same batch — we're not
+        // proceeding, so nothing should stay held.
+        const reservedIds = uniqueIds.filter(
+          (id) => !failedToReserve.includes(id),
+        );
+        await releaseProductReservations(tenantId, reservedIds);
+        const names = items
+          .filter((p) => failedToReserve.includes(p.id))
+          .map((p) => p.name);
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: `Someone else is already buying: ${names.join(", ")}. Please remove them from your bag or try again shortly.`,
+        });
+      }
+
       const baseUrl = resolveBaseUrl();
 
       const lineItems = items.map((p) => {
@@ -169,88 +193,105 @@ export const checkoutRouter = router({
       // own connected Standard account (a "direct charge") using Zolto's
       // platform key — funds settle straight to the tenant, no application
       // fee, no raw tenant Stripe key ever touches Zolto's servers.
-      const session = await stripe.checkout.sessions.create(
-        {
-          mode: "payment",
-          // Credit & debit cards plus TWINT (Swiss mobile payment)
-          payment_method_types: ["card", "twint"],
-          line_items: lineItems,
-          // Without this, one-time "payment" mode sessions never create a
-          // Stripe Customer, so the dashboard's Customers count stays at 0.
-          customer_creation: "always",
-          billing_address_collection: "required",
-          shipping_address_collection: {
-            allowed_countries: [...SHIPPING_COUNTRIES],
-          },
-          // Stripe Checkout shows every option to every customer regardless
-          // of the address they enter — it doesn't filter shipping_options
-          // by destination country within a single session config. The
-          // customer picks the option matching their own country from the
-          // two labeled choices below; this is the standard workaround for
-          // per-country flat rates without a custom shipping-rate lookup.
-          shipping_options: [
-            {
-              shipping_rate_data: {
-                type: "fixed_amount",
-                fixed_amount: { amount: chShippingFeeRappen, currency: "chf" },
-                display_name:
-                  chShippingFeeRappen === 0
-                    ? "Free shipping (Switzerland)"
-                    : "Standard shipping (Switzerland)",
-                delivery_estimate: {
-                  minimum: { unit: "business_day", value: 2 },
-                  maximum: { unit: "business_day", value: 3 },
+      //
+      // Wrapped so a Stripe/DB failure after the reservation above doesn't
+      // leave a phantom hold on these pieces until it times out on its own.
+      try {
+        const session = await stripe.checkout.sessions.create(
+          {
+            mode: "payment",
+            // Credit & debit cards plus TWINT (Swiss mobile payment)
+            payment_method_types: ["card", "twint"],
+            line_items: lineItems,
+            // Without this, one-time "payment" mode sessions never create a
+            // Stripe Customer, so the dashboard's Customers count stays at 0.
+            customer_creation: "always",
+            billing_address_collection: "required",
+            shipping_address_collection: {
+              allowed_countries: [...SHIPPING_COUNTRIES],
+            },
+            // Stripe Checkout shows every option to every customer regardless
+            // of the address they enter — it doesn't filter shipping_options
+            // by destination country within a single session config. The
+            // customer picks the option matching their own country from the
+            // two labeled choices below; this is the standard workaround for
+            // per-country flat rates without a custom shipping-rate lookup.
+            shipping_options: [
+              {
+                shipping_rate_data: {
+                  type: "fixed_amount",
+                  fixed_amount: {
+                    amount: chShippingFeeRappen,
+                    currency: "chf",
+                  },
+                  display_name:
+                    chShippingFeeRappen === 0
+                      ? "Free shipping (Switzerland)"
+                      : "Standard shipping (Switzerland)",
+                  delivery_estimate: {
+                    minimum: { unit: "business_day", value: 2 },
+                    maximum: { unit: "business_day", value: 3 },
+                  },
                 },
               },
-            },
-            {
-              shipping_rate_data: {
-                type: "fixed_amount",
-                fixed_amount: {
-                  amount: EU_FLAT_SHIPPING_FEE_RAPPEN,
-                  currency: "chf",
-                },
-                display_name: "Standard shipping (EU)",
-                delivery_estimate: {
-                  minimum: { unit: "business_day", value: 4 },
-                  maximum: { unit: "business_day", value: 7 },
+              {
+                shipping_rate_data: {
+                  type: "fixed_amount",
+                  fixed_amount: {
+                    amount: EU_FLAT_SHIPPING_FEE_RAPPEN,
+                    currency: "chf",
+                  },
+                  display_name: "Standard shipping (EU)",
+                  delivery_estimate: {
+                    minimum: { unit: "business_day", value: 4 },
+                    maximum: { unit: "business_day", value: 7 },
+                  },
                 },
               },
+            ],
+            phone_number_collection: { enabled: true },
+            locale: "auto",
+            // Controls the merchant name shown on TWINT and bank statements.
+            // 22-char max. The Stripe account business profile name (on the
+            // tenant's OWN connected account) also affects TWINT display.
+            // NOTE: must be inside payment_intent_data for Checkout Sessions;
+            // top-level statement_descriptor is rejected by newer Stripe API versions.
+            payment_intent_data: {
+              statement_descriptor: (ctx.tenant.name || "ZOLTO STORE")
+                .slice(0, 22)
+                .toUpperCase(),
             },
-          ],
-          phone_number_collection: { enabled: true },
-          locale: "auto",
-          // Controls the merchant name shown on TWINT and bank statements.
-          // 22-char max. The Stripe account business profile name (on the
-          // tenant's OWN connected account) also affects TWINT display.
-          // NOTE: must be inside payment_intent_data for Checkout Sessions;
-          // top-level statement_descriptor is rejected by newer Stripe API versions.
-          payment_intent_data: {
-            statement_descriptor: (ctx.tenant.name || "ZOLTO STORE")
-              .slice(0, 22)
-              .toUpperCase(),
+            success_url: `${baseUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: `${baseUrl}/checkout/cancel`,
+            metadata: { productIds: uniqueIds.join(",") },
+            // Matches the reservation TTL above (30 min, Stripe's own minimum
+            // for expires_at) so the hold on these pieces never outlives the
+            // session that placed it.
+            expires_at: Math.floor(
+              (Date.now() + PRODUCT_RESERVATION_TTL_MS) / 1000,
+            ),
           },
-          success_url: `${baseUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-          cancel_url: `${baseUrl}/checkout/cancel`,
-          metadata: { productIds: uniqueIds.join(",") },
-        },
-        { stripeAccount: connectedAccountId },
-      );
+          { stripeAccount: connectedAccountId },
+        );
 
-      const amountTotal =
-        session.amount_total ??
-        items.reduce((sum, p) => sum + Math.round(Number(p.price) * 100), 0);
+        const amountTotal =
+          session.amount_total ??
+          items.reduce((sum, p) => sum + Math.round(Number(p.price) * 100), 0);
 
-      await createOrder({
-        tenantId,
-        stripeSessionId: session.id,
-        status: "pending",
-        amountTotal,
-        currency: "chf",
-        productIds: uniqueIds.join(","),
-      });
+        await createOrder({
+          tenantId,
+          stripeSessionId: session.id,
+          status: "pending",
+          amountTotal,
+          currency: "chf",
+          productIds: uniqueIds.join(","),
+        });
 
-      return { url: session.url, sessionId: session.id };
+        return { url: session.url, sessionId: session.id };
+      } catch (err) {
+        await releaseProductReservations(tenantId, uniqueIds).catch(() => {});
+        throw err;
+      }
     }),
 
   // Admin: manually re-trigger fulfillment for a Stripe session (e.g. missed webhook)

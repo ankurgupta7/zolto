@@ -104,6 +104,32 @@ migrate_0020_stripe_connect() {
   fi
 }
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Migration 0021: POS <-> online inventory sync (checkout holds).
+#
+# Adds products.reserved_until / products.reserved_token — a short-lived hold
+# placed on a piece while an online Checkout Session for it is in flight, so
+# the POS terminal (or a second online checkout) can't sell the same
+# one-of-a-kind piece out from under it. reserved_token disambiguates
+# concurrent holds so releasing an expired/failed session's hold can never
+# clear a different, newer hold on the same piece. Idempotent: a no-op if the
+# columns already exist.
+migrate_0021_product_reservations() {
+  if [ "$(col_exists products reserved_until)" = "0" ]; then
+    run_sql "0021 add products.reserved_until" \
+      "ALTER TABLE \`products\` ADD \`reserved_until\` timestamp NULL;"
+  else
+    ok "0021 products.reserved_until already exists"
+  fi
+
+  if [ "$(col_exists products reserved_token)" = "0" ]; then
+    run_sql "0021 add products.reserved_token" \
+      "ALTER TABLE \`products\` ADD \`reserved_token\` varchar(32) NULL;"
+  else
+    ok "0021 products.reserved_token already exists"
+  fi
+}
+
 migrate_0019_multitenant() {
   run_sql "0019 tenants table" "
     CREATE TABLE IF NOT EXISTS \`tenants\` (
