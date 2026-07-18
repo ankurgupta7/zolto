@@ -33,11 +33,14 @@ The requirements were simple:
 
 Sheena started with 15 products. Not the full catalog — just the pieces that photograph well and sell consistently. The process:
 
-1. **Photograph each product** — phone camera, natural light, white background. 2–3 shots per item.
-2. **Upload to Zolto** — bulk CSV upload for speed.
-3. **AI descriptions** — the AI generated product descriptions from the photos. Not perfect, but 80% there. Sheena edited them to match her voice.
+1. **Photograph each product once, roughly** — a single phone photo, no studio, no lighting kit, no white background. Pearls laid out on a bedsheet at home.
+2. **AI restyles the photo** — Zolto turns that one rough shot into a styled product photo (backdrop, lighting, composition) or a full lifestyle image (a model wearing the piece, a scene). No photographer booked. No model hired. No studio rented.
 
-**Time spent: 3 hours.** Most of it was photography, not software.
+   **Disclosure:** in every AI-restyled image, the piece of jewelry is real — everything around it (backdrop, styling, and any model or scene) is AI-generated. Kalakosh discloses this on every AI-styled image, and so does Zolto: this isn't staged authenticity, it's a small maker being upfront about the tool she used.
+3. **Upload to Zolto** — bulk CSV upload for speed.
+4. **AI descriptions** — the AI generated product descriptions from the photos. Not perfect, but 80% there. Sheena edited them to match her voice.
+
+**Time spent: under an hour.** The old bottleneck — booking a photographer, or a model, or renting a studio for a few product shots — is gone. Sheena's time went into picking which AI-restyled images to keep, not producing them.
 
 **Day 2: Store Configuration**
 
@@ -59,7 +62,7 @@ Zolto handles this automatically. One inventory database, two sales channels. Wh
 1. **Start small.** 15 products, not 150. You can always add more. Launching with everything creates paralysis.
 2. **AI descriptions save time, but they need editing.** The AI captured the materials and dimensions accurately. It missed the emotional tone — the story behind why Sheena chooses pearls from a particular supplier, or how she matches stones. Sheena added that.
 3. **POS sync is non-negotiable.** For anyone selling both online and in-person, this is the feature that prevents disasters.
-4. **Photography is the bottleneck.** Not the software. Good product photos take time. Plan for it.
+4. **Photography used to be the bottleneck. AI removed it.** One rough phone photo per product, restyled by AI, disclosed as such — no photographer, no model, no studio budget. That's money a maker this size would otherwise not have spent on her store at all.
 
 ## What's Next
 
