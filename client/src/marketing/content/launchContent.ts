@@ -18,6 +18,11 @@ import {
   BLOG_POSTS,
 } from "@shared/marketing";
 
+export interface ImageAsset {
+  src: string;
+  alt: string;
+}
+
 export type Block =
   | { type: "p"; text: string }
   | { type: "h2"; text: string }
@@ -25,7 +30,16 @@ export type Block =
   | { type: "ol"; items: string[] }
   | { type: "quote"; text: string; cite?: string }
   | { type: "note"; text: string }
-  | { type: "table"; head: string[]; rows: string[][]; caption?: string };
+  | { type: "table"; head: string[]; rows: string[][]; caption?: string }
+  | { type: "figure"; image: ImageAsset; caption?: string }
+  | {
+      type: "beforeAfter";
+      before: ImageAsset;
+      after: ImageAsset;
+      beforeLabel?: string;
+      afterLabel?: string;
+      caption?: string;
+    };
 
 export interface ArticleLink {
   label: string;
@@ -56,6 +70,10 @@ export interface Article {
 }
 
 const founderName = maker.founder ?? "the maker";
+/** Title-case reference to the maker: their name once released, else a neutral phrase. */
+const founderTitle = maker.founder ?? `a ${maker.city} maker`;
+/** Possessive form of the brand for headlines: "Kalakosh's" once released, else "a". */
+const brandPossessive = maker.founder ? `${maker.brand}'s` : "a";
 const BLOG_BASE = "/blog";
 const STORY_PATH = `/stories/${STORY_SLUG}`;
 
@@ -111,9 +129,10 @@ const diary1: Article = {
   kind: "diary",
   eyebrow: "Launch Diary · Part 1 of 4",
   title: "Launch Diary #1: The Setup",
-  metaTitle: `How a Zurich Jewelry Maker Set Up a First Online Store | Zolto Launch Diary`,
-  metaDescription:
-    "Follow a pearl jewelry maker in Zurich as she sets up her first online store on Zolto. Real process, real timeline, no growth hacks.",
+  metaTitle: `How ${founderTitle} Set Up ${brandPossessive} First Online Store | Zolto Launch Diary`,
+  metaDescription: maker.founder
+    ? `Follow ${maker.founder}, founder of ${maker.brand} pearl jewelry in ${maker.city}, as she sets up her first online store on Zolto. Real process, real timeline, no growth hacks.`
+    : `Follow a ${maker.city} pearl jewelry maker as she sets up a first online store on Zolto. Real process, real timeline, no growth hacks.`,
   dek: "From Christmas markets to a first online store — Part 1: getting started.",
   datePublished: BLOG_POSTS[0].lastmod,
   dateModified: BLOG_POSTS[0].lastmod,
@@ -167,8 +186,38 @@ const diary1: Article = {
       text: "Disclosure: in every AI-restyled image the piece of jewelry is real — everything around it (backdrop, styling, any model or scene) is AI-generated, and that is disclosed on every such image. This isn't staged authenticity; it's a small maker being upfront about the tool she used.",
     },
     {
+      type: "beforeAfter",
+      before: {
+        src: "/launch/pearl-halo-set-raw.jpg",
+        alt: `Original phone photo of a ${maker.brand} pearl-halo earring and pendant set on a plain cloth`,
+      },
+      after: {
+        src: "/launch/pearl-halo-set-styled.jpg",
+        alt: "The same pearl-halo set on an AI-generated marble-and-rose backdrop",
+      },
+      beforeLabel: "Maker's phone photo",
+      afterLabel: "AI-styled",
+      caption:
+        "The exact same pearl-halo set: the maker's single phone photo (left) and the AI-styled product image (right). The jewelry is the real piece; only the backdrop is AI-generated.",
+    },
+    {
       type: "p",
       text: "Time spent: under an hour. The old bottleneck — booking a photographer, or a model, or renting a studio for a few product shots — is gone.",
+    },
+    {
+      type: "beforeAfter",
+      before: {
+        src: "/launch/baroque-fringe-earrings-raw.jpg",
+        alt: `Original phone photo of ${maker.brand} baroque-pearl fringe earrings resting on volcanic rock`,
+      },
+      after: {
+        src: "/launch/baroque-fringe-earrings-on-model.jpg",
+        alt: "The same baroque-pearl fringe earrings shown on an AI-generated model",
+      },
+      beforeLabel: "Maker's phone photo",
+      afterLabel: "AI on-model",
+      caption:
+        "Same earrings, taken further: a phone photo becomes an on-model shot with no model booked or studio hired. The earrings are the real piece; the model and scene are AI-generated.",
     },
     {
       type: "p",
@@ -213,10 +262,8 @@ const diary2: Article = {
   kind: "diary",
   eyebrow: "Launch Diary · Part 2 of 4",
   title: "Launch Diary #2: Going Live",
-  metaTitle:
-    "Going Live: A Zurich Jewelry Store's First Day Online | Zolto Launch Diary",
-  metaDescription:
-    "Day 1 of a pearl jewelry store going online in Zurich: 34 visitors, 0 orders. Day 2: the first sale. The real story of launching online.",
+  metaTitle: `Going Live: ${maker.founder ? `${maker.brand}'s` : "A Zurich Jewelry Store's"} First Day Online | Zolto Launch Diary`,
+  metaDescription: `Day 1 of ${maker.founder ? `${maker.brand}'s` : "a pearl jewelry store"} going online in ${maker.city}: 34 visitors, 0 orders. Day 2: the first sale. The real story of launching online.`,
   dek: "Part 2: the quiet switch from 'not available' to 'here it is' — and the first order.",
   datePublished: BLOG_POSTS[1].lastmod,
   dateModified: BLOG_POSTS[1].lastmod,
@@ -325,8 +372,7 @@ const diary3: Article = {
   title: "Launch Diary #3: First Month Online",
   metaTitle:
     "First Month Online: 12 Orders, Honest Numbers | Zolto Launch Diary",
-  metaDescription:
-    "One month after launching online, a Zurich pearl jewelry maker shares real numbers: 12 orders, CHF 61 average, 81% AI chatbot resolution. No growth hacks.",
+  metaDescription: `One month after launching online, ${maker.founder ? maker.brand : `a ${maker.city} pearl jewelry maker`} shares real numbers: 12 orders, CHF 61 average, 81% AI chatbot resolution. No growth hacks.`,
   dek: "Part 3: honest month-one numbers — 12 online orders, CHF 61 average, and what drove them.",
   datePublished: BLOG_POSTS[2].lastmod,
   dateModified: BLOG_POSTS[2].lastmod,
@@ -455,10 +501,8 @@ const caseStudy: Article = {
   slug: STORY_SLUG,
   kind: "story",
   title: `${maker.brand} Launch Case Study`,
-  metaTitle:
-    "Case Study: From Christmas Markets to Online Sales in 30 Days | Zolto",
-  metaDescription:
-    "How a pearl jewelry maker in Zurich launched a first online store in 3 days and made 12 online sales in the first month, on Zolto.",
+  metaTitle: `${maker.founder ? `${maker.brand} Case Study` : "Case Study"}: From Christmas Markets to Online Sales in 30 Days | Zolto`,
+  metaDescription: `How ${maker.founder ? `${maker.founder}, founder of ${maker.brand},` : `a pearl jewelry maker in ${maker.city}`} launched a first online store in 3 days and made 12 online sales in the first month, on Zolto.`,
   dek: "From ~60 offline sales/month at Christmas markets to a hybrid online-offline pearl jewelry business in 30 days.",
   datePublished: CASE_STUDY_PUBLISHED,
   dateModified: CASE_STUDY_PUBLISHED,
@@ -499,6 +543,15 @@ const caseStudy: Article = {
     {
       type: "p",
       text: "Key features used: AI product descriptions (generated from photos, edited for tone in ~5 minutes each); POS + online sync (one inventory for both channels, so selling at a Chilbi updates online stock and vice versa); and the AI chatbot (handling pearl-type, shipping, and sizing questions — and turning requests into shipped features).",
+    },
+    {
+      type: "figure",
+      image: {
+        src: "/launch/gold-fringe-earrings-styled.jpg",
+        alt: `${maker.brand} gold-set baroque-pearl fringe earrings on an AI-generated marble backdrop`,
+      },
+      caption:
+        "A store-ready product image from a single maker's photo — the earrings are the real piece; the backdrop is AI-generated, disclosed as such.",
     },
     { type: "h2", text: "The Results (First Month)" },
     {

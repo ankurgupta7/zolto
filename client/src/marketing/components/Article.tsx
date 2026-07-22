@@ -114,6 +114,52 @@ function BlockView({ block }: { block: Block }) {
           )}
         </figure>
       );
+    case "figure":
+      return (
+        <figure className="my-2">
+          <img
+            src={block.image.src}
+            alt={block.image.alt}
+            loading="lazy"
+            className="w-full rounded-xl border border-slate-800"
+          />
+          {block.caption && (
+            <figcaption className="mt-2 text-xs text-slate-500">
+              {block.caption}
+            </figcaption>
+          )}
+        </figure>
+      );
+    case "beforeAfter":
+      return (
+        <figure className="my-2">
+          <div className="grid gap-3 sm:grid-cols-2">
+            {[
+              { img: block.before, label: block.beforeLabel },
+              { img: block.after, label: block.afterLabel },
+            ].map(({ img, label }, i) => (
+              <div key={i} className="relative">
+                <img
+                  src={img.src}
+                  alt={img.alt}
+                  loading="lazy"
+                  className="aspect-[3/4] w-full rounded-xl border border-slate-800 object-cover"
+                />
+                {label && (
+                  <span className="absolute left-2 top-2 rounded-full bg-slate-950/80 px-2.5 py-1 text-xs font-medium text-slate-200 backdrop-blur">
+                    {label}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+          {block.caption && (
+            <figcaption className="mt-2 text-xs text-slate-500">
+              {block.caption}
+            </figcaption>
+          )}
+        </figure>
+      );
   }
 }
 
