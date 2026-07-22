@@ -38,6 +38,10 @@ import ProductDiscoveryControls, {
 import ProductCategoryGroup from "@/components/ProductCategoryGroup";
 import ProductListItem from "@/components/ProductListItem";
 import { Link } from "wouter";
+import { HelpCircle } from "lucide-react";
+import GuidedTour from "@/components/GuidedTour";
+import { ADMIN_TOUR_ID, ADMIN_TOUR_STEPS } from "@/lib/adminTour";
+import { clearTourCompletion } from "@/lib/tour";
 
 const CATEGORIES: readonly ProductCategory[] = PRODUCT_CATEGORIES;
 
@@ -543,6 +547,8 @@ type InsightsData = {
 
 export default function Admin() {
   const { user, isAuthenticated, loading } = useAuth();
+  // Bumping this restarts the guided tour (the "Replay tour" button).
+  const [tourSignal, setTourSignal] = useState(0);
   const [showAddForm, setShowAddForm] = useState(false);
   const [form, setForm] = useState<AddForm>(EMPTY_FORM);
   const [sortBy, setSortBy] = useState<SortOption>("newest");
@@ -852,6 +858,12 @@ export default function Admin() {
 
   return (
     <div className="page-enter pt-20 min-h-screen bg-[var(--brand-surface)]">
+      {/* First-run guided tour of the dashboard (coach marks). */}
+      <GuidedTour
+        tourId={ADMIN_TOUR_ID}
+        steps={ADMIN_TOUR_STEPS}
+        startSignal={tourSignal}
+      />
       {/* Header */}
       <section className="bg-[var(--brand-ink)] py-12">
         <div className="container flex items-center justify-between flex-wrap gap-4">
@@ -859,13 +871,17 @@ export default function Admin() {
             <p className="text-[var(--brand-accent)] text-xs uppercase tracking-[0.3em] mb-1 font-sans">
               Admin Panel
             </p>
-            <h1 className="font-serif text-white text-2xl">
+            <h1
+              data-tour="admin-title"
+              className="font-serif text-white text-2xl"
+            >
               Catalogue Management
             </h1>
           </div>
           <div className="flex items-center gap-3 flex-wrap">
             <Link
               href="/admin/csv-import"
+              data-tour="csv-import"
               className="flex items-center gap-2 border border-white/20 text-white/80 px-4 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:border-white hover:text-white transition-colors"
             >
               <FileSpreadsheet size={14} />
@@ -902,6 +918,7 @@ export default function Admin() {
               type="button"
               onClick={() => previewTranslateMutation.mutate()}
               disabled={previewTranslateMutation.isPending}
+              data-tour="auto-translate"
               title="Fill missing English translations using AI (review before applying)"
               className="flex items-center gap-2 border border-white/20 text-white/80 px-4 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:border-white hover:text-white transition-colors disabled:opacity-50"
             >
@@ -928,6 +945,7 @@ export default function Admin() {
             </button>
             {stripeConnectQuery.data?.connected ? (
               <span
+                data-tour="connect-stripe"
                 title="This store's own Stripe account is linked — checkout pays out directly to you"
                 className="flex items-center gap-2 border border-emerald-400/40 text-emerald-300 px-4 py-2.5 text-xs uppercase tracking-[0.15em] font-sans"
               >
@@ -939,6 +957,7 @@ export default function Admin() {
                 type="button"
                 onClick={handleConnectStripe}
                 disabled={stripeConnectQuery.isLoading}
+                data-tour="connect-stripe"
                 title="Link your OWN Stripe account so your storefront's customers pay directly into it"
                 className="flex items-center gap-2 border border-white/20 text-white/80 px-4 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:border-white hover:text-white transition-colors disabled:opacity-50"
               >
@@ -952,7 +971,21 @@ export default function Admin() {
             )}
             <button
               type="button"
+              onClick={() => {
+                clearTourCompletion(ADMIN_TOUR_ID);
+                setTourSignal((n) => n + 1);
+              }}
+              title="Replay the guided tour of this dashboard"
+              aria-label="Replay guided tour"
+              className="flex items-center gap-2 border border-white/20 text-white/80 px-3 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:border-white hover:text-white transition-colors"
+            >
+              <HelpCircle size={14} />
+              Tour
+            </button>
+            <button
+              type="button"
               onClick={() => setShowAddForm((v) => !v)}
+              data-tour="add-product"
               className="flex items-center gap-2 bg-[var(--brand-accent)] text-[var(--brand-ink)] px-5 py-2.5 text-xs uppercase tracking-[0.15em] font-sans font-medium hover:bg-[var(--brand-accent-light)] transition-colors"
             >
               <Plus size={14} />
@@ -1225,7 +1258,10 @@ export default function Admin() {
         )}
 
         {/* AI Insights */}
-        <div className="mb-8 bg-white border border-[var(--brand-border)] overflow-hidden">
+        <div
+          data-tour="insights"
+          className="mb-8 bg-white border border-[var(--brand-border)] overflow-hidden"
+        >
           <div className="flex items-center justify-between px-6 py-5 border-b border-[var(--brand-border)] bg-[var(--brand-surface)]">
             <div>
               <p className="text-[var(--brand-accent)] text-xs uppercase tracking-[0.3em] mb-1 font-sans">
