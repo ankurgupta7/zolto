@@ -5,6 +5,9 @@ import Landing from "./pages/Landing";
 import Pricing from "./pages/Pricing";
 import Signup from "./pages/Signup";
 import Onboarding from "./pages/Onboarding";
+import Blog from "./pages/Blog";
+import BlogPost from "./pages/BlogPost";
+import Story from "./pages/Story";
 import { Privacy, Terms } from "./pages/Legal";
 
 function ScrollToTop() {
@@ -40,6 +43,9 @@ export default function MarketingApp() {
         <Route path="/pricing" component={Pricing} />
         <Route path="/signup" component={Signup} />
         <Route path="/onboarding" component={Onboarding} />
+        <Route path="/blog" component={Blog} />
+        <Route path="/blog/:slug" component={BlogPost} />
+        <Route path="/stories/:slug" component={Story} />
         <Route path="/legal/privacy" component={Privacy} />
         <Route path="/legal/terms" component={Terms} />
         <Route component={NotFound} />
