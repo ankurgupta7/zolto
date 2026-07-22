@@ -7,7 +7,9 @@ import {
   marketingSitemapEntries,
   renderSitemapXml,
   renderRobotsTxt,
+  renderMarketingLlmsTxt,
   normalizeBaseUrl,
+  AI_CRAWLERS,
 } from "./marketing";
 
 describe("marketing identity gate", () => {
@@ -101,6 +103,35 @@ describe("renderRobotsTxt", () => {
     expect(txt).toContain("User-agent: *");
     expect(txt).toContain("Allow: /");
     expect(txt).toContain("Sitemap: https://zolto.com/sitemap.xml");
+  });
+
+  it("explicitly welcomes AI crawlers and advertises llms.txt", () => {
+    const txt = renderRobotsTxt("https://zolto.com");
+    for (const bot of AI_CRAWLERS) {
+      expect(txt).toContain(`User-agent: ${bot}`);
+    }
+    expect(txt).toContain("GPTBot");
+    expect(txt).toContain("ClaudeBot");
+    expect(txt).toContain("https://zolto.com/llms.txt");
+  });
+});
+
+describe("renderMarketingLlmsTxt", () => {
+  it("is an llms.txt with an H1, summary, and key links", () => {
+    const txt = renderMarketingLlmsTxt("https://zolto.com/");
+    expect(txt.startsWith("# Zolto")).toBe(true);
+    expect(txt).toContain("> "); // llmstxt.org blockquote summary
+    expect(txt).toContain("https://zolto.com/pricing");
+    expect(txt).toContain(`https://zolto.com/stories/${STORY_SLUG}`);
+    // no double slashes from a trailing-slash base
+    expect(txt).not.toContain("https://zolto.com//");
+  });
+
+  it("advertises the MCP endpoint for agents", () => {
+    const txt = renderMarketingLlmsTxt("https://zolto.com");
+    expect(txt).toContain("Model Context Protocol");
+    expect(txt).toContain("/mcp");
+    expect(txt).toContain("search_products");
   });
 });
 

@@ -169,14 +169,71 @@ export function renderSitemapXml(baseUrl: string): string {
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`;
 }
 
-/** Render robots.txt, pointing crawlers at the sitemap. */
+/**
+ * AI assistant / agent crawlers we explicitly welcome. Many sites block these by
+ * default; Zolto's whole thesis is discoverability, so we opt in — the maker's
+ * store should be findable and answerable by AI assistants, not walled off.
+ */
+export const AI_CRAWLERS = [
+  "GPTBot", // OpenAI training/index
+  "OAI-SearchBot", // OpenAI search
+  "ChatGPT-User", // ChatGPT browsing on a user's behalf
+  "ClaudeBot", // Anthropic
+  "Claude-Web",
+  "anthropic-ai",
+  "PerplexityBot",
+  "Google-Extended", // Gemini/Vertex training
+  "Applebot-Extended",
+  "CCBot", // Common Crawl
+] as const;
+
+/**
+ * Render robots.txt. Allows everything, then explicitly welcomes AI crawlers,
+ * and advertises both the sitemap and the LLM guide (/llms.txt).
+ */
 export function renderRobotsTxt(baseUrl: string): string {
   const base = normalizeBaseUrl(baseUrl);
-  return [
-    "User-agent: *",
-    "Allow: /",
-    "",
+  const lines = ["User-agent: *", "Allow: /", ""];
+  lines.push(
+    "# AI assistants and agents are explicitly welcome to read this site.",
+  );
+  for (const bot of AI_CRAWLERS) {
+    lines.push(`User-agent: ${bot}`, "Allow: /", "");
+  }
+  lines.push(
+    `# Machine-readable guide for LLMs: ${base}/llms.txt`,
     `Sitemap: ${base}/sitemap.xml`,
     "",
-  ].join("\n");
+  );
+  return lines.join("\n");
+}
+
+/**
+ * The Zolto platform `/llms.txt` (llmstxt.org format) — a compact, link-first
+ * markdown brief that an LLM can read to understand what Zolto is, where the key
+ * pages are, and how to talk to a store programmatically (MCP). Served on the
+ * marketing surface; each tenant storefront serves its own product-aware version
+ * (see server/llms.ts).
+ */
+export function renderMarketingLlmsTxt(baseUrl: string): string {
+  const base = normalizeBaseUrl(baseUrl);
+  return `# Zolto
+
+> AI-run commerce for independent makers — set up an online store and point-of-sale in days, not weeks, with AI handling product photos, descriptions, and support.
+
+Zolto is a commerce platform for small makers (jewelry, crafts, artisan goods). Each merchant runs their own storefront on Zolto; this file describes the Zolto platform itself. Individual storefronts serve their own /llms.txt with their live catalogue.
+
+## Key pages
+
+- [Pricing](${base}/pricing): plans and pricing for makers.
+- [Launch Diary](${base}/blog): a real maker's store launch, documented week by week.
+- [Case study](${base}/stories/${STORY_SLUG}): how a Zurich pearl-jewelry maker launched in 3 days.
+- [Sign up](${base}/signup): start a store.
+
+## For AI agents
+
+- Every Zolto storefront exposes a Model Context Protocol (MCP) endpoint at \`https://<store-domain>/mcp\` for product discovery — JSON-RPC 2.0 over HTTP (Streamable HTTP transport). Tools: \`search_products\`, \`get_product\`, \`list_categories\`, \`get_store_info\`.
+- Each storefront also serves its own \`/llms.txt\` and \`/robots.txt\`.
+- Sitemap: ${base}/sitemap.xml
+`;
 }
