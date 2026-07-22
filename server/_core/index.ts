@@ -12,6 +12,7 @@ import { registerStripeWebhook } from "../stripe";
 import { registerStripeConnectRoutes } from "../stripeConnect";
 import { registerPosWebhook, registerPosRoutes } from "../pos";
 import { registerReconciliationRoutes } from "../reconciliationRoutes";
+import { registerSeoRoutes } from "../seo";
 import { getDb } from "../db";
 
 function isPortAvailable(port: number): Promise<boolean> {
@@ -58,6 +59,9 @@ async function startServer() {
 
   // One-click confirmation links from the Stripe reconciliation review email
   registerReconciliationRoutes(app);
+
+  // SEO discovery: /sitemap.xml + /robots.txt (before the SPA catch-all).
+  registerSeoRoutes(app);
 
   // tRPC API
   app.use(

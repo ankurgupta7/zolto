@@ -92,10 +92,12 @@
 
 | Task | Status | Notes |
 |------|--------|-------|
-| [ ] Set up URL structure (`/stories/kalakosh-launch`, `/blog/launch-diary-1`, etc.) | 👤 | Implement in your router |
-| [ ] Add schema markup (Article + Organization + LocalBusiness for Zurich) | 🤖 | JSON-LD templates provided in content files |
-| [ ] Create XML sitemap | 🤖 | Template in `phase1/marketing/sitemap-template.xml` |
-| [ ] Set up Google Business Profile for Kalakosh | 👤 | Local SEO critical for "pearl jewelry zurich" |
+| [x] Set up URL structure (`/stories/…`, `/blog/launch-diary-1`, etc.) | ✅ | **Built.** Routes live on the marketing surface: `/blog` (index), `/blog/:slug` (the three diaries), `/stories/:slug` (case study). Wired in `client/src/marketing/MarketingApp.tsx`; pages in `client/src/marketing/pages/{Blog,BlogPost,Story}.tsx`; content in `client/src/marketing/content/launchContent.ts`. "Launch Diary" added to the marketing nav. |
+| [x] Add schema markup (Article + Organization + LocalBusiness for Zurich) | ✅ | **Built.** Each article renders JSON-LD (`Article` + Zolto `Organization` publisher + Zurich `LocalBusiness`) via `client/src/marketing/components/Article.tsx`. Per-page `<title>`/meta/canonical/OG set by `client/src/marketing/lib/useDocumentMeta.ts` (project has no react-helmet). |
+| [x] Create XML sitemap | ✅ | **Built + served.** `/sitemap.xml` and `/robots.txt` are live server routes (`server/seo.ts`, registered in `server/_core/index.ts`), generated from the shared route list (`shared/marketing.ts`) so they always match the routes actually served. Absolute URLs use `PUBLIC_BASE_URL`, falling back to the request host. Supersedes the static `phase1/marketing/sitemap-template.xml` (which also listed not-yet-built `/features/*` and bare `/privacy`). |
+| [ ] Set up Google Business Profile for Kalakosh | 👤 | Local SEO critical for "pearl jewelry zurich" — needs Sheena's Google account. |
+
+> **⚠️ Publication is release-gated (business-plan §5.1).** The diary/case-study pages are built and live *anonymized* — maker rendered as "our pilot studio", no founder name, neutral story slug (`/stories/pilot-launch`), no personal testimonial — exactly as `Pricing.tsx` already gates the Kalakosh quote. This is the shipped default because Zolto may not publish Sheena Arora's name, likeness, or story until the **signed content/publicity release** is on file (`phase1/legal/content-release-form.md`). **To go named:** get the release signed, then flip `CONTENT_RELEASE_SIGNED` in `shared/marketing.ts` — every page, byline, JSON-LD identity, and the story slug (`/stories/kalakosh-launch`) swap automatically. The named prose drafts remain in `phase1/content/*.md` for that edit.
 
 ---
 
@@ -257,6 +259,8 @@ Verified in-browser: zero Kalakosh strings on any surface.
 | Signup **frontend** (`Signup.tsx`) | Sprint 3.2 | ✅ Implemented | `client/src/marketing/pages/Signup.tsx`, wired to `tenant.create` |
 | Onboarding wizard (`Onboarding.tsx`) | Sprint 3.3 | ⚠️ Partial | `client/src/marketing/pages/Onboarding.tsx` — client-side checklist; **not yet persisted** (`onboardingStep` column exists but no mutation) |
 | Pricing page | Week 4 | ✅ Implemented | `client/src/marketing/pages/Pricing.tsx` from `marketing/pricing-page-copy.md` |
+| **Launch Diary + case-study pages** (blog engine) | Week 2 | ✅ Implemented | `/blog`, `/blog/:slug`, `/stories/:slug`. Content in `content/launchContent.ts` (typed blocks), rendered by `components/Article.tsx`, pages `pages/{Blog,BlogPost,Story}.tsx`. Identity **release-gated** via `shared/marketing.ts` (`CONTENT_RELEASE_SIGNED`) — anonymized until Sheena's content release is signed (see §5.1 note above). Tests: `launchContent.test.ts`, `Blog.test.tsx`, `useDocumentMeta.test.tsx`. |
+| **SEO plumbing** (sitemap, robots, per-page meta/JSON-LD) | Week 2 | ✅ Implemented | `/sitemap.xml` + `/robots.txt` served by `server/seo.ts`; per-page `<title>`/meta/canonical/OG via `lib/useDocumentMeta.ts`; `Article`/`LocalBusiness`/`Organization` JSON-LD per article. Route list single-sourced in `shared/marketing.ts`. Tests: `shared/marketing.test.ts`, `server/seo.test.ts`. |
 | Platform legal pages (Zolto ToS/Privacy) | Week 4 | ✅ Implemented | `client/src/marketing/pages/Legal.tsx` (/legal/privacy, /legal/terms). Storefront still uses tenant's own AGB (`pages/Policy.tsx`). |
 | Chatbot metrics dashboard | Sprint 4 | ❌ Not built | — |
 | `feature_usage`, `chatbot_conversations` tables | Sprint 1 | ❌ Not built | Verified absent from `drizzle/schema.ts`; required before the chatbot metrics dashboard |
