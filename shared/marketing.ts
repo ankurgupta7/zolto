@@ -17,8 +17,13 @@
  * WHEN THE RELEASE IS SIGNED: flip CONTENT_RELEASE_SIGNED to `true`. Every page,
  * byline, meta tag, JSON-LD block, and the story URL slug then swap to the real
  * identity automatically. Nothing else needs editing to go named.
+ *
+ * STATUS: signed. The operator confirmed the Kalakosh / Sheena Arora content &
+ * publicity release is signed and on file (confirmed 2026-07-22). The scanned
+ * release should be committed to docs/planning/phase1/legal/ as the durable
+ * record — see the tracker's §5.1 note. Flip back to `false` to re-anonymize.
  */
-export const CONTENT_RELEASE_SIGNED = false;
+export const CONTENT_RELEASE_SIGNED = true;
 
 export interface MakerIdentity {
   /** Brand name, or a neutral stand-in while unreleased. */

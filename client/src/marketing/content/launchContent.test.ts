@@ -1,14 +1,28 @@
 import { describe, it, expect } from "vitest";
+import { existsSync } from "node:fs";
+import path from "node:path";
 import {
   DIARY_POSTS,
   CASE_STUDY,
   getDiaryPost,
   CURRENT_STORY_SLUG,
   type Article,
+  type Block,
+  type ImageAsset,
 } from "./launchContent";
-import { BLOG_POSTS, CONTENT_RELEASE_SIGNED } from "@shared/marketing";
+import { BLOG_POSTS, CONTENT_RELEASE_SIGNED, maker } from "@shared/marketing";
 
 const ALL: Article[] = [...DIARY_POSTS, CASE_STUDY];
+
+/** Collect every ImageAsset referenced by any block. */
+function imagesOf(article: Article): ImageAsset[] {
+  const out: ImageAsset[] = [];
+  for (const block of article.blocks as Block[]) {
+    if (block.type === "figure") out.push(block.image);
+    if (block.type === "beforeAfter") out.push(block.before, block.after);
+  }
+  return out;
+}
 
 describe("launch content integrity", () => {
   it("has one diary article per BLOG_POSTS entry, in order", () => {
@@ -63,6 +77,38 @@ describe("launch content integrity", () => {
   });
 });
 
+describe("image blocks", () => {
+  const referenced = ALL.flatMap(imagesOf);
+
+  it("gives every image a root-relative src and non-empty alt text", () => {
+    expect(referenced.length).toBeGreaterThan(0);
+    for (const img of referenced) {
+      expect(img.src.startsWith("/launch/")).toBe(true);
+      expect(img.alt.trim().length).toBeGreaterThan(0);
+    }
+  });
+
+  it("references image files that exist in client/public", () => {
+    // vitest root is the repo root; public assets live under client/public.
+    for (const img of referenced) {
+      const onDisk = path.join(process.cwd(), "client", "public", img.src);
+      expect(existsSync(onDisk), `missing asset: ${img.src}`).toBe(true);
+    }
+  });
+
+  it("pairs a maker phone photo with an AI-styled counterpart in diary #1", () => {
+    const pairs = (DIARY_POSTS[0].blocks as Block[]).filter(
+      (b): b is Extract<Block, { type: "beforeAfter" }> =>
+        b.type === "beforeAfter",
+    );
+    expect(pairs.length).toBeGreaterThanOrEqual(1);
+    for (const p of pairs) {
+      // Every AI-styled/on-model image must carry a disclosure in its caption.
+      expect(p.caption?.toLowerCase()).toContain("ai-generated");
+    }
+  });
+});
+
 describe("JSON-LD schema", () => {
   it("marks each article as schema.org Article with a Zolto publisher", () => {
     for (const a of ALL) {
@@ -97,5 +143,25 @@ describe("right-of-publicity gate in content", () => {
       const about = a.schema.about as Record<string, unknown>;
       expect(about.founder).toBeUndefined();
     }
+  });
+
+  it("names the maker and asserts a Person founder once the release is signed", () => {
+    if (!CONTENT_RELEASE_SIGNED) return; // anonymized mode covered above
+
+    const haystack = JSON.stringify(ALL);
+    expect(haystack).toContain(maker.brand);
+    if (maker.founder) {
+      expect(haystack).toContain(maker.founder);
+      // Schema now carries a named Person founder.
+      for (const a of ALL) {
+        const about = a.schema.about as Record<string, unknown>;
+        expect(about.founder).toMatchObject({
+          "@type": "Person",
+          name: maker.founder,
+        });
+      }
+    }
+    // Story slug is brand-named once released.
+    expect(CURRENT_STORY_SLUG).toBe("kalakosh-launch");
   });
 });
