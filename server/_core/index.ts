@@ -13,6 +13,8 @@ import { registerStripeConnectRoutes } from "../stripeConnect";
 import { registerPosWebhook, registerPosRoutes } from "../pos";
 import { registerReconciliationRoutes } from "../reconciliationRoutes";
 import { registerSeoRoutes } from "../seo";
+import { registerLlmsRoutes } from "../llms";
+import { registerMcpRoutes } from "../mcp";
 import { getDb } from "../db";
 
 function isPortAvailable(port: number): Promise<boolean> {
@@ -62,6 +64,10 @@ async function startServer() {
 
   // SEO discovery: /sitemap.xml + /robots.txt (before the SPA catch-all).
   registerSeoRoutes(app);
+
+  // AI-agent discovery: /llms.txt (tenant-aware) + the MCP product endpoint.
+  registerLlmsRoutes(app);
+  registerMcpRoutes(app);
 
   // tRPC API
   app.use(
