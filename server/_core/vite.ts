@@ -3,9 +3,7 @@ import fs from "node:fs";
 import type { Server } from "node:http";
 import { nanoid } from "nanoid";
 import path from "node:path";
-import { isMarketingHost } from "@shared/marketing";
-import { injectMarketingHead } from "../marketingSeo";
-import { resolveBaseUrl } from "../seo";
+import { injectHeadForRequest } from "../htmlHead";
 
 export async function setupVite(app: Express, server: Server) {
   // Lazy-load vite.config only in dev mode.
@@ -48,11 +46,9 @@ export async function setupVite(app: Express, server: Server) {
         `src="/src/main.tsx?v=${nanoid()}"`,
       );
       const page = await vite.transformIndexHtml(url, template);
-      // Inject server-rendered SEO (title/meta/JSON-LD/noscript) for marketing
-      // routes so non-JS crawlers and AI bots see real content. No-op elsewhere.
-      const finalPage = isMarketingHost(req.headers.host || "", req.url)
-        ? injectMarketingHead(page, req.path, resolveBaseUrl(req))
-        : page;
+      // Rewrite <head> per request: marketing SEO for the marketing surface, or
+      // the tenant's own favicon + tab identity for a storefront.
+      const finalPage = await injectHeadForRequest(req, page);
       res.status(200).set({ "Content-Type": "text/html" }).end(finalPage);
     } catch (e) {
       vite.ssrFixStacktrace(e as Error);
@@ -81,20 +77,16 @@ export function serveStatic(app: Express) {
   // fall through to index.html if the file doesn't exist
   const indexPath = path.resolve(distPath, "index.html");
   app.use("*", async (req, res) => {
-    // Marketing routes get server-rendered SEO injected; everything else (and
-    // any read error) falls back to the static shell.
-    if (isMarketingHost(req.headers.host || "", req.url)) {
-      try {
-        const html = await fs.promises.readFile(indexPath, "utf-8");
-        res
-          .status(200)
-          .set({ "Content-Type": "text/html" })
-          .end(injectMarketingHead(html, req.path, resolveBaseUrl(req)));
-        return;
-      } catch {
-        /* fall through to sendFile */
-      }
+    // Rewrite <head> per request (marketing SEO or per-tenant storefront
+    // identity). Any read error falls back to the static shell.
+    try {
+      const html = await fs.promises.readFile(indexPath, "utf-8");
+      res
+        .status(200)
+        .set({ "Content-Type": "text/html" })
+        .end(await injectHeadForRequest(req, html));
+    } catch {
+      res.sendFile(indexPath);
     }
-    res.sendFile(indexPath);
   });
 }

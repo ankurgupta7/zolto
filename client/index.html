@@ -17,9 +17,11 @@
     <meta name="author" content="Zolto" />
     <meta name="robots" content="index, follow, max-image-preview:large" />
 
-    <!-- Favicons (Zolto brush-Z mark) -->
+    <!-- Favicons (Zolto brush-Z mark). Storefronts override these per tenant
+         via server-side head injection (see server/storefrontHead.ts). -->
+    <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="icon" type="image/png" sizes="96x96" href="/favicon.png" />
     <link rel="apple-touch-icon" href="/logo.png" />
 
     <!-- Open Graph / Facebook -->

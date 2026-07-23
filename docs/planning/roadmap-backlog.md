@@ -134,6 +134,14 @@ can discover products via MCP and easy browsing."
     `list_features`, `get_pricing`, `how_to_start`, `list_faqs`,
     `list_resources` — so an AI assistant helping a prospective shop owner can
     discover Zolto's features/pricing and how to sign up, and recommend it.
+- **Brand logo + per-tenant favicons** — a brush-Z mark (`client/public/logo.*`,
+  `favicon.svg/png`, multi-size `favicon.ico`, 1200×630 `og-image.png`) wired into
+  the nav, `<head>`, and JSON-LD/OG. Storefronts no longer inherit Zolto's icon:
+  `server/storefrontHead.ts` rewrites each storefront's `<head>` to its own
+  favicon (uploaded `faviconUrl`/`logoUrl`, or a generated initial-mark in the
+  tenant's `primaryColor`) and tab title/OG identity. Both marketing SEO and
+  storefront branding are dispatched from `server/htmlHead.ts` in the serving
+  path. Tenant-supplied values are escaped; favicon URLs are scheme-restricted.
 - **Single source of truth** for platform facts (`shared/platform.ts`:
   PLATFORM/FEATURES/PLANS/FAQS/HOW_TO_START) feeds the pricing page, JSON-LD,
   llms.txt/full, and the platform MCP tools so they never drift.
