@@ -48,7 +48,7 @@ export function tenantFaviconDataUri(
   primaryColor?: string | null,
 ): string {
   const color =
-    primaryColor && HEX.test(primaryColor) ? primaryColor : "#0f172a";
+    primaryColor && HEX.test(primaryColor) ? primaryColor : "#2d2620";
   const initial = (storeName.trim()[0] || "•").toUpperCase();
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="${color}"/><text x="32" y="44" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="38" fill="#f8f6f2">${escapeHtml(initial)}</text></svg>`;
   return `data:image/svg+xml,${encodeURIComponent(svg)}`;

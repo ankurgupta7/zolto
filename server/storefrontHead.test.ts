@@ -43,7 +43,7 @@ describe("tenantFaviconDataUri", () => {
         "data:image/svg+xml,".length,
       ),
     );
-    expect(svg).toContain("#0f172a");
+    expect(svg).toContain("#2d2620");
   });
 });
 

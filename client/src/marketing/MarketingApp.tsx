@@ -21,8 +21,13 @@ function ScrollToTop() {
 function NotFound() {
   return (
     <div className="mx-auto max-w-xl px-6 py-32 text-center">
-      <h1 className="text-3xl font-semibold text-white">Page not found</h1>
-      <a href="/" className="mt-6 inline-block text-violet-300 hover:underline">
+      <h1 className="font-serif text-3xl text-[var(--brand-text)]">
+        Page not found
+      </h1>
+      <a
+        href="/"
+        className="mt-6 inline-block text-[var(--brand-accent)] hover:underline"
+      >
         Back to home
       </a>
     </div>
