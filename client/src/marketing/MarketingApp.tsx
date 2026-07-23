@@ -12,6 +12,7 @@ import { Privacy, Terms } from "./pages/Legal";
 
 function ScrollToTop() {
   const [location] = useLocation();
+  // biome-ignore lint/correctness/useExhaustiveDependencies: re-run on every route change to reset scroll position
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [location]);

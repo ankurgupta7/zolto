@@ -22,9 +22,11 @@ export default function CheckoutSuccess() {
       enabled: Boolean(sessionId),
       refetchInterval: (query) => {
         const status = query.state.data?.status;
-        return status === "paid" || status === "failed" || status === "expired" ? false : 1000;
+        return status === "paid" || status === "failed" || status === "expired"
+          ? false
+          : 1000;
       },
-    }
+    },
   );
 
   // Empty the bag once we land on the success page — payment has been initiated.
@@ -61,7 +63,9 @@ export default function CheckoutSuccess() {
 
         {order?.reference != null && (
           <p className="text-muted-foreground text-sm font-sans mb-2">
-            {t("success.orderReference", { reference: String(order.reference).padStart(5, "0") })}
+            {t("success.orderReference", {
+              reference: String(order.reference).padStart(5, "0"),
+            })}
           </p>
         )}
 

@@ -45,11 +45,11 @@ export default function BulkChangeReviewDialog({
   const [selected, setSelected] = useState<Set<number>>(new Set());
 
   useEffect(() => {
-    if (open) setSelected(new Set(items.map(i => i.id)));
+    if (open) setSelected(new Set(items.map((i) => i.id)));
   }, [open, items]);
 
   const toggle = (id: number) => {
-    setSelected(prev => {
+    setSelected((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
@@ -58,7 +58,7 @@ export default function BulkChangeReviewDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={v => !v && onCancel()}>
+    <Dialog open={open} onOpenChange={(v) => !v && onCancel()}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle className="font-serif flex items-center gap-2">
@@ -71,7 +71,7 @@ export default function BulkChangeReviewDialog({
         </DialogHeader>
 
         <div className="max-h-80 overflow-y-auto border border-[var(--brand-border)] divide-y divide-[var(--brand-border)]">
-          {items.map(item => (
+          {items.map((item) => (
             <label
               key={item.id}
               className="flex items-center gap-3 px-4 py-2.5 text-sm font-sans cursor-pointer hover:bg-[var(--brand-surface)]/50"

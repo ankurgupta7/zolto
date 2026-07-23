@@ -82,7 +82,8 @@ unchanged, tenant #1 + settings are seeded, and the second run adds nothing.
 ### B.3 Cutover
 
 Only after the dry-run passes: back up (`deploy/backup.sh`), deploy the Zolto code
-+ run `bash update.sh` in your window, then re-run `deploy/inspect-db.sh` to confirm.
+
+- run `bash update.sh` in your window, then re-run `deploy/inspect-db.sh` to confirm.
 
 ---
 

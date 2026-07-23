@@ -151,6 +151,7 @@ function Field({
   children: React.ReactNode;
 }) {
   return (
+    // biome-ignore lint/a11y/noLabelWithoutControl: the associated control is supplied via {children} and can't be seen statically
     <label className="block">
       <span className="mb-1.5 block text-sm font-medium text-[var(--brand-text)]">
         {label}

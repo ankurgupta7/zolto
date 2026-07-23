@@ -78,7 +78,8 @@ export function genericFaq(branding: Branding): FaqItem[] {
   if (branding.whatsappNumber) contactBits.push("WhatsApp");
   if (branding.instagramHandle)
     contactBits.push(`Instagram (@${branding.instagramHandle})`);
-  if (branding.contactEmail) contactBits.push(`email (${branding.contactEmail})`);
+  if (branding.contactEmail)
+    contactBits.push(`email (${branding.contactEmail})`);
   const how =
     contactBits.length > 0
       ? `You can reach us via ${contactBits.join(", ")}, or the contact form.`
@@ -152,7 +153,7 @@ export function genericImprint(branding: Branding): {
   const lines = [`Operated by ${branding.storeName}.`];
   if (branding.contactEmail) lines.push(`Email: ${branding.contactEmail}`);
   lines.push(
-    "This store is responsible for its own listings, fulfilment, and customer service."
+    "This store is responsible for its own listings, fulfilment, and customer service.",
   );
   return { title: "Legal Notice", lines };
 }

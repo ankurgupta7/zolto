@@ -53,7 +53,7 @@ const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 async function analyseProduct(
   currentName: string,
-  currentDescription: string
+  currentDescription: string,
 ): Promise<LLMResult> {
   const response = await invokeLLM({
     messages: [
@@ -100,12 +100,30 @@ Return ONLY valid JSON, no markdown.`,
               enum: ["de", "en", "other"],
               description: "Detected language of the provided content",
             },
-            name_de: { type: "string", description: "Correct Swiss German product name (2-5 words)" },
-            name_en: { type: "string", description: "Correct English product name (2-5 words)" },
-            description_de: { type: "string", description: "One lyrical Swiss German sentence" },
-            description_en: { type: "string", description: "One lyrical English sentence" },
+            name_de: {
+              type: "string",
+              description: "Correct Swiss German product name (2-5 words)",
+            },
+            name_en: {
+              type: "string",
+              description: "Correct English product name (2-5 words)",
+            },
+            description_de: {
+              type: "string",
+              description: "One lyrical Swiss German sentence",
+            },
+            description_en: {
+              type: "string",
+              description: "One lyrical English sentence",
+            },
           },
-          required: ["source_lang", "name_de", "name_en", "description_de", "description_en"],
+          required: [
+            "source_lang",
+            "name_de",
+            "name_en",
+            "description_de",
+            "description_en",
+          ],
           additionalProperties: false,
         },
       },
@@ -114,7 +132,9 @@ Return ONLY valid JSON, no markdown.`,
 
   const raw = response.choices?.[0]?.message?.content;
   if (!raw) throw new Error("No content from LLM");
-  const parsed = JSON.parse(typeof raw === "string" ? raw : JSON.stringify(raw));
+  const parsed = JSON.parse(
+    typeof raw === "string" ? raw : JSON.stringify(raw),
+  );
 
   return {
     sourceLang: parsed.source_lang as "de" | "en" | "other",
@@ -152,9 +172,9 @@ async function main() {
   console.log(`Scanning ${rows.length} product(s) for language errors…\n`);
 
   const totalBatches = Math.ceil(rows.length / BATCH_SIZE);
-  let fixed = 0;       // EN content written to DE fields
-  let enriched = 0;    // only EN fields filled/updated
-  let skipped = 0;     // already correct + complete, nothing to do
+  let fixed = 0; // EN content written to DE fields
+  let enriched = 0; // only EN fields filled/updated
+  let skipped = 0; // already correct + complete, nothing to do
   let failed = 0;
 
   for (let i = 0; i < rows.length; i += BATCH_SIZE) {
@@ -171,7 +191,9 @@ async function main() {
 
           // Nothing to do: correct language and EN already filled
           if (!isEnglish && !needsEnFill) {
-            console.log(`  — [${row.id}] "${row.name}"  (DE ✓, EN ✓ — no change)`);
+            console.log(
+              `  — [${row.id}] "${row.name}"  (DE ✓, EN ✓ — no change)`,
+            );
             skipped++;
             return;
           }
@@ -186,7 +208,8 @@ async function main() {
             console.log(`       EN desc: ${result.descriptionEn}`);
 
             if (!DRY_RUN) {
-              await db.update(products)
+              await db
+                .update(products)
                 .set({
                   name: result.nameDe,
                   description: result.descriptionDe,
@@ -203,7 +226,8 @@ async function main() {
             console.log(`       EN desc: ${result.descriptionEn}`);
 
             if (!DRY_RUN) {
-              await db.update(products)
+              await db
+                .update(products)
                 .set({
                   nameEn: result.nameEn,
                   descriptionEn: result.descriptionEn,
@@ -217,7 +241,7 @@ async function main() {
           console.error(`  ✗ [${row.id}] "${row.name}" failed: ${msg}`);
           failed++;
         }
-      })
+      }),
     );
 
     if (i + BATCH_SIZE < rows.length) {
@@ -236,7 +260,9 @@ async function main() {
     console.log(`Failed          : ${failed}  ← re-run to retry`);
   }
   if (changed > 0 && DRY_RUN) {
-    console.log(`\nRe-run without --dry-run to apply these ${changed} change(s).`);
+    console.log(
+      `\nRe-run without --dry-run to apply these ${changed} change(s).`,
+    );
   }
 }
 

@@ -106,24 +106,32 @@ describe("findCandidateProducts", () => {
     ]);
 
     const result = await findCandidateProducts(1, 10000); // CHF 100.00
-    expect(result.map(p => p.id)).toEqual([2, 1, 3]);
+    expect(result.map((p) => p.id)).toEqual([2, 1, 3]);
   });
 
   it("breaks price ties by newest listing first", async () => {
     getAvailableProductsForMatching.mockResolvedValue([
-      makeProduct({ id: 1, price: "100.00", createdAt: new Date("2026-01-01") }),
-      makeProduct({ id: 2, price: "100.00", createdAt: new Date("2026-06-01") }),
+      makeProduct({
+        id: 1,
+        price: "100.00",
+        createdAt: new Date("2026-01-01"),
+      }),
+      makeProduct({
+        id: 2,
+        price: "100.00",
+        createdAt: new Date("2026-06-01"),
+      }),
     ]);
 
     const result = await findCandidateProducts(1, 10000);
-    expect(result.map(p => p.id)).toEqual([2, 1]);
+    expect(result.map((p) => p.id)).toEqual([2, 1]);
   });
 
   it("caps results at MAX_CANDIDATES", async () => {
     getAvailableProductsForMatching.mockResolvedValue(
       Array.from({ length: 10 }, (_, i) =>
-        makeProduct({ id: i + 1, price: "100.00" })
-      )
+        makeProduct({ id: i + 1, price: "100.00" }),
+      ),
     );
 
     const result = await findCandidateProducts(1, 10000);
@@ -140,7 +148,7 @@ describe("runStripeReconciliation", () => {
   it("throws when Stripe is not configured", async () => {
     getStripe.mockReturnValue(null);
     await expect(runStripeReconciliation()).rejects.toThrow(
-      "Stripe is not configured"
+      "Stripe is not configured",
     );
   });
 
@@ -179,9 +187,7 @@ describe("runStripeReconciliation", () => {
     getStripe.mockReturnValue({
       paymentIntents: {
         list: () =>
-          makeIntentList([
-            makePaymentIntent({ id: "pi_new", amount: 10000 }),
-          ]),
+          makeIntentList([makePaymentIntent({ id: "pi_new", amount: 10000 })]),
       },
     });
 
@@ -193,7 +199,7 @@ describe("runStripeReconciliation", () => {
         amountRappen: 10000,
         status: "pending_review",
         candidateProductIds: "7",
-      })
+      }),
     );
     expect(summary.newPendingReview).toBe(1);
     expect(summary.newNoCandidates).toBe(0);
@@ -214,7 +220,10 @@ describe("runStripeReconciliation", () => {
     const summary = await runStripeReconciliation();
 
     expect(createStripeReconciliation).toHaveBeenCalledWith(
-      expect.objectContaining({ status: "no_candidates", candidateProductIds: "" })
+      expect.objectContaining({
+        status: "no_candidates",
+        candidateProductIds: "",
+      }),
     );
     expect(summary.newNoCandidates).toBe(1);
     expect(summary.newPendingReview).toBe(0);

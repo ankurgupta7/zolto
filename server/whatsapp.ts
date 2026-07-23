@@ -3,7 +3,7 @@ import type { Request, Response } from "express";
 import { PRODUCT_CATEGORIES, type ProductCategory } from "@shared/const";
 import { invokeLLM } from "./_core/llm";
 import { notifyOwner } from "./_core/notification";
-import { createProduct, getTenantSettings } from "./db";
+import { createProduct, } from "./db";
 import { storagePut } from "./storage";
 import type { TenantBranding } from "./_core/email";
 import { tenants, tenantSettings } from "../drizzle/schema";
@@ -14,7 +14,7 @@ import { getDb } from "./db";
 // is folded into "Other" (see the prompt) and deliberately omitted from the
 // choices offered to the model. Derived from the canonical list so the rest of
 // the categories can never drift.
-const AI_CATEGORIES = PRODUCT_CATEGORIES.filter(c => c !== "Sets");
+const AI_CATEGORIES = PRODUCT_CATEGORIES.filter((c) => c !== "Sets");
 
 const WHATSAPP_TOKEN = process.env.WHATSAPP_TOKEN ?? "";
 const WHATSAPP_VERIFY_TOKEN =
@@ -77,7 +77,11 @@ export async function handleWebhookMessage(req: Request, res: Response) {
           tenantId = row.tenant.id;
           branding = {
             tenantName: row.settings?.whiteLabelName ?? row.tenant.name,
-            tenantDomain: row.tenant.domain ?? row.settings?.publicDomain ?? process.env.PUBLIC_BASE_URL ?? "https://zolto.ch",
+            tenantDomain:
+              row.tenant.domain ??
+              row.settings?.publicDomain ??
+              process.env.PUBLIC_BASE_URL ??
+              "https://zolto.ch",
             contactEmail: row.settings?.contactEmail ?? undefined,
           };
         }
@@ -85,7 +89,9 @@ export async function handleWebhookMessage(req: Request, res: Response) {
     }
 
     if (!tenantId) {
-      console.log(`[WhatsApp] No tenant mapped to business number ${businessPhone}, skipping`);
+      console.log(
+        `[WhatsApp] No tenant mapped to business number ${businessPhone}, skipping`,
+      );
       return;
     }
 
@@ -116,7 +122,10 @@ export async function handleWebhookMessage(req: Request, res: Response) {
     }
 
     // Parse product details with tenant-branded LLM prompt
-    const parsed = await parseProductFromMessage(textContent, branding.tenantName);
+    const parsed = await parseProductFromMessage(
+      textContent,
+      branding.tenantName,
+    );
     if (!parsed) {
       console.log("[WhatsApp] Could not parse product from message");
       return;
@@ -142,7 +151,7 @@ export async function handleWebhookMessage(req: Request, res: Response) {
     });
 
     console.log(
-      `[WhatsApp] Product created for ${branding.tenantName}: ${parsed.name} @ $${parsed.price}`
+      `[WhatsApp] Product created for ${branding.tenantName}: ${parsed.name} @ $${parsed.price}`,
     );
   } catch (err) {
     console.error("[WhatsApp] Error processing webhook:", err);
@@ -153,7 +162,7 @@ export async function handleWebhookMessage(req: Request, res: Response) {
 
 export async function parseProductFromMessage(
   text: string,
-  tenantName?: string
+  tenantName?: string,
 ): Promise<{
   name: string;
   description: string;
@@ -172,7 +181,7 @@ export async function parseProductFromMessage(
 Extract product information from the owner's message and return a JSON object.
 Write the product name and description in German (Swiss German spelling: use ss instead of ß).
 
-Categories available: ${AI_CATEGORIES.map(c => `"${c}"`).join(", ")}
+Categories available: ${AI_CATEGORIES.map((c) => `"${c}"`).join(", ")}
 
 Rules:
 - name: short product name (2-6 words, elegant)
@@ -256,7 +265,7 @@ async function downloadWhatsAppMedia(mediaId: string): Promise<string | null> {
     // Step 1: Get the media URL
     const mediaInfoRes = await axios.get(
       `https://graph.facebook.com/v18.0/${mediaId}`,
-      { headers: { Authorization: `Bearer ${WHATSAPP_TOKEN}` } }
+      { headers: { Authorization: `Bearer ${WHATSAPP_TOKEN}` } },
     );
     const mediaUrl = mediaInfoRes.data?.url;
     if (!mediaUrl) return null;
@@ -268,7 +277,7 @@ async function downloadWhatsAppMedia(mediaId: string): Promise<string | null> {
     });
 
     const contentType = String(
-      mediaRes.headers["content-type"] ?? "image/jpeg"
+      mediaRes.headers["content-type"] ?? "image/jpeg",
     );
     const ext = contentType.includes("png")
       ? "png"
@@ -281,7 +290,7 @@ async function downloadWhatsAppMedia(mediaId: string): Promise<string | null> {
     const { url } = await storagePut(
       key,
       Buffer.from(mediaRes.data),
-      contentType
+      contentType,
     );
     return url;
   } catch (err) {

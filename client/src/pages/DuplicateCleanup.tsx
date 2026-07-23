@@ -27,7 +27,7 @@ export default function DuplicateCleanup() {
 
   useEffect(() => {
     if (!groups) return;
-    setSelection(prev => {
+    setSelection((prev) => {
       const next = { ...prev };
       for (const g of groups) {
         if (next[g.key] === undefined) next[g.key] = g.suggestedKeepId;
@@ -37,16 +37,16 @@ export default function DuplicateCleanup() {
   }, [groups]);
 
   const mergeMutation = trpc.products.mergeDuplicates.useMutation({
-    onSuccess: result => {
+    onSuccess: (result) => {
       toast.success(
-        `Removed ${result.removed} duplicate product${result.removed !== 1 ? "s" : ""}`
+        `Removed ${result.removed} duplicate product${result.removed !== 1 ? "s" : ""}`,
       );
       utils.products.adminList.invalidate();
       utils.products.list.invalidate();
       setShowConfirm(false);
       refetch();
     },
-    onError: e => toast.error(e.message),
+    onError: (e) => toast.error(e.message),
   });
 
   // The radio buttons above already let the admin choose what to keep per
@@ -61,10 +61,10 @@ export default function DuplicateCleanup() {
   }
 
   const openConfirmForGroup = (key: string) => {
-    const group = groups?.find(g => g.key === key);
+    const group = groups?.find((g) => g.key === key);
     if (!group) return;
     const keepId = selection[key];
-    const ids = group.products.filter(p => p.id !== keepId).map(p => p.id);
+    const ids = group.products.filter((p) => p.id !== keepId).map((p) => p.id);
     if (ids.length === 0) return;
     setCandidateIds(ids);
     setShowConfirm(true);
@@ -72,9 +72,9 @@ export default function DuplicateCleanup() {
 
   const openConfirmForAll = () => {
     if (!groups || groups.length === 0) return;
-    const ids = groups.flatMap(g => {
+    const ids = groups.flatMap((g) => {
       const keepId = selection[g.key] ?? g.suggestedKeepId;
-      return g.products.filter(p => p.id !== keepId).map(p => p.id);
+      return g.products.filter((p) => p.id !== keepId).map((p) => p.id);
     });
     if (ids.length === 0) return;
     setCandidateIds(ids);
@@ -145,7 +145,10 @@ export default function DuplicateCleanup() {
       <div className="container py-8 max-w-5xl">
         {isLoading ? (
           <div className="flex items-center justify-center py-20">
-            <Loader2 className="animate-spin text-[var(--brand-ink)]" size={28} />
+            <Loader2
+              className="animate-spin text-[var(--brand-ink)]"
+              size={28}
+            />
           </div>
         ) : !groups || groups.length === 0 ? (
           <div className="bg-white border border-[var(--brand-border)] p-10 text-center">
@@ -158,7 +161,10 @@ export default function DuplicateCleanup() {
           <div>
             <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
               <div className="flex items-center gap-2 bg-white border border-[var(--brand-border)] px-4 py-2.5">
-                <Copy size={16} className="text-[var(--brand-accent)] flex-shrink-0" />
+                <Copy
+                  size={16}
+                  className="text-[var(--brand-accent)] flex-shrink-0"
+                />
                 <span className="text-sm font-sans">
                   <strong>{groups.length}</strong> duplicate group
                   {groups.length !== 1 ? "s" : ""} found
@@ -190,7 +196,7 @@ export default function DuplicateCleanup() {
             </p>
 
             <div className="space-y-6">
-              {groups.map(group => (
+              {groups.map((group) => (
                 <div
                   key={group.key}
                   className="bg-white border border-[var(--brand-border)] overflow-hidden"
@@ -223,7 +229,7 @@ export default function DuplicateCleanup() {
                               name={`keep-${group.key}`}
                               checked={selection[group.key] === p.id}
                               onChange={() =>
-                                setSelection(prev => ({
+                                setSelection((prev) => ({
                                   ...prev,
                                   [group.key]: p.id,
                                 }))
@@ -268,7 +274,7 @@ export default function DuplicateCleanup() {
         description="These products will be permanently removed from the catalogue, including their photos. This cannot be undone."
         destructive
         confirmLabel="Deletion"
-        items={candidateIds.map(id => {
+        items={candidateIds.map((id) => {
           const p = productById.get(id);
           return {
             id,
@@ -279,7 +285,7 @@ export default function DuplicateCleanup() {
         })}
         isApplying={mergeMutation.isPending}
         onCancel={() => setShowConfirm(false)}
-        onConfirm={selectedIds => mergeMutation.mutate({ ids: selectedIds })}
+        onConfirm={(selectedIds) => mergeMutation.mutate({ ids: selectedIds })}
       />
     </div>
   );

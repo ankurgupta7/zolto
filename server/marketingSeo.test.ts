@@ -77,7 +77,7 @@ describe("injectMarketingHead", () => {
   });
 
   it("sets an absolute canonical with no double slash for the landing page", () => {
-    const out = injectMarketingHead(SHELL, "/", BASE + "/");
+    const out = injectMarketingHead(SHELL, "/", `${BASE}/`);
     expect(out).toContain('<link rel="canonical" href="https://zolto.com/"');
     expect(out).not.toContain("zolto.com//");
   });

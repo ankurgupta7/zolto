@@ -32,7 +32,7 @@ const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 async function translateProduct(
   id: number,
   nameDe: string,
-  descriptionDe: string
+  descriptionDe: string,
 ): Promise<{ nameEn: string; descriptionEn: string }> {
   const response = await invokeLLM({
     messages: [
@@ -61,8 +61,14 @@ Return ONLY valid JSON, no markdown.`,
         schema: {
           type: "object",
           properties: {
-            name_en: { type: "string", description: "English product name (2-5 words)" },
-            description_en: { type: "string", description: "One lyrical English sentence" },
+            name_en: {
+              type: "string",
+              description: "English product name (2-5 words)",
+            },
+            description_en: {
+              type: "string",
+              description: "One lyrical English sentence",
+            },
           },
           required: ["name_en", "description_en"],
           additionalProperties: false,
@@ -73,8 +79,13 @@ Return ONLY valid JSON, no markdown.`,
 
   const raw = response.choices?.[0]?.message?.content;
   if (!raw) throw new Error("No content from LLM");
-  const parsed = JSON.parse(typeof raw === "string" ? raw : JSON.stringify(raw));
-  return { nameEn: parsed.name_en as string, descriptionEn: parsed.description_en as string };
+  const parsed = JSON.parse(
+    typeof raw === "string" ? raw : JSON.stringify(raw),
+  );
+  return {
+    nameEn: parsed.name_en as string,
+    descriptionEn: parsed.description_en as string,
+  };
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
@@ -82,12 +93,18 @@ Return ONLY valid JSON, no markdown.`,
 async function main() {
   // Find all products missing English content
   const rows = await db
-    .select({ id: products.id, name: products.name, description: products.description })
+    .select({
+      id: products.id,
+      name: products.name,
+      description: products.description,
+    })
     .from(products)
     .where(or(isNull(products.nameEn), isNull(products.descriptionEn)));
 
   if (rows.length === 0) {
-    console.log("All products already have English translations. Nothing to do.");
+    console.log(
+      "All products already have English translations. Nothing to do.",
+    );
     return;
   }
 
@@ -101,7 +118,9 @@ async function main() {
     const batch = rows.slice(i, i + BATCH_SIZE);
     const batchNum = Math.floor(i / BATCH_SIZE) + 1;
     const totalBatches = Math.ceil(rows.length / BATCH_SIZE);
-    console.log(`Batch ${batchNum}/${totalBatches} — translating ${batch.length} product(s)…`);
+    console.log(
+      `Batch ${batchNum}/${totalBatches} — translating ${batch.length} product(s)…`,
+    );
 
     await Promise.all(
       batch.map(async (row) => {
@@ -109,7 +128,7 @@ async function main() {
           const { nameEn, descriptionEn } = await translateProduct(
             row.id,
             row.name,
-            row.description
+            row.description,
           );
           await db
             .update(products)
@@ -123,7 +142,7 @@ async function main() {
           console.error(`  ✗ [${row.id}] "${row.name}" failed: ${msg}`);
           failed++;
         }
-      })
+      }),
     );
 
     // Pause between batches to stay within rate limits
@@ -134,7 +153,9 @@ async function main() {
 
   console.log(`\nDone. ${succeeded} succeeded, ${failed} failed.`);
   if (failed > 0) {
-    console.log("Re-run the script to retry failed products — it skips already-translated ones.");
+    console.log(
+      "Re-run the script to retry failed products — it skips already-translated ones.",
+    );
   }
 }
 

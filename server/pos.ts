@@ -1,18 +1,15 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import express from "express";
 import type Stripe from "stripe";
-import { and, desc, eq, gt, inArray, isNull, lt, or } from "drizzle-orm";
+import { and, eq, gt, inArray, isNull, lt, or } from "drizzle-orm";
 import {
   getDb,
-  getAllProducts,
-  updateProduct,
   markProductsSold,
   getTenantByPosApiKey,
 } from "./db";
 import { posOrders, posOrderItems, products } from "../drizzle/schema";
 import { getStripe, isStripeConfigured } from "./stripe";
-import { sendOrderReceipt, escapeHtml } from "./_core/email";
-import { storagePut } from "./storage";
+import { escapeHtml } from "./_core/email";
 import { PRODUCT_CATEGORIES, CATEGORY_EXTRA_INCLUDES } from "../shared/const";
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -25,6 +22,7 @@ interface PosContext {
 }
 
 declare global {
+  // biome-ignore lint/suspicious/noRedeclare: global module augmentation of the Express namespace, distinct from the imported Express type
   namespace Express {
     interface Request {
       posContext?: PosContext;
@@ -32,7 +30,11 @@ declare global {
   }
 }
 
-async function requirePosKey(req: Request, res: Response, next: NextFunction): Promise<void> {
+async function requirePosKey(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
   const apiKey = req.headers["x-pos-key"] as string | undefined;
   if (!apiKey) {
     res.status(401).json({ error: "Unauthorized — POS API key required" });
@@ -100,13 +102,17 @@ async function resolveSaleLineItems(
     allowHidden?: boolean;
     priceOverrides?: Record<string, number>;
     customItems?: { name: string; priceRappen: number }[];
-  }
+  },
 ): Promise<ResolveSaleResult> {
   const ids = Array.isArray(params.productIds) ? params.productIds : [];
   const custom = Array.isArray(params.customItems) ? params.customItems : [];
 
   if (ids.length === 0 && custom.length === 0) {
-    return { ok: false, status: 400, error: "productIds or customItems required" };
+    return {
+      ok: false,
+      status: 400,
+      error: "productIds or customItems required",
+    };
   }
 
   for (const item of custom) {
@@ -121,7 +127,8 @@ async function resolveSaleLineItems(
       return {
         ok: false,
         status: 400,
-        error: "Invalid customItems entry: name and non-negative integer priceRappen required",
+        error:
+          "Invalid customItems entry: name and non-negative integer priceRappen required",
       };
     }
   }
@@ -130,44 +137,56 @@ async function resolveSaleLineItems(
   if (params.priceOverrides && typeof params.priceOverrides === "object") {
     for (const [key, value] of Object.entries(params.priceOverrides)) {
       const productId = Number(key);
-      if (!Number.isInteger(productId) || !Number.isInteger(value) || value < 0) {
-        return { ok: false, status: 400, error: "Invalid priceOverrides entry" };
+      if (
+        !Number.isInteger(productId) ||
+        !Number.isInteger(value) ||
+        value < 0
+      ) {
+        return {
+          ok: false,
+          status: 400,
+          error: "Invalid priceOverrides entry",
+        };
       }
       overrides.set(productId, value);
     }
   }
 
   // SCOPE TO TENANT: only fetch products belonging to this tenant
-  const rows = ids.length > 0
-    ? await db.select().from(products).where(
-        and(
-          eq(products.tenantId, tenantId),
-          inArray(products.id, ids)
-        )
-      )
-    : [];
+  const rows =
+    ids.length > 0
+      ? await db
+          .select()
+          .from(products)
+          .where(
+            and(eq(products.tenantId, tenantId), inArray(products.id, ids)),
+          )
+      : [];
 
   const available = rows.filter(
-    p =>
+    (p) =>
       (params.allowHidden === true || p.visible) &&
       !p.sold &&
       p.quantity > 0 &&
-      !isActivelyReserved(p)
+      !isActivelyReserved(p),
   );
   if (available.length !== ids.length) {
     return {
       ok: false,
       status: 409,
-      error: "One or more items are no longer available. Refresh the catalogue and rebuild the cart.",
+      error:
+        "One or more items are no longer available. Refresh the catalogue and rebuild the cart.",
     };
   }
 
-  const productLineItems: ResolvedLineItem[] = available.map(p => ({
+  const productLineItems: ResolvedLineItem[] = available.map((p) => ({
     productId: p.id,
     name: null,
-    priceRappen: overrides.has(p.id) ? overrides.get(p.id)! : Math.round(Number(p.price) * 100),
+    priceRappen: overrides.has(p.id)
+      ? overrides.get(p.id)!
+      : Math.round(Number(p.price) * 100),
   }));
-  const customLineItems: ResolvedLineItem[] = custom.map(item => ({
+  const customLineItems: ResolvedLineItem[] = custom.map((item) => ({
     productId: null,
     name: item.name.trim(),
     priceRappen: item.priceRappen,
@@ -176,7 +195,11 @@ async function resolveSaleLineItems(
 
   const totalRappen = lineItems.reduce((sum, i) => sum + i.priceRappen, 0);
   if (totalRappen <= 0) {
-    return { ok: false, status: 422, error: "Computed total is CHF 0.00 — refusing to create a charge" };
+    return {
+      ok: false,
+      status: 422,
+      error: "Computed total is CHF 0.00 — refusing to create a charge",
+    };
   }
 
   return { ok: true, lineItems, totalRappen };
@@ -195,7 +218,7 @@ async function createPosOrder(
     customerName?: string;
     customerEmail?: string;
     customerPhone?: string;
-  }
+  },
 ): Promise<number> {
   const inserted = await db.insert(posOrders).values({
     tenantId,
@@ -208,7 +231,8 @@ async function createPosOrder(
     customerPhone: params.customerPhone || null,
   });
 
-  const posOrderId = (inserted as unknown as { insertId?: number }).insertId ?? 0;
+  const posOrderId =
+    (inserted as unknown as { insertId?: number }).insertId ?? 0;
 
   if (posOrderId > 0) {
     await db
@@ -217,13 +241,13 @@ async function createPosOrder(
       .where(eq(posOrders.id, posOrderId));
 
     await db.insert(posOrderItems).values(
-      params.lineItems.map(item => ({
+      params.lineItems.map((item) => ({
         tenantId,
         posOrderId,
         productId: item.productId,
         name: item.name,
         priceRappen: item.priceRappen,
-      }))
+      })),
     );
   }
 
@@ -232,7 +256,7 @@ async function createPosOrder(
 
 async function fulfillPosOrder(
   db: Db,
-  intent: Stripe.PaymentIntent
+  intent: Stripe.PaymentIntent,
 ): Promise<{ posOrderId: number; alreadyFulfilled: boolean } | null> {
   const rows = await db
     .select()
@@ -245,7 +269,8 @@ async function fulfillPosOrder(
     console.warn(`[POS] No pos_order found for intent ${intent.id}`);
     return null;
   }
-  if (order.status === "paid") return { posOrderId: order.id, alreadyFulfilled: true };
+  if (order.status === "paid")
+    return { posOrderId: order.id, alreadyFulfilled: true };
 
   const items = await db
     .select()
@@ -285,7 +310,7 @@ export function registerPosWebhook(app: Express): void {
         event = stripe.webhooks.constructEvent(
           req.body as Buffer,
           signature as string,
-          webhookSecret
+          webhookSecret,
         );
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
@@ -298,7 +323,10 @@ export function registerPosWebhook(app: Express): void {
         if (event.type === "payment_intent.succeeded") {
           const db = await getDb();
           if (db) {
-            await fulfillPosOrder(db, event.data.object as Stripe.PaymentIntent);
+            await fulfillPosOrder(
+              db,
+              event.data.object as Stripe.PaymentIntent,
+            );
           }
         }
       } catch (err) {
@@ -308,7 +336,7 @@ export function registerPosWebhook(app: Express): void {
       }
 
       res.json({ received: true });
-    }
+    },
   );
 }
 
@@ -333,31 +361,40 @@ interface ReceiptOrder {
   items: ReceiptItem[];
 }
 
-function generateReceiptHtml(order: ReceiptOrder, tenantName: string = "Zolto Store", tenantDomain: string = ""): string {
+function _generateReceiptHtml(
+  order: ReceiptOrder,
+  tenantName: string = "Zolto Store",
+  tenantDomain: string = "",
+): string {
   const orderRef = String(order.id).padStart(5, "0");
   const date = new Date(order.createdAt).toLocaleDateString("en-GB", {
-    day: "numeric", month: "long", year: "numeric",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
   });
   const totalChf = (order.totalRappen / 100).toFixed(2);
 
-  const itemRowsHtml = order.items.map(item => {
-    const name = escapeHtml(item.productName ?? "Custom item");
-    const price = (item.priceRappen / 100).toFixed(2);
-    return `
+  const itemRowsHtml = order.items
+    .map((item) => {
+      const name = escapeHtml(item.productName ?? "Custom item");
+      const price = (item.priceRappen / 100).toFixed(2);
+      return `
       <tr style="border-bottom:1px solid #F0EAE0">
         <td style="padding:10px 0;font-family:Georgia,serif;font-size:14px;color:#2D2620">${name}</td>
         <td style="padding:10px 0;text-align:right;font-family:Arial,sans-serif;font-size:14px;color:#2D2620;white-space:nowrap">CHF ${price}</td>
       </tr>`;
-  }).join("");
+    })
+    .join("");
 
-  const billedTo = (order.customerName || order.customerEmail)
-    ? `<div style="margin-bottom:24px">
+  const billedTo =
+    order.customerName || order.customerEmail
+      ? `<div style="margin-bottom:24px">
         <p style="margin:0 0 6px;font-family:Arial,sans-serif;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:#6B5E52">Billed to</p>
         ${order.customerName ? `<p style="margin:0;font-family:Georgia,serif;font-size:14px;color:#2D2620">${escapeHtml(order.customerName)}</p>` : ""}
         ${order.customerEmail ? `<p style="margin:2px 0 0;font-family:Arial,sans-serif;font-size:12px;color:#6B5E52">${escapeHtml(order.customerEmail)}</p>` : ""}
         ${order.customerPhone ? `<p style="margin:2px 0 0;font-family:Arial,sans-serif;font-size:12px;color:#6B5E52">${escapeHtml(order.customerPhone)}</p>` : ""}
        </div>`
-    : "";
+      : "";
 
   const paymentRow = order.paymentMethod
     ? `<p style="margin:18px 0 0;padding-top:14px;border-top:1px solid #E0D8CC;font-family:Arial,sans-serif;font-size:12px;color:#6B5E52">
@@ -434,54 +471,69 @@ export function registerPosRoutes(app: Express): void {
     res.json({ ok: true, stripe: true });
   });
 
-  app.get("/api/pos/products", requirePosKey, async (req: Request, res: Response) => {
-    try {
-      const db = await getDb();
-      if (!db) { res.status(503).json({ error: "Database unavailable" }); return; }
+  app.get(
+    "/api/pos/products",
+    requirePosKey,
+    async (req: Request, res: Response) => {
+      try {
+        const db = await getDb();
+        if (!db) {
+          res.status(503).json({ error: "Database unavailable" });
+          return;
+        }
 
-      const { tenantId } = getPosTenant(req);
-      const includeHidden = req.query.includeHidden === "true";
-      // Excludes pieces with a live checkout hold (POS <-> online inventory
-      // sync) so the register doesn't even list something mid-online-checkout.
-      const notActivelyReserved = or(
-        isNull(products.reservedUntil),
-        lt(products.reservedUntil, new Date())
-      );
-      const rows = await db
-        .select()
-        .from(products)
-        .where(
-          and(
-            eq(products.tenantId, tenantId),
-            includeHidden
-              ? and(eq(products.sold, false), gt(products.quantity, 0), notActivelyReserved)
-              : and(
-                  eq(products.visible, true),
-                  eq(products.sold, false),
-                  gt(products.quantity, 0),
-                  notActivelyReserved
-                )
-          )
+        const { tenantId } = getPosTenant(req);
+        const includeHidden = req.query.includeHidden === "true";
+        // Excludes pieces with a live checkout hold (POS <-> online inventory
+        // sync) so the register doesn't even list something mid-online-checkout.
+        const notActivelyReserved = or(
+          isNull(products.reservedUntil),
+          lt(products.reservedUntil, new Date()),
         );
+        const rows = await db
+          .select()
+          .from(products)
+          .where(
+            and(
+              eq(products.tenantId, tenantId),
+              includeHidden
+                ? and(
+                    eq(products.sold, false),
+                    gt(products.quantity, 0),
+                    notActivelyReserved,
+                  )
+                : and(
+                    eq(products.visible, true),
+                    eq(products.sold, false),
+                    gt(products.quantity, 0),
+                    notActivelyReserved,
+                  ),
+            ),
+          );
 
-      res.json(
-        rows.map((p) => ({
-          ...p,
-          priceRappen: Math.round(Number(p.price) * 100),
-        }))
-      );
-    } catch (err) {
-      console.error("[POS] GET /api/pos/products error:", err);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
+        res.json(
+          rows.map((p) => ({
+            ...p,
+            priceRappen: Math.round(Number(p.price) * 100),
+          })),
+        );
+      } catch (err) {
+        console.error("[POS] GET /api/pos/products error:", err);
+        res.status(500).json({ error: "Internal server error" });
+      }
+    },
+  );
 
-  app.get("/api/pos/categories", requirePosKey, (_req: Request, res: Response) => {
-    res.json({
-      categories: PRODUCT_CATEGORIES,
-      extraIncludes: CATEGORY_EXTRA_INCLUDES,
-    });
-  });
+  app.get(
+    "/api/pos/categories",
+    requirePosKey,
+    (_req: Request, res: Response) => {
+      res.json({
+        categories: PRODUCT_CATEGORIES,
+        extraIncludes: CATEGORY_EXTRA_INCLUDES,
+      });
+    },
+  );
 
   app.get("/api/pos/config", requirePosKey, (req: Request, res: Response) => {
     const { tenantSlug } = getPosTenant(req);
@@ -493,191 +545,311 @@ export function registerPosRoutes(app: Express): void {
 
   // Card (Terminal / Tap to Pay): create a card_present PaymentIntent and a
   // pending pos_order; the app confirms on the reader, then calls /api/pos/sale.
-  app.post("/api/pos/payment-intent", requirePosKey, async (req: Request, res: Response) => {
-    try {
-      const stripe = getStripe();
-      const db = await getDb();
-      if (!stripe) { res.status(503).json({ error: "Stripe not configured" }); return; }
-      if (!db) { res.status(503).json({ error: "Database unavailable" }); return; }
+  app.post(
+    "/api/pos/payment-intent",
+    requirePosKey,
+    async (req: Request, res: Response) => {
+      try {
+        const stripe = getStripe();
+        const db = await getDb();
+        if (!stripe) {
+          res.status(503).json({ error: "Stripe not configured" });
+          return;
+        }
+        if (!db) {
+          res.status(503).json({ error: "Database unavailable" });
+          return;
+        }
 
-      const { tenantId } = getPosTenant(req);
-      const { productIds, allowHidden, priceOverrides, customItems, customerName, customerEmail, customerPhone } = req.body as SaleRequestBody;
+        const { tenantId } = getPosTenant(req);
+        const {
+          productIds,
+          allowHidden,
+          priceOverrides,
+          customItems,
+          customerName,
+          customerEmail,
+          customerPhone,
+        } = req.body as SaleRequestBody;
 
-      const resolved = await resolveSaleLineItems(db, tenantId, { productIds, allowHidden, priceOverrides, customItems });
-      if (!resolved.ok) { res.status(resolved.status).json({ error: resolved.error }); return; }
-      const { lineItems, totalRappen } = resolved;
+        const resolved = await resolveSaleLineItems(db, tenantId, {
+          productIds,
+          allowHidden,
+          priceOverrides,
+          customItems,
+        });
+        if (!resolved.ok) {
+          res.status(resolved.status).json({ error: resolved.error });
+          return;
+        }
+        const { lineItems, totalRappen } = resolved;
 
-      // Attach a Stripe Customer so in-person sales show up under Customers,
-      // not just Payments, in the dashboard.
-      const stripeCustomer = await stripe.customers.create({
-        name: customerName || undefined,
-        email: customerEmail || undefined,
-        phone: customerPhone || undefined,
-      });
+        // Attach a Stripe Customer so in-person sales show up under Customers,
+        // not just Payments, in the dashboard.
+        const stripeCustomer = await stripe.customers.create({
+          name: customerName || undefined,
+          email: customerEmail || undefined,
+          phone: customerPhone || undefined,
+        });
 
-      const intent = await stripe.paymentIntents.create({
-        amount: totalRappen,
-        currency: "chf",
-        customer: stripeCustomer.id,
-        receipt_email: customerEmail || undefined,
-        payment_method_types: ["card_present"],
-        capture_method: "automatic",
-        metadata: {
-          tenantId: String(tenantId),
-          productIds: (Array.isArray(productIds) ? productIds : []).join(","),
-          hasCustomItems: lineItems.some(i => i.productId === null) ? "true" : "false",
-        },
-      });
+        const intent = await stripe.paymentIntents.create({
+          amount: totalRappen,
+          currency: "chf",
+          customer: stripeCustomer.id,
+          receipt_email: customerEmail || undefined,
+          payment_method_types: ["card_present"],
+          capture_method: "automatic",
+          metadata: {
+            tenantId: String(tenantId),
+            productIds: (Array.isArray(productIds) ? productIds : []).join(","),
+            hasCustomItems: lineItems.some((i) => i.productId === null)
+              ? "true"
+              : "false",
+          },
+        });
 
-      const posOrderId = await createPosOrder(db, tenantId, {
-        stripePaymentIntentId: intent.id,
-        status: "pending",
-        paymentMethod: "card",
-        totalRappen,
-        lineItems,
-        customerName,
-        customerEmail,
-        customerPhone,
-      });
+        const posOrderId = await createPosOrder(db, tenantId, {
+          stripePaymentIntentId: intent.id,
+          status: "pending",
+          paymentMethod: "card",
+          totalRappen,
+          lineItems,
+          customerName,
+          customerEmail,
+          customerPhone,
+        });
 
-      res.json({ clientSecret: intent.client_secret, paymentIntentId: intent.id, posOrderId, totalRappen });
-    } catch (err) {
-      console.error("[POS] POST /api/pos/payment-intent error:", err);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
+        res.json({
+          clientSecret: intent.client_secret,
+          paymentIntentId: intent.id,
+          posOrderId,
+          totalRappen,
+        });
+      } catch (err) {
+        console.error("[POS] POST /api/pos/payment-intent error:", err);
+        res.status(500).json({ error: "Internal server error" });
+      }
+    },
+  );
 
   // TWINT: create + confirm a `twint` PaymentIntent and hand back the redirect
   // URL Stripe returns (rendered as a QR code by the app). Order stays pending
   // until the webhook or /api/pos/sale confirms it.
-  app.post("/api/pos/twint-intent", requirePosKey, async (req: Request, res: Response) => {
-    try {
-      const stripe = getStripe();
-      const db = await getDb();
-      if (!stripe) { res.status(503).json({ error: "Stripe not configured" }); return; }
-      if (!db) { res.status(503).json({ error: "Database unavailable" }); return; }
+  app.post(
+    "/api/pos/twint-intent",
+    requirePosKey,
+    async (req: Request, res: Response) => {
+      try {
+        const stripe = getStripe();
+        const db = await getDb();
+        if (!stripe) {
+          res.status(503).json({ error: "Stripe not configured" });
+          return;
+        }
+        if (!db) {
+          res.status(503).json({ error: "Database unavailable" });
+          return;
+        }
 
-      const { tenantId, tenantSlug } = getPosTenant(req);
-      const { productIds, allowHidden, priceOverrides, customItems, customerName, customerEmail, customerPhone } = req.body as SaleRequestBody;
+        const { tenantId, tenantSlug } = getPosTenant(req);
+        const {
+          productIds,
+          allowHidden,
+          priceOverrides,
+          customItems,
+          customerName,
+          customerEmail,
+          customerPhone,
+        } = req.body as SaleRequestBody;
 
-      const resolved = await resolveSaleLineItems(db, tenantId, { productIds, allowHidden, priceOverrides, customItems });
-      if (!resolved.ok) { res.status(resolved.status).json({ error: resolved.error }); return; }
-      const { lineItems, totalRappen } = resolved;
+        const resolved = await resolveSaleLineItems(db, tenantId, {
+          productIds,
+          allowHidden,
+          priceOverrides,
+          customItems,
+        });
+        if (!resolved.ok) {
+          res.status(resolved.status).json({ error: resolved.error });
+          return;
+        }
+        const { lineItems, totalRappen } = resolved;
 
-      const stripeCustomer = await stripe.customers.create({
-        name: customerName || undefined,
-        email: customerEmail || undefined,
-        phone: customerPhone || undefined,
-      });
+        const stripeCustomer = await stripe.customers.create({
+          name: customerName || undefined,
+          email: customerEmail || undefined,
+          phone: customerPhone || undefined,
+        });
 
-      const intent = await stripe.paymentIntents.create({
-        amount: totalRappen,
-        currency: "chf",
-        customer: stripeCustomer.id,
-        receipt_email: customerEmail || undefined,
-        payment_method_types: ["twint"],
-        payment_method_data: { type: "twint" },
-        confirm: true,
-        return_url: `${resolveBaseUrl(tenantSlug)}/pos/twint-return`,
-        // Merchant name shown in the TWINT app (22-char max). Stripe also reads
-        // the account business-profile name; keep it set per tenant there.
-        statement_descriptor: posStatementDescriptor(tenantSlug),
-        metadata: {
-          tenantId: String(tenantId),
-          productIds: (Array.isArray(productIds) ? productIds : []).join(","),
-          hasCustomItems: lineItems.some(i => i.productId === null) ? "true" : "false",
-        },
-      });
+        const intent = await stripe.paymentIntents.create({
+          amount: totalRappen,
+          currency: "chf",
+          customer: stripeCustomer.id,
+          receipt_email: customerEmail || undefined,
+          payment_method_types: ["twint"],
+          payment_method_data: { type: "twint" },
+          confirm: true,
+          return_url: `${resolveBaseUrl(tenantSlug)}/pos/twint-return`,
+          // Merchant name shown in the TWINT app (22-char max). Stripe also reads
+          // the account business-profile name; keep it set per tenant there.
+          statement_descriptor: posStatementDescriptor(tenantSlug),
+          metadata: {
+            tenantId: String(tenantId),
+            productIds: (Array.isArray(productIds) ? productIds : []).join(","),
+            hasCustomItems: lineItems.some((i) => i.productId === null)
+              ? "true"
+              : "false",
+          },
+        });
 
-      const redirectUrl = intent.next_action?.redirect_to_url?.url;
-      if (!redirectUrl) {
-        console.error(`[POS] TWINT intent ${intent.id} has no redirect_to_url`, intent.next_action);
-        res.status(502).json({ error: "TWINT did not return a redirect URL" });
-        return;
+        const redirectUrl = intent.next_action?.redirect_to_url?.url;
+        if (!redirectUrl) {
+          console.error(
+            `[POS] TWINT intent ${intent.id} has no redirect_to_url`,
+            intent.next_action,
+          );
+          res
+            .status(502)
+            .json({ error: "TWINT did not return a redirect URL" });
+          return;
+        }
+
+        const posOrderId = await createPosOrder(db, tenantId, {
+          stripePaymentIntentId: intent.id,
+          status: "pending",
+          paymentMethod: "twint",
+          totalRappen,
+          lineItems,
+          customerName,
+          customerEmail,
+          customerPhone,
+        });
+
+        res.json({
+          redirectUrl,
+          paymentIntentId: intent.id,
+          posOrderId,
+          totalRappen,
+        });
+      } catch (err) {
+        console.error("[POS] POST /api/pos/twint-intent error:", err);
+        res.status(500).json({ error: "Internal server error" });
       }
-
-      const posOrderId = await createPosOrder(db, tenantId, {
-        stripePaymentIntentId: intent.id,
-        status: "pending",
-        paymentMethod: "twint",
-        totalRappen,
-        lineItems,
-        customerName,
-        customerEmail,
-        customerPhone,
-      });
-
-      res.json({ redirectUrl, paymentIntentId: intent.id, posOrderId, totalRappen });
-    } catch (err) {
-      console.error("[POS] POST /api/pos/twint-intent error:", err);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
+    },
+  );
 
   // Cash never touches Stripe — the cashier takes the money, so this records the
   // sale and decrements stock immediately (no async confirmation to wait for).
-  app.post("/api/pos/manual-sale", requirePosKey, async (req: Request, res: Response) => {
-    try {
-      const db = await getDb();
-      if (!db) { res.status(503).json({ error: "Database unavailable" }); return; }
+  app.post(
+    "/api/pos/manual-sale",
+    requirePosKey,
+    async (req: Request, res: Response) => {
+      try {
+        const db = await getDb();
+        if (!db) {
+          res.status(503).json({ error: "Database unavailable" });
+          return;
+        }
 
-      const { tenantId } = getPosTenant(req);
-      const { productIds, allowHidden, priceOverrides, customItems, customerName, customerEmail, customerPhone } = req.body as SaleRequestBody;
+        const { tenantId } = getPosTenant(req);
+        const {
+          productIds,
+          allowHidden,
+          priceOverrides,
+          customItems,
+          customerName,
+          customerEmail,
+          customerPhone,
+        } = req.body as SaleRequestBody;
 
-      const resolved = await resolveSaleLineItems(db, tenantId, { productIds, allowHidden, priceOverrides, customItems });
-      if (!resolved.ok) { res.status(resolved.status).json({ error: resolved.error }); return; }
-      const { lineItems, totalRappen } = resolved;
+        const resolved = await resolveSaleLineItems(db, tenantId, {
+          productIds,
+          allowHidden,
+          priceOverrides,
+          customItems,
+        });
+        if (!resolved.ok) {
+          res.status(resolved.status).json({ error: resolved.error });
+          return;
+        }
+        const { lineItems, totalRappen } = resolved;
 
-      const posOrderId = await createPosOrder(db, tenantId, {
-        stripePaymentIntentId: null,
-        status: "paid",
-        paymentMethod: "cash",
-        totalRappen,
-        lineItems,
-        customerName,
-        customerEmail,
-        customerPhone,
-      });
+        const posOrderId = await createPosOrder(db, tenantId, {
+          stripePaymentIntentId: null,
+          status: "paid",
+          paymentMethod: "cash",
+          totalRappen,
+          lineItems,
+          customerName,
+          customerEmail,
+          customerPhone,
+        });
 
-      const productIdsSold = lineItems
-        .map(i => i.productId)
-        .filter((id): id is number => id !== null);
-      await markProductsSold(tenantId, productIdsSold);
+        const productIdsSold = lineItems
+          .map((i) => i.productId)
+          .filter((id): id is number => id !== null);
+        await markProductsSold(tenantId, productIdsSold);
 
-      res.json({ success: true, posOrderId, totalRappen });
-    } catch (err) {
-      console.error("[POS] POST /api/pos/manual-sale error:", err);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
+        res.json({ success: true, posOrderId, totalRappen });
+      } catch (err) {
+        console.error("[POS] POST /api/pos/manual-sale error:", err);
+        res.status(500).json({ error: "Internal server error" });
+      }
+    },
+  );
 
   // Confirm a card/TWINT sale: verify the PaymentIntent succeeded, then fulfil
   // the matching pos_order (mark paid + decrement stock). Idempotent.
-  app.post("/api/pos/sale", requirePosKey, async (req: Request, res: Response) => {
-    try {
-      const stripe = getStripe();
-      if (!stripe) { res.status(503).json({ error: "Stripe not configured" }); return; }
-      const db = await getDb();
-      if (!db) { res.status(503).json({ error: "Database unavailable" }); return; }
+  app.post(
+    "/api/pos/sale",
+    requirePosKey,
+    async (req: Request, res: Response) => {
+      try {
+        const stripe = getStripe();
+        if (!stripe) {
+          res.status(503).json({ error: "Stripe not configured" });
+          return;
+        }
+        const db = await getDb();
+        if (!db) {
+          res.status(503).json({ error: "Database unavailable" });
+          return;
+        }
 
-      const { paymentIntentId } = req.body as { paymentIntentId?: string };
-      if (!paymentIntentId) { res.status(400).json({ error: "paymentIntentId required" }); return; }
+        const { paymentIntentId } = req.body as { paymentIntentId?: string };
+        if (!paymentIntentId) {
+          res.status(400).json({ error: "paymentIntentId required" });
+          return;
+        }
 
-      const intent = await stripe.paymentIntents.retrieve(paymentIntentId);
-      if (intent.status !== "succeeded") {
-        res.status(400).json({ error: `Payment not succeeded (status: ${intent.status})` });
-        return;
+        const intent = await stripe.paymentIntents.retrieve(paymentIntentId);
+        if (intent.status !== "succeeded") {
+          res
+            .status(400)
+            .json({
+              error: `Payment not succeeded (status: ${intent.status})`,
+            });
+          return;
+        }
+
+        const result = await fulfillPosOrder(db, intent);
+        if (!result) {
+          res
+            .status(404)
+            .json({ error: "No matching pos_order for this PaymentIntent" });
+          return;
+        }
+
+        res.json({
+          success: true,
+          posOrderId: result.posOrderId,
+          alreadyFulfilled: result.alreadyFulfilled,
+        });
+      } catch (err) {
+        console.error("[POS] POST /api/pos/sale error:", err);
+        res.status(500).json({ error: "Internal server error" });
       }
-
-      const result = await fulfillPosOrder(db, intent);
-      if (!result) { res.status(404).json({ error: "No matching pos_order for this PaymentIntent" }); return; }
-
-      res.json({ success: true, posOrderId: result.posOrderId, alreadyFulfilled: result.alreadyFulfilled });
-    } catch (err) {
-      console.error("[POS] POST /api/pos/sale error:", err);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
+    },
+  );
 }
 
 // Shared request shape for the sale-building POS endpoints.
@@ -694,6 +866,9 @@ interface SaleRequestBody {
 // Stripe statement_descriptor allows letters/numbers/spaces only, 5–22 chars.
 // Derive a neutral, tenant-scoped descriptor from the slug; fall back to ZOLTO.
 function posStatementDescriptor(tenantSlug: string): string {
-  const cleaned = tenantSlug.replace(/[^A-Za-z0-9 ]/g, "").toUpperCase().slice(0, 22);
+  const cleaned = tenantSlug
+    .replace(/[^A-Za-z0-9 ]/g, "")
+    .toUpperCase()
+    .slice(0, 22);
   return cleaned.length >= 5 ? cleaned : "ZOLTO";
 }

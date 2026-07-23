@@ -20,7 +20,12 @@ import axios from "axios";
 import { PRODUCT_CATEGORIES, type ProductCategory } from "@shared/const";
 import { invokeLLM } from "./_core/llm";
 import { notifyOwner } from "./_core/notification";
-import { createProduct, getProductByDiscordMessageId, getTenantByDiscordChannelId, getTenantSettings } from "./db";
+import {
+  createProduct,
+  getProductByDiscordMessageId,
+  getTenantByDiscordChannelId,
+  getTenantSettings,
+} from "./db";
 import { storagePut } from "./storage";
 import { DEFAULT_TENANT_ID } from "./_core/tenant";
 import type { TenantBranding } from "./_core/email";
@@ -29,7 +34,7 @@ import type { TenantBranding } from "./_core/email";
 // is folded into "Other" (see the prompt) and deliberately omitted from the
 // choices offered to the model. Derived from the canonical list so the rest of
 // the categories can never drift.
-const AI_CATEGORIES = PRODUCT_CATEGORIES.filter(c => c !== "Sets");
+const AI_CATEGORIES = PRODUCT_CATEGORIES.filter((c) => c !== "Sets");
 
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN ?? "";
 const DISCORD_CHANNEL_ID = process.env.DISCORD_CHANNEL_ID ?? "";
@@ -39,7 +44,7 @@ const DISCORD_API = "https://discord.com/api/v10";
 
 export async function parseProductFromMessage(
   text: string,
-  tenantName?: string
+  tenantName?: string,
 ): Promise<{
   name: string;
   description: string;
@@ -59,7 +64,7 @@ export async function parseProductFromMessage(
           content: `You are a product data extractor for ${storeName}.
 Extract product information from the owner's Discord message and return a JSON object.
 
-Available categories: ${AI_CATEGORIES.map(c => `"${c}"`).join(", ")}
+Available categories: ${AI_CATEGORIES.map((c) => `"${c}"`).join(", ")}
 
 Rules:
 - name: short elegant product name (2–6 words)
@@ -145,7 +150,7 @@ interface DiscordAttachment {
 }
 
 async function downloadDiscordAttachment(
-  attachment: DiscordAttachment
+  attachment: DiscordAttachment,
 ): Promise<string | null> {
   try {
     const response = await axios.get(attachment.url, {
@@ -166,7 +171,7 @@ async function downloadDiscordAttachment(
     const { url } = await storagePut(
       key,
       Buffer.from(response.data),
-      contentType
+      contentType,
     );
     return url;
   } catch (err) {
@@ -186,7 +191,7 @@ export interface DiscordMessage {
 }
 
 export async function handleDiscordMessage(
-  message: DiscordMessage
+  message: DiscordMessage,
 ): Promise<void> {
   // Ignore bot messages
   if (message.author.bot) return;
@@ -197,7 +202,9 @@ export async function handleDiscordMessage(
     // If no tenant mapped to this channel, fall back to legacy single-channel mode
     if (DISCORD_CHANNEL_ID && message.channel_id !== DISCORD_CHANNEL_ID) return;
     if (!DISCORD_CHANNEL_ID) {
-      console.log(`[Discord] No tenant mapped to channel ${message.channel_id}, skipping`);
+      console.log(
+        `[Discord] No tenant mapped to channel ${message.channel_id}, skipping`,
+      );
       return;
     }
   }
@@ -206,7 +213,11 @@ export async function handleDiscordMessage(
   const settings = tenant ? await getTenantSettings(tenant.id) : null;
   const branding: TenantBranding = {
     tenantName: settings?.whiteLabelName ?? tenantName,
-    tenantDomain: tenant?.domain ?? settings?.publicDomain ?? process.env.PUBLIC_BASE_URL ?? "https://zolto.ch",
+    tenantDomain:
+      tenant?.domain ??
+      settings?.publicDomain ??
+      process.env.PUBLIC_BASE_URL ??
+      "https://zolto.ch",
     contactEmail: settings?.contactEmail ?? undefined,
   };
 
@@ -214,7 +225,7 @@ export async function handleDiscordMessage(
   const discordTenantId = tenant?.id ?? DEFAULT_TENANT_ID;
   const existing = await getProductByDiscordMessageId(
     discordTenantId,
-    message.id
+    message.id,
   );
   if (existing) {
     console.log(`[Discord] Message ${message.id} already processed, skipping`);
@@ -228,15 +239,18 @@ export async function handleDiscordMessage(
 
   // Download the first image attachment if present
   let imageUrl: string | null = null;
-  const imageAttachment = attachments.find(a =>
-    (a.content_type ?? "").startsWith("image/")
+  const imageAttachment = attachments.find((a) =>
+    (a.content_type ?? "").startsWith("image/"),
   );
   if (imageAttachment) {
     imageUrl = await downloadDiscordAttachment(imageAttachment);
   }
 
   // Parse product details using tenant-branded prompt
-  const parsed = await parseProductFromMessage(text || "New jewelry item", branding.tenantName);
+  const parsed = await parseProductFromMessage(
+    text || "New jewelry item",
+    branding.tenantName,
+  );
   if (!parsed) {
     console.log("[Discord] Could not parse product from message, skipping");
     return;
@@ -271,7 +285,7 @@ export async function handleDiscordMessage(
           content: `✅ **${parsed.name}** (${parsed.category}) — CHF ${parsed.price} has been added to the ${branding.tenantName} catalogue!`,
           message_reference: { message_id: message.id },
         },
-        { headers: { Authorization: `Bot ${DISCORD_BOT_TOKEN}` } }
+        { headers: { Authorization: `Bot ${DISCORD_BOT_TOKEN}` } },
       );
     } catch (err) {
       console.warn("[Discord] Could not send confirmation reply:", err);
@@ -279,7 +293,7 @@ export async function handleDiscordMessage(
   }
 
   console.log(
-    `[Discord] Product created for ${branding.tenantName}: ${parsed.name} @ CHF ${parsed.price}`
+    `[Discord] Product created for ${branding.tenantName}: ${parsed.name} @ CHF ${parsed.price}`,
   );
 }
 
@@ -314,30 +328,30 @@ export async function startDiscordGateway(): Promise<void> {
 
 function connectGateway(url: string): void {
   gatewayWs = new WebSocket(url);
-    gatewayWs.on("open", () => {
-      console.log("[Discord] Gateway connected");
-    });
+  gatewayWs.on("open", () => {
+    console.log("[Discord] Gateway connected");
+  });
 
-    gatewayWs.on("message", (data: import("ws").RawData) => {
-      try {
-        const payload = JSON.parse(data.toString());
-        handleGatewayPayload(payload, url);
-      } catch (err) {
-        console.error("[Discord] Failed to parse gateway message:", err);
-      }
-    });
+  gatewayWs.on("message", (data: import("ws").RawData) => {
+    try {
+      const payload = JSON.parse(data.toString());
+      handleGatewayPayload(payload, url);
+    } catch (err) {
+      console.error("[Discord] Failed to parse gateway message:", err);
+    }
+  });
 
-    gatewayWs.on("close", code => {
-      console.log(
-        `[Discord] Gateway closed (code ${code}), reconnecting in 5s...`
-      );
-      cleanup();
-      reconnectTimeout = setTimeout(() => connectGateway(url), 5_000);
-    });
+  gatewayWs.on("close", (code) => {
+    console.log(
+      `[Discord] Gateway closed (code ${code}), reconnecting in 5s...`,
+    );
+    cleanup();
+    reconnectTimeout = setTimeout(() => connectGateway(url), 5_000);
+  });
 
-    gatewayWs.on("error", err => {
-      console.error("[Discord] Gateway error:", err);
-    });
+  gatewayWs.on("error", (err) => {
+    console.error("[Discord] Gateway error:", err);
+  });
 }
 
 function handleGatewayPayload(
@@ -347,7 +361,7 @@ function handleGatewayPayload(
     s?: number;
     t?: string;
   },
-  gatewayUrl: string
+  gatewayUrl: string,
 ): void {
   if (payload.s !== undefined && payload.s !== null) {
     lastSequence = payload.s;
@@ -376,8 +390,8 @@ function handleGatewayPayload(
     // Dispatch
     case 0:
       if (payload.t === "MESSAGE_CREATE") {
-        handleDiscordMessage(payload.d as DiscordMessage).catch(err =>
-          console.error("[Discord] Message handler error:", err)
+        handleDiscordMessage(payload.d as DiscordMessage).catch((err) =>
+          console.error("[Discord] Message handler error:", err),
         );
       }
       break;
@@ -394,7 +408,7 @@ function identify(): void {
         intents: (1 << 9) | (1 << 15), // GUILD_MESSAGES + MESSAGE_CONTENT
         properties: { os: "linux", browser: "zolto", device: "zolto" },
       },
-    })
+    }),
   );
 }
 

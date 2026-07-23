@@ -40,14 +40,17 @@ async function sendDiscordDM(userId: string, text: string): Promise<void> {
   const { id: channelId } = (await dmRes.json()) as { id: string };
 
   // 2. Send the message
-  const msgRes = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bot ${token}`,
-      "Content-Type": "application/json",
+  const msgRes = await fetch(
+    `https://discord.com/api/v10/channels/${channelId}/messages`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bot ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ content: text }),
     },
-    body: JSON.stringify({ content: text }),
-  });
+  );
 
   if (!msgRes.ok) {
     const detail = await msgRes.text().catch(() => msgRes.statusText);
@@ -55,7 +58,9 @@ async function sendDiscordDM(userId: string, text: string): Promise<void> {
   }
 }
 
-export async function notifyOwner(payload: NotificationPayload): Promise<boolean> {
+export async function notifyOwner(
+  payload: NotificationPayload,
+): Promise<boolean> {
   const { title, content } = payload;
   const message = `**${title}**\n${content}`;
 

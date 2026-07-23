@@ -170,6 +170,7 @@ export default function GuidedTour({
       />
 
       {/* Tooltip card */}
+      {/* biome-ignore lint/a11y/useSemanticElements: an ephemeral tour tooltip has no matching semantic element; role="group" with an aria-label is the correct affordance */}
       <div
         role="group"
         aria-label={`Tour step ${index + 1} of ${steps.length}`}

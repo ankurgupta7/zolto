@@ -11,7 +11,8 @@ import {
 import { useCart } from "@/contexts/CartContext";
 
 export default function CartDrawer() {
-  const { items, total, count, removeItem, isOpen, setOpen, closeCart } = useCart();
+  const { items, total, count, removeItem, isOpen, setOpen, closeCart } =
+    useCart();
   const { t, i18n } = useTranslation();
   const [, navigate] = useLocation();
 
@@ -40,8 +41,12 @@ export default function CartDrawer() {
 
         {items.length === 0 ? (
           <div className="flex-1 flex flex-col items-center justify-center text-center px-6">
-            <div className="text-5xl text-[var(--brand-accent)]/20 font-serif mb-4">◇</div>
-            <p className="text-muted-foreground text-sm font-sans">{t("cart.empty")}</p>
+            <div className="text-5xl text-[var(--brand-accent)]/20 font-serif mb-4">
+              ◇
+            </div>
+            <p className="text-muted-foreground text-sm font-sans">
+              {t("cart.empty")}
+            </p>
           </div>
         ) : (
           <>
@@ -93,7 +98,9 @@ export default function CartDrawer() {
                   CHF {total.toFixed(2)}
                 </span>
               </div>
-              <p className="text-xs text-muted-foreground font-sans">{t("cart.taxNote")}</p>
+              <p className="text-xs text-muted-foreground font-sans">
+                {t("cart.taxNote")}
+              </p>
               <button
                 type="button"
                 onClick={goToCheckout}

@@ -40,4 +40,6 @@ export type ProductCategory = (typeof PRODUCT_CATEGORIES)[number];
 export const CATEGORY_EXTRA_INCLUDES = {
   Necklaces: ["Sets"],
   Earrings: ["Sets"],
-} as const satisfies Partial<Record<ProductCategory, readonly ProductCategory[]>>;
+} as const satisfies Partial<
+  Record<ProductCategory, readonly ProductCategory[]>
+>;

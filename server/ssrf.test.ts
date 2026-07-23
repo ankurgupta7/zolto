@@ -54,14 +54,14 @@ describe("assertPublicHostname", () => {
 
   it("rejects localhost without a DNS lookup", async () => {
     await expect(assertPublicHostname("localhost")).rejects.toThrow(
-      /Internal URLs not allowed/
+      /Internal URLs not allowed/,
     );
     expect(lookupMock).not.toHaveBeenCalled();
   });
 
   it("rejects a literal private IP without a DNS lookup", async () => {
     await expect(assertPublicHostname("169.254.169.254")).rejects.toThrow(
-      /Internal URLs not allowed/
+      /Internal URLs not allowed/,
     );
     expect(lookupMock).not.toHaveBeenCalled();
   });
@@ -76,7 +76,7 @@ describe("assertPublicHostname", () => {
       { address: "10.0.0.5", family: 4 },
     ]);
     await expect(assertPublicHostname("evil.example.com")).rejects.toThrow(
-      /Internal URLs not allowed/
+      /Internal URLs not allowed/,
     );
   });
 
@@ -106,7 +106,7 @@ describe("assertPublicHostname", () => {
   it("rejects a hostname that resolves to no addresses", async () => {
     lookupMock.mockImplementation(async () => []);
     await expect(assertPublicHostname("empty.example.com")).rejects.toThrow(
-      /Internal URLs not allowed/
+      /Internal URLs not allowed/,
     );
   });
 });

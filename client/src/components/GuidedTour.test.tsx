@@ -24,8 +24,12 @@ const STEPS: TourStep[] = [
 function renderTour(steps: TourStep[] = STEPS, props = {}) {
   return render(
     <div>
-      <button data-tour="a">A</button>
-      <button data-tour="b">B</button>
+      <button type="button" data-tour="a">
+        A
+      </button>
+      <button type="button" data-tour="b">
+        B
+      </button>
       <GuidedTour tourId="test" steps={steps} {...props} />
     </div>,
   );

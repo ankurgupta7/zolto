@@ -1,5 +1,12 @@
 import { useState } from "react";
-import { Eye, EyeOff, Trash2, ShoppingBag, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  Eye,
+  EyeOff,
+  Trash2,
+  ShoppingBag,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import type { ProductItem } from "@shared/types";
 import ProductModal from "./ProductModal";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -34,14 +41,18 @@ export default function ProductCard({ product, onMutated }: Props) {
   const { t, i18n } = useTranslation();
   const utils = trpc.useUtils();
 
-  const displayName = (i18n.language === "en" && product.nameEn) ? product.nameEn : product.name;
-  const displayDescription = (i18n.language === "en" && product.descriptionEn) ? product.descriptionEn : product.description;
+  const displayName =
+    i18n.language === "en" && product.nameEn ? product.nameEn : product.name;
+  const displayDescription =
+    i18n.language === "en" && product.descriptionEn
+      ? product.descriptionEn
+      : product.description;
 
   /* Lazy-load extra images the first time the card is hovered; staleTime:
      Infinity so they stay cached for repeat hovers without re-fetching.   */
   const { data: extraImages = [] } = trpc.products.getImages.useQuery(
     { productId: product.id },
-    { enabled: hovered, staleTime: Infinity }
+    { enabled: hovered, staleTime: Infinity },
   );
 
   const allImages: string[] = [
@@ -57,7 +68,9 @@ export default function ProductCard({ product, onMutated }: Props) {
     onSuccess: () => {
       utils.products.list.invalidate();
       utils.products.adminList.invalidate();
-      toast.success(product.visible ? "Product hidden from shop" : "Product is now visible");
+      toast.success(
+        product.visible ? "Product hidden from shop" : "Product is now visible",
+      );
       onMutated?.();
     },
     onError: () => toast.error("Failed to update visibility"),
@@ -67,7 +80,9 @@ export default function ProductCard({ product, onMutated }: Props) {
     onSuccess: () => {
       utils.products.list.invalidate();
       utils.products.adminList.invalidate();
-      toast.success(product.sold ? "Product marked as available" : "Product marked as sold");
+      toast.success(
+        product.sold ? "Product marked as available" : "Product marked as sold",
+      );
       onMutated?.();
     },
     onError: () => toast.error("Failed to update sold status"),
@@ -97,7 +112,8 @@ export default function ProductCard({ product, onMutated }: Props) {
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!confirm(`Permanently delete "${displayName}"? This cannot be undone.`)) return;
+    if (!confirm(`Permanently delete "${displayName}"? This cannot be undone.`))
+      return;
     deleteMutation.mutate({ id: product.id });
   };
 
@@ -181,7 +197,8 @@ export default function ProductCard({ product, onMutated }: Props) {
                   style={{
                     opacity: i === activeImg ? (product.sold ? 0.6 : 1) : 0,
                     /* Include both so the inline shorthand doesn't override the CSS transform transition */
-                    transition: "opacity 400ms ease, transform 700ms cubic-bezier(0.22, 1, 0.36, 1)",
+                    transition:
+                      "opacity 400ms ease, transform 700ms cubic-bezier(0.22, 1, 0.36, 1)",
                   }}
                 />
               ))}
@@ -225,14 +242,21 @@ export default function ProductCard({ product, onMutated }: Props) {
                     <button
                       type="button"
                       key={i}
-                      onClick={(e) => { e.stopPropagation(); setActiveImg(i); }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveImg(i);
+                      }}
                       aria-label={`Image ${i + 1} of ${total}`}
                       style={{
                         width: i === activeImg ? "14px" : "5px",
                         height: "4px",
                         borderRadius: "2px",
-                        background: i === activeImg ? "var(--brand-accent)" : "rgba(255,255,255,0.6)",
-                        transition: "width 300ms cubic-bezier(0.22,1,0.36,1), background 200ms ease",
+                        background:
+                          i === activeImg
+                            ? "var(--brand-accent)"
+                            : "rgba(255,255,255,0.6)",
+                        transition:
+                          "width 300ms cubic-bezier(0.22,1,0.36,1), background 200ms ease",
                         border: "none",
                         padding: 0,
                         cursor: "pointer",
@@ -253,7 +277,9 @@ export default function ProductCard({ product, onMutated }: Props) {
             </>
           ) : (
             <div className="w-full h-full flex items-center justify-center">
-              <span className="text-5xl text-[var(--brand-accent)]/30 font-serif">◇</span>
+              <span className="text-5xl text-[var(--brand-accent)]/30 font-serif">
+                ◇
+              </span>
             </div>
           )}
         </div>
@@ -267,7 +293,8 @@ export default function ProductCard({ product, onMutated }: Props) {
           </div>
           <span
             className={`inline-block text-[10px] uppercase tracking-[0.15em] px-2 py-0.5 mb-2 font-sans ${
-              CATEGORY_COLORS[product.category] ?? "bg-muted text-muted-foreground"
+              CATEGORY_COLORS[product.category] ??
+              "bg-muted text-muted-foreground"
             }`}
           >
             {product.category}
@@ -276,7 +303,9 @@ export default function ProductCard({ product, onMutated }: Props) {
             {displayDescription}
           </p>
           <div className="flex items-center gap-3">
-            <p className={`font-serif text-xl ${product.sold ? "text-muted-foreground line-through" : "text-[var(--brand-ink)]"}`}>
+            <p
+              className={`font-serif text-xl ${product.sold ? "text-muted-foreground line-through" : "text-[var(--brand-ink)]"}`}
+            >
               CHF {Number(product.price).toFixed(2)}
             </p>
             {product.sold && (
@@ -288,7 +317,11 @@ export default function ProductCard({ product, onMutated }: Props) {
         </div>
       </article>
 
-      <ProductModal product={product} open={open} onClose={() => setOpen(false)} />
+      <ProductModal
+        product={product}
+        open={open}
+        onClose={() => setOpen(false)}
+      />
     </>
   );
 }

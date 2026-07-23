@@ -17,12 +17,12 @@ import type { TrpcContext } from "../_core/context";
 
 const TEST_TENANT_ID = 7;
 
-function ctx(opts: { role?: "admin" | "user"; tenant?: boolean } = {}): TrpcContext {
+function ctx(
+  opts: { role?: "admin" | "user"; tenant?: boolean } = {},
+): TrpcContext {
   const { role, tenant = true } = opts;
   return {
-    user: role
-      ? ({ id: 1, tenantId: TEST_TENANT_ID, role } as never)
-      : null,
+    user: role ? ({ id: 1, tenantId: TEST_TENANT_ID, role } as never) : null,
     tenant: tenant ? ({ id: TEST_TENANT_ID } as never) : null,
     req: {} as never,
     res: {} as never,
@@ -42,7 +42,7 @@ describe("instagram.list", () => {
 
   it("throws NOT_FOUND when no tenant is resolved (no cross-tenant leak)", async () => {
     await expect(
-      instagramRouter.createCaller(ctx({ tenant: false })).list()
+      instagramRouter.createCaller(ctx({ tenant: false })).list(),
     ).rejects.toThrow(/not found/i);
     expect(dbMock.getInstagramPosts).not.toHaveBeenCalled();
   });
@@ -56,7 +56,7 @@ describe("instagram admin mutations", () => {
     expect(dbMock.addInstagramPost).toHaveBeenCalledWith(
       TEST_TENANT_ID,
       "https://instagram.com/p/abc",
-      2
+      2,
     );
   });
 
@@ -64,13 +64,15 @@ describe("instagram admin mutations", () => {
     await expect(
       instagramRouter
         .createCaller(ctx({ role: "admin" }))
-        .add({ postUrl: "https://example.com/p/abc", sortOrder: 0 })
+        .add({ postUrl: "https://example.com/p/abc", sortOrder: 0 }),
     ).rejects.toThrow(/instagram url/i);
     expect(dbMock.addInstagramPost).not.toHaveBeenCalled();
   });
 
   it("delete scopes to the admin's own tenant", async () => {
-    await instagramRouter.createCaller(ctx({ role: "admin" })).delete({ id: 9 });
+    await instagramRouter
+      .createCaller(ctx({ role: "admin" }))
+      .delete({ id: 9 });
     expect(dbMock.deleteInstagramPost).toHaveBeenCalledWith(TEST_TENANT_ID, 9);
   });
 
@@ -81,7 +83,7 @@ describe("instagram admin mutations", () => {
     expect(dbMock.reorderInstagramPost).toHaveBeenCalledWith(
       TEST_TENANT_ID,
       9,
-      3
+      3,
     );
   });
 
@@ -89,7 +91,7 @@ describe("instagram admin mutations", () => {
     await expect(
       instagramRouter
         .createCaller(ctx({ role: "user" }))
-        .add({ postUrl: "https://instagram.com/p/abc", sortOrder: 0 })
+        .add({ postUrl: "https://instagram.com/p/abc", sortOrder: 0 }),
     ).rejects.toThrow();
     expect(dbMock.addInstagramPost).not.toHaveBeenCalled();
   });

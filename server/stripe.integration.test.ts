@@ -114,7 +114,7 @@ describeIf("Stripe Integration — Checkout Session", () => {
         statement_descriptor: "KALAKOSH" as unknown as undefined,
         success_url: "https://kalakosh.ch/success",
         cancel_url: "https://kalakosh.ch/cancel",
-      })
+      }),
     ).rejects.toThrow(/Received unknown parameter: statement_descriptor/);
   });
 
@@ -137,11 +137,11 @@ describeIf("Stripe Integration — Checkout Session", () => {
         {
           shipping_rate_data: {
             type: "fixed_amount",
-            "fixed_amount": { "amount": 0, "currency": "chf" },
-            "display_name": "Free shipping (Switzerland)",
-            "delivery_estimate": {
-              "minimum": { "unit": "business_day", "value": 2 },
-              "maximum": { "unit": "business_day", "value": 3 },
+            fixed_amount: { amount: 0, currency: "chf" },
+            display_name: "Free shipping (Switzerland)",
+            delivery_estimate: {
+              minimum: { unit: "business_day", value: 2 },
+              maximum: { unit: "business_day", value: 3 },
             },
           },
         },
@@ -253,7 +253,11 @@ describeIf("Stripe Integration — Webhook Verification", () => {
       });
 
       // This should not throw
-      const event = stripe.webhooks.constructEvent(payload, header, webhookSecret!);
+      const event = stripe.webhooks.constructEvent(
+        payload,
+        header,
+        webhookSecret!,
+      );
       expect(event.id).toBe("evt_test_123");
       expect(event.type).toBe("checkout.session.completed");
     });
@@ -265,7 +269,7 @@ describeIf("Stripe Integration — Webhook Verification", () => {
         stripe.webhooks.constructEvent(
           payload,
           "t=1,v1=invalid_signature",
-          webhookSecret!
+          webhookSecret!,
         );
       }).toThrow();
     });

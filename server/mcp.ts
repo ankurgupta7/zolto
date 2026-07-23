@@ -407,7 +407,7 @@ export async function handleMcpMessage(
   msg: JsonRpcRequest,
   ctx: McpContext,
 ): Promise<JsonRpcResponse | null> {
-  if (!msg || msg.jsonrpc !== "2.0" || typeof msg.method !== "string") {
+  if (msg?.jsonrpc !== "2.0" || typeof msg.method !== "string") {
     return err(msg?.id ?? null, -32600, "Invalid Request");
   }
   const isNotification = msg.id === undefined || msg.id === null;

@@ -69,7 +69,7 @@ function buildPublicUrl(key: string): string {
 export async function storagePut(
   relKey: string,
   data: Buffer | Uint8Array | string,
-  contentType = "application/octet-stream"
+  contentType = "application/octet-stream",
 ): Promise<{ key: string; url: string }> {
   const client = getS3Client();
   const bucket = getBucket();
@@ -83,20 +83,22 @@ export async function storagePut(
       Key: key,
       Body: body,
       ContentType: contentType,
-    })
+    }),
   );
 
   return { key, url: buildPublicUrl(key) };
 }
 
-export async function storageGet(relKey: string): Promise<{ key: string; url: string }> {
+export async function storageGet(
+  relKey: string,
+): Promise<{ key: string; url: string }> {
   const key = normalizeKey(relKey);
   return { key, url: buildPublicUrl(key) };
 }
 
 export async function storageGetSignedUrl(
   relKey: string,
-  expiresIn = 3600
+  expiresIn = 3600,
 ): Promise<string> {
   const client = getS3Client();
   const bucket = getBucket();
@@ -105,6 +107,6 @@ export async function storageGetSignedUrl(
   return getSignedUrl(
     client,
     new GetObjectCommand({ Bucket: bucket, Key: key }),
-    { expiresIn }
+    { expiresIn },
   );
 }

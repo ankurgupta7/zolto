@@ -22,7 +22,13 @@ describe("storefront content is generic (no borrowed brand specifics)", () => {
       genericTermsSections(AURORA),
       genericImprint(AURORA),
     ]).toLowerCase();
-    for (const banned of ["kalakosh", "rajasthan", "pearl", "zürich", "zurich"]) {
+    for (const banned of [
+      "kalakosh",
+      "rajasthan",
+      "pearl",
+      "zürich",
+      "zurich",
+    ]) {
       expect(blob).not.toContain(banned);
     }
   });
@@ -38,14 +44,14 @@ describe("storefront content is generic (no borrowed brand specifics)", () => {
 describe("genericFaq", () => {
   it("mentions the configured contact channels when present", () => {
     const answer = genericFaq(AURORA).find((f) =>
-      f.question.includes("get in touch")
+      f.question.includes("get in touch"),
     )!.answer;
     expect(answer).toContain("hi@aurora.example");
   });
 
   it("falls back to the contact form when no channels are set", () => {
     const answer = genericFaq(NEUTRAL_BRANDING).find((f) =>
-      f.question.includes("get in touch")
+      f.question.includes("get in touch"),
     )!.answer;
     expect(answer).toContain("contact form");
     expect(answer).not.toContain("Instagram");

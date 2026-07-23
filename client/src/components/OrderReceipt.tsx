@@ -49,7 +49,7 @@ export default function OrderReceipt({
 
   const subtotalRappen = items.reduce(
     (sum, item) => sum + Math.round(parseFloat(item.price) * 100),
-    0
+    0,
   );
   const shippingRappen = amountTotal - subtotalRappen;
 
@@ -89,7 +89,10 @@ export default function OrderReceipt({
         </button>
       </div>
 
-      <div id="order-receipt" className="border border-[var(--brand-border)] bg-white text-left">
+      <div
+        id="order-receipt"
+        className="border border-[var(--brand-border)] bg-white text-left"
+      >
         {/* Letterhead */}
         <div className="bg-[var(--brand-ink)] px-8 py-7 text-center">
           <p className="text-[var(--brand-accent)] text-xl tracking-[0.22em] uppercase font-serif mb-1">
@@ -109,8 +112,12 @@ export default function OrderReceipt({
               {t("success.receipt.title")}
             </p>
             <div className="text-right">
-              <p className="text-[var(--brand-ink)] text-sm font-sans">#{orderRef}</p>
-              <p className="text-[var(--brand-muted-2)] text-xs font-sans mt-0.5">{date}</p>
+              <p className="text-[var(--brand-ink)] text-sm font-sans">
+                #{orderRef}
+              </p>
+              <p className="text-[var(--brand-muted-2)] text-xs font-sans mt-0.5">
+                {date}
+              </p>
             </div>
           </div>
 
@@ -121,10 +128,14 @@ export default function OrderReceipt({
                 {t("success.receipt.billedTo")}
               </p>
               {customerName && (
-                <p className="text-[var(--brand-ink)] text-sm font-serif">{customerName}</p>
+                <p className="text-[var(--brand-ink)] text-sm font-serif">
+                  {customerName}
+                </p>
               )}
               {customerEmail && (
-                <p className="text-[var(--brand-muted-2)] text-xs font-sans mt-0.5">{customerEmail}</p>
+                <p className="text-[var(--brand-muted-2)] text-xs font-sans mt-0.5">
+                  {customerEmail}
+                </p>
               )}
             </div>
           )}
@@ -157,7 +168,10 @@ export default function OrderReceipt({
                     )}
                   </td>
                   <td className="py-2.5 text-sm text-[var(--brand-ink)] font-serif pr-4 align-middle">
-                    <a href={`/product/${item.id}`} className="hover:text-[var(--brand-accent)] transition-colors">
+                    <a
+                      href={`/product/${item.id}`}
+                      className="hover:text-[var(--brand-accent)] transition-colors"
+                    >
                       {item.nameEn ?? item.name}
                     </a>
                   </td>

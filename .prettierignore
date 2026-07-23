@@ -1,0 +1,25 @@
+# Dependencies & build output
+node_modules
+dist
+build
+coverage
+
+# Lockfiles
+pnpm-lock.yaml
+package-lock.json
+
+# Vendored / generated assets
+client/public/__manus__
+drizzle
+*.min.js
+
+# Native mobile projects
+android
+ios
+
+# Generated / planning docs & backups
+docs
+backups
+
+# Vendored shadcn/ui components (also excluded from biome)
+client/src/components/ui

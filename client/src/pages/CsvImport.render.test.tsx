@@ -87,14 +87,14 @@ describe("CsvImport preview: selection + chunked import", () => {
         created: rows.length,
         updated: 0,
         failed: [],
-      })
+      }),
     );
 
     const { container } = render(<CsvImport />);
 
     const csvRows = Array.from(
       { length: 7 },
-      (_, i) => `"Item ${i}","Desc ${i}",${10 + i},Rings,1`
+      (_, i) => `"Item ${i}","Desc ${i}",${10 + i},Rings,1`,
     ).join("\n");
     const csvText = `name,description,price,category,quantity\n${csvRows}`;
 
@@ -102,7 +102,7 @@ describe("CsvImport preview: selection + chunked import", () => {
     fireEvent.change(input, { target: { files: [makeCsvFile(csvText)] } });
 
     await waitFor(() =>
-      expect(container.textContent).toContain("7 valid rows")
+      expect(container.textContent).toContain("7 valid rows"),
     );
     expect(container.textContent).toContain("7 selected for import");
 
@@ -112,7 +112,7 @@ describe("CsvImport preview: selection + chunked import", () => {
     fireEvent.click(checkboxes[1]);
 
     await waitFor(() =>
-      expect(container.textContent).toContain("6 selected for import")
+      expect(container.textContent).toContain("6 selected for import"),
     );
 
     const importButton = screen.getByRole("button", {
@@ -129,14 +129,18 @@ describe("CsvImport preview: selection + chunked import", () => {
     expect(secondCall[0].rows).toHaveLength(1);
 
     await waitFor(() =>
-      expect(container.textContent).toContain("6 products created")
+      expect(container.textContent).toContain("6 products created"),
     );
     expect(mocks.adminListInvalidate).toHaveBeenCalled();
     expect(mocks.listInvalidate).toHaveBeenCalled();
   });
 
   it("lets you edit an invalid row so it becomes valid and importable", async () => {
-    mocks.csvImportMutate.mockResolvedValue({ created: 1, updated: 0, failed: [] });
+    mocks.csvImportMutate.mockResolvedValue({
+      created: 1,
+      updated: 0,
+      failed: [],
+    });
 
     const { container } = render(<CsvImport />);
 
@@ -145,7 +149,7 @@ describe("CsvImport preview: selection + chunked import", () => {
     fireEvent.change(input, { target: { files: [makeCsvFile(csvText)] } });
 
     await waitFor(() =>
-      expect(container.textContent).toContain("rows with errors")
+      expect(container.textContent).toContain("rows with errors"),
     );
     expect(container.textContent).toContain("0 valid rows");
 
@@ -153,7 +157,7 @@ describe("CsvImport preview: selection + chunked import", () => {
     fireEvent.change(priceInput, { target: { value: "50" } });
 
     await waitFor(() =>
-      expect(container.textContent).toContain("1 valid rows")
+      expect(container.textContent).toContain("1 valid rows"),
     );
     expect(container.textContent).not.toContain("rows with errors");
 
@@ -174,7 +178,11 @@ describe("CsvImport preview: selection + chunked import", () => {
   });
 
   it("does not send deselected or invalid rows when a mix is present", async () => {
-    mocks.csvImportMutate.mockResolvedValue({ created: 1, updated: 0, failed: [] });
+    mocks.csvImportMutate.mockResolvedValue({
+      created: 1,
+      updated: 0,
+      failed: [],
+    });
     const { container } = render(<CsvImport />);
 
     const csvText =
@@ -185,7 +193,7 @@ describe("CsvImport preview: selection + chunked import", () => {
     fireEvent.change(input, { target: { files: [makeCsvFile(csvText)] } });
 
     await waitFor(() =>
-      expect(container.textContent).toContain("1 valid rows")
+      expect(container.textContent).toContain("1 valid rows"),
     );
 
     const importButton = screen.getByRole("button", {
@@ -197,7 +205,7 @@ describe("CsvImport preview: selection + chunked import", () => {
     await waitFor(() => expect(mocks.csvImportMutate).toHaveBeenCalledTimes(1));
     expect(mocks.csvImportMutate.mock.calls[0][0].rows).toHaveLength(1);
     expect(mocks.csvImportMutate.mock.calls[0][0].rows[0].name).toBe(
-      "Good One"
+      "Good One",
     );
   });
 });
@@ -240,11 +248,11 @@ describe("CsvImport: multiple handwritten inventory photos", () => {
     fireEvent.change(input, { target: { files: [file1, file2] } });
 
     await waitFor(() =>
-      expect(mocks.parseHandwrittenMutate).toHaveBeenCalledTimes(2)
+      expect(mocks.parseHandwrittenMutate).toHaveBeenCalledTimes(2),
     );
 
     await waitFor(() =>
-      expect(container.textContent).toContain("2 valid rows")
+      expect(container.textContent).toContain("2 valid rows"),
     );
     expect(container.textContent).toContain("2 selected for import");
   });
@@ -276,10 +284,10 @@ describe("CsvImport: multiple handwritten inventory photos", () => {
     fireEvent.change(input, { target: { files: [file1, file2] } });
 
     await waitFor(() =>
-      expect(mocks.parseHandwrittenMutate).toHaveBeenCalledTimes(2)
+      expect(mocks.parseHandwrittenMutate).toHaveBeenCalledTimes(2),
     );
     await waitFor(() =>
-      expect(container.textContent).toContain("1 valid rows")
+      expect(container.textContent).toContain("1 valid rows"),
     );
   });
 });
@@ -323,7 +331,7 @@ describe("CsvImport: input-stage validation and template download", () => {
     });
     // Stays on the input stage — no preview table summary appears.
     await waitFor(() =>
-      expect(container.textContent).not.toContain("valid rows")
+      expect(container.textContent).not.toContain("valid rows"),
     );
   });
 
@@ -378,7 +386,7 @@ describe("CsvImport: input-stage validation and template download", () => {
 
     const { container } = render(<CsvImport />);
     const urlInput = screen.getByPlaceholderText(
-      "https://docs.google.com/spreadsheets/d/..."
+      "https://docs.google.com/spreadsheets/d/...",
     );
     fireEvent.change(urlInput, {
       target: { value: "https://docs.google.com/spreadsheets/d/abc" },
@@ -386,7 +394,7 @@ describe("CsvImport: input-stage validation and template download", () => {
     fireEvent.click(screen.getByRole("button", { name: /Load Sheet/i }));
 
     await waitFor(() =>
-      expect(container.textContent).toContain("1 valid rows")
+      expect(container.textContent).toContain("1 valid rows"),
     );
     expect(mocks.fetchSheetMutateAsync).toHaveBeenCalledWith({
       url: "https://docs.google.com/spreadsheets/d/abc",
@@ -401,13 +409,13 @@ describe("CsvImport: full field editing and post-import navigation", () => {
       target: {
         files: [
           makeCsvFile(
-            'name,description,price,category,quantity\n"Ring","desc",10,Rings,1'
+            'name,description,price,category,quantity\n"Ring","desc",10,Rings,1',
           ),
         ],
       },
     });
     await waitFor(() =>
-      expect(container.textContent).toContain("1 valid rows")
+      expect(container.textContent).toContain("1 valid rows"),
     );
   }
 
@@ -429,12 +437,16 @@ describe("CsvImport: full field editing and post-import navigation", () => {
     });
 
     const qtyInput = container.querySelector(
-      'input[type="number"][step="1"]'
+      'input[type="number"][step="1"]',
     ) as HTMLInputElement;
     fireEvent.change(qtyInput, { target: { value: "4" } });
     expect(qtyInput.value).toBe("4");
 
-    mocks.csvImportMutate.mockResolvedValue({ created: 1, updated: 0, failed: [] });
+    mocks.csvImportMutate.mockResolvedValue({
+      created: 1,
+      updated: 0,
+      failed: [],
+    });
     fireEvent.click(screen.getByRole("button", { name: /Import 1 Product/i }));
 
     await waitFor(() => expect(mocks.csvImportMutate).toHaveBeenCalledTimes(1));
@@ -459,7 +471,7 @@ describe("CsvImport: full field editing and post-import navigation", () => {
     fireEvent.click(screen.getByRole("button", { name: /Import 1 Product/i }));
 
     await waitFor(() =>
-      expect(container.textContent).toContain("0 products created")
+      expect(container.textContent).toContain("0 products created"),
     );
     expect(container.textContent).toContain("1 failed");
     expect(container.textContent).toContain("Ring");
@@ -478,7 +490,11 @@ describe("CsvImport: full field editing and post-import navigation", () => {
   });
 
   it("edits the name and description fields directly", async () => {
-    mocks.csvImportMutate.mockResolvedValue({ created: 1, updated: 0, failed: [] });
+    mocks.csvImportMutate.mockResolvedValue({
+      created: 1,
+      updated: 0,
+      failed: [],
+    });
     const { container } = render(<CsvImport />);
     await loadSingleRowPreview(container);
 
@@ -502,7 +518,7 @@ describe("CsvImport: full field editing and post-import navigation", () => {
     await loadSingleRowPreview(container);
 
     const qtyInput = container.querySelector(
-      'input[type="number"][step="1"]'
+      'input[type="number"][step="1"]',
     ) as HTMLInputElement;
     fireEvent.change(qtyInput, { target: { value: "-5" } });
     expect(qtyInput.value).toBe("0");
@@ -518,18 +534,18 @@ describe("CsvImport: full field editing and post-import navigation", () => {
       target: { files: [makeCsvFile(csvText)] },
     });
     await waitFor(() =>
-      expect(container.textContent).toContain("2 selected for import")
+      expect(container.textContent).toContain("2 selected for import"),
     );
 
     const headerCheckbox = screen.getAllByRole("checkbox")[0];
     fireEvent.click(headerCheckbox); // deselect all
     await waitFor(() =>
-      expect(container.textContent).toContain("0 selected for import")
+      expect(container.textContent).toContain("0 selected for import"),
     );
 
     fireEvent.click(headerCheckbox); // reselect all
     await waitFor(() =>
-      expect(container.textContent).toContain("2 selected for import")
+      expect(container.textContent).toContain("2 selected for import"),
     );
   });
 
@@ -541,7 +557,7 @@ describe("CsvImport: full field editing and post-import navigation", () => {
     fireEvent.click(screen.getByRole("button", { name: /Import 1 Product/i }));
 
     await waitFor(() =>
-      expect(container.textContent).toContain("0 products created")
+      expect(container.textContent).toContain("0 products created"),
     );
     expect(container.textContent).toContain("1 failed");
     expect(container.textContent).toContain("Ring");
@@ -553,9 +569,9 @@ describe("CsvImport: multi-photo edge cases", () => {
     let resolveFirst!: (v: { items: unknown[] }) => void;
     mocks.parseHandwrittenMutate.mockImplementationOnce(
       () =>
-        new Promise(resolve => {
+        new Promise((resolve) => {
           resolveFirst = resolve;
-        })
+        }),
     );
     mocks.parseHandwrittenMutate.mockResolvedValueOnce({ items: [] });
 
@@ -567,13 +583,13 @@ describe("CsvImport: multi-photo edge cases", () => {
     });
 
     await waitFor(() =>
-      expect(container.textContent).toContain("Reading your inventory")
+      expect(container.textContent).toContain("Reading your inventory"),
     );
     expect(container.textContent).toContain("Photo 1 of 2");
 
     resolveFirst({ items: [] });
     await waitFor(() =>
-      expect(mocks.parseHandwrittenMutate).toHaveBeenCalledTimes(2)
+      expect(mocks.parseHandwrittenMutate).toHaveBeenCalledTimes(2),
     );
   });
 
@@ -588,10 +604,10 @@ describe("CsvImport: multi-photo edge cases", () => {
     });
 
     await waitFor(() =>
-      expect(mocks.parseHandwrittenMutate).toHaveBeenCalledTimes(1)
+      expect(mocks.parseHandwrittenMutate).toHaveBeenCalledTimes(1),
     );
     await waitFor(() =>
-      expect(container.textContent).toContain("Upload photos of your notes")
+      expect(container.textContent).toContain("Upload photos of your notes"),
     );
     expect(container.textContent).not.toContain("valid rows");
   });
