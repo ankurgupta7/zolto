@@ -15,13 +15,13 @@ function BlockView({ block }: { block: Block }) {
   switch (block.type) {
     case "p":
       return (
-        <p className="text-[15px] leading-relaxed text-slate-300">
+        <p className="text-[15px] leading-relaxed text-[var(--brand-muted-2)]">
           {block.text}
         </p>
       );
     case "h2":
       return (
-        <h2 className="mt-10 text-2xl font-semibold tracking-tight text-white">
+        <h2 className="mt-10 font-serif text-2xl text-[var(--brand-text)]">
           {block.text}
         </h2>
       );
@@ -31,9 +31,9 @@ function BlockView({ block }: { block: Block }) {
           {block.items.map((item, i) => (
             <li
               key={i}
-              className="flex gap-3 text-[15px] leading-relaxed text-slate-300"
+              className="flex gap-3 text-[15px] leading-relaxed text-[var(--brand-muted-2)]"
             >
-              <span aria-hidden className="mt-1 text-violet-400">
+              <span aria-hidden className="mt-1 text-[var(--brand-accent)]">
                 •
               </span>
               <span>{item}</span>
@@ -47,11 +47,11 @@ function BlockView({ block }: { block: Block }) {
           {block.items.map((item, i) => (
             <li
               key={i}
-              className="flex gap-3 text-[15px] leading-relaxed text-slate-300"
+              className="flex gap-3 text-[15px] leading-relaxed text-[var(--brand-muted-2)]"
             >
               <span
                 aria-hidden
-                className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-violet-500/15 text-xs font-medium text-violet-300"
+                className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-[var(--brand-surface)] text-xs font-medium text-[var(--brand-ink)]"
               >
                 {i + 1}
               </span>
@@ -62,10 +62,12 @@ function BlockView({ block }: { block: Block }) {
       );
     case "quote":
       return (
-        <blockquote className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
-          <p className="text-lg text-slate-200">“{block.text}”</p>
+        <blockquote className="rounded-xl border border-[var(--brand-border)] bg-white p-6">
+          <p className="font-serif text-lg italic text-[var(--brand-text)]">
+            “{block.text}”
+          </p>
           {block.cite && (
-            <footer className="mt-3 text-sm text-slate-400">
+            <footer className="mt-3 text-sm text-[var(--brand-muted)]">
               — {block.cite}
             </footer>
           )}
@@ -73,21 +75,21 @@ function BlockView({ block }: { block: Block }) {
       );
     case "note":
       return (
-        <p className="rounded-xl border border-violet-500/30 bg-violet-500/10 p-4 text-sm leading-relaxed text-violet-100">
+        <p className="rounded-xl border border-[var(--brand-accent)]/30 bg-[var(--brand-accent)]/8 p-4 text-sm leading-relaxed text-[var(--brand-ink)]">
           {block.text}
         </p>
       );
     case "table":
       return (
         <figure className="my-2">
-          <div className="overflow-x-auto rounded-xl border border-slate-800">
+          <div className="overflow-x-auto rounded-xl border border-[var(--brand-border)]">
             <table className="w-full border-collapse text-left text-sm">
               <thead>
-                <tr className="bg-slate-900">
+                <tr className="bg-[var(--brand-surface)]">
                   {block.head.map((h) => (
                     <th
                       key={h}
-                      className="whitespace-nowrap px-4 py-2.5 font-medium text-slate-200"
+                      className="whitespace-nowrap px-4 py-2.5 font-medium text-[var(--brand-text)]"
                     >
                       {h}
                     </th>
@@ -96,9 +98,15 @@ function BlockView({ block }: { block: Block }) {
               </thead>
               <tbody>
                 {block.rows.map((row, ri) => (
-                  <tr key={ri} className="border-t border-slate-800">
+                  <tr
+                    key={ri}
+                    className="border-t border-[var(--brand-border)]"
+                  >
                     {row.map((cell, ci) => (
-                      <td key={ci} className="px-4 py-2.5 text-slate-300">
+                      <td
+                        key={ci}
+                        className="px-4 py-2.5 text-[var(--brand-muted-2)]"
+                      >
                         {cell}
                       </td>
                     ))}
@@ -108,7 +116,7 @@ function BlockView({ block }: { block: Block }) {
             </table>
           </div>
           {block.caption && (
-            <figcaption className="mt-2 text-xs text-slate-500">
+            <figcaption className="mt-2 text-xs text-[var(--brand-muted)]">
               {block.caption}
             </figcaption>
           )}
@@ -121,10 +129,10 @@ function BlockView({ block }: { block: Block }) {
             src={block.image.src}
             alt={block.image.alt}
             loading="lazy"
-            className="w-full rounded-xl border border-slate-800"
+            className="w-full rounded-xl border border-[var(--brand-border)]"
           />
           {block.caption && (
-            <figcaption className="mt-2 text-xs text-slate-500">
+            <figcaption className="mt-2 text-xs text-[var(--brand-muted)]">
               {block.caption}
             </figcaption>
           )}
@@ -143,10 +151,10 @@ function BlockView({ block }: { block: Block }) {
                   src={img.src}
                   alt={img.alt}
                   loading="lazy"
-                  className="aspect-[3/4] w-full rounded-xl border border-slate-800 object-cover"
+                  className="aspect-[3/4] w-full rounded-xl border border-[var(--brand-border)] object-cover"
                 />
                 {label && (
-                  <span className="absolute left-2 top-2 rounded-full bg-slate-950/80 px-2.5 py-1 text-xs font-medium text-slate-200 backdrop-blur">
+                  <span className="absolute left-2 top-2 rounded-full bg-[var(--brand-ink)]/80 px-2.5 py-1 text-xs font-medium text-white backdrop-blur">
                     {label}
                   </span>
                 )}
@@ -154,7 +162,7 @@ function BlockView({ block }: { block: Block }) {
             ))}
           </div>
           {block.caption && (
-            <figcaption className="mt-2 text-xs text-slate-500">
+            <figcaption className="mt-2 text-xs text-[var(--brand-muted)]">
               {block.caption}
             </figcaption>
           )}
@@ -190,20 +198,23 @@ export function ArticleView({ article }: { article: Article }) {
     <article className="mx-auto max-w-3xl px-6 py-16">
       <JsonLd schema={article.schema} />
 
-      <Link href="/blog" className="text-sm text-violet-300 hover:underline">
+      <Link
+        href="/blog"
+        className="text-sm text-[var(--brand-accent)] hover:underline"
+      >
         ← All Launch Diary posts
       </Link>
 
       {article.eyebrow && (
-        <p className="mt-8 text-xs font-medium uppercase tracking-widest text-violet-400">
+        <p className="mt-8 text-xs font-medium uppercase tracking-widest text-[var(--brand-accent)]">
           {article.eyebrow}
         </p>
       )}
-      <h1 className="mt-3 text-4xl font-semibold tracking-tight text-white">
+      <h1 className="mt-3 font-serif text-4xl text-[var(--brand-text)]">
         {article.title}
       </h1>
-      <p className="mt-4 text-lg text-slate-300">{article.dek}</p>
-      <p className="mt-3 text-xs uppercase tracking-widest text-slate-500">
+      <p className="mt-4 text-lg text-[var(--brand-muted-2)]">{article.dek}</p>
+      <p className="mt-3 text-xs uppercase tracking-widest text-[var(--brand-muted)]">
         {published} · {article.readingTime}
       </p>
 
@@ -214,20 +225,20 @@ export function ArticleView({ article }: { article: Article }) {
       </div>
 
       {article.next && (
-        <div className="mt-14 rounded-2xl border border-slate-800 bg-slate-900 p-6">
-          <p className="text-xs uppercase tracking-widest text-slate-500">
+        <div className="mt-14 rounded-xl border border-[var(--brand-border)] bg-white p-6">
+          <p className="text-xs uppercase tracking-widest text-[var(--brand-muted)]">
             Next in the series
           </p>
           <Link
             href={article.next.href}
-            className="mt-2 inline-block text-lg font-medium text-white hover:text-violet-300"
+            className="mt-2 inline-block font-serif text-lg text-[var(--brand-text)] hover:text-[var(--brand-accent)]"
           >
             {article.next.label} →
           </Link>
         </div>
       )}
 
-      <p className="mt-12 border-t border-slate-800 pt-6 text-xs leading-relaxed text-slate-500">
+      <p className="mt-12 border-t border-[var(--brand-border)] pt-6 text-xs leading-relaxed text-[var(--brand-muted)]">
         This series documents a real maker's first online-store launch on Zolto.
         No growth hacks, no cherry-picked metrics — just what happened.
       </p>

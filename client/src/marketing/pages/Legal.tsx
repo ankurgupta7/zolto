@@ -16,20 +16,23 @@ function LegalLayout({
 }) {
   return (
     <div className="mx-auto max-w-3xl px-6 py-20">
-      <h1 className="text-4xl font-semibold tracking-tight text-white">
-        {title}
-      </h1>
-      <p className="mt-2 text-xs uppercase tracking-widest text-slate-500">
+      <h1 className="font-serif text-4xl text-[var(--brand-text)]">{title}</h1>
+      <p className="mt-2 text-xs uppercase tracking-widest text-[var(--brand-muted)]">
         {updated}
       </p>
-      <p className="mt-6 text-slate-300">{intro}</p>
+      <p className="mt-6 text-[var(--brand-muted-2)]">{intro}</p>
       <div className="mt-10 space-y-8">
         {sections.map((s) => (
           <section key={s.heading}>
-            <h2 className="text-xl font-semibold text-white">{s.heading}</h2>
+            <h2 className="font-serif text-xl text-[var(--brand-text)]">
+              {s.heading}
+            </h2>
             <div className="mt-3 space-y-3">
               {s.body.map((p, i) => (
-                <p key={i} className="text-sm leading-relaxed text-slate-300">
+                <p
+                  key={i}
+                  className="text-sm leading-relaxed text-[var(--brand-muted-2)]"
+                >
                   {p}
                 </p>
               ))}
@@ -37,7 +40,7 @@ function LegalLayout({
           </section>
         ))}
       </div>
-      <p className="mt-12 rounded-xl border border-slate-800 bg-slate-900 p-4 text-xs text-slate-400">
+      <p className="mt-12 rounded-xl border border-[var(--brand-border)] bg-white p-4 text-xs text-[var(--brand-muted-2)]">
         This is a plain-language summary of Zolto's platform terms. It is not
         legal advice. Merchants remain responsible for their own storefront's
         customer-facing policies.

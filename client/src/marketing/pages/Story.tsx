@@ -14,10 +14,12 @@ export default function Story() {
   if (slug !== CASE_STUDY.slug) {
     return (
       <div className="mx-auto max-w-xl px-6 py-32 text-center">
-        <h1 className="text-3xl font-semibold text-white">Story not found</h1>
+        <h1 className="font-serif text-3xl text-[var(--brand-text)]">
+          Story not found
+        </h1>
         <Link
           href="/blog"
-          className="mt-6 inline-block text-violet-300 hover:underline"
+          className="mt-6 inline-block text-[var(--brand-accent)] hover:underline"
         >
           ← Back to the Launch Diary
         </Link>
