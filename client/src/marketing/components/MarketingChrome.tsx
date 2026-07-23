@@ -2,8 +2,13 @@ import { Link } from "wouter";
 import type { ReactNode } from "react";
 
 /**
- * Zolto marketing chrome — nav + footer with Zolto's own identity (slate + violet,
- * per business-plan §10.3), deliberately distinct from the warm storefront theme.
+ * Zolto marketing chrome — nav + footer.
+ *
+ * Warm, handcrafted identity: the oyster/gold/ink + Cormorant serif palette the
+ * makers' own storefronts use, so the acquisition page looks like it was built
+ * for craftspeople rather than a generic dev tool — and stays coherent with the
+ * product a visitor is about to build. Serif + gold carry the brand; the pen
+ * (see MarketingIllustrations) stays off prices, payment claims, and CTAs.
  */
 
 const NAV = [
@@ -15,13 +20,13 @@ const NAV = [
 
 export function MarketingNav() {
   return (
-    <header className="sticky top-0 z-50 border-b border-slate-800 bg-slate-900/90 backdrop-blur">
+    <header className="sticky top-0 z-50 border-b border-[var(--brand-border)] bg-[var(--brand-ground)]/90 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
         <Link href="/" className="flex items-center gap-2">
-          <span className="grid h-8 w-8 place-items-center rounded-lg bg-violet-500 font-bold text-white">
+          <span className="grid h-8 w-8 place-items-center rounded-md bg-[var(--brand-ink)] font-serif text-lg text-[var(--brand-accent)]">
             Z
           </span>
-          <span className="text-lg font-semibold tracking-tight text-white">
+          <span className="font-serif text-xl tracking-tight text-[var(--brand-text)]">
             Zolto
           </span>
         </Link>
@@ -30,14 +35,14 @@ export function MarketingNav() {
             <Link
               key={item.href}
               href={item.href}
-              className="text-sm text-slate-300 transition-colors hover:text-white"
+              className="hidden text-sm text-[var(--brand-muted-2)] transition-colors hover:text-[var(--brand-ink)] sm:inline"
             >
               {item.label}
             </Link>
           ))}
           <Link
             href="/signup"
-            className="rounded-lg bg-violet-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-violet-400"
+            className="rounded-md bg-[var(--brand-ink)] px-4 py-2 text-xs font-medium uppercase tracking-[0.12em] text-white transition-colors hover:bg-[var(--brand-ink-hover)]"
           >
             Start free
           </Link>
@@ -49,17 +54,20 @@ export function MarketingNav() {
 
 export function MarketingFooter() {
   return (
-    <footer className="border-t border-slate-800 bg-slate-900">
-      <div className="mx-auto flex max-w-6xl flex-col gap-4 px-6 py-10 text-sm text-slate-400 sm:flex-row sm:items-center sm:justify-between">
-        <p>© {new Date().getFullYear()} Zolto — AI-run commerce for makers.</p>
+    <footer className="border-t border-[var(--brand-border)] bg-[var(--brand-surface)]">
+      <div className="mx-auto flex max-w-6xl flex-col gap-4 px-6 py-10 text-sm text-[var(--brand-muted-2)] sm:flex-row sm:items-center sm:justify-between">
+        <p>
+          © {new Date().getFullYear()} Zolto — commerce for makers, handmade in
+          Zürich.
+        </p>
         <nav className="flex gap-6">
-          <Link href="/pricing" className="hover:text-white">
+          <Link href="/pricing" className="hover:text-[var(--brand-ink)]">
             Pricing
           </Link>
-          <Link href="/legal/privacy" className="hover:text-white">
+          <Link href="/legal/privacy" className="hover:text-[var(--brand-ink)]">
             Privacy
           </Link>
-          <Link href="/legal/terms" className="hover:text-white">
+          <Link href="/legal/terms" className="hover:text-[var(--brand-ink)]">
             Terms
           </Link>
         </nav>
@@ -70,7 +78,7 @@ export function MarketingFooter() {
 
 export function MarketingShell({ children }: { children: ReactNode }) {
   return (
-    <div className="flex min-h-screen flex-col bg-slate-950 font-sans text-slate-100">
+    <div className="flex min-h-screen flex-col bg-[var(--brand-ground)] font-sans text-[var(--brand-text)]">
       <MarketingNav />
       <main className="flex-1">{children}</main>
       <MarketingFooter />

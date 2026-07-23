@@ -1,12 +1,22 @@
 import { describe, it, expect, afterEach } from "vitest";
 import { render, cleanup } from "@testing-library/react";
-import { SketchUnderline, SketchDivider, SketchCircle } from "./SketchAccents";
+import {
+  SketchUnderline,
+  SketchDivider,
+  SketchCircle,
+  SketchArrow,
+} from "./SketchAccents";
 
 afterEach(cleanup);
 
 describe("SketchAccents", () => {
   it("renders each accent as a decorative, non-interactive SVG", () => {
-    for (const Accent of [SketchUnderline, SketchDivider, SketchCircle]) {
+    for (const Accent of [
+      SketchUnderline,
+      SketchDivider,
+      SketchCircle,
+      SketchArrow,
+    ]) {
       const { container } = render(<Accent />);
       const svg = container.querySelector("svg");
       expect(svg).toBeTruthy();

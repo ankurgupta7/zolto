@@ -84,6 +84,47 @@ export function SketchDivider({ className }: SketchProps) {
 }
 
 /**
+ * A hand-drawn arrow with a rough two-stroke head. Points right by default;
+ * rotate via the className (e.g. `rotate-90`) for other directions. Used to
+ * literally draw the connection between ideas — e.g. inventory → a channel.
+ */
+export function SketchArrow({ className }: SketchProps) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 120 40"
+      preserveAspectRatio="none"
+      fill="none"
+      role="presentation"
+      aria-hidden="true"
+      focusable="false"
+      style={{ pointerEvents: "none" }}
+    >
+      {/* Shaft — a slightly loose line so it reads as drawn, not ruled. */}
+      <path
+        d="M4 22 C 34 16, 68 26, 104 20"
+        stroke="currentColor"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+      />
+      {/* Two arrowhead strokes. */}
+      <path
+        d="M104 20 L 90 12"
+        stroke="currentColor"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+      />
+      <path
+        d="M104 20 L 89 29"
+        stroke="currentColor"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+/**
  * A rough circular pen-loop, used to ring an icon or glyph in decorative zones
  * (capability band, empty state). Absolutely positioned by the caller.
  */
