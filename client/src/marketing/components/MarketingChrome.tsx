@@ -18,14 +18,30 @@ const NAV = [
   { label: "Sign in", href: "/signup" },
 ];
 
+/**
+ * The Zolto brush-Z mark — the signature gold-on-mahogany lockup (matches
+ * /favicon.svg + /logo.png). A near-square mahogany tile with a hand-inked gold
+ * "Z"; reads at 16px. Inline so it stays crisp at any size.
+ */
+export function BrushMark({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 200 200" className={className} role="img" aria-label="Zolto">
+      <rect width="200" height="200" rx="20" fill="#2D2620" />
+      <path
+        d="M50 54 C70 50 132 50 150 54 C150 66 120 70 96 84 C78 95 66 110 58 130 C74 138 132 132 152 138 C150 150 120 152 96 150 C74 148 52 150 46 140 C48 120 70 100 96 84 C70 74 54 70 50 54 Z"
+        fill="#B8963E"
+      />
+      <circle cx="163" cy="60" r="6.5" fill="#F0EBE3" />
+    </svg>
+  );
+}
+
 export function MarketingNav() {
   return (
     <header className="sticky top-0 z-50 border-b border-[var(--brand-border)] bg-[var(--brand-ground)]/90 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
-        <Link href="/" className="flex items-center gap-2">
-          <span className="grid h-8 w-8 place-items-center rounded-md bg-[var(--brand-ink)] font-serif text-lg text-[var(--brand-accent)]">
-            Z
-          </span>
+        <Link href="/" className="flex items-center gap-2.5">
+          <BrushMark className="h-8 w-8" />
           <span className="font-serif text-xl tracking-tight text-[var(--brand-text)]">
             Zolto
           </span>

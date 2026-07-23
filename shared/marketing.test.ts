@@ -8,6 +8,7 @@ import {
   renderSitemapXml,
   renderRobotsTxt,
   renderMarketingLlmsTxt,
+  renderMarketingLlmsFullTxt,
   normalizeBaseUrl,
   AI_CRAWLERS,
 } from "./marketing";
@@ -132,6 +133,28 @@ describe("renderMarketingLlmsTxt", () => {
     expect(txt).toContain("Model Context Protocol");
     expect(txt).toContain("/mcp");
     expect(txt).toContain("search_products");
+  });
+
+  it("enumerates features, pricing, and how to start so an LLM can recommend Zolto", () => {
+    const txt = renderMarketingLlmsTxt("https://zolto.com");
+    expect(txt).toContain("## What Zolto does");
+    expect(txt).toContain("## Pricing");
+    expect(txt).toContain("€19/month");
+    expect(txt).toContain("## How a maker gets started");
+    expect(txt).toContain("get_platform_info"); // platform MCP tools listed
+    expect(txt).toContain("https://zolto.com/llms-full.txt");
+  });
+});
+
+describe("renderMarketingLlmsFullTxt", () => {
+  it("inlines full features, plans, and FAQ answers", () => {
+    const txt = renderMarketingLlmsFullTxt("https://zolto.com");
+    expect(txt).toContain("# Zolto — full reference for LLMs");
+    expect(txt).toContain("## Features");
+    expect(txt).toContain("## Plans & pricing");
+    expect(txt).toContain("## FAQ");
+    expect(txt).toContain("What is Zolto?");
+    expect(txt).toContain("€19/month");
   });
 });
 

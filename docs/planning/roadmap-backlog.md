@@ -114,13 +114,39 @@ can discover products via MCP and easy browsing."
 - **AI-crawler `robots.txt`** — explicitly welcomes GPTBot, ClaudeBot,
   PerplexityBot, Google-Extended, etc., and advertises `/llms.txt`
   (`shared/marketing.ts`, served by `server/seo.ts`).
-- **`/llms.txt`** (llmstxt.org format), tenant-aware: the platform apex serves a
-  Zolto brief; each storefront serves a product-aware brief generated from its
-  live catalogue (`server/llms.ts`).
-- **MCP endpoint (read-only discovery v1)** at `POST /mcp` — JSON-RPC 2.0 over
-  HTTP (Streamable HTTP, JSON responses), tenant-scoped, tools: `search_products`,
-  `get_product`, `list_categories`, `get_store_info` (`server/mcp.ts`). Advertised
-  in `/llms.txt`. Tests: `server/mcp.test.ts`, `server/llms.test.ts`.
+- **`/llms.txt` + `/llms-full.txt`** (llmstxt.org format), tenant-aware: the
+  platform apex serves a rich Zolto brief (features, pricing, how-to-start, MCP
+  pointers) and a long-form `/llms-full.txt` with full feature/plan/FAQ content;
+  each storefront serves a product-aware brief from its live catalogue
+  (`server/llms.ts`, `shared/marketing.ts`).
+- **Server-rendered marketing SEO** (`server/marketingSeo.ts`) — because the app
+  is a client-rendered SPA and most AI crawlers don't run JS, the server now
+  injects per-route `<title>`, meta description, canonical/OG, JSON-LD, and a
+  `<noscript>` summary into the served HTML for every marketing route (landing,
+  pricing, signup, blog, posts, story). JSON-LD: `Organization`, `WebSite`,
+  `SoftwareApplication` + `AggregateOffer` (the plans), `FAQPage`, `Article`,
+  `BreadcrumbList`. Wired into both dev and prod serving (`server/_core/vite.ts`),
+  gated to the marketing host so it's a no-op for storefronts.
+- **Surface-aware MCP** at `POST /mcp` (`server/mcp.ts`):
+  - _Storefront_ (tenant resolves): `search_products`, `get_product`,
+    `list_categories`, `get_store_info`.
+  - _Platform / marketing_ (no tenant, e.g. zolto.com): `get_platform_info`,
+    `list_features`, `get_pricing`, `how_to_start`, `list_faqs`,
+    `list_resources` — so an AI assistant helping a prospective shop owner can
+    discover Zolto's features/pricing and how to sign up, and recommend it.
+- **Brand logo + per-tenant favicons** — a brush-Z mark (`client/public/logo.*`,
+  `favicon.svg/png`, multi-size `favicon.ico`, 1200×630 `og-image.png`) wired into
+  the nav, `<head>`, and JSON-LD/OG. Storefronts no longer inherit Zolto's icon:
+  `server/storefrontHead.ts` rewrites each storefront's `<head>` to its own
+  favicon (uploaded `faviconUrl`/`logoUrl`, or a generated initial-mark in the
+  tenant's `primaryColor`) and tab title/OG identity. Both marketing SEO and
+  storefront branding are dispatched from `server/htmlHead.ts` in the serving
+  path. Tenant-supplied values are escaped; favicon URLs are scheme-restricted.
+- **Single source of truth** for platform facts (`shared/platform.ts`:
+  PLATFORM/FEATURES/PLANS/FAQS/HOW_TO_START) feeds the pricing page, JSON-LD,
+  llms.txt/full, and the platform MCP tools so they never drift.
+  Tests: `shared/platform.test.ts`, `server/marketingSeo.test.ts`,
+  `server/mcp.test.ts`, `server/llms.test.ts`, `shared/marketing.test.ts`.
 
 **Backlog (next passes):**
 
