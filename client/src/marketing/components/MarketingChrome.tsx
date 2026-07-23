@@ -2,9 +2,13 @@ import { Link } from "wouter";
 import type { ReactNode } from "react";
 
 /**
- * Zolto marketing chrome — nav + footer. Shares the storefront's warm
- * "Pearl Jeweller" system (see docs/DESIGN-SYSTEM.md): oyster-cream ground,
- * warm mahogany ink, a single refined-gold accent. No cold greys, no violet.
+ * Zolto marketing chrome — nav + footer.
+ *
+ * Warm, handcrafted identity: the oyster/gold/ink + Cormorant serif palette the
+ * makers' own storefronts use, so the acquisition page looks like it was built
+ * for craftspeople rather than a generic dev tool — and stays coherent with the
+ * product a visitor is about to build. Serif + gold carry the brand; the pen
+ * (see MarketingIllustrations) stays off prices, payment claims, and CTAs.
  */
 
 const NAV = [
@@ -21,12 +25,7 @@ const NAV = [
  */
 export function BrushMark({ className }: { className?: string }) {
   return (
-    <svg
-      viewBox="0 0 200 200"
-      className={className}
-      role="img"
-      aria-label="Zolto"
-    >
+    <svg viewBox="0 0 200 200" className={className} role="img" aria-label="Zolto">
       <rect width="200" height="200" rx="20" fill="#2D2620" />
       <path
         d="M50 54 C70 50 132 50 150 54 C150 66 120 70 96 84 C78 95 66 110 58 130 C74 138 132 132 152 138 C150 150 120 152 96 150 C74 148 52 150 46 140 C48 120 70 100 96 84 C70 74 54 70 50 54 Z"
@@ -43,7 +42,7 @@ export function MarketingNav() {
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
         <Link href="/" className="flex items-center gap-2.5">
           <BrushMark className="h-8 w-8" />
-          <span className="font-serif text-2xl font-medium tracking-tight text-[var(--brand-text)]">
+          <span className="font-serif text-xl tracking-tight text-[var(--brand-text)]">
             Zolto
           </span>
         </Link>
@@ -52,7 +51,7 @@ export function MarketingNav() {
             <Link
               key={item.href}
               href={item.href}
-              className="text-sm text-[var(--brand-muted-2)] transition-colors hover:text-[var(--brand-text)]"
+              className="hidden text-sm text-[var(--brand-muted-2)] transition-colors hover:text-[var(--brand-ink)] sm:inline"
             >
               {item.label}
             </Link>
@@ -72,19 +71,19 @@ export function MarketingNav() {
 export function MarketingFooter() {
   return (
     <footer className="border-t border-[var(--brand-border)] bg-[var(--brand-surface)]">
-      <div className="mx-auto flex max-w-6xl flex-col gap-4 px-6 py-10 text-sm text-[var(--brand-muted)] sm:flex-row sm:items-center sm:justify-between">
-        <p>© {new Date().getFullYear()} Zolto — AI-run commerce for makers.</p>
+      <div className="mx-auto flex max-w-6xl flex-col gap-4 px-6 py-10 text-sm text-[var(--brand-muted-2)] sm:flex-row sm:items-center sm:justify-between">
+        <p>
+          © {new Date().getFullYear()} Zolto — commerce for makers, handmade in
+          Zürich.
+        </p>
         <nav className="flex gap-6">
-          <Link href="/pricing" className="hover:text-[var(--brand-text)]">
+          <Link href="/pricing" className="hover:text-[var(--brand-ink)]">
             Pricing
           </Link>
-          <Link
-            href="/legal/privacy"
-            className="hover:text-[var(--brand-text)]"
-          >
+          <Link href="/legal/privacy" className="hover:text-[var(--brand-ink)]">
             Privacy
           </Link>
-          <Link href="/legal/terms" className="hover:text-[var(--brand-text)]">
+          <Link href="/legal/terms" className="hover:text-[var(--brand-ink)]">
             Terms
           </Link>
         </nav>

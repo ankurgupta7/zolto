@@ -20,10 +20,13 @@ export default function Pricing() {
   return (
     <div className="mx-auto max-w-6xl px-6 py-20">
       <div className="text-center">
-        <h1 className="text-4xl font-semibold tracking-tight text-white">
+        <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
+          fair &amp; simple
+        </p>
+        <h1 className="mt-2 font-serif text-4xl text-[var(--brand-text)]">
           Simple pricing for makers.
         </h1>
-        <p className="mx-auto mt-4 max-w-xl text-slate-300">
+        <p className="mx-auto mt-4 max-w-xl text-[var(--brand-muted-2)]">
           Start free. Upgrade when you're ready. No hidden fees, no surprises.
         </p>
       </div>
@@ -33,29 +36,33 @@ export default function Pricing() {
         {PLANS.map((plan) => (
           <div
             key={plan.id}
-            className={`flex flex-col rounded-2xl border p-6 ${
+            className={`flex flex-col rounded-xl border bg-white p-6 ${
               plan.highlight
-                ? "border-violet-500 bg-slate-900 ring-1 ring-violet-500"
-                : "border-slate-800 bg-slate-900"
+                ? "border-[var(--brand-accent)] ring-1 ring-[var(--brand-accent)]"
+                : "border-[var(--brand-border)]"
             }`}
           >
             {plan.highlight && (
-              <span className="mb-3 inline-block w-fit rounded-full bg-violet-500/15 px-3 py-1 text-xs font-medium text-violet-300">
+              <span className="mb-3 inline-block w-fit rounded-full bg-[var(--brand-accent)]/15 px-3 py-1 text-xs font-medium uppercase tracking-[0.1em] text-[var(--brand-ink)]">
                 Most popular
               </span>
             )}
-            <h2 className="text-lg font-semibold text-white">{plan.name}</h2>
+            <h2 className="font-serif text-xl text-[var(--brand-text)]">
+              {plan.name}
+            </h2>
             <div className="mt-2 flex items-baseline gap-1">
-              <span className="text-3xl font-semibold text-white">
+              <span className="text-3xl font-semibold tabular-nums text-[var(--brand-ink)]">
                 {formatPrice(plan.priceEur)}
               </span>
-              <span className="text-sm text-slate-400">/ month</span>
+              <span className="text-sm text-[var(--brand-muted)]">/ month</span>
             </div>
-            <p className="mt-2 text-sm text-slate-400">{plan.blurb}</p>
-            <ul className="mt-6 flex-1 space-y-3 text-sm text-slate-300">
+            <p className="mt-2 text-sm text-[var(--brand-muted-2)]">
+              {plan.blurb}
+            </p>
+            <ul className="mt-6 flex-1 space-y-3 text-sm text-[var(--brand-muted-2)]">
               {plan.features.map((f) => (
                 <li key={f} className="flex gap-2">
-                  <span aria-hidden className="text-violet-400">
+                  <span aria-hidden className="text-[var(--brand-accent)]">
                     ✓
                   </span>
                   {f}
@@ -68,10 +75,10 @@ export default function Pricing() {
                   ? "/signup?plan=atelier"
                   : `/signup?plan=${plan.id}`
               }
-              className={`mt-8 rounded-lg px-4 py-2.5 text-center text-sm font-medium transition-colors ${
+              className={`mt-8 rounded-md px-4 py-2.5 text-center text-xs font-medium uppercase tracking-[0.12em] transition-colors ${
                 plan.highlight
-                  ? "bg-violet-500 text-white hover:bg-violet-400"
-                  : "border border-slate-700 text-slate-200 hover:border-slate-500 hover:text-white"
+                  ? "bg-[var(--brand-accent)] text-[var(--brand-ink)] hover:bg-[var(--brand-accent-light)]"
+                  : "border border-[var(--brand-ink)]/25 text-[var(--brand-ink)] hover:bg-[var(--brand-ink)] hover:text-white"
               }`}
             >
               {plan.cta}
@@ -87,30 +94,34 @@ export default function Pricing() {
         (business-plan §5.1, phase1/legal/content-release-form.md). Swap in the real
         quote once that's signed.
       */}
-      <blockquote className="mx-auto mt-20 max-w-2xl rounded-2xl border border-slate-800 bg-slate-900 p-8 text-center">
-        <p className="text-lg text-slate-200">
-          "I went from selling only at markets to my first online order in a few
-          days — without learning a new platform or hiring anyone."
+      <blockquote className="mx-auto mt-20 max-w-2xl rounded-xl border border-[var(--brand-border)] bg-white p-8 text-center">
+        <p className="font-serif text-xl italic text-[var(--brand-text)]">
+          “I went from selling only at markets to my first online order in a few
+          days — without learning a new platform or hiring anyone.”
         </p>
-        <footer className="mt-4 text-sm text-slate-400">
+        <footer className="mt-4 text-sm text-[var(--brand-muted)]">
           — Pilot maker, Zurich{" "}
-          <span className="text-slate-600">(testimonial pending release)</span>
+          <span className="text-[var(--brand-muted)]/70">
+            (testimonial pending release)
+          </span>
         </footer>
       </blockquote>
 
       {/* FAQ */}
       <div className="mx-auto mt-20 max-w-2xl">
-        <h2 className="text-center text-2xl font-semibold text-white">
+        <h2 className="text-center font-serif text-2xl text-[var(--brand-text)]">
           Questions
         </h2>
         <dl className="mt-8 space-y-6">
           {FAQ.map((item) => (
             <div
               key={item.q}
-              className="rounded-xl border border-slate-800 bg-slate-900 p-6"
+              className="rounded-xl border border-[var(--brand-border)] bg-white p-6"
             >
-              <dt className="font-medium text-white">{item.q}</dt>
-              <dd className="mt-2 text-sm text-slate-300">{item.a}</dd>
+              <dt className="font-medium text-[var(--brand-text)]">{item.q}</dt>
+              <dd className="mt-2 text-sm text-[var(--brand-muted-2)]">
+                {item.a}
+              </dd>
             </div>
           ))}
         </dl>

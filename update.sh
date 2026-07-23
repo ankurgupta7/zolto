@@ -5,9 +5,13 @@
 # one-time English translation backfill, rebuilds the app, restarts Docker
 # services, and prunes unused Docker resources.
 #
+# By default it deploys the branch currently checked out on this host. To pin a
+# specific branch, set DEPLOY_BRANCH (in .env or the environment).
+#
 # Usage:
 #   chmod +x update.sh
-#   ./update.sh
+#   ./update.sh                      # deploy the checked-out branch
+#   DEPLOY_BRANCH=main ./update.sh   # deploy a specific branch
 #
 # Safe to re-run at any time — every step is idempotent.
 
@@ -80,11 +84,21 @@ source "deploy/lib/db.sh"
 MYSQL="$(build_mysql_cmd)"
 
 # ── Git pull ──────────────────────────────────────────────────────────────────
-log "Pulling latest code"
+# Deploy whatever branch is checked out on this server, not a hard-coded one —
+# otherwise a host running a feature/release branch would silently keep pulling
+# `main` and never see its own changes. Override explicitly with DEPLOY_BRANCH.
+DEPLOY_BRANCH="${DEPLOY_BRANCH:-$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")}"
+if [ -z "$DEPLOY_BRANCH" ] || [ "$DEPLOY_BRANCH" = "HEAD" ]; then
+  die "Cannot determine which branch to deploy (detached HEAD?).
+  Check out a branch, or set DEPLOY_BRANCH in .env / the environment, e.g.:
+      DEPLOY_BRANCH=main ./update.sh"
+fi
+
+log "Pulling latest code (branch: ${DEPLOY_BRANCH})"
 
 PREV_COMMIT=$(git rev-parse --short HEAD)
-git fetch origin main
-git pull origin main
+git fetch origin "$DEPLOY_BRANCH"
+git pull origin "$DEPLOY_BRANCH"
 NEW_COMMIT=$(git rev-parse --short HEAD)
 
 if [ "$PREV_COMMIT" = "$NEW_COMMIT" ]; then
@@ -678,6 +692,7 @@ echo -e "${BOLD}━━━━━━━━━━━━━━━━━━━━━�
 echo -e "${GREEN}${BOLD}  Update complete!${RESET}"
 echo -e "${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
 echo ""
+echo -e "  Branch   ${DEPLOY_BRANCH}"
 echo -e "  Commit   $(git rev-parse --short HEAD) — $(git log -1 --pretty=%s)"
 echo -e "  Date     $(date '+%Y-%m-%d %H:%M:%S %Z')"
 echo -e "  Backup   every Sunday 02:00 → ${PROJECT_DIR}/backups/"

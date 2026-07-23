@@ -36,8 +36,9 @@ function NotFound() {
 
 /**
  * The Zolto marketing / SaaS surface — rendered when the hostname resolves to the
- * platform apex (zolto.com) rather than a tenant storefront. Has its own Zolto
- * identity and chrome, independent of the warm storefront theme.
+ * platform apex (zolto.com) rather than a tenant storefront. Shares the warm
+ * oyster/gold/ink + serif brand system of the storefront (a handcrafted identity
+ * for a maker audience), with its own marketing chrome.
  */
 export default function MarketingApp() {
   return (

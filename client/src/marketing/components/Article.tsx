@@ -21,7 +21,7 @@ function BlockView({ block }: { block: Block }) {
       );
     case "h2":
       return (
-        <h2 className="mt-10 font-serif text-2xl tracking-tight text-[var(--brand-text)]">
+        <h2 className="mt-10 font-serif text-2xl text-[var(--brand-text)]">
           {block.text}
         </h2>
       );
@@ -51,7 +51,7 @@ function BlockView({ block }: { block: Block }) {
             >
               <span
                 aria-hidden
-                className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-sm bg-[var(--brand-surface)] text-xs font-medium tabular-nums text-[var(--brand-accent)]"
+                className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-[var(--brand-surface)] text-xs font-medium text-[var(--brand-ink)]"
               >
                 {i + 1}
               </span>
@@ -63,7 +63,7 @@ function BlockView({ block }: { block: Block }) {
     case "quote":
       return (
         <blockquote className="rounded-xl border border-[var(--brand-border)] bg-white p-6">
-          <p className="font-serif text-xl text-[var(--brand-text)]">
+          <p className="font-serif text-lg italic text-[var(--brand-text)]">
             “{block.text}”
           </p>
           {block.cite && (
@@ -75,15 +75,15 @@ function BlockView({ block }: { block: Block }) {
       );
     case "note":
       return (
-        <p className="rounded-lg border border-[var(--brand-accent)]/40 bg-[var(--brand-surface)] p-4 text-sm leading-relaxed text-[var(--brand-muted-2)]">
+        <p className="rounded-xl border border-[var(--brand-accent)]/30 bg-[var(--brand-accent)]/8 p-4 text-sm leading-relaxed text-[var(--brand-ink)]">
           {block.text}
         </p>
       );
     case "table":
       return (
         <figure className="my-2">
-          <div className="overflow-x-auto rounded-lg border border-[var(--brand-border)]">
-            <table className="w-full border-collapse text-left text-sm tabular-nums">
+          <div className="overflow-x-auto rounded-xl border border-[var(--brand-border)]">
+            <table className="w-full border-collapse text-left text-sm">
               <thead>
                 <tr className="bg-[var(--brand-surface)]">
                   {block.head.map((h) => (
@@ -129,7 +129,7 @@ function BlockView({ block }: { block: Block }) {
             src={block.image.src}
             alt={block.image.alt}
             loading="lazy"
-            className="w-full rounded-lg border border-[var(--brand-border)]"
+            className="w-full rounded-xl border border-[var(--brand-border)]"
           />
           {block.caption && (
             <figcaption className="mt-2 text-xs text-[var(--brand-muted)]">
@@ -151,10 +151,10 @@ function BlockView({ block }: { block: Block }) {
                   src={img.src}
                   alt={img.alt}
                   loading="lazy"
-                  className="aspect-[3/4] w-full rounded-lg border border-[var(--brand-border)] object-cover"
+                  className="aspect-[3/4] w-full rounded-xl border border-[var(--brand-border)] object-cover"
                 />
                 {label && (
-                  <span className="absolute left-2 top-2 rounded-full bg-[var(--brand-ink)]/85 px-2.5 py-1 text-xs font-medium text-white backdrop-blur">
+                  <span className="absolute left-2 top-2 rounded-full bg-[var(--brand-ink)]/80 px-2.5 py-1 text-xs font-medium text-white backdrop-blur">
                     {label}
                   </span>
                 )}
@@ -210,7 +210,7 @@ export function ArticleView({ article }: { article: Article }) {
           {article.eyebrow}
         </p>
       )}
-      <h1 className="mt-3 font-serif text-4xl tracking-tight text-[var(--brand-text)]">
+      <h1 className="mt-3 font-serif text-4xl text-[var(--brand-text)]">
         {article.title}
       </h1>
       <p className="mt-4 text-lg text-[var(--brand-muted-2)]">{article.dek}</p>

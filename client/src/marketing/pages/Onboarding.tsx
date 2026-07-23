@@ -31,9 +31,9 @@ function ClaimStep({ store }: { store: string | null }) {
   const me = trpc.auth.me.useQuery(undefined, { retry: false });
   const isAuthed = !!me.data;
   const claim = trpc.tenant.claimAdmin.useMutation();
-  const [state, setState] = useState<
-    "idle" | "claiming" | "done" | "error"
-  >("idle");
+  const [state, setState] = useState<"idle" | "claiming" | "done" | "error">(
+    "idle",
+  );
   const [claimedSlug, setClaimedSlug] = useState<string | null>(null);
 
   // Once the owner is signed in and a token is present, redeem it exactly once.
@@ -67,13 +67,15 @@ function ClaimStep({ store }: { store: string | null }) {
   if (state === "done") {
     inner = (
       <div>
-        <p className="font-medium text-white">You're the store admin. 🎉</p>
-        <p className="mt-1 text-sm text-slate-300">
+        <p className="font-medium text-[var(--brand-text)]">
+          You're the store admin. 🎉
+        </p>
+        <p className="mt-1 text-sm text-[var(--brand-muted-2)]">
           Your account now manages this store.
         </p>
         <Link
           href={adminHref(claimedSlug)}
-          className="mt-3 inline-block rounded-lg bg-violet-500 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-violet-400"
+          className="mt-3 inline-block rounded-md bg-[var(--brand-ink)] px-5 py-2.5 text-xs font-medium uppercase tracking-[0.12em] text-white transition-colors hover:bg-[var(--brand-ink-hover)]"
         >
           Go to your dashboard →
         </Link>
@@ -82,10 +84,10 @@ function ClaimStep({ store }: { store: string | null }) {
   } else if (state === "error") {
     inner = (
       <div>
-        <p className="font-medium text-white">
+        <p className="font-medium text-[var(--brand-text)]">
           We couldn't finish setting you up.
         </p>
-        <p className="mt-1 text-sm text-slate-300">
+        <p className="mt-1 text-sm text-[var(--brand-muted-2)]">
           This claim link is invalid or has already been used. If you already
           signed in on another device, you're all set.
         </p>
@@ -93,20 +95,22 @@ function ClaimStep({ store }: { store: string | null }) {
     );
   } else if (isAuthed || state === "claiming") {
     inner = (
-      <p className="text-sm text-slate-300">Finishing your setup…</p>
+      <p className="text-sm text-[var(--brand-muted-2)]">
+        Finishing your setup…
+      </p>
     );
   } else {
     inner = (
       <div>
-        <p className="font-medium text-white">One more step</p>
-        <p className="mt-1 text-sm text-slate-300">
+        <p className="font-medium text-[var(--brand-text)]">One more step</p>
+        <p className="mt-1 text-sm text-[var(--brand-muted-2)]">
           Sign in to become the admin of your new store.
         </p>
         <a
           href={getLoginUrl(
             `/onboarding${store ? `?store=${encodeURIComponent(store)}` : ""}`,
           )}
-          className="mt-3 inline-block rounded-lg bg-violet-500 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-violet-400"
+          className="mt-3 inline-block rounded-md bg-[var(--brand-ink)] px-5 py-2.5 text-xs font-medium uppercase tracking-[0.12em] text-white transition-colors hover:bg-[var(--brand-ink-hover)]"
         >
           Sign in with Google
         </a>
@@ -115,7 +119,7 @@ function ClaimStep({ store }: { store: string | null }) {
   }
 
   return (
-    <div className="mb-8 rounded-2xl border border-violet-500/40 bg-violet-500/5 p-5">
+    <div className="mb-8 rounded-xl border border-[var(--brand-accent)]/40 bg-[var(--brand-accent)]/8 p-5">
       {inner}
     </div>
   );
@@ -156,13 +160,13 @@ export default function Onboarding() {
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-20">
-      <p className="text-sm font-medium uppercase tracking-widest text-violet-300">
-        Welcome{store ? ` — ${store}` : ""}
+      <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
+        welcome{store ? ` — ${store}` : ""}
       </p>
-      <h1 className="mt-3 text-3xl font-semibold tracking-tight text-white">
+      <h1 className="mt-2 font-serif text-3xl text-[var(--brand-text)]">
         Let's get your store live.
       </h1>
-      <p className="mt-3 text-slate-300">
+      <p className="mt-3 text-[var(--brand-muted-2)]">
         Four steps. You can do them now or come back anytime.
       </p>
 
@@ -170,9 +174,9 @@ export default function Onboarding() {
         <ClaimStep store={store} />
       </div>
 
-      <div className="mt-6 h-2 w-full overflow-hidden rounded-full bg-slate-800">
+      <div className="mt-6 h-2 w-full overflow-hidden rounded-full bg-[var(--brand-surface)]">
         <div
-          className="h-full rounded-full bg-violet-500 transition-all"
+          className="h-full rounded-full bg-[var(--brand-accent)] transition-all"
           style={{ width: `${(completed / STEPS.length) * 100}%` }}
         />
       </div>
@@ -181,7 +185,7 @@ export default function Onboarding() {
         {STEPS.map((step, i) => (
           <li
             key={step.title}
-            className="flex gap-4 rounded-2xl border border-slate-800 bg-slate-900 p-5"
+            className="flex gap-4 rounded-xl border border-[var(--brand-border)] bg-white p-5"
           >
             <button
               type="button"
@@ -190,19 +194,21 @@ export default function Onboarding() {
               onClick={() => toggle(i)}
               className={`mt-0.5 grid h-6 w-6 flex-shrink-0 place-items-center rounded-full border text-xs transition-colors ${
                 done[i]
-                  ? "border-violet-500 bg-violet-500 text-white"
-                  : "border-slate-600 text-transparent hover:border-violet-400"
+                  ? "border-[var(--brand-accent)] bg-[var(--brand-accent)] text-[var(--brand-ink)]"
+                  : "border-[var(--brand-border-2)] text-transparent hover:border-[var(--brand-accent)]"
               }`}
             >
               ✓
             </button>
             <div>
               <h3
-                className={`font-medium ${done[i] ? "text-slate-400 line-through" : "text-white"}`}
+                className={`font-serif text-lg ${done[i] ? "text-[var(--brand-muted)] line-through" : "text-[var(--brand-text)]"}`}
               >
                 {step.title}
               </h3>
-              <p className="mt-1 text-sm text-slate-400">{step.body}</p>
+              <p className="mt-1 text-sm text-[var(--brand-muted-2)]">
+                {step.body}
+              </p>
             </div>
           </li>
         ))}
@@ -214,10 +220,10 @@ export default function Onboarding() {
             ? `/?surface=storefront&tenant=${encodeURIComponent(store)}`
             : "/"
         }
-        className={`mt-8 inline-block rounded-lg px-6 py-3 text-sm font-medium transition-colors ${
+        className={`mt-8 inline-block rounded-md px-6 py-3 text-xs font-medium uppercase tracking-[0.12em] transition-colors ${
           allDone
-            ? "bg-violet-500 text-white hover:bg-violet-400"
-            : "border border-slate-700 text-slate-200 hover:border-slate-500 hover:text-white"
+            ? "bg-[var(--brand-accent)] text-[var(--brand-ink)] hover:bg-[var(--brand-accent-light)]"
+            : "border border-[var(--brand-ink)]/25 text-[var(--brand-ink)] hover:bg-[var(--brand-ink)] hover:text-white"
         }`}
       >
         {allDone ? "Go to your store →" : "Skip to your store"}
