@@ -66,6 +66,16 @@ describe("injectMarketingHead", () => {
     expect(out).not.toContain('content="old default"');
   });
 
+  it("injects an absolute og:image / twitter:image social card", () => {
+    const out = injectMarketingHead(SHELL, "/", BASE);
+    expect(out).toContain(
+      '<meta property="og:image" content="https://zolto.com/og-image.png"',
+    );
+    expect(out).toContain(
+      '<meta name="twitter:image" content="https://zolto.com/og-image.png"',
+    );
+  });
+
   it("sets an absolute canonical with no double slash for the landing page", () => {
     const out = injectMarketingHead(SHELL, "/", BASE + "/");
     expect(out).toContain('<link rel="canonical" href="https://zolto.com/"');

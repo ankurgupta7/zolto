@@ -45,6 +45,7 @@ function organizationNode(base: string): Record<string, unknown> {
     url: `${base}/`,
     description: PLATFORM.summary,
     logo: { "@type": "ImageObject", url: `${base}/logo.png` },
+    image: `${base}/og-image.png`,
   };
 }
 
@@ -128,6 +129,7 @@ function articleNode(
     description,
     author: { "@type": "Organization", name: PLATFORM.name },
     publisher: { "@id": `${base}/#organization` },
+    image: `${base}/og-image.png`,
     mainEntityOfPage: { "@type": "WebPage", "@id": `${base}${path}` },
     ...(dates
       ? { datePublished: dates.published, dateModified: dates.modified }
@@ -354,9 +356,12 @@ export function injectMarketingHead(
         })}</script>`,
     )
     .join("");
+  const ogImage = `${base}/og-image.png`;
   const headExtra =
     `<link rel="canonical" href="${escapeHtml(canonical)}" />` +
     `<meta property="og:url" content="${escapeHtml(canonical)}" />` +
+    `<meta property="og:image" content="${escapeHtml(ogImage)}" />` +
+    `<meta name="twitter:image" content="${escapeHtml(ogImage)}" />` +
     ld;
   out = out.replace(/<\/head>/i, `${headExtra}</head>`);
 

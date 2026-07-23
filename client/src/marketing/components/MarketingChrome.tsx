@@ -13,15 +13,35 @@ const NAV = [
   { label: "Sign in", href: "/signup" },
 ];
 
+/**
+ * The Zolto brush-Z mark (matches /favicon.svg + /logo.png). Cream stroke with a
+ * violet accent dot, tuned for the dark marketing chrome. Inline so it inherits
+ * crisp rendering at any size.
+ */
+export function BrushMark({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="8 34 184 132"
+      className={className}
+      role="img"
+      aria-label="Zolto"
+    >
+      <path
+        d="M50 54 C70 50 132 50 150 54 C150 66 120 70 96 84 C78 95 66 110 58 130 C74 138 132 132 152 138 C150 150 120 152 96 150 C74 148 52 150 46 140 C48 120 70 100 96 84 C70 74 54 70 50 54 Z"
+        fill="#f4efe6"
+      />
+      <circle cx="163" cy="60" r="6" fill="#a78bfa" />
+    </svg>
+  );
+}
+
 export function MarketingNav() {
   return (
     <header className="sticky top-0 z-50 border-b border-slate-800 bg-slate-900/90 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
-        <Link href="/" className="flex items-center gap-2">
-          <span className="grid h-8 w-8 place-items-center rounded-lg bg-violet-500 font-bold text-white">
-            Z
-          </span>
-          <span className="text-lg font-semibold tracking-tight text-white">
+        <Link href="/" className="flex items-center gap-2.5">
+          <BrushMark className="h-8 w-auto" />
+          <span className="font-serif text-2xl font-medium tracking-tight text-white">
             Zolto
           </span>
         </Link>
