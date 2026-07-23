@@ -21,8 +21,13 @@ function ScrollToTop() {
 function NotFound() {
   return (
     <div className="mx-auto max-w-xl px-6 py-32 text-center">
-      <h1 className="text-3xl font-semibold text-white">Page not found</h1>
-      <a href="/" className="mt-6 inline-block text-violet-300 hover:underline">
+      <h1 className="font-serif text-3xl text-[var(--brand-text)]">
+        Page not found
+      </h1>
+      <a
+        href="/"
+        className="mt-6 inline-block text-[var(--brand-accent)] hover:underline"
+      >
         Back to home
       </a>
     </div>
@@ -31,8 +36,9 @@ function NotFound() {
 
 /**
  * The Zolto marketing / SaaS surface — rendered when the hostname resolves to the
- * platform apex (zolto.com) rather than a tenant storefront. Has its own Zolto
- * identity and chrome, independent of the warm storefront theme.
+ * platform apex (zolto.com) rather than a tenant storefront. Shares the warm
+ * oyster/gold/ink + serif brand system of the storefront (a handcrafted identity
+ * for a maker audience), with its own marketing chrome.
  */
 export default function MarketingApp() {
   return (

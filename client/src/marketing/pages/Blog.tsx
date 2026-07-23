@@ -18,20 +18,20 @@ function PostCard({
   return (
     <Link
       href={href}
-      className="group flex flex-col rounded-2xl border border-slate-800 bg-slate-900 p-6 transition-colors hover:border-violet-500/60"
+      className="group flex flex-col rounded-xl border border-[var(--brand-border)] bg-white p-6 transition-colors hover:border-[var(--brand-accent)]/60"
     >
       {eyebrow && (
-        <p className="text-xs font-medium uppercase tracking-widest text-violet-400">
+        <p className="text-xs font-medium uppercase tracking-widest text-[var(--brand-accent)]">
           {eyebrow}
         </p>
       )}
-      <h2 className="mt-2 text-xl font-semibold text-white group-hover:text-violet-200">
+      <h2 className="mt-2 font-serif text-xl text-[var(--brand-text)] transition-colors group-hover:text-[var(--brand-accent)]">
         {title}
       </h2>
-      <p className="mt-2 flex-1 text-sm leading-relaxed text-slate-400">
+      <p className="mt-2 flex-1 text-sm leading-relaxed text-[var(--brand-muted-2)]">
         {dek}
       </p>
-      <p className="mt-4 text-xs uppercase tracking-widest text-slate-500">
+      <p className="mt-4 text-xs uppercase tracking-widest text-[var(--brand-muted)]">
         {meta}
       </p>
     </Link>
@@ -53,13 +53,13 @@ export default function Blog() {
   return (
     <div className="mx-auto max-w-5xl px-6 py-20">
       <div className="max-w-2xl">
-        <p className="text-xs font-medium uppercase tracking-widest text-violet-400">
+        <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
           The Launch Diary
         </p>
-        <h1 className="mt-3 text-4xl font-semibold tracking-tight text-white">
+        <h1 className="mt-2 font-serif text-4xl text-[var(--brand-text)]">
           A maker's first online store, documented.
         </h1>
-        <p className="mt-4 text-lg text-slate-300">
+        <p className="mt-4 text-lg text-[var(--brand-muted-2)]">
           A pearl jewelry maker in Zurich went from ~60 offline sales a month at
           Christmas markets to a hybrid online-offline business. This is the
           real process — setup, launch day, first month — written as it
