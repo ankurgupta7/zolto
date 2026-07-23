@@ -47,11 +47,14 @@ if [ "${DISK_USE_PCT:-0}" -ge 90 ] 2>/dev/null; then
   Check:  docker system df"
 fi
 
-# Load .env (skip blank lines and comments)
-set -a
-# shellcheck source=/dev/null
-source <(grep -v '^\s*#' .env | grep -v '^\s*$')
-set +a
+# Load .env into the environment. We parse it rather than `source` it: values
+# can legitimately contain shell metacharacters — e.g.
+#   RESEND_FROM_EMAIL=Kalakosh <orders@kalakosh.ch>
+# — which `source` would try to execute, aborting the deploy with
+# "syntax error near unexpected token `newline'". docker-compose reads these
+# same values literally, so the shell must too. See deploy/lib/env.sh.
+source "deploy/lib/env.sh"
+load_env ".env"
 
 : "${MYSQL_USER:?MYSQL_USER not set in .env}"
 : "${MYSQL_PASSWORD:?MYSQL_PASSWORD not set in .env}"
