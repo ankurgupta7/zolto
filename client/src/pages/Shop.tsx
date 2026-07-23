@@ -19,17 +19,18 @@ const CATEGORY_VALUES: (ProductCategory | "All")[] = [
 // Necklaces/Earrings). Sourced from the single shared definition so the web
 // shop and POS apps never drift.
 const extraIncludesFor = (
-  cat: ProductCategory | "All"
+  cat: ProductCategory | "All",
 ): readonly ProductCategory[] =>
-  (CATEGORY_EXTRA_INCLUDES as Record<string, readonly ProductCategory[]>)[cat] ??
-  [];
+  (CATEGORY_EXTRA_INCLUDES as Record<string, readonly ProductCategory[]>)[
+    cat
+  ] ?? [];
 
 export default function Shop() {
   const { t } = useTranslation();
   const { branding } = useTenant();
   const [_location] = useLocation();
   const [activeCategory, setActiveCategory] = useState<ProductCategory | "All">(
-    "All"
+    "All",
   );
 
   const CATEGORY_LABELS: Record<string, string> = {
@@ -60,18 +61,18 @@ export default function Shop() {
   const products =
     allProducts && activeCategory !== "All"
       ? allProducts.filter(
-          p =>
+          (p) =>
             p.category === activeCategory ||
-            extraIncludesFor(activeCategory).includes(p.category)
+            extraIncludesFor(activeCategory).includes(p.category),
         )
       : allProducts;
 
   const availableCategories = useMemo(
-    () => new Set(allProducts?.map(p => p.category) ?? []),
-    [allProducts]
+    () => new Set(allProducts?.map((p) => p.category) ?? []),
+    [allProducts],
   );
   const visibleCategoryValues = CATEGORY_VALUES.filter(
-    cat => cat === "All" || availableCategories.has(cat)
+    (cat) => cat === "All" || availableCategories.has(cat),
   );
 
   return (
@@ -91,7 +92,7 @@ export default function Shop() {
       <section className="bg-[var(--brand-surface)] border-b border-[var(--brand-border)] sticky top-16 md:top-20 z-30">
         <div className="container">
           <div className="flex items-center gap-1 overflow-x-auto py-4 scrollbar-hide">
-            {visibleCategoryValues.map(cat => (
+            {visibleCategoryValues.map((cat) => (
               <button
                 type="button"
                 key={cat}
@@ -131,7 +132,7 @@ export default function Shop() {
                   : ""}
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {products.map(product => (
+                {products.map((product) => (
                   <ProductCard key={product.id} product={product} />
                 ))}
               </div>

@@ -67,7 +67,7 @@ interface MatchDecision {
 // AI bulk-upload categorises a single piece per card, so "Sets" is folded into
 // "Other" and omitted here — kept in sync with the server-side AI extractors.
 const CATEGORIES: ProductCategory[] = PRODUCT_CATEGORIES.filter(
-  c => c !== "Sets"
+  (c) => c !== "Sets",
 );
 const GROUP_LABELS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
@@ -131,7 +131,7 @@ export default function BulkUpload() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [groups, setGroups] = useState<Group[]>([]);
   const [selectedPhotoIds, setSelectedPhotoIds] = useState<Set<string>>(
-    new Set()
+    new Set(),
   );
   const [groupingMode, setGroupingMode] = useState(false);
   const [reviewCards, setReviewCards] = useState<ReviewCard[]>([]);
@@ -152,8 +152,7 @@ export default function BulkUpload() {
   const bulkAnalyzeMutation = trpc.products.bulkAnalyze.useMutation();
   const bulkCreateMutation = trpc.products.bulkCreate.useMutation();
   const findMatchesMutation = trpc.products.findMatches.useMutation();
-  const bulkUpsertImagesMutation =
-    trpc.products.bulkUpsertImages.useMutation();
+  const bulkUpsertImagesMutation = trpc.products.bulkUpsertImages.useMutation();
 
   // ── Step 1: Photo selection ──────────────────────────────────────────────────
 
@@ -171,32 +170,32 @@ export default function BulkUpload() {
         "image/heif",
       ];
 
-      const oversized = files.filter(f => f.size > MAX_FILE_SIZE);
+      const oversized = files.filter((f) => f.size > MAX_FILE_SIZE);
       const badType = files.filter(
-        f => f.type && !ALLOWED_TYPES.includes(f.type)
+        (f) => f.type && !ALLOWED_TYPES.includes(f.type),
       );
 
       if (oversized.length > 0) {
         toast.error(
-          `${oversized.length} file(s) exceed 8 MB and were skipped: ${oversized.map(f => f.name).join(", ")}`
+          `${oversized.length} file(s) exceed 8 MB and were skipped: ${oversized.map((f) => f.name).join(", ")}`,
         );
       }
       if (badType.length > 0) {
         toast.error(
-          `${badType.length} file(s) have unsupported formats and were skipped: ${badType.map(f => f.name).join(", ")}`
+          `${badType.length} file(s) have unsupported formats and were skipped: ${badType.map((f) => f.name).join(", ")}`,
         );
       }
 
       const validFiles = files.filter(
-        f =>
+        (f) =>
           f.size <= MAX_FILE_SIZE &&
-          (!f.type || ALLOWED_TYPES.includes(f.type))
+          (!f.type || ALLOWED_TYPES.includes(f.type)),
       );
       if (validFiles.length === 0) return;
 
       const readers = validFiles.map(
-        file =>
-          new Promise<PhotoItem | null>(resolve => {
+        (file) =>
+          new Promise<PhotoItem | null>((resolve) => {
             const reader = new FileReader();
             reader.onload = () => {
               resolve({
@@ -212,30 +211,30 @@ export default function BulkUpload() {
               resolve(null);
             };
             reader.readAsDataURL(file);
-          })
+          }),
       );
 
-      Promise.all(readers).then(results => {
+      Promise.all(readers).then((results) => {
         const newPhotos = results.filter((p): p is PhotoItem => p !== null);
-        setPhotos(prev => [...prev, ...newPhotos]);
+        setPhotos((prev) => [...prev, ...newPhotos]);
         if (newPhotos.length > 0) {
           toast.success(
-            t("bulkUpload.photosSelected", { count: newPhotos.length })
+            t("bulkUpload.photosSelected", { count: newPhotos.length }),
           );
         }
       });
 
       e.target.value = "";
     },
-    [t]
+    [t],
   );
 
   const removePhoto = (id: string) => {
-    setPhotos(prev => prev.filter(p => p.id !== id));
-    setPhotos(prev =>
-      prev.map(p => (p.id === id ? { ...p, groupId: null } : p))
+    setPhotos((prev) => prev.filter((p) => p.id !== id));
+    setPhotos((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, groupId: null } : p)),
     );
-    setSelectedPhotoIds(prev => {
+    setSelectedPhotoIds((prev) => {
       const next = new Set(prev);
       next.delete(id);
       return next;
@@ -246,7 +245,7 @@ export default function BulkUpload() {
 
   const togglePhotoSelect = (id: string) => {
     if (!groupingMode) return;
-    setSelectedPhotoIds(prev => {
+    setSelectedPhotoIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
@@ -261,23 +260,23 @@ export default function BulkUpload() {
     }
     const label = GROUP_LABELS[groups.length] ?? `${groups.length + 1}`;
     const newGroup: Group = { id: `group-${Date.now()}`, label };
-    setGroups(prev => [...prev, newGroup]);
-    setPhotos(prev =>
-      prev.map(p =>
-        selectedPhotoIds.has(p.id) ? { ...p, groupId: newGroup.id } : p
-      )
+    setGroups((prev) => [...prev, newGroup]);
+    setPhotos((prev) =>
+      prev.map((p) =>
+        selectedPhotoIds.has(p.id) ? { ...p, groupId: newGroup.id } : p,
+      ),
     );
     setSelectedPhotoIds(new Set());
     toast.success(
-      `Group ${label} with ${selectedPhotoIds.size} photos created`
+      `Group ${label} with ${selectedPhotoIds.size} photos created`,
     );
   };
 
   const ungroup = (groupId: string) => {
-    setPhotos(prev =>
-      prev.map(p => (p.groupId === groupId ? { ...p, groupId: null } : p))
+    setPhotos((prev) =>
+      prev.map((p) => (p.groupId === groupId ? { ...p, groupId: null } : p)),
     );
-    setGroups(prev => prev.filter(g => g.id !== groupId));
+    setGroups((prev) => prev.filter((g) => g.id !== groupId));
   };
 
   // ── Step 3: AI Analysis + Match Finding ─────────────────────────────────────
@@ -288,11 +287,11 @@ export default function BulkUpload() {
   }> => {
     const result: Array<{ groupId: string; photoIds: string[] }> = [];
     for (const group of groups) {
-      const groupPhotos = photos.filter(p => p.groupId === group.id);
+      const groupPhotos = photos.filter((p) => p.groupId === group.id);
       if (groupPhotos.length > 0) {
         result.push({
           groupId: group.id,
-          photoIds: groupPhotos.map(p => p.id),
+          photoIds: groupPhotos.map((p) => p.id),
         });
       }
     }
@@ -316,10 +315,10 @@ export default function BulkUpload() {
     setStep(3);
 
     try {
-      const groups_input = reviewGroups.map(rg => ({
+      const groups_input = reviewGroups.map((rg) => ({
         groupId: rg.groupId,
-        images: rg.photoIds.map(pid => {
-          const photo = photos.find(p => p.id === pid)!;
+        images: rg.photoIds.map((pid) => {
+          const photo = photos.find((p) => p.id === pid)!;
           return { data: photo.dataUrl, mimeType: photo.mimeType };
         }),
       }));
@@ -328,8 +327,8 @@ export default function BulkUpload() {
         groups: groups_input,
       });
 
-      const cards: ReviewCard[] = reviewGroups.map(rg => {
-        const aiResult = results.find(r => r.groupId === rg.groupId);
+      const cards: ReviewCard[] = reviewGroups.map((rg) => {
+        const aiResult = results.find((r) => r.groupId === rg.groupId);
         return {
           groupId: rg.groupId,
           photoIds: rg.photoIds,
@@ -348,7 +347,7 @@ export default function BulkUpload() {
       setReviewCards(cards);
 
       // ── Auto-run findMatches after AI analysis ──
-      const matchInput = cards.map(card => ({
+      const matchInput = cards.map((card) => ({
         tempId: card.groupId,
         name: card.name,
         description: card.description,
@@ -379,11 +378,11 @@ export default function BulkUpload() {
         setMatchDecisions(decisions);
 
         const matchCount = matchResult.matches.filter(
-          m => m.confidence !== "none"
+          (m) => m.confidence !== "none",
         ).length;
         if (matchCount > 0) {
           toast.success(
-            `${matchCount} of ${cards.length} products found in inventory`
+            `${matchCount} of ${cards.length} products found in inventory`,
           );
         }
       } catch (err) {
@@ -399,12 +398,10 @@ export default function BulkUpload() {
         setMatchDecisions(decisions);
       }
     } catch {
-      toast.error(
-        "AI analysis failed. You can enter details manually."
-      );
+      toast.error("AI analysis failed. You can enter details manually.");
       const reviewGroups2 = buildReviewGroups();
       setReviewCards(
-        reviewGroups2.map(rg => ({
+        reviewGroups2.map((rg) => ({
           groupId: rg.groupId,
           photoIds: rg.photoIds,
           name: "Schmuckstück",
@@ -415,7 +412,7 @@ export default function BulkUpload() {
           price: "",
           confirmed: true,
           aiSuccess: false,
-        }))
+        })),
       );
     } finally {
       setAnalyzing(false);
@@ -426,15 +423,15 @@ export default function BulkUpload() {
   const updateCard = (
     groupId: string,
     field: keyof ReviewCard,
-    value: unknown
+    value: unknown,
   ) => {
-    setReviewCards(prev =>
-      prev.map(c => (c.groupId === groupId ? { ...c, [field]: value } : c))
+    setReviewCards((prev) =>
+      prev.map((c) => (c.groupId === groupId ? { ...c, [field]: value } : c)),
     );
   };
 
   const getMatchForCard = (groupId: string): MatchResult | undefined => {
-    return matches.find(m => m.tempId === groupId);
+    return matches.find((m) => m.tempId === groupId);
   };
 
   const getDecisionForCard = (groupId: string): MatchDecision => {
@@ -447,7 +444,7 @@ export default function BulkUpload() {
   };
 
   const setDecision = (groupId: string, decision: MatchDecision) => {
-    setMatchDecisions(prev => {
+    setMatchDecisions((prev) => {
       const next = new Map(prev);
       next.set(groupId, decision);
       return next;
@@ -457,7 +454,7 @@ export default function BulkUpload() {
   // ── Step 4: Publish ──────────────────────────────────────────────────────────
 
   const handlePublish = async () => {
-    const confirmed = reviewCards.filter(c => c.confirmed);
+    const confirmed = reviewCards.filter((c) => c.confirmed);
 
     // Separate into "add to existing" and "create new"
     const toUpsert: Array<{
@@ -471,10 +468,7 @@ export default function BulkUpload() {
       const match = getMatchForCard(card.groupId);
       const decision = getDecisionForCard(card.groupId);
 
-      if (
-        decision.action === "add-to-existing" &&
-        match?.matchedProductId
-      ) {
+      if (decision.action === "add-to-existing" && match?.matchedProductId) {
         toUpsert.push({ card, match, decision });
       } else {
         // Validate price for new items
@@ -483,9 +477,7 @@ export default function BulkUpload() {
           Number.isNaN(parseFloat(card.price)) ||
           parseFloat(card.price) <= 0
         ) {
-          toast.error(
-            `Please set a valid price for: ${card.name}`
-          );
+          toast.error(`Please set a valid price for: ${card.name}`);
           return;
         }
         toCreate.push(card);
@@ -509,8 +501,8 @@ export default function BulkUpload() {
       if (toUpsert.length > 0) {
         const upsertItems = toUpsert.map(({ card, match, decision }) => ({
           productId: match.matchedProductId!,
-          images: card.photoIds.map(pid => {
-            const photo = photos.find(p => p.id === pid)!;
+          images: card.photoIds.map((pid) => {
+            const photo = photos.find((p) => p.id === pid)!;
             return { data: photo.dataUrl, mimeType: photo.mimeType };
           }),
           description: card.description,
@@ -519,10 +511,9 @@ export default function BulkUpload() {
         }));
 
         try {
-          const upsertResult =
-            await bulkUpsertImagesMutation.mutateAsync({
-              items: upsertItems,
-            });
+          const upsertResult = await bulkUpsertImagesMutation.mutateAsync({
+            items: upsertItems,
+          });
           updatedCount += upsertResult.updated;
           allFailed.push(...upsertResult.failed);
           if (upsertResult.extraImageWarnings) {
@@ -531,22 +522,22 @@ export default function BulkUpload() {
         } catch (err) {
           console.error("[bulkUpsertImages] failed:", err);
           allFailed.push(
-            ...toUpsert.map(u => u.match.matchedProductName ?? "unknown")
+            ...toUpsert.map((u) => u.match.matchedProductName ?? "unknown"),
           );
         }
       }
 
       // ── Create new products ──
       if (toCreate.length > 0) {
-        const productsToCreate = toCreate.map(card => ({
+        const productsToCreate = toCreate.map((card) => ({
           name: card.name,
           nameEn: card.nameEn || undefined,
           description: card.description,
           descriptionEn: card.descriptionEn || undefined,
           price: parseFloat(card.price),
           category: card.category,
-          images: card.photoIds.map(pid => {
-            const photo = photos.find(p => p.id === pid)!;
+          images: card.photoIds.map((pid) => {
+            const photo = photos.find((p) => p.id === pid)!;
             return { data: photo.dataUrl, mimeType: photo.mimeType };
           }),
         }));
@@ -562,7 +553,7 @@ export default function BulkUpload() {
           }
         } catch (err) {
           console.error("[bulkCreate] failed:", err);
-          allFailed.push(...toCreate.map(c => c.name));
+          allFailed.push(...toCreate.map((c) => c.name));
         }
       }
 
@@ -576,9 +567,7 @@ export default function BulkUpload() {
       utils.products.list.invalidate();
       utils.products.adminList.invalidate();
     } catch {
-      toast.error(
-        "Publishing failed. Please try again."
-      );
+      toast.error("Publishing failed. Please try again.");
     } finally {
       setPublishing(false);
     }
@@ -706,7 +695,7 @@ export default function BulkUpload() {
             {photos.length > 0 && (
               <>
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 mb-6">
-                  {photos.map(photo => (
+                  {photos.map((photo) => (
                     <div
                       key={photo.id}
                       className="relative aspect-square group"
@@ -771,7 +760,7 @@ export default function BulkUpload() {
               <button
                 type="button"
                 onClick={() => {
-                  setGroupingMode(v => !v);
+                  setGroupingMode((v) => !v);
                   setSelectedPhotoIds(new Set());
                 }}
                 className={`flex items-center gap-2 px-4 py-2 text-xs uppercase tracking-[0.12em] font-sans transition-colors ${
@@ -813,9 +802,9 @@ export default function BulkUpload() {
                 <p className="text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans">
                   {t("bulkUpload.groups", { count: groups.length })}
                 </p>
-                {groups.map(group => {
+                {groups.map((group) => {
                   const groupPhotos = photos.filter(
-                    p => p.groupId === group.id
+                    (p) => p.groupId === group.id,
                   );
                   return (
                     <div
@@ -826,7 +815,7 @@ export default function BulkUpload() {
                         {group.label}
                       </div>
                       <div className="flex gap-1.5 flex-1 overflow-x-auto">
-                        {groupPhotos.map(p => (
+                        {groupPhotos.map((p) => (
                           <img
                             key={p.id}
                             src={p.dataUrl}
@@ -853,9 +842,9 @@ export default function BulkUpload() {
             )}
 
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 mb-6">
-              {photos.map(photo => {
+              {photos.map((photo) => {
                 const group = photo.groupId
-                  ? groups.find(g => g.id === photo.groupId)
+                  ? groups.find((g) => g.id === photo.groupId)
                   : null;
                 const isSelected = selectedPhotoIds.has(photo.id);
                 return (
@@ -884,7 +873,10 @@ export default function BulkUpload() {
                     )}
                     {isSelected && (
                       <div className="absolute inset-0 bg-[var(--brand-accent)]/20 flex items-center justify-center">
-                        <CheckCircle2 size={24} className="text-[var(--brand-accent)]" />
+                        <CheckCircle2
+                          size={24}
+                          className="text-[var(--brand-accent)]"
+                        />
                       </div>
                     )}
                     {!group && !isSelected && (
@@ -903,7 +895,7 @@ export default function BulkUpload() {
                 dangerouslySetInnerHTML={{
                   __html: t("bulkUpload.willCreate", {
                     count:
-                      groups.length + photos.filter(p => !p.groupId).length,
+                      groups.length + photos.filter((p) => !p.groupId).length,
                   }),
                 }}
               />
@@ -911,7 +903,7 @@ export default function BulkUpload() {
                 {groups.length > 0 &&
                   `${t("bulkUpload.groupedProducts", { count: groups.length })} · `}
                 {t("bulkUpload.soloPhotos", {
-                  count: photos.filter(p => !p.groupId).length,
+                  count: photos.filter((p) => !p.groupId).length,
                 })}
               </p>
             </div>
@@ -947,7 +939,7 @@ export default function BulkUpload() {
               <p className="text-muted-foreground text-sm font-sans">
                 {findingMatches
                   ? "Checking inventory..."
-                  : matches.some(m => m.confidence !== "none")
+                  : matches.some((m) => m.confidence !== "none")
                     ? "Matches found with existing inventory are shown below."
                     : t("bulkUpload.reviewSubtitle")}
               </p>
@@ -977,7 +969,9 @@ export default function BulkUpload() {
                     const match = getMatchForCard(card.groupId);
                     const decision = getDecisionForCard(card.groupId);
                     const hasMatch =
-                      match && match.confidence !== "none" && match.matchedProductId;
+                      match &&
+                      match.confidence !== "none" &&
+                      match.matchedProductId;
 
                     return (
                       <div
@@ -990,8 +984,8 @@ export default function BulkUpload() {
                       >
                         <div className="flex items-center gap-3 p-4 border-b border-[var(--brand-border)]">
                           <div className="flex gap-1.5 flex-shrink-0">
-                            {card.photoIds.slice(0, 3).map(pid => {
-                              const photo = photos.find(p => p.id === pid);
+                            {card.photoIds.slice(0, 3).map((pid) => {
+                              const photo = photos.find((p) => p.id === pid);
                               return photo ? (
                                 <img
                                   key={pid}
@@ -1034,11 +1028,11 @@ export default function BulkUpload() {
                             <input
                               type="checkbox"
                               checked={card.confirmed}
-                              onChange={e =>
+                              onChange={(e) =>
                                 updateCard(
                                   card.groupId,
                                   "confirmed",
-                                  e.target.checked
+                                  e.target.checked,
                                 )
                               }
                               className="w-4 h-4 accent-[var(--brand-ink)]"
@@ -1140,7 +1134,7 @@ export default function BulkUpload() {
                                 <input
                                   type="checkbox"
                                   checked={decision.updateDescription}
-                                  onChange={e =>
+                                  onChange={(e) =>
                                     setDecision(card.groupId, {
                                       action: "add-to-existing",
                                       updateDescription: e.target.checked,
@@ -1165,17 +1159,19 @@ export default function BulkUpload() {
                                 className="block text-xs uppercase tracking-[0.12em] text-foreground font-sans mb-1.5"
                               >
                                 {t("bulkUpload.fieldNameDe")}{" "}
-                                <span className="text-[var(--brand-accent)]">*</span>
+                                <span className="text-[var(--brand-accent)]">
+                                  *
+                                </span>
                               </label>
                               <input
                                 id={`bulk-name-${card.groupId}`}
                                 type="text"
                                 value={card.name}
-                                onChange={e =>
+                                onChange={(e) =>
                                   updateCard(
                                     card.groupId,
                                     "name",
-                                    e.target.value
+                                    e.target.value,
                                   )
                                 }
                                 className="w-full border border-[var(--brand-ink)]/20 px-3 py-2 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] transition-colors bg-transparent"
@@ -1189,17 +1185,19 @@ export default function BulkUpload() {
                                 className="block text-xs uppercase tracking-[0.12em] text-foreground font-sans mb-1.5"
                               >
                                 {t("bulkUpload.fieldNameEn")}{" "}
-                                <span className="text-[var(--brand-accent)]">*</span>
+                                <span className="text-[var(--brand-accent)]">
+                                  *
+                                </span>
                               </label>
                               <input
                                 id={`bulk-nameEn-${card.groupId}`}
                                 type="text"
                                 value={card.nameEn}
-                                onChange={e =>
+                                onChange={(e) =>
                                   updateCard(
                                     card.groupId,
                                     "nameEn",
-                                    e.target.value
+                                    e.target.value,
                                   )
                                 }
                                 className="w-full border border-[var(--brand-ink)]/20 px-3 py-2 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] transition-colors bg-transparent"
@@ -1212,21 +1210,23 @@ export default function BulkUpload() {
                                 className="block text-xs uppercase tracking-[0.12em] text-foreground font-sans mb-1.5"
                               >
                                 {t("bulkUpload.fieldCategory")}{" "}
-                                <span className="text-[var(--brand-accent)]">*</span>
+                                <span className="text-[var(--brand-accent)]">
+                                  *
+                                </span>
                               </label>
                               <select
                                 id={`bulk-category-${card.groupId}`}
                                 value={card.category}
-                                onChange={e =>
+                                onChange={(e) =>
                                   updateCard(
                                     card.groupId,
                                     "category",
-                                    e.target.value as ProductCategory
+                                    e.target.value as ProductCategory,
                                   )
                                 }
                                 className="w-full border border-[var(--brand-ink)]/20 px-3 py-2 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] transition-colors bg-white"
                               >
-                                {CATEGORIES.map(c => (
+                                {CATEGORIES.map((c) => (
                                   <option key={c} value={c}>
                                     {c}
                                   </option>
@@ -1240,7 +1240,9 @@ export default function BulkUpload() {
                                 className="block text-xs uppercase tracking-[0.12em] text-foreground font-sans mb-1.5"
                               >
                                 {t("bulkUpload.fieldPrice")}{" "}
-                                <span className="text-[var(--brand-accent)]">*</span>
+                                <span className="text-[var(--brand-accent)]">
+                                  *
+                                </span>
                               </label>
                               <input
                                 id={`bulk-price-${card.groupId}`}
@@ -1248,11 +1250,11 @@ export default function BulkUpload() {
                                 step="0.01"
                                 min="0"
                                 value={card.price}
-                                onChange={e =>
+                                onChange={(e) =>
                                   updateCard(
                                     card.groupId,
                                     "price",
-                                    e.target.value
+                                    e.target.value,
                                   )
                                 }
                                 placeholder={t("bulkUpload.pricePlaceholder")}
@@ -1267,16 +1269,18 @@ export default function BulkUpload() {
                                 className="block text-xs uppercase tracking-[0.12em] text-foreground font-sans mb-1.5"
                               >
                                 {t("bulkUpload.fieldDescriptionDe")}{" "}
-                                <span className="text-[var(--brand-accent)]">*</span>
+                                <span className="text-[var(--brand-accent)]">
+                                  *
+                                </span>
                               </label>
                               <textarea
                                 id={`bulk-description-${card.groupId}`}
                                 value={card.description}
-                                onChange={e =>
+                                onChange={(e) =>
                                   updateCard(
                                     card.groupId,
                                     "description",
-                                    e.target.value
+                                    e.target.value,
                                   )
                                 }
                                 rows={3}
@@ -1291,16 +1295,18 @@ export default function BulkUpload() {
                                 className="block text-xs uppercase tracking-[0.12em] text-foreground font-sans mb-1.5"
                               >
                                 {t("bulkUpload.fieldDescriptionEn")}{" "}
-                                <span className="text-[var(--brand-accent)]">*</span>
+                                <span className="text-[var(--brand-accent)]">
+                                  *
+                                </span>
                               </label>
                               <textarea
                                 id={`bulk-descriptionEn-${card.groupId}`}
                                 value={card.descriptionEn}
-                                onChange={e =>
+                                onChange={(e) =>
                                   updateCard(
                                     card.groupId,
                                     "descriptionEn",
-                                    e.target.value
+                                    e.target.value,
                                   )
                                 }
                                 rows={3}
@@ -1320,14 +1326,14 @@ export default function BulkUpload() {
                       className="text-sm font-sans text-foreground"
                       dangerouslySetInnerHTML={{
                         __html: t("bulkUpload.selectedForPublish", {
-                          confirmed: reviewCards.filter(c => c.confirmed)
+                          confirmed: reviewCards.filter((c) => c.confirmed)
                             .length,
                           total: reviewCards.length,
                         }),
                       }}
                     />
                     {(() => {
-                      const newItems = reviewCards.filter(c => {
+                      const newItems = reviewCards.filter((c) => {
                         if (!c.confirmed) return false;
                         const d = getDecisionForCard(c.groupId);
                         const m = getMatchForCard(c.groupId);
@@ -1335,7 +1341,7 @@ export default function BulkUpload() {
                           d.action === "create-new" || !m?.matchedProductId
                         );
                       });
-                      const existingItems = reviewCards.filter(c => {
+                      const existingItems = reviewCards.filter((c) => {
                         if (!c.confirmed) return false;
                         const d = getDecisionForCard(c.groupId);
                         const m = getMatchForCard(c.groupId);
@@ -1356,7 +1362,7 @@ export default function BulkUpload() {
                       );
                     })()}
                     {reviewCards
-                      .filter(c => {
+                      .filter((c) => {
                         if (!c.confirmed) return false;
                         const d = getDecisionForCard(c.groupId);
                         const m = getMatchForCard(c.groupId);
@@ -1365,27 +1371,29 @@ export default function BulkUpload() {
                         );
                       })
                       .filter(
-                        c =>
+                        (c) =>
                           !c.price ||
                           Number.isNaN(parseFloat(c.price)) ||
-                          parseFloat(c.price) <= 0
+                          parseFloat(c.price) <= 0,
                       ).length > 0 && (
                       <p className="text-xs text-amber-600 font-sans mt-0.5">
                         {t("bulkUpload.needsPrice", {
-                          count: reviewCards.filter(c => {
-                            if (!c.confirmed) return false;
-                            const d = getDecisionForCard(c.groupId);
-                            const m = getMatchForCard(c.groupId);
-                            return (
-                              d.action === "create-new" ||
-                              !m?.matchedProductId
-                            );
-                          }).filter(
-                            c =>
-                              !c.price ||
-                              Number.isNaN(parseFloat(c.price)) ||
-                              parseFloat(c.price) <= 0
-                          ).length,
+                          count: reviewCards
+                            .filter((c) => {
+                              if (!c.confirmed) return false;
+                              const d = getDecisionForCard(c.groupId);
+                              const m = getMatchForCard(c.groupId);
+                              return (
+                                d.action === "create-new" ||
+                                !m?.matchedProductId
+                              );
+                            })
+                            .filter(
+                              (c) =>
+                                !c.price ||
+                                Number.isNaN(parseFloat(c.price)) ||
+                                parseFloat(c.price) <= 0,
+                            ).length,
                         })}
                       </p>
                     )}
@@ -1406,7 +1414,7 @@ export default function BulkUpload() {
                     onClick={handlePublish}
                     disabled={
                       publishing ||
-                      reviewCards.filter(c => c.confirmed).length === 0
+                      reviewCards.filter((c) => c.confirmed).length === 0
                     }
                     className="flex-1 flex items-center justify-center gap-2 bg-[var(--brand-accent)] text-[var(--brand-ink)] px-6 py-3 text-sm uppercase tracking-[0.15em] font-sans font-medium hover:bg-[var(--brand-accent-light)] transition-colors disabled:opacity-60"
                   >
@@ -1416,7 +1424,7 @@ export default function BulkUpload() {
                       <ShoppingBag size={16} />
                     )}
                     {t("bulkUpload.publishButton", {
-                      count: reviewCards.filter(c => c.confirmed).length,
+                      count: reviewCards.filter((c) => c.confirmed).length,
                     })}
                   </button>
                 </div>
@@ -1437,8 +1445,7 @@ export default function BulkUpload() {
               })}
             </h2>
             <p className="text-muted-foreground font-sans mb-2">
-              {publishResult.created > 0 &&
-                `${publishResult.created} created`}
+              {publishResult.created > 0 && `${publishResult.created} created`}
               {publishResult.created > 0 && publishResult.updated > 0
                 ? " · "
                 : ""}

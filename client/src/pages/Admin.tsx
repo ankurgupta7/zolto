@@ -36,7 +36,6 @@ import ProductDiscoveryControls, {
   type ViewMode,
 } from "@/components/ProductDiscoveryControls";
 import ProductCategoryGroup from "@/components/ProductCategoryGroup";
-import ProductListItem from "@/components/ProductListItem";
 import { Link } from "wouter";
 import { HelpCircle } from "lucide-react";
 import GuidedTour from "@/components/GuidedTour";

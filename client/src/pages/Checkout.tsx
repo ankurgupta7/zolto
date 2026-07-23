@@ -67,9 +67,15 @@ export default function Checkout() {
     return (
       <div className="page-enter pt-28 pb-24 min-h-[60vh]">
         <div className="container max-w-2xl text-center">
-          <div className="text-6xl text-[var(--brand-accent)]/20 font-serif mb-6">◇</div>
-          <h1 className="font-serif text-foreground text-2xl mb-3">{t("checkout.emptyTitle")}</h1>
-          <p className="text-muted-foreground text-sm font-sans mb-8">{t("checkout.emptySub")}</p>
+          <div className="text-6xl text-[var(--brand-accent)]/20 font-serif mb-6">
+            ◇
+          </div>
+          <h1 className="font-serif text-foreground text-2xl mb-3">
+            {t("checkout.emptyTitle")}
+          </h1>
+          <p className="text-muted-foreground text-sm font-sans mb-8">
+            {t("checkout.emptySub")}
+          </p>
           <Link
             href="/shop"
             className="inline-flex bg-[var(--brand-ink)] text-[var(--brand-accent)] px-8 py-3.5 text-sm uppercase tracking-[0.15em] font-sans hover:bg-[var(--brand-ink-hover)] transition-colors"
@@ -84,25 +90,42 @@ export default function Checkout() {
   return (
     <div className="page-enter pt-28 pb-24">
       <div className="container max-w-4xl">
-        <h1 className="font-serif text-foreground text-3xl mb-2">{t("checkout.title")}</h1>
+        <h1 className="font-serif text-foreground text-3xl mb-2">
+          {t("checkout.title")}
+        </h1>
         <div className="divider-gold w-16 mb-10" />
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-10">
           {/* Order summary */}
           <div className="lg:col-span-3 space-y-5">
             {items.map((item) => (
-              <div key={item.id} className="flex gap-4 items-start border-b border-[var(--brand-border)] pb-5">
+              <div
+                key={item.id}
+                className="flex gap-4 items-start border-b border-[var(--brand-border)] pb-5"
+              >
                 <div className="w-24 h-28 bg-[var(--brand-surface-3)] flex-shrink-0 overflow-hidden">
                   {item.imageUrl ? (
-                    <img src={item.imageUrl} alt={displayName(item)} className="w-full h-full object-cover" />
+                    <img
+                      src={item.imageUrl}
+                      alt={displayName(item)}
+                      className="w-full h-full object-cover"
+                    />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-3xl text-[var(--brand-accent)]/30 font-serif">◇</div>
+                    <div className="w-full h-full flex items-center justify-center text-3xl text-[var(--brand-accent)]/30 font-serif">
+                      ◇
+                    </div>
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-serif text-foreground text-lg leading-tight mb-1">{displayName(item)}</h3>
-                  <p className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground font-sans mb-2">{item.category}</p>
-                  <p className="font-serif text-[var(--brand-ink)] text-xl">CHF {Number(item.price).toFixed(2)}</p>
+                  <h3 className="font-serif text-foreground text-lg leading-tight mb-1">
+                    {displayName(item)}
+                  </h3>
+                  <p className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground font-sans mb-2">
+                    {item.category}
+                  </p>
+                  <p className="font-serif text-[var(--brand-ink)] text-xl">
+                    CHF {Number(item.price).toFixed(2)}
+                  </p>
                 </div>
                 <button
                   type="button"
@@ -123,9 +146,13 @@ export default function Checkout() {
                 <span className="text-sm uppercase tracking-[0.15em] font-sans text-muted-foreground">
                   {t("cart.subtotal")}
                 </span>
-                <span className="font-serif text-2xl text-[var(--brand-ink)]">CHF {total.toFixed(2)}</span>
+                <span className="font-serif text-2xl text-[var(--brand-ink)]">
+                  CHF {total.toFixed(2)}
+                </span>
               </div>
-              <p className="text-xs text-muted-foreground font-sans mb-5">{t("checkout.shippingNote")}</p>
+              <p className="text-xs text-muted-foreground font-sans mb-5">
+                {t("checkout.shippingNote")}
+              </p>
 
               <div className="mb-5">
                 <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-sans mb-2">
@@ -143,7 +170,10 @@ export default function Checkout() {
                 />
                 <span className="text-xs text-muted-foreground font-sans leading-relaxed">
                   {t("checkout.acceptPrefix")}{" "}
-                  <Link href="/policy" className="text-[var(--brand-ink)] underline hover:text-[var(--brand-accent)]">
+                  <Link
+                    href="/policy"
+                    className="text-[var(--brand-ink)] underline hover:text-[var(--brand-accent)]"
+                  >
                     {t("checkout.acceptPolicyLink")}
                   </Link>
                   .
@@ -152,7 +182,10 @@ export default function Checkout() {
 
               <p className="text-[11px] text-muted-foreground font-sans mb-5 pl-6">
                 {t("policy.returnsShort")}{" "}
-                <Link href="/policy" className="text-[var(--brand-ink)] underline hover:text-[var(--brand-accent)] transition-colors">
+                <Link
+                  href="/policy"
+                  className="text-[var(--brand-ink)] underline hover:text-[var(--brand-accent)] transition-colors"
+                >
                   {t("checkout.readPolicy")}
                 </Link>
               </p>
@@ -169,7 +202,9 @@ export default function Checkout() {
                   className="w-full flex items-center justify-center gap-2 bg-[var(--brand-ink)] text-[var(--brand-accent)] py-3.5 text-sm uppercase tracking-[0.15em] font-sans hover:bg-[var(--brand-ink-hover)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Lock size={14} />
-                  {submitting ? t("checkout.redirecting") : t("checkout.payNow")}
+                  {submitting
+                    ? t("checkout.redirecting")
+                    : t("checkout.payNow")}
                 </button>
               )}
 
@@ -179,7 +214,10 @@ export default function Checkout() {
 
               <button
                 type="button"
-                onClick={() => { clear(); navigate("/shop"); }}
+                onClick={() => {
+                  clear();
+                  navigate("/shop");
+                }}
                 className="w-full text-muted-foreground text-[11px] uppercase tracking-[0.15em] font-sans hover:text-foreground transition-colors mt-4"
               >
                 {t("checkout.clearBag")}

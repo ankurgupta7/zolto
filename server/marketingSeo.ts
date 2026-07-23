@@ -187,7 +187,7 @@ export function getMarketingSeo(
       return {
         path: "/pricing",
         title: `Pricing — ${PLATFORM.name} for makers`,
-        description: `${PLATFORM.pricingSummary} Plans: ${PLANS.map((p) => `${p.name} ${p.priceEur === 0 ? "free" : "€" + p.priceEur + "/mo"}`).join(", ")}.`,
+        description: `${PLATFORM.pricingSummary} Plans: ${PLANS.map((p) => `${p.name} ${p.priceEur === 0 ? "free" : `€${p.priceEur}/mo`}`).join(", ")}.`,
         jsonLd: [
           ...common,
           softwareApplicationNode(base),
@@ -197,7 +197,7 @@ export function getMarketingSeo(
             ["Pricing", "/pricing"],
           ]),
         ],
-        noscript: `${PLATFORM.name} pricing. ${PLANS.map((p) => `${p.name}: ${p.priceEur === 0 ? "free" : "€" + p.priceEur + "/month"} — ${p.features.join("; ")}`).join(". ")}.`,
+        noscript: `${PLATFORM.name} pricing. ${PLANS.map((p) => `${p.name}: ${p.priceEur === 0 ? "free" : `€${p.priceEur}/month`} — ${p.features.join("; ")}`).join(". ")}.`,
       };
     case "/signup":
       return {

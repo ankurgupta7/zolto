@@ -17,7 +17,7 @@ describe("parseCsv", () => {
 
   it("parses a header row and data rows into objects keyed by normalized header", () => {
     const rows = parseCsv(
-      'Name,Price\n"Moonstone Ring",185\n"Pearl Earrings",120'
+      'Name,Price\n"Moonstone Ring",185\n"Pearl Earrings",120',
     );
     expect(rows).toEqual([
       { name: "Moonstone Ring", price: "185" },
@@ -27,7 +27,7 @@ describe("parseCsv", () => {
 
   it("handles quoted fields containing commas and escaped quotes", () => {
     const rows = parseCsv(
-      'name,description\n"Ring, Gold","Says ""hello"" to you"'
+      'name,description\n"Ring, Gold","Says ""hello"" to you"',
     );
     expect(rows[0].description).toBe('Says "hello" to you');
     expect(rows[0].name).toBe("Ring, Gold");
@@ -65,7 +65,7 @@ describe("mapRows", () => {
         "name required",
         "description required",
         "invalid price",
-      ])
+      ]),
     );
     expect(row.name).toBe("(empty)");
   });
@@ -81,8 +81,8 @@ describe("mapRows", () => {
     ]);
     expect(row.category).toBe("Other");
     expect(row._valid).toBe(false);
-    expect(row._errors.some(e => e.includes("category must be one of"))).toBe(
-      true
+    expect(row._errors.some((e) => e.includes("category must be one of"))).toBe(
+      true,
     );
   });
 
@@ -181,7 +181,7 @@ describe("mapHandwrittenItems", () => {
         "name required",
         "description required",
         "invalid price",
-      ])
+      ]),
     );
   });
 });

@@ -86,7 +86,7 @@ describe("reconciliation.run", () => {
 
   it("maps a not-configured Stripe error to PRECONDITION_FAILED", async () => {
     runStripeReconciliation.mockRejectedValue(
-      new Error("Stripe is not configured")
+      new Error("Stripe is not configured"),
     );
     const caller = reconciliationRouter.createCaller(makeCtx("admin"));
 

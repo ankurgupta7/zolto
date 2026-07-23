@@ -5,7 +5,13 @@
 import { useRef, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { ImagePlus, Trash2, Loader2, ChevronDown, ChevronUp } from "lucide-react";
+import {
+  ImagePlus,
+  Trash2,
+  Loader2,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
 
 interface Props {
   productId: number;
@@ -21,7 +27,7 @@ export default function ProductImageManager({ productId, productName }: Props) {
 
   const { data: images = [], isLoading } = trpc.products.getImages.useQuery(
     { productId },
-    { enabled: expanded }
+    { enabled: expanded },
   );
 
   const addImageMutation = trpc.products.addImage.useMutation({
@@ -89,7 +95,9 @@ export default function ProductImageManager({ productId, productName }: Props) {
       {expanded && (
         <div className="mt-3 p-4 bg-[var(--brand-surface-2)] border border-[var(--brand-border)]">
           <p className="text-xs text-muted-foreground font-sans mb-3">
-            Extra images for <span className="font-medium text-foreground">{productName}</span> — swipeable in the product modal.
+            Extra images for{" "}
+            <span className="font-medium text-foreground">{productName}</span> —
+            swipeable in the product modal.
           </p>
 
           {isLoading ? (
@@ -107,7 +115,9 @@ export default function ProductImageManager({ productId, productName }: Props) {
                   />
                   <button
                     type="button"
-                    onClick={() => deleteImageMutation.mutate({ imageId: img.id })}
+                    onClick={() =>
+                      deleteImageMutation.mutate({ imageId: img.id })
+                    }
                     disabled={deleteImageMutation.isPending}
                     className="absolute inset-0 flex items-center justify-center bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity"
                     aria-label="Remove image"
@@ -124,7 +134,9 @@ export default function ProductImageManager({ productId, productName }: Props) {
                 ) : (
                   <>
                     <ImagePlus size={16} />
-                    <span className="text-[9px] uppercase tracking-wider mt-0.5 font-sans">Add</span>
+                    <span className="text-[9px] uppercase tracking-wider mt-0.5 font-sans">
+                      Add
+                    </span>
                   </>
                 )}
                 <input
@@ -141,7 +153,9 @@ export default function ProductImageManager({ productId, productName }: Props) {
           )}
 
           {images.length === 0 && !isLoading && (
-            <p className="text-xs text-muted-foreground font-sans italic">No extra images yet. Click the + to upload.</p>
+            <p className="text-xs text-muted-foreground font-sans italic">
+              No extra images yet. Click the + to upload.
+            </p>
           )}
         </div>
       )}

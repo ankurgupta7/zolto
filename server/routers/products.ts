@@ -46,12 +46,12 @@ export const productsRouter = router({
         .object({
           category: z.enum(PRODUCT_CATEGORIES).optional(),
         })
-        .optional()
+        .optional(),
     )
     .query(async ({ input, ctx }) => {
       const all = await getVisibleProducts(storefrontTenantId(ctx));
       if (input?.category) {
-        return all.filter(p => p.category === input.category);
+        return all.filter((p) => p.category === input.category);
       }
       return all;
     }),
@@ -62,7 +62,7 @@ export const productsRouter = router({
     .query(async ({ input, ctx }) => {
       const product = await getVisibleProductById(
         storefrontTenantId(ctx),
-        input.id
+        input.id,
       );
       if (!product) throw new TRPCError({ code: "NOT_FOUND" });
       return product;
@@ -114,7 +114,7 @@ export const productsRouter = router({
     .mutation(async ({ input, ctx }) => {
       const tid = ctx.user.tenantId;
       const all = await getAllProducts(tid);
-      const existingIds = new Set(all.map(p => p.id));
+      const existingIds = new Set(all.map((p) => p.id));
       let removed = 0;
       for (const id of input.ids) {
         if (!existingIds.has(id)) continue; // already removed, or never existed
@@ -172,7 +172,7 @@ export const productsRouter = router({
         imageData: z.string(), // base64 data URL
         mimeType: z.string().default("image/jpeg"),
         sortOrder: z.number().default(0),
-      })
+      }),
     )
     .mutation(async ({ input, ctx }) => {
       const tid = ctx.user.tenantId;
@@ -223,23 +223,23 @@ export const productsRouter = router({
                   z.object({
                     data: z.string(), // base64 data URL
                     mimeType: z.string().default("image/jpeg"),
-                  })
+                  }),
                 )
                 .min(1)
                 .max(8),
-            })
+            }),
           )
           .min(1)
           .max(20),
-      })
+      }),
     )
     .mutation(async ({ input }) => {
       const { invokeLLM } = await import("../_core/llm");
       const results = await Promise.all(
-        input.groups.map(async group => {
+        input.groups.map(async (group) => {
           try {
             // Build multimodal message: all images in the group + instruction
-            const imageContents = group.images.map(img => ({
+            const imageContents = group.images.map((img) => ({
               type: "image_url" as const,
               image_url: { url: img.data, detail: "auto" as const },
             }));
@@ -251,7 +251,7 @@ export const productsRouter = router({
                   content: `You are a product copywriter for Kalakosh Jewellery – Zürich, a luxury jewellery boutique in Zurich, Switzerland.
 Analyse the provided photo(s) of a jewellery piece and return a JSON object with bilingual product details (German + English).
 
-Available categories (keep these in English exactly as shown): ${PRODUCT_CATEGORIES.map(c => `"${c}"`).join(", ")}
+Available categories (keep these in English exactly as shown): ${PRODUCT_CATEGORIES.map((c) => `"${c}"`).join(", ")}
 
 Rules:
 - name: short elegant product name in Swiss German (2–5 words). Use "ss" instead of "ß". Name the specific stone or pearl type first, e.g. "Mondstein-Ohrhänger", "Labradorit-Armband", "Barockperlen-Kollier".
@@ -364,7 +364,7 @@ Return ONLY valid JSON, no markdown, no explanation.`,
               category: "Other" as const,
             };
           }
-        })
+        }),
       );
       return results;
     }),
@@ -387,15 +387,15 @@ Return ONLY valid JSON, no markdown, no explanation.`,
                   z.object({
                     data: z.string(), // base64 data URL
                     mimeType: z.string().default("image/jpeg"),
-                  })
+                  }),
                 )
                 .min(1)
                 .max(8),
-            })
+            }),
           )
           .min(1)
           .max(20),
-      })
+      }),
     )
     .mutation(async ({ input, ctx }) => {
       const tid = ctx.user.tenantId;
@@ -408,10 +408,7 @@ Return ONLY valid JSON, no markdown, no explanation.`,
         try {
           // Upload primary image (first in array)
           const primary = item.images[0];
-          const primaryBase64 = primary.data.replace(
-            /^data:[^;]+;base64,/,
-            ""
-          );
+          const primaryBase64 = primary.data.replace(/^data:[^;]+;base64,/, "");
           const primaryBuffer = Buffer.from(primaryBase64, "base64");
           const primaryExt =
             primary.mimeType.split("/")[1]?.replace("jpeg", "jpg") ?? "jpg";
@@ -419,7 +416,7 @@ Return ONLY valid JSON, no markdown, no explanation.`,
           const { url: primaryUrl } = await storagePut(
             primaryKey,
             primaryBuffer,
-            primary.mimeType
+            primary.mimeType,
           );
 
           // Create the product row
@@ -442,10 +439,7 @@ Return ONLY valid JSON, no markdown, no explanation.`,
           created.push(newId);
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err);
-          console.error(
-            `[BulkCreate] Failed to create "${item.name}":`,
-            err
-          );
+          console.error(`[BulkCreate] Failed to create "${item.name}":`, err);
           await insertBulkUploadLog({
             tenantId: tid,
             operation: "create",
@@ -478,7 +472,7 @@ Return ONLY valid JSON, no markdown, no explanation.`,
               imgErr instanceof Error ? imgErr.message : String(imgErr);
             console.error(
               `[BulkCreate] Extra image ${i} for "${item.name}" failed:`,
-              imgErr
+              imgErr,
             );
             await insertBulkUploadLog({
               tenantId: tid,
@@ -506,19 +500,19 @@ Return ONLY valid JSON, no markdown, no explanation.`,
               name: z.string().min(1),
               description: z.string().min(1),
               category: z.enum(PRODUCT_CATEGORIES),
-            })
+            }),
           )
           .min(1)
           .max(20),
-      })
+      }),
     )
     .mutation(async ({ input, ctx }) => {
       const existing = await getAllProducts(ctx.user.tenantId);
       const byName = new Map(
-        existing.map(p => [p.name.trim().toLowerCase(), p])
+        existing.map((p) => [p.name.trim().toLowerCase(), p]),
       );
 
-      const matches = input.items.map(item => {
+      const matches = input.items.map((item) => {
         const normalizedName = item.name.trim().toLowerCase();
         const exactMatch = byName.get(normalizedName);
         if (exactMatch) {
@@ -568,18 +562,18 @@ Return ONLY valid JSON, no markdown, no explanation.`,
                   z.object({
                     data: z.string(), // base64 data URL
                     mimeType: z.string().default("image/jpeg"),
-                  })
+                  }),
                 )
                 .min(1)
                 .max(8),
               description: z.string().optional(),
               descriptionEn: z.string().optional(),
               updateDescription: z.boolean().default(false),
-            })
+            }),
           )
           .min(1)
           .max(20),
-      })
+      }),
     )
     .mutation(async ({ input, ctx }) => {
       const tid = ctx.user.tenantId;
@@ -604,7 +598,7 @@ Return ONLY valid JSON, no markdown, no explanation.`,
             await updateProduct(
               tid,
               item.productId,
-              patch as Parameters<typeof updateProduct>[2]
+              patch as Parameters<typeof updateProduct>[2],
             );
           }
 
@@ -640,7 +634,7 @@ Return ONLY valid JSON, no markdown, no explanation.`,
                 imgErr instanceof Error ? imgErr.message : String(imgErr);
               console.error(
                 `[BulkUpsertImages] Image ${i} for product ${item.productId} failed:`,
-                imgErr
+                imgErr,
               );
               await insertBulkUploadLog({
                 tenantId: tid,
@@ -649,7 +643,7 @@ Return ONLY valid JSON, no markdown, no explanation.`,
                 errorMessage: msg,
               });
               extraImageWarnings.push(
-                `Product ${item.productId} (image ${i + 1})`
+                `Product ${item.productId} (image ${i + 1})`,
               );
             }
           }
@@ -658,7 +652,7 @@ Return ONLY valid JSON, no markdown, no explanation.`,
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err);
           console.error(
-            `[BulkUpsertImages] Failed for product ${item.productId}:`
+            `[BulkUpsertImages] Failed for product ${item.productId}:`,
           );
           await insertBulkUploadLog({
             tenantId: tid,
@@ -692,7 +686,7 @@ Return ONLY valid JSON, no markdown, no explanation.`,
 
     for (let i = 0; i < missing.length; i += BATCH_SIZE) {
       const batch = missing.slice(i, i + BATCH_SIZE);
-      const items = batch.map(p => ({
+      const items = batch.map((p) => ({
         id: p.id,
         name: p.name,
         description: p.description,
@@ -755,7 +749,7 @@ Return ONLY valid JSON, no markdown.`,
         };
 
         for (const item of parsed.items) {
-          const original = batch.find(p => p.id === item.id);
+          const original = batch.find((p) => p.id === item.id);
           if (!original) continue;
           const nameEn = !original.nameEn && item.nameEn ? item.nameEn : "";
           const descriptionEn =
@@ -774,7 +768,7 @@ Return ONLY valid JSON, no markdown.`,
       } catch (err) {
         console.error(
           `[AutoTranslate] Batch ${Math.floor(i / BATCH_SIZE) + 1} failed:`,
-          err
+          err,
         );
       }
     }
@@ -792,10 +786,10 @@ Return ONLY valid JSON, no markdown.`,
               id: z.number(),
               nameEn: z.string().optional(),
               descriptionEn: z.string().optional(),
-            })
+            }),
           )
           .min(1),
-      })
+      }),
     )
     .mutation(async ({ input, ctx }) => {
       const tid = ctx.user.tenantId;
@@ -808,7 +802,7 @@ Return ONLY valid JSON, no markdown.`,
         await updateProduct(
           tid,
           item.id,
-          patch as Parameters<typeof updateProduct>[2]
+          patch as Parameters<typeof updateProduct>[2],
         );
         updated++;
       }
@@ -831,7 +825,7 @@ Return ONLY valid JSON, no markdown.`,
       }
     }
 
-    const productData = allProducts.slice(0, 60).map(p => ({
+    const productData = allProducts.slice(0, 60).map((p) => ({
       id: p.id,
       name: p.name,
       category: p.category,
@@ -841,21 +835,21 @@ Return ONLY valid JSON, no markdown.`,
       quantity: p.quantity,
       timesSold: productSalesMap[p.id] ?? 0,
       daysInCatalogue: Math.floor(
-        (Date.now() - new Date(p.createdAt).getTime()) / 86400000
+        (Date.now() - new Date(p.createdAt).getTime()) / 86400000,
       ),
     }));
 
     const summary = {
       totalProducts: allProducts.length,
-      visibleProducts: allProducts.filter(p => p.visible).length,
-      soldProducts: allProducts.filter(p => p.sold).length,
+      visibleProducts: allProducts.filter((p) => p.visible).length,
+      soldProducts: allProducts.filter((p) => p.sold).length,
       totalOrders: paidOrders.length,
       totalRevenueCHF: paidOrders.reduce((s, o) => s + o.amountTotal, 0) / 100,
       categoryBreakdown: Object.fromEntries(
-        PRODUCT_CATEGORIES.map(category => [
+        PRODUCT_CATEGORIES.map((category) => [
           category,
-          allProducts.filter(p => p.category === category).length,
-        ])
+          allProducts.filter((p) => p.category === category).length,
+        ]),
       ) as Record<(typeof PRODUCT_CATEGORIES)[number], number>,
       products: productData,
     };
@@ -938,16 +932,16 @@ Be specific with numbers. Each insight must be exactly one clear sentence.`,
         name: z.string().min(1),
         description: z.string().min(1),
         category: z.enum(PRODUCT_CATEGORIES),
-      })
+      }),
     )
     .mutation(async ({ input, ctx }) => {
       const { invokeLLM } = await import("../_core/llm");
       const existing = await getAllProducts(ctx.user.tenantId);
       if (existing.length === 0) return { duplicates: [] };
 
-      const sameCat = existing.filter(p => p.category === input.category);
+      const sameCat = existing.filter((p) => p.category === input.category);
       const candidates = (sameCat.length > 0 ? sameCat : existing).slice(0, 60);
-      const catalogue = candidates.map(p => ({
+      const catalogue = candidates.map((p) => ({
         id: p.id,
         name: p.name,
         description: p.description,
@@ -1020,7 +1014,7 @@ Return only genuine near-duplicates. Return an empty duplicates array if there a
   previewRecategorizeAll: adminProcedure.mutation(async ({ ctx }) => {
     const { invokeLLM } = await import("../_core/llm");
     const all = await getAllProducts(ctx.user.tenantId);
-    const uncategorised = all.filter(p => p.category === "Other");
+    const uncategorised = all.filter((p) => p.category === "Other");
     if (uncategorised.length === 0) return { proposals: [], total: 0 };
 
     const BATCH_SIZE = 10;
@@ -1033,7 +1027,7 @@ Return only genuine near-duplicates. Return an empty duplicates array if there a
 
     for (let i = 0; i < uncategorised.length; i += BATCH_SIZE) {
       const batch = uncategorised.slice(i, i + BATCH_SIZE);
-      const items = batch.map(p => ({
+      const items = batch.map((p) => ({
         id: p.id,
         name: p.name,
         nameEn: p.nameEn ?? "",
@@ -1106,7 +1100,7 @@ Return ONLY valid JSON, no markdown.`,
         };
 
         for (const item of parsed.items) {
-          const original = batch.find(p => p.id === item.id);
+          const original = batch.find((p) => p.id === item.id);
           if (original && item.category && item.category !== "Other") {
             proposals.push({
               id: item.id,
@@ -1119,7 +1113,7 @@ Return ONLY valid JSON, no markdown.`,
       } catch (err) {
         console.error(
           `[ReCategorize] Batch ${Math.floor(i / BATCH_SIZE) + 1} failed:`,
-          err
+          err,
         );
       }
     }
@@ -1133,10 +1127,10 @@ Return ONLY valid JSON, no markdown.`,
       z.object({
         items: z
           .array(
-            z.object({ id: z.number(), category: z.enum(PRODUCT_CATEGORIES) })
+            z.object({ id: z.number(), category: z.enum(PRODUCT_CATEGORIES) }),
           )
           .min(1),
-      })
+      }),
     )
     .mutation(async ({ input, ctx }) => {
       const tid = ctx.user.tenantId;
@@ -1165,7 +1159,7 @@ Return ONLY valid JSON, no markdown.`,
         category: z.enum(PRODUCT_CATEGORIES),
         quantity: z.number().int().min(0).default(1),
         imageUrl: z.string().optional(),
-      })
+      }),
     )
     .mutation(async ({ input, ctx }) => {
       await createProduct({
@@ -1195,7 +1189,7 @@ Return ONLY valid JSON, no markdown.`,
         descriptionEn: z.string().nullable().optional(),
         price: z.number().positive().optional(),
         category: z.enum(PRODUCT_CATEGORIES).optional(),
-      })
+      }),
     )
     .mutation(async ({ input, ctx }) => {
       const { id, price, ...rest } = input;
@@ -1204,7 +1198,7 @@ Return ONLY valid JSON, no markdown.`,
       await updateProduct(
         ctx.user.tenantId,
         id,
-        data as Parameters<typeof updateProduct>[2]
+        data as Parameters<typeof updateProduct>[2],
       );
       return { success: true };
     }),
@@ -1224,11 +1218,11 @@ Return ONLY valid JSON, no markdown.`,
               category: z.enum(PRODUCT_CATEGORIES),
               quantity: z.number().int().min(0).default(1),
               imageUrl: z.string().optional(),
-            })
+            }),
           )
           .min(1)
           .max(500),
-      })
+      }),
     )
     .mutation(async ({ input, ctx }) => {
       const tid = ctx.user.tenantId;
@@ -1237,7 +1231,7 @@ Return ONLY valid JSON, no markdown.`,
       // of creating a fresh duplicate row for every already-imported item.
       const existing = await getAllProducts(tid);
       const byName = new Map(
-        existing.map(p => [p.name.trim().toLowerCase(), p])
+        existing.map((p) => [p.name.trim().toLowerCase(), p]),
       );
 
       const created: string[] = [];
@@ -1259,7 +1253,7 @@ Return ONLY valid JSON, no markdown.`,
             await updateProduct(
               tid,
               match.id,
-              patch as Parameters<typeof updateProduct>[2]
+              patch as Parameters<typeof updateProduct>[2],
             );
             updated.push(row.name);
           } else {
@@ -1291,7 +1285,7 @@ Return ONLY valid JSON, no markdown.`,
       z.object({
         imageData: z.string(), // base64 data URL
         mimeType: z.string().default("image/jpeg"),
-      })
+      }),
     )
     .mutation(async ({ input }) => {
       const { invokeLLM } = await import("../_core/llm");
@@ -1309,7 +1303,7 @@ STEP 1 — Find the page heading.
 Look at the top of the page for a title or box label. This heading tells you what type of jewellery EVERY item on the page is, even when an item's own text is just a gemstone or material name and never says the word "ring", "necklace", etc. For example, on a page headed "Rings Box", an item written only as "Lemon Quartz - 50 CHF" is a ring — use the heading, not the item text, to know that.
 
 STEP 2 — Assign a category.
-category must be exactly one of: ${PRODUCT_CATEGORIES.map(c => `"${c}"`).join(", ")}.
+category must be exactly one of: ${PRODUCT_CATEGORIES.map((c) => `"${c}"`).join(", ")}.
 - Prefer the most specific category (Necklaces, Earrings, Rings, Bracelets, Bangles, Anklets, Brooches, Hair Accessories) based on the page heading first, then the item's own description.
 - Treat "Sets" and "Other" as last-resort categories. Only use "Sets" when the item text explicitly describes a combined piece (e.g. a matching necklace-and-earring set). Only use "Other" when neither the page heading nor the item text gives any clue about the jewellery type.
 - Never pick "Sets" or "Other" purely because a gemstone or material name by itself doesn't state the jewellery type — check the page heading first.

@@ -42,18 +42,18 @@ describe("db helpers when the database is unavailable", () => {
         description: "y",
         price: "1.00",
         category: "Other",
-      })
+      }),
     ).rejects.toThrow(/Database not available/);
     await expect(deleteProduct(1)).rejects.toThrow(/Database not available/);
     await expect(
-      addInstagramPost("https://instagram.com/p/1", 0)
+      addInstagramPost("https://instagram.com/p/1", 0),
     ).rejects.toThrow(/Database not available/);
   });
 
   it("soft-failing writes no-op instead of throwing", async () => {
     // upsertUser and insertBulkUploadLog intentionally warn + return.
     await expect(
-      insertBulkUploadLog({ operation: "analyze", ref: "r" })
+      insertBulkUploadLog({ operation: "analyze", ref: "r" }),
     ).resolves.toBeUndefined();
   });
 });

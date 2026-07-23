@@ -9,13 +9,16 @@ export const reconciliationRouter = router({
   // guess candidate products for each, and email the admin to confirm.
   run: adminProcedure
     .input(
-      z.object({ lookbackDays: z.number().int().min(1).max(90).optional() })
+      z.object({ lookbackDays: z.number().int().min(1).max(90).optional() }),
     )
     .mutation(async ({ input }) => {
       try {
         return await runStripeReconciliation(input.lookbackDays);
       } catch (err) {
-        if (err instanceof Error && err.message === "Stripe is not configured") {
+        if (
+          err instanceof Error &&
+          err.message === "Stripe is not configured"
+        ) {
           throw new TRPCError({
             code: "PRECONDITION_FAILED",
             message: err.message,

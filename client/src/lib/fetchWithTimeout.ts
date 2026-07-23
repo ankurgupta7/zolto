@@ -5,11 +5,11 @@
 export const DEFAULT_REQUEST_TIMEOUT_MS = 60_000;
 
 export function createFetchWithTimeout(
-  timeoutMs: number = DEFAULT_REQUEST_TIMEOUT_MS
+  timeoutMs: number = DEFAULT_REQUEST_TIMEOUT_MS,
 ) {
   return function fetchWithTimeout(
     input: Parameters<typeof fetch>[0],
-    init?: RequestInit
+    init?: RequestInit,
   ) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);

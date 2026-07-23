@@ -171,7 +171,7 @@ describe("products.getById", () => {
     ctx.tenant = null;
     const caller = appRouter.createCaller(ctx);
     await expect(caller.products.getById({ id: 1 })).rejects.toThrow(
-      /not found/i
+      /not found/i,
     );
   });
 });
@@ -229,7 +229,7 @@ describe("products.findDuplicates", () => {
     const result = await caller.products.findDuplicates();
 
     expect(result).toHaveLength(1);
-    expect(result[0].products.map(p => p.id).sort()).toEqual([10, 11]);
+    expect(result[0].products.map((p) => p.id).sort()).toEqual([10, 11]);
     // complete (visible, in-stock, photographed) should win over incomplete
     expect(result[0].suggestedKeepId).toBe(10);
   });
@@ -260,7 +260,7 @@ describe("products.mergeDuplicates", () => {
   it("throws FORBIDDEN for non-admin", async () => {
     const caller = appRouter.createCaller(makeCtx("user"));
     await expect(
-      caller.products.mergeDuplicates({ ids: [11] })
+      caller.products.mergeDuplicates({ ids: [11] }),
     ).rejects.toThrow();
   });
 
@@ -305,7 +305,7 @@ describe("products.previewAutoTranslateAll / applyAutoTranslateAll", () => {
     await expect(
       caller.products.applyAutoTranslateAll({
         items: [{ id: 20, nameEn: "Silver Ring" }],
-      })
+      }),
     ).rejects.toThrow();
   });
 
@@ -368,7 +368,7 @@ describe("products.previewRecategorizeAll / applyRecategorizeAll", () => {
     await expect(
       caller.products.applyRecategorizeAll({
         items: [{ id: 30, category: "Earrings" }],
-      })
+      }),
     ).rejects.toThrow();
   });
 
@@ -404,7 +404,7 @@ describe("products.toggleVisibility", () => {
   it("throws FORBIDDEN for non-admin", async () => {
     const caller = appRouter.createCaller(makeCtx("user"));
     await expect(
-      caller.products.toggleVisibility({ id: 1, visible: false })
+      caller.products.toggleVisibility({ id: 1, visible: false }),
     ).rejects.toThrow();
   });
 
@@ -456,7 +456,7 @@ describe("products.csvImport", () => {
     expect(result.updated).toBe(0);
     expect(result.failed).toEqual([]);
     expect(createProduct).toHaveBeenCalledWith(
-      expect.objectContaining({ name: validRow.name, source: "manual" })
+      expect.objectContaining({ name: validRow.name, source: "manual" }),
     );
   });
 
@@ -494,7 +494,7 @@ describe("products.csvImport", () => {
         price: "185",
         category: "Earrings",
         quantity: 2,
-      })
+      }),
     );
     // Re-importing a sheet row that has no English translation or image must not
     // wipe out data an admin already filled in via the admin panel.
@@ -515,7 +515,7 @@ describe("parseProductFromMessage", () => {
 
   it("parses a product message successfully", async () => {
     const result = await parseProductFromMessage(
-      "Pearl drop earrings, freshwater pearls on silver hooks. CHF 145"
+      "Pearl drop earrings, freshwater pearls on silver hooks. CHF 145",
     );
     expect(result).not.toBeNull();
     expect(result?.name).toBe("Pearl Drop Earrings");
@@ -532,7 +532,7 @@ describe("products.parseHandwrittenInventory", () => {
     await expect(
       caller.products.parseHandwrittenInventory({
         imageData: "data:image/jpeg;base64,abc123",
-      })
+      }),
     ).rejects.toThrow();
   });
 
@@ -571,7 +571,7 @@ describe("products.parseHandwrittenInventory", () => {
 
     expect(result.items).toHaveLength(2);
     expect(result.items[1].quantity).toBe(3);
-    expect(result.items.every(item => item.category === "Rings")).toBe(true);
+    expect(result.items.every((item) => item.category === "Rings")).toBe(true);
   });
 
   it("instructs the model to deprioritize Sets/Other and to read quantity shorthand", async () => {
@@ -585,7 +585,7 @@ describe("products.parseHandwrittenInventory", () => {
     });
 
     const call = vi.mocked(invokeLLM).mock.calls.at(-1)?.[0];
-    const systemContent = call?.messages.find(m => m.role === "system")
+    const systemContent = call?.messages.find((m) => m.role === "system")
       ?.content as string;
     expect(systemContent).toContain("last-resort");
     expect(systemContent).toContain("page heading");

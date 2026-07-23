@@ -25,7 +25,12 @@ const NAV = [
  */
 export function BrushMark({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 200 200" className={className} role="img" aria-label="Zolto">
+    <svg
+      viewBox="0 0 200 200"
+      className={className}
+      role="img"
+      aria-label="Zolto"
+    >
       <rect width="200" height="200" rx="20" fill="#2D2620" />
       <path
         d="M50 54 C70 50 132 50 150 54 C150 66 120 70 96 84 C78 95 66 110 58 130 C74 138 132 132 152 138 C150 150 120 152 96 150 C74 148 52 150 46 140 C48 120 70 100 96 84 C70 74 54 70 50 54 Z"

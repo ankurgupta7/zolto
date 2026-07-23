@@ -44,7 +44,7 @@ export function generateConfirmationToken(): string {
  */
 export async function findCandidateProducts(
   tenantId: number,
-  amountRappen: number
+  amountRappen: number,
 ): Promise<Product[]> {
   const available = await getAvailableProductsForMatching(tenantId);
   const priceDiff = (p: Product) =>
@@ -73,7 +73,7 @@ export interface ReconciliationSummary {
 }
 
 export async function runStripeReconciliation(
-  lookbackDays: number = RECONCILIATION_LOOKBACK_DAYS_DEFAULT
+  lookbackDays: number = RECONCILIATION_LOOKBACK_DAYS_DEFAULT,
 ): Promise<ReconciliationSummary> {
   const stripe = getStripe();
   if (!stripe) throw new Error("Stripe is not configured");
@@ -124,7 +124,7 @@ export async function runStripeReconciliation(
     // matches against the default tenant's catalogue. See tracker follow-ups.
     const candidates = await findCandidateProducts(
       DEFAULT_TENANT_ID,
-      intent.amount
+      intent.amount,
     );
     const token = generateConfirmationToken();
     const status = candidates.length > 0 ? "pending_review" : "no_candidates";
@@ -140,7 +140,7 @@ export async function runStripeReconciliation(
       description: intent.description ?? null,
       paymentMethodType,
       status,
-      candidateProductIds: candidates.map(p => p.id).join(","),
+      candidateProductIds: candidates.map((p) => p.id).join(","),
       confirmationToken: token,
     });
 
@@ -151,7 +151,7 @@ export async function runStripeReconciliation(
         amountRappen: intent.amount,
         currency: intent.currency,
         stripeCreatedAt: new Date(intent.created * 1000),
-        candidates: candidates.map(p => ({
+        candidates: candidates.map((p) => ({
           id: p.id,
           name: p.name,
           nameEn: p.nameEn ?? null,

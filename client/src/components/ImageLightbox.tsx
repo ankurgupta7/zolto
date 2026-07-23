@@ -11,14 +11,24 @@ interface Props {
   onGoTo: (i: number) => void;
 }
 
-export default function ImageLightbox({ images, activeIndex, onClose, onNext, onPrev, onGoTo }: Props) {
+export default function ImageLightbox({
+  images,
+  activeIndex,
+  onClose,
+  onNext,
+  onPrev,
+  onGoTo,
+}: Props) {
   const hasMultiple = images.length > 1;
 
-  const handleKey = useCallback((e: KeyboardEvent) => {
-    if (e.key === "Escape") onClose();
-    if (e.key === "ArrowRight" && hasMultiple) onNext();
-    if (e.key === "ArrowLeft" && hasMultiple) onPrev();
-  }, [onClose, onNext, onPrev, hasMultiple]);
+  const handleKey = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+      if (e.key === "ArrowRight" && hasMultiple) onNext();
+      if (e.key === "ArrowLeft" && hasMultiple) onPrev();
+    },
+    [onClose, onNext, onPrev, hasMultiple],
+  );
 
   useEffect(() => {
     document.addEventListener("keydown", handleKey);
@@ -71,7 +81,10 @@ export default function ImageLightbox({ images, activeIndex, onClose, onNext, on
       {hasMultiple && (
         <button
           type="button"
-          onClick={(e) => { e.stopPropagation(); onPrev(); }}
+          onClick={(e) => {
+            e.stopPropagation();
+            onPrev();
+          }}
           className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center bg-white/10 text-white hover:bg-white/25 transition-colors rounded-full"
           aria-label="Previous image"
         >
@@ -83,7 +96,10 @@ export default function ImageLightbox({ images, activeIndex, onClose, onNext, on
       {hasMultiple && (
         <button
           type="button"
-          onClick={(e) => { e.stopPropagation(); onNext(); }}
+          onClick={(e) => {
+            e.stopPropagation();
+            onNext();
+          }}
           className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center bg-white/10 text-white hover:bg-white/25 transition-colors rounded-full"
           aria-label="Next image"
         >
@@ -98,9 +114,14 @@ export default function ImageLightbox({ images, activeIndex, onClose, onNext, on
             <button
               type="button"
               key={i}
-              onClick={(e) => { e.stopPropagation(); onGoTo(i); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onGoTo(i);
+              }}
               className={`h-1.5 rounded-full transition-all duration-200 ${
-                i === activeIndex ? "bg-[var(--brand-accent)] w-5" : "bg-white/30 hover:bg-white/60 w-1.5"
+                i === activeIndex
+                  ? "bg-[var(--brand-accent)] w-5"
+                  : "bg-white/30 hover:bg-white/60 w-1.5"
               }`}
               aria-label={`Go to image ${i + 1}`}
             />
@@ -108,6 +129,6 @@ export default function ImageLightbox({ images, activeIndex, onClose, onNext, on
         </div>
       )}
     </div>,
-    document.body
+    document.body,
   );
 }

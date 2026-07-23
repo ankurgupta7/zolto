@@ -48,12 +48,12 @@ export function parseCsv(text: string): Record<string, string>[] {
   const lines = text
     .trim()
     .split(/\r?\n/)
-    .filter(l => l.trim());
+    .filter((l) => l.trim());
   if (lines.length < 2) return [];
-  const headers = parseRow(lines[0]).map(h =>
-    h.toLowerCase().replace(/[\s_-]+/g, "")
+  const headers = parseRow(lines[0]).map((h) =>
+    h.toLowerCase().replace(/[\s_-]+/g, ""),
   );
-  return lines.slice(1).map(line => {
+  return lines.slice(1).map((line) => {
     const values = parseRow(line);
     return Object.fromEntries(headers.map((h, i) => [h, values[i] ?? ""]));
   });
@@ -62,7 +62,7 @@ export function parseCsv(text: string): Record<string, string>[] {
 // CSV import maps free-text categories onto known values; "Sets" is folded into
 // "Other" (unmatched rows default to "Other"), matching the AI import flows.
 export const VALID_CATEGORIES: ProductCategory[] = PRODUCT_CATEGORIES.filter(
-  c => c !== "Sets"
+  (c) => c !== "Sets",
 );
 
 // Importing in small batches (rather than one request for all rows) bounds
@@ -72,7 +72,7 @@ export const IMPORT_CHUNK_SIZE = 5;
 
 function normalizeCategory(raw: string): ProductCategory | null {
   const lower = raw.trim().toLowerCase();
-  return VALID_CATEGORIES.find(c => c.toLowerCase() === lower) ?? null;
+  return VALID_CATEGORIES.find((c) => c.toLowerCase() === lower) ?? null;
 }
 
 function getField(raw: Record<string, string>, ...keys: string[]): string {
@@ -98,7 +98,7 @@ export interface CsvRow {
 }
 
 export function mapRows(raw: Record<string, string>[]): CsvRow[] {
-  return raw.map(r => {
+  return raw.map((r) => {
     const errors: string[] = [];
     const name = getField(r, "name");
     const description = getField(r, "description", "desc");
@@ -113,7 +113,7 @@ export function mapRows(raw: Record<string, string>[]): CsvRow[] {
     const category = normalizeCategory(categoryStr);
     if (!category)
       errors.push(
-        `category must be one of: Necklaces, Earrings, Rings, Bracelets, Bangles, Anklets, Brooches, Hair Accessories, Other`
+        `category must be one of: Necklaces, Earrings, Rings, Bracelets, Bangles, Anklets, Brooches, Hair Accessories, Other`,
       );
 
     const qtyStr = getField(r, "quantity", "qty", "stock");
@@ -129,7 +129,7 @@ export function mapRows(raw: Record<string, string>[]): CsvRow[] {
           "descriptionEn",
           "description_en",
           "descen",
-          "descriptionenglish"
+          "descriptionenglish",
         ) || undefined,
       price: Number.isNaN(price) ? 0 : price,
       category: (category ?? "Other") as ProductCategory,
@@ -142,7 +142,7 @@ export function mapRows(raw: Record<string, string>[]): CsvRow[] {
           "imageurl",
           "image",
           "img",
-          "photo"
+          "photo",
         ) || undefined,
       _valid: errors.length === 0,
       _errors: errors,
@@ -188,9 +188,9 @@ export function mapHandwrittenItems(
     price: number;
     category: string;
     quantity: number;
-  }>
+  }>,
 ): CsvRow[] {
-  return items.map(item => {
+  return items.map((item) => {
     const errors: string[] = [];
     if (!item.name?.trim()) errors.push("name required");
     if (!item.description?.trim()) errors.push("description required");
@@ -242,21 +242,21 @@ export default function CsvImport() {
   // written to directly from this page.
   const { data: existingProducts } = trpc.products.adminList.useQuery(
     undefined,
-    { enabled: isAuthenticated && user?.role === "admin" }
+    { enabled: isAuthenticated && user?.role === "admin" },
   );
   const existingByName = new Map(
-    (existingProducts ?? []).map(p => [p.name.trim().toLowerCase(), p])
+    (existingProducts ?? []).map((p) => [p.name.trim().toLowerCase(), p]),
   );
 
   const fetchSheetMutation = trpc.products.fetchSheetCsv.useMutation({
-    onError: e => toast.error(e.message),
+    onError: (e) => toast.error(e.message),
   });
 
   const loadCsv = (text: string) => {
     const raw = parseCsv(text);
     if (raw.length === 0) {
       toast.error(
-        "No data rows found — check the file has a header row and at least one data row"
+        "No data rows found — check the file has a header row and at least one data row",
       );
       return;
     }
@@ -270,7 +270,7 @@ export default function CsvImport() {
     if (!file) return;
     if (!file.name.endsWith(".csv") && file.type !== "text/csv") {
       toast.error(
-        "Please upload a .csv file. For Excel, use File → Save As → CSV."
+        "Please upload a .csv file. For Excel, use File → Save As → CSV.",
       );
       return;
     }
@@ -290,7 +290,7 @@ export default function CsvImport() {
     });
 
   const handleHandwritingFiles = async (
-    e: React.ChangeEvent<HTMLInputElement>
+    e: React.ChangeEvent<HTMLInputElement>,
   ) => {
     const files = Array.from(e.target.files ?? []);
     e.target.value = "";
@@ -306,7 +306,7 @@ export default function CsvImport() {
     for (const file of files) {
       if (file.type && !ALLOWED.includes(file.type)) {
         toast.error(
-          `${file.name}: please upload a JPEG, PNG, WebP or HEIC image`
+          `${file.name}: please upload a JPEG, PNG, WebP or HEIC image`,
         );
         return;
       }
@@ -355,7 +355,7 @@ export default function CsvImport() {
     }
     if (allItems.length === 0) {
       toast.error(
-        "AI could not extract any items from these photos — try clearer photos"
+        "AI could not extract any items from these photos — try clearer photos",
       );
       return;
     }
@@ -363,24 +363,24 @@ export default function CsvImport() {
     setRows(mapped);
     setStage("preview");
     toast.success(
-      `AI extracted ${allItems.length} item${allItems.length !== 1 ? "s" : ""} from ${dataUrls.length} photo${dataUrls.length !== 1 ? "s" : ""}`
+      `AI extracted ${allItems.length} item${allItems.length !== 1 ? "s" : ""} from ${dataUrls.length} photo${dataUrls.length !== 1 ? "s" : ""}`,
     );
   };
 
   const updateRow = (index: number, patch: Partial<CsvRow>) => {
-    setRows(prev =>
-      prev.map((r, i) => (i === index ? revalidateRow({ ...r, ...patch }) : r))
+    setRows((prev) =>
+      prev.map((r, i) => (i === index ? revalidateRow({ ...r, ...patch }) : r)),
     );
   };
 
   const toggleRowSelected = (index: number, selected: boolean) => {
-    setRows(prev =>
-      prev.map((r, i) => (i === index ? { ...r, _selected: selected } : r))
+    setRows((prev) =>
+      prev.map((r, i) => (i === index ? { ...r, _selected: selected } : r)),
     );
   };
 
   const toggleAllSelected = (selected: boolean) => {
-    setRows(prev => prev.map(r => ({ ...r, _selected: selected })));
+    setRows((prev) => prev.map((r) => ({ ...r, _selected: selected })));
   };
 
   const handleFetchSheet = async () => {
@@ -395,7 +395,7 @@ export default function CsvImport() {
   };
 
   const handleImport = async () => {
-    const toImport = rows.filter(r => r._valid && r._selected);
+    const toImport = rows.filter((r) => r._valid && r._selected);
     if (toImport.length === 0) {
       toast.error("No rows selected to import");
       return;
@@ -414,7 +414,7 @@ export default function CsvImport() {
     for (let i = 0; i < chunks.length; i++) {
       try {
         const result = await utils.client.products.csvImport.mutate({
-          rows: chunks[i].map(r => ({
+          rows: chunks[i].map((r) => ({
             name: r.name,
             nameEn: r.nameEn,
             description: r.description,
@@ -432,7 +432,7 @@ export default function CsvImport() {
         const message = err instanceof Error ? err.message : String(err);
         console.error("[CsvImport] Batch import failed:", err);
         toast.error(`A batch failed to import: ${message}`);
-        failed.push(...chunks[i].map(r => r.name));
+        failed.push(...chunks[i].map((r) => r.name));
       }
       setImportProgress({ done: i + 1, total: chunks.length });
     }
@@ -480,11 +480,11 @@ export default function CsvImport() {
       </div>
     );
 
-  const validRows = rows.filter(r => r._valid);
-  const invalidRows = rows.filter(r => !r._valid);
-  const selectedForImport = rows.filter(r => r._valid && r._selected);
-  const allSelected = rows.length > 0 && rows.every(r => r._selected);
-  const someSelected = rows.some(r => r._selected) && !allSelected;
+  const validRows = rows.filter((r) => r._valid);
+  const invalidRows = rows.filter((r) => !r._valid);
+  const selectedForImport = rows.filter((r) => r._valid && r._selected);
+  const allSelected = rows.length > 0 && rows.every((r) => r._selected);
+  const someSelected = rows.some((r) => r._selected) && !allSelected;
 
   return (
     <div className="page-enter pt-20 min-h-screen bg-[var(--brand-surface)]">
@@ -549,7 +549,10 @@ export default function CsvImport() {
               {/* CSV File Upload */}
               <div className="bg-white border border-[var(--brand-border)] p-6">
                 <div className="flex items-center gap-2 mb-4">
-                  <FileSpreadsheet size={18} className="text-[var(--brand-accent)]" />
+                  <FileSpreadsheet
+                    size={18}
+                    className="text-[var(--brand-accent)]"
+                  />
                   <h2 className="font-serif text-foreground text-lg">
                     Upload CSV File
                   </h2>
@@ -587,7 +590,10 @@ export default function CsvImport() {
               {/* Google Sheets */}
               <div className="bg-white border border-[var(--brand-border)] p-6">
                 <div className="flex items-center gap-2 mb-4">
-                  <ExternalLink size={18} className="text-[var(--brand-accent)]" />
+                  <ExternalLink
+                    size={18}
+                    className="text-[var(--brand-accent)]"
+                  />
                   <h2 className="font-serif text-foreground text-lg">
                     Google Sheets URL
                   </h2>
@@ -603,7 +609,7 @@ export default function CsvImport() {
                 <input
                   type="url"
                   value={sheetUrl}
-                  onChange={e => setSheetUrl(e.target.value)}
+                  onChange={(e) => setSheetUrl(e.target.value)}
                   placeholder="https://docs.google.com/spreadsheets/d/..."
                   className="w-full border border-[var(--brand-ink)]/20 px-4 py-2.5 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] bg-transparent mb-4"
                 />
@@ -655,7 +661,7 @@ export default function CsvImport() {
                     Photo{" "}
                     {Math.min(
                       handwritingProgress.done + 1,
-                      handwritingProgress.total
+                      handwritingProgress.total,
                     )}{" "}
                     of {handwritingProgress.total}
                   </p>
@@ -800,10 +806,10 @@ export default function CsvImport() {
                         <input
                           type="checkbox"
                           checked={allSelected}
-                          ref={el => {
+                          ref={(el) => {
                             if (el) el.indeterminate = someSelected;
                           }}
-                          onChange={e => toggleAllSelected(e.target.checked)}
+                          onChange={(e) => toggleAllSelected(e.target.checked)}
                           aria-label="Select all rows"
                         />
                       </th>
@@ -834,7 +840,7 @@ export default function CsvImport() {
                   <tbody>
                     {rows.map((row, i) => {
                       const match = existingByName.get(
-                        row.name.trim().toLowerCase()
+                        row.name.trim().toLowerCase(),
                       );
                       return (
                         <tr
@@ -845,7 +851,7 @@ export default function CsvImport() {
                             <input
                               type="checkbox"
                               checked={row._selected}
-                              onChange={e =>
+                              onChange={(e) =>
                                 toggleRowSelected(i, e.target.checked)
                               }
                               aria-label={`Select ${row.name || "row"} for import`}
@@ -865,7 +871,7 @@ export default function CsvImport() {
                             <input
                               type="text"
                               value={row.name}
-                              onChange={e =>
+                              onChange={(e) =>
                                 updateRow(i, { name: e.target.value })
                               }
                               placeholder="Name"
@@ -874,7 +880,7 @@ export default function CsvImport() {
                             <input
                               type="text"
                               value={row.description}
-                              onChange={e =>
+                              onChange={(e) =>
                                 updateRow(i, { description: e.target.value })
                               }
                               placeholder="Description"
@@ -883,7 +889,7 @@ export default function CsvImport() {
                             <input
                               type="text"
                               value={row.nameEn ?? ""}
-                              onChange={e =>
+                              onChange={(e) =>
                                 updateRow(i, {
                                   nameEn: e.target.value || undefined,
                                 })
@@ -894,7 +900,7 @@ export default function CsvImport() {
                             <input
                               type="text"
                               value={row.descriptionEn ?? ""}
-                              onChange={e =>
+                              onChange={(e) =>
                                 updateRow(i, {
                                   descriptionEn: e.target.value || undefined,
                                 })
@@ -920,14 +926,14 @@ export default function CsvImport() {
                           <td className="px-4 py-3 hidden md:table-cell">
                             <select
                               value={row.category}
-                              onChange={e =>
+                              onChange={(e) =>
                                 updateRow(i, {
                                   category: e.target.value as ProductCategory,
                                 })
                               }
                               className="text-[10px] uppercase tracking-[0.1em] px-2 py-1 font-sans bg-[#E8E8E8] text-[#555] border-none focus:outline-none focus:ring-1 focus:ring-[var(--brand-accent)]"
                             >
-                              {VALID_CATEGORIES.map(c => (
+                              {VALID_CATEGORIES.map((c) => (
                                 <option key={c} value={c}>
                                   {c}
                                 </option>
@@ -944,7 +950,7 @@ export default function CsvImport() {
                                 min="0"
                                 step="0.01"
                                 value={row.price || ""}
-                                onChange={e =>
+                                onChange={(e) =>
                                   updateRow(i, {
                                     price: parseFloat(e.target.value) || 0,
                                   })
@@ -960,7 +966,7 @@ export default function CsvImport() {
                               min="0"
                               step="1"
                               value={row.quantity}
-                              onChange={e => {
+                              onChange={(e) => {
                                 const quantity = parseInt(e.target.value, 10);
                                 updateRow(i, {
                                   quantity:
@@ -976,7 +982,7 @@ export default function CsvImport() {
                             <input
                               type="text"
                               value={row.imageUrl ?? ""}
-                              onChange={e =>
+                              onChange={(e) =>
                                 updateRow(i, {
                                   imageUrl: e.target.value || undefined,
                                 })

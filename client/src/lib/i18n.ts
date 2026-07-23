@@ -5,16 +5,14 @@ import en from "@/locales/en.json";
 
 const savedLang = localStorage.getItem("kalakosh_lang") ?? "de";
 
-i18n
-  .use(initReactI18next)
-  .init({
-    resources: {
-      de: { translation: de },
-      en: { translation: en },
-    },
-    lng: savedLang,
-    fallbackLng: "de",
-    interpolation: { escapeValue: false },
-  });
+i18n.use(initReactI18next).init({
+  resources: {
+    de: { translation: de },
+    en: { translation: en },
+  },
+  lng: savedLang,
+  fallbackLng: "de",
+  interpolation: { escapeValue: false },
+});
 
 export default i18n;

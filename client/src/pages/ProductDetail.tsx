@@ -31,7 +31,12 @@ const CATEGORY_COLORS: Record<string, string> = {
 };
 
 const WhatsAppIcon = () => (
-  <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4" aria-hidden="true">
+  <svg
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    className="w-4 h-4"
+    aria-hidden="true"
+  >
     <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
   </svg>
 );
@@ -46,21 +51,27 @@ export default function ProductDetail() {
   const [carouselApi, setCarouselApi] = useState<CarouselApi>();
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
 
-  const { data: product, isLoading, error } = trpc.products.getById.useQuery(
+  const {
+    data: product,
+    isLoading,
+    error,
+  } = trpc.products.getById.useQuery(
     { id: productId },
-    { enabled: !Number.isNaN(productId) }
+    { enabled: !Number.isNaN(productId) },
   );
 
   const { data: extraImages = [] } = trpc.products.getImages.useQuery(
     { productId: productId },
-    { enabled: !!product }
+    { enabled: !!product },
   );
 
   useEffect(() => {
     if (!carouselApi) return;
     const onSelect = () => setActiveIdx(carouselApi.selectedScrollSnap());
     carouselApi.on("select", onSelect);
-    return () => { carouselApi.off("select", onSelect); };
+    return () => {
+      carouselApi.off("select", onSelect);
+    };
   }, [carouselApi]);
 
   if (isLoading) {
@@ -97,14 +108,18 @@ export default function ProductDetail() {
       <div className="page-enter pt-20">
         <section className="bg-[var(--brand-ink)] py-20">
           <div className="container text-center">
-            <p className="text-[var(--brand-accent)] text-xs uppercase tracking-[0.3em] mb-3 font-sans">Not Found</p>
+            <p className="text-[var(--brand-accent)] text-xs uppercase tracking-[0.3em] mb-3 font-sans">
+              Not Found
+            </p>
             <h1 className="font-serif text-white">This piece is unavailable</h1>
             <div className="divider-gold w-16 mx-auto mt-6" />
           </div>
         </section>
         <section className="py-16 bg-background">
           <div className="container text-center">
-            <div className="text-6xl text-[var(--brand-accent)]/20 font-serif mb-6">◇</div>
+            <div className="text-6xl text-[var(--brand-accent)]/20 font-serif mb-6">
+              ◇
+            </div>
             <p className="text-muted-foreground font-sans mb-8">
               This piece may have been removed or is no longer available.
             </p>
@@ -121,8 +136,12 @@ export default function ProductDetail() {
     );
   }
 
-  const displayName = (i18n.language === "en" && product.nameEn) ? product.nameEn : product.name;
-  const displayDescription = (i18n.language === "en" && product.descriptionEn) ? product.descriptionEn : product.description;
+  const displayName =
+    i18n.language === "en" && product.nameEn ? product.nameEn : product.name;
+  const displayDescription =
+    i18n.language === "en" && product.descriptionEn
+      ? product.descriptionEn
+      : product.description;
 
   const inCart = has(product.id);
   const handleAddToCart = () => {
@@ -138,7 +157,10 @@ export default function ProductDetail() {
 
   const total = allImages.length;
 
-  const productUrl = typeof window !== "undefined" ? window.location.href : `/product/${productId}`;
+  const productUrl =
+    typeof window !== "undefined"
+      ? window.location.href
+      : `/product/${productId}`;
   const enquiryText = product.sold
     ? t("product.enquirySimilar", { name: displayName, link: productUrl })
     : t("product.enquiryAvailable", { name: displayName, link: productUrl });
@@ -148,45 +170,49 @@ export default function ProductDetail() {
     ? `https://wa.me/${branding.whatsappNumber}?text=${encodeURIComponent(enquiryText)}`
     : whatsappHref(branding);
 
-  const productSchema = product ? {
-    "@context": "https://schema.org",
-    "@type": "Product",
-    "name": displayName,
-    "description": displayDescription,
-    "image": allImages.map((img) => img.imageUrl),
-    "sku": `SKU-${product.id}`,
-    "brand": {
-      "@type": "Brand",
-      "name": branding.storeName
-    },
-    "category": product.category,
-    "offers": {
-      "@type": "Offer",
-      "url": productUrl,
-      "priceCurrency": currencyCode,
-      "price": Number(product.price).toFixed(2),
-      "availability": product.sold ? "https://schema.org/OutOfStock" : "https://schema.org/InStock",
-      "itemCondition": "https://schema.org/NewCondition",
-      "seller": {
-        "@type": "Organization",
-        "name": branding.storeName
-      },
-      "shippingDetails": {
-        "@type": "OfferShippingDetails",
-        "shippingRate": {
-          "@type": "MonetaryAmount",
-          "value": "0",
-          "currency": currencyCode
+  const productSchema = product
+    ? {
+        "@context": "https://schema.org",
+        "@type": "Product",
+        name: displayName,
+        description: displayDescription,
+        image: allImages.map((img) => img.imageUrl),
+        sku: `SKU-${product.id}`,
+        brand: {
+          "@type": "Brand",
+          name: branding.storeName,
         },
-        "shippingDestination": {
-          "@type": "DefinedRegion"
-        }
+        category: product.category,
+        offers: {
+          "@type": "Offer",
+          url: productUrl,
+          priceCurrency: currencyCode,
+          price: Number(product.price).toFixed(2),
+          availability: product.sold
+            ? "https://schema.org/OutOfStock"
+            : "https://schema.org/InStock",
+          itemCondition: "https://schema.org/NewCondition",
+          seller: {
+            "@type": "Organization",
+            name: branding.storeName,
+          },
+          shippingDetails: {
+            "@type": "OfferShippingDetails",
+            shippingRate: {
+              "@type": "MonetaryAmount",
+              value: "0",
+              currency: currencyCode,
+            },
+            shippingDestination: {
+              "@type": "DefinedRegion",
+            },
+          },
+        },
+        ...(product.sold && {
+          availability: "https://schema.org/OutOfStock",
+        }),
       }
-    },
-    ...(product.sold && {
-      "availability": "https://schema.org/OutOfStock"
-    })
-  } : null;
+    : null;
 
   return (
     <div className="page-enter pt-20">
@@ -202,21 +228,33 @@ export default function ProductDetail() {
       <section className="bg-[var(--brand-ink)] py-16">
         <div className="container">
           {/* Breadcrumb */}
-          <nav className="flex items-center gap-2 text-xs font-sans mb-5" aria-label="Breadcrumb">
-            <Link href="/" className="text-[var(--brand-accent)]/60 hover:text-[var(--brand-accent)] transition-colors">
+          <nav
+            className="flex items-center gap-2 text-xs font-sans mb-5"
+            aria-label="Breadcrumb"
+          >
+            <Link
+              href="/"
+              className="text-[var(--brand-accent)]/60 hover:text-[var(--brand-accent)] transition-colors"
+            >
               Home
             </Link>
             <span className="text-[var(--brand-accent)]/40">/</span>
-            <Link href="/shop" className="text-[var(--brand-accent)]/60 hover:text-[var(--brand-accent)] transition-colors">
+            <Link
+              href="/shop"
+              className="text-[var(--brand-accent)]/60 hover:text-[var(--brand-accent)] transition-colors"
+            >
               Shop
             </Link>
             <span className="text-[var(--brand-accent)]/40">/</span>
-            <span className="text-[var(--brand-accent)] truncate max-w-[200px]">{displayName}</span>
+            <span className="text-[var(--brand-accent)] truncate max-w-[200px]">
+              {displayName}
+            </span>
           </nav>
 
           <span
             className={`inline-block text-[10px] uppercase tracking-[0.2em] px-2 py-0.5 mb-4 font-sans ${
-              CATEGORY_COLORS[product.category] ?? "bg-muted text-muted-foreground"
+              CATEGORY_COLORS[product.category] ??
+              "bg-muted text-muted-foreground"
             }`}
           >
             {product.category}
@@ -233,12 +271,13 @@ export default function ProductDetail() {
       <section className="py-16 bg-background">
         <div className="container">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10 lg:gap-16 max-w-5xl mx-auto">
-
             {/* Image gallery */}
             <div>
               {total === 0 ? (
                 <div className="aspect-square bg-[var(--brand-surface-3)] flex items-center justify-center">
-                  <span className="text-8xl text-[var(--brand-accent)]/20 font-serif">◇</span>
+                  <span className="text-8xl text-[var(--brand-accent)]/20 font-serif">
+                    ◇
+                  </span>
                 </div>
               ) : total === 1 ? (
                 <button
@@ -313,7 +352,9 @@ export default function ProductDetail() {
                         key={i}
                         onClick={() => carouselApi?.scrollTo(i)}
                         className={`h-1.5 rounded-full transition-all duration-200 ${
-                          i === activeIdx ? "bg-[var(--brand-accent)] w-5" : "bg-white/50 hover:bg-white/80 w-1.5"
+                          i === activeIdx
+                            ? "bg-[var(--brand-accent)] w-5"
+                            : "bg-white/50 hover:bg-white/80 w-1.5"
                         }`}
                         aria-label={`Go to image ${i + 1}`}
                       />
@@ -329,23 +370,48 @@ export default function ProductDetail() {
             </div>
 
             {/* Details */}
-            <div className="flex flex-col justify-center" itemScope itemType="https://schema.org/Product">
+            <div
+              className="flex flex-col justify-center"
+              itemScope
+              itemType="https://schema.org/Product"
+            >
               <meta itemProp="name" content={displayName} />
               <meta itemProp="description" content={displayDescription} />
               <meta itemProp="sku" content={`SKU-${product.id}`} />
               <link itemProp="image" href={allImages[0]?.imageUrl ?? ""} />
-              <div itemProp="brand" itemScope itemType="https://schema.org/Brand">
+              <div
+                itemProp="brand"
+                itemScope
+                itemType="https://schema.org/Brand"
+              >
                 <meta itemProp="name" content={branding.storeName} />
               </div>
-              <div itemProp="offers" itemScope itemType="https://schema.org/Offer">
+              <div
+                itemProp="offers"
+                itemScope
+                itemType="https://schema.org/Offer"
+              >
                 <meta itemProp="priceCurrency" content={currencyCode} />
-                <meta itemProp="price" content={Number(product.price).toFixed(2)} />
-                <meta itemProp="availability" content={product.sold ? "https://schema.org/OutOfStock" : "https://schema.org/InStock"} />
+                <meta
+                  itemProp="price"
+                  content={Number(product.price).toFixed(2)}
+                />
+                <meta
+                  itemProp="availability"
+                  content={
+                    product.sold
+                      ? "https://schema.org/OutOfStock"
+                      : "https://schema.org/InStock"
+                  }
+                />
                 <link itemProp="url" href={productUrl} />
               </div>
 
               <div className="flex items-center gap-3 flex-wrap mb-2">
-                <h2 className="font-serif text-foreground text-2xl md:text-3xl leading-tight" itemProp="name">
+                <h2
+                  className="font-serif text-foreground text-2xl md:text-3xl leading-tight"
+                  itemProp="name"
+                >
                   {displayName}
                 </h2>
                 {product.sold && (
@@ -361,7 +427,9 @@ export default function ProductDetail() {
                 {displayDescription}
               </p>
 
-              <p className={`font-serif text-3xl mb-8 ${product.sold ? "text-muted-foreground line-through" : "text-[var(--brand-ink)]"}`}>
+              <p
+                className={`font-serif text-3xl mb-8 ${product.sold ? "text-muted-foreground line-through" : "text-[var(--brand-ink)]"}`}
+              >
                 {currencyCode} {Number(product.price).toFixed(2)}
               </p>
 

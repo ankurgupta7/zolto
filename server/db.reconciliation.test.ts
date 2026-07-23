@@ -36,7 +36,7 @@ const dbMock = {
   transaction: vi.fn(),
   $client: {
     getConnection: vi.fn((cb: (err: unknown, conn: unknown) => void) =>
-      cb(null, mockConnection)
+      cb(null, mockConnection),
     ),
   },
 };
@@ -70,7 +70,7 @@ beforeEach(() => {
   mockConnection.destroy.mockReset();
   dbMock.$client.getConnection.mockClear();
   dbMock.$client.getConnection.mockImplementation(
-    (cb: (err: unknown, conn: unknown) => void) => cb(null, mockConnection)
+    (cb: (err: unknown, conn: unknown) => void) => cb(null, mockConnection),
   );
 });
 
@@ -85,9 +85,7 @@ describe("getAvailableProductsForMatching", () => {
 
 describe("getKnownOrderPaymentIntentIds", () => {
   it("returns a set of non-null payment intent ids", async () => {
-    dbMock.select.mockReturnValue(
-      makeChain([{ id: "pi_1" }, { id: "pi_2" }])
-    );
+    dbMock.select.mockReturnValue(makeChain([{ id: "pi_1" }, { id: "pi_2" }]));
     const result = await getKnownOrderPaymentIntentIds();
     expect(result).toEqual(new Set(["pi_1", "pi_2"]));
   });
@@ -174,8 +172,8 @@ describe("resolveStripeReconciliationConfirmed", () => {
       .mockReturnValueOnce(updateProductChain)
       .mockReturnValueOnce(updateReconChain);
 
-    dbMock.transaction.mockImplementation(async (cb: (tx: unknown) => unknown) =>
-      cb(tx)
+    dbMock.transaction.mockImplementation(
+      async (cb: (tx: unknown) => unknown) => cb(tx),
     );
 
     await resolveStripeReconciliationConfirmed(9, 3, 10000, "pi_1");

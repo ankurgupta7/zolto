@@ -11,7 +11,7 @@ import {
 describe("escapeHtml", () => {
   it("escapes the five reserved HTML characters", () => {
     expect(escapeHtml(`<script>alert('xss')&"hi"</script>`)).toBe(
-      "&lt;script&gt;alert(&#39;xss&#39;)&amp;&quot;hi&quot;&lt;/script&gt;"
+      "&lt;script&gt;alert(&#39;xss&#39;)&amp;&quot;hi&quot;&lt;/script&gt;",
     );
   });
 
@@ -108,13 +108,11 @@ describe("buildReconciliationReviewHtml", () => {
 
   it("includes a per-candidate assign link carrying the token and choice index", () => {
     const html = buildReconciliationReviewHtml([baseItem]);
+    expect(html).toContain("/api/reconciliation/confirm?token=abc123&choice=0");
+    expect(html).toContain("/api/reconciliation/confirm?token=abc123&choice=1");
     expect(html).toContain(
-      "/api/reconciliation/confirm?token=abc123&choice=0"
+      "/api/reconciliation/confirm?token=abc123&choice=none",
     );
-    expect(html).toContain(
-      "/api/reconciliation/confirm?token=abc123&choice=1"
-    );
-    expect(html).toContain("/api/reconciliation/confirm?token=abc123&choice=none");
   });
 
   it("prefers the English name when present and falls back to the local name", () => {
@@ -168,9 +166,7 @@ describe("sendReconciliationReviewEmail", () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
 
-    await sendReconciliationReviewEmail([
-      { ...baseItemFor("pi_1") },
-    ]);
+    await sendReconciliationReviewEmail([{ ...baseItemFor("pi_1") }]);
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
@@ -204,12 +200,14 @@ describe("sendReconciliationReviewEmail", () => {
     process.env.ADMIN_EMAIL = "admin@example.com";
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue({ ok: false, status: 422, text: async () => "bad" })
+      vi
+        .fn()
+        .mockResolvedValue({ ok: false, status: 422, text: async () => "bad" }),
     );
 
-    await expect(sendReconciliationReviewEmail([baseItemFor("pi_1")])).rejects.toThrow(
-      /Resend API 422/
-    );
+    await expect(
+      sendReconciliationReviewEmail([baseItemFor("pi_1")]),
+    ).rejects.toThrow(/Resend API 422/);
   });
 
   function baseItemFor(paymentIntentId: string): ReconciliationReviewItem {

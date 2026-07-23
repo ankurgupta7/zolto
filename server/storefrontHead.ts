@@ -95,7 +95,7 @@ export function injectStorefrontHead(
   );
 
   // Tab title + OG identity.
-  const title = (b.metaTitle && b.metaTitle.trim()) || b.storeName;
+  const title = (b.metaTitle?.trim()) || b.storeName;
   out = out.replace(
     /<title>[\s\S]*?<\/title>/i,
     `<title>${escapeHtml(title)}</title>`,
@@ -103,7 +103,7 @@ export function injectStorefrontHead(
   out = setMetaContent(out, "property", "og:title", title);
   out = setMetaContent(out, "property", "twitter:title", title);
   out = setMetaContent(out, "property", "og:site_name", b.storeName);
-  if (b.metaDescription && b.metaDescription.trim()) {
+  if (b.metaDescription?.trim()) {
     const d = b.metaDescription.trim();
     out = setMetaContent(out, "name", "description", d);
     out = setMetaContent(out, "property", "og:description", d);

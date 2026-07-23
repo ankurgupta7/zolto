@@ -58,8 +58,8 @@ describe("parseProductFromMessage", () => {
           description: "Freshwater pearl ring",
           price: "99.50",
           category: "Rings",
-        })
-      )
+        }),
+      ),
     );
     const result = await parseProductFromMessage("Pearl ring, CHF 99.50");
     expect(result).not.toBeNull();
@@ -75,8 +75,8 @@ describe("parseProductFromMessage", () => {
           description: "Rigid silver bangle with moonstone inlay",
           price: 220,
           category: "Bangles",
-        })
-      )
+        }),
+      ),
     );
     const result = await parseProductFromMessage("Moonstone bangle, CHF 220");
     expect(result?.category).toBe("Bangles");
@@ -90,14 +90,14 @@ describe("parseProductFromMessage", () => {
           description: "Gold drop earrings",
           price: 150,
           category: "Earrings",
-        })
-      )
+        }),
+      ),
     );
     await parseProductFromMessage("Gold drop earrings, CHF 150");
 
     const call = invokeLLM.mock.calls[0][0];
     const userMessage = call.messages.find(
-      (m: { role: string }) => m.role === "user"
+      (m: { role: string }) => m.role === "user",
     );
     expect(userMessage.content).toContain("Gold drop earrings, CHF 150");
   });

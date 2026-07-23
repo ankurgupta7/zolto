@@ -25,7 +25,7 @@ import { createStripeCustomer } from "../stripe";
 import { buildConnectAuthorizeUrl } from "../stripeConnect";
 import { tenants, tenantSettings } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
-import crypto from "crypto";
+import crypto from "node:crypto";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Tenant Router — Self-service signup + tenant management
@@ -159,7 +159,7 @@ export const tenantRouter = router({
     .input(z.object({ token: z.string().min(1) }))
     .mutation(async ({ ctx, input }) => {
       const pending = await getUserByOpenId(`pending:${input.token}`);
-      if (!pending || pending.role !== "admin") {
+      if (pending?.role !== "admin") {
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "Invalid or already-claimed invitation",
