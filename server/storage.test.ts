@@ -26,11 +26,7 @@ vi.mock("@aws-sdk/s3-request-presigner", () => ({
   getSignedUrl: getSignedUrlMock,
 }));
 
-import {
-  storagePut,
-  storageGet,
-  storageGetSignedUrl,
-} from "./storage";
+import { storagePut, storageGet, storageGetSignedUrl } from "./storage";
 
 const ENV_KEYS = [
   "S3_REGION",
@@ -67,7 +63,9 @@ describe("storage", () => {
       const result = await storagePut("images/cat.png", Buffer.from("hi"));
 
       expect(sendMock).toHaveBeenCalledTimes(1);
-      const cmd = sendMock.mock.calls[0][0] as { input: Record<string, unknown> };
+      const cmd = sendMock.mock.calls[0][0] as {
+        input: Record<string, unknown>;
+      };
       expect(cmd.input.Bucket).toBe("my-bucket");
       // hash suffix inserted before the extension
       expect(result.key).toMatch(/^images\/cat_[0-9a-f]{8}\.png$/);
@@ -78,7 +76,9 @@ describe("storage", () => {
     it("converts string bodies to a Buffer", async () => {
       process.env.S3_BUCKET = "b";
       await storagePut("notes.txt", "plain text", "text/plain");
-      const cmd = sendMock.mock.calls[0][0] as { input: Record<string, unknown> };
+      const cmd = sendMock.mock.calls[0][0] as {
+        input: Record<string, unknown>;
+      };
       expect(Buffer.isBuffer(cmd.input.Body)).toBe(true);
       expect((cmd.input.Body as Buffer).toString()).toBe("plain text");
       expect(cmd.input.ContentType).toBe("text/plain");
