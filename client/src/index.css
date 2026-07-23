@@ -41,6 +41,9 @@
   /* Typography */
   --font-serif: "Cormorant Garamond", Georgia, "Times New Roman", serif;
   --font-sans: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  /* Handwriting accent — brand voice only (eyebrows, empty states). Never used
+     for numbers, money, tables, inputs, or status pills. */
+  --font-hand: "Caveat", "Segoe Print", "Bradley Hand", cursive;
 }
 
 /* ─── Tenant-themeable brand palette ─────────────────────────────────────────── */
@@ -135,6 +138,17 @@
 
 .font-serif { font-family: var(--font-serif); }
 .font-sans  { font-family: var(--font-sans); }
+
+/* Handwriting brand voice. Guardrail: decorative labels/eyebrows and empty
+   states only — money and inventory stay in the crisp serif/sans faces. Bumped
+   in size since Caveat runs small at a given font-size. */
+.font-hand {
+  font-family: var(--font-hand);
+  font-weight: 500;
+  letter-spacing: 0;
+  font-size: 1.35em;
+  line-height: 1.1;
+}
 
 /* Gold gradient text */
 .text-gold-gradient {
