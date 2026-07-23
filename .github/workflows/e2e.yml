@@ -1,0 +1,83 @@
+name: E2E (storefront)
+
+# Runs the browser storefront journey (e2e/storefront.spec.ts) against a real,
+# freshly-migrated-and-seeded MySQL — on every PR and on every merge to main.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# One in-flight run per branch; a newer push cancels the older run.
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  storefront:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: zolto
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
+    env:
+      DATABASE_URL: mysql://root:root@127.0.0.1:3306/zolto
+      # Storefront journey knobs (see e2e/storefront.spec.ts).
+      E2E_STOREFRONT: "1"
+      E2E_TENANT_SLUG: demo
+      # Deterministic dev-mode boot for the app the tests drive.
+      NODE_ENV: development
+      # A JWT secret is read at boot; any non-empty value is fine for e2e.
+      JWT_SECRET: e2e-ci-jwt-secret-that-is-long-enough
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.4.1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Build the full schema straight from drizzle/schema.ts (the app's source
+      # of truth) onto the fresh CI database. Push, not the migration files,
+      # because those don't include the multi-tenancy tables (created by the
+      # deploy migrator, which is coupled to docker-compose).
+      - name: Create database schema
+        run: pnpm run db:sync
+
+      - name: Seed the storefront tenant + product
+        run: pnpm run seed:e2e
+
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run storefront e2e
+        run: pnpm run test:e2e
+
+      - name: Upload Playwright report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+          if-no-files-found: ignore

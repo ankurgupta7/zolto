@@ -48,6 +48,22 @@ query string (`?surface=storefront&tenant=<slug>`) and forwards it to the API as
 the `x-tenant-slug` header (see `client/src/lib/surface.ts` + `main.tsx`), so no
 subdomain or hosts-file setup is needed.
 
+## On every merge (CI)
+
+`.github/workflows/e2e.yml` runs this suite on every pull request and every push
+to `main`. It stands up a MySQL service, builds the schema from
+`drizzle/schema.ts` (`npm run db:sync` → `drizzle-kit push`), seeds a tenant +
+product (`npm run seed:e2e`), installs Chromium, and runs
+`E2E_STOREFRONT=1 npm run test:e2e`. The Playwright HTML report is uploaded as a
+build artifact. Locally, reproduce it with:
+
+```bash
+docker run -d --name zolto-e2e -e MYSQL_ROOT_PASSWORD=root -e MYSQL_DATABASE=zolto -p 3306:3306 mysql:8.0
+export DATABASE_URL='mysql://root:root@127.0.0.1:3306/zolto'
+npm run db:sync && npm run seed:e2e
+E2E_STOREFRONT=1 E2E_TENANT_SLUG=demo npm run test:e2e
+```
+
 ## Browser binary
 
 `npm run test:e2e` needs a Chromium build:
