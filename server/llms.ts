@@ -1,6 +1,10 @@
-import type { Express } from "express";
+import type { Express, Response } from "express";
 import type { Product, Tenant } from "../drizzle/schema";
-import { normalizeBaseUrl, renderMarketingLlmsTxt } from "@shared/marketing";
+import {
+  normalizeBaseUrl,
+  renderMarketingLlmsTxt,
+  renderMarketingLlmsFullTxt,
+} from "@shared/marketing";
 import { getVisibleProducts } from "./db";
 import { resolveBaseUrl } from "./seo";
 import { resolveTenantFromRequest } from "./tenantResolve";
@@ -87,21 +91,33 @@ export function renderStorefrontLlmsTxt(
  * Must be registered before the SPA catch-all.
  */
 export function registerLlmsRoutes(app: Express): void {
-  app.get("/llms.txt", async (req, res) => {
-    const base = resolveBaseUrl(req);
-    const tenant = await resolveTenantFromRequest(req);
-
-    let body: string;
-    if (tenant) {
-      const products = await getVisibleProducts(tenant.id);
-      body = renderStorefrontLlmsTxt(tenant, products, base);
-    } else {
-      body = renderMarketingLlmsTxt(base);
-    }
-
+  const send = (res: Response, body: string) =>
     res
       .type("text/plain; charset=utf-8")
       .set("Cache-Control", "public, max-age=3600")
       .send(body);
+
+  app.get("/llms.txt", async (req, res) => {
+    const base = resolveBaseUrl(req);
+    const tenant = await resolveTenantFromRequest(req);
+    if (tenant) {
+      const products = await getVisibleProducts(tenant.id);
+      send(res, renderStorefrontLlmsTxt(tenant, products, base));
+    } else {
+      send(res, renderMarketingLlmsTxt(base));
+    }
+  });
+
+  // Long-form companion. Platform surface gets the full Zolto reference; a
+  // storefront reuses its product-aware brief (already lists its catalogue).
+  app.get("/llms-full.txt", async (req, res) => {
+    const base = resolveBaseUrl(req);
+    const tenant = await resolveTenantFromRequest(req);
+    if (tenant) {
+      const products = await getVisibleProducts(tenant.id);
+      send(res, renderStorefrontLlmsTxt(tenant, products, base));
+    } else {
+      send(res, renderMarketingLlmsFullTxt(base));
+    }
   });
 }

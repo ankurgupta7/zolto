@@ -126,4 +126,12 @@ describe("GET /llms.txt", () => {
     expect(res.text.startsWith("# Zolto")).toBe(true);
     expect(res.text).toContain("Model Context Protocol");
   });
+
+  it("serves the long-form /llms-full.txt on the platform surface", async () => {
+    mocks.getTenantBySlug.mockResolvedValue(undefined);
+    const res = await request(await buildApp()).get("/llms-full.txt");
+    expect(res.status).toBe(200);
+    expect(res.text).toContain("full reference for LLMs");
+    expect(res.text).toContain("## FAQ");
+  });
 });

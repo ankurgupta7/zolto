@@ -237,7 +237,7 @@ describe("MCP tools", () => {
     expect(res?.error?.code).toBe(-32602);
   });
 
-  it("tools require a resolved store", async () => {
+  it("storefront tools called without a store point the agent to the platform tools", async () => {
     const noTenant: McpContext = { ...ctx, tenant: null };
     const res = await handleMcpMessage(
       req("tools/call", { name: "search_products", arguments: {} }),
@@ -249,6 +249,92 @@ describe("MCP tools", () => {
     };
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toContain("No store resolved");
+  });
+});
+
+describe("Platform MCP (no tenant / marketing surface)", () => {
+  const ctx: McpContext = { tenant: null, baseUrl: "https://zolto.com" };
+
+  async function call(name: string, args: Record<string, unknown> = {}) {
+    const res = await handleMcpMessage(
+      req("tools/call", { name, arguments: args }),
+      ctx,
+    );
+    return res?.result as {
+      structuredContent?: Record<string, unknown>;
+      isError?: boolean;
+    };
+  }
+
+  it("exposes platform tools when no store resolves", async () => {
+    const res = await handleMcpMessage(req("tools/list"), ctx);
+    const names = (res?.result as { tools: { name: string }[] }).tools.map(
+      (t) => t.name,
+    );
+    expect(names).toContain("get_platform_info");
+    expect(names).toContain("get_pricing");
+    expect(names).toContain("how_to_start");
+    expect(names).not.toContain("search_products");
+  });
+
+  it("initialize describes the platform when there's no tenant", async () => {
+    const res = await handleMcpMessage(req("initialize"), ctx);
+    expect((res?.result as { instructions: string }).instructions).toContain(
+      "Zolto platform",
+    );
+  });
+
+  it("get_platform_info returns the signup link and summary", async () => {
+    const r = await call("get_platform_info");
+    expect(r.structuredContent).toMatchObject({
+      name: "Zolto",
+      signupUrl: "https://zolto.com/signup",
+    });
+  });
+
+  it("get_pricing returns EUR plans with a free trial", async () => {
+    const r = await call("get_pricing");
+    const sc = r.structuredContent as {
+      currency: string;
+      freeTrialDays: number;
+      plans: { name: string; pricePerMonth: number }[];
+    };
+    expect(sc.currency).toBe("EUR");
+    expect(sc.freeTrialDays).toBe(14);
+    expect(sc.plans.some((p) => p.pricePerMonth === 0)).toBe(true);
+  });
+
+  it("list_features and how_to_start return content", async () => {
+    const features = (await call("list_features")).structuredContent as {
+      features: unknown[];
+    };
+    expect(features.features.length).toBeGreaterThan(3);
+    const start = (await call("how_to_start")).structuredContent as {
+      steps: string[];
+      signupUrl: string;
+    };
+    expect(start.steps.length).toBeGreaterThan(2);
+    expect(start.signupUrl).toBe("https://zolto.com/signup");
+  });
+
+  it("list_resources links to signup, pricing, and the case study", async () => {
+    const r = (await call("list_resources")).structuredContent as {
+      resources: { url: string }[];
+    };
+    const urls = r.resources.map((x) => x.url);
+    expect(urls).toContain("https://zolto.com/signup");
+    expect(urls.some((u) => u.includes("/stories/"))).toBe(true);
+  });
+
+  it("a storefront-only tool name is unknown on the platform surface", async () => {
+    // get_store_info is storefront-only; on the platform surface it 404s as a tool.
+    const res = await handleMcpMessage(
+      req("tools/call", { name: "list_categories", arguments: {} }),
+      ctx,
+    );
+    // storefront tool without a store → helpful isError, not a crash
+    const result = res?.result as { isError?: boolean };
+    expect(result.isError).toBe(true);
   });
 });
 
@@ -316,5 +402,16 @@ describe("POST /mcp (Streamable HTTP)", () => {
     const res = await request(app).get("/mcp");
     expect(res.status).toBe(200);
     expect(res.body.tools).toContain("search_products");
+  });
+
+  it("serves platform tools when no store resolves", async () => {
+    mocks.getTenantBySlug.mockResolvedValue(undefined); // nothing matches
+    const app = await buildApp();
+    const res = await request(app)
+      .post("/mcp")
+      .set("Host", "zolto.com")
+      .send(req("tools/call", { name: "get_pricing", arguments: {} }));
+    expect(res.status).toBe(200);
+    expect(res.body.result.structuredContent.currency).toBe("EUR");
   });
 });

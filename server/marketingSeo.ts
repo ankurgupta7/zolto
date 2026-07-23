@@ -1,0 +1,371 @@
+import {
+  normalizeBaseUrl,
+  STORY_SLUG,
+  BLOG_POSTS,
+  maker,
+} from "@shared/marketing";
+import { PLATFORM, FEATURES, PLANS, FAQS } from "@shared/platform";
+
+/**
+ * Server-side SEO for the Zolto marketing surface. This app is a client-rendered
+ * SPA; most AI crawlers (GPTBot, ClaudeBot, PerplexityBot, …) and some search
+ * bots do NOT execute JavaScript, so a client-only <head> is invisible to them.
+ * This module injects a real per-route <title>, meta description, canonical/OG
+ * tags, JSON-LD structured data, and a <noscript> content summary into the HTML
+ * before it's served — turning invisible SPA routes into fully indexable pages.
+ *
+ * Pure string transforms so they're unit-testable without a browser.
+ */
+
+export interface MarketingSeo {
+  title: string;
+  description: string;
+  path: string;
+  /** JSON-LD graph nodes to embed. */
+  jsonLd: Record<string, unknown>[];
+  /** Plain-text content for the <noscript> block (non-JS crawlers). */
+  noscript: string;
+}
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+// ── JSON-LD builders ──────────────────────────────────────────────────────────
+
+function organizationNode(base: string): Record<string, unknown> {
+  return {
+    "@type": "Organization",
+    "@id": `${base}/#organization`,
+    name: PLATFORM.name,
+    url: `${base}/`,
+    description: PLATFORM.summary,
+    logo: { "@type": "ImageObject", url: `${base}/logo.png` },
+  };
+}
+
+function websiteNode(base: string): Record<string, unknown> {
+  return {
+    "@type": "WebSite",
+    "@id": `${base}/#website`,
+    url: `${base}/`,
+    name: PLATFORM.name,
+    description: PLATFORM.summary,
+    publisher: { "@id": `${base}/#organization` },
+  };
+}
+
+function softwareApplicationNode(base: string): Record<string, unknown> {
+  const offers = PLANS.map((p) => ({
+    "@type": "Offer",
+    name: `${PLATFORM.name} ${p.name}`,
+    price: p.priceEur,
+    priceCurrency: "EUR",
+    category: p.name,
+    url: `${base}/pricing`,
+  }));
+  const prices = PLANS.map((p) => p.priceEur);
+  return {
+    "@type": "SoftwareApplication",
+    "@id": `${base}/#software`,
+    name: PLATFORM.name,
+    applicationCategory: "BusinessApplication",
+    operatingSystem: "Web",
+    description: PLATFORM.summary,
+    audience: { "@type": "Audience", audienceType: PLATFORM.audience },
+    offers: {
+      "@type": "AggregateOffer",
+      priceCurrency: "EUR",
+      lowPrice: Math.min(...prices),
+      highPrice: Math.max(...prices),
+      offerCount: offers.length,
+      offers,
+    },
+    featureList: FEATURES.map((f) => f.name),
+  };
+}
+
+function faqPageNode(): Record<string, unknown> {
+  return {
+    "@type": "FAQPage",
+    mainEntity: FAQS.map((f) => ({
+      "@type": "Question",
+      name: f.q,
+      acceptedAnswer: { "@type": "Answer", text: f.a },
+    })),
+  };
+}
+
+function breadcrumb(
+  base: string,
+  trail: [string, string][],
+): Record<string, unknown> {
+  return {
+    "@type": "BreadcrumbList",
+    itemListElement: trail.map(([name, path], i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      name,
+      item: `${base}${path}`,
+    })),
+  };
+}
+
+function articleNode(
+  base: string,
+  path: string,
+  title: string,
+  description: string,
+  dates?: { published: string; modified: string },
+): Record<string, unknown> {
+  return {
+    "@type": "Article",
+    headline: title,
+    description,
+    author: { "@type": "Organization", name: PLATFORM.name },
+    publisher: { "@id": `${base}/#organization` },
+    mainEntityOfPage: { "@type": "WebPage", "@id": `${base}${path}` },
+    ...(dates
+      ? { datePublished: dates.published, dateModified: dates.modified }
+      : {}),
+  };
+}
+
+// ── Per-route SEO ─────────────────────────────────────────────────────────────
+
+const brand = maker.brand;
+const named = Boolean(maker.founder);
+
+/** Concise, SEO-facing titles for the Launch Diary posts (crawler-facing). */
+const DIARY_TITLES: Record<string, { title: string; description: string }> = {
+  "launch-diary-1": {
+    title: "Launch Diary #1: The Setup",
+    description: `How ${named ? brand : "a Zurich pearl-jewelry maker"} set up a first online store on Zolto — the real process, start to finish.`,
+  },
+  "launch-diary-2": {
+    title: "Launch Diary #2: Going Live",
+    description: `Launch day for ${named ? brand : "a Zurich jewelry store"}: the first visitors, the first online order, and what actually converts.`,
+  },
+  "launch-diary-3": {
+    title: "Launch Diary #3: First Month Online",
+    description: `Honest month-one numbers from ${named ? brand : "a Zurich maker"}: 12 orders, CHF 61 average, 81% AI chatbot resolution.`,
+  },
+};
+
+/**
+ * Resolve SEO for a marketing path, or `null` if the path isn't a known marketing
+ * route (in which case the HTML is served unchanged).
+ */
+export function getMarketingSeo(
+  path: string,
+  baseUrl: string,
+): MarketingSeo | null {
+  const base = normalizeBaseUrl(baseUrl);
+  const clean = path.split("?")[0].replace(/\/+$/, "") || "/";
+
+  const org = organizationNode(base);
+  const site = websiteNode(base);
+  const common = [org, site];
+
+  // Static routes.
+  switch (clean) {
+    case "/":
+      return {
+        path: "/",
+        title: `${PLATFORM.name} — ${PLATFORM.tagline}`,
+        description: PLATFORM.summary,
+        jsonLd: [...common, softwareApplicationNode(base), faqPageNode()],
+        noscript: `${PLATFORM.summary} ${PLATFORM.pricingSummary} Features: ${FEATURES.map((f) => f.name).join(", ")}.`,
+      };
+    case "/pricing":
+      return {
+        path: "/pricing",
+        title: `Pricing — ${PLATFORM.name} for makers`,
+        description: `${PLATFORM.pricingSummary} Plans: ${PLANS.map((p) => `${p.name} ${p.priceEur === 0 ? "free" : "€" + p.priceEur + "/mo"}`).join(", ")}.`,
+        jsonLd: [
+          ...common,
+          softwareApplicationNode(base),
+          faqPageNode(),
+          breadcrumb(base, [
+            ["Home", "/"],
+            ["Pricing", "/pricing"],
+          ]),
+        ],
+        noscript: `${PLATFORM.name} pricing. ${PLANS.map((p) => `${p.name}: ${p.priceEur === 0 ? "free" : "€" + p.priceEur + "/month"} — ${p.features.join("; ")}`).join(". ")}.`,
+      };
+    case "/signup":
+      return {
+        path: "/signup",
+        title: `Start your store free — ${PLATFORM.name}`,
+        description: `Open an online store and point-of-sale for your craft or maker business. ${PLATFORM.pricingSummary}`,
+        jsonLd: [
+          ...common,
+          breadcrumb(base, [
+            ["Home", "/"],
+            ["Sign up", "/signup"],
+          ]),
+        ],
+        noscript: `Sign up for ${PLATFORM.name}. ${PLATFORM.audience}`,
+      };
+    case "/blog":
+      return {
+        path: "/blog",
+        title: `Launch Diary — a maker's first online store | ${PLATFORM.name}`,
+        description:
+          "A real maker's store launch on Zolto, documented week by week: setup, launch day, and honest first-month numbers.",
+        jsonLd: [
+          ...common,
+          {
+            "@type": "CollectionPage",
+            name: "Zolto Launch Diary",
+            description:
+              "A real maker's store launch, documented week by week.",
+            url: `${base}/blog`,
+          },
+        ],
+        noscript:
+          "The Zolto Launch Diary — a real maker's first online store, documented week by week.",
+      };
+    case "/legal/privacy":
+      return {
+        path: "/legal/privacy",
+        title: `Privacy Policy — ${PLATFORM.name}`,
+        description:
+          "How Zolto handles data for merchants and their customers.",
+        jsonLd: common,
+        noscript: "Zolto privacy policy.",
+      };
+    case "/legal/terms":
+      return {
+        path: "/legal/terms",
+        title: `Terms of Service — ${PLATFORM.name}`,
+        description: "The terms governing use of the Zolto platform.",
+        jsonLd: common,
+        noscript: "Zolto terms of service.",
+      };
+  }
+
+  // Blog posts.
+  const diarySlug = clean.startsWith("/blog/")
+    ? clean.slice("/blog/".length)
+    : null;
+  if (diarySlug && BLOG_POSTS.some((p) => p.slug === diarySlug)) {
+    const meta = DIARY_TITLES[diarySlug] ?? {
+      title: "Launch Diary",
+      description: "A maker's store launch on Zolto.",
+    };
+    const post = BLOG_POSTS.find((p) => p.slug === diarySlug)!;
+    return {
+      path: clean,
+      title: `${meta.title} | ${PLATFORM.name} Launch Diary`,
+      description: meta.description,
+      jsonLd: [
+        ...common,
+        articleNode(base, clean, meta.title, meta.description, {
+          published: post.lastmod,
+          modified: post.lastmod,
+        }),
+        breadcrumb(base, [
+          ["Home", "/"],
+          ["Launch Diary", "/blog"],
+          [meta.title, clean],
+        ]),
+      ],
+      noscript: meta.description,
+    };
+  }
+
+  // Case study / story.
+  if (clean === `/stories/${STORY_SLUG}`) {
+    const title = named ? `${brand} Launch Case Study` : "Launch Case Study";
+    const description = `How ${named ? maker.founder : "a Zurich pearl-jewelry maker"} launched a first online store in 3 days and made 12 online sales in month one, on Zolto.`;
+    return {
+      path: clean,
+      title: `${title} | ${PLATFORM.name}`,
+      description,
+      jsonLd: [
+        ...common,
+        articleNode(base, clean, title, description),
+        breadcrumb(base, [
+          ["Home", "/"],
+          ["Stories", "/blog"],
+          [title, clean],
+        ]),
+      ],
+      noscript: description,
+    };
+  }
+
+  return null;
+}
+
+// ── HTML injection ────────────────────────────────────────────────────────────
+
+/** Replace a meta tag's content by name/property, or return the html unchanged. */
+function setMetaContent(
+  html: string,
+  attr: "name" | "property",
+  key: string,
+  value: string,
+): string {
+  const re = new RegExp(
+    `(<meta\\s+${attr}=["']${key}["']\\s+content=["'])[^"']*(["'])`,
+    "i",
+  );
+  return html.replace(re, `$1${escapeHtml(value)}$2`);
+}
+
+/**
+ * Inject marketing SEO into the served index.html for a marketing route. Returns
+ * the html unchanged for any non-marketing path, so it's a safe no-op elsewhere.
+ */
+export function injectMarketingHead(
+  html: string,
+  path: string,
+  baseUrl: string,
+): string {
+  const seo = getMarketingSeo(path, baseUrl);
+  if (!seo) return html;
+
+  const base = normalizeBaseUrl(baseUrl);
+  const canonical = `${base}${seo.path === "/" ? "/" : seo.path}`;
+  const title = escapeHtml(seo.title);
+
+  let out = html;
+  // Title + primary meta (replace the static defaults in index.html).
+  out = out.replace(/<title>[\s\S]*?<\/title>/i, `<title>${title}</title>`);
+  out = setMetaContent(out, "name", "description", seo.description);
+  out = setMetaContent(out, "property", "og:title", seo.title);
+  out = setMetaContent(out, "property", "og:description", seo.description);
+  out = setMetaContent(out, "property", "twitter:title", seo.title);
+  out = setMetaContent(out, "property", "twitter:description", seo.description);
+
+  // Canonical + og:url + JSON-LD, injected before </head>.
+  const ld = seo.jsonLd
+    .map(
+      (node) =>
+        `<script type="application/ld+json">${JSON.stringify({
+          "@context": "https://schema.org",
+          ...node,
+        })}</script>`,
+    )
+    .join("");
+  const headExtra =
+    `<link rel="canonical" href="${escapeHtml(canonical)}" />` +
+    `<meta property="og:url" content="${escapeHtml(canonical)}" />` +
+    ld;
+  out = out.replace(/<\/head>/i, `${headExtra}</head>`);
+
+  // Non-JS crawler content.
+  const noscript = `<noscript><h1>${title}</h1><p>${escapeHtml(seo.noscript)}</p><p><a href="${base}/signup">Start your store free</a> · <a href="${base}/pricing">Pricing</a> · <a href="${base}/llms.txt">llms.txt</a></p></noscript>`;
+  out = out.replace(
+    /<div id="root"><\/div>/i,
+    `<div id="root"></div>${noscript}`,
+  );
+
+  return out;
+}
