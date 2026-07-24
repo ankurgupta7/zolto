@@ -320,6 +320,14 @@ cat backup_20260101.sql | docker compose exec -T db mysql -u root -p kalakosh
 docker compose down
 ```
 
+> **If you started the bundled Caddy** (`docker compose --profile standalone up -d`), stop it the same way — re-enable the profile so `down` also removes the Caddy container:
+>
+> ```bash
+> docker compose --profile standalone down
+> ```
+>
+> A plain `docker compose down` does **not** remove containers belonging to a profile that isn't currently enabled, so the standalone Caddy is left running and attached to `zolto_internal`, and the teardown fails with *"Network zolto_internal Resource is still in use"* (see Troubleshooting).
+
 ### Reconcile Stripe payments
 
 Card terminals and webhooks can occasionally miss recording a sale locally.
@@ -395,18 +403,24 @@ Check `DISCORD_CHANNEL_ID` is the numeric ID (not the channel name). Check `dock
 If `S3_PUBLIC_URL` is not set, images are served via signed URLs through the `/uploads/` proxy. Ensure all `S3_*` credentials are correct.
 
 **`docker compose down` fails with "Network zolto_internal Resource is still in use"**
-Compose stopped the app/db containers but could not remove the `zolto_internal` network because another container is still attached to it. This is usually a leftover throwaway runner from an interrupted `./update.sh` (the translation backfill / language-fix step attaches a short-lived container to that network). Find and remove whatever is still attached, then remove the network:
+Compose stopped the app/db containers but could not remove the `zolto_internal` network because another container is still attached to it. First see what is still attached:
 
 ```bash
-# See which containers are still on the network
 docker network inspect zolto_internal \
   --format '{{range .Containers}}{{.Name}} {{end}}'
-
-# Remove the leftover runner(s) it lists, e.g.:
-docker rm -f kalakosh-runner-<pid>
-
-# Now the network frees up on its own; force it if needed:
-docker compose down --remove-orphans
 ```
 
-`./update.sh` now names these runners and force-removes them on exit (even on Ctrl-C), so fresh installs should not hit this. `docker compose down --remove-orphans` also clears containers from services no longer defined in the compose file.
+- **`zolto-caddy-1`** — you started the bundled Caddy with `--profile standalone`, but a plain `docker compose down` does not remove containers behind a profile that isn't enabled (and `--remove-orphans` won't touch it either, since it's a declared service, not an orphan). Re-enable the profile so `down` matches it:
+
+  ```bash
+  docker compose --profile standalone down
+  ```
+
+- **`kalakosh-runner-<pid>`** — a leftover throwaway runner from an interrupted `./update.sh` (the translation-backfill / language-fix step attaches a short-lived container to this network). Remove it, then tear down:
+
+  ```bash
+  docker rm -f kalakosh-runner-<pid>
+  docker compose down --remove-orphans
+  ```
+
+  `./update.sh` now names these runners and force-removes them on exit (even on Ctrl-C), so fresh installs should not hit this case.
