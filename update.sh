@@ -47,11 +47,13 @@ if [ "${DISK_USE_PCT:-0}" -ge 90 ] 2>/dev/null; then
   Check:  docker system df"
 fi
 
-# Load .env (skip blank lines and comments)
-set -a
-# shellcheck source=/dev/null
-source <(grep -v '^\s*#' .env | grep -v '^\s*$')
-set +a
+# Load .env. Parse it literally rather than `source`-ing it: sourcing executes
+# every line as bash, so a value with a shell metacharacter — online (bot),
+# p@ss(word), a backtick — breaks the run ("syntax error near unexpected token")
+# or, worse, gets executed. See deploy/lib/env.sh.
+# shellcheck source=deploy/lib/env.sh
+source "deploy/lib/env.sh"
+load_dotenv ".env"
 
 : "${MYSQL_USER:?MYSQL_USER not set in .env}"
 : "${MYSQL_PASSWORD:?MYSQL_PASSWORD not set in .env}"
