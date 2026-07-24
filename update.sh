@@ -639,6 +639,31 @@ for line in sys.stdin:
   [ "$i" -lt 30 ] || warn "App may still be starting — check 'docker compose logs -f app'"
 done
 
+# ── Verify the freshly-built frontend actually shipped ────────────────────────
+# The marketing/storefront frontend is compiled into dist/public at image-build
+# time and served as static files in production, so a `git pull` alone never
+# changes what users see — only a rebuilt image does. A deploy can still report
+# "healthy" while serving a stale bundle (e.g. the image wasn't rebuilt), which
+# is exactly the "I pulled but still see the old skin" failure mode. Surface the
+# hashed asset baked into the *running* container so that's visible, not silent.
+# Read-only and non-fatal: never fail an otherwise-good deploy over this check.
+log "Verifying deployed frontend build"
+
+SERVED_ASSET=$(docker compose exec -T app sh -c \
+  "grep -o 'assets/index-[^\"]*\.js' dist/public/index.html | head -1" 2>/dev/null \
+  | tr -d '[:space:]' || echo "")
+
+if [ -n "$SERVED_ASSET" ]; then
+  ok "running container serves frontend bundle: ${SERVED_ASSET}"
+  warn "Vite hashes this filename per build, so it changes whenever the frontend"
+  warn "actually rebuilt. If it's unchanged after a code update, the image didn't"
+  warn "rebuild. If the browser still shows the old skin, hard-refresh (Ctrl-Shift-R)"
+  warn "to drop the cached HTML shell."
+else
+  warn "Could not read the served frontend bundle from the app container."
+  warn "Check:  docker compose exec app ls dist/public/assets"
+fi
+
 # ── Prune unused Docker resources ─────────────────────────────────────────────
 # All three of these previously only removed dangling/never-used resources,
 # so tagged-but-unused images (old builder-stage images, the one-off
