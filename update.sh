@@ -47,11 +47,13 @@ if [ "${DISK_USE_PCT:-0}" -ge 90 ] 2>/dev/null; then
   Check:  docker system df"
 fi
 
-# Load .env (skip blank lines and comments)
-set -a
-# shellcheck source=/dev/null
-source <(grep -v '^\s*#' .env | grep -v '^\s*$')
-set +a
+# Load .env. Parse it literally rather than `source`-ing it: sourcing executes
+# every line as bash, so a value with a shell metacharacter — online (bot),
+# p@ss(word), a backtick — breaks the run ("syntax error near unexpected token")
+# or, worse, gets executed. See deploy/lib/env.sh.
+# shellcheck source=deploy/lib/env.sh
+source "deploy/lib/env.sh"
+load_dotenv ".env"
 
 : "${MYSQL_USER:?MYSQL_USER not set in .env}"
 : "${MYSQL_PASSWORD:?MYSQL_PASSWORD not set in .env}"
@@ -638,6 +640,31 @@ for line in sys.stdin:
   sleep 2
   [ "$i" -lt 30 ] || warn "App may still be starting — check 'docker compose logs -f app'"
 done
+
+# ── Verify the freshly-built frontend actually shipped ────────────────────────
+# The marketing/storefront frontend is compiled into dist/public at image-build
+# time and served as static files in production, so a `git pull` alone never
+# changes what users see — only a rebuilt image does. A deploy can still report
+# "healthy" while serving a stale bundle (e.g. the image wasn't rebuilt), which
+# is exactly the "I pulled but still see the old skin" failure mode. Surface the
+# hashed asset baked into the *running* container so that's visible, not silent.
+# Read-only and non-fatal: never fail an otherwise-good deploy over this check.
+log "Verifying deployed frontend build"
+
+SERVED_ASSET=$(docker compose exec -T app sh -c \
+  "grep -o 'assets/index-[^\"]*\.js' dist/public/index.html | head -1" 2>/dev/null \
+  | tr -d '[:space:]' || echo "")
+
+if [ -n "$SERVED_ASSET" ]; then
+  ok "running container serves frontend bundle: ${SERVED_ASSET}"
+  warn "Vite hashes this filename per build, so it changes whenever the frontend"
+  warn "actually rebuilt. If it's unchanged after a code update, the image didn't"
+  warn "rebuild. If the browser still shows the old skin, hard-refresh (Ctrl-Shift-R)"
+  warn "to drop the cached HTML shell."
+else
+  warn "Could not read the served frontend bundle from the app container."
+  warn "Check:  docker compose exec app ls dist/public/assets"
+fi
 
 # ── Prune unused Docker resources ─────────────────────────────────────────────
 # All three of these previously only removed dangling/never-used resources,
