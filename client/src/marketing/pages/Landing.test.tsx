@@ -30,7 +30,7 @@ describe("Landing", () => {
     renderLanding();
     expect(screen.getByText("Market stall")).toBeTruthy();
     expect(screen.getByText("Web storefront")).toBeTruthy();
-    expect(screen.getByText("Moonstone Drop Earrings")).toBeTruthy();
+    expect(screen.getByText("Moonstone Pendant Necklace")).toBeTruthy();
   });
 
   it("offers the primary and secondary calls to action", () => {
