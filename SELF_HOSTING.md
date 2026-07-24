@@ -393,3 +393,20 @@ Check `DISCORD_CHANNEL_ID` is the numeric ID (not the channel name). Check `dock
 
 **Images not showing**
 If `S3_PUBLIC_URL` is not set, images are served via signed URLs through the `/uploads/` proxy. Ensure all `S3_*` credentials are correct.
+
+**`docker compose down` fails with "Network zolto_internal Resource is still in use"**
+Compose stopped the app/db containers but could not remove the `zolto_internal` network because another container is still attached to it. This is usually a leftover throwaway runner from an interrupted `./update.sh` (the translation backfill / language-fix step attaches a short-lived container to that network). Find and remove whatever is still attached, then remove the network:
+
+```bash
+# See which containers are still on the network
+docker network inspect zolto_internal \
+  --format '{{range .Containers}}{{.Name}} {{end}}'
+
+# Remove the leftover runner(s) it lists, e.g.:
+docker rm -f kalakosh-runner-<pid>
+
+# Now the network frees up on its own; force it if needed:
+docker compose down --remove-orphans
+```
+
+`./update.sh` now names these runners and force-removes them on exit (even on Ctrl-C), so fresh installs should not hit this. `docker compose down --remove-orphans` also clears containers from services no longer defined in the compose file.

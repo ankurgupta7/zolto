@@ -528,13 +528,31 @@ run_in_builder() {
   fi
   ok "Docker network: ${network}"
 
+  # Give the throwaway runner a stable name and guarantee it is torn down even
+  # if this script is interrupted (Ctrl-C) or the runner is killed mid-run.
+  # Relying on `--rm` alone is not enough: on a signal the cleanup can be
+  # skipped, leaving an orphaned container attached to "${network}". Because
+  # that container is not managed by compose, a later `docker compose down`
+  # then fails with "Network ${network} Resource is still in use". A fixed
+  # --name plus a trap (mirroring deploy/dry-run-migration.sh) makes cleanup
+  # reliable regardless of how we exit.
+  local runner_name="kalakosh-runner-$$"
+  docker rm -f "${runner_name}" &>/dev/null || true
+  trap "docker rm -f '${runner_name}' &>/dev/null || true" INT TERM EXIT
+
   docker run --rm \
+    --name "${runner_name}" \
     --network "${network}" \
     --env-file .env \
     --env "DATABASE_URL=mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@db:3306/${MYSQL_DATABASE}" \
     "$@" \
     "${tag}" \
     pnpm tsx "${script}"
+
+  # Normal completion: remove the runner and drop the trap so it does not fire
+  # again (or clobber cleanup for a subsequent run_in_builder call).
+  docker rm -f "${runner_name}" &>/dev/null || true
+  trap - INT TERM EXIT
 
   docker rmi "${tag}" --force &>/dev/null || true
 }
