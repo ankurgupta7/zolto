@@ -12,10 +12,11 @@ into the relevant plan and track shipping in
 **Goal:** let a small business move to Zolto from whatever they're on today with
 as little friction as possible — ideally a guided "import your store" step in
 onboarding. The whole premise of Zolto is that incumbents overcharge small
-makers; a painless exit ramp *off* those incumbents is a core wedge, not a
+makers; a painless exit ramp _off_ those incumbents is a core wedge, not a
 nice-to-have.
 
 **Sources to support (Switzerland-first, then broad):**
+
 - **Shopify** — catalogue, variants, inventory levels, collections, customers,
   orders. (CSV product export + Admin API.)
 - **Square** — items/catalogue, inventory, customers, past sales. (Square
@@ -32,6 +33,7 @@ nice-to-have.
   mapping-driven "bring your catalogue" flow).
 
 **Scope notes / open questions (refine later):**
+
 - What's the minimum viable import? Almost certainly **catalogue + inventory
   levels + product images** first (that's the painful, high-value part). Orders
   and customers are a second pass.
@@ -58,6 +60,7 @@ Full content draft (voice, structure, and the open questions to answer) lives in
 [`phase1/content/about-founder.md`](./phase1/content/about-founder.md).
 
 Build notes for when it's implemented:
+
 - Lives on the **marketing** surface (e.g. `/about` or `/story`), not the tenant
   storefront.
 - One-column, long-form, personal — not the card-grid marketing look.
@@ -87,12 +90,79 @@ Bracelets, plus Sets/Bangles/Anklets/Brooches/Hair Accessories/Other, no
 changes needed there).
 
 **Scope (when it's built):**
+
 - New `products` column (enum or free-text) for material/gem — needs a migration.
 - Wire into the admin product form, CSV importer, and the WhatsApp/Slack/Discord
   auto-listing LLM parsers (so material is extracted alongside name/price/category).
 - Filter control on the Shop page next to the category filter.
 - Tests for all of the above per this repo's testing rule (new server logic +
   client hooks need coverage in the same change).
+
+---
+
+## 5. AI-agent readiness — discoverability + MCP
+
+**Goal:** make Zolto and every storefront legible and usable by LLMs and AI
+agents — both so assistants can _find and recommend_ a maker's products
+(discovery/SEO for the AI era) and so agents can _interact_ programmatically.
+Founder note (2026-07): "make the website friendly for LLMs and other AI agents;
+proper robots/AI txt; offer an MCP service so clients can interact and customers
+can discover products via MCP and easy browsing."
+
+**Shipped (Phase 1, week 2):**
+
+- **AI-crawler `robots.txt`** — explicitly welcomes GPTBot, ClaudeBot,
+  PerplexityBot, Google-Extended, etc., and advertises `/llms.txt`
+  (`shared/marketing.ts`, served by `server/seo.ts`).
+- **`/llms.txt` + `/llms-full.txt`** (llmstxt.org format), tenant-aware: the
+  platform apex serves a rich Zolto brief (features, pricing, how-to-start, MCP
+  pointers) and a long-form `/llms-full.txt` with full feature/plan/FAQ content;
+  each storefront serves a product-aware brief from its live catalogue
+  (`server/llms.ts`, `shared/marketing.ts`).
+- **Server-rendered marketing SEO** (`server/marketingSeo.ts`) — because the app
+  is a client-rendered SPA and most AI crawlers don't run JS, the server now
+  injects per-route `<title>`, meta description, canonical/OG, JSON-LD, and a
+  `<noscript>` summary into the served HTML for every marketing route (landing,
+  pricing, signup, blog, posts, story). JSON-LD: `Organization`, `WebSite`,
+  `SoftwareApplication` + `AggregateOffer` (the plans), `FAQPage`, `Article`,
+  `BreadcrumbList`. Wired into both dev and prod serving (`server/_core/vite.ts`),
+  gated to the marketing host so it's a no-op for storefronts.
+- **Surface-aware MCP** at `POST /mcp` (`server/mcp.ts`):
+  - _Storefront_ (tenant resolves): `search_products`, `get_product`,
+    `list_categories`, `get_store_info`.
+  - _Platform / marketing_ (no tenant, e.g. zolto.com): `get_platform_info`,
+    `list_features`, `get_pricing`, `how_to_start`, `list_faqs`,
+    `list_resources` — so an AI assistant helping a prospective shop owner can
+    discover Zolto's features/pricing and how to sign up, and recommend it.
+- **Brand logo + per-tenant favicons** — a brush-Z mark (`client/public/logo.*`,
+  `favicon.svg/png`, multi-size `favicon.ico`, 1200×630 `og-image.png`) wired into
+  the nav, `<head>`, and JSON-LD/OG. Storefronts no longer inherit Zolto's icon:
+  `server/storefrontHead.ts` rewrites each storefront's `<head>` to its own
+  favicon (uploaded `faviconUrl`/`logoUrl`, or a generated initial-mark in the
+  tenant's `primaryColor`) and tab title/OG identity. Both marketing SEO and
+  storefront branding are dispatched from `server/htmlHead.ts` in the serving
+  path. Tenant-supplied values are escaped; favicon URLs are scheme-restricted.
+- **Single source of truth** for platform facts (`shared/platform.ts`:
+  PLATFORM/FEATURES/PLANS/FAQS/HOW_TO_START) feeds the pricing page, JSON-LD,
+  llms.txt/full, and the platform MCP tools so they never drift.
+  Tests: `shared/platform.test.ts`, `server/marketingSeo.test.ts`,
+  `server/mcp.test.ts`, `server/llms.test.ts`, `shared/marketing.test.ts`.
+
+**Backlog (next passes):**
+
+- **Write/interaction MCP** for tenant clients: add-to-cart / create checkout
+  session / order status — needs auth (per-tenant API key or OAuth) and careful
+  scoping; the "clients interact with the website" half of the note. Keep the
+  human-in-the-loop rule for anything touching payments/inventory.
+- **Server-initiated streaming (SSE)** on the MCP transport for long-running or
+  progress-reporting tools, and MCP **session management** if stateful tools land.
+- **Adopt the official `@modelcontextprotocol/sdk`** if/when we need the full
+  transport surface (the v1 handler is a focused hand-rolled JSON-RPC dispatcher).
+- **Agent-friendly structured data** beyond JSON-LD: per-product `Offer`/`Product`
+  feeds, a machine-readable catalogue export, and a `/.well-known/` agent manifest
+  if a standard settles.
+- **Analytics for AI referrals** — attribute visits/sales that originate from AI
+  assistants (distinct from classic organic search).
 
 ---
 

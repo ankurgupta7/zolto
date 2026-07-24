@@ -1,4 +1,4 @@
-import { useState } from "react";
+
 import { LayoutGrid, List, ChevronDown, ChevronUp } from "lucide-react";
 import {
   Select,
@@ -45,7 +45,10 @@ export default function ProductDiscoveryControls({
               >
                 Sort by:
               </label>
-              <Select value={sortBy} onValueChange={(v) => onSortChange(v as SortOption)}>
+              <Select
+                value={sortBy}
+                onValueChange={(v) => onSortChange(v as SortOption)}
+              >
                 <SelectTrigger
                   id="sort-select"
                   className="w-[180px] text-xs uppercase tracking-[0.15em]"

@@ -18,7 +18,9 @@ export type TrpcContext = {
 // 3. No fallback — if no tenant resolved, context.tenant is null
 //    This is intentional: Zolto is a fresh product, not Kalakosh.
 //    Kalakosh remains separate on kalakosh.ch.
-async function resolveTenant(req: CreateExpressContextOptions["req"]): Promise<Tenant | null> {
+async function resolveTenant(
+  req: CreateExpressContextOptions["req"],
+): Promise<Tenant | null> {
   try {
     // Check header first (POS apps, API clients)
     const slug = req.headers["x-tenant-slug"] as string | undefined;
@@ -47,7 +49,7 @@ async function resolveTenant(req: CreateExpressContextOptions["req"]): Promise<T
 }
 
 export async function createContext(
-  opts: CreateExpressContextOptions
+  opts: CreateExpressContextOptions,
 ): Promise<TrpcContext> {
   let user: User | null = null;
   let tenant: Tenant | null = null;

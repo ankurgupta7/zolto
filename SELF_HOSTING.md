@@ -8,13 +8,13 @@ Admin login uses **Google OAuth** — only the designated Google account (`shwen
 
 ## What You Need
 
-| Requirement | Minimum spec | Recommended |
-|---|---|---|
-| VPS | 1 vCPU, 1 GB RAM | 2 vCPU, 4 GB RAM (Hetzner CX22 ~€4/mo) |
-| OS | Ubuntu 22.04 or Debian 12 | Ubuntu 24.04 LTS |
-| Domain | Any domain pointing to your server IP | — |
-| Docker | 24+ | Latest stable |
-| Docker Compose | v2 plugin | Latest stable |
+| Requirement    | Minimum spec                          | Recommended                            |
+| -------------- | ------------------------------------- | -------------------------------------- |
+| VPS            | 1 vCPU, 1 GB RAM                      | 2 vCPU, 4 GB RAM (Hetzner CX22 ~€4/mo) |
+| OS             | Ubuntu 22.04 or Debian 12             | Ubuntu 24.04 LTS                       |
+| Domain         | Any domain pointing to your server IP | —                                      |
+| Docker         | 24+                                   | Latest stable                          |
+| Docker Compose | v2 plugin                             | Latest stable                          |
 
 ---
 
@@ -43,6 +43,41 @@ The Discord bot runs as a long-lived WebSocket connection inside the Node.js pro
 
 ---
 
+## Running alongside Kalakosh-ch (served at zolto.kalakosh.ch)
+
+If you already run the [Kalakosh-ch](https://github.com/ankurgupta7/Kalakosh-ch) stack on the same server, its Caddy already owns host ports **80** and **443**. Rather than have Zolto's Caddy fight for those ports, let the Kalakosh Caddy serve Zolto as a subdomain — **zolto.kalakosh.ch** — and reverse-proxy it to Zolto's app over a shared Docker network:
+
+```
+Internet
+    │  (:443)
+    ▼
+ Kalakosh Caddy ──── kalakosh.ch ─────────▶ Kalakosh app :3000
+        │
+        └─────────── zolto.kalakosh.ch ───▶ Zolto app :3000   (via "kalakosh-shared" network)
+```
+
+In this mode Zolto runs **no Caddy of its own and binds no host ports**, so there is nothing to compete over.
+
+**Setup:**
+
+1. **Create the shared network** (once — safe to re-run):
+   ```bash
+   docker network create kalakosh-shared
+   ```
+2. **Add DNS:** point `zolto.kalakosh.ch` at the server IP (an `A`/`AAAA` record). The Kalakosh-ch repo already carries the matching `zolto.kalakosh.ch` block in its `Caddyfile`, so Caddy will provision the TLS certificate automatically.
+3. **Set** `PUBLIC_BASE_URL=https://zolto.kalakosh.ch` in Zolto's `.env` (used for Stripe redirects and absolute URLs).
+4. **Start Zolto** — the bundled Caddy is behind the `standalone` profile, so a plain up brings only the app + db, attached to the shared network:
+   ```bash
+   docker compose up -d
+   ```
+5. **Restart the Kalakosh stack** (or `docker compose up -d` it) so its Caddy picks up the shared network and the `zolto.kalakosh.ch` route.
+
+Both stacks are independent — separate databases, separate deploys — they only share the reverse-proxy network.
+
+To run Zolto **standalone** instead (its own domain/IP with its own Caddy), see [Step 7 — Configure Caddy](#step-7--configure-caddy) and start it with `docker compose --profile standalone up -d`.
+
+---
+
 ## Step 1 — Provision Your VPS
 
 Any provider works. Hetzner is recommended for European users (fast, cheap, GDPR-compliant).
@@ -67,10 +102,10 @@ docker compose version
 
 In your domain registrar's DNS settings (e.g. Swissonic.ch), add:
 
-| Type | Name | Value | TTL |
-|---|---|---|---|
-| `A` | `@` | `YOUR_SERVER_IP` | 300 |
-| `A` | `www` | `YOUR_SERVER_IP` | 300 |
+| Type | Name  | Value            | TTL |
+| ---- | ----- | ---------------- | --- |
+| `A`  | `@`   | `YOUR_SERVER_IP` | 300 |
+| `A`  | `www` | `YOUR_SERVER_IP` | 300 |
 
 Verify propagation: `dig +short yourdomain.com`
 
@@ -117,6 +152,7 @@ nano .env
 ### Required values
 
 **Database** — internal MySQL credentials, choose any strong passwords:
+
 ```env
 MYSQL_ROOT_PASSWORD=a_strong_root_password
 MYSQL_DATABASE=kalakosh
@@ -125,14 +161,17 @@ MYSQL_PASSWORD=a_strong_user_password
 ```
 
 **Session secret** — generate a random 32-char string:
+
 ```bash
 openssl rand -hex 32
 ```
+
 ```env
 JWT_SECRET=<output of above command>
 ```
 
 **Google OAuth** — from Step 4:
+
 ```env
 GOOGLE_CLIENT_ID=your_client_id.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=your_client_secret
@@ -140,6 +179,7 @@ ADMIN_EMAIL=shwena9@gmail.com
 ```
 
 **Discord Bot:**
+
 ```env
 DISCORD_BOT_TOKEN=your_bot_token
 DISCORD_CHANNEL_ID=your_channel_id
@@ -148,6 +188,7 @@ DISCORD_OWNER_USER_ID=your_discord_user_id   # optional, for DM notifications
 
 **LLM — Groq (recommended, free tier):**
 Sign up at [console.groq.com](https://console.groq.com) → API Keys.
+
 ```env
 LLM_BASE_URL=https://api.groq.com/openai/v1
 LLM_API_KEY=gsk_your_groq_key
@@ -156,6 +197,7 @@ LLM_MODEL=llama3-8b-8192
 
 **S3 Storage — Cloudflare R2 (recommended, free 10 GB):**
 Create a bucket at [dash.cloudflare.com](https://dash.cloudflare.com) → R2.
+
 ```env
 S3_BUCKET=kalakosh-images
 S3_REGION=auto
@@ -172,19 +214,23 @@ Swiss/CHF Stripe account so TWINT is available. In the dashboard enable the
 to `https://yourdomain.com/api/stripe/webhook` subscribed to
 `checkout.session.completed`, `checkout.session.async_payment_succeeded`,
 `checkout.session.async_payment_failed` and `checkout.session.expired`.
+
 ```env
 STRIPE_SECRET_KEY=sk_live_your_secret_key
 STRIPE_WEBHOOK_SECRET=whsec_your_webhook_signing_secret
 PUBLIC_BASE_URL=https://yourdomain.com   # used for Stripe success/cancel redirects
 ```
+
 If `STRIPE_SECRET_KEY` is left blank, the storefront hides online payment and
 customers are routed to the WhatsApp enquiry flow instead.
 
 **POS Terminal / Tap to Pay (optional):**
 The Android and iOS market-stall apps authenticate requests with a shared API key and use Stripe Terminal for in-person payments. Add a second webhook endpoint at `https://yourdomain.com/api/pos/webhook` subscribed to `payment_intent.succeeded`.
+
 ```bash
 openssl rand -hex 32   # generate POS_API_KEY
 ```
+
 ```env
 POS_API_KEY=<generated above>
 STRIPE_POS_WEBHOOK_SECRET=whsec_your_pos_webhook_signing_secret
@@ -192,10 +238,12 @@ STRIPE_POS_WEBHOOK_SECRET=whsec_your_pos_webhook_signing_secret
 # Served to the POS apps at runtime via GET /api/pos/config — not baked into the builds.
 STRIPE_LOCATION_ID=tml_your_location_id
 ```
+
 Leave all three blank if you are not using the POS apps.
 
 **Backups (optional):**
 `deploy/backup.sh` dumps the database, exports inventory CSV, and uploads to a secondary S3 bucket and/or a private GitHub repository. Run it from cron or manually.
+
 ```env
 # Secondary S3 (e.g. Backblaze B2 if primary is Cloudflare R2)
 BACKUP_S3_BUCKET=kalakosh-backups
@@ -208,28 +256,31 @@ BACKUP_S3_ENDPOINT=https://s3.us-west-004.backblazeb2.com
 BACKUP_GITHUB_REPO=youruser/kalakosh-backups
 BACKUP_GITHUB_TOKEN=github_pat_...
 ```
+
 Leave blank to skip backups.
 
 ---
 
 ## Step 7 — Configure Caddy
 
-Replace the placeholder domain in `Caddyfile`:
+> Serving Zolto at **zolto.kalakosh.ch** instead? Skip this step — the Kalakosh-ch Caddy handles TLS and routing for you. See [Running alongside Kalakosh-ch](#running-alongside-kalakosh-ch-served-at-zoltokalakoshch).
 
-```bash
-sed -i 's/yourdomain.com/kalakoshzurich.ch/g' Caddyfile
-```
+Zolto's bundled Caddy is only used for **standalone** deploys (its own domain/IP) and lives behind the `standalone` compose profile. Point `SITE_DOMAIN` (in `.env`) at your domain so Caddy provisions HTTPS automatically.
 
 ---
 
 ## Step 8 — Start Everything
 
+For a **standalone** deploy (Zolto's own Caddy on its own domain), enable the profile so Caddy starts:
+
 ```bash
-docker compose up -d
+docker compose --profile standalone up -d
 docker compose logs -f app   # watch startup logs
 ```
 
-Caddy will obtain an SSL certificate within ~30 seconds. Visit `https://yourdomain.com` to see the storefront.
+Caddy will obtain an SSL certificate within ~30 seconds. Visit your `SITE_DOMAIN` to see the storefront.
+
+> Running **alongside Kalakosh-ch** at zolto.kalakosh.ch? Use `docker compose up -d` (no profile) — the app joins the shared network and the Kalakosh Caddy serves it. See [Running alongside Kalakosh-ch](#running-alongside-kalakosh-ch-served-at-zoltokalakoshch).
 
 To access the admin panel, go to `https://yourdomain.com/admin` and click **Sign in with Google**.
 
@@ -238,28 +289,33 @@ To access the admin panel, go to `https://yourdomain.com/admin` and click **Sign
 ## Ongoing Operations
 
 ### View logs
+
 ```bash
 docker compose logs -f app     # application + Discord bot logs
 docker compose logs -f caddy   # access logs
 ```
 
 ### Update the application
+
 ```bash
 docker compose build app
 docker compose up -d app
 ```
 
 ### Backup the database
+
 ```bash
 docker compose exec db mysqldump -u root -p kalakosh > backup_$(date +%Y%m%d).sql
 ```
 
 ### Restore from backup
+
 ```bash
 cat backup_20260101.sql | docker compose exec -T db mysql -u root -p kalakosh
 ```
 
 ### Stop everything
+
 ```bash
 docker compose down
 ```
@@ -280,38 +336,38 @@ whenever you suspect a payment is missing.
 
 ## Environment Variable Reference
 
-| Variable | Required | Description |
-|---|---|---|
-| `MYSQL_*` | Yes | Internal database credentials |
-| `JWT_SECRET` | Yes | Session cookie signing secret (32+ chars) |
-| `GOOGLE_CLIENT_ID` | Yes | Google OAuth client ID |
-| `GOOGLE_CLIENT_SECRET` | Yes | Google OAuth client secret |
-| `ADMIN_EMAIL` | Yes | Google account allowed to log in as admin |
-| `DISCORD_BOT_TOKEN` | Yes | Discord bot token |
-| `DISCORD_CHANNEL_ID` | Yes | Channel to watch for new products |
-| `DISCORD_OWNER_USER_ID` | No | Your Discord user ID for DM notifications |
-| `LLM_BASE_URL` | Yes | OpenAI-compatible API base URL |
-| `LLM_API_KEY` | Yes | API key (`ollama` for local Ollama) |
-| `LLM_MODEL` | Yes | Model name (e.g. `llama3-8b-8192`) |
-| `S3_BUCKET` | Yes | Storage bucket name |
-| `S3_REGION` | Yes | Region (`auto` for R2) |
-| `S3_ACCESS_KEY_ID` | Yes | Storage access key |
-| `S3_SECRET_ACCESS_KEY` | Yes | Storage secret key |
-| `S3_ENDPOINT` | No | Custom endpoint for non-AWS providers |
-| `S3_PUBLIC_URL` | No | Public CDN base URL for serving images |
-| `STRIPE_SECRET_KEY` | No | Stripe secret key — enables card & TWINT checkout |
-| `STRIPE_WEBHOOK_SECRET` | No | Signing secret for `/api/stripe/webhook` |
-| `PUBLIC_BASE_URL` | No | Canonical site URL for Stripe success/cancel redirects |
-| `POS_API_KEY` | No | Shared secret for the POS apps — Android and iOS (generate with `openssl rand -hex 32`) |
-| `STRIPE_POS_WEBHOOK_SECRET` | No | Signing secret for `/api/pos/webhook` |
-| `STRIPE_LOCATION_ID` | No | Stripe Terminal Location ID served to POS apps at runtime via `GET /api/pos/config` — not baked into builds |
-| `BACKUP_S3_BUCKET` | No | Secondary S3 bucket for database backups |
-| `BACKUP_S3_REGION` | No | Region for secondary backup bucket |
-| `BACKUP_S3_ACCESS_KEY_ID` | No | Access key for secondary backup bucket |
-| `BACKUP_S3_SECRET_ACCESS_KEY` | No | Secret key for secondary backup bucket |
-| `BACKUP_S3_ENDPOINT` | No | Endpoint for secondary backup provider (e.g. Backblaze B2) |
-| `BACKUP_GITHUB_REPO` | No | Private GitHub repo for weekly SQL + CSV backup commits |
-| `BACKUP_GITHUB_TOKEN` | No | Fine-grained PAT with Contents: Read & Write for the backup repo |
+| Variable                      | Required | Description                                                                                                 |
+| ----------------------------- | -------- | ----------------------------------------------------------------------------------------------------------- |
+| `MYSQL_*`                     | Yes      | Internal database credentials                                                                               |
+| `JWT_SECRET`                  | Yes      | Session cookie signing secret (32+ chars)                                                                   |
+| `GOOGLE_CLIENT_ID`            | Yes      | Google OAuth client ID                                                                                      |
+| `GOOGLE_CLIENT_SECRET`        | Yes      | Google OAuth client secret                                                                                  |
+| `ADMIN_EMAIL`                 | Yes      | Google account allowed to log in as admin                                                                   |
+| `DISCORD_BOT_TOKEN`           | Yes      | Discord bot token                                                                                           |
+| `DISCORD_CHANNEL_ID`          | Yes      | Channel to watch for new products                                                                           |
+| `DISCORD_OWNER_USER_ID`       | No       | Your Discord user ID for DM notifications                                                                   |
+| `LLM_BASE_URL`                | Yes      | OpenAI-compatible API base URL                                                                              |
+| `LLM_API_KEY`                 | Yes      | API key (`ollama` for local Ollama)                                                                         |
+| `LLM_MODEL`                   | Yes      | Model name (e.g. `llama3-8b-8192`)                                                                          |
+| `S3_BUCKET`                   | Yes      | Storage bucket name                                                                                         |
+| `S3_REGION`                   | Yes      | Region (`auto` for R2)                                                                                      |
+| `S3_ACCESS_KEY_ID`            | Yes      | Storage access key                                                                                          |
+| `S3_SECRET_ACCESS_KEY`        | Yes      | Storage secret key                                                                                          |
+| `S3_ENDPOINT`                 | No       | Custom endpoint for non-AWS providers                                                                       |
+| `S3_PUBLIC_URL`               | No       | Public CDN base URL for serving images                                                                      |
+| `STRIPE_SECRET_KEY`           | No       | Stripe secret key — enables card & TWINT checkout                                                           |
+| `STRIPE_WEBHOOK_SECRET`       | No       | Signing secret for `/api/stripe/webhook`                                                                    |
+| `PUBLIC_BASE_URL`             | No       | Canonical site URL for Stripe success/cancel redirects                                                      |
+| `POS_API_KEY`                 | No       | Shared secret for the POS apps — Android and iOS (generate with `openssl rand -hex 32`)                     |
+| `STRIPE_POS_WEBHOOK_SECRET`   | No       | Signing secret for `/api/pos/webhook`                                                                       |
+| `STRIPE_LOCATION_ID`          | No       | Stripe Terminal Location ID served to POS apps at runtime via `GET /api/pos/config` — not baked into builds |
+| `BACKUP_S3_BUCKET`            | No       | Secondary S3 bucket for database backups                                                                    |
+| `BACKUP_S3_REGION`            | No       | Region for secondary backup bucket                                                                          |
+| `BACKUP_S3_ACCESS_KEY_ID`     | No       | Access key for secondary backup bucket                                                                      |
+| `BACKUP_S3_SECRET_ACCESS_KEY` | No       | Secret key for secondary backup bucket                                                                      |
+| `BACKUP_S3_ENDPOINT`          | No       | Endpoint for secondary backup provider (e.g. Backblaze B2)                                                  |
+| `BACKUP_GITHUB_REPO`          | No       | Private GitHub repo for weekly SQL + CSV backup commits                                                     |
+| `BACKUP_GITHUB_TOKEN`         | No       | Fine-grained PAT with Contents: Read & Write for the backup repo                                            |
 
 ---
 

@@ -49,7 +49,9 @@ class SDKServer {
 
   // Kept for backward-compat with any code that calls sdk.createSessionToken
   async createSessionToken(_openId: string, _opts?: unknown): Promise<string> {
-    throw new Error("createSessionToken: use the Google OAuth callback instead");
+    throw new Error(
+      "createSessionToken: use the Google OAuth callback instead",
+    );
   }
 }
 

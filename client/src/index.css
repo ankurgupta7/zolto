@@ -17,30 +17,33 @@
 /* Card:       Warm Ivory     #EDE7DF                                             */
 
 @theme inline {
-  --color-background: oklch(96.5% 0.008 75);          /* #F7F3EE oyster cream */
-  --color-foreground: oklch(13% 0.012 50);             /* #1C1714 warm near-black */
-  --color-card: oklch(93% 0.010 75);                   /* #EDE7DF warm ivory */
+  --color-background: oklch(96.5% 0.008 75); /* #F7F3EE oyster cream */
+  --color-foreground: oklch(13% 0.012 50); /* #1C1714 warm near-black */
+  --color-card: oklch(93% 0.01 75); /* #EDE7DF warm ivory */
   --color-card-foreground: oklch(13% 0.012 50);
   --color-popover: oklch(96.5% 0.008 75);
   --color-popover-foreground: oklch(13% 0.012 50);
-  --color-primary: oklch(13% 0.012 50);                /* warm near-black */
+  --color-primary: oklch(13% 0.012 50); /* warm near-black */
   --color-primary-foreground: oklch(96.5% 0.008 75);
-  --color-secondary: oklch(63% 0.09 75);               /* #B8963E refined gold */
+  --color-secondary: oklch(63% 0.09 75); /* #B8963E refined gold */
   --color-secondary-foreground: oklch(13% 0.012 50);
-  --color-muted: oklch(90% 0.010 75);                  /* warm soft tone */
-  --color-muted-foreground: oklch(48% 0.018 50);       /* #7A6D65 warm taupe */
-  --color-accent: oklch(63% 0.09 75);                  /* gold */
+  --color-muted: oklch(90% 0.01 75); /* warm soft tone */
+  --color-muted-foreground: oklch(48% 0.018 50); /* #7A6D65 warm taupe */
+  --color-accent: oklch(63% 0.09 75); /* gold */
   --color-accent-foreground: oklch(13% 0.012 50);
   --color-destructive: oklch(55% 0.22 27);
   --color-destructive-foreground: oklch(96.5% 0.008 75);
-  --color-border: oklch(87% 0.012 75);                 /* #DDD4C9 warm pearl border */
-  --color-input: oklch(90% 0.010 75);
+  --color-border: oklch(87% 0.012 75); /* #DDD4C9 warm pearl border */
+  --color-input: oklch(90% 0.01 75);
   --color-ring: oklch(63% 0.09 75);
   --radius: 0.125rem;
 
   /* Typography */
   --font-serif: "Cormorant Garamond", Georgia, "Times New Roman", serif;
   --font-sans: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  /* Handwriting accent — brand voice only (eyebrows, empty states). Never used
+     for numbers, money, tables, inputs, or status pills. */
+  --font-hand: "Caveat", "Segoe Print", "Bradley Hand", cursive;
 }
 
 /* ─── Tenant-themeable brand palette ─────────────────────────────────────────── */
@@ -83,7 +86,12 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     font-family: var(--font-serif);
     font-weight: 400;
     line-height: 1.2;
@@ -91,9 +99,15 @@
     color: var(--brand-text);
   }
 
-  h1 { font-size: clamp(2.2rem, 5vw, 3.8rem); }
-  h2 { font-size: clamp(1.7rem, 3.5vw, 2.8rem); }
-  h3 { font-size: clamp(1.3rem, 2.5vw, 2rem); }
+  h1 {
+    font-size: clamp(2.2rem, 5vw, 3.8rem);
+  }
+  h2 {
+    font-size: clamp(1.7rem, 3.5vw, 2.8rem);
+  }
+  h3 {
+    font-size: clamp(1.3rem, 2.5vw, 2rem);
+  }
 
   a {
     color: inherit;
@@ -133,36 +147,72 @@
 
 /* ─── Custom Utilities ───────────────────────────────────────────────────────── */
 
-.font-serif { font-family: var(--font-serif); }
-.font-sans  { font-family: var(--font-sans); }
+.font-serif {
+  font-family: var(--font-serif);
+}
+.font-sans {
+  font-family: var(--font-sans);
+}
+
+/* Handwriting brand voice. Guardrail: decorative labels/eyebrows and empty
+   states only — money and inventory stay in the crisp serif/sans faces. Bumped
+   in size since Caveat runs small at a given font-size. */
+.font-hand {
+  font-family: var(--font-hand);
+  font-weight: 500;
+  letter-spacing: 0;
+  font-size: 1.35em;
+  line-height: 1.1;
+}
 
 /* Gold gradient text */
 .text-gold-gradient {
-  background: linear-gradient(135deg, var(--brand-accent) 0%, var(--brand-accent-light) 50%, var(--brand-accent) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--brand-accent) 0%,
+    var(--brand-accent-light) 50%,
+    var(--brand-accent) 100%
+  );
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
 /* Brand utilities */
-.text-gold    { color: var(--brand-accent); }
-.bg-gold      { background-color: var(--brand-accent); }
-.border-gold  { border-color: var(--brand-accent); }
+.text-gold {
+  color: var(--brand-accent);
+}
+.bg-gold {
+  background-color: var(--brand-accent);
+}
+.border-gold {
+  border-color: var(--brand-accent);
+}
 
 /* Warm mahogany dark — used for hero, footer; never cold charcoal */
-.bg-mahogany  { background-color: var(--brand-ink); }
-.bg-warm-dark { background-color: var(--brand-ink-deep); }
+.bg-mahogany {
+  background-color: var(--brand-ink);
+}
+.bg-warm-dark {
+  background-color: var(--brand-ink-deep);
+}
 
 /* Hairline divider with gold accent */
 .divider-gold {
   height: 1px;
-  background: linear-gradient(90deg, transparent, var(--brand-accent), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--brand-accent),
+    transparent
+  );
 }
 
 /* Card hover lift */
 .card-hover {
-  transition: transform 500ms cubic-bezier(0.22, 1, 0.36, 1),
-              box-shadow 500ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition:
+    transform 500ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 500ms cubic-bezier(0.22, 1, 0.36, 1);
   will-change: transform;
 }
 .card-hover:hover {
@@ -183,10 +233,14 @@
   transform: scale(1.04);
 }
 .img-overlay::after {
-  content: '';
+  content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(to top, rgba(44, 38, 32, 0.22) 0%, transparent 60%);
+  background: linear-gradient(
+    to top,
+    rgba(44, 38, 32, 0.22) 0%,
+    transparent 60%
+  );
   opacity: 0;
   transition: opacity 500ms cubic-bezier(0.22, 1, 0.36, 1);
   pointer-events: none;
@@ -197,7 +251,8 @@
 }
 
 /* Button active scale */
-button:active, [role="button"]:active {
+button:active,
+[role="button"]:active {
   transform: scale(0.97);
   transition: transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -208,8 +263,14 @@ button:active, [role="button"]:active {
     animation: fadeUp 500ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
   }
   @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to   { opacity: 1; transform: translateY(0); }
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 }
 
@@ -218,7 +279,9 @@ button:active, [role="button"]:active {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  html { scroll-behavior: auto !important; }
+  html {
+    scroll-behavior: auto !important;
+  }
   * {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;

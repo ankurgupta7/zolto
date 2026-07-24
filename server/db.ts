@@ -12,7 +12,7 @@ import {
   sql,
 } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import crypto from "crypto";
+import crypto from "node:crypto";
 import type { Pool as MySqlPool, PoolConnection } from "mysql2";
 import * as schema from "../drizzle/schema";
 import {

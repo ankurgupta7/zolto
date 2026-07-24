@@ -32,6 +32,7 @@ import MarketingApp from "./marketing/MarketingApp";
 
 function ScrollToTop() {
   const [location] = useLocation();
+  // biome-ignore lint/correctness/useExhaustiveDependencies: re-run on every route change to reset scroll position
   useEffect(() => {
     if (lenisRef.current) {
       // Tell Lenis to jump to the top immediately (no inertia carry-over).

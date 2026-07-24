@@ -30,7 +30,7 @@ export const instagramRouter = router({
       z.object({
         postUrl: z.string().url(),
         sortOrder: z.number().int().default(0),
-      })
+      }),
     )
     .mutation(async ({ input, ctx }) => {
       if (!input.postUrl.includes("instagram.com/")) {

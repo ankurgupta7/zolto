@@ -1,6 +1,7 @@
 # Kalakosh Zurich — Project TODO
 
 ## Database & Backend
+
 - [x] Products table (id, name, description, price, category, imageKey, imageUrl, visible, createdAt)
 - [x] Drizzle schema migration applied
 - [x] tRPC: products.list (public, visible only)
@@ -15,12 +16,14 @@
 - [x] Owner notification on successful product add via Slack
 
 ## Frontend — Global
+
 - [x] Global CSS: deep green/gold palette (Kalakosh branding), Cormorant Garamond + Inter
 - [x] Top navigation: Home, Shop, About, Contact (+ admin link when logged in as admin)
 - [x] Footer with brand name and minimal links
 - [x] Responsive layout (mobile-first)
 
 ## Frontend — Pages
+
 - [x] Home page: hero section, brand tagline, featured categories, CTA to Shop
 - [x] Shop page: product grid with category filter (All, Silver, Semi-Precious Gems, Pearls)
 - [x] Product Detail modal/page: enlarged image, name, description, price, category badge
@@ -28,6 +31,7 @@
 - [x] Contact page: enquiry form (name, email, subject, message) with submission feedback
 
 ## Admin Interface
+
 - [x] Admin-only nav item visible only to logged-in admin
 - [x] Admin panel: list all products (including hidden)
 - [x] Toggle product visibility (show/hide)
@@ -35,6 +39,7 @@
 - [x] Admin controls hidden from regular visitors
 
 ## WhatsApp Integration
+
 - [x] Slack URL verification challenge (url_verification type)
 - [x] Incoming message handler (POST /api/slack/events)
 - [x] Parse image + text from Slack message payload
@@ -44,15 +49,18 @@
 - [x] Owner notification on product creation
 
 ## Bug Fixes
+
 - [x] Fix duplicate product creation when Discord fires MESSAGE_CREATE twice (added discordMessageId dedup column)
 - [x] Add quick-access hide/delete buttons on product cards in Shop for admin users
 
 ## Tests
+
 - [x] Vitest: LLM parser unit test
 - [x] Vitest: products tRPC procedures
 - [x] Vitest: Slack webhook handler
 
 ## New Features (Round 2)
+
 - [x] Add `sold` status to products schema (boolean column)
 - [x] DB migration for sold column
 - [x] tRPC: products.toggleSold (admin)
@@ -65,6 +73,7 @@
 - [x] Instagram CTA in WhatsApp pre-filled message
 
 ## Design Refresh (Round 3)
+
 - [x] Bigger logo in navbar (h-16/h-20, navbar height h-20/h-24)
 - [x] Abstract SVG/CSS art background in hero section (geometric mandala + botanical branch + diamond cluster + stars)
 - [x] product_images table: productId, imageKey, imageUrl, sortOrder

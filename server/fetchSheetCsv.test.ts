@@ -82,24 +82,26 @@ describe("products.fetchSheetCsv (SSRF guard)", () => {
   it("rejects literal loopback URLs", async () => {
     const caller = appRouter.createCaller(makeCtx("admin"));
     await expect(
-      caller.products.fetchSheetCsv({ url: "http://127.0.0.1/secret.csv" })
+      caller.products.fetchSheetCsv({ url: "http://127.0.0.1/secret.csv" }),
     ).rejects.toThrow(/Internal URLs not allowed/);
   });
 
   it("rejects the cloud metadata link-local address", async () => {
     const caller = appRouter.createCaller(makeCtx("admin"));
     await expect(
-      caller.products.fetchSheetCsv({ url: "http://169.254.169.254/latest/meta-data/" })
+      caller.products.fetchSheetCsv({
+        url: "http://169.254.169.254/latest/meta-data/",
+      }),
     ).rejects.toThrow(/Internal URLs not allowed/);
   });
 
   it("rejects private RFC1918 ranges", async () => {
     const caller = appRouter.createCaller(makeCtx("admin"));
     await expect(
-      caller.products.fetchSheetCsv({ url: "http://10.0.0.5/internal.csv" })
+      caller.products.fetchSheetCsv({ url: "http://10.0.0.5/internal.csv" }),
     ).rejects.toThrow(/Internal URLs not allowed/);
     await expect(
-      caller.products.fetchSheetCsv({ url: "http://192.168.1.1/internal.csv" })
+      caller.products.fetchSheetCsv({ url: "http://192.168.1.1/internal.csv" }),
     ).rejects.toThrow(/Internal URLs not allowed/);
   });
 
@@ -107,7 +109,9 @@ describe("products.fetchSheetCsv (SSRF guard)", () => {
     dnsLookup.mockResolvedValue([{ address: "169.254.169.254", family: 4 }]);
     const caller = appRouter.createCaller(makeCtx("admin"));
     await expect(
-      caller.products.fetchSheetCsv({ url: "http://attacker-controlled.example.com/x.csv" })
+      caller.products.fetchSheetCsv({
+        url: "http://attacker-controlled.example.com/x.csv",
+      }),
     ).rejects.toThrow(/Internal URLs not allowed/);
   });
 
@@ -128,7 +132,7 @@ describe("products.fetchSheetCsv (SSRF guard)", () => {
   it("requires admin role", async () => {
     const caller = appRouter.createCaller(makeCtx("user"));
     await expect(
-      caller.products.fetchSheetCsv({ url: "http://example.com/x.csv" })
+      caller.products.fetchSheetCsv({ url: "http://example.com/x.csv" }),
     ).rejects.toThrow();
   });
 });

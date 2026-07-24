@@ -5,9 +5,13 @@
 # one-time English translation backfill, rebuilds the app, restarts Docker
 # services, and prunes unused Docker resources.
 #
+# By default it deploys the branch currently checked out on this host. To pin a
+# specific branch, set DEPLOY_BRANCH (in .env or the environment).
+#
 # Usage:
 #   chmod +x update.sh
-#   ./update.sh
+#   ./update.sh                      # deploy the checked-out branch
+#   DEPLOY_BRANCH=main ./update.sh   # deploy a specific branch
 #
 # Safe to re-run at any time — every step is idempotent.
 
@@ -43,11 +47,13 @@ if [ "${DISK_USE_PCT:-0}" -ge 90 ] 2>/dev/null; then
   Check:  docker system df"
 fi
 
-# Load .env (skip blank lines and comments)
-set -a
-# shellcheck source=/dev/null
-source <(grep -v '^\s*#' .env | grep -v '^\s*$')
-set +a
+# Load .env. Parse it literally rather than `source`-ing it: sourcing executes
+# every line as bash, so a value with a shell metacharacter — online (bot),
+# p@ss(word), a backtick — breaks the run ("syntax error near unexpected token")
+# or, worse, gets executed. See deploy/lib/env.sh.
+# shellcheck source=deploy/lib/env.sh
+source "deploy/lib/env.sh"
+load_dotenv ".env"
 
 : "${MYSQL_USER:?MYSQL_USER not set in .env}"
 : "${MYSQL_PASSWORD:?MYSQL_PASSWORD not set in .env}"
@@ -80,11 +86,21 @@ source "deploy/lib/db.sh"
 MYSQL="$(build_mysql_cmd)"
 
 # ── Git pull ──────────────────────────────────────────────────────────────────
-log "Pulling latest code"
+# Deploy whatever branch is checked out on this server, not a hard-coded one —
+# otherwise a host running a feature/release branch would silently keep pulling
+# `main` and never see its own changes. Override explicitly with DEPLOY_BRANCH.
+DEPLOY_BRANCH="${DEPLOY_BRANCH:-$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")}"
+if [ -z "$DEPLOY_BRANCH" ] || [ "$DEPLOY_BRANCH" = "HEAD" ]; then
+  die "Cannot determine which branch to deploy (detached HEAD?).
+  Check out a branch, or set DEPLOY_BRANCH in .env / the environment, e.g.:
+      DEPLOY_BRANCH=main ./update.sh"
+fi
+
+log "Pulling latest code (branch: ${DEPLOY_BRANCH})"
 
 PREV_COMMIT=$(git rev-parse --short HEAD)
-git fetch origin main
-git pull origin main
+git fetch origin "$DEPLOY_BRANCH"
+git pull origin "$DEPLOY_BRANCH"
 NEW_COMMIT=$(git rev-parse --short HEAD)
 
 if [ "$PREV_COMMIT" = "$NEW_COMMIT" ]; then
@@ -625,6 +641,31 @@ for line in sys.stdin:
   [ "$i" -lt 30 ] || warn "App may still be starting — check 'docker compose logs -f app'"
 done
 
+# ── Verify the freshly-built frontend actually shipped ────────────────────────
+# The marketing/storefront frontend is compiled into dist/public at image-build
+# time and served as static files in production, so a `git pull` alone never
+# changes what users see — only a rebuilt image does. A deploy can still report
+# "healthy" while serving a stale bundle (e.g. the image wasn't rebuilt), which
+# is exactly the "I pulled but still see the old skin" failure mode. Surface the
+# hashed asset baked into the *running* container so that's visible, not silent.
+# Read-only and non-fatal: never fail an otherwise-good deploy over this check.
+log "Verifying deployed frontend build"
+
+SERVED_ASSET=$(docker compose exec -T app sh -c \
+  "grep -o 'assets/index-[^\"]*\.js' dist/public/index.html | head -1" 2>/dev/null \
+  | tr -d '[:space:]' || echo "")
+
+if [ -n "$SERVED_ASSET" ]; then
+  ok "running container serves frontend bundle: ${SERVED_ASSET}"
+  warn "Vite hashes this filename per build, so it changes whenever the frontend"
+  warn "actually rebuilt. If it's unchanged after a code update, the image didn't"
+  warn "rebuild. If the browser still shows the old skin, hard-refresh (Ctrl-Shift-R)"
+  warn "to drop the cached HTML shell."
+else
+  warn "Could not read the served frontend bundle from the app container."
+  warn "Check:  docker compose exec app ls dist/public/assets"
+fi
+
 # ── Prune unused Docker resources ─────────────────────────────────────────────
 # All three of these previously only removed dangling/never-used resources,
 # so tagged-but-unused images (old builder-stage images, the one-off
@@ -678,6 +719,7 @@ echo -e "${BOLD}━━━━━━━━━━━━━━━━━━━━━�
 echo -e "${GREEN}${BOLD}  Update complete!${RESET}"
 echo -e "${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
 echo ""
+echo -e "  Branch   ${DEPLOY_BRANCH}"
 echo -e "  Commit   $(git rev-parse --short HEAD) — $(git log -1 --pretty=%s)"
 echo -e "  Date     $(date '+%Y-%m-%d %H:%M:%S %Z')"
 echo -e "  Backup   every Sunday 02:00 → ${PROJECT_DIR}/backups/"

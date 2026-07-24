@@ -8,7 +8,7 @@ const OTHER_SECRET = "different-jwt-secret-also-32-characters-plus";
 async function sign(
   payload: Record<string, unknown>,
   secret: string,
-  expiresInSeconds = 3600
+  expiresInSeconds = 3600,
 ): Promise<string> {
   const key = new TextEncoder().encode(secret);
   return new SignJWT(payload)
@@ -27,7 +27,7 @@ describe("verifySessionJwt", () => {
   it("returns the session payload for a valid token", async () => {
     const token = await sign(
       { openId: "google:123", appId: "google", name: "Jane" },
-      SECRET
+      SECRET,
     );
     const result = await verifySessionJwt(token, SECRET);
     expect(result).toEqual({
@@ -40,7 +40,7 @@ describe("verifySessionJwt", () => {
   it("returns null when the token was signed with a different secret", async () => {
     const token = await sign(
       { openId: "google:123", appId: "google", name: "Jane" },
-      OTHER_SECRET
+      OTHER_SECRET,
     );
     expect(await verifySessionJwt(token, SECRET)).toBeNull();
   });
@@ -49,7 +49,7 @@ describe("verifySessionJwt", () => {
     const token = await sign(
       { openId: "google:123", appId: "google", name: "Jane" },
       SECRET,
-      -10
+      -10,
     );
     expect(await verifySessionJwt(token, SECRET)).toBeNull();
   });
@@ -61,13 +61,13 @@ describe("verifySessionJwt", () => {
   it("returns null when required claims are missing or wrong type", async () => {
     const missingName = await sign(
       { openId: "google:123", appId: "google" },
-      SECRET
+      SECRET,
     );
     expect(await verifySessionJwt(missingName, SECRET)).toBeNull();
 
     const wrongType = await sign(
       { openId: 123, appId: "google", name: "Jane" },
-      SECRET
+      SECRET,
     );
     expect(await verifySessionJwt(wrongType, SECRET)).toBeNull();
   });
@@ -77,7 +77,7 @@ describe("sanitizeNextPath", () => {
   it("accepts a rooted same-origin path (with query)", () => {
     expect(sanitizeNextPath("/onboarding")).toBe("/onboarding");
     expect(sanitizeNextPath("/onboarding?store=aurora")).toBe(
-      "/onboarding?store=aurora"
+      "/onboarding?store=aurora",
     );
   });
 

@@ -1,18 +1,28 @@
 # ─────────────────────────────────────────────────────────────────────────────
-# Caddyfile — Kalakosh Zurich self-hosted
+# Caddyfile — Zolto self-hosted
 #
-# Replace "yourdomain.com" with your actual domain.
-# Caddy will automatically obtain and renew an SSL certificate via Let's Encrypt.
+# SITE_DOMAIN (see docker-compose.yml / .env) controls what Caddy serves:
+#   - Default ":80" — a port-only address, so Caddy serves plain HTTP on the
+#     mapped port for any hostname/IP and skips automatic HTTPS entirely.
+#     Use this while testing without a domain pointed at the server yet.
+#   - A real domain (e.g. "app.example.com") — Caddy automatically requests
+#     and renews a Let's Encrypt certificate and serves HTTPS instead. Once
+#     you switch to a domain, also uncomment the www redirect below (it's
+#     meaningless for a port-only address).
+#
+# This lets the stack run on the same server as another instance (e.g.
+# Kalakosh-ch) without both Caddyfiles fighting over the same domain/port.
 # ─────────────────────────────────────────────────────────────────────────────
 
-kalakosh.ch {
+{$SITE_DOMAIN} {
     # Reverse proxy all traffic to the Node.js app
     reverse_proxy app:3000
 
     # Enable gzip compression
     encode gzip
 
-    # Security headers
+    # Security headers (harmless over plain HTTP; take effect once SITE_DOMAIN
+    # is a real domain and Caddy is serving HTTPS)
     header {
         Strict-Transport-Security "max-age=31536000; includeSubDomains"
         X-Content-Type-Options "nosniff"
@@ -26,7 +36,7 @@ kalakosh.ch {
     }
 }
 
-# Redirect www → apex
-www.kalakosh.ch {
-    redir https://kalakosh.ch{uri} permanent
-}
+# Redirect www → apex — uncomment once SITE_DOMAIN is a real domain.
+# www.{$SITE_DOMAIN} {
+#     redir https://{$SITE_DOMAIN}{uri} permanent
+# }

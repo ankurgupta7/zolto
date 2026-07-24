@@ -128,7 +128,11 @@ export function derivePalette(primaryColor: string): BrandPalette | null {
     "--brand-text": hslToHex({ h, s: clamp(inkS + 0.04, 0, 0.9), l: 0.12 }),
     // Accent: same hue, clearly lighter and more vivid so it reads as a highlight
     // against both the ink and the cream surfaces.
-    "--brand-accent": hslToHex({ h, s: clamp(inkS + 0.12, 0.35, 0.95), l: 0.52 }),
+    "--brand-accent": hslToHex({
+      h,
+      s: clamp(inkS + 0.12, 0.35, 0.95),
+      l: 0.52,
+    }),
     "--brand-accent-light": hslToHex({
       h,
       s: clamp(inkS + 0.1, 0.3, 0.95),

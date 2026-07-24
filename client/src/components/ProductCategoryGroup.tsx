@@ -1,5 +1,5 @@
 import { ChevronDown, ChevronUp } from "lucide-react";
-import { ReactNode } from "react";
+import type { ReactNode } from "react";
 
 interface ProductCategoryGroupProps {
   category: string;

@@ -55,10 +55,13 @@ export default function Signup() {
 
   return (
     <div className="mx-auto max-w-md px-6 py-20">
-      <h1 className="text-3xl font-semibold tracking-tight text-white">
+      <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
+        let&rsquo;s begin
+      </p>
+      <h1 className="mt-2 font-serif text-3xl text-[var(--brand-text)]">
         Create your store
       </h1>
-      <p className="mt-2 text-sm text-slate-400">
+      <p className="mt-2 text-sm text-[var(--brand-muted-2)]">
         Free to start. 14-day trial on paid features. No card required.
       </p>
 
@@ -69,7 +72,7 @@ export default function Signup() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Your store name"
-            className="w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-2.5 text-white outline-none focus:border-violet-500"
+            className="w-full rounded-md border border-[var(--brand-border-2)] bg-white px-4 py-2.5 text-[var(--brand-text)] outline-none focus:border-[var(--brand-accent)]"
           />
         </Field>
 
@@ -88,7 +91,7 @@ export default function Signup() {
               setSlug(slugify(e.target.value));
             }}
             placeholder="kalakosh"
-            className="w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-2.5 text-white outline-none focus:border-violet-500"
+            className="w-full rounded-md border border-[var(--brand-border-2)] bg-white px-4 py-2.5 text-[var(--brand-text)] outline-none focus:border-[var(--brand-accent)]"
           />
         </Field>
 
@@ -102,25 +105,31 @@ export default function Signup() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="you@example.com"
-            className="w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-2.5 text-white outline-none focus:border-violet-500"
+            className="w-full rounded-md border border-[var(--brand-border-2)] bg-white px-4 py-2.5 text-[var(--brand-text)] outline-none focus:border-[var(--brand-accent)]"
           />
         </Field>
 
         <button
           type="submit"
           disabled={!canSubmit}
-          className="w-full rounded-lg bg-violet-500 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-violet-400 disabled:cursor-not-allowed disabled:opacity-50"
+          className="w-full rounded-md bg-[var(--brand-ink)] px-4 py-3 text-xs font-medium uppercase tracking-[0.12em] text-white transition-colors hover:bg-[var(--brand-ink-hover)] disabled:cursor-not-allowed disabled:opacity-50"
         >
           {createTenant.isPending ? "Creating…" : "Create store →"}
         </button>
 
-        <p className="text-center text-xs text-slate-500">
+        <p className="text-center text-xs text-[var(--brand-muted)]">
           By creating a store you agree to our{" "}
-          <a href="/legal/terms" className="text-violet-300 hover:underline">
+          <a
+            href="/legal/terms"
+            className="text-[var(--brand-accent)] hover:underline"
+          >
             Terms
           </a>{" "}
           and{" "}
-          <a href="/legal/privacy" className="text-violet-300 hover:underline">
+          <a
+            href="/legal/privacy"
+            className="text-[var(--brand-accent)] hover:underline"
+          >
             Privacy Policy
           </a>
           .
@@ -142,15 +151,18 @@ function Field({
   children: React.ReactNode;
 }) {
   return (
+    // biome-ignore lint/a11y/noLabelWithoutControl: the associated control is supplied via {children} and can't be seen statically
     <label className="block">
-      <span className="mb-1.5 block text-sm font-medium text-slate-200">
+      <span className="mb-1.5 block text-sm font-medium text-[var(--brand-text)]">
         {label}
       </span>
       {children}
       {error ? (
-        <span className="mt-1 block text-xs text-rose-400">{error}</span>
+        <span className="mt-1 block text-xs text-rose-600">{error}</span>
       ) : hint ? (
-        <span className="mt-1 block text-xs text-slate-500">{hint}</span>
+        <span className="mt-1 block text-xs text-[var(--brand-muted)]">
+          {hint}
+        </span>
       ) : null}
     </label>
   );

@@ -36,8 +36,13 @@ import ProductDiscoveryControls, {
   type ViewMode,
 } from "@/components/ProductDiscoveryControls";
 import ProductCategoryGroup from "@/components/ProductCategoryGroup";
-import ProductListItem from "@/components/ProductListItem";
 import { Link } from "wouter";
+import { HelpCircle } from "lucide-react";
+import GuidedTour from "@/components/GuidedTour";
+import { ADMIN_TOUR_ID, ADMIN_TOUR_STEPS } from "@/lib/adminTour";
+import { clearTourCompletion } from "@/lib/tour";
+import CapabilityBand from "@/components/CapabilityBand";
+import { SketchUnderline } from "@/components/SketchAccents";
 
 const CATEGORIES: readonly ProductCategory[] = PRODUCT_CATEGORIES;
 
@@ -543,6 +548,8 @@ type InsightsData = {
 
 export default function Admin() {
   const { user, isAuthenticated, loading } = useAuth();
+  // Bumping this restarts the guided tour (the "Replay tour" button).
+  const [tourSignal, setTourSignal] = useState(0);
   const [showAddForm, setShowAddForm] = useState(false);
   const [form, setForm] = useState<AddForm>(EMPTY_FORM);
   const [sortBy, setSortBy] = useState<SortOption>("newest");
@@ -852,20 +859,33 @@ export default function Admin() {
 
   return (
     <div className="page-enter pt-20 min-h-screen bg-[var(--brand-surface)]">
+      {/* First-run guided tour of the dashboard (coach marks). */}
+      <GuidedTour
+        tourId={ADMIN_TOUR_ID}
+        steps={ADMIN_TOUR_STEPS}
+        startSignal={tourSignal}
+      />
       {/* Header */}
       <section className="bg-[var(--brand-ink)] py-12">
         <div className="container flex items-center justify-between flex-wrap gap-4">
           <div>
-            <p className="text-[var(--brand-accent)] text-xs uppercase tracking-[0.3em] mb-1 font-sans">
-              Admin Panel
+            <p className="font-hand text-[var(--brand-accent)] leading-none mb-1">
+              Your maker&rsquo;s bench
             </p>
-            <h1 className="font-serif text-white text-2xl">
+            <h1
+              data-tour="admin-title"
+              className="font-serif text-white text-2xl"
+            >
               Catalogue Management
             </h1>
+            <div className="mt-1.5 w-44 text-[var(--brand-accent)]/70">
+              <SketchUnderline />
+            </div>
           </div>
           <div className="flex items-center gap-3 flex-wrap">
             <Link
               href="/admin/csv-import"
+              data-tour="csv-import"
               className="flex items-center gap-2 border border-white/20 text-white/80 px-4 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:border-white hover:text-white transition-colors"
             >
               <FileSpreadsheet size={14} />
@@ -902,6 +922,7 @@ export default function Admin() {
               type="button"
               onClick={() => previewTranslateMutation.mutate()}
               disabled={previewTranslateMutation.isPending}
+              data-tour="auto-translate"
               title="Fill missing English translations using AI (review before applying)"
               className="flex items-center gap-2 border border-white/20 text-white/80 px-4 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:border-white hover:text-white transition-colors disabled:opacity-50"
             >
@@ -928,6 +949,7 @@ export default function Admin() {
             </button>
             {stripeConnectQuery.data?.connected ? (
               <span
+                data-tour="connect-stripe"
                 title="This store's own Stripe account is linked — checkout pays out directly to you"
                 className="flex items-center gap-2 border border-emerald-400/40 text-emerald-300 px-4 py-2.5 text-xs uppercase tracking-[0.15em] font-sans"
               >
@@ -939,6 +961,7 @@ export default function Admin() {
                 type="button"
                 onClick={handleConnectStripe}
                 disabled={stripeConnectQuery.isLoading}
+                data-tour="connect-stripe"
                 title="Link your OWN Stripe account so your storefront's customers pay directly into it"
                 className="flex items-center gap-2 border border-white/20 text-white/80 px-4 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:border-white hover:text-white transition-colors disabled:opacity-50"
               >
@@ -952,7 +975,21 @@ export default function Admin() {
             )}
             <button
               type="button"
+              onClick={() => {
+                clearTourCompletion(ADMIN_TOUR_ID);
+                setTourSignal((n) => n + 1);
+              }}
+              title="Replay the guided tour of this dashboard"
+              aria-label="Replay guided tour"
+              className="flex items-center gap-2 border border-white/20 text-white/80 px-3 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:border-white hover:text-white transition-colors"
+            >
+              <HelpCircle size={14} />
+              Tour
+            </button>
+            <button
+              type="button"
               onClick={() => setShowAddForm((v) => !v)}
+              data-tour="add-product"
               className="flex items-center gap-2 bg-[var(--brand-accent)] text-[var(--brand-ink)] px-5 py-2.5 text-xs uppercase tracking-[0.15em] font-sans font-medium hover:bg-[var(--brand-accent-light)] transition-colors"
             >
               <Plus size={14} />
@@ -963,6 +1000,22 @@ export default function Admin() {
       </section>
 
       <div className="container py-10">
+        {/* What Zolto does for this seller — live capability status */}
+        <CapabilityBand
+          storeConnected={!!stripeConnectQuery.data?.connected}
+          insightsReady={!!insightsData}
+          onConnectStore={handleConnectStripe}
+          onViewInsights={() => {
+            if (!insightsData && !insightsMutation.isPending) {
+              insightsMutation.mutate();
+            }
+            setShowInsights(true);
+            document
+              .getElementById("ai-insights")
+              ?.scrollIntoView({ behavior: "smooth", block: "start" });
+          }}
+        />
+
         {/* Add Product Form */}
         {showAddForm && (
           <div className="bg-white border border-[var(--brand-border)] p-8 mb-8">
@@ -1197,23 +1250,29 @@ export default function Admin() {
           </div>
         )}
 
-        {/* Stats */}
+        {/* Stats — counts read as plain figures; inventory value is the hero
+            money tile and gets distinct, institutional (never hand-drawn)
+            treatment. Sold Out turns to a warning tone only when > 0. */}
         {products && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             {[
               { label: "Total Products", value: products.length },
               { label: "In Stock", value: inStock },
-              { label: "Sold Out", value: soldOut },
               {
-                label: "Inventory Value",
-                value: `CHF ${inventoryValue.toFixed(0)}`,
+                label: "Sold Out",
+                value: soldOut,
+                warn: soldOut > 0,
               },
             ].map((stat) => (
               <div
                 key={stat.label}
                 className="bg-white border border-[var(--brand-border)] p-5 text-center"
               >
-                <p className="font-serif text-[var(--brand-ink)] text-3xl mb-1">
+                <p
+                  className={`font-serif text-3xl mb-1 tabular-nums ${
+                    stat.warn ? "text-amber-700" : "text-[var(--brand-ink)]"
+                  }`}
+                >
                   {stat.value}
                 </p>
                 <p className="text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans">
@@ -1221,11 +1280,29 @@ export default function Admin() {
                 </p>
               </div>
             ))}
+            {/* Hero money tile */}
+            <div className="bg-[var(--brand-ink)] p-5 text-center flex flex-col justify-center">
+              <p className="font-serif text-white text-3xl mb-1 tabular-nums">
+                <span className="text-[var(--brand-accent)] text-base align-top mr-1">
+                  CHF
+                </span>
+                {inventoryValue.toLocaleString("de-CH", {
+                  maximumFractionDigits: 0,
+                })}
+              </p>
+              <p className="text-xs uppercase tracking-[0.15em] text-[var(--brand-accent)] font-sans">
+                Inventory Value
+              </p>
+            </div>
           </div>
         )}
 
         {/* AI Insights */}
-        <div className="mb-8 bg-white border border-[var(--brand-border)] overflow-hidden">
+        <div
+          id="ai-insights"
+          data-tour="insights"
+          className="mb-8 bg-white border border-[var(--brand-border)] overflow-hidden scroll-mt-24"
+        >
           <div className="flex items-center justify-between px-6 py-5 border-b border-[var(--brand-border)] bg-[var(--brand-surface)]">
             <div>
               <p className="text-[var(--brand-accent)] text-xs uppercase tracking-[0.3em] mb-1 font-sans">
@@ -1492,9 +1569,12 @@ export default function Admin() {
           </div>
         ) : (
           <div className="bg-white border border-[var(--brand-border)] text-center py-24">
-            <div className="text-5xl text-[var(--brand-accent)]/20 font-serif mb-6">
+            <div className="text-5xl text-[var(--brand-accent)]/20 font-serif mb-4">
               ◇
             </div>
+            <p className="font-hand text-[var(--brand-accent)] mb-2">
+              A blank page for your bench
+            </p>
             <h3 className="font-serif text-foreground text-xl mb-3">
               No products yet
             </h3>

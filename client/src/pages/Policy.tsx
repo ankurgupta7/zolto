@@ -20,8 +20,8 @@ export default function Policy() {
       <section className="py-16 bg-background">
         <div className="container max-w-3xl">
           <p className="text-muted-foreground font-sans leading-relaxed mb-10">
-            These terms govern purchases from {branding.storeName}. By placing an
-            order you agree to them.
+            These terms govern purchases from {branding.storeName}. By placing
+            an order you agree to them.
           </p>
 
           <div className="space-y-10">
@@ -46,8 +46,8 @@ export default function Policy() {
 
           <p className="mt-12 rounded border border-[var(--brand-border)] bg-[var(--brand-surface-2)] p-4 text-xs text-muted-foreground font-sans">
             This is a general template. {branding.storeName} is responsible for
-            ensuring its terms comply with the laws that apply to its business and
-            customers.
+            ensuring its terms comply with the laws that apply to its business
+            and customers.
           </p>
         </div>
       </section>

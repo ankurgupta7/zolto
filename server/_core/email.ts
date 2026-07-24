@@ -6,7 +6,8 @@ export interface TenantBranding {
 
 const DEFAULT_BRANDING: TenantBranding = {
   tenantName: "Zolto Store",
-  tenantDomain: process.env.PUBLIC_BASE_URL?.replace(/\/$/, "") ?? "https://zolto.ch",
+  tenantDomain:
+    process.env.PUBLIC_BASE_URL?.replace(/\/$/, "") ?? "https://zolto.ch",
   contactEmail: process.env.RESEND_FROM_EMAIL ?? "orders@zolto.ch",
 };
 
@@ -66,12 +67,18 @@ export function buildReceiptHtml(opts: OrderReceiptOptions): string {
   const branding = resolveBranding(opts.branding);
   const baseUrl = branding.tenantDomain;
   const ref = String(opts.orderRef).padStart(5, "0");
-  const date = new Date(opts.createdAt ?? Date.now()).toLocaleDateString("en-GB", {
-    day: "numeric", month: "long", year: "numeric",
-  });
+  const date = new Date(opts.createdAt ?? Date.now()).toLocaleDateString(
+    "en-GB",
+    {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    },
+  );
 
   const subtotalRappen = opts.items.reduce(
-    (s, p) => s + Math.round(parseFloat(p.price) * 100), 0
+    (s, p) => s + Math.round(parseFloat(p.price) * 100),
+    0,
   );
   const shippingRappen = opts.amountTotal - subtotalRappen;
 
@@ -191,12 +198,16 @@ export function buildReceiptHtml(opts: OrderReceiptOptions): string {
 }
 
 // ── Public API ────────────────────────────────────────────────────────────────
-export async function sendOrderReceipt(opts: OrderReceiptOptions): Promise<void> {
+export async function sendOrderReceipt(
+  opts: OrderReceiptOptions,
+): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) return;
 
   const branding = resolveBranding(opts.branding);
-  const from = branding.contactEmail ?? `orders@${branding.tenantDomain.replace(/^https?:\/\//, "")}`;
+  const from =
+    branding.contactEmail ??
+    `orders@${branding.tenantDomain.replace(/^https?:\/\//, "")}`;
   const ref = String(opts.orderRef).padStart(5, "0");
 
   const res = await fetch("https://api.resend.com/emails", {
@@ -335,12 +346,15 @@ export interface ReconciliationReviewItem {
   token: string;
 }
 
-export function buildReconciliationReviewHtml(items: ReconciliationReviewItem[], branding?: Partial<TenantBranding>): string {
+export function buildReconciliationReviewHtml(
+  items: ReconciliationReviewItem[],
+  branding?: Partial<TenantBranding>,
+): string {
   const b = resolveBranding(branding);
   const baseUrl = b.tenantDomain;
 
   const sections = items
-    .map(item => {
+    .map((item) => {
       const amount = (item.amountRappen / 100).toFixed(2);
       const date = item.stripeCreatedAt.toLocaleString("en-GB", {
         dateStyle: "medium",
@@ -404,7 +418,7 @@ export function buildReconciliationReviewHtml(items: ReconciliationReviewItem[],
 
 export async function sendReconciliationReviewEmail(
   items: ReconciliationReviewItem[],
-  branding?: Partial<TenantBranding>
+  branding?: Partial<TenantBranding>,
 ): Promise<void> {
   if (items.length === 0) return;
 
@@ -413,7 +427,8 @@ export async function sendReconciliationReviewEmail(
   if (!apiKey || !to) return;
 
   const b = resolveBranding(branding);
-  const from = b.contactEmail ?? `orders@${b.tenantDomain.replace(/^https?:\/\//, "")}`;
+  const from =
+    b.contactEmail ?? `orders@${b.tenantDomain.replace(/^https?:\/\//, "")}`;
 
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",

@@ -29,13 +29,17 @@ export default function ProductListItem({
 }: ProductListItemProps) {
   const [isHovering, setIsHovering] = useState(false);
 
-  const formattedDate = new Date(product.createdAt).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
+  const formattedDate = new Date(product.createdAt).toLocaleDateString(
+    "en-US",
+    {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    },
+  );
 
   return (
+    // biome-ignore lint/a11y/noStaticElementInteractions: pointer-only hover affordance that reveals row actions; no keyboard semantics are implied
     <div
       className="flex items-center gap-4 px-6 py-4 border-b border-[var(--brand-border)] hover:bg-[#F9F7F3] transition-colors"
       onMouseEnter={() => setIsHovering(true)}
@@ -81,7 +85,9 @@ export default function ProductListItem({
       </div>
 
       {/* Actions */}
-      <div className={`flex items-center gap-2 flex-shrink-0 transition-opacity ${isHovering ? "opacity-100" : "opacity-60"}`}>
+      <div
+        className={`flex items-center gap-2 flex-shrink-0 transition-opacity ${isHovering ? "opacity-100" : "opacity-60"}`}
+      >
         <button
           type="button"
           onClick={onToggleVisibility}

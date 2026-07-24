@@ -71,8 +71,8 @@ describe("useCart", () => {
     act(() => result.current.addItem(makeProduct({ id: 1 })));
     act(() =>
       result.current.addItem(
-        makeProduct({ id: 2, name: "Pearl Earrings", price: "120.00" })
-      )
+        makeProduct({ id: 2, name: "Pearl Earrings", price: "120.00" }),
+      ),
     );
     act(() => result.current.removeItem(1));
 
@@ -120,7 +120,7 @@ describe("useCart", () => {
           imageUrl: null,
           category: "Other",
         },
-      ])
+      ]),
     );
 
     const { result } = renderCart();

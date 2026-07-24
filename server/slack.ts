@@ -16,7 +16,11 @@ import type { Request, Response } from "express";
 import { PRODUCT_CATEGORIES, type ProductCategory } from "@shared/const";
 import { invokeLLM } from "./_core/llm";
 import { notifyOwner } from "./_core/notification";
-import { createProduct, getTenantBySlackChannelId, getTenantSettings } from "./db";
+import {
+  createProduct,
+  getTenantBySlackChannelId,
+  getTenantSettings,
+} from "./db";
 import { storagePut } from "./storage";
 import type { TenantBranding } from "./_core/email";
 
@@ -24,7 +28,7 @@ import type { TenantBranding } from "./_core/email";
 // is folded into "Other" (see the prompt) and deliberately omitted from the
 // choices offered to the model. Derived from the canonical list so the rest of
 // the categories can never drift.
-const AI_CATEGORIES = PRODUCT_CATEGORIES.filter(c => c !== "Sets");
+const AI_CATEGORIES = PRODUCT_CATEGORIES.filter((c) => c !== "Sets");
 
 const SLACK_BOT_TOKEN = process.env.SLACK_BOT_TOKEN ?? "";
 const SLACK_SIGNING_SECRET = process.env.SLACK_SIGNING_SECRET ?? "";
@@ -34,7 +38,7 @@ const SLACK_SIGNING_SECRET = process.env.SLACK_SIGNING_SECRET ?? "";
 function verifySlackSignature(req: Request): boolean {
   if (!SLACK_SIGNING_SECRET) {
     console.warn(
-      "[Slack] No SLACK_SIGNING_SECRET set — skipping signature verification"
+      "[Slack] No SLACK_SIGNING_SECRET set — skipping signature verification",
     );
     return true;
   }
@@ -62,7 +66,7 @@ function verifySlackSignature(req: Request): boolean {
   try {
     return crypto.timingSafeEqual(
       Buffer.from(computedSig, "utf8"),
-      Buffer.from(slackSignature, "utf8")
+      Buffer.from(slackSignature, "utf8"),
     );
   } catch {
     return false;
@@ -111,7 +115,11 @@ export async function handleSlackEvent(req: Request, res: Response) {
     const settings = await getTenantSettings(tenant.id);
     const branding: TenantBranding = {
       tenantName: settings?.whiteLabelName ?? tenant.name,
-      tenantDomain: tenant.domain ?? settings?.publicDomain ?? process.env.PUBLIC_BASE_URL ?? "https://zolto.ch",
+      tenantDomain:
+        tenant.domain ??
+        settings?.publicDomain ??
+        process.env.PUBLIC_BASE_URL ??
+        "https://zolto.ch",
       contactEmail: settings?.contactEmail ?? undefined,
     };
 
@@ -122,10 +130,10 @@ export async function handleSlackEvent(req: Request, res: Response) {
     let imageUrl: string | null = null;
     if (files.length > 0) {
       const imageFile = files.find(
-        f =>
+        (f) =>
           f.mimetype?.startsWith("image/") ||
           f.filetype === "jpg" ||
-          f.filetype === "png"
+          f.filetype === "png",
       );
       if (imageFile) {
         imageUrl = await downloadSlackFile(imageFile);
@@ -133,7 +141,10 @@ export async function handleSlackEvent(req: Request, res: Response) {
     }
 
     // Parse product details using tenant-branded prompt
-    const parsed = await parseProductFromMessage(text || "New jewelry item", branding.tenantName);
+    const parsed = await parseProductFromMessage(
+      text || "New jewelry item",
+      branding.tenantName,
+    );
     if (!parsed) {
       console.log("[Slack] Could not parse product from message, skipping");
       return;
@@ -159,7 +170,7 @@ export async function handleSlackEvent(req: Request, res: Response) {
     });
 
     console.log(
-      `[Slack] Product created for ${branding.tenantName}: ${parsed.name} @ CHF ${parsed.price}`
+      `[Slack] Product created for ${branding.tenantName}: ${parsed.name} @ CHF ${parsed.price}`,
     );
   } catch (err) {
     console.error("[Slack] Error processing event:", err);
@@ -170,7 +181,7 @@ export async function handleSlackEvent(req: Request, res: Response) {
 
 export async function parseProductFromMessage(
   text: string,
-  tenantName?: string
+  tenantName?: string,
 ): Promise<{
   name: string;
   description: string;
@@ -188,7 +199,7 @@ export async function parseProductFromMessage(
           content: `You are a product data extractor for ${storeName}.
 Extract product information from the owner's Slack message and return a JSON object.
 
-Available categories: ${AI_CATEGORIES.map(c => `"${c}"`).join(", ")}
+Available categories: ${AI_CATEGORIES.map((c) => `"${c}"`).join(", ")}
 
 Rules:
 - name: short elegant product name (2–6 words)
@@ -296,7 +307,7 @@ async function downloadSlackFile(file: SlackFile): Promise<string | null> {
     const { url } = await storagePut(
       key,
       Buffer.from(response.data),
-      contentType
+      contentType,
     );
     return url;
   } catch (err) {

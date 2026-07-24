@@ -14,7 +14,7 @@ vi.mock("./db", () => ({
   updateProduct: vi.fn(),
   markProductsSold: vi.fn(),
   getTenantByPosApiKey: vi.fn(async (key: string) =>
-    key === "test-pos-key" ? TEST_TENANT : undefined
+    key === "test-pos-key" ? TEST_TENANT : undefined,
   ),
 }));
 
@@ -43,9 +43,9 @@ function makeFakeDb(
     sold?: boolean;
     quantity?: number;
     reservedUntil?: Date | null;
-  }>
+  }>,
 ) {
-  const rows = productRows.map(p => ({
+  const rows = productRows.map((p) => ({
     visible: true,
     sold: false,
     quantity: 1,
@@ -236,7 +236,7 @@ describe("GET /api/pos/products", () => {
   // looping forever on that circularity.
   function conditionReferencesColumn(
     node: unknown,
-    columnName: string
+    columnName: string,
   ): boolean {
     const seen = new Set<unknown>();
     function walk(value: unknown): boolean {
@@ -248,7 +248,7 @@ describe("GET /api/pos/products", () => {
       // sibling column, which would make any single referenced column look
       // like it "reaches" every other column in the table.
       return Object.entries(obj).some(
-        ([key, val]) => key !== "table" && walk(val)
+        ([key, val]) => key !== "table" && walk(val),
       );
     }
     return walk(node);
@@ -265,7 +265,7 @@ describe("GET /api/pos/products", () => {
     expect(res.status).toBe(200);
     expect(res.body).toHaveLength(1);
     expect(
-      conditionReferencesColumn(whereSpy.mock.calls[0][0], "visible")
+      conditionReferencesColumn(whereSpy.mock.calls[0][0], "visible"),
     ).toBe(true);
   });
 
@@ -282,10 +282,10 @@ describe("GET /api/pos/products", () => {
     expect(res.status).toBe(200);
     expect(res.body).toHaveLength(1);
     expect(
-      conditionReferencesColumn(whereSpy.mock.calls[0][0], "visible")
+      conditionReferencesColumn(whereSpy.mock.calls[0][0], "visible"),
     ).toBe(false);
     expect(conditionReferencesColumn(whereSpy.mock.calls[0][0], "sold")).toBe(
-      true
+      true,
     );
   });
 
@@ -299,7 +299,7 @@ describe("GET /api/pos/products", () => {
 
     expect(res.status).toBe(200);
     expect(
-      conditionReferencesColumn(whereSpy.mock.calls[0][0], "reserved_until")
+      conditionReferencesColumn(whereSpy.mock.calls[0][0], "reserved_until"),
     ).toBe(true);
   });
 });
@@ -320,7 +320,7 @@ describe("POST /api/pos/payment-intent", () => {
 
   it("rejects when a requested product id no longer resolves to a row (e.g. stale POS cache after a catalogue re-import)", async () => {
     vi.mocked(getDb).mockResolvedValueOnce(
-      makeFakeDb([{ id: 1, price: "50.00" }]) as never
+      makeFakeDb([{ id: 1, price: "50.00" }]) as never,
     );
     vi.mocked(getStripe).mockReturnValueOnce(makeFakeStripe() as never);
 
@@ -334,7 +334,7 @@ describe("POST /api/pos/payment-intent", () => {
 
   it("rejects when a resolved product exists but is hidden, sold, or out of stock (e.g. a stale POS cart that still holds a since-hidden or deleted duplicate)", async () => {
     vi.mocked(getDb).mockResolvedValueOnce(
-      makeFakeDb([{ id: 1, price: "50.00", visible: false }]) as never
+      makeFakeDb([{ id: 1, price: "50.00", visible: false }]) as never,
     );
     const fakeStripe = makeFakeStripe();
     vi.mocked(getStripe).mockReturnValueOnce(fakeStripe as never);
@@ -350,7 +350,7 @@ describe("POST /api/pos/payment-intent", () => {
 
   it("allows a hidden product through when allowHidden is true (cashier had 'Show Hidden Items' on when building this sale)", async () => {
     vi.mocked(getDb).mockResolvedValueOnce(
-      makeFakeDb([{ id: 1, price: "50.00", visible: false }]) as never
+      makeFakeDb([{ id: 1, price: "50.00", visible: false }]) as never,
     );
     const fakeStripe = makeFakeStripe();
     vi.mocked(getStripe).mockReturnValueOnce(fakeStripe as never);
@@ -363,7 +363,7 @@ describe("POST /api/pos/payment-intent", () => {
     expect(res.status).toBe(200);
     expect(res.body.totalRappen).toBe(5000);
     expect(fakeStripe.paymentIntents.create).toHaveBeenCalledWith(
-      expect.objectContaining({ amount: 5000 })
+      expect.objectContaining({ amount: 5000 }),
     );
   });
 
@@ -371,7 +371,7 @@ describe("POST /api/pos/payment-intent", () => {
     vi.mocked(getDb).mockResolvedValueOnce(
       makeFakeDb([
         { id: 1, price: "50.00", visible: false, sold: true },
-      ]) as never
+      ]) as never,
     );
     const fakeStripe = makeFakeStripe();
     vi.mocked(getStripe).mockReturnValueOnce(fakeStripe as never);
@@ -393,7 +393,7 @@ describe("POST /api/pos/payment-intent", () => {
           price: "50.00",
           reservedUntil: new Date(Date.now() + 10 * 60 * 1000),
         },
-      ]) as never
+      ]) as never,
     );
     const fakeStripe = makeFakeStripe();
     vi.mocked(getStripe).mockReturnValueOnce(fakeStripe as never);
@@ -415,7 +415,7 @@ describe("POST /api/pos/payment-intent", () => {
           price: "50.00",
           reservedUntil: new Date(Date.now() - 60 * 1000),
         },
-      ]) as never
+      ]) as never,
     );
     const fakeStripe = makeFakeStripe();
     vi.mocked(getStripe).mockReturnValueOnce(fakeStripe as never);
@@ -430,7 +430,7 @@ describe("POST /api/pos/payment-intent", () => {
 
   it("refuses to create a payment intent when the computed total is CHF 0.00", async () => {
     vi.mocked(getDb).mockResolvedValueOnce(
-      makeFakeDb([{ id: 1, price: "0.00" }]) as never
+      makeFakeDb([{ id: 1, price: "0.00" }]) as never,
     );
     const fakeStripe = makeFakeStripe();
     vi.mocked(getStripe).mockReturnValueOnce(fakeStripe as never);
@@ -449,7 +449,7 @@ describe("POST /api/pos/payment-intent", () => {
       makeFakeDb([
         { id: 1, price: "50.00" },
         { id: 2, price: "25.50" },
-      ]) as never
+      ]) as never,
     );
     const fakeStripe = makeFakeStripe();
     vi.mocked(getStripe).mockReturnValueOnce(fakeStripe as never);
@@ -462,7 +462,7 @@ describe("POST /api/pos/payment-intent", () => {
     expect(res.status).toBe(200);
     expect(res.body.totalRappen).toBe(7550);
     expect(fakeStripe.paymentIntents.create).toHaveBeenCalledWith(
-      expect.objectContaining({ amount: 7550 })
+      expect.objectContaining({ amount: 7550 }),
     );
   });
 });
@@ -495,7 +495,7 @@ describe("POST /api/pos/payment-intent — bargained price overrides and custom 
     expect(res.status).toBe(200);
     expect(res.body.totalRappen).toBe(3500);
     expect(fakeStripe.paymentIntents.create).toHaveBeenCalledWith(
-      expect.objectContaining({ amount: 3500 })
+      expect.objectContaining({ amount: 3500 }),
     );
     // Second insert() call is pos_order_items.
     expect(db.insertValuesSpy).toHaveBeenNthCalledWith(2, [
@@ -521,7 +521,11 @@ describe("POST /api/pos/payment-intent — bargained price overrides and custom 
     expect(res.body.totalRappen).toBe(6000);
     expect(db.insertValuesSpy).toHaveBeenNthCalledWith(2, [
       expect.objectContaining({ productId: 1, priceRappen: 5000, name: null }),
-      expect.objectContaining({ productId: null, priceRappen: 1000, name: "Custom repair" }),
+      expect.objectContaining({
+        productId: null,
+        priceRappen: 1000,
+        name: "Custom repair",
+      }),
     ]);
   });
 
@@ -539,7 +543,7 @@ describe("POST /api/pos/payment-intent — bargained price overrides and custom 
     expect(res.status).toBe(200);
     expect(res.body.totalRappen).toBe(4200);
     expect(fakeStripe.paymentIntents.create).toHaveBeenCalledWith(
-      expect.objectContaining({ amount: 4200 })
+      expect.objectContaining({ amount: 4200 }),
     );
   });
 
@@ -615,7 +619,12 @@ describe("fulfillment via POST /api/pos/sale", () => {
 
   function makeFulfillFakeDb(
     orderRow: { id: number; status: string } | undefined,
-    itemRows: Array<{ posOrderId: number; productId: number | null; priceRappen: number; name: string | null }>
+    itemRows: Array<{
+      posOrderId: number;
+      productId: number | null;
+      priceRappen: number;
+      name: string | null;
+    }>,
   ) {
     const updateWhereSpy = vi.fn().mockResolvedValue(undefined);
     let selectCallCount = 0;
@@ -659,14 +668,24 @@ describe("fulfillment via POST /api/pos/sale", () => {
   });
 
   it("marks stock sold using the productIds recorded on pos_order_items, not Stripe metadata (custom items are skipped since they have no product row)", async () => {
-    const { db, updateWhereSpy } = makeFulfillFakeDb({ id: 7, status: "pending", tenantId: 1 }, [
-      { posOrderId: 7, productId: 1, priceRappen: 3000, name: null },
-      { posOrderId: 7, productId: null, priceRappen: 1500, name: "Custom repair fee" },
-    ]);
+    const { db, updateWhereSpy } = makeFulfillFakeDb(
+      { id: 7, status: "pending", tenantId: 1 },
+      [
+        { posOrderId: 7, productId: 1, priceRappen: 3000, name: null },
+        {
+          posOrderId: 7,
+          productId: null,
+          priceRappen: 1500,
+          name: "Custom repair fee",
+        },
+      ],
+    );
     vi.mocked(getDb).mockResolvedValue(db as never);
     const fakeStripe = {
       paymentIntents: {
-        retrieve: vi.fn().mockResolvedValue({ id: "pi_1", status: "succeeded" }),
+        retrieve: vi
+          .fn()
+          .mockResolvedValue({ id: "pi_1", status: "succeeded" }),
       },
     };
     vi.mocked(getStripe).mockReturnValue(fakeStripe as never);
@@ -681,7 +700,11 @@ describe("fulfillment via POST /api/pos/sale", () => {
     // requires to decode at all — { ok: true } (the old shape) would throw a
     // decoding error client-side and report a successful charge as "Payment
     // Failed" to the cashier.
-    expect(res.body).toEqual({ success: true, posOrderId: 7, alreadyFulfilled: false });
+    expect(res.body).toEqual({
+      success: true,
+      posOrderId: 7,
+      alreadyFulfilled: false,
+    });
     expect(markProductsSold).toHaveBeenCalledWith(1, [1]);
     expect(updateWhereSpy).toHaveBeenCalled();
   });
@@ -691,7 +714,9 @@ describe("fulfillment via POST /api/pos/sale", () => {
     vi.mocked(getDb).mockResolvedValue(db as never);
     const fakeStripe = {
       paymentIntents: {
-        retrieve: vi.fn().mockResolvedValue({ id: "pi_1", status: "succeeded" }),
+        retrieve: vi
+          .fn()
+          .mockResolvedValue({ id: "pi_1", status: "succeeded" }),
       },
     };
     vi.mocked(getStripe).mockReturnValue(fakeStripe as never);
@@ -702,7 +727,11 @@ describe("fulfillment via POST /api/pos/sale", () => {
       .send({ paymentIntentId: "pi_1" });
 
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ success: true, posOrderId: 7, alreadyFulfilled: true });
+    expect(res.body).toEqual({
+      success: true,
+      posOrderId: 7,
+      alreadyFulfilled: true,
+    });
     expect(markProductsSold).not.toHaveBeenCalled();
   });
 
@@ -711,7 +740,9 @@ describe("fulfillment via POST /api/pos/sale", () => {
     vi.mocked(getDb).mockResolvedValue(db as never);
     const fakeStripe = {
       paymentIntents: {
-        retrieve: vi.fn().mockResolvedValue({ id: "pi_unknown", status: "succeeded" }),
+        retrieve: vi
+          .fn()
+          .mockResolvedValue({ id: "pi_unknown", status: "succeeded" }),
       },
     };
     vi.mocked(getStripe).mockReturnValue(fakeStripe as never);
@@ -749,7 +780,11 @@ describe("POST /api/pos/manual-sale (cash)", () => {
       .send({ productIds: [1] });
 
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ success: true, posOrderId: 99, totalRappen: 5000 });
+    expect(res.body).toEqual({
+      success: true,
+      posOrderId: 99,
+      totalRappen: 5000,
+    });
     expect(db.insertValuesSpy).toHaveBeenNthCalledWith(
       1,
       expect.objectContaining({
@@ -757,7 +792,7 @@ describe("POST /api/pos/manual-sale (cash)", () => {
         status: "paid",
         paymentMethod: "cash",
         totalRappen: 5000,
-      })
+      }),
     );
     expect(markProductsSold).toHaveBeenCalledWith(1, [1]);
   });
@@ -779,7 +814,11 @@ describe("POST /api/pos/manual-sale (cash)", () => {
     expect(res.body.totalRappen).toBe(4500);
     expect(db.insertValuesSpy).toHaveBeenNthCalledWith(2, [
       expect.objectContaining({ productId: 1, priceRappen: 3500, name: null }),
-      expect.objectContaining({ productId: null, priceRappen: 1000, name: "Custom repair" }),
+      expect.objectContaining({
+        productId: null,
+        priceRappen: 1000,
+        name: "Custom repair",
+      }),
     ]);
   });
 
@@ -809,7 +848,9 @@ describe("POST /api/pos/manual-sale (cash)", () => {
   });
 
   it("rejects requests without the POS key", async () => {
-    const res = await request(makeApp()).post("/api/pos/manual-sale").send({ productIds: [1] });
+    const res = await request(makeApp())
+      .post("/api/pos/manual-sale")
+      .send({ productIds: [1] });
     expect(res.status).toBe(401);
   });
 });
@@ -817,7 +858,11 @@ describe("POST /api/pos/manual-sale (cash)", () => {
 describe("POST /api/pos/twint-intent", () => {
   const OLD_KEY = process.env.POS_API_KEY;
 
-  function makeFakeTwintStripe(nextAction: unknown = { redirect_to_url: { url: "https://hooks.stripe.com/twint/pi_1" } }) {
+  function makeFakeTwintStripe(
+    nextAction: unknown = {
+      redirect_to_url: { url: "https://hooks.stripe.com/twint/pi_1" },
+    },
+  ) {
     return {
       customers: { create: vi.fn().mockResolvedValue({ id: "cus_123" }) },
       paymentIntents: {
@@ -863,11 +908,15 @@ describe("POST /api/pos/twint-intent", () => {
         amount: 5000,
         payment_method_types: ["twint"],
         confirm: true,
-      })
+      }),
     );
     expect(db.insertValuesSpy).toHaveBeenNthCalledWith(
       1,
-      expect.objectContaining({ paymentMethod: "twint", status: "pending", stripePaymentIntentId: "pi_twint_1" })
+      expect.objectContaining({
+        paymentMethod: "twint",
+        status: "pending",
+        stripePaymentIntentId: "pi_twint_1",
+      }),
     );
   });
 
@@ -880,12 +929,16 @@ describe("POST /api/pos/twint-intent", () => {
     const res = await request(makeApp())
       .post("/api/pos/twint-intent")
       .set("x-pos-key", "test-pos-key")
-      .send({ productIds: [1], priceOverrides: { "1": 3000 }, customerPhone: "0791234567" });
+      .send({
+        productIds: [1],
+        priceOverrides: { "1": 3000 },
+        customerPhone: "0791234567",
+      });
 
     expect(res.status).toBe(200);
     expect(res.body.totalRappen).toBe(3000);
     expect(fakeStripe.paymentIntents.create).toHaveBeenCalledWith(
-      expect.objectContaining({ amount: 3000 })
+      expect.objectContaining({ amount: 3000 }),
     );
   });
 
@@ -919,7 +972,9 @@ describe("POST /api/pos/twint-intent", () => {
   });
 
   it("rejects requests without the POS key", async () => {
-    const res = await request(makeApp()).post("/api/pos/twint-intent").send({ productIds: [1] });
+    const res = await request(makeApp())
+      .post("/api/pos/twint-intent")
+      .send({ productIds: [1] });
     expect(res.status).toBe(401);
   });
 });

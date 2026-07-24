@@ -63,7 +63,7 @@ describe("GET /api/reconciliation/confirm", () => {
     getStripeReconciliationByToken.mockResolvedValue(undefined);
     const app = buildApp();
     const res = await request(app).get(
-      "/api/reconciliation/confirm?token=nope&choice=0"
+      "/api/reconciliation/confirm?token=nope&choice=0",
     );
     expect(res.status).toBe(404);
   });
@@ -75,7 +75,7 @@ describe("GET /api/reconciliation/confirm", () => {
     });
     const app = buildApp();
     const res = await request(app).get(
-      "/api/reconciliation/confirm?token=tok_abc&choice=0"
+      "/api/reconciliation/confirm?token=tok_abc&choice=0",
     );
     expect(res.status).toBe(410);
   });
@@ -84,7 +84,7 @@ describe("GET /api/reconciliation/confirm", () => {
     getStripeReconciliationByToken.mockResolvedValue(pendingReconciliation);
     const app = buildApp();
     const res = await request(app).get(
-      "/api/reconciliation/confirm?token=tok_abc&choice=5"
+      "/api/reconciliation/confirm?token=tok_abc&choice=5",
     );
     expect(res.status).toBe(400);
   });
@@ -93,7 +93,7 @@ describe("GET /api/reconciliation/confirm", () => {
     getStripeReconciliationByToken.mockResolvedValue(pendingReconciliation);
     const app = buildApp();
     const res = await request(app).get(
-      "/api/reconciliation/confirm?token=tok_abc&choice=banana"
+      "/api/reconciliation/confirm?token=tok_abc&choice=banana",
     );
     expect(res.status).toBe(400);
   });
@@ -103,7 +103,7 @@ describe("GET /api/reconciliation/confirm", () => {
     getProductById.mockResolvedValue(sampleProduct);
     const app = buildApp();
     const res = await request(app).get(
-      "/api/reconciliation/confirm?token=tok_abc&choice=0"
+      "/api/reconciliation/confirm?token=tok_abc&choice=0",
     );
     expect(res.status).toBe(200);
     expect(res.text).toContain("Silver Ring");
@@ -115,7 +115,7 @@ describe("GET /api/reconciliation/confirm", () => {
     getStripeReconciliationByToken.mockResolvedValue(pendingReconciliation);
     const app = buildApp();
     const res = await request(app).get(
-      "/api/reconciliation/confirm?token=tok_abc&choice=none"
+      "/api/reconciliation/confirm?token=tok_abc&choice=none",
     );
     expect(res.status).toBe(200);
     expect(res.text).toContain("manual review");
@@ -129,7 +129,7 @@ describe("GET /api/reconciliation/confirm", () => {
     });
     const app = buildApp();
     const res = await request(app).get(
-      "/api/reconciliation/confirm?token=tok_abc&choice=none"
+      "/api/reconciliation/confirm?token=tok_abc&choice=none",
     );
     expect(res.text).not.toContain("<script>alert(1)</script>");
   });
@@ -163,7 +163,7 @@ describe("POST /api/reconciliation/confirm", () => {
       1,
       7,
       10000,
-      "pi_test_1"
+      "pi_test_1",
     );
     expect(res.text).toContain("Silver Ring");
   });

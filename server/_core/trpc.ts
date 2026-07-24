@@ -1,4 +1,4 @@
-import { NOT_ADMIN_ERR_MSG, UNAUTHED_ERR_MSG } from '@shared/const';
+import { NOT_ADMIN_ERR_MSG, UNAUTHED_ERR_MSG } from "@shared/const";
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import type { TrpcContext } from "./context";
@@ -14,7 +14,7 @@ export const publicProcedure = t.procedure;
 // Auth Middleware
 // ═══════════════════════════════════════════════════════════════════════════════
 
-const requireUser = t.middleware(async opts => {
+const requireUser = t.middleware(async (opts) => {
   const { ctx, next } = opts;
 
   if (!ctx.user) {
@@ -33,10 +33,13 @@ export const protectedProcedure = t.procedure.use(requireUser);
 
 // Admin guard — supports both "admin" and "superadmin" roles
 export const adminProcedure = t.procedure.use(
-  t.middleware(async opts => {
+  t.middleware(async (opts) => {
     const { ctx, next } = opts;
 
-    if (!ctx.user || (ctx.user.role !== "admin" && ctx.user.role !== "superadmin")) {
+    if (
+      !ctx.user ||
+      (ctx.user.role !== "admin" && ctx.user.role !== "superadmin")
+    ) {
       throw new TRPCError({ code: "FORBIDDEN", message: NOT_ADMIN_ERR_MSG });
     }
 
@@ -51,11 +54,14 @@ export const adminProcedure = t.procedure.use(
 
 // Superadmin guard — platform owner only
 export const superadminProcedure = t.procedure.use(
-  t.middleware(async opts => {
+  t.middleware(async (opts) => {
     const { ctx, next } = opts;
 
     if (ctx.user?.role !== "superadmin") {
-      throw new TRPCError({ code: "FORBIDDEN", message: "Superadmin access required" });
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message: "Superadmin access required",
+      });
     }
 
     return next({ ctx });
@@ -110,7 +116,10 @@ export type PlanFeature = keyof typeof PLAN_FEATURES.starter;
 export function checkFeature(feature: PlanFeature) {
   return t.middleware(async ({ ctx, next }) => {
     if (!ctx.tenant) {
-      throw new TRPCError({ code: "PRECONDITION_FAILED", message: "No tenant context" });
+      throw new TRPCError({
+        code: "PRECONDITION_FAILED",
+        message: "No tenant context",
+      });
     }
 
     const features = PLAN_FEATURES[ctx.tenant.plan];
@@ -133,7 +142,10 @@ export function checkFeature(feature: PlanFeature) {
 
 export const requireTenant = t.middleware(async ({ ctx, next }) => {
   if (!ctx.tenant) {
-    throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Tenant required" });
+    throw new TRPCError({
+      code: "PRECONDITION_FAILED",
+      message: "Tenant required",
+    });
   }
   return next({ ctx: { ...ctx, tenant: ctx.tenant } });
 });

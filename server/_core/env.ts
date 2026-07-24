@@ -34,10 +34,10 @@ const schema = z.object({
 const parsed = schema.safeParse(source);
 if (!parsed.success) {
   const details = parsed.error.issues
-    .map(issue => `  - ${issue.path.join(".")}: ${issue.message}`)
+    .map((issue) => `  - ${issue.path.join(".")}: ${issue.message}`)
     .join("\n");
   throw new Error(
-    `Invalid environment configuration (NODE_ENV=${process.env.NODE_ENV ?? "undefined"}):\n${details}`
+    `Invalid environment configuration (NODE_ENV=${process.env.NODE_ENV ?? "undefined"}):\n${details}`,
   );
 }
 

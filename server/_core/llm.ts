@@ -1,5 +1,3 @@
-
-
 export type Role = "system" | "user" | "assistant" | "tool" | "function";
 
 export type TextContent = {
@@ -19,7 +17,12 @@ export type FileContent = {
   type: "file_url";
   file_url: {
     url: string;
-    mime_type?: "audio/mpeg" | "audio/wav" | "application/pdf" | "audio/mp4" | "video/mp4" ;
+    mime_type?:
+      | "audio/mpeg"
+      | "audio/wav"
+      | "application/pdf"
+      | "audio/mp4"
+      | "video/mp4";
   };
 };
 
@@ -114,11 +117,11 @@ export type ResponseFormat =
   | { type: "json_schema"; json_schema: JsonSchema };
 
 const ensureArray = (
-  value: MessageContent | MessageContent[]
+  value: MessageContent | MessageContent[],
 ): MessageContent[] => (Array.isArray(value) ? value : [value]);
 
 const normalizeContentPart = (
-  part: MessageContent
+  part: MessageContent,
 ): TextContent | ImageContent | FileContent => {
   if (typeof part === "string") {
     return { type: "text", text: part };
@@ -144,7 +147,7 @@ const normalizeMessage = (message: Message) => {
 
   if (role === "tool" || role === "function") {
     const content = ensureArray(message.content)
-      .map(part => (typeof part === "string" ? part : JSON.stringify(part)))
+      .map((part) => (typeof part === "string" ? part : JSON.stringify(part)))
       .join("\n");
 
     return {
@@ -175,7 +178,7 @@ const normalizeMessage = (message: Message) => {
 
 const normalizeToolChoice = (
   toolChoice: ToolChoice | undefined,
-  tools: Tool[] | undefined
+  tools: Tool[] | undefined,
 ): "none" | "auto" | ToolChoiceExplicit | undefined => {
   if (!toolChoice) return undefined;
 
@@ -186,13 +189,13 @@ const normalizeToolChoice = (
   if (toolChoice === "required") {
     if (!tools || tools.length === 0) {
       throw new Error(
-        "tool_choice 'required' was provided but no tools were configured"
+        "tool_choice 'required' was provided but no tools were configured",
       );
     }
 
     if (tools.length > 1) {
       throw new Error(
-        "tool_choice 'required' needs a single tool or specify the tool name explicitly"
+        "tool_choice 'required' needs a single tool or specify the tool name explicitly",
       );
     }
 
@@ -213,7 +216,10 @@ const normalizeToolChoice = (
 };
 
 const resolveApiUrl = () => {
-  const base = process.env.LLM_BASE_URL ?? process.env.OPENAI_BASE_URL ?? "https://api.openai.com/v1";
+  const base =
+    process.env.LLM_BASE_URL ??
+    process.env.OPENAI_BASE_URL ??
+    "https://api.openai.com/v1";
   return `${base.replace(/\/+$/, "")}/chat/completions`;
 };
 
@@ -222,9 +228,9 @@ const assertApiKey = () => {
   if (!key) {
     throw new Error(
       "LLM_API_KEY (or OPENAI_API_KEY) is not set.\n" +
-      "  OpenAI: set LLM_API_KEY=sk-...\n" +
-      "  Groq:   set LLM_API_KEY=gsk_...\n" +
-      "  Ollama: set LLM_API_KEY=ollama"
+        "  OpenAI: set LLM_API_KEY=sk-...\n" +
+        "  Groq:   set LLM_API_KEY=gsk_...\n" +
+        "  Ollama: set LLM_API_KEY=ollama",
     );
   }
 };
@@ -251,7 +257,7 @@ const normalizeResponseFormat = ({
       !explicitFormat.json_schema?.schema
     ) {
       throw new Error(
-        "responseFormat json_schema requires a defined schema object"
+        "responseFormat json_schema requires a defined schema object",
       );
     }
     return explicitFormat;
@@ -281,7 +287,7 @@ const RETRY_MAX_DELAY_MS = 30_000;
 type FetchInit = NonNullable<Parameters<typeof fetch>[1]>;
 
 const sleep = (ms: number) =>
-  new Promise<void>(resolve => setTimeout(resolve, ms));
+  new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 const parseRetryAfter = (value: string | null): number | undefined => {
   if (!value) return undefined;
@@ -296,7 +302,7 @@ const parseRetryAfter = (value: string | null): number | undefined => {
 // upstream while it keeps returning errors.
 const computeBackoffDelay = (
   attempt: number,
-  retryAfterMs?: number
+  retryAfterMs?: number,
 ): number => {
   const cap = Math.min(RETRY_BASE_DELAY_MS * 2 ** attempt, RETRY_MAX_DELAY_MS);
   const jittered = cap / 2 + Math.random() * (cap / 2);
@@ -307,7 +313,7 @@ const computeBackoffDelay = (
 // returns the final Response so callers keep their existing error handling.
 const fetchWithBackoff = async (
   url: string,
-  init: FetchInit
+  init: FetchInit,
 ): Promise<Response> => {
   let lastError: unknown;
 
@@ -318,23 +324,21 @@ const fetchWithBackoff = async (
         return response;
       }
 
-      const retryAfterMs = parseRetryAfter(
-        response.headers.get("retry-after")
-      );
+      const retryAfterMs = parseRetryAfter(response.headers.get("retry-after"));
       try {
         await response.body?.cancel();
       } catch {
         // Body already settled; nothing to clean up.
       }
       console.warn(
-        `LLM request retry ${attempt + 1}/${RETRY_MAX_RETRIES} after status ${response.status}`
+        `LLM request retry ${attempt + 1}/${RETRY_MAX_RETRIES} after status ${response.status}`,
       );
       await sleep(computeBackoffDelay(attempt, retryAfterMs));
     } catch (error) {
       lastError = error;
       if (attempt === RETRY_MAX_RETRIES) throw error;
       console.warn(
-        `LLM request retry ${attempt + 1}/${RETRY_MAX_RETRIES} after network error`
+        `LLM request retry ${attempt + 1}/${RETRY_MAX_RETRIES} after network error`,
       );
       await sleep(computeBackoffDelay(attempt));
     }
@@ -368,7 +372,8 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     messages: messages.map(normalizeMessage),
   };
 
-  const resolvedModel = model ?? process.env.LLM_MODEL ?? process.env.OPENAI_MODEL;
+  const resolvedModel =
+    model ?? process.env.LLM_MODEL ?? process.env.OPENAI_MODEL;
   if (resolvedModel) {
     payload.model = resolvedModel;
   }
@@ -379,7 +384,7 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
 
   const normalizedToolChoice = normalizeToolChoice(
     toolChoice || tool_choice,
-    tools
+    tools,
   );
   if (normalizedToolChoice) {
     payload.tool_choice = normalizedToolChoice;
@@ -420,7 +425,7 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
   if (!response.ok) {
     const errorText = await response.text();
     throw new Error(
-      `LLM invoke failed: ${response.status} ${response.statusText} – ${errorText}`
+      `LLM invoke failed: ${response.status} ${response.statusText} – ${errorText}`,
     );
   }
 
@@ -442,17 +447,22 @@ export type ModelsResponse = {
 export async function listLLMModels(): Promise<ModelsResponse> {
   assertApiKey();
 
-  const base = process.env.LLM_BASE_URL ?? process.env.OPENAI_BASE_URL ?? "https://api.openai.com/v1";
+  const base =
+    process.env.LLM_BASE_URL ??
+    process.env.OPENAI_BASE_URL ??
+    "https://api.openai.com/v1";
   const url = `${base.replace(/\/+$/, "")}/models`;
 
   const response = await fetchWithBackoff(url, {
-    headers: { authorization: `Bearer ${process.env.LLM_API_KEY ?? process.env.OPENAI_API_KEY ?? ""}` },
+    headers: {
+      authorization: `Bearer ${process.env.LLM_API_KEY ?? process.env.OPENAI_API_KEY ?? ""}`,
+    },
   });
 
   if (!response.ok) {
     const errorText = await response.text();
     throw new Error(
-      `List LLM models failed: ${response.status} ${response.statusText} – ${errorText}`
+      `List LLM models failed: ${response.status} ${response.statusText} – ${errorText}`,
     );
   }
 

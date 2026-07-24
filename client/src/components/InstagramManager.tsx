@@ -1,7 +1,13 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { Plus, Trash2, Loader2, ExternalLink, GripVertical } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+  Loader2,
+  ExternalLink,
+  GripVertical,
+} from "lucide-react";
 
 export default function InstagramManager() {
   const [newUrl, setNewUrl] = useState("");
@@ -33,7 +39,10 @@ export default function InstagramManager() {
   const handleAdd = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newUrl.trim()) return;
-    addMutation.mutate({ postUrl: newUrl.trim(), sortOrder: posts?.length ?? 0 });
+    addMutation.mutate({
+      postUrl: newUrl.trim(),
+      sortOrder: posts?.length ?? 0,
+    });
   };
 
   return (
@@ -53,7 +62,11 @@ export default function InstagramManager() {
           disabled={addMutation.isPending || !newUrl.trim()}
           className="flex items-center gap-2 bg-[var(--brand-ink)] text-white px-5 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:bg-[var(--brand-ink-hover)] transition-colors disabled:opacity-60 flex-shrink-0"
         >
-          {addMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
+          {addMutation.isPending ? (
+            <Loader2 size={14} className="animate-spin" />
+          ) : (
+            <Plus size={14} />
+          )}
           Add
         </button>
       </form>
@@ -67,10 +80,12 @@ export default function InstagramManager() {
       ) : !posts || posts.length === 0 ? (
         <div className="text-center py-8 border border-dashed border-[var(--brand-ink)]/20">
           <p className="text-muted-foreground text-sm font-sans">
-            No posts added yet. Paste an Instagram post URL above to get started.
+            No posts added yet. Paste an Instagram post URL above to get
+            started.
           </p>
           <p className="text-muted-foreground text-xs font-sans mt-1 opacity-60">
-            Tip: Open a post on Instagram, copy the URL from your browser, and paste it here.
+            Tip: Open a post on Instagram, copy the URL from your browser, and
+            paste it here.
           </p>
         </div>
       ) : (
@@ -83,7 +98,10 @@ export default function InstagramManager() {
               key={post.id}
               className="flex items-center gap-3 p-3 border border-[var(--brand-border)] bg-[var(--brand-surface-2)] group"
             >
-              <GripVertical size={14} className="text-muted-foreground/40 flex-shrink-0" />
+              <GripVertical
+                size={14}
+                className="text-muted-foreground/40 flex-shrink-0"
+              />
               <span className="text-xs text-muted-foreground font-sans w-5 flex-shrink-0">
                 {idx + 1}
               </span>
@@ -118,7 +136,8 @@ export default function InstagramManager() {
       )}
 
       <p className="text-xs text-muted-foreground font-sans opacity-60">
-        Posts appear on the home page as embedded Instagram widgets. Supports both /p/ posts and /reel/ reels.
+        Posts appear on the home page as embedded Instagram widgets. Supports
+        both /p/ posts and /reel/ reels.
       </p>
     </div>
   );

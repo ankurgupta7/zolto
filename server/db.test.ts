@@ -320,7 +320,7 @@ describe("getTenantAdminContact", () => {
 
   it("returns the earliest admin's name and email", async () => {
     dbMock.select.mockReturnValue(
-      makeChain([{ name: "Sheena Arora", email: "sheena@example.com" }])
+      makeChain([{ name: "Sheena Arora", email: "sheena@example.com" }]),
     );
     const result = await getTenantAdminContact(1);
     expect(result).toEqual({
@@ -331,7 +331,7 @@ describe("getTenantAdminContact", () => {
 
   it("returns a null name for a still-pending (unclaimed) admin row", async () => {
     dbMock.select.mockReturnValue(
-      makeChain([{ name: null, email: "sheena@example.com" }])
+      makeChain([{ name: null, email: "sheena@example.com" }]),
     );
     const result = await getTenantAdminContact(1);
     expect(result).toEqual({ name: null, email: "sheena@example.com" });

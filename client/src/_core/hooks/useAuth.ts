@@ -44,7 +44,7 @@ export function useAuth(options?: UseAuthOptions) {
   const state = useMemo(() => {
     localStorage.setItem(
       "manus-runtime-user-info",
-      JSON.stringify(meQuery.data)
+      JSON.stringify(meQuery.data),
     );
     return {
       user: meQuery.data ?? null,
@@ -67,7 +67,7 @@ export function useAuth(options?: UseAuthOptions) {
     if (typeof window === "undefined") return;
     if (window.location.pathname === redirectPath) return;
 
-    window.location.href = redirectPath
+    window.location.href = redirectPath;
   }, [
     redirectOnUnauthenticated,
     redirectPath,

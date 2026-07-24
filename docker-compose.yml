@@ -12,7 +12,6 @@
 # ─────────────────────────────────────────────────────────────────────────────
 
 services:
-
   # ── Application ───────────────────────────────────────────────────────────────────
   app:
     build:
@@ -63,7 +62,13 @@ services:
       db:
         condition: service_healthy
     networks:
-      - internal
+      internal: {}
+      # Joined to the shared proxy network so the Kalakosh-ch stack's Caddy can
+      # reach this app directly and serve it at zolto.kalakosh.ch. The alias is
+      # the hostname the Kalakosh Caddyfile reverse-proxies to.
+      shared:
+        aliases:
+          - zolto-app
 
   # ── MySQL Database ───────────────────────────────────────────────────────────────────
   db:
@@ -77,7 +82,17 @@ services:
     volumes:
       - db_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-u",
+          "root",
+          "-p${MYSQL_ROOT_PASSWORD}",
+        ]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -85,12 +100,32 @@ services:
       - internal
 
   # ── Caddy (reverse proxy + automatic HTTPS) ──────────────────────────────────────────
+  #
+  # This bundled Caddy is only needed to run Zolto STANDALONE (on its own
+  # domain/IP). When running alongside the Kalakosh-ch stack — the intended
+  # setup — leave it off: the Kalakosh Caddy already owns ports 80/443 and
+  # serves this app at zolto.kalakosh.ch, so a second Caddy here would just
+  # compete for the host ports. It therefore lives behind the "standalone"
+  # profile and does NOT start with a plain `docker compose up`.
+  #
+  #   Alongside Kalakosh (default):  docker compose up -d
+  #   Standalone (own Caddy):        docker compose --profile standalone up -d
   caddy:
     image: caddy:2-alpine
     restart: unless-stopped
+    profiles:
+      - standalone
+    # Host ports are overridable so this stack can also run alongside another
+    # instance on its own ports if you prefer that over the subdomain setup.
+    # Defaults deliberately differ from the standard 80/443.
     ports:
-      - "80:80"
-      - "443:443"
+      - "${HTTP_PORT:-8080}:80"
+      - "${HTTPS_PORT:-8443}:443"
+    environment:
+      # Caddyfile reads this to pick which domain(s) to serve — see Caddyfile.
+      # Defaults to ":80" (plain HTTP, no domain needed) for testing by IP;
+      # set to a real domain in .env once you're ready for HTTPS.
+      SITE_DOMAIN: ${SITE_DOMAIN:-:80}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
@@ -108,3 +143,10 @@ volumes:
 networks:
   internal:
     driver: bridge
+  # Shared, cross-stack network that lets the Kalakosh-ch Caddy reach this
+  # app and serve it at zolto.kalakosh.ch. Declared external so both stacks
+  # attach to the SAME Docker network regardless of start order. Create it
+  # once with:  docker network create kalakosh-shared
+  shared:
+    external: true
+    name: kalakosh-shared

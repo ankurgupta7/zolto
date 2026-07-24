@@ -53,7 +53,7 @@ function getConfig() {
 
   if (!clientId || !clientSecret) {
     console.error(
-      "[GoogleOAuth] GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must be set"
+      "[GoogleOAuth] GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must be set",
     );
   }
   if (!jwtSecret) {
@@ -65,15 +65,18 @@ function getConfig() {
 
 function getRedirectUri(req: Request): string {
   // Support X-Forwarded-Proto for reverse proxies (Caddy)
-  const proto =
-    req.headers["x-forwarded-proto"] ?? req.protocol ?? "https";
+  const proto = req.headers["x-forwarded-proto"] ?? req.protocol ?? "https";
   const host = req.headers["x-forwarded-host"] ?? req.headers.host ?? "";
   return `${proto}://${host}/api/oauth/callback`;
 }
 
 // ── Session JWT ───────────────────────────────────────────────────────────────
 
-async function signSessionJwt(openId: string, name: string, secret: string): Promise<string> {
+async function signSessionJwt(
+  openId: string,
+  name: string,
+  secret: string,
+): Promise<string> {
   const key = new TextEncoder().encode(secret);
   return new SignJWT({ openId, appId: "google", name })
     .setProtectedHeader({ alg: "HS256", typ: "JWT" })
@@ -83,7 +86,7 @@ async function signSessionJwt(openId: string, name: string, secret: string): Pro
 
 export async function verifySessionJwt(
   token: string | undefined | null,
-  secret: string
+  secret: string,
 ): Promise<{ openId: string; appId: string; name: string } | null> {
   if (!token) return null;
   try {
@@ -112,7 +115,7 @@ type GoogleTokenResponse = {
 };
 
 type GoogleUserInfo = {
-  sub: string;       // unique Google user ID
+  sub: string; // unique Google user ID
   email: string;
   name: string;
   picture?: string;
@@ -123,7 +126,7 @@ async function exchangeCodeForTokens(
   code: string,
   redirectUri: string,
   clientId: string,
-  clientSecret: string
+  clientSecret: string,
 ): Promise<GoogleTokenResponse> {
   const res = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
@@ -145,7 +148,9 @@ async function exchangeCodeForTokens(
   return res.json();
 }
 
-async function fetchGoogleUserInfo(accessToken: string): Promise<GoogleUserInfo> {
+async function fetchGoogleUserInfo(
+  accessToken: string,
+): Promise<GoogleUserInfo> {
   const res = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
@@ -165,7 +170,9 @@ export function registerOAuthRoutes(app: Express) {
   app.get("/api/oauth/login", (req: Request, res: Response) => {
     const { clientId } = getConfig();
     if (!clientId) {
-      res.status(500).send("Google OAuth is not configured (missing GOOGLE_CLIENT_ID)");
+      res
+        .status(500)
+        .send("Google OAuth is not configured (missing GOOGLE_CLIENT_ID)");
       return;
     }
 
@@ -216,7 +223,12 @@ export function registerOAuthRoutes(app: Express) {
 
     try {
       const redirectUri = getRedirectUri(req);
-      const tokens = await exchangeCodeForTokens(code, redirectUri, clientId, clientSecret);
+      const tokens = await exchangeCodeForTokens(
+        code,
+        redirectUri,
+        clientId,
+        clientSecret,
+      );
       const userInfo = await fetchGoogleUserInfo(tokens.access_token);
 
       // Zolto is multi-tenant self-serve: any Google account can sign in. The
@@ -240,9 +252,16 @@ export function registerOAuthRoutes(app: Express) {
         lastSignedIn: new Date(),
       });
 
-      const sessionToken = await signSessionJwt(openId, userInfo.name, jwtSecret);
+      const sessionToken = await signSessionJwt(
+        openId,
+        userInfo.name,
+        jwtSecret,
+      );
       const cookieOptions = getSessionCookieOptions(req);
-      res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
+      res.cookie(COOKIE_NAME, sessionToken, {
+        ...cookieOptions,
+        maxAge: ONE_YEAR_MS,
+      });
 
       // Send the user back where they started (the claim page), if a safe next
       // was stashed on login; otherwise the platform admin lands on /admin and a

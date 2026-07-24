@@ -37,8 +37,8 @@ export default function Impressum() {
 
           <p className="mt-10 rounded border border-[var(--brand-border)] bg-[var(--brand-surface-2)] p-4 text-xs text-muted-foreground font-sans">
             {branding.storeName} is responsible for adding any legal details its
-            jurisdiction requires (company form, registration or VAT numbers, and
-            a registered address).
+            jurisdiction requires (company form, registration or VAT numbers,
+            and a registered address).
           </p>
         </div>
       </section>

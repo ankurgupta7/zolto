@@ -59,7 +59,9 @@ export async function assertPublicHostname(hostname: string): Promise<void> {
   // with a domain that simply points at an internal/metadata address.
   let addresses: string[];
   try {
-    addresses = (await dnsLookup(hostname, { all: true })).map(a => a.address);
+    addresses = (await dnsLookup(hostname, { all: true })).map(
+      (a) => a.address,
+    );
   } catch {
     throw new TRPCError({
       code: "BAD_REQUEST",

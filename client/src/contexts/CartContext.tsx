@@ -1,4 +1,10 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from "react";
 import type { ProductItem } from "@shared/types";
 
 /**
@@ -73,7 +79,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const removeItem = (id: number) => setItems((prev) => prev.filter((i) => i.id !== id));
+  const removeItem = (id: number) =>
+    setItems((prev) => prev.filter((i) => i.id !== id));
   const clear = () => setItems([]);
   const has = (id: number) => items.some((i) => i.id === id);
 
