@@ -43,6 +43,41 @@ The Discord bot runs as a long-lived WebSocket connection inside the Node.js pro
 
 ---
 
+## Running alongside Kalakosh-ch (served at zolto.kalakosh.ch)
+
+If you already run the [Kalakosh-ch](https://github.com/ankurgupta7/Kalakosh-ch) stack on the same server, its Caddy already owns host ports **80** and **443**. Rather than have Zolto's Caddy fight for those ports, let the Kalakosh Caddy serve Zolto as a subdomain — **zolto.kalakosh.ch** — and reverse-proxy it to Zolto's app over a shared Docker network:
+
+```
+Internet
+    │  (:443)
+    ▼
+ Kalakosh Caddy ──── kalakosh.ch ─────────▶ Kalakosh app :3000
+        │
+        └─────────── zolto.kalakosh.ch ───▶ Zolto app :3000   (via "kalakosh-shared" network)
+```
+
+In this mode Zolto runs **no Caddy of its own and binds no host ports**, so there is nothing to compete over.
+
+**Setup:**
+
+1. **Create the shared network** (once — safe to re-run):
+   ```bash
+   docker network create kalakosh-shared
+   ```
+2. **Add DNS:** point `zolto.kalakosh.ch` at the server IP (an `A`/`AAAA` record). The Kalakosh-ch repo already carries the matching `zolto.kalakosh.ch` block in its `Caddyfile`, so Caddy will provision the TLS certificate automatically.
+3. **Set** `PUBLIC_BASE_URL=https://zolto.kalakosh.ch` in Zolto's `.env` (used for Stripe redirects and absolute URLs).
+4. **Start Zolto** — the bundled Caddy is behind the `standalone` profile, so a plain up brings only the app + db, attached to the shared network:
+   ```bash
+   docker compose up -d
+   ```
+5. **Restart the Kalakosh stack** (or `docker compose up -d` it) so its Caddy picks up the shared network and the `zolto.kalakosh.ch` route.
+
+Both stacks are independent — separate databases, separate deploys — they only share the reverse-proxy network.
+
+To run Zolto **standalone** instead (its own domain/IP with its own Caddy), see [Step 7 — Configure Caddy](#step-7--configure-caddy) and start it with `docker compose --profile standalone up -d`.
+
+---
+
 ## Step 1 — Provision Your VPS
 
 Any provider works. Hetzner is recommended for European users (fast, cheap, GDPR-compliant).
@@ -228,22 +263,24 @@ Leave blank to skip backups.
 
 ## Step 7 — Configure Caddy
 
-Replace the placeholder domain in `Caddyfile`:
+> Serving Zolto at **zolto.kalakosh.ch** instead? Skip this step — the Kalakosh-ch Caddy handles TLS and routing for you. See [Running alongside Kalakosh-ch](#running-alongside-kalakosh-ch-served-at-zoltokalakoshch).
 
-```bash
-sed -i 's/yourdomain.com/kalakoshzurich.ch/g' Caddyfile
-```
+Zolto's bundled Caddy is only used for **standalone** deploys (its own domain/IP) and lives behind the `standalone` compose profile. Point `SITE_DOMAIN` (in `.env`) at your domain so Caddy provisions HTTPS automatically.
 
 ---
 
 ## Step 8 — Start Everything
 
+For a **standalone** deploy (Zolto's own Caddy on its own domain), enable the profile so Caddy starts:
+
 ```bash
-docker compose up -d
+docker compose --profile standalone up -d
 docker compose logs -f app   # watch startup logs
 ```
 
-Caddy will obtain an SSL certificate within ~30 seconds. Visit `https://yourdomain.com` to see the storefront.
+Caddy will obtain an SSL certificate within ~30 seconds. Visit your `SITE_DOMAIN` to see the storefront.
+
+> Running **alongside Kalakosh-ch** at zolto.kalakosh.ch? Use `docker compose up -d` (no profile) — the app joins the shared network and the Kalakosh Caddy serves it. See [Running alongside Kalakosh-ch](#running-alongside-kalakosh-ch-served-at-zoltokalakoshch).
 
 To access the admin panel, go to `https://yourdomain.com/admin` and click **Sign in with Google**.
 
