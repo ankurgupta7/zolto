@@ -1,4 +1,4 @@
-import { Store, Smartphone, Sparkles, Camera } from "lucide-react";
+import { Store, Smartphone, Sparkles } from "lucide-react";
 import { SketchArrow } from "@/components/SketchAccents";
 
 /**
@@ -94,6 +94,79 @@ function ChannelCard({
 }
 
 /**
+ * A single line-drawn drop earring: a fish-hook ear wire above a teardrop stone.
+ * `crisp` toggles the "generated listing" polish — a touch bolder, with inner
+ * facet lines that read as a cut gem. The muted, facet-less default reads as the
+ * loose phone snapshot. Decorative: `currentColor` lets the frame set the ink.
+ */
+function Earring({ crisp }: { crisp: boolean }) {
+  return (
+    <g
+      stroke="currentColor"
+      strokeWidth={crisp ? 2 : 1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      fill="none"
+    >
+      {/* Ear wire — a loose fish-hook that curves up and over. */}
+      <path d="M0 12 C 0 4, -1 -2, -5 -5 C -9 -8, -15 -6, -15 -1 C -15 3, -12 5, -9 3" />
+      {/* Connector ring between wire and stone. */}
+      <circle cx="0" cy="13" r="1.8" />
+      {/* Drop stone — a teardrop, pointed at the top where it hangs. */}
+      <path d="M0 16 C 8 27, 8 41, 0 49 C -8 41, -8 27, 0 16 Z" />
+      {crisp && (
+        <>
+          {/* Facet lines — only the polished listing shows the cut. */}
+          <path d="M-7 31 L 7 31" opacity="0.55" />
+          <path d="M0 16 L 0 49" opacity="0.55" />
+        </>
+      )}
+    </g>
+  );
+}
+
+/**
+ * A minimal pair of drop earrings in line-art — the Moonstone Drop Earrings the
+ * listing is about. `crisp` swaps the loose snapshot for the polished, faceted
+ * version (plus a little sparkle), so the before/after frames carry the actual
+ * product instead of a generic placeholder icon. Decorative & aria-hidden.
+ */
+export function DropEarringsSketch({
+  crisp = false,
+  className,
+}: {
+  crisp?: boolean;
+  className?: string;
+}) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 130 78"
+      fill="none"
+      role="presentation"
+      aria-hidden="true"
+      focusable="false"
+      style={{ pointerEvents: "none" }}
+    >
+      <g transform="translate(50 18)">
+        <Earring crisp={crisp} />
+      </g>
+      <g transform="translate(85 18)">
+        <Earring crisp={crisp} />
+      </g>
+      {crisp && (
+        /* A single four-point sparkle — the "freshly generated" flourish. */
+        <path
+          d="M110 12 l1.6 4.4 l4.4 1.6 l-4.4 1.6 l-1.6 4.4 l-1.6 -4.4 l-4.4 -1.6 l4.4 -1.6 z"
+          fill="currentColor"
+          opacity="0.7"
+        />
+      )}
+    </svg>
+  );
+}
+
+/**
  * "Photo → listing." A sketched photo frame on the left becomes a crisp,
  * ready-to-publish listing on the right — the AI "wow" made literal. The photo
  * side wears the pen; the generated listing (title, price) stays crisp.
@@ -105,11 +178,7 @@ export function PhotoToListing() {
       <figure className="relative mx-auto w-full max-w-xs">
         <div className="rounded-[0.4rem] border-2 border-dashed border-[var(--brand-accent)]/60 bg-[var(--brand-surface-2)] p-3">
           <div className="flex aspect-[4/3] items-center justify-center rounded-sm bg-[var(--brand-surface-3)]">
-            <Camera
-              size={30}
-              strokeWidth={1.25}
-              className="text-[var(--brand-muted)]"
-            />
+            <DropEarringsSketch className="h-[60%] w-[70%] text-[var(--brand-muted)]" />
           </div>
           <figcaption className="font-hand mt-2 text-center text-[var(--brand-accent)]">
             just your phone photo
@@ -126,9 +195,10 @@ export function PhotoToListing() {
       {/* After: a crisp generated listing */}
       <div className="mx-auto w-full max-w-xs rounded-lg border border-[var(--brand-border)] bg-white p-4 shadow-sm">
         <div className="flex aspect-[4/3] items-center justify-center rounded-sm bg-gradient-to-br from-[var(--brand-surface)] to-[var(--brand-surface-3)]">
-          <span className="font-serif text-3xl text-[var(--brand-accent)]/40">
-            ◇
-          </span>
+          <DropEarringsSketch
+            crisp
+            className="h-[60%] w-[70%] text-[var(--brand-accent)]"
+          />
         </div>
         <p className="mt-3 font-serif text-base leading-tight text-[var(--brand-text)]">
           Moonstone Drop Earrings

@@ -4,6 +4,7 @@ import {
   OneInventoryDiagram,
   PhotoToListing,
   MarketStallScene,
+  DropEarringsSketch,
 } from "./MarketingIllustrations";
 
 afterEach(cleanup);
@@ -26,6 +27,35 @@ describe("PhotoToListing", () => {
     render(<PhotoToListing />);
     expect(screen.getByText("Moonstone Drop Earrings")).toBeTruthy();
     expect(screen.getByText("CHF 180")).toBeTruthy();
+  });
+
+  it("sketches the earrings in both the before and after frames", () => {
+    const { container } = render(<PhotoToListing />);
+    // Two DropEarringsSketch SVGs (before + after) plus the SketchArrow.
+    expect(container.querySelectorAll("svg").length).toBeGreaterThanOrEqual(3);
+    // The old placeholder camera icon and diamond glyph are gone.
+    expect(container.querySelector(".lucide-camera")).toBeNull();
+    expect(container.textContent).not.toContain("◇");
+  });
+});
+
+describe("DropEarringsSketch", () => {
+  it("is a decorative, aria-hidden illustration the frame can tint", () => {
+    const { container } = render(
+      <DropEarringsSketch className="text-gold" />,
+    );
+    const svg = container.querySelector("svg");
+    expect(svg?.getAttribute("aria-hidden")).toBe("true");
+    expect(svg?.classList.contains("text-gold")).toBe(true);
+  });
+
+  it("draws two earrings by default and adds a sparkle when crisp", () => {
+    const { container: loose } = render(<DropEarringsSketch />);
+    const { container: crisp } = render(<DropEarringsSketch crisp />);
+    // The crisp/generated variant carries more marks (facets + sparkle).
+    const loosePaths = loose.querySelectorAll("path").length;
+    const crispPaths = crisp.querySelectorAll("path").length;
+    expect(crispPaths).toBeGreaterThan(loosePaths);
   });
 });
 
