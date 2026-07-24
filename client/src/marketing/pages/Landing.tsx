@@ -1,5 +1,6 @@
 import { Link } from "wouter";
 import { SketchUnderline } from "@/components/SketchAccents";
+import ParticleField from "@/components/ParticleField";
 import {
   OneInventoryDiagram,
   PhotoToListing,
@@ -9,6 +10,9 @@ import {
 export default function Landing() {
   return (
     <>
+      {/* Ambient gold-dust layer — glows over the mahogany hero/CTA bands,
+          fades out over the light sections via screen blend. */}
+      <ParticleField />
       {/* ── Hero — warm mahogany band, the storefront's own hero treatment ── */}
       <section className="bg-[var(--brand-ink)]">
         <div className="mx-auto grid max-w-6xl items-center gap-10 px-6 pb-20 pt-20 md:grid-cols-2">
