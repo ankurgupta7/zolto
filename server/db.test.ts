@@ -83,6 +83,7 @@ import {
   markProductsSold,
   reserveProducts,
   releaseProductReservations,
+  getTenantAdminContact,
   insertBulkUploadLog,
   createProduct,
 } from "./db";
@@ -307,6 +308,33 @@ describe("releaseProductReservations", () => {
     expect(dbMock.update).toHaveBeenCalledTimes(1);
     const [setArg] = updateChain.__calls.set[0];
     expect(setArg).toEqual({ reservedUntil: null, reservedToken: null });
+  });
+});
+
+describe("getTenantAdminContact", () => {
+  it("returns undefined when no admin row matches", async () => {
+    dbMock.select.mockReturnValue(makeChain([]));
+    const result = await getTenantAdminContact(1);
+    expect(result).toBeUndefined();
+  });
+
+  it("returns the earliest admin's name and email", async () => {
+    dbMock.select.mockReturnValue(
+      makeChain([{ name: "Sheena Arora", email: "sheena@example.com" }]),
+    );
+    const result = await getTenantAdminContact(1);
+    expect(result).toEqual({
+      name: "Sheena Arora",
+      email: "sheena@example.com",
+    });
+  });
+
+  it("returns a null name for a still-pending (unclaimed) admin row", async () => {
+    dbMock.select.mockReturnValue(
+      makeChain([{ name: null, email: "sheena@example.com" }]),
+    );
+    const result = await getTenantAdminContact(1);
+    expect(result).toEqual({ name: null, email: "sheena@example.com" });
   });
 });
 

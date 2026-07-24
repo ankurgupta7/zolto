@@ -2,9 +2,12 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   buildReceiptHtml,
   buildReconciliationReviewHtml,
+  buildOwnerOrderNotificationHtml,
   escapeHtml,
   sendReconciliationReviewEmail,
+  sendOwnerOrderEmail,
   type OrderReceiptOptions,
+  type OwnerOrderNotificationOptions,
   type ReconciliationReviewItem,
 } from "./email";
 
@@ -220,4 +223,108 @@ describe("sendReconciliationReviewEmail", () => {
       token: "tok",
     };
   }
+});
+
+describe("buildOwnerOrderNotificationHtml", () => {
+  const baseOpts: OwnerOrderNotificationOptions = {
+    to: "sheena@example.com",
+    ownerName: "Sheena Arora",
+    orderRef: 42,
+    amountTotal: 18500,
+    customerName: "Jane Buyer",
+    customerEmail: "jane@example.com",
+    paymentMethod: "card",
+    items: [{ name: "Goldkette", nameEn: "Gold Necklace", price: "185.00" }],
+  };
+
+  it("greets the owner by name and includes the order total and items", () => {
+    const html = buildOwnerOrderNotificationHtml(baseOpts);
+    expect(html).toContain("Hi Sheena Arora");
+    expect(html).toContain("#00042");
+    expect(html).toContain("CHF 185.00");
+    expect(html).toContain("Gold Necklace");
+  });
+
+  it("falls back to a generic greeting when the owner has no name yet (pending claim)", () => {
+    const html = buildOwnerOrderNotificationHtml({
+      ...baseOpts,
+      ownerName: null,
+    });
+    expect(html).toContain("Hi there");
+  });
+
+  it("escapes a malicious owner name and customer name", () => {
+    const html = buildOwnerOrderNotificationHtml({
+      ...baseOpts,
+      ownerName: `<img src=x onerror=alert(1)>`,
+      customerName: `<script>alert(1)</script>`,
+    });
+    expect(html).not.toContain("<img src=x onerror=alert(1)>");
+    expect(html).not.toContain("<script>alert(1)</script>");
+  });
+});
+
+describe("sendOwnerOrderEmail", () => {
+  const originalEnv = { ...process.env };
+
+  afterEach(() => {
+    process.env = { ...originalEnv };
+    vi.unstubAllGlobals();
+  });
+
+  const baseOpts: OwnerOrderNotificationOptions = {
+    to: "sheena@example.com",
+    ownerName: "Sheena Arora",
+    orderRef: 7,
+    amountTotal: 5000,
+    customerName: "Jane Buyer",
+    customerEmail: "jane@example.com",
+    paymentMethod: "card",
+    items: [{ name: "Ring", nameEn: null, price: "50.00" }],
+  };
+
+  it("does nothing when RESEND_API_KEY is unset", async () => {
+    delete process.env.RESEND_API_KEY;
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    await sendOwnerOrderEmail(baseOpts);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("does nothing when there's no owner email to send to", async () => {
+    process.env.RESEND_API_KEY = "re_test";
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    await sendOwnerOrderEmail({ ...baseOpts, to: "" });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("sends to the owner's email with the order total in the subject", async () => {
+    process.env.RESEND_API_KEY = "re_test";
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await sendOwnerOrderEmail(baseOpts);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [, init] = fetchMock.mock.calls[0];
+    const body = JSON.parse(init.body as string);
+    expect(body.to).toBe("sheena@example.com");
+    expect(body.subject).toContain("CHF 50.00");
+    expect(body.html).toContain("Ring");
+  });
+
+  it("throws when the Resend API responds with an error", async () => {
+    process.env.RESEND_API_KEY = "re_test";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: false, status: 500, text: async () => "oops" })
+    );
+
+    await expect(sendOwnerOrderEmail(baseOpts)).rejects.toThrow(
+      /Resend API 500/
+    );
+  });
 });

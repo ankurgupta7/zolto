@@ -857,6 +857,26 @@ export async function getTenantById(id: number): Promise<Tenant | undefined> {
   }, undefined);
 }
 
+// The person to notify about this tenant's activity (e.g. a paid order) —
+// the earliest `role = 'admin'` user row for the tenant, ordered by id so a
+// still-pending claim (see createPendingTenantAdmin) resolves to the same
+// row that becomes the real admin once claimed. A tenant can in principle
+// have more than one admin; this picks one rather than notifying all of
+// them, matching notifyOwner's existing single-recipient model.
+export async function getTenantAdminContact(
+  tenantId: number,
+): Promise<{ name: string | null; email: string | null } | undefined> {
+  return withDb(async (db) => {
+    const result = await db
+      .select({ name: users.name, email: users.email })
+      .from(users)
+      .where(and(eq(users.tenantId, tenantId), eq(users.role, "admin")))
+      .orderBy(asc(users.id))
+      .limit(1);
+    return result.length > 0 ? result[0] : undefined;
+  }, undefined);
+}
+
 // Resolve the tenant that owns a POS API key. POS clients authenticate purely by
 // this key (see server/pos.ts requirePosKey); returns undefined for an unknown
 // key or when the database is unavailable.
