@@ -124,25 +124,46 @@ export interface PlatformPlan {
   cta: string;
   highlight?: boolean;
   features: string[];
+  /**
+   * AI photo credits granted with the plan each month (see AI_PHOTO_CREDITS).
+   * Photo generation has a real per-image GPU cost, so it is metered rather
+   * than bundled as "unlimited" — plans include a monthly bucket, and extra
+   * images are pay-as-you-go.
+   */
+  includedPhotoCredits: number;
 }
 
 /**
  * Pricing tiers — the source of truth for both the marketing pricing page and
  * the machine-readable Offers (JSON-LD / MCP / llms). Prices are placeholders
  * pending the VAT-inclusive-vs-exclusive decision (business-plan §7.1).
+ *
+ * Packaging rule (honest-pricing-strategy.md): we never gate a feature that
+ * costs us ~nothing to run. The whole commerce engine — unlimited products,
+ * full POS, an online store, real-time inventory sync, AI *text* (descriptions
+ * + translation), and one-click data export — is therefore on the Free plan.
+ * Paid plans sell the things that carry a real *recurring* cost: a custom
+ * domain + managed SSL, human support, more staff seats, an SLA. The one AI
+ * feature with a real *per-use* cost, photo generation, is metered as an
+ * add-on (AI_PHOTO_CREDITS) with a monthly bucket per plan — not sold as a
+ * fictional "unlimited".
  */
 export const PLANS: PlatformPlan[] = [
   {
     id: "free",
     name: "Free",
     priceChf: 0,
-    blurb: "For makers exploring.",
+    blurb: "A complete store, not a demo.",
     cta: "Get started free",
+    includedPhotoCredits: 0,
     features: [
-      "Up to 50 products",
-      "1 staff member",
-      "Basic POS",
-      "10 AI descriptions / month",
+      "Unlimited products",
+      "Full POS — Tap to Pay, TWINT QR, cash",
+      "Online store on a zolto.shop address",
+      "Real-time POS ↔ online inventory sync",
+      "AI descriptions & translation (fair use)",
+      "CSV & photo bulk upload",
+      "One-click full data export",
       "Community support",
     ],
   },
@@ -150,16 +171,17 @@ export const PLANS: PlatformPlan[] = [
     id: "maker",
     name: "Maker",
     priceChf: 19,
-    blurb: "For solo makers.",
+    blurb: "For solo makers going pro.",
     cta: "Start 14-day free trial",
     highlight: true,
+    includedPhotoCredits: 10,
     features: [
-      "Unlimited products",
-      "Full POS + online store",
-      "Unlimited AI descriptions",
-      "Bulk upload",
-      "Real-time inventory sync",
-      "Email support",
+      "Everything in Free",
+      "Your own custom domain + managed SSL",
+      'Your brand only — no "runs on Zolto"',
+      "Human email support (next business day)",
+      "3 staff seats",
+      "10 AI photo credits / month included",
     ],
   },
   {
@@ -168,12 +190,14 @@ export const PLANS: PlatformPlan[] = [
     priceChf: 49,
     blurb: "For small teams.",
     cta: "Start 14-day free trial",
+    includedPhotoCredits: 40,
     features: [
       "Everything in Maker",
-      "5 staff members",
-      "Custom domain",
+      "10 staff seats",
       "Advanced analytics",
-      "Priority support",
+      "Priority support (same day)",
+      "Multi-currency checkout",
+      "40 AI photo credits / month included",
     ],
   },
   {
@@ -182,12 +206,14 @@ export const PLANS: PlatformPlan[] = [
     priceChf: 99,
     blurb: "For growing brands.",
     cta: "Contact sales",
+    includedPhotoCredits: 150,
     features: [
       "Everything in Studio",
-      "20 staff members",
-      "API access",
-      "Custom AI training",
+      "20 staff seats",
+      "API access + SSO",
+      "Audit logs",
       "Dedicated support + SLA",
+      "150 AI photo credits / month included",
     ],
   },
 ];
@@ -195,6 +221,42 @@ export const PLANS: PlatformPlan[] = [
 export function formatPrice(chf: number): string {
   return chf === 0 ? "CHF 0" : `CHF ${chf}`;
 }
+
+export interface PlatformAddOn {
+  id: string;
+  name: string;
+  priceChf: number;
+  /** Human-readable billing unit, e.g. "per image". */
+  unit: string;
+  blurb: string;
+  points: string[];
+}
+
+/**
+ * AI Photo Credits — the one AI feature metered per use, because image
+ * generation costs Zolto real GPU money per image (unlike near-free text AI,
+ * which is free within fair use on every plan). Pay-as-you-go and non-expiring,
+ * so a maker only pays for images she actually generates — never a recurring
+ * add-on fee that bills whether or not it's used. Decision + competitive
+ * anchor: docs/planning/phase1/marketing/ai-photography-pitch.md.
+ *
+ * NOTE: CHF 1/image is the marketing anchor from that pitch; it must be
+ * confirmed against Zolto's real per-image generation cost before launch.
+ */
+export const AI_PHOTO_CREDITS: PlatformAddOn = {
+  id: "ai-photo-credits",
+  name: "AI Photo Credits",
+  priceChf: 1,
+  unit: "per image",
+  blurb:
+    "Turn one rough phone photo into a clean catalogue shot or a full lifestyle image — no photographer, model, or studio.",
+  points: [
+    "CHF 1 per image, pay-as-you-go — buy credits and use them whenever.",
+    "Credits never expire and there's no monthly commitment.",
+    "Metered because image generation costs us real money per image — so you pay for images you actually make, not a fee that bills whether you use it or not.",
+    "Every AI-styled image is disclosed as AI-generated.",
+  ],
+};
 
 /**
  * The positioning thesis, as structured facts the marketing surface renders and
@@ -219,8 +281,9 @@ export const PRICING_PROMISE = {
   pledge:
     "We will never charge you for anything that isn't charged to us. No card reader to buy. No lock-in. No surprises on the bill.",
   points: [
-    "Costs are passed straight through, at what they cost us.",
-    "Your customers pay into your own Stripe account — we never touch your money.",
+    "Your store, POS, catalogue and data export are free — we never charge for what costs us nothing to run.",
+    "Extras with a real cost, like AI photo generation, are pay-as-you-go — never padded into a monthly fee you pay whether you use them or not.",
+    "Your customers pay into your own Stripe account — we take 0% of your sales and never touch your money.",
     "If we ever stop being the honest, cheapest option for a maker your size, we've failed at our one job.",
   ],
 } as const;

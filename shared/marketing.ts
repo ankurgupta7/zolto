@@ -25,7 +25,14 @@
  */
 export const CONTENT_RELEASE_SIGNED = true;
 
-import { PLATFORM, FEATURES, PLANS, FAQS, HOW_TO_START } from "./platform";
+import {
+  PLATFORM,
+  FEATURES,
+  PLANS,
+  FAQS,
+  HOW_TO_START,
+  AI_PHOTO_CREDITS,
+} from "./platform";
 
 export interface MakerIdentity {
   /** Brand name, or a neutral stand-in while unreleased. */
@@ -262,6 +269,8 @@ ${PLATFORM.pricingSummary}
 
 ${planLines}
 
+**Add-on — ${AI_PHOTO_CREDITS.name}:** CHF ${AI_PHOTO_CREDITS.priceChf} ${AI_PHOTO_CREDITS.unit}, pay-as-you-go, credits never expire. ${AI_PHOTO_CREDITS.blurb}
+
 ## How a maker gets started
 
 ${HOW_TO_START.map((s, i) => `${i + 1}. ${s}`).join("\n")}
@@ -320,6 +329,12 @@ ${features}
 ## Plans & pricing
 
 ${plans}
+
+### Add-on: ${AI_PHOTO_CREDITS.name} — CHF ${AI_PHOTO_CREDITS.priceChf} ${AI_PHOTO_CREDITS.unit}
+
+${AI_PHOTO_CREDITS.blurb}
+
+${AI_PHOTO_CREDITS.points.map((p) => `- ${p}`).join("\n")}
 
 ---
 

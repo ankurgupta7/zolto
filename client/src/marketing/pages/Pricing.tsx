@@ -1,6 +1,10 @@
 import { Link } from "wouter";
 import { PLANS, formatPrice } from "../plans";
-import { PRICING_PROMISE, COST_COMPARISON } from "@shared/platform";
+import {
+  PRICING_PROMISE,
+  COST_COMPARISON,
+  AI_PHOTO_CREDITS,
+} from "@shared/platform";
 
 const FAQ = [
   {
@@ -134,6 +138,51 @@ export default function Pricing() {
             </Link>
           </div>
         ))}
+      </div>
+
+      {/*
+        Metered add-on — the one AI feature with a real per-use cost. Surfaced
+        openly (not hidden as "unlimited") so the plans match the pledge: we
+        meter what genuinely costs us per use, and never charge for what doesn't.
+      */}
+      <div className="mx-auto mt-12 max-w-3xl rounded-2xl border border-[var(--brand-border)] bg-white p-8 md:p-10">
+        <div className="flex flex-wrap items-baseline justify-between gap-3">
+          <div>
+            <p className="font-hand text-xl leading-none text-[var(--brand-accent)]">
+              pay only for what you use
+            </p>
+            <h2 className="mt-2 font-serif text-2xl text-[var(--brand-text)]">
+              {AI_PHOTO_CREDITS.name}
+            </h2>
+          </div>
+          <p className="font-serif text-3xl text-[var(--brand-ink)] tabular-nums">
+            {formatPrice(AI_PHOTO_CREDITS.priceChf)}
+            <span className="text-sm text-[var(--brand-muted)]">
+              {" "}
+              {AI_PHOTO_CREDITS.unit}
+            </span>
+          </p>
+        </div>
+        <p className="mt-3 text-[var(--brand-muted-2)]">
+          {AI_PHOTO_CREDITS.blurb}
+        </p>
+        <ul className="mt-5 grid gap-2.5">
+          {AI_PHOTO_CREDITS.points.map((point) => (
+            <li
+              key={point}
+              className="flex gap-2.5 text-sm leading-relaxed text-[var(--brand-muted-2)]"
+            >
+              <span aria-hidden className="text-[var(--brand-accent)]">
+                —
+              </span>
+              {point}
+            </li>
+          ))}
+        </ul>
+        <p className="mt-5 text-sm text-[var(--brand-muted)]">
+          Paid plans include a monthly bucket of credits — Maker 10, Studio 40,
+          Atelier 150. Need more? Top up any time; credits never expire.
+        </p>
       </div>
 
       {/*

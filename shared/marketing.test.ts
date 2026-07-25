@@ -143,6 +143,8 @@ describe("renderMarketingLlmsTxt", () => {
     expect(txt).toContain("## How a maker gets started");
     expect(txt).toContain("get_platform_info"); // platform MCP tools listed
     expect(txt).toContain("https://zolto.com/llms-full.txt");
+    // The metered AI-photo add-on is disclosed, not hidden as "unlimited".
+    expect(txt).toContain("AI Photo Credits");
   });
 });
 
@@ -155,6 +157,7 @@ describe("renderMarketingLlmsFullTxt", () => {
     expect(txt).toContain("## FAQ");
     expect(txt).toContain("What is Zolto?");
     expect(txt).toContain("CHF 19/month");
+    expect(txt).toContain("AI Photo Credits");
   });
 });
 

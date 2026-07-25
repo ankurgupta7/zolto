@@ -11,6 +11,7 @@ import {
   COST_COMPARISON,
   INCUMBENT_COMPARISON,
   SELLING_FLOW,
+  AI_PHOTO_CREDITS,
 } from "./platform";
 
 describe("platform facts", () => {
@@ -38,6 +39,44 @@ describe("platform facts", () => {
     }
     // exactly one highlighted plan
     expect(PLANS.filter((p) => p.highlight).length).toBe(1);
+  });
+
+  it("keeps the free plan a complete store, not a capped demo", () => {
+    const free = PLANS.find((p) => p.id === "free");
+    expect(free).toBeTruthy();
+    const text = free!.features.join(" | ");
+    // Zero-marginal-cost features are free, not gated behind a paywall.
+    expect(text).toMatch(/unlimited products/i);
+    expect(text).toMatch(/data export/i);
+    // The old manufactured-scarcity caps must not come back.
+    expect(text).not.toMatch(/up to 50 products/i);
+    expect(text).not.toMatch(/\d+\s*AI descriptions?\s*\/?\s*month/i);
+  });
+
+  it("meters AI photo generation instead of bundling it as 'unlimited'", () => {
+    // "Unlimited AI" hides a real per-image GPU cost — it must not appear on any plan.
+    for (const plan of PLANS) {
+      for (const f of plan.features) {
+        expect(f.toLowerCase()).not.toContain("unlimited ai");
+      }
+    }
+    // Photo credits are a real, priced, metered add-on.
+    expect(AI_PHOTO_CREDITS.priceChf).toBeGreaterThan(0);
+    expect(AI_PHOTO_CREDITS.unit.length).toBeGreaterThan(0);
+    expect(AI_PHOTO_CREDITS.points.length).toBeGreaterThanOrEqual(3);
+    expect(AI_PHOTO_CREDITS.points.join(" ").toLowerCase()).toContain(
+      "never expire",
+    );
+  });
+
+  it("includes a non-decreasing monthly photo-credit bucket per plan", () => {
+    const buckets = PLANS.map((p) => p.includedPhotoCredits);
+    expect(PLANS[0].includedPhotoCredits).toBe(0); // Free: pay-as-you-go only
+    for (let i = 1; i < buckets.length; i++) {
+      expect(buckets[i]).toBeGreaterThanOrEqual(buckets[i - 1]);
+    }
+    // Paid plans actually grant credits.
+    expect(buckets[buckets.length - 1]).toBeGreaterThan(0);
   });
 
   it("has FAQs and getting-started steps", () => {
