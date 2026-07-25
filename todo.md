@@ -87,3 +87,44 @@
 - [x] Instagram profile card section on Home page
 - [x] Instagram follow banner in Footer
 - [x] Instagram gradient card on Contact page
+
+## Marketing, Messaging & Positioning (Round 4)
+
+### Marketing blurb
+
+> **Zolto exists to disrupt the website + point-of-sale integration market.** The big incumbents — Stripe, Worldline, SumUp — are relics of a previous era of software, when building a website was hard and keeping a small database of inventory was expensive. They overcharge small merchants for what is now cheap, and their real game is upselling their own card-reader hardware to lock you inside their ecosystem.
+>
+> Two things have fundamentally changed. **First, AI** — we can now build a merchant's website in under a day. **Second, phones carry NFC chips** and QR-based payment methods (TWINT and friends) are everywhere, so nobody pushes a card into a machine anymore — they tap, and a phone is all the hardware you need. Server space is dirt cheap. There is simply no reason for a small business to pay hundreds or thousands of euros a year — in France, easily €2,000 — to stay trapped in a legacy provider.
+>
+> **We don't do any of that.** Our pricing is radically transparent: we never charge for anything that isn't charged to us. We have enough money of our own — we are not here to make money off small people. We are here to help them, and we promise to always keep doing that. Instead of €2,000, you spend €20 — one-hundredth the cost. Why wouldn't you?
+>
+> And the biggest shift of all: **AI means inventory management no longer has to be rigid.** AI handles ambiguity by design, so we let merchants stay messy. Kept your stock in a notebook or a diary? Scan it — we pick it up automatically. Too busy at your stall to tag every sale? Just punch the amount into the reader (say, 50 francs) and make the sale — at the end of the day our AI figures out what you most likely sold and emails you a simple guess to confirm; once you tap the right item, it's marked sold everywhere at once — website, POS, catalogue. Don't know what to call a piece, can't write silky jewelry copy, don't speak every customer's language? That's fine — the AI names, describes, and translates for you from just a photo. We keep you free. We're on your side.
+
+### Positioning pillars (every surface should reinforce these)
+
+- [ ] **Pillar 1 — Disrupt the legacy website + POS market.** Frame Stripe / Worldline / SumUp as previous-era software that overcharges to keep small merchants locked in and to upsell card-reader hardware.
+- [ ] **Pillar 2 — The two shifts that make legacy obsolete.** (a) AI builds a full store in under a day; (b) NFC phones + QR payments (TWINT) mean no card hardware and near-zero server cost.
+- [ ] **Pillar 3 — Radically transparent, pass-through pricing.** Never charge for anything not charged to us; never monetize small merchants; ~1/100th the cost (€20 vs €2,000). A public, plain-language pricing promise.
+- [ ] **Pillar 4 — AI-native inventory that embraces ambiguity** (flagship pillar). Scan handwritten notes/diaries → auto-imported. Value-only POS sales reconciled by an end-of-day AI email that marks the item sold everywhere on confirmation. AI does naming, silky descriptions, and multi-language translation from a photo.
+
+### Marketing copy tasks
+
+- [ ] Rewrite Home hero around the disruption thesis — headline + subhead lead with "one-hundredth the cost, no card reader to buy," CTA to see pricing / start a store
+- [ ] "Why Zolto vs. Stripe/SumUp/Worldline" comparison section (cost, lock-in, hardware upsell, AI setup speed) on Home or a dedicated page
+- [ ] Transparent-pricing page: pass-through promise, €20-vs-€2,000 framing, "we never charge for anything not charged to us," explicit "we will always be on the small merchant's side" pledge
+- [ ] "Built in a day with AI" section — set-up-speed story for the merchant
+- [ ] "Tap, don't insert" section — NFC phone + TWINT/QR payments, no hardware to buy
+- [ ] AI-inventory story section: scan-your-notebook, value-only sales + end-of-day AI reconciliation email, AI naming/descriptions/translations from a photo
+- [ ] Rewrite About page to carry the mission ("we have enough; we're here to help small merchants, not extract from them")
+- [ ] Audit all copy so it's translated by AI (DE/EN and beyond) and never assumes the merchant writes multiple languages
+
+### UI / design direction (gear the whole UI toward the pillars)
+
+- [ ] Establish a design language that reads "modern, transparent, on-your-side" — open/airy layout, honest typography, no dark-pattern upsell UI
+- [ ] Surface pricing prominently and legibly everywhere (nav + footer link, no hidden fees) as a trust signal, contrasting with incumbents' opaque pricing
+- [ ] Design merchant onboarding to feel "up and running in a day" (progress that celebrates speed, minimal required fields)
+- [ ] POS UI: make value-only "just enter the amount and sell" the fast default; defer item selection to AI reconciliation
+- [ ] End-of-day AI reconciliation email + in-app review UI: one-tap confirm of the AI's guess, then sold-status propagates to store + POS + catalogue
+- [ ] Bulk/"scan my notebook" import UI: upload a photo/scan of handwritten inventory → AI-extracted draft products to confirm
+- [ ] Catalog editor with AI-assist affordances: generate name, generate silky description, auto-translate — all optional, all editable
+- [ ] Comparison/"switch from your old provider" UI that quantifies savings vs. legacy players
