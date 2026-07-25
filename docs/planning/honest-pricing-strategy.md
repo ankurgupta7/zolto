@@ -17,6 +17,19 @@
 > the **promise-vs-plans contradiction** the branch still carries and the `PLANS` fix to
 > resolve it.
 
+> **v1.2 — the §7.1 fix is now implemented in code** (branch
+> `claude/honest-pricing-plans`, off `main`). The promise-vs-plans contradiction is
+> resolved: `PLANS` no longer carries the artificial caps, the whole zero-cost commerce
+> engine sits on Free, and **AI product photography is shipped as a metered add-on**
+> (`AI_PHOTO_CREDITS`) rather than a fictional "unlimited". Final numbers, now live in
+> `shared/platform.ts`: **CHF 1 / image, pay-as-you-go, credits never expire**, with a
+> **monthly included bucket per plan — Free 0, Maker 10, Studio 40, Atelier 150.** The one
+> `PRICING_PROMISE` bullet that overclaimed literal zero-margin pass-through was reworded,
+> and the add-on is surfaced on the Pricing page, `/llms.txt`, `/llms-full.txt`, and the
+> platform MCP `get_pricing` tool. What is **not** yet settled: whether CHF 1/image is
+> genuine pass-through or carries margin (see §4) — the price is a marketing anchor pending a
+> real per-image cost check.
+
 ---
 
 ## 1. The one principle
@@ -115,7 +128,7 @@ Everything here has a cost that scales with usage and that we pay to someone els
 LLM/GPU API, an email/SMS provider, a storage bill). So you pay per use, **at our cost.**
 We publish the unit cost. The only add-on is a cost that is *itself charged to us* (e.g.
 the Stripe fee to collect a micro-payment), which is why we pool tiny costs into
-non-expiring, refundable credit packs instead of billing you CHF 0.0007 line items.
+non-expiring credit packs instead of billing you CHF 0.0007 line items.
 
 Text AI runs on Groq `llama3-8b` (~CHF 0.05–0.10 per **million** tokens) — so cheap we give
 it away within a fair allowance (§3). The item that actually *needs* metering is **AI
@@ -124,7 +137,7 @@ magnitude pricier than text, and the one place "unlimited" would sink the unit e
 
 | Feature | One unit | Our real cost / unit | **You pay (pass-through)** | Why metered (not free, not "unlimited") |
 |---|---|---|---|---|
-| **AI product photography** (rough photo → clean/on-model shot) | 1 image | ~CHF 0.02–0.08 (GPU) | **at cost** (≈ 1 credit/image), or from a plan bucket | Real GPU cost, high relative to text, easy to run in bulk — the headline reason metering exists |
+| **AI product photography** (rough photo → clean/on-model shot) — **shipped** | 1 image | ~CHF 0.02–0.08 (GPU) | **CHF 1 / image**, pay-as-you-go, credits never expire; or from a plan bucket (Free 0, Maker 10, Studio 40, Atelier 150) | Real GPU cost, high relative to text, easy to run in bulk — the headline reason metering exists |
 | AI translation (→ `nameEn`/`descriptionEn`, DE/FR/…) | 1 product | < CHF 0.001 | free within allowance, then **at cost** | So cheap it's free in the allowance; pure pass-through beyond it |
 | AI description writing (photo/notes → copy) | 1 description | < CHF 0.005 | free within allowance, then **at cost** | Same — text is near-free |
 | AI bulk/"scan my notebook" intake (photo → structured products) | 1 image parsed | ~CHF 0.005–0.02 (vision) | **at cost** | Vision model, clearly variable |
@@ -132,11 +145,22 @@ magnitude pricier than text, and the one place "unlimited" would sink the unit e
 | SMS / WhatsApp order notifications | 1 message | CHF 0.02–0.08 (carrier) | **at carrier cost** | Carrier fees are unavoidable and regional |
 | Image storage beyond 5 GB | 1 GB-month | CHF 0.015 (R2) | **at cost** | Genuinely metered; 5 GB ≈ 2,000 photos free |
 
-**How you pay:** prepaid credit packs (e.g. **CHF 5 = 500 credits**) or metered monthly
-billing on your card. Credits **never expire** and are **refundable on exit** — an honest
-meter gives the money back. **If our upstream cost drops** (cheaper image/text models ship
-constantly), **your price drops with it.** We commit to repricing down, never pocketing the
-delta — that's what "at what it costs us" means in practice.
+**How you pay:** prepaid credit packs or metered monthly billing on your card. Credits
+**never expire**. **If our upstream cost drops** (cheaper image/text models ship
+constantly), **your price should drop with it** — we commit to repricing down, not pocketing
+the delta.
+
+> **One honesty caveat on the shipped photo price.** The rest of §4 is literal pass-through
+> (email, SMS, storage, text AI = free). **AI photo credits are the exception:** the shipped
+> **CHF 1/image** sits *above* the ~CHF 0.02–0.08 GPU cost, so it carries margin — chosen as a
+> simple, round anchor that's still ~1/100th of a photographer, and explicitly *"confirm it
+> covers cost with healthy margin before launch"* in
+> `phase1/marketing/ai-photography-pitch.md`. That means the pledge line *"passed straight
+> through at what they cost us"* would be **false if applied to photo credits** — which is why
+> the shipped `PRICING_PROMISE` bullet was reworded (v1.2) to promise *"pay-as-you-go, never
+> padded into a monthly fee"* rather than *"at exactly our cost."* Open decision (§11): either
+> reprice photo credits toward true cost, or keep CHF 1 and keep the wording honest about the
+> margin. The code currently does the latter.
 
 ---
 
@@ -190,9 +214,9 @@ person on call, a domain + certificate + deliverability we keep alive, extra sta
 | Plan | Price (CHF, VAT per business plan §7.1) | What it adds beyond Free | Why it's a subscription |
 |---|---|---|---|
 | **Free** | **CHF 0/mo** | The entire §3 list — a complete, sellable store. Fair AI-text allowance. Community support. | Marginal cost ≈ 0 |
-| **Maker** | **CHF 19/mo** *(highlighted)* | Custom domain + managed SSL, remove "runs on Zolto" badge, **AI-photography credit bucket**, higher email/AI allowances, priority email support (next-business-day), 3 staff seats | Domain/cert/deliverability + a real human answering email are *ongoing* costs |
-| **Studio** | **CHF 49/mo** | Everything in Maker + up to 10 staff seats, advanced analytics, same-day human support, bigger buckets, multi-currency | More support time + more seats = more standing cost |
-| **Atelier** | **CHF 99/mo** | Everything in Studio + API access, SSO, audit logs, uptime SLA, named contact, custom AI limits | SLA + security/compliance carry real recurring cost |
+| **Maker** | **CHF 19/mo** *(highlighted)* | Custom domain + managed SSL, remove "runs on Zolto" badge, **10 AI photo credits/mo included**, priority email support (next-business-day), 3 staff seats | Domain/cert/deliverability + a real human answering email are *ongoing* costs |
+| **Studio** | **CHF 49/mo** | Everything in Maker + up to 10 staff seats, advanced analytics, same-day human support, **40 AI photo credits/mo**, multi-currency | More support time + more seats = more standing cost |
+| **Atelier** | **CHF 99/mo** | Everything in Studio + API access, SSO, audit logs, uptime SLA, **150 AI photo credits/mo** | SLA + security/compliance carry real recurring cost |
 
 **Honesty guardrails baked into the subscription:**
 
@@ -208,37 +232,34 @@ person on call, a domain + certificate + deliverability we keep alive, extra sta
 - **Grandfathering:** raise a plan price and existing subscribers keep their rate (roadmap
   §4.1). Changes are announced, never silent. Prorated, cancel any time, export on exit (§5).
 
-### 7.1 Resolving the promise-vs-plans contradiction (action for the code)
+### 7.1 Resolving the promise-vs-plans contradiction (✅ implemented)
 
-The marketing branch ships **two pricing philosophies at once**, and they fight each other:
+The positioning originally shipped **two pricing philosophies at once** that fought each other:
 
-- **`PRICING_PROMISE`** — pass-through, metered, at-cost, "never charge for what isn't
-  charged to us." ✅ the pledge above.
+- **`PRICING_PROMISE`** — pass-through, metered, "never charge for what isn't charged to us."
 - **`PLANS`** — flat, feature-gated tiers copied from business-plan §3.1:
   *"Up to 50 products," "1 staff member," "10 AI descriptions / month," "Unlimited AI
   descriptions."*
 
-Both halves of `PLANS` violate the pledge, in opposite directions:
+Both halves of the old `PLANS` violated the pledge, in opposite directions — artificial caps
+gated zero-cost features (manufactured scarcity), while "Unlimited AI" hid the real GPU cost
+of AI photography. **Both are now fixed in code** (branch `claude/honest-pricing-plans`, off
+`main`; `shared/platform.ts`, with tests + the Pricing page, llms briefs, and MCP updated):
 
-1. **Artificial caps** ("50 products", "1 staff", "10 AI/month") gate things that cost us
-   ~nothing. That's manufactured scarcity to force upgrades — the dark pattern the pledge
-   disowns. **Fix: remove them.** Unlimited products, full POS, and inventory sync belong in
-   **Free** (they're zero-marginal); seats scale for *support surface*, not compute.
-2. **"Unlimited AI"** hides a *variable* cost — harmless for near-free text, but a trap once
-   **AI product photography** (real GPU) is in scope. "Unlimited" GPU on a CHF 19 plan is
-   the one line that can go underwater. **Fix: text AI stays free-and-generous; AI
-   photography is a visible at-cost meter / plan bucket (§4), not "unlimited."**
-
-**Concrete change to `shared/platform.ts` → `PLANS`:**
-
-| Current (pre-pledge) | Honest replacement |
+| Was (pre-pledge) | Now (shipped) |
 |---|---|
-| Free: "Up to 50 products", "10 AI descriptions/month" | Free: **unlimited products**, full POS + online, inventory sync, fair AI-**text** allowance, data export |
-| Maker: "Unlimited AI descriptions" | Maker: custom domain + SSL, **AI-photography credit bucket** (not "unlimited"), priority email support, 3 seats |
-| Studio / Atelier: staff-count gating as the headline | Keep seat counts (support surface is a real cost), lead with support tier + domain + SLA, not caps on zero-cost features |
+| Free: "Up to 50 products", "10 AI descriptions/month", "1 staff", "Basic POS" | Free: **unlimited products**, full POS (Tap to Pay/TWINT/cash), online store, real-time inventory sync, AI **text** (descriptions + translation, fair use), CSV/photo bulk upload, one-click data export |
+| Maker: "Unlimited AI descriptions" | Maker: custom domain + SSL, badge removal, **10 AI photo credits/mo** (metered, not "unlimited"), human email support, 3 seats |
+| Studio / Atelier: staff-count caps as the headline | Seats kept as a real support-surface cost; lead with support tier + domain + API/SSO/SLA. Photo buckets **40 / 150 per mo** |
+| — (no add-on) | **`AI_PHOTO_CREDITS`**: CHF 1/image, pay-as-you-go, non-expiring; surfaced on Pricing + llms + MCP |
 
-After this change the plan cards and the pledge finally say the same thing: **you pay for
-standing commitments and pass-through usage, never for artificial limits.**
+New `PlatformPlan.includedPhotoCredits` (Free 0, Maker 10, Studio 40, Atelier 150) makes the
+buckets machine-readable. Regression tests guard it: the Free plan can't re-acquire the caps,
+no plan may say "unlimited AI", and the credit buckets must be non-decreasing.
+
+The plan cards and the pledge now say the same thing: **you pay for standing commitments and
+pay-as-you-go usage, never for artificial limits** — with the single, disclosed exception of
+photo-credit margin flagged in §4.
 
 ---
 
@@ -254,10 +275,10 @@ with AI that month.
 | Sales processing | 60 sales | CHF 0 to Zolto (pays Stripe directly) | CHF 0 | 0 |
 | Catalogue translation (one-off) | 150 items | CHF 0 (within allowance) | ~CHF 0.05 | −0.05 |
 | AI descriptions for new items | ~20/mo | CHF 0 (within allowance) | ~CHF 0.10 | −0.10 |
-| **AI product photography** | ~20 images | ~CHF 1.00 (at cost) or plan bucket | ~CHF 1.00 | ~0 |
+| **AI product photography** | ~20 images | CHF 10 (10 from Maker's included bucket, 10 × CHF 1) | ~CHF 1.00 (GPU) | +9 |
 | Order emails | ~120/mo | CHF 0 (under 500 free) | ~CHF 0.05 | −0.05 |
 | Custom domain + SSL + support (Maker) | — | CHF 19 | ~CHF 3 (cert mgmt + support time) | +16 |
-| **Monthly total** | | **~CHF 20** | **~CHF 6.25** | **~+CHF 14 (cost-recovery)** |
+| **Monthly total** | | **~CHF 29** | **~CHF 6.25** | **~+CHF 23** |
 
 A hobby maker on Free doing 15 sales/month pays **CHF 0** and costs us **~CHF 2** — and
 that's fine: they're the funnel and the referral engine. A maker becomes a paying customer
@@ -270,10 +291,11 @@ that's fine: they're the funnel and the referral engine. A maker becomes a payin
 Honest pricing isn't charity pricing — but the margin is *legible* and it's cost-recovery,
 not extraction:
 
-- **Usage features run at zero margin**, by pledge. We don't make a franc on your AI photos
-  or emails; we pass the GPU/provider bill straight through. Text AI we give away because
-  metering it would cost more than the tokens.
-- **The subscription carries the whole margin**, and it buys the one thing that genuinely
+- **Most usage runs at zero margin.** Email, SMS and storage pass the provider bill straight
+  through; text AI we give away because metering it would cost more than the tokens. **AI
+  photo credits are the one usage line with margin** (CHF 1/image over ~CHF 0.02–0.08 cost) —
+  disclosed in §4, and still a small absolute number for the maker.
+- **The subscription carries most of the margin**, and it buys the one thing that genuinely
   costs money at scale: **human support time.** CHF 19 − ~CHF 5 cost isn't profit skimmed off
   a small merchant; it's what keeps support answered and free-tier losses covered.
 - **We lose ~CHF 2/mo on every free tenant** and treat it as CAC — cheaper than the business
@@ -290,12 +312,12 @@ real support commitments.
 ## 10. The honesty guardrails (the promises this pricing makes)
 
 1. **The meter is visible.** Every per-use charge shows unit cost and running total in-product.
-2. **Usage is zero-margin pass-through.** We never charge for anything not charged to us.
+2. **Usage is pass-through, not padding.** Email, SMS, storage and text AI are billed at cost (text AI is free within fair use); we never invent a fee for something that costs us nothing. The one disclosed exception is AI photo credits, which carry a margin above GPU cost (§4).
 3. **Prices only ever move down with our costs.** Cheaper models/providers → cheaper for you.
 4. **No charge for anything that costs us ~nothing.** Free stays free on principle, and there are no artificial product/AI caps.
 5. **Leaving is free and one click.** Export is never gated, delayed, or priced (§5). We charge only for *our labour* if you ask us to migrate you.
 6. **0% of your sales, forever, by architecture.** Stripe Connect Standard means we *can't* skim even if we wanted to (§6).
-7. **Unused credits are refundable.**
+7. **Credits never expire** (as shipped). Refunds on exit are a proposed extra, not yet committed (§11).
 8. **Price changes are announced and grandfathered**, never silent (§7).
 9. **No AI-authored change to billing ships without a human merge** (business plan §1.3/§8.1) — pricing code is where a silent bug becomes a broken promise.
 
@@ -307,11 +329,15 @@ real support commitments.
   digital services → OSS at customer's local rate, CH VAT (8.1%) separate. Enable Stripe Tax;
   decide before the pricing page ships. (The shipped `Pricing.tsx` FAQ already defers tax to
   checkout — make sure that matches the decision.)
-- **Reconcile `PLANS` with the pledge** (§7.1) — the single most important code fix; today the
-  plan cards still encode the pre-pledge, feature-gated model.
+- **~~Reconcile `PLANS` with the pledge~~ (§7.1) — done** in `claude/honest-pricing-plans`.
+  Remaining: get that branch reviewed and merged to `main`.
+- **Validate the CHF 1/image photo-credit price** against real per-image GPU cost, then
+  decide: reprice toward cost (literal pass-through) or keep CHF 1 with disclosed margin (§4).
+  The `AI_PHOTO_CREDITS` code comment carries the same TODO.
 - **Founder pricing** (§4.3): the CHF 9/mo founder rate is a temporary acquisition discount,
   not steady state; it rolls off and doesn't change the model.
-- **Credit-pack accounting**: unused/refundable credits are a liability — model before scaling.
+- **Credit-pack accounting**: non-expiring credits are a standing liability (and refunds, if
+  adopted, more so) — model before scaling usage billing.
 - **Metering implementation**: usage billing needs a `usage_events` table + Stripe metered
   prices (extends roadmap §4.2). Ship with tests on the billing path.
 
