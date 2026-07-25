@@ -4,245 +4,319 @@
 > This document refines the "four flat tiers" sketch in the business plan into a
 > **cost-honest** model: we charge where our cost is real and variable, we keep the
 > commerce engine free, we take **0% of your sales**, and we never charge you to leave.
-> Document version: 1.0
+> Document version: 1.1
+
+> **v1.1 — reconciled with the marketing/positioning branch**
+> (`claude/marketing-messaging-positioning-bw7b92`, source of truth `shared/platform.ts`):
+> (1) currency is **CHF**, tiers are **Free / Maker / Studio / Atelier (0 / 19 / 49 / 99)**;
+> (2) usage is **true pass-through at cost** — the earlier "cost + slim markup" is dropped,
+> because the shipped `PRICING_PROMISE` pledges "we never charge for anything that isn't
+> charged to us"; (3) **all margin lives in the subscription**, reframed as cost-recovery,
+> not profit ("we have enough… not here to make money off small people"); (4) added **AI
+> product photography** as the headline metered item (real GPU cost); (5) new §7.1 flagging
+> the **promise-vs-plans contradiction** the branch still carries and the `PLANS` fix to
+> resolve it.
 
 ---
 
 ## 1. The one principle
 
-**We charge you where serving you actually costs us money, and nowhere else.**
+**We charge you where serving you actually costs us money, and nowhere else. Where it does
+cost us, we pass the cost straight through — at what it costs us, not a franc more.**
 
-That single rule decides everything below:
+That single rule, and the shipped pledge behind it, decides everything below:
 
-- If a feature costs us ~nothing at the margin (one more product row, one more POS
-  sale, one more page view) → **it's free**, forever. Gating it would be a toll booth
-  on a road that's already paid for.
-- If an action has a **real, external, per-use cost** (an AI token, an email, a text
-  message, a gigabyte) → **you pay per use, at our cost plus a slim, disclosed markup.**
-  You can see the meter.
+- If a feature costs us ~nothing at the margin (one more product row, one more POS sale,
+  one more page view) → **it's free**, forever. Gating it would be a toll booth on a road
+  that's already paid for.
+- If an action has a **real, external, per-use cost** (an AI/GPU call, an email, a text
+  message, a gigabyte) → **you pay per use, passed straight through at our cost.** No
+  markup. The only thing we add is a cost that is itself *charged to us* — e.g. the Stripe
+  fee on a micro-charge. You can see the meter.
 - If we're holding a **standing commitment open for you** (a real person answering your
-  questions, a domain + certificate + deliverability we keep alive, extra staff seats,
-  an uptime promise) → **that's a subscription**, because it's a recurring cost to us.
-- **Leaving is free.** Your catalogue, customers, and orders are yours. We will never
-  put a price, a delay, or a dark pattern between you and your own data.
+  questions, a domain + certificate + deliverability we keep alive, extra staff seats, an
+  uptime promise) → **that's a subscription.** This is the *only* place our margin lives,
+  and it's cost-recovery for keeping the lights and the support desk on — not a cut we take
+  because we can.
+- **Leaving is free.** Your catalogue, customers, and orders are yours. We will never put a
+  price, a delay, or a dark pattern between you and your own data.
 - **We take 0% of your sales.** Your money goes straight into your own Stripe account
-  (Stripe Connect Standard — see §6). We are not in the middle of your revenue.
+  (Stripe Connect Standard — §6). We are not in the middle of your revenue.
 
-Everything that follows is just this principle applied line by line, with the numbers shown.
+This is the written pledge in `shared/platform.ts` (`PRICING_PROMISE`), stated as a rule:
+
+> "We only make money when it's fair to. We will never charge you for anything that isn't
+> charged to us. … We have enough money of our own — we are not here to make money off
+> small people."
+
+Everything below is just that pledge applied line by line, with the numbers shown.
 
 ---
 
-## 2. Why this is different from the incumbents
+## 2. Why this is different from the old guard
 
-| | Shopify / Square / WJewel | **Zolto** |
-|---|---|---|
-| Base fee | Flat monthly, whether you sell or not | Free core; you pay only for variable-cost extras |
-| Cut of your sales | Square/Shopify take a % unless you use *their* processor | **0%** — Stripe Connect Standard, money is never ours |
-| AI features | Bundled into a higher tier you're forced to buy | Metered per use, at cost — pay for what you run |
-| Your data on exit | Export exists but you're nudged to stay | **Free full export, one click, any time** |
-| What you're really paying for | Bundling and lock-in | Our actual marginal cost + honest margin |
+The positioning branch names the real foil: the **legacy payments + POS providers —
+Stripe, SumUp, Worldline** — who overcharge small merchants and upsell card-reader
+hardware to lock them in. Two shifts make that model obsolete: **AI builds the store in an
+afternoon**, and **NFC phones + TWINT QR mean there's no card reader to sell** and server
+cost is tiny. So a maker pays **~CHF 19/mo instead of ~CHF 2,000/yr — one-hundredth the
+cost**.
 
-The wedge in the business plan is *maker-first design + POS/online parity*. The pricing
+| | Old guard (Stripe / SumUp / Worldline) | Generic SaaS (Shopify / Square) | **Zolto** |
+|---|---|---|---|
+| Card reader | Sold/rented to you, CHF 50–300+ | — | **None — your phone (NFC tap + TWINT QR)** |
+| Cut of your sales | Processing % (theirs) | %+ unless you use *their* processor | **0% — money never touches us** |
+| Base fee | Hardware + monthly + lock-in (~CHF 2,000/yr) | Flat monthly whether you sell or not | **Free core; pay only for variable-cost extras** |
+| AI features | None | Bundled into a higher forced tier | **Passed through at cost, per use** |
+| Your data on exit | Held, then paid out; sticky | Export exists, but nudged to stay | **Free full export, one click, any time** |
+| What you pay for | Hardware + lock-in | Bundling | **Our actual marginal cost + honest cost-recovery** |
+
+The product wedge (business plan) is *maker-first design + POS/online parity*. The pricing
 wedge is *honesty*: a maker doing 40 sales a month should pay us almost nothing, because
 they cost us almost nothing.
 
 ---
 
-## 3. Free forever (marginal cost ≈ €0)
+## 3. Free forever (marginal cost ≈ CHF 0)
 
-These are free because one more of them costs Zolto essentially nothing. Our infra for
-these is a shared MySQL row, a Cloudflare R2 object (storage ~€0.015/GB-month, **zero
-egress fees**), and CPU we're already paying for. Charging here would be charging for air.
+Free because one more of them costs Zolto essentially nothing: a shared MySQL row, a
+Cloudflare R2 object (~CHF 0.015/GB-month, **zero egress fees**), CPU we already pay for.
+Charging here would be charging for air — and gating any of it is the manufactured-scarcity
+dark pattern the pledge disowns.
 
 | Feature | Why it's free (our cost) | Cost to you |
 |---|---|---|
-| Online storefront (1 store) | A subdomain + shared app server; marginal cost ≈ €0 | €0 |
-| Product catalogue — **unlimited items** | One DB row each; ~€0 to store | €0 |
-| Product images (fair-use storage, see §4) | R2 storage ~€0.015/GB-mo, no egress | €0 up to 5 GB |
-| Cart + Stripe Checkout (cards + TWINT) | Stripe does the work; we just build the session | €0 from us (you pay Stripe directly) |
-| **POS — Tap to Pay, cash, TWINT QR** | Terminal session cost is Stripe's, not ours | €0 from us |
-| Real-time inventory sync (POS ↔ online) | A DB write; the whole point of the product | €0 |
-| Order management, receipts, refunds | Standard app logic | €0 |
-| 1 staff/admin login | One auth row | €0 |
-| Basic analytics (sales, top products, channel split) | Aggregate queries on your own data | €0 |
-| Discord/Slack/WhatsApp "photo → draft product" intake | The *intake* is free; the AI step that writes it is metered (§4) | €0 (AI usage billed separately) |
-| **Full data export** (CSV/JSON + image bundle) | Cheap to generate; morally not ours to charge for | €0 (see §5) |
-| `llms.txt` + storefront SEO/AI discoverability | Generated text; helps you get found | €0 |
+| Online storefront (subdomain) | Shared app server; marginal cost ≈ 0 | CHF 0 |
+| Product catalogue — **unlimited items** | One DB row each | CHF 0 |
+| Product images (fair-use storage, see §4) | R2 ~CHF 0.015/GB-mo, no egress | CHF 0 up to 5 GB |
+| Cart + Stripe Checkout (cards + TWINT) | Stripe does the work | CHF 0 from us (you pay Stripe directly) |
+| **POS — Tap to Pay, cash, TWINT QR** | Terminal session cost is Stripe's | CHF 0 from us |
+| **Sell-by-amount + day-end AI reconciliation** | The reconcile email is one cheap AI call (§4 bucket) | CHF 0 (nominal AI usage) |
+| Real-time inventory sync (POS ↔ online) | A DB write; the whole point of the product | CHF 0 |
+| Order management, receipts, refunds | Standard app logic | CHF 0 |
+| Staff/admin logins | An auth row costs ~nothing (seats are billed for *support surface*, not compute — §7) | CHF 0 on Free; more seats via plan |
+| Basic analytics (sales, top products, channel split) | Aggregate queries on your own data | CHF 0 |
+| WhatsApp/Slack/Discord "photo → draft product" intake | The *intake* is free; the AI write step is metered (§4) | CHF 0 (AI usage metered) |
+| Generous AI **text** allowance (names, descriptions, translation) | llama3-class text is fractions of a cent — cheaper to give than to meter | CHF 0 within a fair monthly allowance |
+| **Full data export** (CSV/JSON + image bundle) | Cheap to generate; not ours to charge for | CHF 0 (see §5) |
+| `llms.txt` + MCP endpoint + SEO | Generated text; helps you get found | CHF 0 |
 
-**Design note:** the free tier is not a crippled demo. It is a *complete, sellable store*.
-A maker can run their entire business on €0/month and we are still glad to have them —
-they cost us cents, they generate the content and word-of-mouth in the business plan
-(§5), and they upgrade *when their own usage makes it worth it*, not because we walled off
-the checkout button.
+**Design note:** the free tier is a *complete, sellable store*, not a crippled demo. A
+maker can run their whole business on CHF 0/month and we're glad to have them — they cost
+us cents, they're the top of the funnel and the word-of-mouth engine (business plan §5),
+and they pay us **when their own usage or growth makes paying worth it to them**, not
+because we walled off the checkout button.
 
 ---
 
-## 4. Pay-per-use (real variable cost — you can watch the meter)
+## 4. Pay-per-use (real variable cost — passed straight through, no markup)
 
-Everything here has a cost that scales with usage and that we pay to someone else
-(an LLM API, an email/SMS provider, a storage bill). So you pay per use. **We publish our
-unit cost and our markup.** The markup exists to cover billing overhead and price
-volatility, not to hide a margin — it's small and stated.
+Everything here has a cost that scales with usage and that we pay to someone else (an
+LLM/GPU API, an email/SMS provider, a storage bill). So you pay per use, **at our cost.**
+We publish the unit cost. The only add-on is a cost that is *itself charged to us* (e.g.
+the Stripe fee to collect a micro-payment), which is why we pool tiny costs into
+non-expiring, refundable credit packs instead of billing you CHF 0.0007 line items.
 
-Our LLM runs on Groq `llama3-8b` today (roughly €0.05–0.10 per **million** tokens), so a
-single product's worth of AI is a *fraction of a cent*. We round to human-legible prices
-and pool tiny costs into credit packs so you're not billed €0.0007 line items.
+Text AI runs on Groq `llama3-8b` (~CHF 0.05–0.10 per **million** tokens) — so cheap we give
+it away within a fair allowance (§3). The item that actually *needs* metering is **AI
+product photography**: image restyling / on-model generation is real GPU time, orders of
+magnitude pricier than text, and the one place "unlimited" would sink the unit economics.
 
-| Feature | What one unit is | Our real cost / unit | **We charge** | Why per-use (not free / not subscription) |
+| Feature | One unit | Our real cost / unit | **You pay (pass-through)** | Why metered (not free, not "unlimited") |
 |---|---|---|---|---|
-| **AI translation** (e.g. → English `nameEn`/`descriptionEn`) | 1 product translated | < €0.001 (LLM tokens) | **€0.01 / product**, or free with a Studio plan bucket | Real external API cost, scales with catalogue size, bursty (you translate 200 items once, then rarely) |
-| **AI description writing** (photo/notes → listing copy) | 1 description generated | < €0.005 | **€0.02 / description** | Same: pure LLM cost, on-demand |
-| **AI bulk upload / vision** (photo → structured product) | 1 image parsed | ~€0.005–0.02 (vision model) | **€0.03 / item** | Higher-cost model, clearly variable |
-| **Transactional email** beyond free bucket | 1 email sent | ~€0.0004 | **first 500/mo free, then €0.50 / 1,000** | Provider bills per send; deliverability is a real cost |
-| **SMS / WhatsApp order notifications** | 1 message | €0.02–0.08 (carrier) | **at carrier cost + 10%** | Carrier fees are unavoidable and regional |
-| **Extra image storage** beyond 5 GB | 1 GB-month | €0.015 (R2) | **€0.05 / GB-month** | Storage is genuinely metered; 5 GB covers ~2,000 photos free |
-| **One-time full-catalogue AI translation run** | whole catalogue | sum of per-item | **€0.01/item, capped at €9** | Convenience "do it all" button; capped so a 5,000-item shop isn't punished |
+| **AI product photography** (rough photo → clean/on-model shot) | 1 image | ~CHF 0.02–0.08 (GPU) | **at cost** (≈ 1 credit/image), or from a plan bucket | Real GPU cost, high relative to text, easy to run in bulk — the headline reason metering exists |
+| AI translation (→ `nameEn`/`descriptionEn`, DE/FR/…) | 1 product | < CHF 0.001 | free within allowance, then **at cost** | So cheap it's free in the allowance; pure pass-through beyond it |
+| AI description writing (photo/notes → copy) | 1 description | < CHF 0.005 | free within allowance, then **at cost** | Same — text is near-free |
+| AI bulk/"scan my notebook" intake (photo → structured products) | 1 image parsed | ~CHF 0.005–0.02 (vision) | **at cost** | Vision model, clearly variable |
+| Transactional email beyond free bucket | 1 email | ~CHF 0.0004 | first 500/mo free, then **at cost** | Provider bills per send; deliverability is a real cost |
+| SMS / WhatsApp order notifications | 1 message | CHF 0.02–0.08 (carrier) | **at carrier cost** | Carrier fees are unavoidable and regional |
+| Image storage beyond 5 GB | 1 GB-month | CHF 0.015 (R2) | **at cost** | Genuinely metered; 5 GB ≈ 2,000 photos free |
 
-**How you pay:** prepaid credit packs (e.g. **€5 = 500 AI credits**) or metered monthly
-billing settled through your card. Credits **never expire** and are **refundable on exit**
-— an honest meter doesn't pocket your unused balance. If our upstream cost drops (cheaper
-models ship constantly), **your price drops too**; we commit to repricing down, not
-pocketing the delta.
+**How you pay:** prepaid credit packs (e.g. **CHF 5 = 500 credits**) or metered monthly
+billing on your card. Credits **never expire** and are **refundable on exit** — an honest
+meter gives the money back. **If our upstream cost drops** (cheaper image/text models ship
+constantly), **your price drops with it.** We commit to repricing down, never pocketing the
+delta — that's what "at what it costs us" means in practice.
 
 ---
 
 ## 5. The price to take your data out
 
-**Self-serve export: €0. Always. No downgrade penalty, no "contact sales," no delay.**
+**Self-serve export: CHF 0. Always. No downgrade penalty, no "contact sales," no delay.**
 
-Holding a maker's catalogue, customers, and order history hostage is the single most
-common SaaS dark pattern, and it is exactly the thing this pricing is a reaction against.
-So:
+Holding a maker's catalogue, customers, and order history hostage is the most common SaaS
+dark pattern, and the exact thing this pricing reacts against.
 
-| Way out | What you get | Our cost | **We charge** | Why |
+| Way out | What you get | Our cost | **You pay** | Why |
 |---|---|---|---|---|
-| **One-click export** | Full CSV + JSON dump: products, images (zip), orders, customers, inventory | Cheap batch job | **€0** | It's your data. Charging to leave is a ransom, not a price. |
-| **Standing API / scheduled export** | Programmatic pull so you can mirror to another system continuously | Small compute + a maintained endpoint | **€0 self-serve; included** | Portability shouldn't require our permission |
-| **White-glove migration to a competitor** (Shopify/Square/WooCommerce) | *We* do the hands-on work: map fields, move images, stand up the import on the other side | **Real human hours** (~2–5 hrs) | **€120 flat, one-time** — our cost of labour, not a lock-in toll | The *only* honest reason to charge here is that a person is doing work *for* you. Priced at cost, optional, and never required — the free export already gets you 100% of your data. |
+| **One-click export** | Full CSV + JSON: products, images (zip), orders, customers, inventory | Cheap batch job | **CHF 0** | It's your data. Charging to leave is a ransom, not a price. |
+| **Standing API / scheduled export** | Programmatic pull to mirror elsewhere continuously | Small compute + a maintained endpoint | **CHF 0, included** | Portability shouldn't need our permission |
+| **White-glove migration to a competitor** (Shopify/Square/Woo) | *We* map fields, move images, stand up the import on the other side | **Real human hours** (~2–5 hrs) | **CHF 120 flat, one-time** — our cost of labour, not a lock-in toll | The only honest reason to charge here is that a person is doing work *for* you. Optional, never required — the free export already gets you 100% of your data. |
 
-The distinction is the whole point: **we charge for our labour, never for the release of
-your data.** You can always leave for €0 and do the import yourself; the €120 only exists
-for makers who'd rather we carry the boxes.
+We charge for our **labour**, never for the **release** of your data. You can always leave
+for CHF 0 and do the import yourself; the CHF 120 exists only for makers who'd rather we
+carry the boxes.
 
 ---
 
 ## 6. The transaction-fee stance: we take 0%
 
-This is worth its own section because it's the biggest honest lever we have.
+The biggest honest lever, and now the shipped positioning ("your money goes straight into
+your own Stripe account — Zolto never touches your money").
 
-Zolto uses **Stripe Connect (Standard)**. When a customer buys from your store, the money
-goes **directly into your own Stripe account**. Zolto's servers never touch it, never hold
-it, and take no application fee. You pay **Stripe's** processing fee (≈2.9% + €0.30 for
-cards; TWINT and Tap-to-Pay are cheaper) **directly to Stripe** — the same rate you'd get
-going to Stripe yourself.
+Zolto uses **Stripe Connect (Standard)**. A customer's payment lands **directly in your own
+Stripe account.** Zolto's servers never touch it, never hold it, and take no application
+fee. You pay **Stripe's** processing fee (≈2.9% + CHF 0.30 cards; TWINT and Tap-to-Pay are
+cheaper) **directly to Stripe** — the same rate you'd get going to Stripe yourself.
 
-- **Shopify** charges an *extra* 0.5–2% on top unless you use Shopify Payments.
-- **Square** bakes its cut into every swipe.
-- **Zolto adds nothing.** Taking a slice of revenue we never touch and did no work to earn
-  would be exactly the kind of invisible tax this strategy refuses.
+- **SumUp / Worldline / Stripe-direct** monetize hardware and processing and hold your
+  funds before payout.
+- **Shopify** adds 0.5–2% on top unless you use Shopify Payments.
+- **Zolto adds nothing.** Taxing revenue we never touch and did no work to earn is exactly
+  the invisible fee this strategy refuses.
 
-If we ever *do* introduce a revenue-share option, it will be **opt-in and in place of**
+If we ever offer a revenue-share option, it will be **opt-in and in place of** the
 subscription/usage fees (a choice for makers who prefer % over fixed), never stacked on top.
 
 ---
 
-## 7. Subscriptions (standing commitments — recurring cost to us)
+## 7. Subscriptions (standing commitments — the only place margin lives)
 
-Subscriptions are for things that cost us money *every month whether or not you use them
-today*: a person on call, a domain + certificate + deliverability we keep alive, extra
-seats, an uptime promise. Recurring cost → recurring price. Each tier is a **superset**
-(everything in Free, plus…), and each line says why it can't just be free or metered.
+A subscription is for what costs us money *every month whether or not you use it today*: a
+person on call, a domain + certificate + deliverability we keep alive, extra staff seats
+(more support surface), an uptime promise. Recurring cost → recurring price. Each tier is a
+**superset** (everything in Free, plus…). Names/prices match `shared/platform.ts`.
 
-| Plan | Price (indicative, VAT handling per business plan §7.1) | What it adds | Why subscription |
+| Plan | Price (CHF, VAT per business plan §7.1) | What it adds beyond Free | Why it's a subscription |
 |---|---|---|---|
-| **Free** | **€0/mo** | The entire §3 list. A complete, sellable store. | Marginal cost ≈ €0 |
-| **Studio** | **€19/mo** | Custom domain + managed SSL, remove "runs on Zolto" badge, **500 AI credits/mo included**, 500→5,000 email/mo, 3 staff seats, email support (next-business-day) | Domain/cert/deliverability + support are *ongoing* costs; included AI bucket saves metered-heavy users money |
-| **Atelier** | **€49/mo** | Everything in Studio + up to 10 staff seats, advanced analytics, priority support (same-day human), **2,000 AI credits/mo**, higher storage/email buckets, multi-currency | More human support time + more seats = more standing cost |
-| **Enterprise** | **from €149/mo** (quoted) | SSO/SAML, audit logs, API access, uptime SLA, named contact, custom AI limits | SLA + security features carry real compliance/support cost |
+| **Free** | **CHF 0/mo** | The entire §3 list — a complete, sellable store. Fair AI-text allowance. Community support. | Marginal cost ≈ 0 |
+| **Maker** | **CHF 19/mo** *(highlighted)* | Custom domain + managed SSL, remove "runs on Zolto" badge, **AI-photography credit bucket**, higher email/AI allowances, priority email support (next-business-day), 3 staff seats | Domain/cert/deliverability + a real human answering email are *ongoing* costs |
+| **Studio** | **CHF 49/mo** | Everything in Maker + up to 10 staff seats, advanced analytics, same-day human support, bigger buckets, multi-currency | More support time + more seats = more standing cost |
+| **Atelier** | **CHF 99/mo** | Everything in Studio + API access, SSO, audit logs, uptime SLA, named contact, custom AI limits | SLA + security/compliance carry real recurring cost |
 
 **Honesty guardrails baked into the subscription:**
 
-- **No feature is behind the paywall that costs us nothing to run.** You never pay a
-  subscription to *unlock* the checkout button, POS, or inventory sync — those are free
-  because they're cheap for us. You pay for domains, people, seats, SLAs — things with a
-  real recurring cost.
-- **Included AI credits are a discount, not a lock-in.** If you'd rather stay on Free and
-  buy credits à la carte, that's often cheaper and we'll say so in-product.
-- **Grandfathering:** if we raise a plan price, existing subscribers keep their rate
-  (business plan §4 / roadmap §4.1). Price changes are announced, never silent.
-- **Prorated, cancel any time, export on the way out (§5).** No annual lock-in required.
+- **No feature is behind the paywall that costs us nothing to run.** You never subscribe to
+  *unlock* the checkout button, POS, inventory sync, or your catalogue size — those are
+  free because they're cheap for us. You pay for domains, people, seats, SLAs.
+- **Included buckets are a discount, not a lock-in.** Prefer to stay on Free and buy credits
+  à la carte? Often cheaper, and we'll say so in-product.
+- **Margin here is cost-recovery, not extraction.** The gap between CHF 19 and our ~CHF 5
+  cost-to-serve is what keeps the support desk and the platform alive across *all* users,
+  including the free ones we lose money on. Consistent with "we have enough — not here to
+  make money off small people": the plan fee sustains the service, it doesn't mine it.
+- **Grandfathering:** raise a plan price and existing subscribers keep their rate (roadmap
+  §4.1). Changes are announced, never silent. Prorated, cancel any time, export on exit (§5).
+
+### 7.1 Resolving the promise-vs-plans contradiction (action for the code)
+
+The marketing branch ships **two pricing philosophies at once**, and they fight each other:
+
+- **`PRICING_PROMISE`** — pass-through, metered, at-cost, "never charge for what isn't
+  charged to us." ✅ the pledge above.
+- **`PLANS`** — flat, feature-gated tiers copied from business-plan §3.1:
+  *"Up to 50 products," "1 staff member," "10 AI descriptions / month," "Unlimited AI
+  descriptions."*
+
+Both halves of `PLANS` violate the pledge, in opposite directions:
+
+1. **Artificial caps** ("50 products", "1 staff", "10 AI/month") gate things that cost us
+   ~nothing. That's manufactured scarcity to force upgrades — the dark pattern the pledge
+   disowns. **Fix: remove them.** Unlimited products, full POS, and inventory sync belong in
+   **Free** (they're zero-marginal); seats scale for *support surface*, not compute.
+2. **"Unlimited AI"** hides a *variable* cost — harmless for near-free text, but a trap once
+   **AI product photography** (real GPU) is in scope. "Unlimited" GPU on a CHF 19 plan is
+   the one line that can go underwater. **Fix: text AI stays free-and-generous; AI
+   photography is a visible at-cost meter / plan bucket (§4), not "unlimited."**
+
+**Concrete change to `shared/platform.ts` → `PLANS`:**
+
+| Current (pre-pledge) | Honest replacement |
+|---|---|
+| Free: "Up to 50 products", "10 AI descriptions/month" | Free: **unlimited products**, full POS + online, inventory sync, fair AI-**text** allowance, data export |
+| Maker: "Unlimited AI descriptions" | Maker: custom domain + SSL, **AI-photography credit bucket** (not "unlimited"), priority email support, 3 seats |
+| Studio / Atelier: staff-count gating as the headline | Keep seat counts (support surface is a real cost), lead with support tier + domain + SLA, not caps on zero-cost features |
+
+After this change the plan cards and the pledge finally say the same thing: **you pay for
+standing commitments and pass-through usage, never for artificial limits.**
 
 ---
 
 ## 8. Worked example — what a real maker actually pays
 
-Kalakosh-shaped tenant: ~60 sales/month, ~150-item catalogue, one custom domain, translates
-the catalogue to English once, generates AI descriptions for new items.
+Kalakosh-shaped tenant: ~60 sales/month, ~150-item catalogue, custom domain, translates the
+catalogue to English once, generates AI copy for new items, and restyles ~20 product photos
+with AI that month.
 
-| Line item | Usage | **Cost to the maker** | **Cost to Zolto** | Zolto margin |
+| Line item | Usage | **Cost to the maker** | **Cost to Zolto** | Net to Zolto |
 |---|---|---|---|---|
-| Core store + POS + inventory | all month | €0 | ~€2 (shared infra) | −€2 |
-| Sales processing | 60 sales | €0 to Zolto (pays Stripe directly) | €0 | €0 |
-| One-time catalogue translation | 150 items | €1.50 (or 0 on Studio) | ~€0.05 | +€1.45 |
-| AI descriptions for new items | ~20/mo | €0.40 | ~€0.10 | +€0.30 |
-| Order emails | ~120/mo | €0 (under 500 free) | ~€0.05 | −€0.05 |
-| Custom domain + SSL + support | — | €19 (Studio) | ~€3 (cert mgmt + support time) | +€16 |
-| **Monthly total** | | **~€19.40** | **~€5.25** | **~€14** |
+| Core store + POS + inventory | all month | CHF 0 | ~CHF 2 (shared infra) | −2 |
+| Sales processing | 60 sales | CHF 0 to Zolto (pays Stripe directly) | CHF 0 | 0 |
+| Catalogue translation (one-off) | 150 items | CHF 0 (within allowance) | ~CHF 0.05 | −0.05 |
+| AI descriptions for new items | ~20/mo | CHF 0 (within allowance) | ~CHF 0.10 | −0.10 |
+| **AI product photography** | ~20 images | ~CHF 1.00 (at cost) or plan bucket | ~CHF 1.00 | ~0 |
+| Order emails | ~120/mo | CHF 0 (under 500 free) | ~CHF 0.05 | −0.05 |
+| Custom domain + SSL + support (Maker) | — | CHF 19 | ~CHF 3 (cert mgmt + support time) | +16 |
+| **Monthly total** | | **~CHF 20** | **~CHF 6.25** | **~+CHF 14 (cost-recovery)** |
 
-A hobby maker on Free doing 15 sales/month pays **€0** and costs us **~€2** — and we're
-fine with that; they're the top of the funnel in the business plan (§5) and a future
-Studio upgrade. A maker only becomes a paying customer **when their own usage makes paying
-worth it to them**, which is the only durable kind of paying customer.
+A hobby maker on Free doing 15 sales/month pays **CHF 0** and costs us **~CHF 2** — and
+that's fine: they're the funnel and the referral engine. A maker becomes a paying customer
+**when their own usage or growth makes paying worth it to them** — the only durable kind.
 
 ---
 
-## 9. Why this is still a real business (margin honesty, both directions)
+## 9. Why this is still sustainable (honesty in both directions)
 
-Honest pricing is not charity pricing. The margins are real, just *legible*:
+Honest pricing isn't charity pricing — but the margin is *legible* and it's cost-recovery,
+not extraction:
 
-- **Usage features** carry a high *percentage* markup on a tiny *absolute* cost (€0.01 on a
-  €0.001 cost). That's fine and disclosed — it covers billing/Stripe fees on micro-charges
-  and price volatility. The maker still pays cents.
-- **Subscriptions** carry the real margin (€19 price vs ~€5 cost), and that margin buys the
-  one thing that genuinely costs us money at scale: **human support time**. We're honest
-  that this is what you're paying for.
-- **We lose a little on every free tenant** (~€2/mo) and treat it as CAC — cheaper than the
-  business plan's €50 blended CAC, and the free tenant *is* the content/referral engine.
-- **We make nothing on your sales**, on purpose. Our incentive is to keep you *using the
-  platform*, not to tax your growth — which aligns us with makers instead of against them.
+- **Usage features run at zero margin**, by pledge. We don't make a franc on your AI photos
+  or emails; we pass the GPU/provider bill straight through. Text AI we give away because
+  metering it would cost more than the tokens.
+- **The subscription carries the whole margin**, and it buys the one thing that genuinely
+  costs money at scale: **human support time.** CHF 19 − ~CHF 5 cost isn't profit skimmed off
+  a small merchant; it's what keeps support answered and free-tier losses covered.
+- **We lose ~CHF 2/mo on every free tenant** and treat it as CAC — cheaper than the business
+  plan's CHF ~50 blended CAC, and the free tenant *is* the content/referral engine (§5).
+- **We make nothing on your sales, on purpose** (§6). Our incentive is to keep you *using*
+  the platform, not to tax your growth — aligning us with makers, not against them.
 
-Blended, this lands in the same **€35 ARPA** neighbourhood the business plan models (§7),
-but composed honestly: a floor of free users, usage revenue that scales with real cost, and
-subscription revenue that maps to real support commitments.
+Blended, this still lands near the **CHF 35 ARPA** the business plan models (§7), composed
+honestly: a floor of free users, usage revenue at cost, and subscription revenue mapped to
+real support commitments.
 
 ---
 
 ## 10. The honesty guardrails (the promises this pricing makes)
 
 1. **The meter is visible.** Every per-use charge shows unit cost and running total in-product.
-2. **Prices only ever move down with our costs.** If Groq/R2/email get cheaper, you get cheaper. We won't quietly keep the delta.
-3. **No charge for anything that costs us ~nothing.** Free stays free on principle, not as a trial.
-4. **Leaving is free and one click.** Data export is never gated, delayed, or priced (§5). We only charge for *our labour* if you ask us to do the migration *for* you.
-5. **0% of your sales, forever, by architecture.** Stripe Connect Standard means we *can't* skim even if we wanted to (§6).
-6. **Unused credits are refundable.** An honest meter gives the money back.
-7. **Price changes are announced and grandfathered**, never silent (§7).
-8. **No AI-authored change to billing ships without a human merge** (business plan §1.3/§8.1) — our pricing code is exactly the surface where a silent bug becomes a broken promise.
+2. **Usage is zero-margin pass-through.** We never charge for anything not charged to us.
+3. **Prices only ever move down with our costs.** Cheaper models/providers → cheaper for you.
+4. **No charge for anything that costs us ~nothing.** Free stays free on principle, and there are no artificial product/AI caps.
+5. **Leaving is free and one click.** Export is never gated, delayed, or priced (§5). We charge only for *our labour* if you ask us to migrate you.
+6. **0% of your sales, forever, by architecture.** Stripe Connect Standard means we *can't* skim even if we wanted to (§6).
+7. **Unused credits are refundable.**
+8. **Price changes are announced and grandfathered**, never silent (§7).
+9. **No AI-authored change to billing ships without a human merge** (business plan §1.3/§8.1) — pricing code is where a silent bug becomes a broken promise.
 
 ---
 
-## 11. Open items (carried from the business plan, must resolve before launch)
+## 11. Open items (must resolve before launch)
 
-- **VAT: inclusive vs exclusive** (business plan §7.1). All prices above are shown
-  ex-VAT/TBD; EU B2C digital services → OSS at customer's local rate, CH VAT (8.1%) is
-  separate. Enable Stripe Tax; decide inclusive vs exclusive before the pricing page ships.
-- **Founder pricing** (§4.3): the €9/mo founder rate is a temporary acquisition discount,
-  not a steady-state price, and rolls off — it does not change the model above.
-- **Credit-pack accounting**: unused/refundable credits are a liability; model it before scaling usage billing.
+- **VAT: inclusive vs exclusive** (business plan §7.1). Prices above are ex-VAT/TBD; EU B2C
+  digital services → OSS at customer's local rate, CH VAT (8.1%) separate. Enable Stripe Tax;
+  decide before the pricing page ships. (The shipped `Pricing.tsx` FAQ already defers tax to
+  checkout — make sure that matches the decision.)
+- **Reconcile `PLANS` with the pledge** (§7.1) — the single most important code fix; today the
+  plan cards still encode the pre-pledge, feature-gated model.
+- **Founder pricing** (§4.3): the CHF 9/mo founder rate is a temporary acquisition discount,
+  not steady state; it rolls off and doesn't change the model.
+- **Credit-pack accounting**: unused/refundable credits are a liability — model before scaling.
 - **Metering implementation**: usage billing needs a `usage_events` table + Stripe metered
-  prices (extends roadmap §4.2 add-on system). Ship with tests on the billing path.
+  prices (extends roadmap §4.2). Ship with tests on the billing path.
 
 ---
 
-> Prepared as a pricing-strategy companion to the Zolto business plan.
-> Spirit: charge for our real, variable cost — never for lock-in, never for your data,
-> never for a slice of sales we didn't earn.
+> Prepared as a pricing-strategy companion to the Zolto business plan, reconciled with the
+> shipped positioning. Spirit: charge for our real, variable cost — at what it costs us —
+> never for lock-in, never for your data, never for a slice of sales we didn't earn.
