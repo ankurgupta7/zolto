@@ -4,6 +4,7 @@ import {
   desc,
   eq,
   gt,
+  gte,
   inArray,
   isNotNull,
   isNull,
@@ -20,6 +21,7 @@ import {
   bulkUploadLogs,
   type InsertBulkUploadLog,
   type InsertOrder,
+  type InsertPosAttribution,
   type InsertProduct,
   type InsertProductImage,
   type InsertStripeReconciliation,
@@ -29,6 +31,8 @@ import {
   instagramPosts,
   type Order,
   orders,
+  type PosAttribution,
+  posAttributions,
   posOrderItems,
   posOrders,
   type Product,
@@ -799,6 +803,132 @@ export async function resolveStripeReconciliationConfirmed(
           resolvedAt: new Date(),
         })
         .where(eq(stripeReconciliations.id, reconciliationId));
+    }),
+  );
+}
+
+// ─── POS attribution (amount-only sales → which product) ───────────────────────
+
+export interface UnattributedPosLine {
+  tenantId: number;
+  posOrderId: number;
+  posOrderItemId: number;
+  amountRappen: number;
+  name: string | null;
+  createdAt: Date;
+}
+
+/**
+ * Paid POS line items that were sold as a bare amount (no productId) and haven't
+ * been queued for attribution yet. A left join against `pos_attributions` keeps
+ * each line out once it already has a review row, so repeated day-end runs don't
+ * re-queue the same sale.
+ */
+export async function getUnattributedPosLineItems(
+  since: Date,
+): Promise<UnattributedPosLine[]> {
+  return withDb(async (db) => {
+    const rows = await db
+      .select({
+        tenantId: posOrderItems.tenantId,
+        posOrderId: posOrderItems.posOrderId,
+        posOrderItemId: posOrderItems.id,
+        amountRappen: posOrderItems.priceRappen,
+        name: posOrderItems.name,
+        createdAt: posOrderItems.createdAt,
+      })
+      .from(posOrderItems)
+      .innerJoin(posOrders, eq(posOrders.id, posOrderItems.posOrderId))
+      .leftJoin(
+        posAttributions,
+        eq(posAttributions.posOrderItemId, posOrderItems.id),
+      )
+      .where(
+        and(
+          isNull(posOrderItems.productId),
+          eq(posOrders.status, "paid"),
+          gte(posOrderItems.createdAt, since),
+          isNull(posAttributions.id),
+        ),
+      );
+    return rows;
+  }, []);
+}
+
+export async function createPosAttribution(
+  data: WithOptionalTenant<InsertPosAttribution>,
+): Promise<void> {
+  await withDbOrThrow((db) =>
+    db.insert(posAttributions).values(withTenant(data)),
+  );
+}
+
+export async function getPosAttributionByToken(
+  token: string,
+): Promise<PosAttribution | undefined> {
+  return withDb(async (db) => {
+    const result = await db
+      .select()
+      .from(posAttributions)
+      .where(eq(posAttributions.confirmationToken, token))
+      .limit(1);
+    return result.length > 0 ? result[0] : undefined;
+  }, undefined);
+}
+
+export async function rejectPosAttribution(id: number): Promise<void> {
+  await withDbOrThrow((db) =>
+    db
+      .update(posAttributions)
+      .set({ status: "rejected", resolvedAt: new Date() })
+      .where(eq(posAttributions.id, id)),
+  );
+}
+
+/**
+ * Attributes an amount-only POS line to the merchant's chosen product: stamps the
+ * productId onto the existing line item, decrements that product's stock (marking
+ * it sold at zero), and resolves the review row — all in one transaction. Unlike
+ * the Stripe path this creates no new order; the pos_order already recorded the sale.
+ */
+export async function resolvePosAttributionConfirmed(
+  attributionId: number,
+  posOrderItemId: number,
+  productId: number,
+  tenantId: number,
+): Promise<void> {
+  await withDbOrThrow((db) =>
+    db.transaction(async (tx) => {
+      await tx
+        .update(posOrderItems)
+        .set({ productId })
+        .where(
+          and(
+            eq(posOrderItems.id, posOrderItemId),
+            eq(posOrderItems.tenantId, tenantId),
+          ),
+        );
+
+      await tx
+        .update(products)
+        .set({
+          quantity: sql`GREATEST(0, \`quantity\` - 1)`,
+          sold: sql`CASE WHEN \`quantity\` <= 1 THEN TRUE ELSE \`sold\` END`,
+          reservedUntil: null,
+          reservedToken: null,
+        })
+        .where(
+          and(eq(products.id, productId), eq(products.tenantId, tenantId)),
+        );
+
+      await tx
+        .update(posAttributions)
+        .set({
+          status: "confirmed",
+          chosenProductId: productId,
+          resolvedAt: new Date(),
+        })
+        .where(eq(posAttributions.id, attributionId));
     }),
   );
 }

@@ -24,6 +24,7 @@ import {
   Tag,
   Copy,
   CreditCard,
+  Receipt,
   CheckCircle2,
 } from "lucide-react";
 import { getLoginUrl } from "@/const";
@@ -745,6 +746,29 @@ export default function Admin() {
       ),
   });
 
+  const posAttributionMutation = trpc.reconciliation.runPos.useMutation({
+    onSuccess: (data) => {
+      if (data.newPendingReview > 0) {
+        toast.success(
+          `${data.newPendingReview} amount-only sale${data.newPendingReview === 1 ? "" : "s"} to confirm — ${data.emailSent ? "review email sent." : "review email could not be sent, check server logs."}`,
+        );
+      } else if (data.newNoCandidates > 0) {
+        toast.success(
+          `${data.newNoCandidates} amount-only sale${data.newNoCandidates === 1 ? "" : "s"} found, but no in-stock piece was close enough in price to guess.`,
+        );
+      } else {
+        toast.success(
+          `No unattributed in-person sales found (${data.scannedLines} checked).`,
+        );
+      }
+    },
+    onError: (err) =>
+      toast.error(
+        err.message ||
+          "In-person sale reconciliation failed. Please try again.",
+      ),
+  });
+
   const insightsMutation = trpc.products.insights.useMutation({
     onSuccess: (data) => {
       setInsightsData(data);
@@ -946,6 +970,20 @@ export default function Admin() {
                 <CreditCard size={14} />
               )}
               Reconcile Stripe Payments
+            </button>
+            <button
+              type="button"
+              onClick={() => posAttributionMutation.mutate({})}
+              disabled={posAttributionMutation.isPending}
+              title="Find amount-only in-person sales and email a request to confirm which piece each one sold"
+              className="flex items-center gap-2 border border-white/20 text-white/80 px-4 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:border-white hover:text-white transition-colors disabled:opacity-50"
+            >
+              {posAttributionMutation.isPending ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : (
+                <Receipt size={14} />
+              )}
+              Confirm In-Person Sales
             </button>
             {stripeConnectQuery.data?.connected ? (
               <span
