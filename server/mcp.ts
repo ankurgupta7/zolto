@@ -8,6 +8,7 @@ import {
   PLANS,
   FAQS,
   HOW_TO_START,
+  AI_PHOTO_CREDITS,
 } from "@shared/platform";
 import { getVisibleProducts, getVisibleProductById } from "./db";
 import { resolveBaseUrl } from "./seo";
@@ -262,8 +263,19 @@ function runPlatformTool(name: string, ctx: McpContext) {
           id: p.id,
           name: p.name,
           pricePerMonth: p.priceChf,
+          includedPhotoCredits: p.includedPhotoCredits,
           includes: p.features,
         })),
+        addOns: [
+          {
+            id: AI_PHOTO_CREDITS.id,
+            name: AI_PHOTO_CREDITS.name,
+            price: AI_PHOTO_CREDITS.priceChf,
+            unit: AI_PHOTO_CREDITS.unit,
+            billing: "pay-as-you-go, credits never expire",
+            description: AI_PHOTO_CREDITS.blurb,
+          },
+        ],
         pricingUrl: `${base}/pricing`,
       });
     case "how_to_start":
