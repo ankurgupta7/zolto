@@ -449,3 +449,130 @@ export async function sendReconciliationReviewEmail(
     throw new Error(`Resend API ${res.status}: ${body}`);
   }
 }
+
+// ── POS attribution review email ───────────────────────────────────────────────
+// Sibling of the Stripe reconciliation email, for amount-only in-person sales that
+// need matching to a product. Same look and one-click confirm pattern, but the
+// links point at /api/pos-attribution/confirm and the copy is framed around a sale
+// that already happened at the stall rather than an unmatched online payment.
+
+export interface PosAttributionReviewItem {
+  /** The pos_order_item row being attributed. */
+  posOrderItemId: number;
+  /** Line amount, in the smallest currency unit (Rappen for CHF). */
+  amountRappen: number;
+  soldAt: Date;
+  /** The custom label the merchant typed at the till, if any. */
+  itemLabel: string | null;
+  /** Ranked best-guess products, closest price match first. */
+  candidates: ReconciliationCandidate[];
+  /** Single-use secret embedded in this item's confirm links. */
+  token: string;
+}
+
+export function buildPosAttributionReviewHtml(
+  items: PosAttributionReviewItem[],
+  branding?: Partial<TenantBranding>,
+): string {
+  const b = resolveBranding(branding);
+  const baseUrl = b.tenantDomain;
+
+  const sections = items
+    .map((item) => {
+      const amount = (item.amountRappen / 100).toFixed(2);
+      const date = item.soldAt.toLocaleString("en-GB", {
+        dateStyle: "medium",
+        timeStyle: "short",
+      });
+
+      const candidateRows = item.candidates
+        .map((c, index) => {
+          const label = escapeHtml(c.nameEn ?? c.name);
+          const url = `${baseUrl}/api/pos-attribution/confirm?token=${encodeURIComponent(item.token)}&choice=${index}`;
+          return `
+          <tr>
+            <td style="padding:8px 0;border-bottom:1px solid ${C.faint};font-family:Arial,sans-serif;font-size:13px;color:${C.brown}">${label} — CHF ${Number(c.price).toFixed(2)}</td>
+            <td style="padding:8px 0;border-bottom:1px solid ${C.faint};text-align:right;white-space:nowrap">
+              <a href="${url}" style="display:inline-block;background:${C.gold};color:${C.brown};text-decoration:none;padding:6px 14px;font-family:Arial,sans-serif;font-size:12px;text-transform:uppercase;letter-spacing:0.05em">That's it</a>
+            </td>
+          </tr>`;
+        })
+        .join("");
+
+      const noneUrl = `${baseUrl}/api/pos-attribution/confirm?token=${encodeURIComponent(item.token)}&choice=none`;
+      const labelLine = item.itemLabel
+        ? `rung up as “${escapeHtml(item.itemLabel)}”`
+        : "rung up as a bare amount";
+
+      return `
+      <div style="margin-bottom:28px;padding-bottom:24px;border-bottom:1px solid ${C.divider}">
+        <p style="margin:0 0 4px;font-family:Arial,sans-serif;font-size:13px;color:${C.brown}">
+          <strong>CHF ${amount}</strong> · ${date}
+        </p>
+        <p style="margin:0 0 12px;font-family:Arial,sans-serif;font-size:11px;color:${C.mid}">
+          In-person sale ${labelLine} — which piece was it?
+        </p>
+        <table style="width:100%;border-collapse:collapse">${candidateRows}</table>
+        <p style="margin:12px 0 0">
+          <a href="${noneUrl}" style="font-family:Arial,sans-serif;font-size:12px;color:${C.mid}">None of these — leave it for me to sort out</a>
+        </p>
+      </div>`;
+    })
+    .join("");
+
+  return `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#FAF8F5;font-family:Arial,sans-serif">
+  <div style="max-width:560px;margin:40px auto;background:#fff;border:1px solid ${C.divider}">
+
+    <div style="background:${C.brown};padding:32px;text-align:center">
+      <p style="margin:0 0 6px;font-family:Georgia,serif;font-size:22px;letter-spacing:0.22em;color:${C.gold};text-transform:uppercase">${escapeHtml(b.tenantName)}</p>
+      <p style="margin:0;font-family:Arial,sans-serif;font-size:11px;letter-spacing:0.08em;color:${C.light}">Your day at the stall · confirm what sold</p>
+    </div>
+
+    <div style="padding:32px">
+      <p style="margin:0 0 20px;font-family:Arial,sans-serif;font-size:13px;color:${C.mid}">
+        ${items.length} in-person sale${items.length === 1 ? "" : "s"} ${items.length === 1 ? "was" : "were"} taken as an amount only. Tap the piece each one was, and we'll mark it sold across your store and POS. Nothing changes until you pick.
+      </p>
+      ${sections}
+    </div>
+
+  </div>
+</body>
+</html>`;
+}
+
+export async function sendPosAttributionReviewEmail(
+  items: PosAttributionReviewItem[],
+  branding?: Partial<TenantBranding>,
+): Promise<void> {
+  if (items.length === 0) return;
+
+  const apiKey = process.env.RESEND_API_KEY;
+  const to = process.env.ADMIN_EMAIL;
+  if (!apiKey || !to) return;
+
+  const b = resolveBranding(branding);
+  const from =
+    b.contactEmail ?? `orders@${b.tenantDomain.replace(/^https?:\/\//, "")}`;
+
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from,
+      to,
+      subject: `${items.length} in-person sale${items.length === 1 ? "" : "s"} to confirm — ${b.tenantName}`,
+      html: buildPosAttributionReviewHtml(items, branding),
+    }),
+  });
+
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Resend API ${res.status}: ${body}`);
+  }
+}

@@ -123,8 +123,9 @@
 - [ ] Establish a design language that reads "modern, transparent, on-your-side" — open/airy layout, honest typography, no dark-pattern upsell UI
 - [ ] Surface pricing prominently and legibly everywhere (nav + footer link, no hidden fees) as a trust signal, contrasting with incumbents' opaque pricing
 - [ ] Design merchant onboarding to feel "up and running in a day" (progress that celebrates speed, minimal required fields)
-- [ ] POS UI: make value-only "just enter the amount and sell" the fast default; defer item selection to AI reconciliation
-- [ ] End-of-day AI reconciliation email + in-app review UI: one-tap confirm of the AI's guess, then sold-status propagates to store + POS + catalogue
-- [ ] Bulk/"scan my notebook" import UI: upload a photo/scan of handwritten inventory → AI-extracted draft products to confirm
+- [x] POS UI: value-only "just enter the amount and sell" is the fast default (POS `customItems`, `productId: null`); item selection is deferred to the end-of-day pass
+- [x] End-of-day AI reconciliation for amount-only POS sales: `runPosAttribution` guesses the piece per-tenant, emails a one-tap confirm (`/api/pos-attribution/confirm`), and on confirm marks it sold across store + POS. Admin trigger: "Confirm In-Person Sales" button (`reconciliation.runPos`). Complements the existing Stripe reconciliation (payments with no local record at all).
+- [x] "Scan my notebook" import: `products.parseHandwrittenInventory` (AI vision) wired into `/admin/csv-import` → AI-extracted draft products to confirm
+- [ ] Optional: run the end-of-day POS attribution automatically on a nightly per-tenant schedule (infra exists via `_core/heartbeat.ts`); today it's admin-triggered
 - [ ] Catalog editor with AI-assist affordances: generate name, generate silky description, auto-translate — all optional, all editable
 - [ ] Comparison/"switch from your old provider" UI that quantifies savings vs. legacy players

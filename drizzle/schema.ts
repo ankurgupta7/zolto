@@ -343,6 +343,44 @@ export type StripeReconciliation = typeof stripeReconciliations.$inferSelect;
 export type InsertStripeReconciliation =
   typeof stripeReconciliations.$inferInsert;
 
+// ── POS attribution ──────────────────────────────────────────────────────────
+// Amount-only POS sales (a market-stall "just enter CHF 50 and tap") are recorded
+// as a pos_order with a custom line item that has no productId. This table drives
+// the end-of-day pass that guesses which piece each such line was, and emails the
+// merchant a one-click confirm link. Unlike stripe_reconciliations, the sale (the
+// pos_order) already exists — confirming only *attributes* the line to a product
+// and decrements that product's stock; it never creates a new order. Keyed on the
+// pos_order_item so each unattributed line is reviewed exactly once, and covers
+// cash/TWINT sales too (which have no Stripe payment intent to reconcile against).
+export const posAttributions = mysqlTable("pos_attributions", {
+  id: int("id").autoincrement().primaryKey(),
+  tenantId: int("tenant_id").notNull(),
+  posOrderId: int("posOrderId").notNull(),
+  posOrderItemId: int("posOrderItemId").notNull().unique(),
+  amountRappen: int("amountRappen").notNull(),
+  status: mysqlEnum("status", [
+    "pending_review",
+    "confirmed",
+    "rejected",
+    "no_candidates",
+  ])
+    .default("pending_review")
+    .notNull(),
+  candidateProductIds: varchar("candidateProductIds", {
+    length: 512,
+  }).notNull(),
+  chosenProductId: int("chosenProductId"),
+  confirmationToken: varchar("confirmationToken", { length: 128 })
+    .notNull()
+    .unique(),
+  resolvedAt: timestamp("resolvedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type PosAttribution = typeof posAttributions.$inferSelect;
+export type InsertPosAttribution = typeof posAttributions.$inferInsert;
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // NEW: ITERATION LOGS — Track pilot feedback
 // ═══════════════════════════════════════════════════════════════════════════════

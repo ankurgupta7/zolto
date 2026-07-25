@@ -8,6 +8,7 @@ import { registerStripeWebhook } from "../stripe";
 import { registerStripeConnectRoutes } from "../stripeConnect";
 import { registerPosWebhook, registerPosRoutes } from "../pos";
 import { registerReconciliationRoutes } from "../reconciliationRoutes";
+import { registerPosAttributionRoutes } from "../posAttributionRoutes";
 import { registerSeoRoutes } from "../seo";
 import { registerLlmsRoutes } from "../llms";
 import { registerMcpRoutes } from "../mcp";
@@ -47,6 +48,7 @@ export async function createApp(): Promise<express.Express> {
 
   // One-click confirmation links from the Stripe reconciliation review email
   registerReconciliationRoutes(app);
+  registerPosAttributionRoutes(app);
 
   // SEO discovery: /sitemap.xml + /robots.txt (before the SPA catch-all).
   registerSeoRoutes(app);

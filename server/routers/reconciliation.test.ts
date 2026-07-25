@@ -2,10 +2,15 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { NOT_ADMIN_ERR_MSG } from "@shared/const";
 
 const runStripeReconciliation = vi.fn();
+const runPosAttribution = vi.fn();
 
 vi.mock("../reconciliation", () => ({
   runStripeReconciliation: (...args: unknown[]) =>
     runStripeReconciliation(...args),
+}));
+
+vi.mock("../posAttribution", () => ({
+  runPosAttribution: (...args: unknown[]) => runPosAttribution(...args),
 }));
 
 import { reconciliationRouter } from "./reconciliation";
@@ -100,5 +105,51 @@ describe("reconciliation.run", () => {
     const caller = reconciliationRouter.createCaller(makeCtx("admin"));
 
     await expect(caller.run({})).rejects.toThrow("boom");
+  });
+});
+
+const posSummary = {
+  scannedLines: 4,
+  newPendingReview: 2,
+  newNoCandidates: 1,
+  emailSent: true,
+};
+
+describe("reconciliation.runPos", () => {
+  it("rejects anonymous callers", async () => {
+    const caller = reconciliationRouter.createCaller(makeCtx(null));
+    await expect(caller.runPos({})).rejects.toThrow();
+    expect(runPosAttribution).not.toHaveBeenCalled();
+  });
+
+  it("rejects non-admin users", async () => {
+    const caller = reconciliationRouter.createCaller(makeCtx("user"));
+    await expect(caller.runPos({})).rejects.toThrow(NOT_ADMIN_ERR_MSG);
+    expect(runPosAttribution).not.toHaveBeenCalled();
+  });
+
+  it("runs the POS attribution pass for an admin and returns its summary", async () => {
+    runPosAttribution.mockResolvedValue(posSummary);
+    const caller = reconciliationRouter.createCaller(makeCtx("admin"));
+
+    const result = await caller.runPos({ lookbackDays: 7 });
+
+    expect(runPosAttribution).toHaveBeenCalledWith(7);
+    expect(result).toEqual(posSummary);
+  });
+
+  it("passes undefined lookbackDays through when omitted", async () => {
+    runPosAttribution.mockResolvedValue(posSummary);
+    const caller = reconciliationRouter.createCaller(makeCtx("admin"));
+
+    await caller.runPos({});
+
+    expect(runPosAttribution).toHaveBeenCalledWith(undefined);
+  });
+
+  it("rejects an out-of-range lookbackDays", async () => {
+    const caller = reconciliationRouter.createCaller(makeCtx("admin"));
+    await expect(caller.runPos({ lookbackDays: 0 })).rejects.toThrow();
+    await expect(caller.runPos({ lookbackDays: 31 })).rejects.toThrow();
   });
 });
