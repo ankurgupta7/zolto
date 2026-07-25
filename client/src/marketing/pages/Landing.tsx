@@ -76,7 +76,7 @@ export default function Landing() {
               {COST_COMPARISON.themLabel}
             </p>
             <p className="mt-2 font-serif text-5xl font-semibold text-white/55 tabular-nums line-through decoration-[var(--brand-accent)]/60">
-              {formatPrice(COST_COMPARISON.themPerYearEur)}
+              CHF {COST_COMPARISON.themPerYearChf.toLocaleString("en-US")}
             </p>
             <p className="mt-2 text-xs text-white/40">
               {COST_COMPARISON.themNote}
@@ -93,7 +93,7 @@ export default function Landing() {
               {COST_COMPARISON.usLabel}
             </p>
             <p className="mt-2 font-serif text-6xl font-bold text-[var(--brand-accent-light)] tabular-nums">
-              {formatPrice(COST_COMPARISON.usPerMonthEur)}
+              {formatPrice(COST_COMPARISON.usPerMonthChf)}
             </p>
             <p className="mt-2 text-xs text-white/40">
               {COST_COMPARISON.usNote}

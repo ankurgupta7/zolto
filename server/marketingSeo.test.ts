@@ -32,7 +32,7 @@ describe("getMarketingSeo", () => {
     const offers = software.offers as Record<string, unknown>;
     expect(offers["@type"]).toBe("AggregateOffer");
     expect(offers.lowPrice).toBe(0);
-    expect(offers.priceCurrency).toBe("EUR");
+    expect(offers.priceCurrency).toBe("CHF");
   });
 
   it("handles blog posts and the case study", () => {

@@ -299,7 +299,7 @@ describe("Platform MCP (no tenant / marketing surface)", () => {
       freeTrialDays: number;
       plans: { name: string; pricePerMonth: number }[];
     };
-    expect(sc.currency).toBe("EUR");
+    expect(sc.currency).toBe("CHF");
     expect(sc.freeTrialDays).toBe(14);
     expect(sc.plans.some((p) => p.pricePerMonth === 0)).toBe(true);
   });
@@ -412,6 +412,6 @@ describe("POST /mcp (Streamable HTTP)", () => {
       .set("Host", "zolto.com")
       .send(req("tools/call", { name: "get_pricing", arguments: {} }));
     expect(res.status).toBe(200);
-    expect(res.body.result.structuredContent.currency).toBe("EUR");
+    expect(res.body.result.structuredContent.currency).toBe("CHF");
   });
 });
