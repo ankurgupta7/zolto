@@ -1,5 +1,6 @@
 import { Link } from "wouter";
 import { PLANS, formatPrice } from "../plans";
+import { PRICING_PROMISE, COST_COMPARISON } from "@shared/platform";
 
 const FAQ = [
   {
@@ -29,6 +30,54 @@ export default function Pricing() {
         <p className="mx-auto mt-4 max-w-xl text-[var(--brand-muted-2)]">
           Start free. Upgrade when you're ready. No hidden fees, no surprises.
         </p>
+      </div>
+
+      {/* Transparent-pricing pledge — the positioning's heart, above the plans */}
+      <div className="mx-auto mt-14 max-w-3xl rounded-2xl border border-[var(--brand-accent)]/40 bg-[var(--brand-surface-2)] p-8 md:p-10">
+        <div className="grid gap-8 md:grid-cols-[1fr_auto] md:items-center">
+          <div>
+            <h2 className="font-serif text-2xl text-[var(--brand-text)]">
+              {PRICING_PROMISE.headline}
+            </h2>
+            <p className="mt-3 font-serif text-lg italic leading-snug text-[var(--brand-muted-2)]">
+              &ldquo;{PRICING_PROMISE.pledge}&rdquo;
+            </p>
+            <ul className="mt-5 grid gap-2.5">
+              {PRICING_PROMISE.points.map((point) => (
+                <li
+                  key={point}
+                  className="flex gap-2.5 text-sm leading-relaxed text-[var(--brand-muted-2)]"
+                >
+                  <span aria-hidden className="text-[var(--brand-accent)]">
+                    —
+                  </span>
+                  {point}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="shrink-0 rounded-xl border border-[var(--brand-border)] bg-white px-8 py-6 text-center">
+            <p className="text-[11px] uppercase tracking-[0.16em] text-[var(--brand-muted)]">
+              The old way
+            </p>
+            <p className="mt-1 font-serif text-2xl text-[var(--brand-muted-2)] line-through tabular-nums">
+              €{COST_COMPARISON.themPerYearEur.toLocaleString("en-US")}
+              <span className="text-sm">/yr</span>
+            </p>
+            <p className="mt-4 text-[11px] uppercase tracking-[0.16em] text-[var(--brand-accent)]">
+              Zolto Maker
+            </p>
+            <p className="mt-1 font-serif text-4xl font-bold text-[var(--brand-ink)] tabular-nums">
+              {formatPrice(COST_COMPARISON.usPerMonthEur)}
+              <span className="text-sm font-normal text-[var(--brand-muted)]">
+                /mo
+              </span>
+            </p>
+            <p className="mt-2 text-[11px] text-[var(--brand-muted)]">
+              {COST_COMPARISON.multiplier}
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Plan cards */}

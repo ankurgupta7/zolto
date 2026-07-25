@@ -21,7 +21,7 @@ describe("Landing", () => {
     expect(
       screen.getByRole("heading", {
         level: 1,
-        name: /Sell online and in person/i,
+        name: /Your whole shop, on the phone/i,
       }),
     ).toBeTruthy();
   });
@@ -31,6 +31,25 @@ describe("Landing", () => {
     expect(screen.getByText("Market stall")).toBeTruthy();
     expect(screen.getByText("Web storefront")).toBeTruthy();
     expect(screen.getByText("Moonstone Pendant Necklace")).toBeTruthy();
+  });
+
+  it("makes the disruption case: names an incumbent and the pledge", () => {
+    renderLanding();
+    // The comparison section calls out the legacy players by name…
+    expect(screen.getByText(/Stripe, SumUp and Worldline/i)).toBeTruthy();
+    // …and the pricing pledge ("never charge for anything not charged to us").
+    // Appears in both the pledge card and the comparison table row.
+    expect(screen.getAllByText(/never charge/i).length).toBeGreaterThan(0);
+  });
+
+  it("shows the scan → tap → reconcile selling loop", () => {
+    renderLanding();
+    expect(
+      screen.getByRole("heading", { name: /Scan your notebook/i }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("heading", { name: /Confirm at day.s end/i }),
+    ).toBeTruthy();
   });
 
   it("offers the primary and secondary calls to action", () => {
