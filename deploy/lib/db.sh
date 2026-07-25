@@ -130,6 +130,40 @@ migrate_0021_product_reservations() {
   fi
 }
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Migration 0022: POS attribution for amount-only in-person sales.
+#
+# Creates pos_attributions — the review queue for the end-of-day pass that ties
+# a bare-amount POS sale (a custom line item with no productId) back to a product.
+# Keyed on posOrderItemId so each unattributed line is reviewed exactly once;
+# confirmationToken backs the one-click email links. Idempotent: a no-op if the
+# table already exists. See server/posAttribution.ts + drizzle/schema.ts.
+# ─────────────────────────────────────────────────────────────────────────────
+migrate_0022_pos_attributions() {
+  if [ "$(tbl_exists pos_attributions)" = "0" ]; then
+    run_sql "0022 pos_attributions table" "
+      CREATE TABLE IF NOT EXISTS \`pos_attributions\` (
+        \`id\`                  int AUTO_INCREMENT NOT NULL,
+        \`tenant_id\`           int NOT NULL,
+        \`posOrderId\`          int NOT NULL,
+        \`posOrderItemId\`      int NOT NULL,
+        \`amountRappen\`        int NOT NULL,
+        \`status\`              enum('pending_review','confirmed','rejected','no_candidates') NOT NULL DEFAULT 'pending_review',
+        \`candidateProductIds\` varchar(512) NOT NULL,
+        \`chosenProductId\`     int,
+        \`confirmationToken\`   varchar(128) NOT NULL,
+        \`resolvedAt\`          timestamp NULL,
+        \`createdAt\`           timestamp NOT NULL DEFAULT (now()),
+        \`updatedAt\`           timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+        CONSTRAINT \`pos_attributions_id\` PRIMARY KEY(\`id\`),
+        CONSTRAINT \`pos_attributions_posOrderItemId_unique\` UNIQUE(\`posOrderItemId\`),
+        CONSTRAINT \`pos_attributions_confirmationToken_unique\` UNIQUE(\`confirmationToken\`)
+      );"
+  else
+    ok "0022 pos_attributions already exists"
+  fi
+}
+
 migrate_0019_multitenant() {
   run_sql "0019 tenants table" "
     CREATE TABLE IF NOT EXISTS \`tenants\` (

@@ -503,6 +503,11 @@ migrate_0020_stripe_connect
 # migrate_0021_product_reservations in deploy/lib/db.sh.
 migrate_0021_product_reservations
 
+# ── 0022: POS attribution for amount-only in-person sales ────────────────────
+# Creates pos_attributions (end-of-day "which piece was that CHF 50 sale?"
+# review queue). Idempotent; see migrate_0022_pos_attributions in deploy/lib/db.sh.
+migrate_0022_pos_attributions
+
 # ── Shared helper: run a script inside the builder container ──────────────────
 # Usage: run_in_builder <tag> <script-path> [extra docker args...]
 run_in_builder() {
