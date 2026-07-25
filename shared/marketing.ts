@@ -243,7 +243,7 @@ export function renderMarketingLlmsTxt(baseUrl: string): string {
   ).join("\n");
   const planLines = PLANS.map(
     (p) =>
-      `- **${p.name}** — ${p.priceEur === 0 ? "free" : `€${p.priceEur}/month`}: ${p.features.join(", ")}.`,
+      `- **${p.name}** — ${p.priceChf === 0 ? "free" : `CHF ${p.priceChf}/month`}: ${p.features.join(", ")}.`,
   ).join("\n");
 
   return `# ${PLATFORM.name}
@@ -295,7 +295,7 @@ export function renderMarketingLlmsFullTxt(baseUrl: string): string {
   ).join("\n\n");
   const plans = PLANS.map(
     (p) =>
-      `### ${p.name} — ${p.priceEur === 0 ? "Free" : `€${p.priceEur}/month`}\n\n${p.blurb}\n\n${p.features.map((x) => `- ${x}`).join("\n")}`,
+      `### ${p.name} — ${p.priceChf === 0 ? "Free" : `CHF ${p.priceChf}/month`}\n\n${p.blurb}\n\n${p.features.map((x) => `- ${x}`).join("\n")}`,
   ).join("\n\n");
   const faqs = FAQS.map((f) => `### ${f.q}\n\n${f.a}`).join("\n\n");
 

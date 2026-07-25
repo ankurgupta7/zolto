@@ -61,14 +61,14 @@ export default function Pricing() {
               The old way
             </p>
             <p className="mt-1 font-serif text-2xl text-[var(--brand-muted-2)] line-through tabular-nums">
-              €{COST_COMPARISON.themPerYearEur.toLocaleString("en-US")}
+              CHF {COST_COMPARISON.themPerYearChf.toLocaleString("en-US")}
               <span className="text-sm">/yr</span>
             </p>
             <p className="mt-4 text-[11px] uppercase tracking-[0.16em] text-[var(--brand-accent)]">
               Zolto Maker
             </p>
             <p className="mt-1 font-serif text-4xl font-bold text-[var(--brand-ink)] tabular-nums">
-              {formatPrice(COST_COMPARISON.usPerMonthEur)}
+              {formatPrice(COST_COMPARISON.usPerMonthChf)}
               <span className="text-sm font-normal text-[var(--brand-muted)]">
                 /mo
               </span>
@@ -101,7 +101,7 @@ export default function Pricing() {
             </h2>
             <div className="mt-2 flex items-baseline gap-1">
               <span className="text-3xl font-semibold tabular-nums text-[var(--brand-ink)]">
-                {formatPrice(plan.priceEur)}
+                {formatPrice(plan.priceChf)}
               </span>
               <span className="text-sm text-[var(--brand-muted)]">/ month</span>
             </div>

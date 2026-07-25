@@ -31,8 +31,8 @@ describe("platform facts", () => {
   });
 
   it("has a free plan and ascending paid prices", () => {
-    expect(PLANS[0].priceEur).toBe(0);
-    const paid = PLANS.map((p) => p.priceEur);
+    expect(PLANS[0].priceChf).toBe(0);
+    const paid = PLANS.map((p) => p.priceChf);
     for (let i = 1; i < paid.length; i++) {
       expect(paid[i]).toBeGreaterThanOrEqual(paid[i - 1]);
     }
@@ -49,9 +49,9 @@ describe("platform facts", () => {
     expect(HOW_TO_START.length).toBeGreaterThanOrEqual(3);
   });
 
-  it("formats prices with the euro sign", () => {
-    expect(formatPrice(0)).toBe("€0");
-    expect(formatPrice(19)).toBe("€19");
+  it("formats prices in Swiss francs", () => {
+    expect(formatPrice(0)).toBe("CHF 0");
+    expect(formatPrice(19)).toBe("CHF 19");
   });
 
   it("names the incumbents it positions against", () => {
@@ -70,10 +70,10 @@ describe("platform facts", () => {
   it("keeps the cost comparison in sync with the highlighted plan", () => {
     const highlighted = PLANS.find((p) => p.highlight);
     expect(highlighted).toBeTruthy();
-    expect(COST_COMPARISON.usPerMonthEur).toBe(highlighted?.priceEur);
+    expect(COST_COMPARISON.usPerMonthChf).toBe(highlighted?.priceChf);
     // The whole point is that Zolto is dramatically cheaper than the old way.
-    expect(COST_COMPARISON.themPerYearEur).toBeGreaterThan(
-      COST_COMPARISON.usPerMonthEur * 12,
+    expect(COST_COMPARISON.themPerYearChf).toBeGreaterThan(
+      COST_COMPARISON.usPerMonthChf * 12,
     );
   });
 

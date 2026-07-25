@@ -64,12 +64,12 @@ function softwareApplicationNode(base: string): Record<string, unknown> {
   const offers = PLANS.map((p) => ({
     "@type": "Offer",
     name: `${PLATFORM.name} ${p.name}`,
-    price: p.priceEur,
-    priceCurrency: "EUR",
+    price: p.priceChf,
+    priceCurrency: "CHF",
     category: p.name,
     url: `${base}/pricing`,
   }));
-  const prices = PLANS.map((p) => p.priceEur);
+  const prices = PLANS.map((p) => p.priceChf);
   return {
     "@type": "SoftwareApplication",
     "@id": `${base}/#software`,
@@ -80,7 +80,7 @@ function softwareApplicationNode(base: string): Record<string, unknown> {
     audience: { "@type": "Audience", audienceType: PLATFORM.audience },
     offers: {
       "@type": "AggregateOffer",
-      priceCurrency: "EUR",
+      priceCurrency: "CHF",
       lowPrice: Math.min(...prices),
       highPrice: Math.max(...prices),
       offerCount: offers.length,
@@ -187,7 +187,7 @@ export function getMarketingSeo(
       return {
         path: "/pricing",
         title: `Pricing — ${PLATFORM.name} for makers`,
-        description: `${PLATFORM.pricingSummary} Plans: ${PLANS.map((p) => `${p.name} ${p.priceEur === 0 ? "free" : `€${p.priceEur}/mo`}`).join(", ")}.`,
+        description: `${PLATFORM.pricingSummary} Plans: ${PLANS.map((p) => `${p.name} ${p.priceChf === 0 ? "free" : `CHF ${p.priceChf}/mo`}`).join(", ")}.`,
         jsonLd: [
           ...common,
           softwareApplicationNode(base),
@@ -197,7 +197,7 @@ export function getMarketingSeo(
             ["Pricing", "/pricing"],
           ]),
         ],
-        noscript: `${PLATFORM.name} pricing. ${PLANS.map((p) => `${p.name}: ${p.priceEur === 0 ? "free" : `€${p.priceEur}/month`} — ${p.features.join("; ")}`).join(". ")}.`,
+        noscript: `${PLATFORM.name} pricing. ${PLANS.map((p) => `${p.name}: ${p.priceChf === 0 ? "free" : `CHF ${p.priceChf}/month`} — ${p.features.join("; ")}`).join(". ")}.`,
       };
     case "/signup":
       return {

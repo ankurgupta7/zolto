@@ -139,7 +139,7 @@ describe("renderMarketingLlmsTxt", () => {
     const txt = renderMarketingLlmsTxt("https://zolto.com");
     expect(txt).toContain("## What Zolto does");
     expect(txt).toContain("## Pricing");
-    expect(txt).toContain("€19/month");
+    expect(txt).toContain("CHF 19/month");
     expect(txt).toContain("## How a maker gets started");
     expect(txt).toContain("get_platform_info"); // platform MCP tools listed
     expect(txt).toContain("https://zolto.com/llms-full.txt");
@@ -154,7 +154,7 @@ describe("renderMarketingLlmsFullTxt", () => {
     expect(txt).toContain("## Plans & pricing");
     expect(txt).toContain("## FAQ");
     expect(txt).toContain("What is Zolto?");
-    expect(txt).toContain("€19/month");
+    expect(txt).toContain("CHF 19/month");
   });
 });
 

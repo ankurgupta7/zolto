@@ -14,9 +14,9 @@ export const PLATFORM = {
   /** Who it's for — used in schema audience + llms briefs. */
   audience:
     "Independent makers, artisans, and small shop owners — people who sell at craft fairs, markets, and pop-ups and want an online store without hiring a developer.",
-  /** Free to start; paid plans from €19/mo with a 14-day trial. */
+  /** Free to start; paid plans from CHF 19/mo with a 14-day trial. */
   pricingSummary:
-    "Free to start (no card required). Paid plans from €19/month with a 14-day free trial. Month-to-month, cancel anytime.",
+    "Free to start (no card required). Paid plans from CHF 19/month with a 14-day free trial. Month-to-month, cancel anytime.",
 } as const;
 
 export interface PlatformFeature {
@@ -119,7 +119,7 @@ export const FEATURES: PlatformFeature[] = [
 export interface PlatformPlan {
   id: "free" | "maker" | "studio" | "atelier";
   name: string;
-  priceEur: number;
+  priceChf: number;
   blurb: string;
   cta: string;
   highlight?: boolean;
@@ -135,7 +135,7 @@ export const PLANS: PlatformPlan[] = [
   {
     id: "free",
     name: "Free",
-    priceEur: 0,
+    priceChf: 0,
     blurb: "For makers exploring.",
     cta: "Get started free",
     features: [
@@ -149,7 +149,7 @@ export const PLANS: PlatformPlan[] = [
   {
     id: "maker",
     name: "Maker",
-    priceEur: 19,
+    priceChf: 19,
     blurb: "For solo makers.",
     cta: "Start 14-day free trial",
     highlight: true,
@@ -165,7 +165,7 @@ export const PLANS: PlatformPlan[] = [
   {
     id: "studio",
     name: "Studio",
-    priceEur: 49,
+    priceChf: 49,
     blurb: "For small teams.",
     cta: "Start 14-day free trial",
     features: [
@@ -179,7 +179,7 @@ export const PLANS: PlatformPlan[] = [
   {
     id: "atelier",
     name: "Atelier",
-    priceEur: 99,
+    priceChf: 99,
     blurb: "For growing brands.",
     cta: "Contact sales",
     features: [
@@ -192,8 +192,8 @@ export const PLANS: PlatformPlan[] = [
   },
 ];
 
-export function formatPrice(eur: number): string {
-  return eur === 0 ? "€0" : `€${eur}`;
+export function formatPrice(chf: number): string {
+  return chf === 0 ? "CHF 0" : `CHF ${chf}`;
 }
 
 /**
@@ -230,10 +230,10 @@ export const PRICING_PROMISE = {
  * `usPerMonth` tracks the highlighted paid plan so it never drifts from PLANS.
  */
 export const COST_COMPARISON = {
-  themPerYearEur: 2000,
+  themPerYearChf: 2000,
   themLabel: "A year with the old guard",
   themNote: "reader hardware · monthly fees · lock-in",
-  usPerMonthEur: (PLANS.find((p) => p.highlight)?.priceEur ?? 19) as number,
+  usPerMonthChf: (PLANS.find((p) => p.highlight)?.priceChf ?? 19) as number,
   usLabel: "A month with Zolto",
   usNote: "no hardware · cancel anytime · your Stripe, your money",
   /** "one-hundredth the cost" framing. */
@@ -250,7 +250,7 @@ export interface ComparisonRow {
 export const INCUMBENT_COMPARISON: ComparisonRow[] = [
   {
     feature: "Card reader",
-    them: "Sold to you, €50–300+",
+    them: "Sold to you, CHF 50–300+",
     us: "Your phone — NFC tap & TWINT QR",
   },
   {
@@ -327,7 +327,7 @@ export const FAQS: Faq[] = [
   },
   {
     q: "How much does it cost?",
-    a: "There's a free plan (no card required). Paid plans start at €19/month for the Maker plan, with a 14-day free trial. Plans are month-to-month — cancel anytime.",
+    a: "There's a free plan (no card required). Paid plans start at CHF 19/month for the Maker plan, with a 14-day free trial. Plans are month-to-month — cancel anytime.",
   },
   {
     q: "Can I sell both in person and online?",
@@ -343,7 +343,7 @@ export const FAQS: Faq[] = [
   },
   {
     q: "How is Zolto cheaper than Stripe, SumUp, or Worldline?",
-    a: "Those tools were built for an era when websites were hard and a card reader was king, so they charge for hardware, setup, and lock-in — easily around €2,000 a year. AI builds your store in an afternoon and your phone is the terminal, so the real cost is tiny. Zolto passes that saving on: paid plans start at €19/month, roughly one-hundredth of the old way, and we never charge for anything that isn't charged to us.",
+    a: "Those tools were built for an era when websites were hard and a card reader was king, so they charge for hardware, setup, and lock-in — easily around CHF 2,000 a year. AI builds your store in an afternoon and your phone is the terminal, so the real cost is tiny. Zolto passes that saving on: paid plans start at CHF 19/month, roughly one-hundredth of the old way, and we never charge for anything that isn't charged to us.",
   },
   {
     q: "What if I keep my inventory in a notebook?",

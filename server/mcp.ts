@@ -255,13 +255,13 @@ function runPlatformTool(name: string, ctx: McpContext) {
       return toolResult({ features: FEATURES });
     case "get_pricing":
       return toolResult({
-        currency: "EUR",
+        currency: "CHF",
         billing: "monthly, cancel anytime",
         freeTrialDays: 14,
         plans: PLANS.map((p) => ({
           id: p.id,
           name: p.name,
-          pricePerMonth: p.priceEur,
+          pricePerMonth: p.priceChf,
           includes: p.features,
         })),
         pricingUrl: `${base}/pricing`,
