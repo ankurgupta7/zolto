@@ -109,14 +109,14 @@
 
 ### Marketing copy tasks
 
-- [ ] Rewrite Home hero around the disruption thesis — headline + subhead lead with "one-hundredth the cost, no card reader to buy," CTA to see pricing / start a store
-- [ ] "Why Zolto vs. Stripe/SumUp/Worldline" comparison section (cost, lock-in, hardware upsell, AI setup speed) on Home or a dedicated page
-- [ ] Transparent-pricing page: pass-through promise, €20-vs-€2,000 framing, "we never charge for anything not charged to us," explicit "we will always be on the small merchant's side" pledge
-- [ ] "Built in a day with AI" section — set-up-speed story for the merchant
-- [ ] "Tap, don't insert" section — NFC phone + TWINT/QR payments, no hardware to buy
-- [ ] AI-inventory story section: scan-your-notebook, value-only sales + end-of-day AI reconciliation email, AI naming/descriptions/translations from a photo
+- [x] Rewrite marketing Landing hero around the disruption thesis — leads with "on the phone in your pocket," "no card reader to buy," "one-hundredth the cost," CTAs to Start free / See pricing (`marketing/pages/Landing.tsx`)
+- [x] "Why Zolto vs. Stripe/SumUp/Worldline" comparison section (cost, lock-in, hardware upsell, AI setup speed) — shipped on Landing, driven by `INCUMBENT_COMPARISON` in `shared/platform.ts`
+- [x] Transparent-pricing pledge: pass-through promise, €2,000-vs-€19 framing, "we never charge for anything not charged to us," "we're on your side" — shipped on Landing + Pricing, driven by `PRICING_PROMISE` / `COST_COMPARISON`
+- [x] "Tap, don't insert" + AI-inventory story: scan-your-notebook → sell-by-amount → end-of-day AI reconciliation email — shipped on Landing as the `SELLING_FLOW` section; `tap-to-pay` / `notebook-inventory` / `day-end-reconciliation` features added to `shared/platform.ts` (feed SEO + llms + MCP)
+- [x] Positioning FAQs added (no card reader; cheaper than Stripe/SumUp/Worldline; keep inventory in a notebook; don't tag every sale) in `shared/platform.ts`
+- [ ] Dedicated "Built in a day with AI" set-up-speed section (currently only a line in hero/comparison)
 - [ ] Rewrite About page to carry the mission ("we have enough; we're here to help small merchants, not extract from them")
-- [ ] Audit all copy so it's translated by AI (DE/EN and beyond) and never assumes the merchant writes multiple languages
+- [ ] Audit all copy so it's translated by AI (DE/EN and beyond) and never assumes the merchant writes multiple languages (multilingual-listings feature + copy added; full audit pending)
 
 ### UI / design direction (gear the whole UI toward the pillars)
 
