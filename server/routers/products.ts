@@ -234,8 +234,9 @@ export const productsRouter = router({
           .max(20),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const { invokeLLM } = await import("../_core/llm");
+      const storeName = ctx.tenant?.name ?? "the store";
       const results = await Promise.all(
         input.groups.map(async (group) => {
           try {
@@ -249,7 +250,7 @@ export const productsRouter = router({
               messages: [
                 {
                   role: "system",
-                  content: `You are a product copywriter for Kalakosh Jewellery – Zürich, a luxury jewellery boutique in Zurich, Switzerland.
+                  content: `You are a product copywriter for "${storeName}", a jewellery boutique.
 Analyse the provided photo(s) of a jewellery piece and return a JSON object with bilingual product details (German + English).
 
 Available categories (keep these in English exactly as shown): ${PRODUCT_CATEGORIES.map((c) => `"${c}"`).join(", ")}
@@ -918,6 +919,7 @@ Return ONLY valid JSON, no markdown.`,
   // Admin: AI-generated insights from sales and inventory data
   insights: adminProcedure.mutation(async ({ ctx }) => {
     const { invokeLLM } = await import("../_core/llm");
+    const storeName = ctx.tenant?.name ?? "the store";
     const [allProducts, paidOrders] = await Promise.all([
       getAllProducts(ctx.user.tenantId),
       getPaidOrders(ctx.user.tenantId, 200),
@@ -964,7 +966,7 @@ Return ONLY valid JSON, no markdown.`,
       messages: [
         {
           role: "system",
-          content: `You are a retail analytics advisor for Kalakosh Jewellery, a luxury jewellery boutique in Zurich.
+          content: `You are a retail analytics advisor for "${storeName}", a jewellery boutique.
 Analyse the inventory and sales snapshot and return concise, actionable insights in English.
 Be specific with numbers. Each insight must be exactly one clear sentence.`,
         },
@@ -1119,6 +1121,7 @@ Return only genuine near-duplicates. Return an empty duplicates array if there a
   // and only applyRecategorizeAll persists the approved subset.
   previewRecategorizeAll: adminProcedure.mutation(async ({ ctx }) => {
     const { invokeLLM } = await import("../_core/llm");
+    const storeName = ctx.tenant?.name ?? "the store";
     const all = await getAllProducts(ctx.user.tenantId);
     const uncategorised = all.filter((p) => p.category === "Other");
     if (uncategorised.length === 0) return { proposals: [], total: 0 };
@@ -1145,7 +1148,7 @@ Return only genuine near-duplicates. Return an empty duplicates array if there a
           messages: [
             {
               role: "system",
-              content: `You are a jewellery category classifier for Kalakosh Jewellery, Zurich.
+              content: `You are a jewellery category classifier for "${storeName}".
 For each product assign exactly one body-part category from this list:
   "Necklaces" — necklaces, pendants, chokers, lariats, collar pieces, kollier, halskette, kette, anhänger
   "Earrings" — studs, drops, hoops, chandeliers, ear cuffs, ohrringe, ohrstecker, ohrhänger, ohrclip
@@ -1393,13 +1396,14 @@ Return ONLY valid JSON, no markdown.`,
         mimeType: z.string().default("image/jpeg"),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const { invokeLLM } = await import("../_core/llm");
+      const storeName = ctx.tenant?.name ?? "the store";
       const response = await invokeLLM({
         messages: [
           {
             role: "system",
-            content: `You are an inventory data extractor for Kalakosh Jewellery, a luxury jewellery boutique in Zurich, Switzerland.
+            content: `You are an inventory data extractor for "${storeName}", a jewellery boutique.
 
 The user will provide a photo of handwritten inventory notes from a diary or notebook. Notes are usually organized as one "box" per page, with a heading at the top (for example "Rings Box", "Necklace Box", "Bangles") followed by a numbered list of items, each with a price and sometimes a quantity note.
 
