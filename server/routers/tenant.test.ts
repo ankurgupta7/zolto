@@ -32,12 +32,13 @@ import type { TrpcContext } from "../_core/context";
 
 function ctx(
   user: { openId: string; role?: string; tenantId?: number } | null = null,
+  tenant: { id: number; plan: string } | null = null,
 ): TrpcContext {
   return {
     req: { protocol: "https", headers: {} } as never,
     res: {} as never,
     user: (user as never) ?? null,
-    tenant: null,
+    tenant: (tenant as never) ?? null,
   };
 }
 
@@ -254,5 +255,79 @@ describe("tenant.getStripeConnectUrl", () => {
       tenantRouter.createCaller(ctx(null)).getStripeConnectUrl(),
     ).rejects.toThrow();
     expect(buildConnectAuthorizeUrl).not.toHaveBeenCalled();
+  });
+});
+
+describe("tenant.updateSettings plan gates", () => {
+  const admin = { openId: "google:admin", role: "admin", tenantId: 42 };
+
+  function tenantCtx(plan: string) {
+    // Wire the settings row + update chain the procedure uses.
+    dbMock.db.query = {
+      tenantSettings: { findFirst: vi.fn().mockResolvedValue({ id: 9 }) },
+    };
+    const where = vi.fn().mockResolvedValue(undefined);
+    const set = vi.fn(() => ({ where }));
+    dbMock.db.update = vi.fn(() => ({ set }));
+    return {
+      caller: tenantRouter.createCaller(ctx(admin, { id: 42, plan })),
+      set,
+    };
+  }
+
+  it("rejects a custom domain on the free plan", async () => {
+    const { caller, set } = tenantCtx("free");
+    await expect(
+      caller.updateSettings({ publicDomain: "shop.example.com" }),
+    ).rejects.toThrow(/Maker plan/);
+    expect(set).not.toHaveBeenCalled();
+  });
+
+  it("allows a custom domain from the Maker plan up", async () => {
+    const { caller, set } = tenantCtx("maker");
+    await expect(
+      caller.updateSettings({ publicDomain: "shop.example.com" }),
+    ).resolves.toEqual({ success: true });
+    expect(set).toHaveBeenCalled();
+  });
+
+  it("rejects multi-currency on the Maker plan", async () => {
+    const { caller, set } = tenantCtx("maker");
+    await expect(caller.updateSettings({ currency: "eur" })).rejects.toThrow(
+      /Studio plan/,
+    );
+    expect(set).not.toHaveBeenCalled();
+  });
+
+  it("allows multi-currency from the Studio plan up", async () => {
+    const { caller, set } = tenantCtx("studio");
+    await expect(caller.updateSettings({ currency: "eur" })).resolves.toEqual({
+      success: true,
+    });
+    expect(set).toHaveBeenCalled();
+  });
+
+  it("always allows CHF regardless of plan", async () => {
+    const { caller, set } = tenantCtx("free");
+    await expect(caller.updateSettings({ currency: "chf" })).resolves.toEqual({
+      success: true,
+    });
+    expect(set).toHaveBeenCalled();
+  });
+
+  it("still accepts ungated branding fields on the free plan", async () => {
+    const { caller, set } = tenantCtx("free");
+    await expect(
+      caller.updateSettings({ primaryColor: "#2D6B4A", metaTitle: "Hi" }),
+    ).resolves.toEqual({ success: true });
+    expect(set).toHaveBeenCalled();
+  });
+
+  it("rejects malformed domains", async () => {
+    const { caller, set } = tenantCtx("atelier");
+    await expect(
+      caller.updateSettings({ publicDomain: "https://shop.example.com/" }),
+    ).rejects.toThrow();
+    expect(set).not.toHaveBeenCalled();
   });
 });

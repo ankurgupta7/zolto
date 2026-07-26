@@ -11,6 +11,7 @@ import {
   Loader2,
   ChevronDown,
   ChevronUp,
+  Sparkles,
 } from "lucide-react";
 
 interface Props {
@@ -18,9 +19,17 @@ interface Props {
   productName: string;
 }
 
+/** Ready-made styles for the AI photo generator (1 credit per image). */
+const AI_STYLES = [
+  "Clean catalogue shot on a seamless white background, soft studio light",
+  "Elegant lifestyle flat-lay on natural linen with soft morning light",
+  "Luxury macro close-up highlighting the material details and texture",
+] as const;
+
 export default function ProductImageManager({ productId, productName }: Props) {
   const [expanded, setExpanded] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [aiStyle, setAiStyle] = useState<string>(AI_STYLES[0]);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const utils = trpc.useUtils();
@@ -29,6 +38,21 @@ export default function ProductImageManager({ productId, productName }: Props) {
     { productId },
     { enabled: expanded },
   );
+
+  const { data: billingStatus } = trpc.billing.getStatus.useQuery(undefined, {
+    enabled: expanded,
+  });
+  const creditBalance = billingStatus?.photoCredits.balance ?? null;
+
+  const aiPhotoMutation = trpc.billing.generateProductPhoto.useMutation({
+    onSuccess: ({ balance }) => {
+      utils.products.getImages.invalidate({ productId });
+      utils.billing.getStatus.invalidate();
+      utils.billing.photoCreditHistory.invalidate();
+      toast.success(`AI photo added — ${balance} credits left`);
+    },
+    onError: (err) => toast.error(err.message),
+  });
 
   const addImageMutation = trpc.products.addImage.useMutation({
     onSuccess: () => {
@@ -157,6 +181,65 @@ export default function ProductImageManager({ productId, productName }: Props) {
               No extra images yet. Click the + to upload.
             </p>
           )}
+
+          {/* AI photo generation — 1 credit per image, uses the product's
+              main photo as the source (see server/photoCredits.ts). */}
+          <div className="mt-3 pt-3 border-t border-[var(--brand-border)]">
+            <p className="text-xs font-sans text-muted-foreground mb-2 flex items-center gap-1.5">
+              <Sparkles size={12} className="text-[var(--brand-accent)]" />
+              Restyle the main photo with AI
+              {creditBalance !== null && (
+                <span className="ml-auto">
+                  {creditBalance} credit{creditBalance === 1 ? "" : "s"} left
+                </span>
+              )}
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <select
+                value={aiStyle}
+                onChange={(e) => setAiStyle(e.target.value)}
+                className="flex-1 min-w-48 text-xs font-sans border border-[var(--brand-border)] bg-white px-2 py-1.5"
+              >
+                {AI_STYLES.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                disabled={aiPhotoMutation.isPending || creditBalance === 0}
+                onClick={() =>
+                  aiPhotoMutation.mutate({ productId, stylePrompt: aiStyle })
+                }
+                className="flex items-center gap-1.5 text-xs uppercase tracking-[0.12em] font-sans border border-[var(--brand-accent)]/40 text-[var(--brand-accent)] px-3 py-1.5 hover:bg-[var(--brand-surface)] transition-colors disabled:opacity-50"
+                title={
+                  creditBalance === 0
+                    ? "No AI photo credits left — top up under Plan & Billing"
+                    : "Generate an AI-styled image (uses 1 credit)"
+                }
+              >
+                {aiPhotoMutation.isPending ? (
+                  <Loader2 size={12} className="animate-spin" />
+                ) : (
+                  <Sparkles size={12} />
+                )}
+                Generate (1 credit)
+              </button>
+            </div>
+            {creditBalance === 0 && (
+              <p className="text-xs font-sans text-muted-foreground mt-1.5">
+                Out of credits — top up under{" "}
+                <a href="/admin/billing" className="underline">
+                  Plan &amp; Billing
+                </a>
+                .
+              </p>
+            )}
+            <p className="text-[10px] font-sans text-muted-foreground/70 mt-1.5">
+              AI-styled images are disclosed as AI-generated.
+            </p>
+          </div>
         </div>
       )}
     </div>
