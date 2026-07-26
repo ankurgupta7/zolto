@@ -1,5 +1,6 @@
 import { Eye, EyeOff, Trash2, Pencil } from "lucide-react";
 import { useState } from "react";
+import { formatPrice, useCurrency } from "@/lib/money";
 
 interface ProductListItemProps {
   product: {
@@ -28,6 +29,7 @@ export default function ProductListItem({
   onToggleSold,
 }: ProductListItemProps) {
   const [isHovering, setIsHovering] = useState(false);
+  const currency = useCurrency();
 
   const formattedDate = new Date(product.createdAt).toLocaleDateString(
     "en-US",
@@ -74,7 +76,7 @@ export default function ProductListItem({
       {/* Price and Status */}
       <div className="flex-shrink-0 text-right mr-4">
         <div className="font-serif text-foreground text-sm font-medium">
-          CHF {product.price}
+          {formatPrice(Number(product.price), currency)}
         </div>
         <div className="flex items-center gap-1 text-xs text-muted-foreground font-sans mt-1">
           <span>Qty: {product.quantity}</span>

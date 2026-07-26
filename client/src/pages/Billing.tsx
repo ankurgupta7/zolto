@@ -16,14 +16,24 @@ import {
   ArrowLeft,
   Check,
   CreditCard,
+  Globe,
   Image as ImageIcon,
   Loader2,
   Sparkles,
+  Trash2,
+  UserPlus,
+  Users,
 } from "lucide-react";
 
 const PLAN_ORDER = ["free", "maker", "studio", "atelier"] as const;
 
 const CREDIT_PACKS = [10, 25, 50, 100] as const;
+
+const CURRENCIES = ["chf", "eur", "usd", "gbp"] as const;
+
+/** Plans that include a custom domain / multi-currency (mirrors PLAN_FEATURES). */
+const CUSTOM_DOMAIN_PLANS = new Set(["maker", "studio", "atelier"]);
+const MULTI_CURRENCY_PLANS = new Set(["studio", "atelier"]);
 
 function planLabel(id: string): string {
   return id.charAt(0).toUpperCase() + id.slice(1);
@@ -51,6 +61,47 @@ export default function Billing() {
   const creditCheckout = trpc.billing.purchasePhotoCredits.useMutation({
     onSuccess: ({ url }) => {
       window.location.href = url;
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  // ── Team seats ────────────────────────────────────────────────────────────
+  const staffQuery = trpc.staff.list.useQuery(undefined, {
+    enabled: isAuthenticated && user?.role === "admin",
+  });
+  const [inviteEmail, setInviteEmail] = useState("");
+  const inviteMutation = trpc.staff.invite.useMutation({
+    onSuccess: ({ emailed, claimUrl }) => {
+      setInviteEmail("");
+      utils.staff.list.invalidate();
+      if (emailed) toast.success("Invite sent");
+      else {
+        toast.info("Email isn't configured — copy the invite link instead.");
+        navigator.clipboard?.writeText(claimUrl).catch(() => {});
+      }
+    },
+    onError: (err) => toast.error(err.message),
+  });
+  const revokeMutation = trpc.staff.revokeInvite.useMutation({
+    onSuccess: () => utils.staff.list.invalidate(),
+    onError: (err) => toast.error(err.message),
+  });
+  const removeMutation = trpc.staff.removeStaff.useMutation({
+    onSuccess: () => utils.staff.list.invalidate(),
+    onError: (err) => toast.error(err.message),
+  });
+
+  // ── Custom domain + currency (plan-gated store settings) ─────────────────
+  const domainStatus = trpc.tenant.domainStatus.useQuery(undefined, {
+    enabled: isAuthenticated && user?.role === "admin",
+  });
+  const [domainInput, setDomainInput] = useState<string | null>(null);
+  const [currencyInput, setCurrencyInput] = useState<string | null>(null);
+  const settingsMutation = trpc.tenant.updateSettings.useMutation({
+    onSuccess: () => {
+      toast.success("Settings saved");
+      utils.tenant.domainStatus.invalidate();
+      utils.tenant.getSettings.invalidate();
     },
     onError: (err) => toast.error(err.message),
   });
@@ -287,6 +338,208 @@ export default function Billing() {
                 </span>
               </div>
             ))}
+          </div>
+        </section>
+      )}
+
+      {/* Team seats */}
+      {staffQuery.data && (
+        <section>
+          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+            <Users className="h-5 w-5" /> Team seats
+            <span className="text-sm font-normal text-muted-foreground">
+              {staffQuery.data.seatsUsed} of {staffQuery.data.seatLimit} used
+            </span>
+          </h2>
+          <div className="rounded-lg border divide-y">
+            {staffQuery.data.staff.map((member) => (
+              <div
+                key={member.id}
+                className="flex items-center justify-between px-4 py-2.5 text-sm"
+              >
+                <span>
+                  {member.name || member.email}
+                  <span className="text-muted-foreground">
+                    {" "}
+                    · {member.role}
+                  </span>
+                </span>
+                {member.role === "staff" && (
+                  <button
+                    type="button"
+                    className="text-muted-foreground hover:text-red-600"
+                    disabled={removeMutation.isPending}
+                    onClick={() => removeMutation.mutate({ userId: member.id })}
+                    aria-label={`Remove ${member.email}`}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+            ))}
+            {staffQuery.data.pendingInvites.map((invite) => (
+              <div
+                key={invite.id}
+                className="flex items-center justify-between px-4 py-2.5 text-sm"
+              >
+                <span className="text-muted-foreground">
+                  {invite.email} · invited
+                </span>
+                <button
+                  type="button"
+                  className="text-xs underline text-muted-foreground hover:text-foreground"
+                  disabled={revokeMutation.isPending}
+                  onClick={() => revokeMutation.mutate({ inviteId: invite.id })}
+                >
+                  Revoke
+                </button>
+              </div>
+            ))}
+          </div>
+          <form
+            className="mt-3 flex gap-2"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (inviteEmail.trim())
+                inviteMutation.mutate({ email: inviteEmail.trim() });
+            }}
+          >
+            <input
+              type="email"
+              required
+              placeholder="teammate@example.com"
+              value={inviteEmail}
+              onChange={(e) => setInviteEmail(e.target.value)}
+              className="flex-1 rounded-md border px-3 py-2 text-sm"
+            />
+            <button
+              type="submit"
+              disabled={
+                inviteMutation.isPending ||
+                staffQuery.data.seatsUsed >= staffQuery.data.seatLimit
+              }
+              className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm text-primary-foreground hover:opacity-90 disabled:opacity-50"
+            >
+              <UserPlus className="h-4 w-4" /> Invite
+            </button>
+          </form>
+          {staffQuery.data.seatsUsed >= staffQuery.data.seatLimit && (
+            <p className="text-xs text-muted-foreground mt-1.5">
+              All seats are in use — upgrade for more.
+            </p>
+          )}
+        </section>
+      )}
+
+      {/* Custom domain + currency (plan-gated store settings) */}
+      {data && (
+        <section>
+          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+            <Globe className="h-5 w-5" /> Store settings
+          </h2>
+          <div className="rounded-lg border p-5 space-y-5">
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium">Custom domain</span>
+                {!CUSTOM_DOMAIN_PLANS.has(currentPlan) && (
+                  <span className="text-xs text-muted-foreground">
+                    Maker plan and above
+                  </span>
+                )}
+              </div>
+              {CUSTOM_DOMAIN_PLANS.has(currentPlan) ? (
+                <>
+                  <form
+                    className="flex gap-2"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      const v = (domainInput ?? "").trim().toLowerCase();
+                      if (v) settingsMutation.mutate({ publicDomain: v });
+                    }}
+                  >
+                    <input
+                      type="text"
+                      placeholder="shop.example.com"
+                      value={domainInput ?? domainStatus.data?.domain ?? ""}
+                      onChange={(e) => setDomainInput(e.target.value)}
+                      className="flex-1 rounded-md border px-3 py-2 text-sm"
+                    />
+                    <button
+                      type="submit"
+                      disabled={settingsMutation.isPending}
+                      className="rounded-md bg-primary px-3 py-2 text-sm text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                    >
+                      Save
+                    </button>
+                  </form>
+                  {domainStatus.data?.domain && domainStatus.data.expected && (
+                    <p className="text-xs mt-1.5">
+                      {domainStatus.data.pointsToUs ? (
+                        <span className="text-green-700">
+                          ✓ {domainStatus.data.domain} points to us — HTTPS is
+                          issued automatically on first visit.
+                        </span>
+                      ) : (
+                        <span className="text-amber-700">
+                          Create a CNAME record: {domainStatus.data.domain} →{" "}
+                          {domainStatus.data.expected}, then wait a few minutes.
+                        </span>
+                      )}
+                    </p>
+                  )}
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Serve your store on your own domain with managed HTTPS.
+                </p>
+              )}
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium">Store currency</span>
+                {!MULTI_CURRENCY_PLANS.has(currentPlan) && (
+                  <span className="text-xs text-muted-foreground">
+                    Studio plan and above
+                  </span>
+                )}
+              </div>
+              <form
+                className="flex gap-2"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (currencyInput)
+                    settingsMutation.mutate({ currency: currencyInput });
+                }}
+              >
+                <select
+                  value={currencyInput ?? "chf"}
+                  onChange={(e) => setCurrencyInput(e.target.value)}
+                  className="rounded-md border px-3 py-2 text-sm bg-white"
+                >
+                  {CURRENCIES.map((c) => (
+                    <option key={c} value={c}>
+                      {c.toUpperCase()}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="submit"
+                  disabled={
+                    settingsMutation.isPending ||
+                    (!MULTI_CURRENCY_PLANS.has(currentPlan) &&
+                      (currencyInput ?? "chf") !== "chf")
+                  }
+                  className="rounded-md bg-primary px-3 py-2 text-sm text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                >
+                  Save
+                </button>
+              </form>
+              <p className="text-xs text-muted-foreground mt-1.5">
+                Prices across your storefront and Stripe checkout are shown and
+                charged in this currency. Amounts stay as entered.
+              </p>
+            </div>
           </div>
         </section>
       )}

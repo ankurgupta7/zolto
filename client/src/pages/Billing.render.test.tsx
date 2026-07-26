@@ -70,6 +70,11 @@ vi.mock("@/lib/trpc", () => ({
         getStatus: { invalidate: mocks.statusInvalidate },
         photoCreditHistory: { invalidate: mocks.historyInvalidate },
       },
+      staff: { list: { invalidate: vi.fn() } },
+      tenant: {
+        domainStatus: { invalidate: vi.fn() },
+        getSettings: { invalidate: vi.fn() },
+      },
     }),
     billing: {
       getStatus: {
@@ -92,6 +97,37 @@ vi.mock("@/lib/trpc", () => ({
           mutate: mocks.creditCheckoutMutate,
           isPending: false,
         }),
+      },
+    },
+    staff: {
+      list: {
+        useQuery: () => ({
+          data: {
+            staff: [
+              { id: 1, name: "Owner", email: "o@a.example", role: "admin" },
+            ],
+            pendingInvites: [],
+            seatsUsed: 1,
+            seatLimit: 1,
+          },
+        }),
+      },
+      invite: { useMutation: () => ({ mutate: vi.fn(), isPending: false }) },
+      revokeInvite: {
+        useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+      },
+      removeStaff: {
+        useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+      },
+    },
+    tenant: {
+      domainStatus: {
+        useQuery: () => ({
+          data: { domain: null, expected: "app.zolto.ch", pointsToUs: false },
+        }),
+      },
+      updateSettings: {
+        useMutation: () => ({ mutate: vi.fn(), isPending: false }),
       },
     },
   },

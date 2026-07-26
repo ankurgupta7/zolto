@@ -13,6 +13,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
+import { formatPrice, useCurrency } from "@/lib/money";
 
 interface Props {
   product: ProductItem;
@@ -39,6 +40,7 @@ export default function ProductCard({ product, onMutated }: Props) {
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
   const { t, i18n } = useTranslation();
+  const currency = useCurrency();
   const utils = trpc.useUtils();
 
   const displayName =
@@ -306,7 +308,7 @@ export default function ProductCard({ product, onMutated }: Props) {
             <p
               className={`font-serif text-xl ${product.sold ? "text-muted-foreground line-through" : "text-[var(--brand-ink)]"}`}
             >
-              CHF {Number(product.price).toFixed(2)}
+              {formatPrice(Number(product.price), currency)}
             </p>
             {product.sold && (
               <span className="text-[10px] uppercase tracking-[0.15em] font-sans text-amber-700 bg-amber-50 px-2 py-0.5">

@@ -20,6 +20,13 @@ import {
   addInstagramPost,
   insertBulkUploadLog,
   getPhotoCreditBalance,
+  getTenantStaff,
+  countTenantStaff,
+  getPendingStaffInvites,
+  getStaffInviteByToken,
+  getTenantSettingsByDomain,
+  createStaffInvite,
+  joinTenantAsStaff,
   getPhotoCreditHistory,
   addPhotoCreditEntry,
   consumePhotoCredit,
@@ -70,6 +77,27 @@ describe("db helpers when the database is unavailable", () => {
     // With the DB down the balance reads as 0, so consumption fails closed —
     // better to refuse a generation than to give one away untracked.
     await expect(consumePhotoCredit(1)).resolves.toBe(false);
+  });
+
+  it("staff reads degrade to empty/zero, staff writes throw", async () => {
+    await expect(getTenantStaff(1)).resolves.toEqual([]);
+    await expect(countTenantStaff(1)).resolves.toBe(0);
+    await expect(getPendingStaffInvites(1)).resolves.toEqual([]);
+    await expect(getStaffInviteByToken("t")).resolves.toBeUndefined();
+    await expect(
+      getTenantSettingsByDomain("x.example.com"),
+    ).resolves.toBeUndefined();
+    await expect(
+      createStaffInvite({
+        tenantId: 1,
+        email: "x@a.example",
+        token: "t",
+        expiresAt: new Date(),
+      }),
+    ).rejects.toThrow(/Database not available/);
+    await expect(joinTenantAsStaff(1, 1)).rejects.toThrow(
+      /Database not available/,
+    );
   });
 
   it("rejects invalid credit deltas before touching the DB", async () => {

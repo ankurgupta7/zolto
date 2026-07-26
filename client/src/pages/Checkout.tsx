@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
+import { formatPrice, useCurrency } from "@/lib/money";
 import { Trash2, Lock, CreditCard } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
@@ -30,6 +31,7 @@ const PaymentBadges = () => (
 export default function Checkout() {
   const { items, total, removeItem, clear } = useCart();
   const { t, i18n } = useTranslation();
+  const currency = useCurrency();
   const [, navigate] = useLocation();
   const [accepted, setAccepted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -124,7 +126,7 @@ export default function Checkout() {
                     {item.category}
                   </p>
                   <p className="font-serif text-[var(--brand-ink)] text-xl">
-                    CHF {Number(item.price).toFixed(2)}
+                    {formatPrice(Number(item.price), currency)}
                   </p>
                 </div>
                 <button
@@ -147,7 +149,7 @@ export default function Checkout() {
                   {t("cart.subtotal")}
                 </span>
                 <span className="font-serif text-2xl text-[var(--brand-ink)]">
-                  CHF {total.toFixed(2)}
+                  {formatPrice(total, currency)}
                 </span>
               </div>
               <p className="text-xs text-muted-foreground font-sans mb-5">

@@ -181,6 +181,35 @@ export const tenantRouter = router({
     return ctx.tenant;
   }),
 
+  // ─── Admin: Custom domain DNS status ──────────────────────────────────────
+  // Live check whether the saved custom domain's DNS points at the platform
+  // (PLATFORM_DOMAIN env, e.g. app.zolto.ch). Caddy's on-demand TLS only
+  // issues a cert once the domain is both registered here and pointing at us.
+  domainStatus: publicProcedure.use(requireTenant).query(async ({ ctx }) => {
+    const settings = await db.query.tenantSettings.findFirst({
+      where: eq(tenantSettings.tenantId, ctx.tenant.id),
+    });
+    const domain = settings?.publicDomain ?? null;
+    const expected = process.env.PLATFORM_DOMAIN ?? null;
+    if (!domain) return { domain: null, expected, pointsToUs: false };
+
+    let pointsToUs = false;
+    if (expected) {
+      try {
+        const dns = await import("node:dns/promises");
+        const cnames = await dns
+          .resolveCname(domain)
+          .catch(() => [] as string[]);
+        pointsToUs = cnames.some(
+          (c) => c.replace(/\.$/, "").toLowerCase() === expected.toLowerCase(),
+        );
+      } catch {
+        pointsToUs = false;
+      }
+    }
+    return { domain, expected, pointsToUs };
+  }),
+
   // ─── Admin: Update tenant settings ────────────────────────────────────────
   // Paid-tier fields are gated by the tenant's plan (PLAN_FEATURES):
   //   publicDomain — custom domain, from the Maker plan up

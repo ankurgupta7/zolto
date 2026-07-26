@@ -6,6 +6,7 @@ import { X, ShoppingBag, Check } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
+import { formatPrice, useCurrency } from "@/lib/money";
 import { useCart } from "@/contexts/CartContext";
 import ImageLightbox from "./ImageLightbox";
 import {
@@ -52,6 +53,7 @@ export default function ProductModal({ product, open, onClose }: Props) {
   const [carouselApi, setCarouselApi] = useState<CarouselApi>();
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
   const { t, i18n } = useTranslation();
+  const currency = useCurrency();
   const { addItem, has, openCart } = useCart();
   const inCart = has(product.id);
 
@@ -245,7 +247,7 @@ export default function ProductModal({ product, open, onClose }: Props) {
           <p
             className={`font-serif text-2xl mb-4 ${product.sold ? "text-muted-foreground line-through" : "text-[var(--brand-ink)]"}`}
           >
-            CHF {Number(product.price).toFixed(2)}
+            {formatPrice(Number(product.price), currency)}
           </p>
 
           {product.sold ? (

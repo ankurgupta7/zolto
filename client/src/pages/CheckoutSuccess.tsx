@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { CheckCircle2, Loader2 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { useCart } from "@/contexts/CartContext";
+import { formatMinorUnits } from "@/lib/money";
 import OrderReceipt from "@/components/OrderReceipt";
 
 export default function CheckoutSuccess() {
@@ -57,7 +58,7 @@ export default function CheckoutSuccess() {
 
         {order?.amountTotal != null && (
           <p className="font-serif text-2xl text-[var(--brand-ink)] my-6">
-            CHF {(order.amountTotal / 100).toFixed(2)}
+            {formatMinorUnits(order.amountTotal, order.currency)}
           </p>
         )}
 
