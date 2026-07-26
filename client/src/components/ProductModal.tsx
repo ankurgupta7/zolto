@@ -7,6 +7,7 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { formatPrice, useCurrency } from "@/lib/money";
+import { localizedDescription, localizedName } from "@/lib/localize";
 import { useCart } from "@/contexts/CartContext";
 import ImageLightbox from "./ImageLightbox";
 import {
@@ -57,12 +58,8 @@ export default function ProductModal({ product, open, onClose }: Props) {
   const { addItem, has, openCart } = useCart();
   const inCart = has(product.id);
 
-  const displayName =
-    i18n.language === "en" && product.nameEn ? product.nameEn : product.name;
-  const displayDescription =
-    i18n.language === "en" && product.descriptionEn
-      ? product.descriptionEn
-      : product.description;
+  const displayName = localizedName(product, i18n.language);
+  const displayDescription = localizedDescription(product, i18n.language);
 
   const handleAddToCart = () => {
     addItem(product);

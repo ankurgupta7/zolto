@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import { formatPrice, useCurrency } from "@/lib/money";
+import { localizedName } from "@/lib/localize";
 import { Trash2, Lock, CreditCard } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
@@ -40,7 +41,7 @@ export default function Checkout() {
   const createSession = trpc.checkout.createSession.useMutation();
 
   const displayName = (i: (typeof items)[number]) =>
-    i18n.language === "en" && i.nameEn ? i.nameEn : i.name;
+    localizedName(i, i18n.language);
 
   const handlePay = async () => {
     if (!accepted) {
