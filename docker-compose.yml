@@ -1,14 +1,33 @@
 # ─────────────────────────────────────────────────────────────────────────────
-# Kalakosh Zurich — Self-Hosted Docker Compose
+# Zolto (zolto.ch) — Self-Hosted Docker Compose
 #
 # Services:
 #   app   — Node.js application (Express + tRPC + React frontend)
 #   db    — MySQL 8 database
-#   caddy — Reverse proxy with automatic HTTPS (Let's Encrypt)
+#   caddy — Reverse proxy with automatic HTTPS (standalone profile only)
+#
+# This stack is designed to run on the SAME server as Kalakosh-ch, fully
+# independently: its own containers, its own MySQL volume, its own bridge
+# network — no shared state with the Kalakosh-ch stack.
+#
+# Two serving modes:
+#   1. SHARED (default, recommended): the Kalakosh-ch stack's Caddy owns host
+#      ports 80/443 and reverse-proxies zolto.ch to this app over the shared
+#      "kalakosh-shared" Docker network (this stack publishes NO host ports).
+#      In the Kalakosh-ch Caddyfile, point zolto.ch at `zolto-app:3000`:
+#          zolto.ch { reverse_proxy zolto-app:3000 }
+#          www.zolto.ch { redir https://zolto.ch{uri} permanent }
+#      Then just:  docker compose up -d
+#
+#   2. STANDALONE: this stack's own bundled Caddy serves zolto.ch itself.
+#      Only usable if nothing else owns 80/443 on the host — so NOT alongside
+#      Kalakosh-ch unless you remap ports. Enable with:
+#          docker compose --profile standalone up -d
 #
 # Usage:
 #   1. Copy .env.example to .env and fill in all values
-#   2. docker compose up -d
+#   2. docker network create kalakosh-shared   # once, if not already created
+#   3. docker compose up -d
 # ─────────────────────────────────────────────────────────────────────────────
 
 services:
@@ -64,8 +83,8 @@ services:
     networks:
       internal: {}
       # Joined to the shared proxy network so the Kalakosh-ch stack's Caddy can
-      # reach this app directly and serve it at zolto.kalakosh.ch. The alias is
-      # the hostname the Kalakosh Caddyfile reverse-proxies to.
+      # reach this app directly and serve it at zolto.ch. The alias is the
+      # hostname the Kalakosh-ch Caddyfile reverse-proxies to.
       shared:
         aliases:
           - zolto-app
@@ -101,12 +120,13 @@ services:
 
   # ── Caddy (reverse proxy + automatic HTTPS) ──────────────────────────────────────────
   #
-  # This bundled Caddy is only needed to run Zolto STANDALONE (on its own
-  # domain/IP). When running alongside the Kalakosh-ch stack — the intended
-  # setup — leave it off: the Kalakosh Caddy already owns ports 80/443 and
-  # serves this app at zolto.kalakosh.ch, so a second Caddy here would just
-  # compete for the host ports. It therefore lives behind the "standalone"
-  # profile and does NOT start with a plain `docker compose up`.
+  # This bundled Caddy is only needed to run Zolto STANDALONE (its own Caddy
+  # serving zolto.ch). When running alongside the Kalakosh-ch stack — the
+  # intended setup — leave it off: the Kalakosh-ch Caddy already owns ports
+  # 80/443 and serves zolto.ch for this app over the shared network, so a
+  # second Caddy here would just compete for the host ports. It therefore
+  # lives behind the "standalone" profile and does NOT start with a plain
+  # `docker compose up`.
   #
   #   Alongside Kalakosh (default):  docker compose up -d
   #   Standalone (own Caddy):        docker compose --profile standalone up -d
@@ -115,17 +135,17 @@ services:
     restart: unless-stopped
     profiles:
       - standalone
-    # Host ports are overridable so this stack can also run alongside another
-    # instance on its own ports if you prefer that over the subdomain setup.
-    # Defaults deliberately differ from the standard 80/443.
+    # Host ports are overridable. Defaults deliberately differ from 80/443 so
+    # the standalone profile can also run on a host where something else owns
+    # the standard ports (e.g. while migrating DNS over to zolto.ch).
     ports:
       - "${HTTP_PORT:-8080}:80"
       - "${HTTPS_PORT:-8443}:443"
     environment:
       # Caddyfile reads this to pick which domain(s) to serve — see Caddyfile.
-      # Defaults to ":80" (plain HTTP, no domain needed) for testing by IP;
-      # set to a real domain in .env once you're ready for HTTPS.
-      SITE_DOMAIN: ${SITE_DOMAIN:-:80}
+      # Defaults to zolto.ch; set ":80" for plain-HTTP testing by IP before
+      # DNS is pointed at the server.
+      SITE_DOMAIN: ${SITE_DOMAIN:-zolto.ch}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
@@ -144,9 +164,9 @@ networks:
   internal:
     driver: bridge
   # Shared, cross-stack network that lets the Kalakosh-ch Caddy reach this
-  # app and serve it at zolto.kalakosh.ch. Declared external so both stacks
-  # attach to the SAME Docker network regardless of start order. Create it
-  # once with:  docker network create kalakosh-shared
+  # app and serve it at zolto.ch. Declared external so both stacks attach to
+  # the SAME Docker network regardless of start order. Create it once with:
+  #   docker network create kalakosh-shared
   shared:
     external: true
     name: kalakosh-shared
