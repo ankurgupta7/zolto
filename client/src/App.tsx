@@ -12,6 +12,7 @@ import Contact from "./pages/Contact";
 import Admin from "./pages/Admin";
 import Billing from "./pages/Billing";
 import ClaimStaff from "./pages/ClaimStaff";
+import SupportChat from "./components/SupportChat";
 import BulkUpload from "./pages/BulkUpload";
 import CsvImport from "./pages/CsvImport";
 import DuplicateCleanup from "./pages/DuplicateCleanup";
@@ -91,6 +92,7 @@ function StorefrontRouter() {
       <Footer />
       <WhatsAppButton />
       <CartDrawer />
+      <SupportChat />
     </div>
   );
 }

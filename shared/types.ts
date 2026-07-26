@@ -12,6 +12,10 @@ export interface ProductItem {
   description: string;
   nameEn: string | null;
   descriptionEn: string | null;
+  nameDe: string | null;
+  descriptionDe: string | null;
+  nameFr: string | null;
+  descriptionFr: string | null;
   price: string;
   category: ProductCategory;
   imageKey: string | null;
