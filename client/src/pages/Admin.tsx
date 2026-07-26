@@ -30,6 +30,7 @@ import {
 import { getLoginUrl } from "@/const";
 import { PRODUCT_CATEGORIES, type ProductCategory } from "@shared/types";
 import ProductImageManager from "@/components/ProductImageManager";
+import OnboardingChecklist from "@/components/OnboardingChecklist";
 import InstagramManager from "@/components/InstagramManager";
 import BulkChangeReviewDialog from "@/components/BulkChangeReviewDialog";
 import ProductDiscoveryControls, {
@@ -924,6 +925,7 @@ export default function Admin() {
             </Link>
             <Link
               href="/admin/bulk-upload"
+              data-tour="bulk-upload"
               className="flex items-center gap-2 border border-white/20 text-white/80 px-4 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:border-white hover:text-white transition-colors"
             >
               Bulk Photo Upload
@@ -1060,6 +1062,9 @@ export default function Admin() {
               ?.scrollIntoView({ behavior: "smooth", block: "start" });
           }}
         />
+
+        {/* Live setup checklist (server-derived; dismissible) */}
+        <OnboardingChecklist />
 
         {/* Add Product Form */}
         {showAddForm && (

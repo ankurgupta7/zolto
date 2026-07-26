@@ -4,10 +4,11 @@ import { trpc } from "@/lib/trpc";
 import { getLoginUrl } from "@/const";
 
 /**
- * Post-signup onboarding wizard. Currently a client-side guided checklist — the
- * server has an `onboardingStep` column on `tenants` but no mutation to persist it
- * yet, so progress here is not saved across reloads. Wiring it to a
- * tenant.updateOnboardingStep mutation is a tracked follow-up.
+ * Post-signup onboarding wizard (docs/ARCHITECTURE.md). The checklist is
+ * SERVER-DERIVED (tenant.onboardingStatus): items complete because the real
+ * thing exists — a product row, a connected Stripe account — not because a
+ * checkbox was clicked. The wizard cursor advances via tenant.setOnboardingCursor
+ * once the admin is claimed, so a reload resumes where the merchant left off.
  */
 
 const CLAIM_TOKEN_KEY = "zolto_claim_token";
@@ -125,38 +126,34 @@ function ClaimStep({ store }: { store: string | null }) {
   );
 }
 
-const STEPS = [
-  {
-    title: "Add your branding",
-    body: "Upload your logo and pick your brand color. Your storefront themes itself from these.",
-  },
-  {
-    title: "Add your first product",
-    body: "Snap a photo and let the AI draft the description, or import a CSV of your catalog.",
-  },
-  {
-    title: "Connect payments",
-    body: "Link Stripe to accept cards online and TWINT/Tap-to-Pay at the market.",
-  },
-  {
-    title: "Make your first sale",
-    body: "Share your store link, ring up a sale on POS, and watch inventory sync in real time.",
-  },
-];
-
 export default function Onboarding() {
   const search = useSearch();
   const store = useMemo(
     () => new URLSearchParams(search).get("store"),
     [search],
   );
-  const [done, setDone] = useState<boolean[]>(() => STEPS.map(() => false));
 
-  const completed = done.filter(Boolean).length;
-  const allDone = completed === STEPS.length;
+  const status = trpc.tenant.onboardingStatus.useQuery(undefined, {
+    // Live: async platform steps (e.g. Stripe Connect return) tick off here.
+    refetchInterval: 5000,
+    retry: false,
+  });
+  const setCursor = trpc.tenant.setOnboardingCursor.useMutation();
+  const [cursorAdvanced, setCursorAdvanced] = useState(false);
 
-  const toggle = (i: number) =>
-    setDone((prev) => prev.map((v, idx) => (idx === i ? !v : v)));
+  const tasks = status.data?.tasks ?? [];
+  const doneCount = status.data?.doneCount ?? 0;
+  const totalCount = status.data?.totalCount ?? 1;
+  const allDone = status.data?.allDone ?? false;
+
+  // Once the wizard is reachable with a tenant context (post-claim), advance
+  // the server cursor to "saw the checklist" — reloads resume from here.
+  useEffect(() => {
+    if (cursorAdvanced || !status.data || status.data.cursor >= 2) return;
+    setCursorAdvanced(true);
+    setCursor.mutate({ step: 2 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status.data, cursorAdvanced]);
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-20">
@@ -167,7 +164,8 @@ export default function Onboarding() {
         Let's get your store live.
       </h1>
       <p className="mt-3 text-[var(--brand-muted-2)]">
-        Four steps. You can do them now or come back anytime.
+        This list updates itself as you go — finish a step in the admin and it
+        ticks off here, on any device.
       </p>
 
       <div className="mt-8">
@@ -177,38 +175,43 @@ export default function Onboarding() {
       <div className="mt-6 h-2 w-full overflow-hidden rounded-full bg-[var(--brand-surface)]">
         <div
           className="h-full rounded-full bg-[var(--brand-accent)] transition-all"
-          style={{ width: `${(completed / STEPS.length) * 100}%` }}
+          style={{ width: `${(doneCount / totalCount) * 100}%` }}
         />
       </div>
 
       <ol className="mt-8 space-y-4">
-        {STEPS.map((step, i) => (
+        {tasks.map((task) => (
           <li
-            key={step.title}
+            key={task.id}
             className="flex gap-4 rounded-xl border border-[var(--brand-border)] bg-white p-5"
           >
-            <button
-              type="button"
-              aria-pressed={done[i]}
-              aria-label={`Mark "${step.title}" ${done[i] ? "incomplete" : "complete"}`}
-              onClick={() => toggle(i)}
-              className={`mt-0.5 grid h-6 w-6 flex-shrink-0 place-items-center rounded-full border text-xs transition-colors ${
-                done[i]
+            <span
+              aria-label={task.done ? "Done" : "Not done"}
+              className={`mt-0.5 grid h-6 w-6 flex-shrink-0 place-items-center rounded-full border text-xs ${
+                task.done
                   ? "border-[var(--brand-accent)] bg-[var(--brand-accent)] text-[var(--brand-ink)]"
-                  : "border-[var(--brand-border-2)] text-transparent hover:border-[var(--brand-accent)]"
+                  : "border-[var(--brand-border-2)] text-transparent"
               }`}
             >
               ✓
-            </button>
-            <div>
+            </span>
+            <div className="flex-1">
               <h3
-                className={`font-serif text-lg ${done[i] ? "text-[var(--brand-muted)] line-through" : "text-[var(--brand-text)]"}`}
+                className={`font-serif text-lg ${task.done ? "text-[var(--brand-muted)] line-through" : "text-[var(--brand-text)]"}`}
               >
-                {step.title}
+                {task.title}
               </h3>
               <p className="mt-1 text-sm text-[var(--brand-muted-2)]">
-                {step.body}
+                {task.blockedReason ?? task.body}
               </p>
+              {!task.done && task.href && !task.blockedReason && (
+                <Link
+                  href={task.href}
+                  className="mt-2 inline-block text-xs font-medium uppercase tracking-[0.12em] text-[var(--brand-accent)] hover:underline"
+                >
+                  Go there →
+                </Link>
+              )}
             </div>
           </li>
         ))}
@@ -217,8 +220,8 @@ export default function Onboarding() {
       <Link
         href={
           store
-            ? `/?surface=storefront&tenant=${encodeURIComponent(store)}`
-            : "/"
+            ? `/admin?surface=storefront&tenant=${encodeURIComponent(store)}`
+            : "/admin"
         }
         className={`mt-8 inline-block rounded-md px-6 py-3 text-xs font-medium uppercase tracking-[0.12em] transition-colors ${
           allDone
@@ -226,7 +229,7 @@ export default function Onboarding() {
             : "border border-[var(--brand-ink)]/25 text-[var(--brand-ink)] hover:bg-[var(--brand-ink)] hover:text-white"
         }`}
       >
-        {allDone ? "Go to your store →" : "Skip to your store"}
+        {allDone ? "Go to your dashboard →" : "Continue in your dashboard"}
       </Link>
     </div>
   );
