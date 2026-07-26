@@ -112,7 +112,7 @@ export const tenantRouter = router({
       const tenantId = await createTenant({
         slug: input.slug,
         name: input.name,
-        plan: "starter",
+        plan: "free",
         posApiKey: generatePosApiKey(),
         trialEndsAt,
         referralCode: generateReferralCode(),

@@ -63,7 +63,7 @@ describe("tenant.create", () => {
       expect.objectContaining({
         slug: "aurora",
         name: "Aurora Atelier",
-        plan: "starter",
+        plan: "free",
       }),
     );
     expect(dbMock.createTenantSettings).toHaveBeenCalledWith({

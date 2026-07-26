@@ -19,6 +19,10 @@ import {
   deleteProduct,
   addInstagramPost,
   insertBulkUploadLog,
+  getPhotoCreditBalance,
+  getPhotoCreditHistory,
+  addPhotoCreditEntry,
+  consumePhotoCredit,
 } from "./db";
 
 describe("db helpers when the database is unavailable", () => {
@@ -55,5 +59,25 @@ describe("db helpers when the database is unavailable", () => {
     await expect(
       insertBulkUploadLog({ operation: "analyze", ref: "r" }),
     ).resolves.toBeUndefined();
+  });
+
+  it("photo credit reads degrade to zero/empty, writes throw", async () => {
+    await expect(getPhotoCreditBalance(1)).resolves.toBe(0);
+    await expect(getPhotoCreditHistory(1)).resolves.toEqual([]);
+    await expect(
+      addPhotoCreditEntry({ tenantId: 1, delta: 10, kind: "purchase" }),
+    ).rejects.toThrow(/Database not available/);
+    // With the DB down the balance reads as 0, so consumption fails closed —
+    // better to refuse a generation than to give one away untracked.
+    await expect(consumePhotoCredit(1)).resolves.toBe(false);
+  });
+
+  it("rejects invalid credit deltas before touching the DB", async () => {
+    await expect(
+      addPhotoCreditEntry({ tenantId: 1, delta: 0, kind: "purchase" }),
+    ).rejects.toThrow(/non-zero integer/);
+    await expect(
+      addPhotoCreditEntry({ tenantId: 1, delta: 1.5, kind: "purchase" }),
+    ).rejects.toThrow(/non-zero integer/);
   });
 });

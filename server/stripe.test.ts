@@ -24,8 +24,7 @@ vi.mock("./db", () => ({
     updateOrderBySessionId(...args),
   createOrder: (...args: unknown[]) => createOrder(...args),
   getProductsByIds: (...args: unknown[]) => getProductsByIds(...args),
-  getTenantAdminContact: (...args: unknown[]) =>
-    getTenantAdminContact(...args),
+  getTenantAdminContact: (...args: unknown[]) => getTenantAdminContact(...args),
   getTenantById: (...args: unknown[]) => getTenantById(...args),
 }));
 
@@ -36,6 +35,13 @@ vi.mock("./_core/notification", () => ({
 vi.mock("./_core/email", () => ({
   sendOrderReceipt: (...args: unknown[]) => sendOrderReceipt(...args),
   sendOwnerOrderEmail: (...args: unknown[]) => sendOwnerOrderEmail(...args),
+}));
+
+// Billing delegation is unit-tested in billing.test.ts; here every event is a
+// storefront event, so billing never claims anything.
+const handleBillingEvent = vi.fn(async () => false);
+vi.mock("./billing", () => ({
+  handleBillingEvent: (...args: unknown[]) => handleBillingEvent(...args),
 }));
 
 import {
@@ -346,6 +352,28 @@ describe("registerStripeWebhook", () => {
       .send(JSON.stringify({ id: "evt_1" }));
 
     expect(res.status).toBe(400);
+    expect(getOrderBySessionId).not.toHaveBeenCalled();
+  });
+
+  it("short-circuits events claimed by platform billing", async () => {
+    handleBillingEvent.mockResolvedValueOnce(true);
+    const stripe = new Stripe("sk_test_123");
+    const app = buildApp();
+    const { body, header } = signedPayload(stripe, {
+      id: "evt_billing",
+      type: "customer.subscription.updated",
+      data: { object: { id: "sub_1" } },
+    });
+
+    const res = await request(app)
+      .post("/api/stripe/webhook")
+      .set("stripe-signature", header)
+      .set("Content-Type", "application/json")
+      .send(body);
+
+    expect(res.status).toBe(200);
+    expect(handleBillingEvent).toHaveBeenCalledTimes(1);
+    // Billing claimed it — storefront order handling must not run.
     expect(getOrderBySessionId).not.toHaveBeenCalled();
   });
 
