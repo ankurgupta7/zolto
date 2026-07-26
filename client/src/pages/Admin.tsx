@@ -928,6 +928,13 @@ export default function Admin() {
             >
               Bulk Photo Upload
             </Link>
+            <Link
+              href="/admin/billing"
+              className="flex items-center gap-2 border border-white/20 text-white/80 px-4 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:border-white hover:text-white transition-colors"
+            >
+              <CreditCard size={14} />
+              Plan &amp; Billing
+            </Link>
             <button
               type="button"
               onClick={() => previewRecategoriseMutation.mutate()}

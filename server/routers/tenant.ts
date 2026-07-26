@@ -6,6 +6,7 @@ import {
   protectedProcedure,
   adminProcedure,
   requireTenant,
+  PLAN_FEATURES,
 } from "../_core/trpc";
 import {
   db,
@@ -181,6 +182,11 @@ export const tenantRouter = router({
   }),
 
   // ─── Admin: Update tenant settings ────────────────────────────────────────
+  // Paid-tier fields are gated by the tenant's plan (PLAN_FEATURES):
+  //   publicDomain — custom domain, from the Maker plan up
+  //   currency     — anything other than CHF needs multi-currency (Studio up)
+  // The checks live inline (not as middleware) because the same procedure also
+  // accepts ungated branding fields on every plan.
   updateSettings: publicProcedure
     .use(requireTenant)
     .input(
@@ -196,9 +202,41 @@ export const tenantRouter = router({
         metaDescription: z.string().optional(),
         contactEmail: z.string().email().optional(),
         contactPhone: z.string().optional(),
+        publicDomain: z
+          .string()
+          .regex(/^[a-z0-9]+(-[a-z0-9]+)*(\.[a-z0-9]+(-[a-z0-9]+)*)+$/, {
+            message: "Enter a bare domain like shop.example.com",
+          })
+          .max(255)
+          .optional(),
+        currency: z
+          .string()
+          .regex(/^[a-z]{3}$/, "Use a 3-letter currency code like chf or eur")
+          .optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
+      const features = PLAN_FEATURES[ctx.tenant.plan];
+
+      if (input.publicDomain !== undefined && !features.customDomain) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message:
+            "A custom domain requires the Maker plan or above. Please upgrade.",
+        });
+      }
+      if (
+        input.currency !== undefined &&
+        input.currency !== "chf" &&
+        !features.multiCurrency
+      ) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message:
+            "Multi-currency checkout requires the Studio plan or above. Please upgrade.",
+        });
+      }
+
       const existing = await db.query.tenantSettings.findFirst({
         where: eq(tenantSettings.tenantId, ctx.tenant.id),
       });

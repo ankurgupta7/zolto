@@ -10,6 +10,7 @@ import Shop from "./pages/Shop";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Admin from "./pages/Admin";
+import Billing from "./pages/Billing";
 import BulkUpload from "./pages/BulkUpload";
 import CsvImport from "./pages/CsvImport";
 import DuplicateCleanup from "./pages/DuplicateCleanup";
@@ -77,6 +78,7 @@ function StorefrontRouter() {
           <Route path="/faq" component={FAQ} />
           <Route path="/product/:id" component={ProductDetail} />
           <Route path="/admin" component={Admin} />
+          <Route path="/admin/billing" component={Billing} />
           <Route path="/admin/bulk-upload" component={BulkUpload} />
           <Route path="/admin/csv-import" component={CsvImport} />
           <Route path="/admin/duplicates" component={DuplicateCleanup} />
