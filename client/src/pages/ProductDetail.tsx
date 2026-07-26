@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useParams } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useTranslation } from "react-i18next";
+import { localizedDescription, localizedName } from "@/lib/localize";
 import { ArrowLeft, ShoppingBag, Check } from "lucide-react";
 import { toast } from "sonner";
 import ImageLightbox from "@/components/ImageLightbox";
@@ -136,12 +137,8 @@ export default function ProductDetail() {
     );
   }
 
-  const displayName =
-    i18n.language === "en" && product.nameEn ? product.nameEn : product.name;
-  const displayDescription =
-    i18n.language === "en" && product.descriptionEn
-      ? product.descriptionEn
-      : product.description;
+  const displayName = localizedName(product, i18n.language);
+  const displayDescription = localizedDescription(product, i18n.language);
 
   const inCart = has(product.id);
   const handleAddToCart = () => {
