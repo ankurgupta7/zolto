@@ -424,3 +424,33 @@ docker network inspect zolto_internal \
   ```
 
   `./update.sh` now names these runners and force-removes them on exit (even on Ctrl-C), so fresh installs should not hit this case.
+
+## Tenant custom domains (Maker plan and above)
+
+Tenants can serve their storefront on their own domain. Two pieces make it work:
+
+1. **`GET /api/domain-ask?domain=…`** — already in the app. Caddy's on-demand
+   TLS calls this before minting a certificate; it answers 200 only for domains
+   a tenant actually saved (and whose plan still includes custom domains), so
+   strangers can't drive Let's Encrypt issuance through your Caddy.
+2. **Caddy on-demand TLS** — add a wildcard-ish block to the Caddyfile:
+
+   ```
+   {
+       on_demand_tls {
+           ask http://app:3000/api/domain-ask
+       }
+   }
+
+   https:// {
+       tls {
+           on_demand
+       }
+       reverse_proxy app:3000
+       encode gzip
+   }
+   ```
+
+   Set `PLATFORM_DOMAIN` (e.g. `app.zolto.ch`) in `.env` — tenants get shown
+   "CNAME your domain → app.zolto.ch" in Plan & Billing, and the app live-checks
+   their DNS. HTTPS is issued automatically on the first visit after DNS points.

@@ -28,12 +28,15 @@ import {
   type InsertTenant,
   type InsertTenantSetting,
   type InsertUser,
+  type User,
   instagramPosts,
   type Order,
   orders,
   type PhotoCreditLedgerEntry,
   photoCreditLedger,
   type PosAttribution,
+  type StaffInvite,
+  staffInvites,
   posAttributions,
   posOrderItems,
   posOrders,
@@ -1159,6 +1162,26 @@ export async function getTenantByStripeCustomerId(
   }, undefined);
 }
 
+// ─── Custom domains ───────────────────────────────────────────────────────────
+
+/**
+ * Find the settings row for a registered custom domain. Used by the Caddy
+ * on-demand-TLS "ask" endpoint: only domains a Maker+ tenant actually saved
+ * may get a certificate, so strangers can't mint certs through our Caddy.
+ */
+export async function getTenantSettingsByDomain(
+  domain: string,
+): Promise<TenantSetting | undefined> {
+  return withDb(async (db) => {
+    const rows = await db
+      .select()
+      .from(tenantSettings)
+      .where(eq(tenantSettings.publicDomain, domain.toLowerCase()))
+      .limit(1);
+    return rows[0];
+  }, undefined);
+}
+
 export async function getTenantByStripeSubscriptionId(
   subscriptionId: string,
 ): Promise<Tenant | undefined> {
@@ -1264,4 +1287,126 @@ export async function getPhotoCreditHistory(
       .orderBy(desc(photoCreditLedger.createdAt))
       .limit(limit);
   }, []);
+}
+
+// ─── Staff seats + invites ────────────────────────────────────────────────────
+// A seat = a users row with role admin/staff (customers never consume seats).
+// Pending invites hold a seat too, so the plan's seat limit applies to
+// "current team + outstanding invites".
+
+/** Users occupying staff seats (admin + staff), newest first. */
+export async function getTenantStaff(tenantId: number): Promise<User[]> {
+  return withDb(async (db) => {
+    return db
+      .select()
+      .from(users)
+      .where(
+        and(
+          eq(users.tenantId, tenantId),
+          inArray(users.role, ["admin", "staff"]),
+        ),
+      )
+      .orderBy(desc(users.createdAt));
+  }, []);
+}
+
+export async function countTenantStaff(tenantId: number): Promise<number> {
+  return withDb(async (db) => {
+    const rows = await db
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(users)
+      .where(
+        and(
+          eq(users.tenantId, tenantId),
+          inArray(users.role, ["admin", "staff"]),
+        ),
+      );
+    return Number(rows[0]?.count ?? 0);
+  }, 0);
+}
+
+export async function createStaffInvite(entry: {
+  tenantId: number;
+  email: string;
+  token: string;
+  invitedByUserId?: number;
+  expiresAt: Date;
+}): Promise<void> {
+  await withDbOrThrow((db) =>
+    db.insert(staffInvites).values({
+      tenantId: entry.tenantId,
+      email: entry.email,
+      token: entry.token,
+      invitedByUserId: entry.invitedByUserId ?? null,
+      expiresAt: entry.expiresAt,
+    }),
+  );
+}
+
+/** Pending (not yet accepted, not yet expired) invites — these hold seats. */
+export async function getPendingStaffInvites(
+  tenantId: number,
+): Promise<StaffInvite[]> {
+  return withDb(async (db) => {
+    return db
+      .select()
+      .from(staffInvites)
+      .where(
+        and(
+          eq(staffInvites.tenantId, tenantId),
+          isNull(staffInvites.acceptedAt),
+          gt(staffInvites.expiresAt, new Date()),
+        ),
+      )
+      .orderBy(desc(staffInvites.createdAt));
+  }, []);
+}
+
+export async function getStaffInviteByToken(
+  token: string,
+): Promise<StaffInvite | undefined> {
+  return withDb(async (db) => {
+    const rows = await db
+      .select()
+      .from(staffInvites)
+      .where(eq(staffInvites.token, token))
+      .limit(1);
+    return rows[0];
+  }, undefined);
+}
+
+export async function markStaffInviteAccepted(id: number): Promise<void> {
+  await withDbOrThrow((db) =>
+    db
+      .update(staffInvites)
+      .set({ acceptedAt: new Date() })
+      .where(eq(staffInvites.id, id)),
+  );
+}
+
+export async function deleteStaffInvite(
+  id: number,
+  tenantId: number,
+): Promise<void> {
+  await withDbOrThrow((db) =>
+    db
+      .delete(staffInvites)
+      .where(and(eq(staffInvites.id, id), eq(staffInvites.tenantId, tenantId))),
+  );
+}
+
+/**
+ * Move a user into a tenant as staff (invite claim). Only ever upgrades to
+ * the staff role on the target tenant — never used to move between tenants.
+ */
+export async function joinTenantAsStaff(
+  userId: number,
+  tenantId: number,
+): Promise<void> {
+  await withDbOrThrow((db) =>
+    db
+      .update(users)
+      .set({ tenantId, role: "staff" })
+      .where(eq(users.id, userId)),
+  );
 }

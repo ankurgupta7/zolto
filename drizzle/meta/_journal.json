@@ -29,6 +29,13 @@
       "when": 1785060239982,
       "tag": "0004_plan_rename_and_photo_credits",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1785063089234,
+      "tag": "0005_staff_invites",
+      "breakpoints": true
     }
   ]
 }

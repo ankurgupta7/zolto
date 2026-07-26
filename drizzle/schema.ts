@@ -487,3 +487,24 @@ export const photoCreditLedger = mysqlTable("photo_credit_ledger", {
 export type PhotoCreditLedgerEntry = typeof photoCreditLedger.$inferSelect;
 export type InsertPhotoCreditLedgerEntry =
   typeof photoCreditLedger.$inferInsert;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// STAFF INVITES — pending team seats (plans limit seats: 1/3/10/20)
+// ═══════════════════════════════════════════════════════════════════════════════
+// A staff seat = a users row with role admin or staff on the tenant. Inviting
+// creates a pending row here; each pending invite holds a seat until accepted
+// or revoked, so an owner can't over-invite past their plan's seat limit.
+export const staffInvites = mysqlTable("staff_invites", {
+  id: int("id").autoincrement().primaryKey(),
+  tenantId: int("tenant_id").notNull(),
+  email: varchar("email", { length: 320 }).notNull(),
+  // Bearer token in the invite link (/claim-staff?token=…), 48 hex chars.
+  token: varchar("token", { length: 64 }).notNull(),
+  invitedByUserId: int("invited_by_user_id"),
+  expiresAt: timestamp("expiresAt").notNull(),
+  acceptedAt: timestamp("acceptedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type StaffInvite = typeof staffInvites.$inferSelect;
+export type InsertStaffInvite = typeof staffInvites.$inferInsert;

@@ -197,6 +197,41 @@ export function buildReceiptHtml(opts: OrderReceiptOptions): string {
 </html>`;
 }
 
+// ── Generic transactional email ───────────────────────────────────────────────
+// Minimal Resend wrapper for internal/team mail (staff invites etc.) where the
+// full order-receipt template doesn't apply. Returns false when Resend isn't
+// configured so callers can degrade gracefully (e.g. show the link on screen).
+
+export async function sendTransactionalEmail(opts: {
+  to: string;
+  subject: string;
+  html: string;
+  from?: string;
+}): Promise<boolean> {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) return false;
+
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: opts.from ?? "Zolto <noreply@zolto.ch>",
+      to: opts.to,
+      subject: opts.subject,
+      html: opts.html,
+    }),
+  });
+
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Resend API ${res.status}: ${body}`);
+  }
+  return true;
+}
+
 // ── Public API ────────────────────────────────────────────────────────────────
 export async function sendOrderReceipt(
   opts: OrderReceiptOptions,

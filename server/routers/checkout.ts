@@ -7,6 +7,7 @@ import {
   createOrder,
   getOrderBySessionId,
   getTenantById,
+  getTenantSettings,
   reserveProducts,
   releaseProductReservations,
   PRODUCT_RESERVATION_TTL_MS,
@@ -112,6 +113,12 @@ export const checkoutRouter = router({
         });
       }
 
+      // Prices and shipping are charged in the tenant's own currency
+      // (tenantSettings.currency; multi-currency is a Studio plan feature,
+      // gated in tenant.updateSettings). Stripe wants lowercase ISO.
+      const tenantSettings = await getTenantSettings(tenantId);
+      const currency = (tenantSettings?.currency || "chf").toLowerCase();
+
       // De-duplicate — each piece is unique and can only be bought once.
       const uniqueIds = Array.from(new Set(input.productIds));
       const items = await getProductsByIds(tenantId, uniqueIds);
@@ -166,7 +173,7 @@ export const checkoutRouter = router({
         return {
           quantity: 1,
           price_data: {
-            currency: "chf",
+            currency,
             unit_amount: Math.round(Number(p.price) * 100),
             product_data: {
               name: p.name,
@@ -222,7 +229,7 @@ export const checkoutRouter = router({
                   type: "fixed_amount",
                   fixed_amount: {
                     amount: chShippingFeeRappen,
-                    currency: "chf",
+                    currency,
                   },
                   display_name:
                     chShippingFeeRappen === 0
@@ -239,7 +246,7 @@ export const checkoutRouter = router({
                   type: "fixed_amount",
                   fixed_amount: {
                     amount: EU_FLAT_SHIPPING_FEE_RAPPEN,
-                    currency: "chf",
+                    currency,
                   },
                   display_name: "Standard shipping (EU)",
                   delivery_estimate: {
@@ -283,7 +290,7 @@ export const checkoutRouter = router({
           stripeSessionId: session.id,
           status: "pending",
           amountTotal,
-          currency: "chf",
+          currency,
           productIds: uniqueIds.join(","),
         });
 

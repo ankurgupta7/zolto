@@ -1,5 +1,6 @@
 import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
+import { formatPrice, useCurrency } from "@/lib/money";
 import { ShoppingBag, Trash2, X } from "lucide-react";
 import {
   Sheet,
@@ -14,6 +15,7 @@ export default function CartDrawer() {
   const { items, total, count, removeItem, isOpen, setOpen, closeCart } =
     useCart();
   const { t, i18n } = useTranslation();
+  const currency = useCurrency();
   const [, navigate] = useLocation();
 
   const goToCheckout = () => {
@@ -74,7 +76,7 @@ export default function CartDrawer() {
                       {item.category}
                     </p>
                     <p className="font-serif text-[var(--brand-ink)] text-lg">
-                      CHF {Number(item.price).toFixed(2)}
+                      {formatPrice(Number(item.price), currency)}
                     </p>
                   </div>
                   <button
@@ -95,7 +97,7 @@ export default function CartDrawer() {
                   {t("cart.subtotal")}
                 </span>
                 <span className="font-serif text-2xl text-[var(--brand-ink)]">
-                  CHF {total.toFixed(2)}
+                  {formatPrice(total, currency)}
                 </span>
               </div>
               <p className="text-xs text-muted-foreground font-sans">

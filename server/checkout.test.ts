@@ -32,6 +32,7 @@ vi.mock("./db", () => ({
   createOrder: (...args: unknown[]) => createOrder(...args),
   getOrderBySessionId: (...args: unknown[]) => getOrderBySessionId(...args),
   getTenantById: (...args: unknown[]) => getTenantById(...args),
+  getTenantSettings: vi.fn().mockResolvedValue(null),
   reserveProducts: (...args: unknown[]) => reserveProducts(...args),
   releaseProductReservations: (...args: unknown[]) =>
     releaseProductReservations(...args),

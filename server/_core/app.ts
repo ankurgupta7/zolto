@@ -12,6 +12,7 @@ import { registerPosAttributionRoutes } from "../posAttributionRoutes";
 import { registerSeoRoutes } from "../seo";
 import { registerLlmsRoutes } from "../llms";
 import { registerMcpRoutes } from "../mcp";
+import { registerDomainAsk } from "../domainAsk";
 import { getDb } from "../db";
 
 /**
@@ -56,6 +57,9 @@ export async function createApp(): Promise<express.Express> {
   // AI-agent discovery: /llms.txt (tenant-aware) + the MCP product endpoint.
   registerLlmsRoutes(app);
   registerMcpRoutes(app);
+
+  // Caddy on-demand-TLS "ask" for tenant custom domains (Maker plan+).
+  registerDomainAsk(app);
 
   // tRPC API
   app.use(
