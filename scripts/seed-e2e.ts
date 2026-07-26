@@ -40,7 +40,7 @@ async function main() {
     await db.insert(tenants).values({
       slug: SLUG,
       name: `${SLUG} storefront (e2e)`,
-      plan: "growth",
+      plan: "studio",
       posApiKey: `pos_${nanoid(24)}`,
       referralCode: nanoid(10),
     });

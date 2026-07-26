@@ -31,6 +31,8 @@ import {
   instagramPosts,
   type Order,
   orders,
+  type PhotoCreditLedgerEntry,
+  photoCreditLedger,
   type PosAttribution,
   posAttributions,
   posOrderItems,
@@ -1136,4 +1138,130 @@ export async function assignUserToTenantAsAdmin(
 
 export async function deleteUserById(id: number): Promise<void> {
   await withDbOrThrow((db) => db.delete(users).where(eq(users.id, id)));
+}
+
+// ─── Billing (Zolto's own subscription relationship with tenants) ─────────────
+// Distinct from storefront payments: stripeCustomerId/stripeSubscriptionId here
+// belong to Zolto's own Stripe account and bill the MERCHANT for their plan;
+// stripeConnectedAccountId is the merchant's own account their customers pay
+// into (see server/stripeConnect.ts).
+
+export async function getTenantByStripeCustomerId(
+  customerId: string,
+): Promise<Tenant | undefined> {
+  return withDb(async (db) => {
+    const rows = await db
+      .select()
+      .from(tenants)
+      .where(eq(tenants.stripeCustomerId, customerId))
+      .limit(1);
+    return rows[0];
+  }, undefined);
+}
+
+export async function getTenantByStripeSubscriptionId(
+  subscriptionId: string,
+): Promise<Tenant | undefined> {
+  return withDb(async (db) => {
+    const rows = await db
+      .select()
+      .from(tenants)
+      .where(eq(tenants.stripeSubscriptionId, subscriptionId))
+      .limit(1);
+    return rows[0];
+  }, undefined);
+}
+
+/**
+ * Sync a tenant's plan/billing state from a Stripe subscription event. Only the
+ * provided fields are written, so a `customer.subscription.updated` that says
+ * nothing about the plan leaves the plan alone.
+ */
+export async function updateTenantBilling(
+  tenantId: number,
+  fields: Partial<
+    Pick<Tenant, "plan" | "subscriptionStatus" | "stripeSubscriptionId">
+  >,
+): Promise<void> {
+  if (Object.keys(fields).length === 0) return;
+  await withDbOrThrow((db) =>
+    db.update(tenants).set(fields).where(eq(tenants.id, tenantId)),
+  );
+}
+
+// ─── Photo credit ledger (AI photo metering) ─────────────────────────────────
+// Balance = SUM(delta) for the tenant. Grants are positive entries
+// (monthly_grant/purchase/manual_adjustment), consumption is -1 per image.
+// Append-only: never update or delete rows, correct with a manual_adjustment.
+
+export async function getPhotoCreditBalance(tenantId: number): Promise<number> {
+  return withDb(async (db) => {
+    const rows = await db
+      .select({
+        balance: sql<number>`COALESCE(SUM(${photoCreditLedger.delta}), 0)`,
+      })
+      .from(photoCreditLedger)
+      .where(eq(photoCreditLedger.tenantId, tenantId));
+    return Number(rows[0]?.balance ?? 0);
+  }, 0);
+}
+
+export async function addPhotoCreditEntry(entry: {
+  tenantId: number;
+  delta: number;
+  kind: PhotoCreditLedgerEntry["kind"];
+  ref?: string | null;
+  note?: string | null;
+}): Promise<void> {
+  if (!Number.isInteger(entry.delta) || entry.delta === 0) {
+    throw new Error("Photo credit delta must be a non-zero integer");
+  }
+  await withDbOrThrow((db) =>
+    db.insert(photoCreditLedger).values({
+      tenantId: entry.tenantId,
+      delta: entry.delta,
+      kind: entry.kind,
+      ref: entry.ref ?? null,
+      note: entry.note ?? null,
+    }),
+  );
+}
+
+/**
+ * Consume one credit for an AI photo generation. Returns false (and writes
+ * nothing) when the tenant has no credits left, so callers can distinguish
+ * "no balance" from a successful deduction. The check-then-insert is not a
+ * serializable transaction; the only consumer is the admin product editor,
+ * where two simultaneous generations by the same merchant are unlikely, and
+ * the worst case is one extra image granted — a deliberate availability-over-
+ * strictness tradeoff for a goodwill-priced feature.
+ */
+export async function consumePhotoCredit(
+  tenantId: number,
+  ref?: string | null,
+): Promise<boolean> {
+  const balance = await getPhotoCreditBalance(tenantId);
+  if (balance <= 0) return false;
+  await addPhotoCreditEntry({
+    tenantId,
+    delta: -1,
+    kind: "consumption",
+    ref: ref ?? null,
+  });
+  return true;
+}
+
+/** List a tenant's ledger entries, newest first (for the billing page). */
+export async function getPhotoCreditHistory(
+  tenantId: number,
+  limit = 50,
+): Promise<PhotoCreditLedgerEntry[]> {
+  return withDb(async (db) => {
+    return db
+      .select()
+      .from(photoCreditLedger)
+      .where(eq(photoCreditLedger.tenantId, tenantId))
+      .orderBy(desc(photoCreditLedger.createdAt))
+      .limit(limit);
+  }, []);
 }

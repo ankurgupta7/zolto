@@ -72,46 +72,82 @@ export const superadminProcedure = t.procedure.use(
 // Feature Gating Middleware
 // ═══════════════════════════════════════════════════════════════════════════════
 
+// Plan ids mirror the marketing source of truth (shared/platform.ts PLANS);
+// the DB enum (drizzle/schema.ts tenants.plan) uses the same four ids, so a
+// tenant's row, the pricing page, and the gates below can never drift apart.
+// includedPhotoCredits is intentionally NOT duplicated here — read it from
+// PLANS in shared/platform.ts, which is the single owner of the buckets.
 export const PLAN_FEATURES = {
-  starter: {
-    maxProducts: 50,
+  // Free: the whole commerce engine (unlimited products, full POS, online
+  // store, real-time sync, AI text) — per honest-pricing-strategy.md we never
+  // gate what costs us ~nothing to run. No custom domain, Zolto badge shown.
+  free: {
     maxStaff: 1,
-    maxImagesPerProduct: 3,
-    discordBot: false,
-    aiBulkUpload: false,
     customDomain: false,
-    pos: true,
-    onlineStore: true,
+    whiteLabel: false,
     analytics: "basic",
-  },
-  growth: {
-    maxProducts: 500,
-    maxStaff: 5,
-    maxImagesPerProduct: 10,
-    discordBot: true,
-    aiBulkUpload: true,
-    customDomain: true,
+    multiCurrency: false,
+    prioritySupport: false,
+    sso: false,
+    apiAccess: false,
+    auditLogs: false,
     pos: true,
     onlineStore: true,
+  },
+  // Maker (CHF 19/mo): custom domain + managed SSL, white-label, human support.
+  maker: {
+    maxStaff: 3,
+    customDomain: true,
+    whiteLabel: true,
+    analytics: "basic",
+    multiCurrency: false,
+    prioritySupport: false,
+    sso: false,
+    apiAccess: false,
+    auditLogs: false,
+    pos: true,
+    onlineStore: true,
+  },
+  // Studio (CHF 49/mo): teams, advanced analytics, multi-currency, priority support.
+  studio: {
+    maxStaff: 10,
+    customDomain: true,
+    whiteLabel: true,
     analytics: "advanced",
-  },
-  enterprise: {
-    maxProducts: Infinity,
-    maxStaff: Infinity,
-    maxImagesPerProduct: Infinity,
-    discordBot: true,
-    aiBulkUpload: true,
-    customDomain: true,
+    multiCurrency: true,
+    prioritySupport: true,
+    sso: false,
+    apiAccess: false,
+    auditLogs: false,
     pos: true,
     onlineStore: true,
-    analytics: "custom",
+  },
+  // Atelier (CHF 99/mo): API access, SSO, audit logs, dedicated support + SLA.
+  atelier: {
+    maxStaff: 20,
+    customDomain: true,
+    whiteLabel: true,
+    analytics: "advanced",
+    multiCurrency: true,
+    prioritySupport: true,
     sso: true,
     apiAccess: true,
-    prioritySupport: true,
+    auditLogs: true,
+    pos: true,
+    onlineStore: true,
   },
 } as const;
 
-export type PlanFeature = keyof typeof PLAN_FEATURES.starter;
+export type PlanId = keyof typeof PLAN_FEATURES;
+export type PlanFeature = keyof typeof PLAN_FEATURES.free;
+
+/** The next plan up, for upgrade prompts. */
+const UPGRADE_PATH: Record<PlanId, string | null> = {
+  free: "Maker",
+  maker: "Studio",
+  studio: "Atelier",
+  atelier: null,
+};
 
 export function checkFeature(feature: PlanFeature) {
   return t.middleware(async ({ ctx, next }) => {
@@ -126,9 +162,12 @@ export function checkFeature(feature: PlanFeature) {
     const hasFeature = features[feature as keyof typeof features] ?? false;
 
     if (!hasFeature) {
+      const nextPlan = UPGRADE_PATH[ctx.tenant.plan];
       throw new TRPCError({
         code: "FORBIDDEN",
-        message: `This feature requires a ${ctx.tenant.plan === "starter" ? "Growth" : "Enterprise"} plan. Please upgrade.`,
+        message: nextPlan
+          ? `This feature requires the ${nextPlan} plan. Please upgrade.`
+          : "This feature is not available on your plan.",
       });
     }
 

@@ -45,6 +45,7 @@ import {
 } from "./db";
 import { sendOrderReceipt, sendOwnerOrderEmail } from "./_core/email";
 import { notifyOwner } from "./_core/notification";
+import { handleBillingEvent } from "./billing";
 
 let _stripe: Stripe | null = null;
 
@@ -247,7 +248,17 @@ async function releaseHeldProducts(sessionId: string): Promise<void> {
  * regardless of which Stripe account it came from, since the order row
  * already carries its own tenantId (set when the session was created).
  */
-async function handleStripeEvent(event: Stripe.Event): Promise<void> {
+async function handleStripeEvent(
+  event: Stripe.Event,
+  source: "platform" | "connect",
+): Promise<void> {
+  // Platform-billing events (plan subscriptions, photo-credit purchases,
+  // subscription lifecycle) are handled by server/billing.ts first — but only
+  // on the platform webhook; subscription events on a tenant's connected
+  // account are not Zolto's billing relationship. Anything billing doesn't
+  // claim falls through to storefront order handling below.
+  if (source === "platform" && (await handleBillingEvent(event))) return;
+
   switch (event.type) {
     case "checkout.session.completed":
     case "checkout.session.async_payment_succeeded": {
@@ -321,7 +332,7 @@ export function registerStripeWebhook(app: Express): void {
       }
 
       try {
-        await handleStripeEvent(event);
+        await handleStripeEvent(event, "platform");
       } catch (err) {
         console.error(`[Stripe] Error handling ${event.type}:`, err);
         res.status(500).send("Webhook handler failed");
@@ -365,7 +376,7 @@ export function registerStripeWebhook(app: Express): void {
       }
 
       try {
-        await handleStripeEvent(event);
+        await handleStripeEvent(event, "connect");
       } catch (err) {
         console.error(`[Stripe] Error handling Connect ${event.type}:`, err);
         res.status(500).send("Webhook handler failed");

@@ -11,12 +11,10 @@ import {
 const testRouter = router({
   superadminOnly: superadminProcedure.query(() => "ok"),
   tenantOnly: publicProcedure.use(requireTenant).query(() => "ok"),
-  discordGated: publicProcedure
-    .use(checkFeature("discordBot"))
+  domainGated: publicProcedure
+    .use(checkFeature("customDomain"))
     .query(() => "ok"),
-  // Cast an unknown feature key to force the "missing feature" path on a
-  // non-starter plan (every real starter-key feature is truthy on growth).
-  ssoGated: publicProcedure.use(checkFeature("sso" as never)).query(() => "ok"),
+  ssoGated: publicProcedure.use(checkFeature("sso")).query(() => "ok"),
 });
 
 function ctx(overrides: Partial<TrpcContext> = {}): TrpcContext {
@@ -56,7 +54,7 @@ describe("superadminProcedure", () => {
 
 describe("requireTenant", () => {
   it("passes through when a tenant is present", async () => {
-    const caller = testRouter.createCaller(ctx({ tenant: tenant("starter") }));
+    const caller = testRouter.createCaller(ctx({ tenant: tenant("free") }));
     expect(await caller.tenantOnly()).toBe("ok");
   });
 
@@ -68,22 +66,28 @@ describe("requireTenant", () => {
 
 describe("checkFeature", () => {
   it("allows a plan that includes the feature", async () => {
-    const caller = testRouter.createCaller(ctx({ tenant: tenant("growth") }));
-    expect(await caller.discordGated()).toBe("ok");
+    const caller = testRouter.createCaller(ctx({ tenant: tenant("maker") }));
+    expect(await caller.domainGated()).toBe("ok");
   });
 
-  it("suggests upgrading to Growth from a starter plan", async () => {
-    const caller = testRouter.createCaller(ctx({ tenant: tenant("starter") }));
-    await expect(caller.discordGated()).rejects.toThrow(/Growth plan/);
+  it("suggests upgrading to Maker from the free plan", async () => {
+    const caller = testRouter.createCaller(ctx({ tenant: tenant("free") }));
+    await expect(caller.domainGated()).rejects.toThrow(/Maker plan/);
   });
 
-  it("suggests Enterprise when a non-starter plan lacks the feature", async () => {
-    const caller = testRouter.createCaller(ctx({ tenant: tenant("growth") }));
-    await expect(caller.ssoGated()).rejects.toThrow(/Enterprise plan/);
+  it("suggests Atelier when a mid-tier plan lacks the feature", async () => {
+    const caller = testRouter.createCaller(ctx({ tenant: tenant("studio") }));
+    await expect(caller.ssoGated()).rejects.toThrow(/Atelier plan/);
+  });
+
+  it("gives a plain message on the top plan", async () => {
+    // Atelier has no upgrade path, so the error doesn't name a next plan.
+    const caller = testRouter.createCaller(ctx({ tenant: tenant("atelier") }));
+    expect(await caller.ssoGated()).toBe("ok");
   });
 
   it("fails without a tenant context", async () => {
     const caller = testRouter.createCaller(ctx());
-    await expect(caller.discordGated()).rejects.toThrow(/No tenant context/);
+    await expect(caller.domainGated()).rejects.toThrow(/No tenant context/);
   });
 });

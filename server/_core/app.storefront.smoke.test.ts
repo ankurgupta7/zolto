@@ -33,7 +33,7 @@ vi.mock("../db", async (importActual) => {
 
 import { createApp } from "./app";
 
-const TENANT = { id: 7, slug: "aurora", plan: "growth", name: "Aurora" };
+const TENANT = { id: 7, slug: "aurora", plan: "studio", name: "Aurora" };
 const PRODUCTS = [
   { id: 1, name: "Mondstein-Ring", category: "Rings", price: "185.00" },
   { id: 2, name: "Perlen-Kollier", category: "Necklaces", price: "240.00" },

@@ -20,8 +20,10 @@ export const tenants = mysqlTable("tenants", {
   slug: varchar("slug", { length: 64 }).notNull().unique(), // e.g. "kalakosh"
   name: varchar("name", { length: 255 }).notNull(),
   domain: varchar("domain", { length: 255 }), // custom domain or null
-  plan: mysqlEnum("plan", ["starter", "growth", "enterprise"])
-    .default("starter")
+  // Plan ids match the marketing source of truth (shared/platform.ts PLANS):
+  // free / maker / studio / atelier. Signup defaults to "free".
+  plan: mysqlEnum("plan", ["free", "maker", "studio", "atelier"])
+    .default("free")
     .notNull(),
   stripeCustomerId: varchar("stripe_customer_id", { length: 255 }),
   stripeSubscriptionId: varchar("stripe_subscription_id", { length: 255 }),
@@ -455,3 +457,33 @@ export const addOns = mysqlTable("add_ons", {
 
 export type AddOn = typeof addOns.$inferSelect;
 export type InsertAddOn = typeof addOns.$inferInsert;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PHOTO CREDIT LEDGER — AI photo generation metering (append-only)
+// ═══════════════════════════════════════════════════════════════════════════════
+// AI photo generation has a real per-image cost, so it's metered: plans include a
+// monthly bucket (shared/platform.ts PLANS[].includedPhotoCredits) and extra
+// images are pay-as-you-go (AI_PHOTO_CREDITS, CHF 1/image). The balance is the
+// sum of this ledger's deltas for a tenant — grants are positive, consumption
+// negative. Append-only so a balance can always be audited back to its source.
+export const photoCreditLedger = mysqlTable("photo_credit_ledger", {
+  id: int("id").autoincrement().primaryKey(),
+  tenantId: int("tenant_id").notNull(),
+  // +N on grant (monthly bucket, purchase, manual adjustment), -1 per generated image.
+  delta: int("delta").notNull(),
+  kind: mysqlEnum("kind", [
+    "monthly_grant", // per-billing-cycle plan bucket
+    "purchase", // pay-as-you-go pack bought via Stripe Checkout
+    "consumption", // one AI image generated
+    "manual_adjustment", // operator correction (support gesture, fix)
+  ]).notNull(),
+  // What this entry came from: a Stripe session/subscription id, a product id,
+  // or a free-form note for manual adjustments.
+  ref: varchar("ref", { length: 255 }),
+  note: text("note"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type PhotoCreditLedgerEntry = typeof photoCreditLedger.$inferSelect;
+export type InsertPhotoCreditLedgerEntry =
+  typeof photoCreditLedger.$inferInsert;

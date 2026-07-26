@@ -7,6 +7,7 @@ import { checkoutRouter } from "./routers/checkout";
 import { instagramRouter } from "./routers/instagram";
 import { reconciliationRouter } from "./routers/reconciliation";
 import { tenantRouter } from "./routers/tenant";
+import { billingRouter } from "./routers/billing";
 
 // ─── App router ───────────────────────────────────────────────────────────────
 
@@ -21,6 +22,7 @@ export const appRouter = router({
     }),
   }),
   tenant: tenantRouter, // NEW: Multi-tenant routes
+  billing: billingRouter, // Plan subscriptions + AI photo credits
   products: productsRouter,
   instagram: instagramRouter,
   checkout: checkoutRouter,
