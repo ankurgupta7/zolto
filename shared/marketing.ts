@@ -75,7 +75,7 @@ export const STORY_SLUG = CONTENT_RELEASE_SIGNED
   : "pilot-launch";
 
 /** Hostnames that render the Zolto marketing surface (kept in sync with client/src/lib/surface.ts). */
-export const MARKETING_HOSTS = new Set(["zolto.com", "www.zolto.com"]);
+export const MARKETING_HOSTS = new Set(["zolto.ch", "www.zolto.ch"]);
 
 /**
  * Whether a request should be treated as the Zolto marketing surface (vs. a

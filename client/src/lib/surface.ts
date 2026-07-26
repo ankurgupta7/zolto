@@ -4,8 +4,8 @@
  * based on the hostname. Pure functions so they can be unit-tested without a DOM.
  *
  * Hostname model (hostname-aware, single app):
- *   - Apex / www of the platform domain  → "marketing"  (zolto.com, www.zolto.com)
- *   - Any other host                     → "storefront" (kalakosh.zolto.com, kalakosh.ch)
+ *   - Apex / www of the platform domain  → "marketing"  (zolto.ch, www.zolto.ch)
+ *   - Any other host                     → "storefront" (kalakosh.zolto.ch, kalakosh.ch)
  *
  * Dev override (localhost / 127.0.0.1, or any host when explicitly set):
  *   - ?surface=marketing|storefront   forces the surface
@@ -16,10 +16,10 @@
 export type Surface = "marketing" | "storefront";
 
 /** Hostnames (and suffixes) that render the Zolto marketing surface. */
-const MARKETING_HOSTS = new Set(["zolto.com", "www.zolto.com"]);
+const MARKETING_HOSTS = new Set(["zolto.ch", "www.zolto.ch"]);
 
 /** The platform apex domain — subdomains of it map to tenant slugs. */
-const PLATFORM_APEX = "zolto.com";
+const PLATFORM_APEX = "zolto.ch";
 
 const DEV_HOSTS = new Set(["localhost", "127.0.0.1", "0.0.0.0", ""]);
 
@@ -30,7 +30,7 @@ export function isDevHost(hostname: string): boolean {
 
 /**
  * Derive the tenant slug from a storefront hostname.
- * `kalakosh.zolto.com` → "kalakosh". Custom domains (kalakosh.ch) and the apex
+ * `kalakosh.zolto.ch` → "kalakosh". Custom domains (kalakosh.ch) and the apex
  * itself return null — the caller falls back to a configured default. Custom-domain
  * → slug mapping is resolved server-side (tenant context middleware), not here.
  */
@@ -41,7 +41,7 @@ export function tenantSlugFromHost(hostname: string): string | null {
     const sub = host.slice(0, -1 * (PLATFORM_APEX.length + 1));
     // Ignore reserved/infra subdomains.
     if (!sub || sub === "www" || sub === "app" || sub === "api") return null;
-    // Only the left-most label is the slug (kalakosh.foo.zolto.com → "kalakosh").
+    // Only the left-most label is the slug (kalakosh.foo.zolto.ch → "kalakosh").
     return sub.split(".")[0];
   }
   return null;

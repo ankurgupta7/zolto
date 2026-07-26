@@ -6,7 +6,7 @@ import { getTenantBySlug } from "./db";
  * Resolve the tenant for a plain Express request (not tRPC), mirroring the tRPC
  * context resolver (server/_core/context.ts): the `X-Tenant-Slug` header wins,
  * then the host's left-most subdomain. Returns null when no tenant matches — the
- * platform apex (zolto.com / www) and unknown hosts resolve to null.
+ * platform apex (zolto.ch / www) and unknown hosts resolve to null.
  *
  * Used by the SEO/LLM and MCP routes, which run outside the tRPC pipeline.
  */

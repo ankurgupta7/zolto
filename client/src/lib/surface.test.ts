@@ -9,21 +9,21 @@ describe("isDevHost", () => {
     expect(isDevHost("mymachine.local")).toBe(true);
   });
   it("treats real domains as non-dev", () => {
-    expect(isDevHost("zolto.com")).toBe(false);
+    expect(isDevHost("zolto.ch")).toBe(false);
     expect(isDevHost("kalakosh.ch")).toBe(false);
   });
 });
 
 describe("tenantSlugFromHost", () => {
   it("extracts the slug from a platform subdomain", () => {
-    expect(tenantSlugFromHost("kalakosh.zolto.com")).toBe("kalakosh");
-    expect(tenantSlugFromHost("kalakosh.zolto.com:443")).toBe("kalakosh");
+    expect(tenantSlugFromHost("kalakosh.zolto.ch")).toBe("kalakosh");
+    expect(tenantSlugFromHost("kalakosh.zolto.ch:443")).toBe("kalakosh");
   });
   it("returns null for the apex and reserved subdomains", () => {
-    expect(tenantSlugFromHost("zolto.com")).toBeNull();
-    expect(tenantSlugFromHost("www.zolto.com")).toBeNull();
-    expect(tenantSlugFromHost("app.zolto.com")).toBeNull();
-    expect(tenantSlugFromHost("api.zolto.com")).toBeNull();
+    expect(tenantSlugFromHost("zolto.ch")).toBeNull();
+    expect(tenantSlugFromHost("www.zolto.ch")).toBeNull();
+    expect(tenantSlugFromHost("app.zolto.ch")).toBeNull();
+    expect(tenantSlugFromHost("api.zolto.ch")).toBeNull();
   });
   it("returns null for custom domains (resolved server-side)", () => {
     expect(tenantSlugFromHost("kalakosh.ch")).toBeNull();
@@ -32,17 +32,17 @@ describe("tenantSlugFromHost", () => {
 
 describe("resolveSurface", () => {
   it("apex hosts render the marketing surface", () => {
-    expect(resolveSurface({ hostname: "zolto.com" })).toEqual({
+    expect(resolveSurface({ hostname: "zolto.ch" })).toEqual({
       surface: "marketing",
       tenantSlug: null,
     });
-    expect(resolveSurface({ hostname: "www.zolto.com" }).surface).toBe(
+    expect(resolveSurface({ hostname: "www.zolto.ch" }).surface).toBe(
       "marketing",
     );
   });
 
   it("subdomains render the tenant storefront with the derived slug", () => {
-    expect(resolveSurface({ hostname: "kalakosh.zolto.com" })).toEqual({
+    expect(resolveSurface({ hostname: "kalakosh.zolto.ch" })).toEqual({
       surface: "storefront",
       tenantSlug: "kalakosh",
     });
@@ -73,13 +73,13 @@ describe("resolveSurface", () => {
   it("?surface override wins on any host", () => {
     expect(
       resolveSurface({
-        hostname: "kalakosh.zolto.com",
+        hostname: "kalakosh.zolto.ch",
         search: "?surface=marketing",
       }),
     ).toEqual({ surface: "marketing", tenantSlug: null });
     expect(
       resolveSurface({
-        hostname: "zolto.com",
+        hostname: "zolto.ch",
         search: "?surface=storefront&tenant=demo",
       }),
     ).toEqual({ surface: "storefront", tenantSlug: "demo" });
