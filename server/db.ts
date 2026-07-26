@@ -1164,6 +1164,33 @@ export async function getTenantByStripeCustomerId(
 
 // ─── Onboarding derivation ────────────────────────────────────────────────────
 
+/** Persist AI-translated per-locale content for a product. */
+export async function updateProductTranslations(
+  tenantId: number,
+  productId: number,
+  translations: Partial<
+    Pick<
+      Product,
+      | "nameEn"
+      | "descriptionEn"
+      | "nameDe"
+      | "descriptionDe"
+      | "nameFr"
+      | "descriptionFr"
+    >
+  >,
+): Promise<void> {
+  if (Object.keys(translations).length === 0) return;
+  await withDbOrThrow((db) =>
+    db
+      .update(products)
+      .set(translations)
+      .where(
+        and(eq(products.id, productId), eq(products.tenantId, tenantId)),
+      ),
+  );
+}
+
 export async function countTenantProducts(tenantId: number): Promise<number> {
   return withDb(async (db) => {
     const rows = await db
