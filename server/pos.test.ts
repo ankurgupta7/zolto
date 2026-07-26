@@ -8,13 +8,27 @@ import request from "supertest";
 // X-POS-Key via getTenantByPosApiKey. Mock it key-aware so "test-pos-key" maps to
 // a tenant and anything else is rejected — this drives auth for every test below.
 const TEST_TENANT = { id: 1, slug: "test-store", posApiKey: "test-pos-key" };
+// A tenant that linked their own Stripe account (Tap to Pay runs on it).
+const CONNECTED_TENANT = {
+  id: 2,
+  slug: "connected-store",
+  posApiKey: "connected-pos-key",
+  stripeConnectedAccountId: "acct_connected",
+  terminalLocationId: null as string | null,
+};
 vi.mock("./db", () => ({
   getDb: vi.fn().mockResolvedValue(null),
   getAllProducts: vi.fn().mockResolvedValue([]),
   updateProduct: vi.fn(),
   markProductsSold: vi.fn(),
+  getTenantSettings: vi.fn().mockResolvedValue(null),
+  setTenantTerminalLocation: vi.fn().mockResolvedValue(undefined),
   getTenantByPosApiKey: vi.fn(async (key: string) =>
-    key === "test-pos-key" ? TEST_TENANT : undefined,
+    key === "test-pos-key"
+      ? TEST_TENANT
+      : key === "connected-pos-key"
+        ? CONNECTED_TENANT
+        : undefined,
   ),
 }));
 
@@ -364,6 +378,7 @@ describe("POST /api/pos/payment-intent", () => {
     expect(res.body.totalRappen).toBe(5000);
     expect(fakeStripe.paymentIntents.create).toHaveBeenCalledWith(
       expect.objectContaining({ amount: 5000 }),
+      undefined, // no connected account → platform account
     );
   });
 
@@ -463,6 +478,7 @@ describe("POST /api/pos/payment-intent", () => {
     expect(res.body.totalRappen).toBe(7550);
     expect(fakeStripe.paymentIntents.create).toHaveBeenCalledWith(
       expect.objectContaining({ amount: 7550 }),
+      undefined, // no connected account → platform account
     );
   });
 });
@@ -496,6 +512,7 @@ describe("POST /api/pos/payment-intent — bargained price overrides and custom 
     expect(res.body.totalRappen).toBe(3500);
     expect(fakeStripe.paymentIntents.create).toHaveBeenCalledWith(
       expect.objectContaining({ amount: 3500 }),
+      undefined, // no connected account → platform account
     );
     // Second insert() call is pos_order_items.
     expect(db.insertValuesSpy).toHaveBeenNthCalledWith(2, [
@@ -544,6 +561,7 @@ describe("POST /api/pos/payment-intent — bargained price overrides and custom 
     expect(res.body.totalRappen).toBe(4200);
     expect(fakeStripe.paymentIntents.create).toHaveBeenCalledWith(
       expect.objectContaining({ amount: 4200 }),
+      undefined, // no connected account → platform account
     );
   });
 
@@ -976,5 +994,280 @@ describe("POST /api/pos/twint-intent", () => {
       .post("/api/pos/twint-intent")
       .send({ productIds: [1] });
     expect(res.status).toBe(401);
+  });
+});
+
+// ─── Tap to Pay (Stripe Terminal) ────────────────────────────────────────────
+
+function makeTerminalStripe() {
+  return {
+    terminal: {
+      connectionTokens: {
+        create: vi.fn().mockResolvedValue({ secret: "pst_secret_123" }),
+      },
+      locations: {
+        create: vi.fn().mockResolvedValue({ id: "tml_new_123" }),
+      },
+    },
+  };
+}
+
+describe("POST /api/pos/terminal/connection-token", () => {
+  it("rejects requests without the POS key", async () => {
+    const res = await request(makeApp()).post(
+      "/api/pos/terminal/connection-token",
+    );
+    expect(res.status).toBe(401);
+  });
+
+  it("503s when Stripe isn't configured", async () => {
+    const res = await request(makeApp())
+      .post("/api/pos/terminal/connection-token")
+      .set("x-pos-key", "connected-pos-key");
+    expect(res.status).toBe(503);
+  });
+
+  it("409s with a clear message when the tenant hasn't connected Stripe", async () => {
+    vi.mocked(getStripe).mockReturnValueOnce(makeTerminalStripe() as never);
+    const res = await request(makeApp())
+      .post("/api/pos/terminal/connection-token")
+      .set("x-pos-key", "test-pos-key"); // TEST_TENANT: no connected account
+    expect(res.status).toBe(409);
+    expect(res.body.error).toMatch(/Connect your Stripe account/);
+  });
+
+  it("mints the token ON the tenant's connected account", async () => {
+    const stripe = makeTerminalStripe();
+    vi.mocked(getStripe).mockReturnValueOnce(stripe as never);
+    const res = await request(makeApp())
+      .post("/api/pos/terminal/connection-token")
+      .set("x-pos-key", "connected-pos-key");
+    expect(res.status).toBe(200);
+    expect(res.body.secret).toBe("pst_secret_123");
+    expect(stripe.terminal.connectionTokens.create).toHaveBeenCalledWith(
+      {},
+      { stripeAccount: "acct_connected" },
+    );
+  });
+});
+
+describe("POST /api/pos/terminal/location", () => {
+  const address = {
+    line1: "Bahnhofstrasse 1",
+    city: "Zürich",
+    postal_code: "8001",
+    country: "CH",
+  };
+
+  it("returns the stored location without calling Stripe", async () => {
+    const stripe = makeTerminalStripe();
+    vi.mocked(getStripe).mockReturnValueOnce(stripe as never);
+    // Simulate an already-provisioned tenant by giving the context a location.
+    CONNECTED_TENANT.terminalLocationId = "tml_existing_1";
+    const res = await request(makeApp())
+      .post("/api/pos/terminal/location")
+      .set("x-pos-key", "connected-pos-key")
+      .send({});
+    expect(res.status).toBe(200);
+    expect(res.body.locationId).toBe("tml_existing_1");
+    expect(stripe.terminal.locations.create).not.toHaveBeenCalled();
+    CONNECTED_TENANT.terminalLocationId = null;
+  });
+
+  it("400s on first provisioning without an address", async () => {
+    vi.mocked(getStripe).mockReturnValueOnce(makeTerminalStripe() as never);
+    const res = await request(makeApp())
+      .post("/api/pos/terminal/location")
+      .set("x-pos-key", "connected-pos-key")
+      .send({ displayName: "My Stall" });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/store address/);
+  });
+
+  it("creates the Location on the connected account and persists the id", async () => {
+    const stripe = makeTerminalStripe();
+    vi.mocked(getStripe).mockReturnValueOnce(stripe as never);
+    const { setTenantTerminalLocation } = await import("./db");
+    const res = await request(makeApp())
+      .post("/api/pos/terminal/location")
+      .set("x-pos-key", "connected-pos-key")
+      .send({ displayName: "Connected Store", address });
+    expect(res.status).toBe(200);
+    expect(res.body.locationId).toBe("tml_new_123");
+    expect(stripe.terminal.locations.create).toHaveBeenCalledWith(
+      {
+        display_name: "Connected Store",
+        address,
+      },
+      { stripeAccount: "acct_connected" },
+    );
+    expect(setTenantTerminalLocation).toHaveBeenCalledWith(2, "tml_new_123");
+  });
+
+  it("409s when the tenant hasn't connected Stripe", async () => {
+    vi.mocked(getStripe).mockReturnValueOnce(makeTerminalStripe() as never);
+    const res = await request(makeApp())
+      .post("/api/pos/terminal/location")
+      .set("x-pos-key", "test-pos-key")
+      .send({ address });
+    expect(res.status).toBe(409);
+  });
+});
+
+describe("GET /api/pos/config with per-tenant locations", () => {
+  it("prefers the tenant's own location over the env fallback", async () => {
+    process.env.STRIPE_LOCATION_ID = "tml_env_fallback";
+    CONNECTED_TENANT.terminalLocationId = "tml_tenant_1";
+    const res = await request(makeApp())
+      .get("/api/pos/config")
+      .set("x-pos-key", "connected-pos-key");
+    expect(res.body.locationId).toBe("tml_tenant_1");
+    CONNECTED_TENANT.terminalLocationId = null;
+    delete process.env.STRIPE_LOCATION_ID;
+  });
+});
+
+describe("POST /api/pos/payment-intent on a connected account", () => {
+  it("creates the card_present intent on the tenant's Stripe account in their currency", async () => {
+    const db = makeFakeDb([{ id: 1, price: "50.00" }]);
+    vi.mocked(getDb).mockResolvedValueOnce(db as never);
+    const fakeStripe = makeFakeStripe();
+    vi.mocked(getStripe).mockReturnValueOnce(fakeStripe as never);
+    const { getTenantSettings } = await import("./db");
+    vi.mocked(getTenantSettings).mockResolvedValueOnce({ currency: "eur" } as never);
+
+    const res = await request(makeApp())
+      .post("/api/pos/payment-intent")
+      .set("x-pos-key", "connected-pos-key")
+      .send({ productIds: [1] });
+
+    expect(res.status).toBe(200);
+    expect(fakeStripe.customers.create).toHaveBeenCalledWith(
+      expect.anything(),
+      { stripeAccount: "acct_connected" },
+    );
+    expect(fakeStripe.paymentIntents.create).toHaveBeenCalledWith(
+      expect.objectContaining({ amount: 5000, currency: "eur" }),
+      { stripeAccount: "acct_connected" },
+    );
+  });
+});
+
+// ─── Sales history + receipts ────────────────────────────────────────────────
+
+function makeSalesDb(orders: unknown[], items: unknown[]) {
+  const updateSetSpy = vi.fn(() => ({ where: vi.fn().mockResolvedValue(undefined) }));
+  return {
+    select: vi.fn(() => ({
+      from: vi.fn((table: unknown) => ({
+        // loadOwnPosOrder's order lookup: where(...).limit(1)
+        where: vi.fn(() => {
+          const isItems = (table as { _: unknown }) === table; // can't distinguish; use call count
+          return {
+            limit: vi.fn(() => Promise.resolve(orders)),
+            orderBy: vi.fn(() => ({ limit: vi.fn(() => Promise.resolve(orders)) })),
+            then: (resolve: (v: unknown) => unknown) => resolve(items),
+          };
+        }),
+      })),
+    })),
+    update: vi.fn(() => ({ set: updateSetSpy })),
+    _updateSetSpy: updateSetSpy,
+  };
+}
+
+describe("GET /api/pos/sales", () => {
+  it("returns paid orders with their line items", async () => {
+    const db = makeSalesDb(
+      [{
+        id: 9,
+        status: "paid",
+        paymentMethod: "card",
+        totalRappen: 7550,
+        createdAt: new Date("2026-07-01T10:00:00Z"),
+        invoiceNumber: "KPOS-9",
+        receiptUrl: null,
+        customerEmail: null,
+        customerPhone: null,
+      }],
+      [
+        { posOrderId: 9, productId: 1, name: "Pearl Ring", priceRappen: 5000 },
+        { posOrderId: 9, productId: null, name: "Gift wrap", priceRappen: 2550 },
+      ],
+    );
+    vi.mocked(getDb).mockResolvedValueOnce(db as never);
+    const res = await request(makeApp())
+      .get("/api/pos/sales")
+      .set("x-pos-key", "test-pos-key");
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveLength(1);
+    expect(res.body[0]).toMatchObject({
+      id: 9,
+      status: "paid",
+      totalRappen: 7550,
+      totalChf: "75.50",
+      paymentMethod: "card",
+    });
+    expect(res.body[0].items).toEqual([
+      { productId: 1, productName: "Pearl Ring", priceRappen: 5000 },
+      { productId: null, productName: "Gift wrap", priceRappen: 2550 },
+    ]);
+  });
+});
+
+describe("POST /api/pos/send-receipt", () => {
+  it("400s on a missing or invalid email", async () => {
+    const res = await request(makeApp())
+      .post("/api/pos/send-receipt")
+      .set("x-pos-key", "test-pos-key")
+      .send({ posOrderId: 9, email: "not-an-email" });
+    expect(res.status).toBe(400);
+  });
+
+  it("404s for an order belonging to another tenant", async () => {
+    const db = makeSalesDb([], []); // loadOwnPosOrder finds nothing
+    vi.mocked(getDb).mockResolvedValueOnce(db as never);
+    const res = await request(makeApp())
+      .post("/api/pos/send-receipt")
+      .set("x-pos-key", "test-pos-key")
+      .send({ posOrderId: 9, email: "buyer@example.com" });
+    expect(res.status).toBe(404);
+  });
+});
+
+describe("POST /api/pos/save-receipt", () => {
+  it("400s without posOrderId", async () => {
+    const res = await request(makeApp())
+      .post("/api/pos/save-receipt")
+      .set("x-pos-key", "test-pos-key")
+      .send({});
+    expect(res.status).toBe(400);
+  });
+
+  it("saves customer details even when storage isn't configured", async () => {
+    const db = makeSalesDb(
+      [{
+        id: 9,
+        status: "paid",
+        paymentMethod: "card",
+        totalRappen: 5000,
+        createdAt: new Date("2026-07-01T10:00:00Z"),
+        invoiceNumber: "KPOS-9",
+        receiptUrl: null,
+        customerEmail: null,
+        customerPhone: null,
+      }],
+      [{ posOrderId: 9, productId: 1, name: "Pearl Ring", priceRappen: 5000 }],
+    );
+    vi.mocked(getDb).mockResolvedValueOnce(db as never);
+    const res = await request(makeApp())
+      .post("/api/pos/save-receipt")
+      .set("x-pos-key", "test-pos-key")
+      .send({ posOrderId: 9, customerEmail: "buyer@example.com" });
+    expect(res.status).toBe(200);
+    expect(res.body.saved).toBe(true);
+    // storagePut without S3 env throws internally → receiptUrl stays null,
+    // but the customer details still get persisted (graceful degradation).
+    expect(db.update).toHaveBeenCalled();
   });
 });

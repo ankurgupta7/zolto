@@ -1,15 +1,18 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import express from "express";
 import type Stripe from "stripe";
-import { and, eq, gt, inArray, isNull, lt, or } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, isNull, lt, or } from "drizzle-orm";
 import {
   getDb,
   markProductsSold,
   getTenantByPosApiKey,
+  getTenantSettings,
+  setTenantTerminalLocation,
 } from "./db";
 import { posOrders, posOrderItems, products } from "../drizzle/schema";
 import { getStripe, isStripeConfigured } from "./stripe";
-import { escapeHtml } from "./_core/email";
+import { escapeHtml, sendTransactionalEmail } from "./_core/email";
+import { storagePut } from "./storage";
 import { PRODUCT_CATEGORIES, CATEGORY_EXTRA_INCLUDES } from "../shared/const";
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -19,6 +22,10 @@ import { PRODUCT_CATEGORIES, CATEGORY_EXTRA_INCLUDES } from "../shared/const";
 interface PosContext {
   tenantId: number;
   tenantSlug: string;
+  /** The tenant's own Stripe Connect account their customers pay into (null until connected). */
+  stripeConnectedAccountId: string | null;
+  /** Provisioned Terminal Location on the Connect account (null until first use). */
+  terminalLocationId: string | null;
 }
 
 declare global {
@@ -50,7 +57,12 @@ async function requirePosKey(
     return;
   }
 
-  req.posContext = { tenantId: tenant.id, tenantSlug: tenant.slug };
+  req.posContext = {
+    tenantId: tenant.id,
+    tenantSlug: tenant.slug,
+    stripeConnectedAccountId: tenant.stripeConnectedAccountId ?? null,
+    terminalLocationId: tenant.terminalLocationId ?? null,
+  };
   next();
 }
 
@@ -536,12 +548,315 @@ export function registerPosRoutes(app: Express): void {
   );
 
   app.get("/api/pos/config", requirePosKey, (req: Request, res: Response) => {
-    const { tenantSlug } = getPosTenant(req);
+    const { tenantSlug, terminalLocationId } = getPosTenant(req);
     res.json({
-      locationId: process.env.STRIPE_LOCATION_ID ?? "",
+      // Per-tenant Location on the tenant's Connect account; the legacy env
+      // fallback only serves single-tenant self-hosted deployments that never
+      // connected an account.
+      locationId: terminalLocationId ?? process.env.STRIPE_LOCATION_ID ?? "",
       tenantSlug,
     });
   });
+
+  // ─── Sales history + receipts ─────────────────────────────────────────────
+
+  // Recent paid sales with line items, for the POS app's history screen.
+  app.get("/api/pos/sales", requirePosKey, async (req: Request, res: Response) => {
+    try {
+      const db = await getDb();
+      if (!db) {
+        res.status(503).json({ error: "Database unavailable" });
+        return;
+      }
+      const { tenantId } = getPosTenant(req);
+      const orders = await db
+        .select()
+        .from(posOrders)
+        .where(
+          and(eq(posOrders.tenantId, tenantId), eq(posOrders.status, "paid")),
+        )
+        .orderBy(desc(posOrders.createdAt))
+        .limit(100);
+      const orderIds = orders.map((o) => o.id);
+      const items =
+        orderIds.length > 0
+          ? await db
+              .select()
+              .from(posOrderItems)
+              .where(
+                and(
+                  eq(posOrderItems.tenantId, tenantId),
+                  inArray(posOrderItems.posOrderId, orderIds),
+                ),
+              )
+          : [];
+      res.json(
+        orders.map((o) => ({
+          id: o.id,
+          status: o.status,
+          totalRappen: o.totalRappen,
+          totalChf: (o.totalRappen / 100).toFixed(2),
+          paymentMethod: o.paymentMethod,
+          createdAt: o.createdAt.toISOString(),
+          items: items
+            .filter((i) => i.posOrderId === o.id)
+            .map((i) => ({
+              productId: i.productId,
+              productName: i.name ?? "Item",
+              priceRappen: i.priceRappen,
+            })),
+        })),
+      );
+    } catch (err) {
+      console.error("[POS] GET /api/pos/sales error:", err);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Load one of the tenant's own orders (+ items) or 404 — shared by receipts.
+  async function loadOwnPosOrder(posOrderId: number, tenantId: number) {
+    const db = await getDb();
+    if (!db) return null;
+    const rows = await db
+      .select()
+      .from(posOrders)
+      .where(and(eq(posOrders.id, posOrderId), eq(posOrders.tenantId, tenantId)))
+      .limit(1);
+    const order = rows[0];
+    if (!order) return null;
+    const items = await db
+      .select()
+      .from(posOrderItems)
+      .where(
+        and(
+          eq(posOrderItems.tenantId, tenantId),
+          eq(posOrderItems.posOrderId, posOrderId),
+        ),
+      );
+    return { db, order, items };
+  }
+
+  function buildPosReceiptHtml(opts: {
+    tenantSlug: string;
+    order: typeof posOrders.$inferSelect;
+    items: Array<{ name: string | null; priceRappen: number }>;
+  }): string {
+    const { order } = opts;
+    const rows = opts.items
+      .map(
+        (i) => `<tr>
+  <td style="padding:4px 8px">${escapeHtml(i.name ?? "Item")}</td>
+  <td style="padding:4px 8px;text-align:right">CHF ${(i.priceRappen / 100).toFixed(2)}</td>
+</tr>`,
+      )
+      .join("");
+    return `<!doctype html><html><body style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px">
+<h2 style="margin:0 0 4px">${escapeHtml(opts.tenantSlug)}</h2>
+<p style="color:#666;margin:0 0 16px">Receipt ${escapeHtml(order.invoiceNumber ?? `#${order.id}`)} · ${order.createdAt.toISOString().slice(0, 16).replace("T", " ")}</p>
+<table style="width:100%;border-collapse:collapse">${rows}</table>
+<p style="text-align:right;font-size:18px;font-weight:bold">Total: CHF ${(order.totalRappen / 100).toFixed(2)}</p>
+<p style="color:#666;font-size:12px">Paid by ${escapeHtml(order.paymentMethod)} · Thank you!</p>
+</body></html>`;
+  }
+
+  // Email the receipt to the customer (Resend); records the email on the order.
+  app.post(
+    "/api/pos/send-receipt",
+    requirePosKey,
+    async (req: Request, res: Response) => {
+      try {
+        const { tenantId, tenantSlug } = getPosTenant(req);
+        const { posOrderId, email } = (req.body ?? {}) as {
+          posOrderId?: number;
+          email?: string;
+        };
+        if (!posOrderId || !email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+          res.status(400).json({ error: "posOrderId and a valid email are required" });
+          return;
+        }
+        const loaded = await loadOwnPosOrder(posOrderId, tenantId);
+        if (!loaded) {
+          res.status(404).json({ error: "Order not found" });
+          return;
+        }
+        const html = buildPosReceiptHtml({
+          tenantSlug,
+          order: loaded.order,
+          items: loaded.items,
+        });
+        const sent = await sendTransactionalEmail({
+          to: email,
+          subject: `Your receipt ${loaded.order.invoiceNumber ?? `#${posOrderId}`}`,
+          html,
+        });
+        await loaded.db
+          .update(posOrders)
+          .set({ customerEmail: email })
+          .where(eq(posOrders.id, posOrderId));
+        res.json({ sent });
+      } catch (err) {
+        console.error("[POS] send-receipt error:", err);
+        res.status(500).json({ error: "Internal server error" });
+      }
+    },
+  );
+
+  // Persist the receipt: customer details on the order + HTML archived to
+  // object storage (receiptUrl), for the merchant's own records.
+  app.post(
+    "/api/pos/save-receipt",
+    requirePosKey,
+    async (req: Request, res: Response) => {
+      try {
+        const { tenantId, tenantSlug } = getPosTenant(req);
+        const { posOrderId, customerEmail, customerPhone } = (req.body ?? {}) as {
+          posOrderId?: number;
+          customerEmail?: string | null;
+          customerPhone?: string | null;
+        };
+        if (!posOrderId) {
+          res.status(400).json({ error: "posOrderId is required" });
+          return;
+        }
+        const loaded = await loadOwnPosOrder(posOrderId, tenantId);
+        if (!loaded) {
+          res.status(404).json({ error: "Order not found" });
+          return;
+        }
+        let receiptUrl = loaded.order.receiptUrl;
+        try {
+          const html = buildPosReceiptHtml({
+            tenantSlug,
+            order: loaded.order,
+            items: loaded.items,
+          });
+          const put = await storagePut(
+            `receipts/${tenantSlug}/${posOrderId}.html`,
+            html,
+            "text/html",
+          );
+          receiptUrl = put.url;
+        } catch (storageErr) {
+          // Storage is optional — customer details still get saved.
+          console.warn("[POS] receipt storage failed:", storageErr);
+        }
+        await loaded.db
+          .update(posOrders)
+          .set({
+            customerEmail: customerEmail || loaded.order.customerEmail,
+            customerPhone: customerPhone || loaded.order.customerPhone,
+            receiptUrl,
+          })
+          .where(eq(posOrders.id, posOrderId));
+        res.json({ saved: true, receiptUrl });
+      } catch (err) {
+        console.error("[POS] save-receipt error:", err);
+        res.status(500).json({ error: "Internal server error" });
+      }
+    },
+  );
+
+  // ─── Tap to Pay (Stripe Terminal) ─────────────────────────────────────────
+  // Both endpoints operate on the TENANT'S OWN connected Stripe account, so
+  // in-person payments land in the same account as the tenant's online sales.
+  // Flow: app fetches a connection token → connects the on-phone reader →
+  // asks this server for a PaymentIntent → collects on the reader.
+
+  app.post(
+    "/api/pos/terminal/connection-token",
+    requirePosKey,
+    async (req: Request, res: Response) => {
+      try {
+        const stripe = getStripe();
+        if (!stripe) {
+          res.status(503).json({ error: "Stripe not configured" });
+          return;
+        }
+        const { stripeConnectedAccountId } = getPosTenant(req);
+        if (!stripeConnectedAccountId) {
+          res.status(409).json({
+            error:
+              "Connect your Stripe account first (Admin → payments) to take card payments.",
+          });
+          return;
+        }
+        const token = await stripe.terminal.connectionTokens.create(
+          {},
+          { stripeAccount: stripeConnectedAccountId },
+        );
+        res.json({ secret: token.secret });
+      } catch (err) {
+        console.error("[POS] connection-token error:", err);
+        res.status(500).json({ error: "Internal server error" });
+      }
+    },
+  );
+
+  // Returns the tenant's Terminal Location, creating it on their Connect
+  // account on first use. Stripe requires an address for a Location, so the
+  // app sends the merchant's address the first time (collected once in the
+  // POS app); afterwards the stored id is returned as-is.
+  app.post(
+    "/api/pos/terminal/location",
+    requirePosKey,
+    async (req: Request, res: Response) => {
+      try {
+        const stripe = getStripe();
+        if (!stripe) {
+          res.status(503).json({ error: "Stripe not configured" });
+          return;
+        }
+        const ctx = getPosTenant(req);
+        if (!ctx.stripeConnectedAccountId) {
+          res.status(409).json({
+            error:
+              "Connect your Stripe account first (Admin → payments) to take card payments.",
+          });
+          return;
+        }
+        if (ctx.terminalLocationId) {
+          res.json({ locationId: ctx.terminalLocationId });
+          return;
+        }
+
+        const body = (req.body ?? {}) as {
+          displayName?: string;
+          address?: {
+            line1?: string;
+            city?: string;
+            postal_code?: string;
+            country?: string;
+          };
+        };
+        const addr = body.address ?? {};
+        if (!addr.line1 || !addr.city || !addr.postal_code || !addr.country) {
+          res.status(400).json({
+            error:
+              "First-time setup needs the store address: address.line1, city, postal_code, country (ISO 2-letter).",
+          });
+          return;
+        }
+
+        const location = await stripe.terminal.locations.create(
+          {
+            display_name: body.displayName || ctx.tenantSlug,
+            address: {
+              line1: addr.line1,
+              city: addr.city,
+              postal_code: addr.postal_code,
+              country: addr.country,
+            },
+          },
+          { stripeAccount: ctx.stripeConnectedAccountId },
+        );
+        await setTenantTerminalLocation(ctx.tenantId, location.id);
+        res.json({ locationId: location.id });
+      } catch (err) {
+        console.error("[POS] terminal location error:", err);
+        res.status(500).json({ error: "Internal server error" });
+      }
+    },
+  );
 
   // Card (Terminal / Tap to Pay): create a card_present PaymentIntent and a
   // pending pos_order; the app confirms on the reader, then calls /api/pos/sale.
@@ -561,7 +876,7 @@ export function registerPosRoutes(app: Express): void {
           return;
         }
 
-        const { tenantId } = getPosTenant(req);
+        const { tenantId, stripeConnectedAccountId } = getPosTenant(req);
         const {
           productIds,
           allowHidden,
@@ -584,29 +899,49 @@ export function registerPosRoutes(app: Express): void {
         }
         const { lineItems, totalRappen } = resolved;
 
+        // When the tenant has connected their own Stripe account, card-present
+        // intents are created ON that account — Tap to Pay collects with a
+        // connection token from the same account, and the money lands with the
+        // merchant just like their online sales. Platform-account creation is
+        // the fallback for single-tenant self-hosted deployments.
+        const stripeOpts = stripeConnectedAccountId
+          ? { stripeAccount: stripeConnectedAccountId }
+          : undefined;
+        const currency = (
+          (await getTenantSettings(tenantId))?.currency || "chf"
+        ).toLowerCase();
+
         // Attach a Stripe Customer so in-person sales show up under Customers,
         // not just Payments, in the dashboard.
-        const stripeCustomer = await stripe.customers.create({
-          name: customerName || undefined,
-          email: customerEmail || undefined,
-          phone: customerPhone || undefined,
-        });
-
-        const intent = await stripe.paymentIntents.create({
-          amount: totalRappen,
-          currency: "chf",
-          customer: stripeCustomer.id,
-          receipt_email: customerEmail || undefined,
-          payment_method_types: ["card_present"],
-          capture_method: "automatic",
-          metadata: {
-            tenantId: String(tenantId),
-            productIds: (Array.isArray(productIds) ? productIds : []).join(","),
-            hasCustomItems: lineItems.some((i) => i.productId === null)
-              ? "true"
-              : "false",
+        const stripeCustomer = await stripe.customers.create(
+          {
+            name: customerName || undefined,
+            email: customerEmail || undefined,
+            phone: customerPhone || undefined,
           },
-        });
+          stripeOpts,
+        );
+
+        const intent = await stripe.paymentIntents.create(
+          {
+            amount: totalRappen,
+            currency,
+            customer: stripeCustomer.id,
+            receipt_email: customerEmail || undefined,
+            payment_method_types: ["card_present"],
+            capture_method: "automatic",
+            metadata: {
+              tenantId: String(tenantId),
+              productIds: (Array.isArray(productIds) ? productIds : []).join(
+                ",",
+              ),
+              hasCustomItems: lineItems.some((i) => i.productId === null)
+                ? "true"
+                : "false",
+            },
+          },
+          stripeOpts,
+        );
 
         const posOrderId = await createPosOrder(db, tenantId, {
           stripePaymentIntentId: intent.id,

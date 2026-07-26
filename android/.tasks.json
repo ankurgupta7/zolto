@@ -1,0 +1,49 @@
+{
+  "instructions": [
+    {
+      "name": "Merge conflict resolution before uploading",
+      "use_when": "When encountering merge conflicts before uploading code",
+      "content": "Always resolve merge conflicts with the main branch before uploading."
+    },
+    {
+      "name": "Shell script checks for environment variable changes in kalakosh repositories",
+      "use_when": "Whenever an environment variable change happens on kalakosh repositories",
+      "content": "Always check the shell scripts on the web server."
+    },
+    {
+      "name": "CI/CD tool preference based on GitHub budget",
+      "use_when": "When configuring CI/CD pipelines and managing GitHub budget",
+      "content": "Prioritize GitHub Actions and GitHub Compute for CI/CD. Only use Codemagic and CircleCI when the GitHub budget is low."
+    },
+    {
+      "name": "GitHub authentication method for CI/CD",
+      "use_when": "When configuring GitHub authentication for CI/CD workflows",
+      "content": "Always use GitHub mcp/cli/PAT for authentication instead of the browser."
+    },
+    {
+      "name": "GitHub branch protection setup",
+      "use_when": "When setting up GitHub branch protection",
+      "content": "Set up GitHub branch protection using the provided personal access token."
+    },
+    {
+      "name": "Preferred folder name for repository instructions",
+      "use_when": "When encountering a '.claude' folder containing repository-specific instructions",
+      "content": "The user prefers to rename the '.claude' folder to '.manus' or a similar descriptive name for future reference and convenience."
+    },
+    {
+      "name": "CI/CD build upload for kalakosh repositories using Codemagic",
+      "use_when": "When configuring CI/CD for kalakosh repositories using Codemagic",
+      "content": "Ensure that all kalakosh repositories upload their iOS and Android builds whenever the CI/CD step is run with Codemagic."
+    },
+    {
+      "name": "GitHub budget overrun handling for PRs",
+      "use_when": "When the GitHub budget is over and there are open Pull Requests (PRs)",
+      "content": "Ensure that an exceeded GitHub budget does not block Pull Requests (PRs)."
+    },
+    {
+      "name": "CI/CD workflow for merge approvals",
+      "use_when": "When handling CI builds and merge processes for code changes",
+      "content": "Ensure that CI builds and checks are run only after a merge has been approved by reviewers. The branch should only be merged if CI tests and checks are successful; otherwise, the pull request (PR) should remain open. Additionally, CI/CD tests should not run at every commit, but only before the actual merge."
+    }
+  ]
+}

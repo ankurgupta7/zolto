@@ -402,7 +402,7 @@ export const FAQS: Faq[] = [
   },
   {
     q: "Do I need to buy a card reader?",
-    a: "No. Payments happen on the phone you already own — contactless card, Apple Pay / Google Pay, and TWINT QR. Nobody inserts a card anymore, they tap, so there's no reader to buy, rent, or plug in.",
+    a: "No — payments happen on the phone you already own, via the Zolto POS app (currently in pilot): contactless card, Apple Pay / Google Pay, and TWINT QR. Nobody inserts a card anymore, they tap, so there's no reader to buy, rent, or plug in.",
   },
   {
     q: "How is Zolto cheaper than Stripe, SumUp, or Worldline?",

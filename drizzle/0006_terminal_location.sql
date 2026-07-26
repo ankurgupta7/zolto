@@ -1,0 +1,1 @@
+ALTER TABLE `tenants` ADD `terminal_location_id` varchar(255);

@@ -35,6 +35,10 @@ export const tenants = mysqlTable("tenants", {
   stripeConnectedAccountId: varchar("stripe_connected_account_id", {
     length: 255,
   }),
+  // Stripe Terminal Location id (tml_...) created on the tenant's CONNECTED
+  // account for Tap to Pay — one per tenant, provisioned on first POS use
+  // (see registerPosRoutes /api/pos/terminal/location). Null until then.
+  terminalLocationId: varchar("terminal_location_id", { length: 255 }),
   subscriptionStatus: mysqlEnum("status", [
     "trialing",
     "active",

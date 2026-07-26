@@ -1,9 +1,131 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Kalakosh</string>
-    <string name="error_title">Uh oh.</string>
-    <string name="error_subtitle">Things are breaking.</string>
-    <string name="error_offline">You seem to be offline.\nCheck your connection and try again.</string>
-    <string name="error_generic">Something went wrong on our end.\nWe\'re already on it.</string>
-    <string name="retry">Try Again</string>
+    <string name="app_name">Zolto POS</string>
+
+    <!-- Optional dev defaults for SetupActivity's URL field. Production builds
+         leave these blank — each register is bound to its store at runtime
+         (SetupActivity → PosConfig), not at build time. -->
+    <string name="pos_api_base_url"></string>
+    <string name="pos_api_key"></string>
+    <!-- Optional local override for the Stripe Terminal Location ID; normally
+         fetched from the server (GET /api/pos/config). -->
+    <string name="stripe_location_id"></string>
+
+    <!-- Payment method labels (must match server-side PaymentMethod enum) -->
+    <string name="method_card">Card</string>
+    <string name="method_cash">Cash</string>
+    <string name="method_twint">TWINT</string>
+
+    <!-- Product browsing -->
+    <string name="products_loading">Loading products…</string>
+    <string name="products_empty">No products available</string>
+    <string name="products_error">Failed to load products</string>
+    <string name="category_all">All</string>
+    <string name="search_hint">Search name, category, price…</string>
+    <string name="no_matches">No pieces match your search</string>
+    <string name="toggle_category">Toggle category</string>
+    <string name="quantity_badge">%d left</string>
+    <string name="selected_summary">%d selected — CHF %s</string>
+
+    <!-- Sale review -->
+    <string name="review_sale">Review Sale</string>
+    <string name="sale_review_title">Sale Review</string>
+    <string name="charge_button">Charge CHF %s</string>
+    <string name="total_label">Total: CHF %s</string>
+    <string name="pay_button">Pay CHF %s</string>
+    <string name="remove">Remove</string>
+    <string name="bargain">Bargain</string>
+
+    <!-- Custom items -->
+    <string name="add_custom_item">Add custom item</string>
+    <string name="custom_items_label">Custom Items</string>
+    <string name="custom_item_name_hint">Item name</string>
+    <string name="custom_item_price_hint">Price (CHF)</string>
+    <string name="add">Add</string>
+    <string name="invalid_price">Invalid price</string>
+    <string name="name_required">Name is required</string>
+
+    <!-- Payment -->
+    <string name="payment_title">Payment</string>
+    <string name="pay_card">Card</string>
+    <string name="pay_cash">Cash</string>
+    <string name="pay_twint">TWINT</string>
+    <string name="tap_card_prompt">Tap card or phone</string>
+    <string name="processing_payment">Processing payment…</string>
+    <string name="recording_cash_sale">Recording cash sale…</string>
+    <string name="twint_scan_prompt">Scan with your TWINT app</string>
+
+    <!-- Payment result -->
+    <string name="payment_success_title">Payment Successful</string>
+    <string name="payment_successful">Payment successful!</string>
+    <string name="payment_success_offline">Sale recorded — will sync when online</string>
+    <string name="payment_failed_title">Payment Failed</string>
+    <string name="payment_failed">Payment failed</string>
+    <string name="order_id_label">Order #%d</string>
+    <string name="order_id">Order #%d</string>
+    <string name="charged_label">Charged: CHF %s</string>
+    <string name="done">Done</string>
+    <string name="cancel">Cancel</string>
+    <string name="try_again">Try Again</string>
+    <string name="retry">Retry</string>
+
+    <!-- Receipt / customer collection -->
+    <string name="send_receipt_prompt">Send receipt to customer</string>
+    <string name="send_receipt">Send Receipt</string>
+    <string name="receipt_sent">Receipt sent!</string>
+    <string name="email_hint">Email address</string>
+    <string name="phone_hint">Phone number</string>
+
+    <!-- Setup -->
+    <string name="setup_location_title">Card payments not set up yet</string>
+    <string name="setup_location_message">Tap to Pay needs a Stripe Terminal Location before it can accept cards on this phone.\n\nTo fix this:\n\n1. Install the Stripe Dashboard app and confirm "Tap to Pay on this phone" works there first. This enables Tap to Pay on your account and completes the one-time setup on this device.\n\n2. In the Stripe Dashboard, create a Terminal Location and copy its ID (it starts with "tml_").\n\n3. Set STRIPE_LOCATION_ID on the POS API server, then reopen this screen.</string>
+
+    <!-- Sales history -->
+    <string name="sales_history_title">Sales History</string>
+    <string name="no_sales">No sales recorded yet</string>
+    <string name="returning_in">Returning in %d seconds…</string>
+
+    <!-- Offline status indicators -->
+    <string name="offline_cash_only">Offline — Cash sales only. Will sync when online.</string>
+    <string name="pending_sync_count">%d sale(s) pending sync</string>
+    <string name="offline_mode_label">Working offline</string>
+    <string name="offline_sync_note">Sales will sync when you\'re back online</string>
+
+    <!-- PaymentActivity -->
+    <string name="payment_error_location">Terminal location not configured</string>
+    <string name="payment_error_location_detail">Card payments require a Stripe Terminal Location ID. Check POS setup.</string>
+    <string name="payment_error_no_reader">No reader connected</string>
+    <string name="payment_error_no_reader_detail">Connect a card reader first.</string>
+    <string name="payment_error_no_location_detail">Terminal location not configured. Check POS setup.</string>
+    <string name="connect_reader">Connect Reader</string>
+    <string name="discovering_readers">Discovering readers…</string>
+    <string name="connecting_reader">Connecting…</string>
+    <string name="collecting_payment">Tap or insert card…</string>
+    <string name="processing">Processing…</string>
+    <string name="payment_cancelled">Payment cancelled</string>
+    <string name="unknown_state">Unknown state: %s</string>
+    <string name="reader_connected">Reader connected</string>
+    <string name="ready_to_charge">Ready to charge</string>
+    <string name="twint_waiting">Waiting for TWINT…</string>
+    <string name="select_reader">Select reader</string>
+    <string name="simulated_reader">Simulated Reader</string>
+    <string name="payment_error_generic">Payment error: %s</string>
+
+
+    <!-- First-launch store binding (multi-tenant) -->
+    <string name="setup_title">Connect this register</string>
+    <string name="setup_subtitle">Point this device at your store: the zolto server URL and your store\'s POS key (from your store\'s admin settings).</string>
+    <string name="setup_url_hint">https://your-store-server</string>
+    <string name="setup_key_hint">POS API key</string>
+    <string name="setup_connect">Connect</string>
+    <string name="setup_checking">Checking…</string>
+
+    <!-- First-time Tap to Pay provisioning -->
+    <string name="t2p_provision_title">Card reader setup</string>
+    <string name="t2p_provision_body">One-time setup: enter your store address so card payments can be enabled on your Stripe account.</string>
+    <string name="t2p_address_line1">Street and number</string>
+    <string name="t2p_address_city">City</string>
+    <string name="t2p_address_postal">Postal code</string>
+    <string name="t2p_address_country">Country code (e.g. CH)</string>
+    <string name="t2p_provision_save">Enable card payments</string>
 </resources>
