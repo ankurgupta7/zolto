@@ -1,17 +1,18 @@
 # ─────────────────────────────────────────────────────────────────────────────
-# Caddyfile — Zolto self-hosted
+# Caddyfile — Zolto self-hosted (standalone profile only)
+#
+# NOTE: in the default shared-server setup this file is NOT used — the
+# Kalakosh-ch stack's Caddy owns 80/443 and reverse-proxies zolto.ch to the
+# app (zolto-app:3000) over the kalakosh-shared network. This file only
+# applies when you start the bundled Caddy with --profile standalone.
 #
 # SITE_DOMAIN (see docker-compose.yml / .env) controls what Caddy serves:
-#   - Default ":80" — a port-only address, so Caddy serves plain HTTP on the
-#     mapped port for any hostname/IP and skips automatic HTTPS entirely.
-#     Use this while testing without a domain pointed at the server yet.
-#   - A real domain (e.g. "app.example.com") — Caddy automatically requests
-#     and renews a Let's Encrypt certificate and serves HTTPS instead. Once
-#     you switch to a domain, also uncomment the www redirect below (it's
-#     meaningless for a port-only address).
-#
-# This lets the stack run on the same server as another instance (e.g.
-# Kalakosh-ch) without both Caddyfiles fighting over the same domain/port.
+#   - "zolto.ch" (default) — Caddy automatically requests and renews a
+#     Let's Encrypt certificate and serves HTTPS for zolto.ch, with the
+#     www → apex redirect below.
+#   - ":80" — a port-only address, plain HTTP on the mapped port for any
+#     hostname/IP, no TLS. Use this while testing by IP before DNS is
+#     pointed at the server.
 # ─────────────────────────────────────────────────────────────────────────────
 
 {$SITE_DOMAIN} {
@@ -36,7 +37,7 @@
     }
 }
 
-# Redirect www → apex — uncomment once SITE_DOMAIN is a real domain.
-# www.{$SITE_DOMAIN} {
-#     redir https://{$SITE_DOMAIN}{uri} permanent
-# }
+# Redirect www → apex (no-op when SITE_DOMAIN is ":80").
+www.{$SITE_DOMAIN} {
+    redir https://{$SITE_DOMAIN}{uri} permanent
+}
