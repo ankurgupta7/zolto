@@ -7,12 +7,12 @@ WORKDIR /app
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
 # Copy dependency manifests first (layer cache)
-# Note: pnpm-lock.yaml is not committed to git, so we generate it during build
-COPY package.json ./
+# pnpm-lock.yaml IS committed — use it for reproducible installs.
+COPY package.json pnpm-lock.yaml ./
 COPY patches/ ./patches/
 
 # Install ALL dependencies (devDeps are needed for the Vite + esbuild build step)
-RUN pnpm install
+RUN pnpm install --frozen-lockfile
 
 # Copy source
 COPY . .
@@ -28,9 +28,9 @@ WORKDIR /app
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
 # Only production dependencies
-COPY package.json ./
+COPY package.json pnpm-lock.yaml ./
 COPY patches/ ./patches/
-RUN pnpm install --prod
+RUN pnpm install --prod --frozen-lockfile
 
 # Copy built artifacts from builder:
 #   dist/index.js  → compiled server
@@ -41,6 +41,10 @@ COPY --from=builder /app/dist ./dist
 COPY drizzle/ ./drizzle/
 COPY drizzle.config.ts ./
 
+# The app listens on 3000 inside the container. It is not published to a host
+# port by default: on the shared server the Kalakosh-ch Caddy (which owns
+# 80/443) reaches the app over the "kalakosh-shared" Docker network and serves
+# it at zolto.ch — so nothing here collides with the Kalakosh-ch stack.
 EXPOSE 3000
 
 CMD ["node", "dist/index.js"]
