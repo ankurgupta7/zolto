@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 const dbMock = vi.hoisted(() => ({
   getProductById: vi.fn(),
   updateProductTranslations: vi.fn(),
+  getProductsMissingTranslation: vi.fn(),
 }));
 
 const llmMock = vi.hoisted(() => ({
@@ -78,6 +79,51 @@ beforeEach(() => {
   vi.clearAllMocks();
   dbMock.updateProductTranslations.mockResolvedValue(undefined);
   llmMock.invokeLLM.mockResolvedValue(LLM_OK);
+  dbMock.getProductsMissingTranslation.mockResolvedValue([]);
+});
+
+describe("products.previewAutoTranslateAll", () => {
+  it("returns no proposals when nothing is missing", async () => {
+    const res = await caller.previewAutoTranslateAll();
+    expect(res).toEqual({ proposals: [], total: 0 });
+    expect(llmMock.invokeLLM).not.toHaveBeenCalled();
+  });
+
+  it("asks the model in the tenant's own store name, not another brand", async () => {
+    dbMock.getProductsMissingTranslation.mockResolvedValue([
+      {
+        id: 7,
+        name: "Silberring",
+        description: "Handgefertigt",
+        category: "Rings",
+        nameEn: null,
+        descriptionEn: null,
+      },
+    ]);
+    llmMock.invokeLLM.mockResolvedValue({
+      choices: [
+        {
+          message: {
+            content: JSON.stringify({
+              items: [
+                {
+                  id: 7,
+                  nameEn: "Silver ring",
+                  descriptionEn: "Made by hand.",
+                },
+              ],
+            }),
+          },
+        },
+      ],
+    });
+    const res = await caller.previewAutoTranslateAll();
+    expect(res.total).toBe(1);
+    const system = llmMock.invokeLLM.mock.calls[0][0].messages[0]
+      .content as string;
+    expect(system).toContain('"Aurora"');
+    expect(system).not.toContain("Kalakosh");
+  });
 });
 
 describe("products.translateProductLocales", () => {

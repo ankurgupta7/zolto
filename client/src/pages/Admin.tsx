@@ -1,699 +1,183 @@
-import { useState, useMemo, useEffect } from "react";
-import { useAuth } from "@/_core/hooks/useAuth";
-import { trpc } from "@/lib/trpc";
+import { useEffect, useMemo, useState } from "react";
+import { Link } from "wouter";
 import { toast } from "sonner";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { getLoginUrl } from "@/const";
+import { trpc } from "@/lib/trpc";
+import { CATEGORIES, type ProductCategory } from "@/lib/products";
+import GuidedTour from "@/components/GuidedTour";
+import OnboardingChecklist from "@/components/OnboardingChecklist";
+import InsightsCard from "@/components/InsightsCard";
+import CapabilityBand from "@/components/CapabilityBand";
 import {
-  Eye,
-  EyeOff,
-  Trash2,
-  Plus,
-  Loader2,
-  Instagram,
-  AlertTriangle,
-  Pencil,
-  Check,
-  X,
-  FileSpreadsheet,
-  Languages,
-  TrendingUp,
-  ShieldAlert,
-  RefreshCw,
-  Lightbulb,
-  BarChart3,
+  ADMIN_TOUR_ID,
+  ADMIN_TOUR_STEPS,
+  clearTourCompletion,
+} from "@/lib/tours";
+import {
   AlertCircle,
-  Tag,
+  AlertTriangle,
+  BarChart3,
+  Check,
+  CheckCircle2,
   Copy,
   CreditCard,
+  FileSpreadsheet,
+  HelpCircle,
+  Instagram,
+  Languages,
+  Lightbulb,
+  Loader2,
+  Plus,
   Receipt,
-  CheckCircle2,
+  RefreshCw,
+  ShieldAlert,
+  Tag,
+  TrendingUp,
 } from "lucide-react";
-import { getLoginUrl } from "@/const";
-import { PRODUCT_CATEGORIES, type ProductCategory } from "@shared/types";
-import ProductImageManager from "@/components/ProductImageManager";
-import OnboardingChecklist from "@/components/OnboardingChecklist";
-import InstagramManager from "@/components/InstagramManager";
-import BulkChangeReviewDialog from "@/components/BulkChangeReviewDialog";
 import ProductDiscoveryControls, {
   type SortOption,
   type ViewMode,
 } from "@/components/ProductDiscoveryControls";
 import ProductCategoryGroup from "@/components/ProductCategoryGroup";
-import { Link } from "wouter";
-import { HelpCircle } from "lucide-react";
-import GuidedTour from "@/components/GuidedTour";
-import { ADMIN_TOUR_ID, ADMIN_TOUR_STEPS } from "@/lib/adminTour";
-import { clearTourCompletion } from "@/lib/tour";
-import CapabilityBand from "@/components/CapabilityBand";
-import { SketchUnderline } from "@/components/SketchAccents";
+import ProductRow from "@/components/ProductRow";
+import InstagramManager from "@/components/InstagramManager";
+import BulkChangeReviewDialog from "@/components/BulkChangeReviewDialog";
 
-const CATEGORIES: readonly ProductCategory[] = PRODUCT_CATEGORIES;
-
-const CATEGORY_COLORS: Record<string, string> = {
-  Necklaces: "bg-[#F5EFE8] text-[#8B6914]",
-  Earrings: "bg-[#E8E8E8] text-[#555]",
-  Rings: "bg-[#E8F4EC] text-[#2D6B4A]",
-  Bracelets: "bg-[#EEE8F5] text-[#5A2D82]",
-  Bangles: "bg-[#F5E8E8] text-[#8B2020]",
-  Anklets: "bg-[#E8F0E8] text-[#2D4A20]",
-  Brooches: "bg-[#FFF0DC] text-[#8B5914]",
-  "Hair Accessories": "bg-[#E8EEF5] text-[#1A3D6B]",
-  Other: "bg-[#EEEEEE] text-[#666]",
-};
-
-interface AddForm {
-  name: string;
-  description: string;
-  price: string;
-  category: ProductCategory;
-  imageUrl: string;
-  quantity: string;
-}
-
-const EMPTY_FORM: AddForm = {
+const EMPTY_FORM = {
   name: "",
   description: "",
   price: "",
-  category: "Other",
-  imageUrl: "",
+  category: "Other" as ProductCategory,
   quantity: "1",
+  imageUrl: "",
 };
 
-interface EditForm {
-  name: string;
-  nameEn: string;
-  description: string;
-  descriptionEn: string;
-  price: string;
-  category: ProductCategory;
-}
-
-// ─── Product Row ──────────────────────────────────────────────────────────────
-
-interface ProductRowProps {
-  product: {
-    id: number;
-    name: string;
-    nameEn: string | null;
-    description: string;
-    descriptionEn: string | null;
-    price: string;
-    category: string;
-    imageUrl: string | null;
-    visible: boolean;
-    sold: boolean;
-    quantity: number;
-    source: string;
-  };
-  onRefetch: () => void;
-}
-
-function ProductRow({ product, onRefetch }: ProductRowProps) {
-  const [qtyValue, setQtyValue] = useState(String(product.quantity));
-  const [editing, setEditing] = useState(false);
-  const [editForm, setEditForm] = useState<EditForm>({
-    name: product.name,
-    nameEn: product.nameEn ?? "",
-    description: product.description,
-    descriptionEn: product.descriptionEn ?? "",
-    price: String(Number(product.price).toFixed(2)),
-    category: product.category as ProductCategory,
-  });
-  const [confirmingDelete, setConfirmingDelete] = useState(false);
-
-  useEffect(() => {
-    setQtyValue(String(product.quantity));
-  }, [product.quantity]);
-
-  const qtyMutation = trpc.products.setQuantity.useMutation({
-    onSuccess: onRefetch,
-    onError: () => toast.error("Failed to update quantity"),
-  });
-
-  const toggleMutation = trpc.products.toggleVisibility.useMutation({
-    onSuccess: onRefetch,
-    onError: () => toast.error("Failed to update visibility"),
-  });
-
-  const deleteMutation = trpc.products.delete.useMutation({
-    onSuccess: () => {
-      onRefetch();
-      toast.success("Product deleted");
-    },
-    onError: () => toast.error("Failed to delete product"),
-  });
-
-  const updateMutation = trpc.products.update.useMutation({
-    onSuccess: () => {
-      onRefetch();
-      setEditing(false);
-      toast.success("Product updated");
-    },
-    onError: () => toast.error("Failed to update product"),
-  });
-
-  const commitQty = () => {
-    const n = parseInt(qtyValue, 10);
-    if (Number.isNaN(n) || n < 0) {
-      setQtyValue(String(product.quantity));
-      return;
-    }
-    if (n === product.quantity) return;
-    qtyMutation.mutate({ id: product.id, quantity: n });
-  };
-
-  const handleSaveEdit = () => {
-    const price = parseFloat(editForm.price);
-    if (!editForm.name.trim() || !editForm.description.trim()) {
-      toast.error("Name and description are required");
-      return;
-    }
-    if (Number.isNaN(price) || price <= 0) {
-      toast.error("Enter a valid price");
-      return;
-    }
-    updateMutation.mutate({
-      id: product.id,
-      name: editForm.name.trim(),
-      nameEn: editForm.nameEn.trim() || null,
-      description: editForm.description.trim(),
-      descriptionEn: editForm.descriptionEn.trim() || null,
-      price,
-      category: editForm.category,
-    });
-  };
-
-  const startEdit = () => {
-    setEditForm({
-      name: product.name,
-      nameEn: product.nameEn ?? "",
-      description: product.description,
-      descriptionEn: product.descriptionEn ?? "",
-      price: String(Number(product.price).toFixed(2)),
-      category: product.category as ProductCategory,
-    });
-    setEditing(true);
-  };
-
-  const isBusy =
-    qtyMutation.isPending ||
-    toggleMutation.isPending ||
-    deleteMutation.isPending ||
-    updateMutation.isPending;
-
+function SketchUnderline() {
   return (
-    <>
-      <tr
-        className={`border-b border-[var(--brand-border)] last:border-0 transition-colors hover:bg-[var(--brand-surface-2)] ${!product.visible ? "opacity-50" : ""}`}
-      >
-        {/* Product */}
-        <td className="px-6 py-4">
-          <div className="flex items-center gap-3">
-            {product.imageUrl ? (
-              <img
-                src={product.imageUrl}
-                alt={product.name}
-                className="w-10 h-10 object-cover flex-shrink-0 bg-[var(--brand-surface-3)]"
-              />
-            ) : (
-              <div className="w-10 h-10 bg-[var(--brand-surface-3)] flex items-center justify-center flex-shrink-0">
-                <span className="text-[var(--brand-accent)]/40 font-serif">
-                  ◇
-                </span>
-              </div>
-            )}
-            <div>
-              <p className="font-serif text-foreground text-sm">
-                {product.name}
-              </p>
-              {product.nameEn && (
-                <p className="text-muted-foreground text-xs font-sans">
-                  {product.nameEn}
-                </p>
-              )}
-              <ProductImageManager
-                productId={product.id}
-                productName={product.name}
-              />
-            </div>
-          </div>
-        </td>
-
-        {/* Category */}
-        <td className="px-4 py-4 hidden md:table-cell">
-          <span
-            className={`text-[10px] uppercase tracking-[0.1em] px-2 py-0.5 font-sans ${CATEGORY_COLORS[product.category] ?? ""}`}
-          >
-            {product.category}
-          </span>
-        </td>
-
-        {/* Price */}
-        <td className="px-4 py-4">
-          <span className="font-serif text-[var(--brand-ink)] text-sm">
-            CHF {Number(product.price).toFixed(2)}
-          </span>
-        </td>
-
-        {/* Qty */}
-        <td className="px-4 py-4">
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={() => {
-                const n = Math.max(0, (parseInt(qtyValue, 10) || 0) - 1);
-                setQtyValue(String(n));
-                qtyMutation.mutate({ id: product.id, quantity: n });
-              }}
-              disabled={isBusy || parseInt(qtyValue, 10) <= 0}
-              className="w-6 h-6 flex items-center justify-center border border-[var(--brand-ink)]/20 text-muted-foreground hover:border-[var(--brand-ink)] hover:text-foreground transition-colors disabled:opacity-30 text-sm leading-none"
-            >
-              −
-            </button>
-            <input
-              type="number"
-              min="0"
-              value={qtyValue}
-              onChange={(e) => setQtyValue(e.target.value)}
-              onBlur={commitQty}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  (e.target as HTMLInputElement).blur();
-                }
-              }}
-              className="w-10 text-center text-sm font-sans border border-[var(--brand-ink)]/20 py-0.5 focus:outline-none focus:border-[var(--brand-accent)] bg-transparent"
-            />
-            <button
-              type="button"
-              onClick={() => {
-                const n = (parseInt(qtyValue, 10) || 0) + 1;
-                setQtyValue(String(n));
-                qtyMutation.mutate({ id: product.id, quantity: n });
-              }}
-              disabled={isBusy}
-              className="w-6 h-6 flex items-center justify-center border border-[var(--brand-ink)]/20 text-muted-foreground hover:border-[var(--brand-ink)] hover:text-foreground transition-colors disabled:opacity-30 text-sm leading-none"
-            >
-              +
-            </button>
-          </div>
-        </td>
-
-        {/* Status */}
-        <td className="px-4 py-4 hidden sm:table-cell">
-          <span
-            className={`text-[10px] uppercase tracking-[0.1em] px-2 py-0.5 font-sans ${product.visible ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-500"}`}
-          >
-            {product.visible ? "Visible" : "Hidden"}
-          </span>
-        </td>
-
-        {/* Actions */}
-        <td className="px-6 py-4">
-          <div className="flex items-center justify-end gap-1">
-            {/* Edit */}
-            <button
-              type="button"
-              onClick={() => (editing ? setEditing(false) : startEdit())}
-              title={editing ? "Cancel edit" : "Edit product"}
-              className={`p-2 transition-colors ${editing ? "text-[var(--brand-accent)]" : "text-muted-foreground hover:text-[var(--brand-ink)]"}`}
-            >
-              <Pencil size={15} />
-            </button>
-
-            {/* Toggle visibility */}
-            <button
-              type="button"
-              onClick={() =>
-                toggleMutation.mutate({
-                  id: product.id,
-                  visible: !product.visible,
-                })
-              }
-              disabled={isBusy}
-              title={product.visible ? "Hide product" : "Show product"}
-              className="p-2 text-muted-foreground hover:text-[var(--brand-ink)] transition-colors disabled:opacity-40"
-            >
-              {toggleMutation.isPending ? (
-                <Loader2 size={15} className="animate-spin" />
-              ) : product.visible ? (
-                <EyeOff size={15} />
-              ) : (
-                <Eye size={15} />
-              )}
-            </button>
-
-            {/* Delete */}
-            {confirmingDelete ? (
-              <div className="flex items-center gap-1 ml-1">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setConfirmingDelete(false);
-                    deleteMutation.mutate({ id: product.id });
-                  }}
-                  disabled={deleteMutation.isPending}
-                  className="px-2 py-1 text-[11px] uppercase tracking-wide font-sans text-white bg-red-600 hover:bg-red-700 transition-colors"
-                >
-                  Del
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setConfirmingDelete(false)}
-                  className="px-2 py-1 text-[11px] font-sans text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  No
-                </button>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setConfirmingDelete(true)}
-                disabled={isBusy}
-                title="Delete product"
-                className="p-2 text-muted-foreground hover:text-red-600 transition-colors disabled:opacity-40"
-              >
-                {deleteMutation.isPending ? (
-                  <Loader2 size={15} className="animate-spin" />
-                ) : (
-                  <Trash2 size={15} />
-                )}
-              </button>
-            )}
-          </div>
-        </td>
-      </tr>
-
-      {/* Inline edit row */}
-      {editing && (
-        <tr className="border-b border-[var(--brand-border)] bg-[var(--brand-surface-2)]">
-          <td colSpan={6} className="px-6 py-5">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-              <div>
-                <label
-                  htmlFor={`edit-name-${product.id}`}
-                  className="block text-[10px] uppercase tracking-[0.12em] text-foreground font-sans mb-1"
-                >
-                  Name (DE) *
-                </label>
-                <input
-                  id={`edit-name-${product.id}`}
-                  type="text"
-                  value={editForm.name}
-                  onChange={(e) =>
-                    setEditForm((f) => ({ ...f, name: e.target.value }))
-                  }
-                  className="w-full border border-[var(--brand-ink)]/20 px-3 py-2 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] bg-white"
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor={`edit-nameEn-${product.id}`}
-                  className="block text-[10px] uppercase tracking-[0.12em] text-foreground font-sans mb-1"
-                >
-                  Name (EN)
-                </label>
-                <input
-                  id={`edit-nameEn-${product.id}`}
-                  type="text"
-                  value={editForm.nameEn}
-                  onChange={(e) =>
-                    setEditForm((f) => ({ ...f, nameEn: e.target.value }))
-                  }
-                  className="w-full border border-[var(--brand-ink)]/20 px-3 py-2 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] bg-white"
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor={`edit-price-${product.id}`}
-                  className="block text-[10px] uppercase tracking-[0.12em] text-foreground font-sans mb-1"
-                >
-                  Price (CHF) *
-                </label>
-                <input
-                  id={`edit-price-${product.id}`}
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={editForm.price}
-                  onChange={(e) =>
-                    setEditForm((f) => ({ ...f, price: e.target.value }))
-                  }
-                  className="w-full border border-[var(--brand-ink)]/20 px-3 py-2 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] bg-white"
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor={`edit-category-${product.id}`}
-                  className="block text-[10px] uppercase tracking-[0.12em] text-foreground font-sans mb-1"
-                >
-                  Category *
-                </label>
-                <select
-                  id={`edit-category-${product.id}`}
-                  value={editForm.category}
-                  onChange={(e) =>
-                    setEditForm((f) => ({
-                      ...f,
-                      category: e.target.value as ProductCategory,
-                    }))
-                  }
-                  className="w-full border border-[var(--brand-ink)]/20 px-3 py-2 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] bg-white"
-                >
-                  {CATEGORIES.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label
-                  htmlFor={`edit-description-${product.id}`}
-                  className="block text-[10px] uppercase tracking-[0.12em] text-foreground font-sans mb-1"
-                >
-                  Description (DE) *
-                </label>
-                <textarea
-                  id={`edit-description-${product.id}`}
-                  value={editForm.description}
-                  onChange={(e) =>
-                    setEditForm((f) => ({ ...f, description: e.target.value }))
-                  }
-                  rows={3}
-                  className="w-full border border-[var(--brand-ink)]/20 px-3 py-2 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] bg-white resize-none"
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor={`edit-descriptionEn-${product.id}`}
-                  className="block text-[10px] uppercase tracking-[0.12em] text-foreground font-sans mb-1"
-                >
-                  Description (EN)
-                </label>
-                <textarea
-                  id={`edit-descriptionEn-${product.id}`}
-                  value={editForm.descriptionEn}
-                  onChange={(e) =>
-                    setEditForm((f) => ({
-                      ...f,
-                      descriptionEn: e.target.value,
-                    }))
-                  }
-                  rows={3}
-                  className="w-full border border-[var(--brand-ink)]/20 px-3 py-2 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] bg-white resize-none"
-                />
-              </div>
-            </div>
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={handleSaveEdit}
-                disabled={updateMutation.isPending}
-                className="flex items-center gap-2 bg-[var(--brand-ink)] text-white px-6 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:bg-[var(--brand-ink-hover)] transition-colors disabled:opacity-60"
-              >
-                {updateMutation.isPending ? (
-                  <Loader2 size={13} className="animate-spin" />
-                ) : (
-                  <Check size={13} />
-                )}
-                Save
-              </button>
-              <button
-                type="button"
-                onClick={() => setEditing(false)}
-                className="flex items-center gap-2 border border-[var(--brand-ink)]/20 text-muted-foreground px-6 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:border-[var(--brand-ink)] hover:text-foreground transition-colors"
-              >
-                <X size={13} />
-                Cancel
-              </button>
-            </div>
-          </td>
-        </tr>
-      )}
-    </>
+    <svg
+      viewBox="0 0 200 8"
+      preserveAspectRatio="none"
+      className="w-full h-[7px]"
+      aria-hidden="true"
+    >
+      <path
+        d="M1 5 C 40 2, 120 7, 199 3"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        fill="none"
+        strokeLinecap="round"
+      />
+    </svg>
   );
 }
-
-// ─── Main component ───────────────────────────────────────────────────────────
-
-type DupResult = {
-  id: number;
-  name: string;
-  confidence: string;
-  reason: string;
-};
-type InsightsData = {
-  highlights: string[];
-  recommendations: string[];
-  topCategory: string;
-  slowMovers: string[];
-};
 
 export default function Admin() {
-  const { user, isAuthenticated, loading } = useAuth();
-  // Bumping this restarts the guided tour (the "Replay tour" button).
-  const [tourSignal, setTourSignal] = useState(0);
+  const { user, loading, isAuthenticated } = useAuth();
   const [showAddForm, setShowAddForm] = useState(false);
-  const [form, setForm] = useState<AddForm>(EMPTY_FORM);
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [dupState, setDupState] = useState<
+    "idle" | "checking" | "found"
+  >("idle");
+  const [dupResults, setDupResults] = useState<
+    Array<{ id: number; name: string; confidence: string; reason: string }>
+  >([]);
   const [sortBy, setSortBy] = useState<SortOption>("newest");
-  const [viewMode, setViewMode] = useState<ViewMode>("grid");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [viewMode, setViewMode] = useState<ViewMode>("table");
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
-    new Set(CATEGORIES.map((c) => c)),
+    new Set(),
   );
-
-  // Duplicate detection state
-  const [dupState, setDupState] = useState<"idle" | "checking" | "found">(
-    "idle",
-  );
-  const [dupResults, setDupResults] = useState<DupResult[]>([]);
-
-  // Insights state
-  const [insightsData, setInsightsData] = useState<InsightsData | null>(null);
-  const [showInsights, setShowInsights] = useState(false);
+  const [tourSignal, setTourSignal] = useState(0);
 
   const utils = trpc.useUtils();
-  const refetch = () => {
-    utils.products.adminList.invalidate();
-    utils.products.list.invalidate();
-  };
-
-  // Stripe Connect: link this store's own Stripe account for storefront
-  // checkout (separate from Zolto's own subscription billing).
-  const stripeConnectQuery = trpc.tenant.getStripeConnectUrl.useQuery();
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const status = params.get("stripeConnect");
-    if (!status) return;
-    if (status === "success") {
-      toast.success("Stripe account connected — online payments are live.");
-      utils.tenant.getStripeConnectUrl.invalidate();
-    } else if (status === "error") {
-      toast.error(
-        params.get("reason")
-          ? `Stripe connection failed: ${params.get("reason")}`
-          : "Stripe connection failed. Please try again.",
-      );
-    }
-    params.delete("stripeConnect");
-    params.delete("reason");
-    const query = params.toString();
-    window.history.replaceState(
-      {},
-      "",
-      window.location.pathname + (query ? `?${query}` : ""),
-    );
-  }, [utils]);
-
-  const handleConnectStripe = () => {
-    if (stripeConnectQuery.data?.url) {
-      window.location.href = stripeConnectQuery.data.url;
-    } else {
-      toast.error(
-        "Stripe Connect isn't set up on the platform yet. Contact support.",
-      );
-    }
-  };
-
-  const { data: products, isLoading: productsLoading } =
+  const { data: products, isLoading: productsLoading, refetch } =
     trpc.products.adminList.useQuery(undefined, {
       enabled: isAuthenticated && user?.role === "admin",
     });
 
-  // Sorted product list derived from sortBy state
-  const sortedProducts = useMemo(() => {
-    if (!products) return [];
-    const copy = [...products];
-    if (sortBy === "name") {
-      return copy.sort((a, b) => a.name.localeCompare(b.name));
-    }
-    if (sortBy === "category") {
-      return copy.sort((a, b) => {
-        const ai = CATEGORIES.indexOf(
-          a.category as (typeof CATEGORIES)[number],
-        );
-        const bi = CATEGORIES.indexOf(
-          b.category as (typeof CATEGORIES)[number],
-        );
-        const catCmp = (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
-        if (catCmp !== 0) return catCmp;
-        return a.name.localeCompare(b.name);
-      });
-    }
-    // "newest" — server already returns newest-first, preserve order
-    return copy;
-  }, [products, sortBy]);
+  const createMutation = trpc.products.create.useMutation({
+    onSuccess: () => {
+      utils.products.adminList.invalidate();
+      utils.products.list.invalidate();
+      toast.success(`"${form.name}" added to the catalogue`);
+      setForm(EMPTY_FORM);
+      setShowAddForm(false);
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const duplicateCheckMutation = trpc.products.checkDuplicate.useMutation();
 
   const { data: bulkLogs, isLoading: bulkLogsLoading } =
     trpc.products.getBulkLogs.useQuery(undefined, {
       enabled: isAuthenticated && user?.role === "admin",
     });
 
-  const createMutation = trpc.products.create.useMutation({
-    onSuccess: () => {
-      refetch();
-      toast.success("Product added successfully");
-      setForm(EMPTY_FORM);
-      setShowAddForm(false);
-      setDupState("idle");
-      setDupResults([]);
+  const insightsMutation = trpc.products.insights.useMutation({
+    onSuccess: (data) => {
+      setInsightsData(data);
+      setShowInsights(true);
     },
-    onError: () => toast.error("Failed to add product"),
+    onError: (err) =>
+      toast.error(err.message || "Failed to generate insights"),
   });
+  const [insightsData, setInsightsData] = useState<{
+    highlights: string[];
+    recommendations: string[];
+    topCategory: string;
+    slowMovers: string[];
+  } | null>(null);
+  const [showInsights, setShowInsights] = useState(false);
 
-  // Auto-translate: preview computes AI suggestions without writing anything;
-  // the admin reviews/deselects in a dialog, and only the approved subset is
-  // ever sent to applyAutoTranslateAll.
-  const [translateProposals, setTranslateProposals] = useState<
-    Array<{ id: number; name: string; nameEn: string; descriptionEn: string }>
-  >([]);
-  const [showTranslateReview, setShowTranslateReview] = useState(false);
-
-  const previewTranslateMutation =
-    trpc.products.previewAutoTranslateAll.useMutation({
+  const reconciliationMutation =
+    trpc.reconciliation.runReconciliation.useMutation({
       onSuccess: (data) => {
-        if (data.proposals.length === 0) {
-          toast.success("All products already have English translations.");
-          return;
+        if (data.orphansFound === 0) {
+          toast.success(
+            data.skippedOld
+              ? "No unaccounted payments in the last 90 days (older orphans already handled)"
+              : "All Stripe payments are accounted for",
+          );
+        } else {
+          toast.success(
+            `Found ${data.orphansFound} unaccounted payment${data.orphansFound !== 1 ? "s" : ""} — match request${data.orphansFound !== 1 ? "s" : ""} sent to your email`,
+          );
         }
-        setTranslateProposals(data.proposals);
-        setShowTranslateReview(true);
       },
-      onError: () =>
-        toast.error("Auto-translation preview failed. Please try again."),
+      onError: (err) =>
+        toast.error(err.message || "Reconciliation failed"),
     });
 
-  const applyTranslateMutation =
-    trpc.products.applyAutoTranslateAll.useMutation({
+  const posAttributionMutation =
+    trpc.reconciliation.runPosAttribution.useMutation({
       onSuccess: (data) => {
-        refetch();
-        setShowTranslateReview(false);
-        toast.success(
-          `${data.updated} product${data.updated !== 1 ? "s" : ""} translated to English.`,
-        );
+        if (data.queued === 0) {
+          toast.success("No unattributed in-person sales found");
+        } else {
+          toast.success(
+            `Sent ${data.queued} confirmation email${data.queued !== 1 ? "s" : ""} for amount-only sales`,
+          );
+        }
       },
-      onError: () => toast.error("Auto-translation failed. Please try again."),
+      onError: (err) =>
+        toast.error(err.message || "POS attribution failed"),
     });
 
-  // Re-categorise: same preview → review → apply shape as auto-translate.
+  const stripeConnectQuery = trpc.tenant.stripeConnectStatus.useQuery(
+    undefined,
+    { enabled: isAuthenticated && user?.role === "admin" },
+  );
+  const startConnectMutation = trpc.tenant.startStripeConnect.useMutation({
+    onSuccess: ({ onboardingUrl }) => {
+      window.location.href = onboardingUrl;
+    },
+    onError: (err) =>
+      toast.error(err.message || "Could not start Stripe onboarding"),
+  });
+  const handleConnectStripe = () => startConnectMutation.mutate();
+
+  // ── AI re-categorise: preview → review → apply ──────────────────────────────
   const [recategorizeProposals, setRecategorizeProposals] = useState<
     Array<{ id: number; name: string; from: string; to: string }>
   >([]);
@@ -703,87 +187,142 @@ export default function Admin() {
     trpc.products.previewRecategorizeAll.useMutation({
       onSuccess: (data) => {
         if (data.proposals.length === 0) {
-          toast.success("All uncategorised products were already classified.");
+          toast.success(
+            data.total === 0
+              ? "No uncategorised products found"
+              : "AI found no better category for the remaining products",
+          );
           return;
         }
         setRecategorizeProposals(data.proposals);
         setShowRecategorizeReview(true);
       },
-      onError: () =>
-        toast.error("Re-categorisation preview failed. Please try again."),
+      onError: (err) =>
+        toast.error(err.message || "Re-categorisation failed"),
     });
 
   const applyRecategoriseMutation =
     trpc.products.applyRecategorizeAll.useMutation({
-      onSuccess: (data) => {
-        refetch();
+      onSuccess: ({ updated }) => {
+        utils.products.adminList.invalidate();
+        utils.products.list.invalidate();
         setShowRecategorizeReview(false);
+        setRecategorizeProposals([]);
         toast.success(
-          `${data.updated} product${data.updated !== 1 ? "s" : ""} re-categorised by body part.`,
+          `Re-categorised ${updated} product${updated !== 1 ? "s" : ""}`,
         );
       },
-      onError: () => toast.error("Re-categorisation failed. Please try again."),
+      onError: (err) =>
+        toast.error(err.message || "Failed to apply categories"),
     });
 
-  const reconciliationMutation = trpc.reconciliation.run.useMutation({
-    onSuccess: (data) => {
-      if (data.newPendingReview > 0) {
+  // ── AI auto-translate (English): preview → review → apply ───────────────────
+  const [translateProposals, setTranslateProposals] = useState<
+    Array<{ id: number; name: string; nameEn: string; descriptionEn: string }>
+  >([]);
+  const [showTranslateReview, setShowTranslateReview] = useState(false);
+
+  const previewTranslateMutation =
+    trpc.products.previewAutoTranslateAll.useMutation({
+      onSuccess: (data) => {
+        if (data.proposals.length === 0) {
+          toast.success("All products already have English translations");
+          return;
+        }
+        setTranslateProposals(data.proposals);
+        setShowTranslateReview(true);
+      },
+      onError: (err) =>
+        toast.error(err.message || "Auto-translate failed"),
+    });
+
+  const applyTranslateMutation =
+    trpc.products.applyAutoTranslateAll.useMutation({
+      onSuccess: ({ updated }) => {
+        utils.products.adminList.invalidate();
+        utils.products.list.invalidate();
+        setShowTranslateReview(false);
+        setTranslateProposals([]);
         toast.success(
-          `${data.newPendingReview} unmatched payment${data.newPendingReview === 1 ? "" : "s"} found — ${data.emailSent ? "review email sent." : "review email could not be sent, check server logs."}`,
+          `Translated ${updated} product${updated !== 1 ? "s" : ""}`,
         );
-      } else if (data.newNoCandidates > 0) {
-        toast.success(
-          `${data.newNoCandidates} unmatched payment${data.newNoCandidates === 1 ? "" : "s"} found, but no in-stock product was close enough in price to guess.`,
-        );
-      } else {
-        toast.success(
-          `No unmatched Stripe payments found (${data.scannedSucceededPayments} checked).`,
-        );
+      },
+      onError: (err) =>
+        toast.error(err.message || "Failed to apply translations"),
+    });
+
+  // Storefront locale translation (de/en/fr): fills each product's missing
+  // locale fields one product at a time; storefront renders the visitor's
+  // locale via client/src/lib/localize.ts and falls back to the primary text.
+  const translateLocalesMutation =
+    trpc.products.translateProductLocales.useMutation();
+  const [translatingLocales, setTranslatingLocales] = useState(false);
+  const handleTranslateLocales = async () => {
+    if (!products || products.length === 0) return;
+    setTranslatingLocales(true);
+    let translated = 0;
+    try {
+      for (const p of products) {
+        const r = await translateLocalesMutation.mutateAsync({
+          productId: p.id,
+        });
+        if (!r.skipped) translated += 1;
       }
-    },
-    onError: (err) =>
-      toast.error(
-        err.message || "Stripe reconciliation failed. Please try again.",
-      ),
-  });
+      refetch();
+      toast.success(
+        translated > 0
+          ? `Translated ${translated} product${translated !== 1 ? "s" : ""} into German, English and French.`
+          : "All products already have de/en/fr translations.",
+      );
+    } catch {
+      toast.error("Storefront translation failed. Please try again.");
+    } finally {
+      setTranslatingLocales(false);
+    }
+  };
 
-  const posAttributionMutation = trpc.reconciliation.runPos.useMutation({
-    onSuccess: (data) => {
-      if (data.newPendingReview > 0) {
-        toast.success(
-          `${data.newPendingReview} amount-only sale${data.newPendingReview === 1 ? "" : "s"} to confirm — ${data.emailSent ? "review email sent." : "review email could not be sent, check server logs."}`,
-        );
-      } else if (data.newNoCandidates > 0) {
-        toast.success(
-          `${data.newNoCandidates} amount-only sale${data.newNoCandidates === 1 ? "" : "s"} found, but no in-stock piece was close enough in price to guess.`,
-        );
-      } else {
-        toast.success(
-          `No unattributed in-person sales found (${data.scannedLines} checked).`,
-        );
-      }
-    },
-    onError: (err) =>
-      toast.error(
-        err.message ||
-          "In-person sale reconciliation failed. Please try again.",
-      ),
-  });
+  const sortedProducts = useMemo(() => {
+    if (!products) return [];
+    const list = [...products];
+    const dir = sortDir === "asc" ? 1 : -1;
+    if (sortBy === "newest") {
+      list.sort(
+        (a, b) =>
+          dir *
+          (new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) *
+          -1,
+      );
+      // "newest" default: keep createdAt desc regardless of dir label
+      list.sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      );
+      if (sortDir === "asc") list.reverse();
+    } else if (sortBy === "name") {
+      list.sort((a, b) => dir * a.name.localeCompare(b.name));
+    } else if (sortBy === "price") {
+      list.sort((a, b) => dir * (Number(a.price) - Number(b.price)));
+    } else if (sortBy === "category") {
+      list.sort(
+        (a, b) =>
+          dir * a.category.localeCompare(b.category) ||
+          a.name.localeCompare(b.name),
+      );
+    }
+    return list;
+  }, [products, sortBy, sortDir]);
 
-  const insightsMutation = trpc.products.insights.useMutation({
-    onSuccess: (data) => {
-      setInsightsData(data);
-      setShowInsights(true);
-    },
-    onError: () =>
-      toast.error("Failed to generate insights. Please try again."),
-  });
-
-  const duplicateCheckMutation = trpc.products.checkDuplicate.useMutation();
+  useEffect(() => {
+    if (sortBy !== "category") return;
+    setExpandedCategories((prev) => {
+      if (prev.size > 0) return prev;
+      return new Set(CATEGORIES);
+    });
+  }, [sortBy]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name || !form.description || !form.price) {
+    if (!form.name.trim() || !form.description.trim() || !form.price) {
       toast.error("Please fill in all required fields");
       return;
     }
@@ -968,6 +507,20 @@ export default function Admin() {
             </button>
             <button
               type="button"
+              onClick={handleTranslateLocales}
+              disabled={translatingLocales}
+              title="Fill missing German, English and French storefront translations for every product using AI"
+              className="flex items-center gap-2 border border-white/20 text-white/80 px-4 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:border-white hover:text-white transition-colors disabled:opacity-50"
+            >
+              {translatingLocales ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : (
+                <Languages size={14} />
+              )}
+              Translate de/en/fr
+            </button>
+            <button
+              type="button"
               onClick={() => reconciliationMutation.mutate({})}
               disabled={reconciliationMutation.isPending}
               title="Check for Stripe payments missing from our records and email a match request for each"
@@ -1065,6 +618,9 @@ export default function Admin() {
 
         {/* Live setup checklist (server-derived; dismissible) */}
         <OnboardingChecklist />
+
+        {/* Sales & inventory insights (stats for all plans, AI narrative Studio+) */}
+        <InsightsCard />
 
         {/* Add Product Form */}
         {showAddForm && (
