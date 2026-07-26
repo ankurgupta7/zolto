@@ -80,7 +80,7 @@ export default function Signup() {
           label="Store URL"
           error={slugTouched && slug ? errors.slug : undefined}
           hint={
-            effectiveSlug ? `${effectiveSlug}.zolto.com` : "yourstore.zolto.com"
+            effectiveSlug ? `${effectiveSlug}.zolto.ch` : "yourstore.zolto.ch"
           }
         >
           <input
