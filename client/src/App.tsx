@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ComponentType } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
@@ -32,6 +32,9 @@ import { TenantProvider } from "./contexts/TenantContext";
 import { useSmoothScroll, lenisRef } from "./hooks/useSmoothScroll";
 import { resolveSurface, type SurfaceResolution } from "./lib/surface";
 import MarketingApp from "./marketing/MarketingApp";
+import { ADMIN_NAV } from "./admin/nav";
+import AdminLayout from "./components/admin/AdminLayout";
+import AdminPlaceholder from "./components/admin/AdminPlaceholder";
 
 function ScrollToTop() {
   const [location] = useLocation();
@@ -60,6 +63,16 @@ function useSurface(): SurfaceResolution {
   return surface;
 }
 
+/**
+ * Manifest ids → real pages. Anything not mapped renders AdminPlaceholder
+ * until its slice of the admin migration lands (docs/ARCHITECTURE-ADMIN.md §9).
+ * The legacy routes below stay live until their sections are extracted.
+ */
+const ADMIN_PAGES: Record<string, ComponentType> = {
+  home: Admin,
+  plan: Billing,
+};
+
 function StorefrontRouter() {
   useSmoothScroll();
   return (
@@ -79,7 +92,23 @@ function StorefrontRouter() {
           <Route path="/impressum" component={Impressum} />
           <Route path="/faq" component={FAQ} />
           <Route path="/product/:id" component={ProductDetail} />
-          <Route path="/admin" component={Admin} />
+          {ADMIN_NAV.map((item) => {
+            const Page = ADMIN_PAGES[item.id];
+            return (
+              <Route key={item.id} path={item.path}>
+                {() => (
+                  <AdminLayout title={item.label}>
+                    {Page ? (
+                      <Page />
+                    ) : (
+                      <AdminPlaceholder label={item.label} icon={item.icon} />
+                    )}
+                  </AdminLayout>
+                )}
+              </Route>
+            );
+          })}
+          {/* Legacy admin routes — kept until each section moves into the shell. */}
           <Route path="/admin/billing" component={Billing} />
           <Route path="/claim-staff" component={ClaimStaff} />
           <Route path="/admin/bulk-upload" component={BulkUpload} />
