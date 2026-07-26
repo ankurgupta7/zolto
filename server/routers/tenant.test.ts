@@ -331,3 +331,43 @@ describe("tenant.updateSettings plan gates", () => {
     expect(set).not.toHaveBeenCalled();
   });
 });
+
+describe("tenant onboarding mutations", () => {
+  const admin = { openId: "google:admin", role: "admin", tenantId: 42 };
+
+  function cursorCtx(step: number) {
+    const where = vi.fn().mockResolvedValue(undefined);
+    const set = vi.fn(() => ({ where }));
+    dbMock.db.update = vi.fn(() => ({ set }));
+    return {
+      caller: tenantRouter.createCaller(
+        ctx(admin, { id: 42, plan: "free", onboardingStep: step } as never),
+      ),
+      set,
+    };
+  }
+
+  it("dismissOnboarding stores -1", async () => {
+    const { caller, set } = cursorCtx(0);
+    await expect(caller.dismissOnboarding()).resolves.toEqual({
+      success: true,
+    });
+    expect(set).toHaveBeenCalledWith({ onboardingStep: -1 });
+  });
+
+  it("setOnboardingCursor moves forward only", async () => {
+    const { caller, set } = cursorCtx(1);
+    await caller.setOnboardingCursor({ step: 2 });
+    expect(set).toHaveBeenCalledWith({ onboardingStep: 2 });
+
+    set.mockClear();
+    await caller.setOnboardingCursor({ step: 1 }); // rewind ignored
+    expect(set).not.toHaveBeenCalled();
+  });
+
+  it("setOnboardingCursor never rewinds a dismissed (-1) checklist", async () => {
+    const { caller, set } = cursorCtx(-1);
+    await caller.setOnboardingCursor({ step: 2 });
+    expect(set).not.toHaveBeenCalled();
+  });
+});

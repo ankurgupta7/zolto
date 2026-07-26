@@ -24,6 +24,7 @@ import {
 } from "../db";
 import { createStripeCustomer } from "../stripe";
 import { buildConnectAuthorizeUrl } from "../stripeConnect";
+import { deriveOnboardingStatus } from "../onboarding";
 import { tenants, tenantSettings } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
 import crypto from "node:crypto";
@@ -181,8 +182,40 @@ export const tenantRouter = router({
     return ctx.tenant;
   }),
 
-  // ─── Admin: Custom domain DNS status ──────────────────────────────────────
-  // Live check whether the saved custom domain's DNS points at the platform
+  // ─── Admin: Onboarding checklist (derived — see server/onboarding.ts) ──────
+  // Completion is computed from real data; only the wizard cursor/dismissal
+  // persists (tenants.onboardingStep: 0 fresh, n wizard progress, -1 hidden).
+  onboardingStatus: publicProcedure
+    .use(requireTenant)
+    .query(async ({ ctx }) => {
+      return deriveOnboardingStatus(ctx.tenant);
+    }),
+
+  dismissOnboarding: publicProcedure
+    .use(requireTenant)
+    .mutation(async ({ ctx }) => {
+      await db
+        .update(tenants)
+        .set({ onboardingStep: -1 })
+        .where(eq(tenants.id, ctx.tenant.id));
+      return { success: true };
+    }),
+
+  setOnboardingCursor: publicProcedure
+    .use(requireTenant)
+    .input(z.object({ step: z.number().int().min(0).max(10) }))
+    .mutation(async ({ ctx, input }) => {
+      // Cursor moves forward only — never rewinds a dismissed (-1) checklist.
+      const current = ctx.tenant.onboardingStep ?? 0;
+      if (current === -1 || input.step <= current) return { success: true };
+      await db
+        .update(tenants)
+        .set({ onboardingStep: input.step })
+        .where(eq(tenants.id, ctx.tenant.id));
+      return { success: true };
+    }),
+
+  // ─── Admin: Custom domain DNS status ──────────────────────────────────────  // Live check whether the saved custom domain's DNS points at the platform
   // (PLATFORM_DOMAIN env, e.g. app.zolto.ch). Caddy's on-demand TLS only
   // issues a cert once the domain is both registered here and pointing at us.
   domainStatus: publicProcedure.use(requireTenant).query(async ({ ctx }) => {

@@ -1162,6 +1162,35 @@ export async function getTenantByStripeCustomerId(
   }, undefined);
 }
 
+// ─── Onboarding derivation ────────────────────────────────────────────────────
+
+export async function countTenantProducts(tenantId: number): Promise<number> {
+  return withDb(async (db) => {
+    const rows = await db
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(products)
+      .where(eq(products.tenantId, tenantId));
+    return Number(rows[0]?.count ?? 0);
+  }, 0);
+}
+
+/** Has the tenant ever generated an AI photo (any consumption ledger row)? */
+export async function hasPhotoConsumption(tenantId: number): Promise<boolean> {
+  return withDb(async (db) => {
+    const rows = await db
+      .select({ id: photoCreditLedger.id })
+      .from(photoCreditLedger)
+      .where(
+        and(
+          eq(photoCreditLedger.tenantId, tenantId),
+          eq(photoCreditLedger.kind, "consumption"),
+        ),
+      )
+      .limit(1);
+    return rows.length > 0;
+  }, false);
+}
+
 // ─── POS Terminal (Tap to Pay) ────────────────────────────────────────────────
 
 /** Persist the Terminal Location id provisioned on the tenant's Connect account. */
