@@ -1,6 +1,7 @@
 import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import { formatPrice, useCurrency } from "@/lib/money";
+import { localizedName } from "@/lib/localize";
 import { ShoppingBag, Trash2, X } from "lucide-react";
 import {
   Sheet,
@@ -24,7 +25,7 @@ export default function CartDrawer() {
   };
 
   const displayName = (i: (typeof items)[number]) =>
-    i18n.language === "en" && i.nameEn ? i.nameEn : i.name;
+    localizedName(i, i18n.language);
 
   return (
     <Sheet open={isOpen} onOpenChange={setOpen}>
