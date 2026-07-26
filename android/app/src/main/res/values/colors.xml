@@ -1,6 +1,38 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="black">#000000</color>
-    <color name="white">#FFFFFF</color>
-    <color name="gray">#888888</color>
+    <!-- Zolto Zürich — Pearl Jeweller Warm Palette -->
+    <!-- Every neutral has a warm (brown/amber) undertone, never cold grey -->
+    <color name="oyster_cream">#FFF7F3EE</color>     <!-- background — warm oyster white -->
+    <color name="warm_dark">#FF2D2620</color>         <!-- mahogany dark — hero, success screen -->
+    <color name="warm_near_black">#FF1C1714</color>   <!-- warm near-black for text -->
+    <color name="warm_dark_mid">#FF3A3028</color>     <!-- mid warm dark -->
+    <color name="gold">#FFB8963E</color>              <!-- refined gold accent -->
+    <color name="gold_light">#FFD4B060</color>
+    <color name="gold_dark">#FF8B6914</color>         <!-- darker gold for muted accents -->
+    <color name="warm_ivory">#FFEDE7DF</color>        <!-- card surfaces -->
+    <color name="warm_muted">#FF7A6D65</color>        <!-- muted / secondary text -->
+    <color name="warm_border">#FFDDD4C9</color>       <!-- pearl warm border -->
+    <color name="selected_border">#FFB8963E</color>
+    <color name="sold_overlay">#802D2620</color>
+
+    <!-- Offline/warning indicator color -->
+    <color name="warning_orange">#FFE65100</color>
+
+    <!-- Legacy aliases so existing code compiles without changes -->
+    <color name="forest_green">#FF1C1714</color>
+    <color name="forest_green_dark">#FF2D2620</color>
+    <color name="forest_green_light">#FF3A3028</color>
+    <color name="near_black">#FF1C1714</color>
+    <color name="charcoal">#FF2D2620</color>
+    <color name="dark_grey">#FF3A3028</color>
+    <color name="warm_white">#FFF7F3EE</color>
+    <color name="soft_white">#FFEDE7DF</color>
+    <color name="deep_text">#FF1C1714</color>
+    <color name="muted_text">#FF7A6D65</color>
+    <color name="border">#FFDDD4C9</color>
+    <color name="success_green">#FF4CAF50</color>
+    <color name="error_red">#FFF44336</color>
+    <color name="gold_500">#FFB8963E</color>
+    <color name="soft_ivory">#FFEDE7DF</color>
+    <color name="warm_cream">#FFF7F3EE</color>
 </resources>

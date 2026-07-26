@@ -1162,8 +1162,22 @@ export async function getTenantByStripeCustomerId(
   }, undefined);
 }
 
-// ─── Custom domains ───────────────────────────────────────────────────────────
+// ─── POS Terminal (Tap to Pay) ────────────────────────────────────────────────
 
+/** Persist the Terminal Location id provisioned on the tenant's Connect account. */
+export async function setTenantTerminalLocation(
+  tenantId: number,
+  locationId: string,
+): Promise<void> {
+  await withDbOrThrow((db) =>
+    db
+      .update(tenants)
+      .set({ terminalLocationId: locationId })
+      .where(eq(tenants.id, tenantId)),
+  );
+}
+
+// ─── Custom domains ───────────────────────────────────────────────────────────
 /**
  * Find the settings row for a registered custom domain. Used by the Caddy
  * on-demand-TLS "ask" endpoint: only domains a Maker+ tenant actually saved

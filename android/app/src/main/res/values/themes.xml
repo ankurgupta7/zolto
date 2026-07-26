@@ -1,13 +1,65 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.Kalakosh" parent="Theme.MaterialComponents.Light.NoActionBar">
-        <item name="colorPrimary">@color/black</item>
-        <item name="colorPrimaryVariant">@color/black</item>
-        <item name="colorOnPrimary">@color/white</item>
-        <item name="android:windowBackground">@color/white</item>
-        <item name="android:statusBarColor">@color/white</item>
+    <style name="Theme.ZoltoPOS" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/near_black</item>
+        <item name="colorPrimaryDark">@color/charcoal</item>
+        <item name="colorAccent">@color/gold</item>
+        <item name="android:windowBackground">@color/warm_white</item>
+        <item name="android:statusBarColor">@color/warm_white</item>
+        <item name="android:navigationBarColor">@color/warm_white</item>
         <item name="android:windowLightStatusBar">true</item>
-        <item name="android:navigationBarColor">@color/white</item>
-        <item name="android:windowLightNavigationBar">true</item>
+        <item name="materialButtonStyle">@style/Widget.Zolto.Button</item>
+        <item name="materialButtonOutlinedStyle">@style/Widget.Zolto.Button.Outlined</item>
+        <item name="borderlessButtonStyle">@style/Widget.Zolto.Button.Borderless</item>
+        <item name="shapeAppearanceSmallComponent">@style/ShapeAppearance.Zolto.SmallComponent</item>
+        <item name="shapeAppearanceMediumComponent">@style/ShapeAppearance.Zolto.MediumComponent</item>
+    </style>
+
+    <!-- Toolbar style: warm white bar with near-black icons — logo reads naturally -->
+    <style name="Widget.Zolto.Toolbar" parent="Widget.MaterialComponents.Toolbar">
+        <item name="android:background">@color/warm_white</item>
+        <item name="titleTextColor">@color/near_black</item>
+        <item name="navigationIconTint">@color/near_black</item>
+        <item name="android:elevation">2dp</item>
+    </style>
+
+    <!-- Primary filled button: near-black bg, warm-white text -->
+    <style name="Widget.Zolto.Button" parent="Widget.MaterialComponents.Button">
+        <item name="backgroundTint">@color/near_black</item>
+        <item name="android:textColor">@color/warm_white</item>
+        <item name="cornerRadius">4dp</item>
+        <item name="android:letterSpacing">0.08</item>
+    </style>
+
+    <!-- Primary alias — used by success screen receipt actions -->
+    <style name="Widget.Zolto.Button.Primary" parent="Widget.Zolto.Button" />
+
+    <!-- Outlined button: near-black stroke + text -->
+    <style name="Widget.Zolto.Button.Outlined" parent="Widget.MaterialComponents.Button.OutlinedButton">
+        <item name="strokeColor">@color/near_black</item>
+        <item name="android:textColor">@color/near_black</item>
+        <item name="cornerRadius">4dp</item>
+        <item name="android:letterSpacing">0.08</item>
+    </style>
+
+    <!-- Borderless / text button -->
+    <style name="Widget.Zolto.Button.Borderless" parent="Widget.MaterialComponents.Button.TextButton">
+        <item name="android:textColor">@color/near_black</item>
+        <item name="cornerRadius">4dp</item>
+    </style>
+
+    <!-- 4dp corner radius for cards/components — Swiss geometric precision -->
+    <style name="ShapeAppearance.Zolto.SmallComponent" parent="ShapeAppearance.MaterialComponents.SmallComponent">
+        <item name="cornerSize">4dp</item>
+    </style>
+
+    <style name="ShapeAppearance.Zolto.MediumComponent" parent="ShapeAppearance.MaterialComponents.MediumComponent">
+        <item name="cornerSize">4dp</item>
+    </style>
+
+    <!-- Gold button used on success screen -->
+    <style name="Widget.Zolto.Button.Gold" parent="Widget.Zolto.Button">
+        <item name="backgroundTint">@color/gold</item>
+        <item name="android:textColor">@color/near_black</item>
     </style>
 </resources>

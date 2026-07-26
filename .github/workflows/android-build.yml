@@ -1,0 +1,60 @@
+name: Android Build & Test
+
+# The POS app lives in android/ and is multi-tenant: registers are bound to
+# their store at runtime (SetupActivity → PosConfig), so there are no baked-in
+# server URLs or POS keys and no secrets.xml step. Unit tests + a debug APK
+# build guard every change under android/.
+
+on:
+  pull_request:
+    branches: ["main"]
+    paths: ["android/**", ".github/workflows/android-build.yml"]
+  push:
+    branches: ["main"]
+    paths: ["android/**", ".github/workflows/android-build.yml"]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: Unit tests + debug APK
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: android
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+
+      # Wire-format contract tests first: they guard the app and
+      # server/pos.ts drifting apart (TWINT, payment-intent, Terminal
+      # provisioning models).
+      - name: Run API contract tests
+        run: ./gradlew :app:testDebugUnitTest --tests '*Twint*' --tests '*StripeModels*' --stacktrace
+
+      - name: Run unit tests
+        run: ./gradlew test --stacktrace
+
+      - name: Build debug APK
+        run: ./gradlew assembleDebug --stacktrace
+
+      - name: Upload debug APK
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ZoltoPOS-debug
+          path: android/app/build/outputs/apk/debug/app-debug.apk

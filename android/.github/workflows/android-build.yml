@@ -1,0 +1,122 @@
+name: Android Build & Test
+
+on:
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: Unit tests + debug APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      # No committed Gradle wrapper jar, so pin the version explicitly. 8.9 is
+      # the distribution declared in gradle/wrapper/gradle-wrapper.properties and
+      # is the minimum required by AGP 8.7.x. setup-gradle handles caching.
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+
+      # secrets.xml is gitignored (see app/secrets.example.xml, which lives
+      # outside res/ so it never collides with the real one). This always
+      # writes a complete secrets.xml — repo secret if set, else the same
+      # placeholder app/secrets.example.xml documents.
+      #
+      # Only POS_API_BASE_URL and POS_API_KEY are passed as secrets.
+      # - stripe_publishable_key is omitted: the Terminal SDK authenticates
+      #   via connection tokens fetched from the backend at runtime.
+      # - stripe_location_id is kept with a default placeholder because
+      #   PaymentActivity.kt references R.string.stripe_location_id as a
+      #   local-development override when the backend is unavailable.
+      - name: Generate secrets.xml from GitHub Secrets
+        env:
+          POS_API_BASE_URL: ${{ secrets.POS_API_BASE_URL }}
+          POS_API_KEY: ${{ secrets.POS_API_KEY }}
+        run: |
+          escape_xml() {
+            local s="$1"
+            s="${s//&/&amp;}"
+            s="${s//</\&lt;}"
+            s="${s//>/\&gt;}"
+            s="${s//\"/\&quot;}"
+            s="${s//\'/\&apos;}"
+            printf '%s' "$s"
+          }
+
+          POS_API_BASE_URL="${POS_API_BASE_URL:-https://zolto.ch}"
+          POS_API_KEY="${POS_API_KEY:-your-32-char-secret-here}"
+          STRIPE_LOCATION_ID="${STRIPE_LOCATION_ID:-tml_...}"
+
+          out="app/src/main/res/values/secrets.xml"
+          {
+            echo '<?xml version="1.0" encoding="utf-8"?>'
+            echo '<resources>'
+            echo "    <string name=\"pos_api_base_url\" translatable=\"false\">$(escape_xml "$POS_API_BASE_URL")</string>"
+            echo "    <string name=\"pos_api_key\" translatable=\"false\">$(escape_xml "$POS_API_KEY")</string>"
+            echo "    <!-- stripe_publishable_key intentionally omitted: the Terminal SDK authenticates via backend connection tokens at runtime -->"
+            echo "    <string name=\"stripe_location_id\" translatable=\"false\">$(escape_xml "$STRIPE_LOCATION_ID")</string>"
+            echo '</resources>'
+          } > "$out"
+
+          echo "Wrote $out (values sourced from GitHub Secrets where set, else the app/secrets.example.xml placeholders)."
+
+      # Runs the pure :logic unit tests and the :app JVM unit tests, then builds
+      # the debug APK so a broken build or failing test blocks the merge.
+      #
+      # TWINT is exercised twice deliberately:
+      # 1. A focused TWINT contract-test step gives immediate, visible feedback
+      #    that the TWINT wire format still matches Zolto-ch/server/pos.ts.
+      # 2. The full test suite still covers everything else.
+      - name: Run TWINT contract tests
+        run: ./gradlew :app:testDebugUnitTest --tests '*Twint*' --stacktrace
+
+      - name: Run unit tests
+        run: ./gradlew test --stacktrace
+
+      - name: Build debug APK
+        run: ./gradlew assembleDebug --stacktrace
+
+      # Smoke-test the live POS backend: the endpoint requires a valid
+      # POS_API_KEY and returns 200 only when Stripe secrets are configured.
+      # This catches deployments where the app builds but cannot actually
+      # create payments because the server is missing secrets.
+      - name: Verify POS server health
+        env:
+          POS_API_BASE_URL: ${{ secrets.POS_API_BASE_URL }}
+          POS_API_KEY: ${{ secrets.POS_API_KEY }}
+        run: |
+          POS_API_BASE_URL="${POS_API_BASE_URL:-https://zolto.ch}"
+          echo "Checking POS health at ${POS_API_BASE_URL}/api/pos/health ..."
+          curl -fsS -H "x-pos-key: ${POS_API_KEY}" "${POS_API_BASE_URL}/api/pos/health"
+
+      - name: Upload debug APK
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ZoltoPOS-debug
+          path: app/build/outputs/apk/debug/*.apk
+          retention-days: 14
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: |
+            app/build/reports/tests/
+            logic/build/reports/tests/
+          retention-days: 14

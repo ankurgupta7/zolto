@@ -1,5 +1,20 @@
+# Android
+*.iml
 .gradle/
-build/
 local.properties
-*.keystore
-*.jks
+.idea/
+app/build/
+build/
+logic/build/
+
+# Secrets
+app/src/main/res/values/secrets.xml
+
+# API
+api/node_modules/
+api/dist/
+api/.env
+
+# OS
+.DS_Store
+*.class
