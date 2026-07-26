@@ -140,6 +140,13 @@ export const products = mysqlTable("products", {
   description: text("description").notNull(),
   nameEn: varchar("nameEn", { length: 255 }),
   descriptionEn: text("descriptionEn"),
+  // Optional per-locale content (AI-translated via products.translate). The
+  // storefront picks the visitor's locale (client/src/lib/localize.ts),
+  // falling back to the merchant's primary text in name/description.
+  nameDe: varchar("nameDe", { length: 255 }),
+  descriptionDe: text("descriptionDe"),
+  nameFr: varchar("nameFr", { length: 255 }),
+  descriptionFr: text("descriptionFr"),
   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
   category: mysqlEnum("category", PRODUCT_CATEGORIES).notNull(),
   imageKey: varchar("imageKey", { length: 512 }),

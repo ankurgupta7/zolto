@@ -23,6 +23,7 @@ import {
   insertBulkUploadLog,
   getBulkUploadLogs,
   getProductsMissingTranslation,
+  updateProductTranslations,
   getPaidOrders,
 } from "../db";
 
@@ -673,6 +674,7 @@ Return ONLY valid JSON, no markdown, no explanation.`,
   // list and only applyAutoTranslateAll persists the approved subset.
   previewAutoTranslateAll: adminProcedure.mutation(async ({ ctx }) => {
     const { invokeLLM } = await import("../_core/llm");
+    const storeName = ctx.tenant?.name ?? "the store";
     const missing = await getProductsMissingTranslation(ctx.user.tenantId);
     if (missing.length === 0) return { proposals: [], total: 0 };
 
@@ -698,7 +700,7 @@ Return ONLY valid JSON, no markdown, no explanation.`,
           messages: [
             {
               role: "system",
-              content: `You are a bilingual copywriter for Kalakosh Jewellery, a luxury jewellery boutique in Zurich, Switzerland.
+              content: `You are a bilingual copywriter for "${storeName}", an artisan boutique.
 Translate each German jewellery product into elegant English.
 - nameEn: 2-5 words, same style and specificity as the German name
 - descriptionEn: exactly one lyrical sentence — same sensory tone and jewel specificity as the German
@@ -807,6 +809,110 @@ Return ONLY valid JSON, no markdown.`,
         updated++;
       }
       return { updated };
+    }),
+
+  // Admin: translate one product into all supported locales (de/en/fr).
+  // Unlike previewAutoTranslateAll (English-only batch flow for one store),
+  // this fills every missing locale field in a single pass, grounded in the
+  // merchant's primary name/description. Storefront picks the visitor's
+  // locale (client/src/lib/localize.ts); missing locales fall back to primary.
+  translateProductLocales: adminProcedure
+    .input(
+      z.object({
+        productId: z.number().int().positive(),
+        // Re-translate even locales that already have content.
+        overwrite: z.boolean().default(false),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { invokeLLM } = await import("../_core/llm");
+      const tid = ctx.user.tenantId;
+      const product = await getProductById(tid, input.productId);
+      if (!product) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Product not found",
+        });
+      }
+
+      const want = (cur: string | null) => input.overwrite || !cur;
+      const locales: string[] = [];
+      if (want(product.nameEn) || want(product.descriptionEn))
+        locales.push("en");
+      if (want(product.nameDe) || want(product.descriptionDe))
+        locales.push("de");
+      if (want(product.nameFr) || want(product.descriptionFr))
+        locales.push("fr");
+      if (locales.length === 0) {
+        return { translated: [], skipped: true };
+      }
+
+      const storeName = ctx.tenant?.name ?? "the store";
+      const result = await invokeLLM({
+        messages: [
+          {
+            role: "system",
+            content:
+              `You are a professional translator for "${storeName}", a small artisan store. ` +
+              "Translate the product name and description into the requested locales. " +
+              "Keep proper nouns (stone names, places) accurate; keep the tone warm and artisan; " +
+              "names stay short (a few words), descriptions keep their structure. " +
+              'Return STRICT JSON only: {"locales": {"en": {"name": "...", "description": "..."}, ...}}.',
+          },
+          {
+            role: "user",
+            content: JSON.stringify({
+              locales,
+              name: product.name,
+              description: product.description,
+            }),
+          },
+        ],
+        maxTokens: 1200,
+        responseFormat: { type: "json_object" },
+      });
+
+      const raw = result.choices[0]?.message.content;
+      const text = typeof raw === "string" ? raw : "";
+      let parsed: {
+        locales?: Record<string, { name?: string; description?: string }>;
+      };
+      try {
+        parsed = JSON.parse(text);
+      } catch {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            "Translation failed — the AI returned unreadable output. Try again.",
+        });
+      }
+      const loc = parsed.locales ?? {};
+
+      const patch: Parameters<typeof updateProductTranslations>[2] = {};
+      const done: string[] = [];
+      if (locales.includes("en") && loc.en?.name) {
+        patch.nameEn = loc.en.name.slice(0, 255);
+        if (loc.en.description) patch.descriptionEn = loc.en.description;
+        done.push("en");
+      }
+      if (locales.includes("de") && loc.de?.name) {
+        patch.nameDe = loc.de.name.slice(0, 255);
+        if (loc.de.description) patch.descriptionDe = loc.de.description;
+        done.push("de");
+      }
+      if (locales.includes("fr") && loc.fr?.name) {
+        patch.nameFr = loc.fr.name.slice(0, 255);
+        if (loc.fr.description) patch.descriptionFr = loc.fr.description;
+        done.push("fr");
+      }
+      if (done.length === 0) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Translation failed — no usable output. Try again.",
+        });
+      }
+      await updateProductTranslations(tid, input.productId, patch);
+      return { translated: done, skipped: false };
     }),
 
   // Admin: AI-generated insights from sales and inventory data

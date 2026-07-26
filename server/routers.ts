@@ -9,6 +9,8 @@ import { reconciliationRouter } from "./routers/reconciliation";
 import { tenantRouter } from "./routers/tenant";
 import { billingRouter } from "./routers/billing";
 import { staffRouter } from "./routers/staff";
+import { chatRouter } from "./routers/chat";
+import { insightsRouter } from "./routers/insights";
 
 // ─── App router ───────────────────────────────────────────────────────────────
 
@@ -25,6 +27,8 @@ export const appRouter = router({
   tenant: tenantRouter, // NEW: Multi-tenant routes
   billing: billingRouter, // Plan subscriptions + AI photo credits
   staff: staffRouter, // Team seats + invites
+  chat: chatRouter, // AI support assistant (storefront)
+  insights: insightsRouter, // Sales/inventory stats + AI narrative (Studio+)
   products: productsRouter,
   instagram: instagramRouter,
   checkout: checkoutRouter,

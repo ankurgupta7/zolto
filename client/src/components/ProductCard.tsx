@@ -14,6 +14,7 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { formatPrice, useCurrency } from "@/lib/money";
+import { localizedDescription, localizedName } from "@/lib/localize";
 
 interface Props {
   product: ProductItem;
@@ -43,12 +44,8 @@ export default function ProductCard({ product, onMutated }: Props) {
   const currency = useCurrency();
   const utils = trpc.useUtils();
 
-  const displayName =
-    i18n.language === "en" && product.nameEn ? product.nameEn : product.name;
-  const displayDescription =
-    i18n.language === "en" && product.descriptionEn
-      ? product.descriptionEn
-      : product.description;
+  const displayName = localizedName(product, i18n.language);
+  const displayDescription = localizedDescription(product, i18n.language);
 
   /* Lazy-load extra images the first time the card is hovered; staleTime:
      Infinity so they stay cached for repeat hovers without re-fetching.   */

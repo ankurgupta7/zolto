@@ -31,6 +31,7 @@ import { getLoginUrl } from "@/const";
 import { PRODUCT_CATEGORIES, type ProductCategory } from "@shared/types";
 import ProductImageManager from "@/components/ProductImageManager";
 import OnboardingChecklist from "@/components/OnboardingChecklist";
+import InsightsCard from "@/components/InsightsCard";
 import InstagramManager from "@/components/InstagramManager";
 import BulkChangeReviewDialog from "@/components/BulkChangeReviewDialog";
 import ProductDiscoveryControls, {
@@ -681,6 +682,36 @@ export default function Admin() {
         toast.error("Auto-translation preview failed. Please try again."),
     });
 
+  // Storefront locale translation (de/en/fr): fills each product's missing
+  // locale fields one product at a time; storefront renders the visitor's
+  // locale via client/src/lib/localize.ts and falls back to the primary text.
+  const translateLocalesMutation =
+    trpc.products.translateProductLocales.useMutation();
+  const [translatingLocales, setTranslatingLocales] = useState(false);
+  const handleTranslateLocales = async () => {
+    if (!products || products.length === 0) return;
+    setTranslatingLocales(true);
+    let translated = 0;
+    try {
+      for (const p of products) {
+        const r = await translateLocalesMutation.mutateAsync({
+          productId: p.id,
+        });
+        if (!r.skipped) translated += 1;
+      }
+      refetch();
+      toast.success(
+        translated > 0
+          ? `Translated ${translated} product${translated !== 1 ? "s" : ""} into German, English and French.`
+          : "All products already have de/en/fr translations.",
+      );
+    } catch {
+      toast.error("Storefront translation failed. Please try again.");
+    } finally {
+      setTranslatingLocales(false);
+    }
+  };
+
   const applyTranslateMutation =
     trpc.products.applyAutoTranslateAll.useMutation({
       onSuccess: (data) => {
@@ -968,6 +999,20 @@ export default function Admin() {
             </button>
             <button
               type="button"
+              onClick={handleTranslateLocales}
+              disabled={translatingLocales}
+              title="Fill missing German, English and French storefront translations for every product using AI"
+              className="flex items-center gap-2 border border-white/20 text-white/80 px-4 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:border-white hover:text-white transition-colors disabled:opacity-50"
+            >
+              {translatingLocales ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : (
+                <Languages size={14} />
+              )}
+              Translate de/en/fr
+            </button>
+            <button
+              type="button"
               onClick={() => reconciliationMutation.mutate({})}
               disabled={reconciliationMutation.isPending}
               title="Check for Stripe payments missing from our records and email a match request for each"
@@ -1065,6 +1110,9 @@ export default function Admin() {
 
         {/* Live setup checklist (server-derived; dismissible) */}
         <OnboardingChecklist />
+
+        {/* Sales & inventory insights (stats for all plans, AI narrative Studio+) */}
+        <InsightsCard />
 
         {/* Add Product Form */}
         {showAddForm && (
