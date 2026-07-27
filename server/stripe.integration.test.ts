@@ -216,7 +216,15 @@ describeIf("Stripe Integration — TWINT PaymentIntent", () => {
 
     expect(intent.id).toMatch(/^pi_/);
     expect(intent.status).toBe("requires_action");
-    expect(intent.next_action?.type).toBe("use_stripe_sdk");
+    // Current Stripe API returns redirect_to_url for TWINT confirmation
+    // (older versions returned use_stripe_sdk). What matters for the POS flow
+    // is that an action is required and Stripe hands us a URL to send the
+    // customer to.
+    expect(intent.next_action?.type).toBe("redirect_to_url");
+    const redirectUrl = (
+      intent.next_action as { redirect_to_url?: { url?: string } } | null
+    )?.redirect_to_url?.url;
+    expect(redirectUrl).toMatch(/^https:\/\/.*stripe/);
     expect(intent.statement_descriptor).toBe("KALAKOSH");
 
     // Cleanup

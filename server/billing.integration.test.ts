@@ -169,7 +169,7 @@ describeIf("Tenant Onboarding — Stripe Integration", () => {
   // ─── Step 2: upgrading to a paid plan ─────────────────────────────────────
   describe("plan upgrade — subscription checkout", () => {
     it(
-      "first subscription gets the 14-day trial and billing metadata",
+      "first subscription checkout carries the Maker price and billing metadata",
       async () => {
         const { createPlanCheckoutSession, isBillingSession } = await import(
           "./billing"
@@ -224,24 +224,18 @@ describeIf("Tenant Onboarding — Stripe Integration", () => {
         expect(lineItems.data[0].price?.id).toBe(makerPriceId);
         expect(lineItems.data[0].quantity).toBe(1);
 
-        // trial_period_days lives inside subscription_data — Stripe echoes it
-        // back on the created subscription's pending setup. Verify via the raw
-        // session's subscription_data if present, else by expanding.
-        const expanded = await stripe.checkout.sessions.retrieve(session.id, {
-          expand: [],
-        });
-        const subData = (
-          expanded as Stripe.Checkout.Session & {
-            subscription_data?: { trial_period_days?: number };
-          }
-        ).subscription_data;
-        expect(subData?.trial_period_days).toBe(14);
+        // NOTE on the 14-day trial: createPlanCheckoutSession passes
+        // subscription_data.trial_period_days=14 for a first subscription, but
+        // Stripe's API (2025-06-30.basil) no longer echoes subscription_data
+        // back on the retrieved Checkout Session, so it can't be asserted
+        // server-to-server without completing the checkout. The trial-once
+        // branching itself is covered by the mocked billing.test.ts suite.
       },
       NETWORK,
     );
 
     it(
-      "returning subscriber does NOT get a second trial",
+      "returning subscriber checkout is created without a trial and keeps tenant metadata",
       async () => {
         const { createPlanCheckoutSession } = await import("./billing");
         const customer = await stripe.customers.create({
@@ -267,13 +261,14 @@ describeIf("Tenant Onboarding — Stripe Integration", () => {
         });
         const session = sessions.data[0];
         sessionIds.push(session.id);
-        const expanded = await stripe.checkout.sessions.retrieve(session.id);
-        const subData = (
-          expanded as Stripe.Checkout.Session & {
-            subscription_data?: { trial_period_days?: number | null };
-          }
-        ).subscription_data;
-        expect(subData?.trial_period_days ?? null).toBeNull();
+        expect(session.mode).toBe("subscription");
+        expect(session.metadata).toMatchObject({
+          zoltoBilling: "plan_subscription",
+          tenantId: "4343",
+          plan: "maker",
+        });
+        // As above: subscription_data (incl. trial_period_days) is a
+        // request-side field on this API version — not readable back.
       },
       NETWORK,
     );
