@@ -1,21 +1,33 @@
 /**
- * Self-hosted notification helper
+ * Notification helper — "new order"-style owner DMs via Discord.
  *
- * Sends owner notifications as a Discord DM to the owner's Discord user ID.
- * This reuses the existing DISCORD_BOT_TOKEN so no extra credentials are needed.
+ * The bot token is a PLATFORM credential (DISCORD_BOT_TOKEN env) — there is one
+ * Zolto bot, invited into each tenant's Discord server. Per-tenant routing is by
+ * ID, not by token: each tenant's owner sets their own Discord user ID in their
+ * store settings (tenant_settings.discord_owner_user_id, via
+ * tenant.updateSettings) and callers pass it as opts.discordUserId. The env var
+ * DISCORD_OWNER_USER_ID remains only as the platform-owner fallback (and for
+ * single-tenant self-hosted deployments that never set a per-tenant recipient).
  *
  * Required env vars:
- *   DISCORD_BOT_TOKEN       — already required for the catalogue bot
- *   DISCORD_OWNER_USER_ID   — your personal Discord user ID (right-click yourself
- *                             in Discord → Copy User ID; needs Developer Mode on)
+ *   DISCORD_BOT_TOKEN       — the platform bot (shared with the catalogue bot)
+ *   DISCORD_OWNER_USER_ID   — platform-owner fallback recipient (optional)
  *
- * If DISCORD_OWNER_USER_ID is not set, notifications are silently logged to
- * the console instead of failing.
+ * If neither a per-tenant recipient nor the env fallback is set, notifications
+ * are logged to the console instead of failing.
  */
 
 export type NotificationPayload = {
   title: string;
   content: string;
+};
+
+export type NotificationOptions = {
+  /**
+   * Per-tenant recipient (tenant_settings.discord_owner_user_id). Wins over
+   * the DISCORD_OWNER_USER_ID env fallback when set.
+   */
+  discordUserId?: string | null;
 };
 
 async function sendDiscordDM(userId: string, text: string): Promise<void> {
@@ -60,11 +72,12 @@ async function sendDiscordDM(userId: string, text: string): Promise<void> {
 
 export async function notifyOwner(
   payload: NotificationPayload,
+  opts?: NotificationOptions,
 ): Promise<boolean> {
   const { title, content } = payload;
   const message = `**${title}**\n${content}`;
 
-  const ownerId = process.env.DISCORD_OWNER_USER_ID;
+  const ownerId = opts?.discordUserId || process.env.DISCORD_OWNER_USER_ID;
 
   if (!ownerId) {
     // Graceful degradation: log to console if not configured

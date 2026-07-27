@@ -46,6 +46,10 @@ export const tenants = mysqlTable("tenants", {
     "canceled",
   ]).default("trialing"),
   trialEndsAt: timestamp("trial_ends_at"),
+  // SHA-256 hash of the tenant's POS API key — NEVER the plaintext key. The
+  // plaintext is shown to the tenant exactly once at generation/rotation
+  // (tenant.create / tenant.rotatePosApiKey); auth hashes the presented key
+  // and compares (server/db.ts getTenantByPosApiKey). See server/posApiKey.ts.
   posApiKey: varchar("pos_api_key", { length: 64 }).notNull().unique(),
   onboardingStep: int("onboarding_step").default(0), // 0-5
   onboardingCompletedAt: timestamp("onboarding_completed_at"),
@@ -83,8 +87,15 @@ export const tenantSettings = mysqlTable("tenant_settings", {
   // Branding
   whiteLabelName: varchar("white_label_name", { length: 255 }),
   publicDomain: varchar("public_domain", { length: 255 }),
-  // External channel IDs (for multi-tenant bot mapping)
+  // External channel IDs (for multi-tenant bot mapping). These are Discord
+  // snowflake IDs, not secrets — the platform's single bot token stays in env
+  // (DISCORD_BOT_TOKEN); each tenant just tells us which of THEIR channels the
+  // already-installed bot should watch.
   discordChannelId: varchar("discord_channel_id", { length: 64 }),
+  // Tenant owner's personal Discord user ID for "new order"-style DM
+  // notifications (server/_core/notification.ts). Per-tenant override of the
+  // platform-wide DISCORD_OWNER_USER_ID env fallback.
+  discordOwnerUserId: varchar("discord_owner_user_id", { length: 64 }),
   slackChannelId: varchar("slack_channel_id", { length: 64 }),
   // Contact
   contactEmail: varchar("contact_email", { length: 320 }),
@@ -105,6 +116,32 @@ export const tenantSettings = mysqlTable("tenant_settings", {
 
 export type TenantSetting = typeof tenantSettings.$inferSelect;
 export type InsertTenantSetting = typeof tenantSettings.$inferInsert;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TENANT SECRETS — Encrypted vault for tenant-provided credentials
+// ═══════════════════════════════════════════════════════════════════════════════
+// The ONLY sanctioned home for tenant secrets (a merchant's own provider tokens,
+// if a future integration can't use OAuth delegation like Stripe Connect does).
+// Ciphertext only — AES-256-GCM against the platform master key in the
+// TENANT_SECRETS_KEY env var — so a DB dump or backup never exposes a tenant's
+// credentials, and no code path returns plaintext to anyone (including Zolto
+// admin). All access goes through server/tenantSecrets.ts.
+export const tenantSecrets = mysqlTable("tenant_secrets", {
+  id: int("id").autoincrement().primaryKey(),
+  tenantId: int("tenant_id").notNull(),
+  provider: varchar("provider", { length: 64 }).notNull(), // "stripe", "discord", "pos", ...
+  ciphertext: text("ciphertext").notNull(), // v1:<iv>:<tag>:<data> (hex) — never plaintext
+  // Last 4 chars of the secret, stored so the admin UI can show a masked
+  // "…3f9a" WITHOUT decrypting. Not reversible.
+  hint: varchar("hint", { length: 8 }).notNull(),
+  keyVersion: int("key_version").notNull().default(1), // master-key rotation marker
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  rotatedAt: timestamp("rotated_at"),
+  lastUsedAt: timestamp("last_used_at"), // audit: last server-side decrypt
+});
+
+export type TenantSecret = typeof tenantSecrets.$inferSelect;
+export type InsertTenantSecret = typeof tenantSecrets.$inferInsert;
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // USERS — Now scoped to a tenant

@@ -78,6 +78,17 @@ else
   warn "STRIPE_SECRET_KEY not set — online checkout is disabled; customers use the WhatsApp enquiry flow."
 fi
 
+# ── Tenant secrets vault (optional, non-fatal) ────────────────────────────────
+# Tenant-provided secrets are encrypted with this master key before touching
+# the database. Without it the vault is disabled — flag it so a deployment
+# that expects it doesn't silently run unconfigured.
+if [ -n "${TENANT_SECRETS_KEY:-}" ]; then
+  ok "TENANT_SECRETS_KEY detected — tenant secrets vault enabled"
+else
+  warn "TENANT_SECRETS_KEY is not set — the tenant secrets vault is disabled."
+  warn "Generate one with: openssl rand -hex 32  (see .env.example)"
+fi
+
 # Shorthand to run SQL inside the running db container, plus the run_sql /
 # col_exists / tbl_exists / idx_exists helpers used by the migrations below.
 # See deploy/lib/db.sh for why the connection and every statement now have a
@@ -326,8 +337,8 @@ if echo "$CURRENT_CAT_ENUM" | grep -q "'Silver'"; then
   run_sql "0011 remap Rings" \
     "UPDATE \`products\` SET \`category\`='Rings'
      WHERE \`category\` IN ('Silver','Semi-Precious Gems','Pearls')
-       AND (\`name\` REGEXP 'Fingerring|\\\\bRing\\\\b'
-            OR \`nameEn\` REGEXP '\\\\bRing\\\\b');"
+       AND (\`name\` REGEXP 'Fingerring|\\bRing\\b'
+            OR \`nameEn\` REGEXP '\\bRing\\b');"
 
   run_sql "0011 remap Brooches" \
     "UPDATE \`products\` SET \`category\`='Brooches'
@@ -523,6 +534,15 @@ migrate_0023_tenant_signup_fix
 # invite/credit write would have failed on a live DB. Idempotent; see
 # migrate_0024_staff_invites_and_photo_credits in deploy/lib/db.sh.
 migrate_0024_staff_invites_and_photo_credits
+
+# ── 0025: tenant secrets vault + per-tenant Discord DM recipient ─────────────
+# Creates tenant_secrets (encrypted vault for tenant-provided credentials) and
+# adds tenant_settings.discord_owner_user_id. DDL only — hashing the existing
+# plaintext tenants.pos_api_key values is the one-shot data step in the
+# temporary scripts/migrate-tenant-secrets.mjs helper; run it once per
+# deployment right after this migration, then delete the helper. Idempotent;
+# see migrate_0025_tenant_secrets in deploy/lib/db.sh.
+migrate_0025_tenant_secrets
 
 # ── Shared helper: run a script inside the builder container ──────────────────
 # Usage: run_in_builder <tag> <script-path> [extra docker args...]
