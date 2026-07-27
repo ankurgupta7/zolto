@@ -83,10 +83,11 @@ tenant_scoped_tables() {
 # on an already-migrated DB it performs no writes. No FK constraints or secondary
 # indexes are added because schema.ts declares none (no .references()).
 #
-# tenant #1's pos_api_key is seeded from $POS_API_KEY when set, else generated.
-# For a cutover that imports an existing store as tenant #1, set POS_API_KEY so
-# that store's POS terminal — which authenticates purely by that key, with no
-# fallback (server/pos.ts requirePosKey) — keeps working after the migration.
+# tenant #1's pos_api_key stores only the SHA-256 of the key (the server hashes
+# a presented key to authenticate — server/posApiKey.ts). For a cutover that
+# imports an existing store as tenant #1, set POS_API_KEY so that store's POS
+# terminal — which authenticates purely by that key — keeps working after the
+# migration; the plaintext env value is hashed on insert and never stored.
 # ─────────────────────────────────────────────────────────────────────────────
 # Migration 0020: Stripe Connect for tenant storefronts.
 #
@@ -281,15 +282,17 @@ migrate_0019_multitenant() {
     local pos_key="${POS_API_KEY:-}"
     if [ -z "$pos_key" ]; then
       # A fresh standalone deploy has no POS terminal yet, so a generated key is
-      # fine; a cutover should set POS_API_KEY so the existing terminal keeps working.
-      pos_key="pos_$(head -c 24 /dev/urandom 2>/dev/null | od -An -tx1 | tr -d ' \n' || date +%s%N)"
-      warn "0019 POS_API_KEY not set — seeded tenant #1 with a generated POS key."
-      warn "     If a POS terminal must authenticate against tenant #1, set POS_API_KEY"
-      warn "     in .env (see deploy/rotate-pos-key.sh) before connecting it."
+      # fine; a cutover should set POS_API_KEY so the existing terminal keeps
+      # working. Only the SHA-256 of the key is stored (server/posApiKey.ts) —
+      # a generated throwaway key's plaintext is never needed or recoverable.
+      pos_key="$(head -c 32 /dev/urandom 2>/dev/null | od -An -tx1 | tr -d ' \n' || date +%s%N)"
+      warn "0019 POS_API_KEY not set — seeded tenant #1 with a generated (hashed) POS key."
+      warn "     To connect a POS terminal to tenant #1 later, rotate its key from the"
+      warn "     tenant admin panel (tenant.rotatePosApiKey) and enter the new key in the app."
     fi
     run_sql "0019 seed tenant #1 (${seed_slug})" "
       INSERT INTO \`tenants\` (\`id\`,\`slug\`,\`name\`,\`plan\`,\`status\`,\`pos_api_key\`)
-      VALUES (1,'${seed_slug}','${seed_name}','free','active','${pos_key}');"
+      VALUES (1,'${seed_slug}','${seed_name}','free','active',SHA2('${pos_key}',256));"
   else
     ok "0019 tenant #1 already seeded"
   fi
@@ -407,5 +410,46 @@ migrate_0024_staff_invites_and_photo_credits() {
       );"
   else
     ok "0024 photo_credit_ledger already exists"
+  fi
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Migration 0025: tenant secrets vault + per-tenant Discord DM recipient.
+#
+# Creates tenant_secrets — the encrypted vault for tenant-provided credentials
+# (ciphertext only, AES-256-GCM against TENANT_SECRETS_KEY; see
+# server/tenantSecrets.ts) — and adds tenant_settings.discord_owner_user_id so
+# each tenant's owner can receive their own "new order" DM from the single
+# platform bot. Idempotent: no-op when already applied.
+#
+# NOTE: this migration is DDL only. Hashing the EXISTING plaintext
+# tenants.pos_api_key values is a one-shot data migration handled by the
+# temporary scripts/migrate-tenant-secrets.mjs helper — run it once per
+# deployment right after this migration, then delete the helper.
+# ─────────────────────────────────────────────────────────────────────────────
+migrate_0025_tenant_secrets() {
+  if [ "$(tbl_exists tenant_secrets)" = "0" ]; then
+    run_sql "0025 tenant_secrets table" "
+      CREATE TABLE IF NOT EXISTS \`tenant_secrets\` (
+        \`id\`          int AUTO_INCREMENT NOT NULL,
+        \`tenant_id\`   int NOT NULL,
+        \`provider\`    varchar(64) NOT NULL,
+        \`ciphertext\`  text NOT NULL,
+        \`hint\`        varchar(8) NOT NULL,
+        \`key_version\` int NOT NULL DEFAULT 1,
+        \`createdAt\`   timestamp NOT NULL DEFAULT (now()),
+        \`rotated_at\`  timestamp NULL,
+        \`last_used_at\` timestamp NULL,
+        CONSTRAINT \`tenant_secrets_id\` PRIMARY KEY(\`id\`)
+      );"
+  else
+    ok "0025 tenant_secrets already exists"
+  fi
+
+  if [ "$(col_exists tenant_settings discord_owner_user_id)" = "0" ]; then
+    run_sql "0025 add tenant_settings.discord_owner_user_id" \
+      "ALTER TABLE \`tenant_settings\` ADD \`discord_owner_user_id\` varchar(64) NULL;"
+  else
+    ok "0025 tenant_settings.discord_owner_user_id already exists"
   fi
 }

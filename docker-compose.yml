@@ -28,6 +28,10 @@
 #   1. Copy .env.example to .env and fill in all values
 #   2. docker network create kalakosh-shared   # once, if not already created
 #   3. docker compose up -d
+#
+# NOTE: only PLATFORM credentials appear below. Tenant credentials (POS keys,
+# tenants' Stripe accounts, per-tenant Discord channels) live in the database
+# — see the "GOLDEN RULE" header in .env.example.
 # ─────────────────────────────────────────────────────────────────────────────
 
 services:
@@ -50,7 +54,11 @@ services:
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
       ADMIN_EMAIL: ${ADMIN_EMAIL}
 
-      # Discord bot
+      # Tenant secrets vault (master encryption key — server/tenantSecrets.ts)
+      TENANT_SECRETS_KEY: ${TENANT_SECRETS_KEY}
+
+      # Discord bot (single platform bot; per-tenant channel/user IDs live in
+      # tenant_settings, not here)
       DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN}
       DISCORD_CHANNEL_ID: ${DISCORD_CHANNEL_ID}
       DISCORD_OWNER_USER_ID: ${DISCORD_OWNER_USER_ID}
@@ -68,13 +76,14 @@ services:
       S3_ENDPOINT: ${S3_ENDPOINT}
       S3_PUBLIC_URL: ${S3_PUBLIC_URL}
 
-      # Stripe payments (online checkout + POS terminal)
+      # Stripe payments (PLATFORM account: billing + Connect platform)
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+      STRIPE_CONNECT_CLIENT_ID: ${STRIPE_CONNECT_CLIENT_ID}
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL}
 
-      # POS Terminal (iOS market-stall app)
-      POS_API_KEY: ${POS_API_KEY}
+      # POS Terminal webhook (POS API keys are per-tenant, hashed in the DB —
+      # there is deliberately no POS_API_KEY env var)
       STRIPE_POS_WEBHOOK_SECRET: ${STRIPE_POS_WEBHOOK_SECRET}
 
     depends_on:
