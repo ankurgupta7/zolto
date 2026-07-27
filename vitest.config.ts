@@ -16,6 +16,7 @@ export default defineConfig({
   },
   test: {
     environment: "node",
+    setupFiles: ["server/test-setup.ts"],
     include: [
       "server/**/*.test.ts",
       "server/**/*.spec.ts",
@@ -36,6 +37,8 @@ export default defineConfig({
         // Entry-point bootstrap: binds a port and wires the SPA/static handler.
         // The route wiring it delegates to lives in app.ts (smoke-tested).
         "server/_core/index.ts",
+        // Test bootstrap (dotenv loader) — nothing to cover.
+        "server/test-setup.ts",
       ],
     },
   },
