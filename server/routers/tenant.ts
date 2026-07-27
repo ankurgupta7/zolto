@@ -25,6 +25,7 @@ import {
 import { createStripeCustomer } from "../stripe";
 import { buildConnectAuthorizeUrl } from "../stripeConnect";
 import { deriveOnboardingStatus } from "../onboarding";
+import { generatePosApiKey, hashPosApiKey } from "../posApiKey";
 import { tenants, tenantSettings } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
 import crypto from "node:crypto";
@@ -33,12 +34,20 @@ import crypto from "node:crypto";
 // Tenant Router — Self-service signup + tenant management
 // ═══════════════════════════════════════════════════════════════════════════════
 
-function generatePosApiKey(): string {
-  return crypto.randomBytes(32).toString("hex");
-}
-
 function generateReferralCode(): string {
   return crypto.randomBytes(8).toString("hex").toUpperCase();
+}
+
+// The POS API key is a bearer credential — a Tenant row must never leak it
+// (or even its hash) through an API response. Strip it everywhere a tenant
+// object is returned; the plaintext is only ever shown once at
+// generation/rotation below.
+function stripPosApiKey<T extends { posApiKey: string }>(
+  tenant: T,
+): Omit<T, "posApiKey"> {
+  const rest: Partial<T> = { ...tenant };
+  delete rest.posApiKey;
+  return rest as Omit<T, "posApiKey">;
 }
 
 export const tenantRouter = router({
@@ -107,7 +116,11 @@ export const tenantRouter = router({
         });
       }
 
-      // 2. Create the tenant with a 14-day trial.
+      // 2. Create the tenant with a 14-day trial. The POS key is stored ONLY
+      // as a SHA-256 hash; the plaintext is returned here exactly once (the
+      // tenant enters it into their POS app) and is unrecoverable afterwards —
+      // a lost key is rotated, not retrieved (see rotatePosApiKey below).
+      const posApiKeyPlaintext = generatePosApiKey();
       const trialEndsAt = new Date();
       trialEndsAt.setDate(trialEndsAt.getDate() + 14);
 
@@ -115,7 +128,7 @@ export const tenantRouter = router({
         slug: input.slug,
         name: input.name,
         plan: "free",
-        posApiKey: generatePosApiKey(),
+        posApiKey: hashPosApiKey(posApiKeyPlaintext),
         trialEndsAt,
         referralCode: generateReferralCode(),
       });
@@ -150,6 +163,9 @@ export const tenantRouter = router({
         slug: input.slug,
         trialEndsAt: trialEndsAt.toISOString(),
         claimToken,
+        // Shown ONCE — the UI must present it as such ("copy it now; it can't
+        // be shown again"). Not stored anywhere in plaintext.
+        posApiKey: posApiKeyPlaintext,
       };
     }),
 
@@ -179,7 +195,20 @@ export const tenantRouter = router({
 
   // ─── Protected: Get my tenant ──────────────────────────────────────────────
   me: publicProcedure.use(requireTenant).query(async ({ ctx }) => {
-    return ctx.tenant;
+    return stripPosApiKey(ctx.tenant);
+  }),
+
+  // ─── Admin: rotate the POS API key (show-once) ─────────────────────────────
+  // The old key stops working the moment this returns — every POS terminal for
+  // this tenant must be reconfigured with the new key. Like signup, the
+  // plaintext is returned exactly once; only its SHA-256 is stored.
+  rotatePosApiKey: adminProcedure.mutation(async ({ ctx }) => {
+    const plaintext = generatePosApiKey();
+    await db
+      .update(tenants)
+      .set({ posApiKey: hashPosApiKey(plaintext) })
+      .where(eq(tenants.id, ctx.user.tenantId));
+    return { posApiKey: plaintext };
   }),
 
   // ─── Admin: Onboarding checklist (derived — see server/onboarding.ts) ──────
@@ -275,6 +304,16 @@ export const tenantRouter = router({
           .string()
           .regex(/^[a-z]{3}$/, "Use a 3-letter currency code like chf or eur")
           .optional(),
+        // Discord integration (IDs, not secrets — the bot token stays
+        // platform-side in env; see .env.example "Discord Bot").
+        discordChannelId: z
+          .string()
+          .regex(/^\d{17,20}$/, "A Discord channel ID is a 17–20 digit number")
+          .optional(),
+        discordOwnerUserId: z
+          .string()
+          .regex(/^\d{17,20}$/, "A Discord user ID is a 17–20 digit number")
+          .optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -337,6 +376,7 @@ export const tenantRouter = router({
   // ─── Superadmin: List all tenants (platform admin) ───────────────────────
   list: publicProcedure.query(async () => {
     // TODO: Add superadmin guard
-    return db.query.tenants.findMany();
+    const all = await db.query.tenants.findMany();
+    return all.map(stripPosApiKey);
   }),
 });

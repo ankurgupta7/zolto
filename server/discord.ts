@@ -1,18 +1,29 @@
 /**
- * Discord Bot handler for Kalakosh Zurich
+ * Discord Bot handler — product intake via a tenant's own Discord channel
  *
- * The store owner posts a message (with optional image attachment) to a designated
- * Discord channel. This handler processes the Discord Gateway MESSAGE_CREATE event
- * forwarded via our polling loop, parses the product details with an LLM, downloads
- * any attached image, and creates the product in the database.
+ * A store owner posts a message (with optional image attachment) to their
+ * designated Discord channel. This handler processes the Discord Gateway
+ * MESSAGE_CREATE event forwarded via our polling loop, parses the product
+ * details with an LLM, downloads any attached image, and creates the product
+ * in the database — scoped to the tenant that owns the channel.
  *
  * Discord uses a WebSocket Gateway for real-time events. Since our server is a
  * standard HTTP server, we run a lightweight Discord Gateway client that connects
  * on startup and forwards MESSAGE_CREATE events to our internal handler.
  *
- * Required env vars:
+ * Multi-tenancy model: there is ONE platform bot (DISCORD_BOT_TOKEN env — a
+ * Zolto credential, never a tenant one) invited into each tenant's Discord
+ * server. Tenants never hand us a token; they only register IDs in their store
+ * settings (tenant.updateSettings):
+ *   tenant_settings.discord_channel_id    → which channel this bot watches
+ *                                            (getTenantByDiscordChannelId)
+ *   tenant_settings.discord_owner_user_id → who gets "product added" DMs
+ * IDs are not secrets, so no vault/encryption is needed for them.
+ *
+ * Required env vars (platform-level):
  *   DISCORD_BOT_TOKEN    – Bot token from the Discord Developer Portal
- *   DISCORD_CHANNEL_ID   – The channel ID to listen for product messages
+ *   DISCORD_CHANNEL_ID   – LEGACY fallback channel for single-tenant
+ *                          self-hosted deployments with no channel mapping
  */
 
 import WebSocket from "ws";
@@ -270,11 +281,15 @@ export async function handleDiscordMessage(
     tenantId: tenant?.id ?? DEFAULT_TENANT_ID,
   });
 
-  // Notify the owner with tenant branding
-  await notifyOwner({
-    title: `New product added via Discord — ${branding.tenantName}`,
-    content: `✨ "${parsed.name}" has been added to the ${branding.tenantName} catalogue at CHF ${parsed.price}.`,
-  });
+  // Notify the tenant's owner (their own Discord user ID if configured, else
+  // the platform-owner env fallback) with tenant branding.
+  await notifyOwner(
+    {
+      title: `New product added via Discord — ${branding.tenantName}`,
+      content: `✨ "${parsed.name}" has been added to the ${branding.tenantName} catalogue at CHF ${parsed.price}.`,
+    },
+    { discordUserId: settings?.discordOwnerUserId ?? null },
+  );
 
   // Send a confirmation reply to the Discord channel
   if (DISCORD_BOT_TOKEN && message.channel_id) {
