@@ -508,6 +508,22 @@ migrate_0021_product_reservations
 # review queue). Idempotent; see migrate_0022_pos_attributions in deploy/lib/db.sh.
 migrate_0022_pos_attributions
 
+# ── 0023: tenant signup schema drift fix ──────────────────────────────────────
+# Brings tenants.plan to the current plan ids (free/maker/studio/atelier —
+# 0019 created it with the retired starter/growth/enterprise names, which made
+# every self-serve signup insert fail) and adds tenants.terminal_location_id
+# (Stripe Terminal Location for Tap to Pay; previously only in the non-
+# authoritative drizzle/*.sql path). Idempotent; see
+# migrate_0023_tenant_signup_fix in deploy/lib/db.sh.
+migrate_0023_tenant_signup_fix
+
+# ── 0024: staff invites + photo credit ledger ────────────────────────────────
+# Creates staff_invites and photo_credit_ledger — both in drizzle/schema.ts
+# (team-seat invites, AI photo metering) but missing from update.sh, so any
+# invite/credit write would have failed on a live DB. Idempotent; see
+# migrate_0024_staff_invites_and_photo_credits in deploy/lib/db.sh.
+migrate_0024_staff_invites_and_photo_credits
+
 # ── Shared helper: run a script inside the builder container ──────────────────
 # Usage: run_in_builder <tag> <script-path> [extra docker args...]
 run_in_builder() {

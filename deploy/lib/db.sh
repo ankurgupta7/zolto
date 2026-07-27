@@ -171,7 +171,7 @@ migrate_0019_multitenant() {
       \`slug\`                      varchar(64) NOT NULL,
       \`name\`                      varchar(255) NOT NULL,
       \`domain\`                    varchar(255),
-      \`plan\`                      enum('starter','growth','enterprise') NOT NULL DEFAULT 'starter',
+      \`plan\`                      enum('free','maker','studio','atelier') NOT NULL DEFAULT 'free',
       \`stripe_customer_id\`        varchar(255),
       \`stripe_subscription_id\`    varchar(255),
       \`status\`                    enum('trialing','active','past_due','canceled') DEFAULT 'trialing',
@@ -289,7 +289,7 @@ migrate_0019_multitenant() {
     fi
     run_sql "0019 seed tenant #1 (${seed_slug})" "
       INSERT INTO \`tenants\` (\`id\`,\`slug\`,\`name\`,\`plan\`,\`status\`,\`pos_api_key\`)
-      VALUES (1,'${seed_slug}','${seed_name}','starter','active','${pos_key}');"
+      VALUES (1,'${seed_slug}','${seed_name}','free','active','${pos_key}');"
   else
     ok "0019 tenant #1 already seeded"
   fi
@@ -319,4 +319,93 @@ migrate_0019_multitenant() {
       ok "0019 ${tbl}.tenant_id already NOT NULL"
     fi
   done
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Migration 0023: tenant signup schema drift fix.
+#
+# Self-serve signup (server/routers/tenant.ts create) inserts plan='free' and
+# relies on tenants.terminal_location_id — but 0019 created the plan enum with
+# the OLD tier names (starter/growth/enterprise, since renamed to
+# free/maker/studio/atelier in shared/platform.ts PLANS) and terminal_location_id
+# was only ever in the drizzle/*.sql (db:push) path, which is NOT authoritative
+# (update.sh is). On a live DB built by update.sh the signup insert therefore
+# failed with "Unknown column 'terminal_location_id'" / a truncated 'free'.
+#
+# Two idempotent steps:
+#  1. Widen tenants.plan to the union of old+new values, remap any old rows
+#     (starter→free, growth→maker, enterprise→atelier), then narrow to the new
+#     enum with DEFAULT 'free'.
+#  2. Add tenants.terminal_location_id (Stripe Terminal Location, tml_...).
+# ─────────────────────────────────────────────────────────────────────────────
+migrate_0023_tenant_signup_fix() {
+  local plan_enum
+  plan_enum=$($MYSQL -se "${MYSQL_LOCK_TIMEOUT_SQL}SELECT COLUMN_TYPE FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA='${MYSQL_DATABASE}' AND TABLE_NAME='tenants' AND COLUMN_NAME='plan';" 2>/dev/null || echo "")
+
+  if echo "$plan_enum" | grep -q "'free'"; then
+    ok "0023 tenants.plan already has new plan ids"
+  else
+    # Widen first so old and new values coexist during the remap.
+    run_sql "0023 widen tenants.plan enum" \
+      "ALTER TABLE \`tenants\` MODIFY \`plan\` enum('starter','growth','enterprise','free','maker','studio','atelier') NOT NULL DEFAULT 'starter';"
+    run_sql "0023 remap tenants.plan starter→free" \
+      "UPDATE \`tenants\` SET \`plan\`='free' WHERE \`plan\`='starter';"
+    run_sql "0023 remap tenants.plan growth→maker" \
+      "UPDATE \`tenants\` SET \`plan\`='maker' WHERE \`plan\`='growth';"
+    run_sql "0023 remap tenants.plan enterprise→atelier" \
+      "UPDATE \`tenants\` SET \`plan\`='atelier' WHERE \`plan\`='enterprise';"
+    run_sql "0023 finalize tenants.plan enum" \
+      "ALTER TABLE \`tenants\` MODIFY \`plan\` enum('free','maker','studio','atelier') NOT NULL DEFAULT 'free';"
+  fi
+
+  if [ "$(col_exists tenants terminal_location_id)" = "0" ]; then
+    run_sql "0023 add tenants.terminal_location_id" \
+      "ALTER TABLE \`tenants\` ADD \`terminal_location_id\` varchar(255) NULL;"
+  else
+    ok "0023 tenants.terminal_location_id already exists"
+  fi
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Migration 0024: staff invites + photo credit ledger tables.
+#
+# Both exist in drizzle/schema.ts (staff_invites for team-seat invites,
+# photo_credit_ledger for AI photo metering) but had no update.sh migration —
+# any invite/credit write would have hit "table doesn't exist" on a live DB.
+# Idempotent: no-op if the tables already exist.
+# ─────────────────────────────────────────────────────────────────────────────
+migrate_0024_staff_invites_and_photo_credits() {
+  if [ "$(tbl_exists staff_invites)" = "0" ]; then
+    run_sql "0024 staff_invites table" "
+      CREATE TABLE IF NOT EXISTS \`staff_invites\` (
+        \`id\`                int AUTO_INCREMENT NOT NULL,
+        \`tenant_id\`         int NOT NULL,
+        \`email\`             varchar(320) NOT NULL,
+        \`token\`             varchar(64) NOT NULL,
+        \`invited_by_user_id\` int,
+        \`expiresAt\`         timestamp NOT NULL,
+        \`acceptedAt\`        timestamp NULL,
+        \`createdAt\`         timestamp NOT NULL DEFAULT (now()),
+        CONSTRAINT \`staff_invites_id\` PRIMARY KEY(\`id\`)
+      );"
+  else
+    ok "0024 staff_invites already exists"
+  fi
+
+  if [ "$(tbl_exists photo_credit_ledger)" = "0" ]; then
+    run_sql "0024 photo_credit_ledger table" "
+      CREATE TABLE IF NOT EXISTS \`photo_credit_ledger\` (
+        \`id\`         int AUTO_INCREMENT NOT NULL,
+        \`tenant_id\`  int NOT NULL,
+        \`delta\`      int NOT NULL,
+        \`kind\`       enum('monthly_grant','purchase','consumption','manual_adjustment') NOT NULL,
+        \`ref\`        varchar(255),
+        \`note\`       text,
+        \`createdAt\`  timestamp NOT NULL DEFAULT (now()),
+        CONSTRAINT \`photo_credit_ledger_id\` PRIMARY KEY(\`id\`)
+      );"
+  else
+    ok "0024 photo_credit_ledger already exists"
+  fi
 }
