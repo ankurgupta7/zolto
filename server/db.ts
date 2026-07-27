@@ -52,6 +52,7 @@ import {
   type TenantSetting,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
+import { hashPosApiKey } from "./posApiKey";
 import {
   DEFAULT_TENANT_ID,
   withTenant,
@@ -1014,15 +1015,18 @@ export async function getTenantAdminContact(
 
 // Resolve the tenant that owns a POS API key. POS clients authenticate purely by
 // this key (see server/pos.ts requirePosKey); returns undefined for an unknown
-// key or when the database is unavailable.
+// key or when the database is unavailable. The key is a bearer credential, so
+// tenants.pos_api_key stores only its SHA-256 — the presented plaintext is
+// hashed here and never persisted (see server/posApiKey.ts).
 export async function getTenantByPosApiKey(
   apiKey: string,
 ): Promise<Tenant | undefined> {
+  const keyHash = hashPosApiKey(apiKey);
   return withDb(async (db) => {
     const result = await db
       .select()
       .from(tenants)
-      .where(eq(tenants.posApiKey, apiKey))
+      .where(eq(tenants.posApiKey, keyHash))
       .limit(1);
     return result.length > 0 ? result[0] : undefined;
   }, undefined);
