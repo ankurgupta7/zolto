@@ -6,6 +6,7 @@ const getOrderBySessionId = vi.fn();
 const getTenantById = vi.fn();
 const reserveProducts = vi.fn();
 const releaseProductReservations = vi.fn();
+const getPaidOrders = vi.fn();
 
 vi.mock("./db", () => ({
   createProduct: vi.fn(),
@@ -38,7 +39,7 @@ vi.mock("./db", () => ({
     releaseProductReservations(...args),
   PRODUCT_RESERVATION_TTL_MS: 30 * 60 * 1000,
   getProductsMissingTranslation: vi.fn(),
-  getPaidOrders: vi.fn(),
+  getPaidOrders: (...args: unknown[]) => getPaidOrders(...args),
 }));
 
 vi.mock("./storage", () => ({
@@ -650,6 +651,76 @@ describe("checkout.orderStatus", () => {
 
     expect(sessionsRetrieve).not.toHaveBeenCalled();
     expect(result?.status).toBe("pending");
+  });
+});
+
+describe("checkout.listOrders", () => {
+  it("requires an admin", async () => {
+    const caller = appRouter.createCaller(makeCtx("user"));
+    await expect(caller.checkout.listOrders()).rejects.toThrow();
+    expect(getPaidOrders).not.toHaveBeenCalled();
+  });
+
+  it("returns paid orders with resolved product names, newest-first as given", async () => {
+    getPaidOrders.mockResolvedValue([
+      {
+        id: 42,
+        tenantId: TEST_TENANT_ID,
+        status: "paid",
+        amountTotal: 18500,
+        currency: "chf",
+        customerName: "Ada",
+        customerEmail: "ada@example.com",
+        paymentMethod: "card",
+        productIds: "1, 2",
+        createdAt: new Date("2026-01-02T00:00:00Z"),
+      },
+    ]);
+    getProductsByIds.mockResolvedValue([
+      { id: 1, name: "Silver Ring" },
+      { id: 2, name: "Gold Band" },
+    ]);
+
+    const caller = appRouter.createCaller(makeCtx("admin"));
+    const result = await caller.checkout.listOrders();
+
+    expect(getPaidOrders).toHaveBeenCalledWith(TEST_TENANT_ID, 100);
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe(42);
+    expect(result[0].items).toEqual([
+      { id: 1, name: "Silver Ring" },
+      { id: 2, name: "Gold Band" },
+    ]);
+  });
+
+  it("falls back to #id for a product that no longer exists", async () => {
+    getPaidOrders.mockResolvedValue([
+      {
+        id: 7,
+        tenantId: TEST_TENANT_ID,
+        status: "paid",
+        amountTotal: 5000,
+        currency: "chf",
+        customerName: null,
+        customerEmail: null,
+        paymentMethod: "twint",
+        productIds: "99",
+        createdAt: new Date(),
+      },
+    ]);
+    getProductsByIds.mockResolvedValue([]);
+
+    const caller = appRouter.createCaller(makeCtx("admin"));
+    const result = await caller.checkout.listOrders();
+    expect(result[0].items).toEqual([{ id: 99, name: "#99" }]);
+  });
+
+  it("skips the product lookup entirely when there are no orders", async () => {
+    getPaidOrders.mockResolvedValue([]);
+    const caller = appRouter.createCaller(makeCtx("admin"));
+    const result = await caller.checkout.listOrders();
+    expect(result).toEqual([]);
+    expect(getProductsByIds).not.toHaveBeenCalled();
   });
 });
 

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useSearch } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { getLoginUrl } from "@/const";
+import { storeAdminUrl } from "@/lib/surface";
 
 /**
  * Post-signup onboarding wizard (docs/ARCHITECTURE.md). The checklist is
@@ -61,8 +62,10 @@ function ClaimStep({ store }: { store: string | null }) {
   // No pending claim (reached onboarding without a fresh signup) — nothing to do.
   if (!claimToken && state === "idle") return null;
 
+  // Cross-surface: a full-page navigation, not a wouter <Link>, so the app
+  // re-resolves onto the storefront surface (see lib/surface.storeAdminUrl).
   const adminHref = (slug: string | null) =>
-    slug ? `/admin?surface=storefront&tenant=${encodeURIComponent(slug)}` : "/";
+    slug ? storeAdminUrl(slug) : "/";
 
   let inner: React.ReactNode;
   if (state === "done") {
@@ -74,12 +77,12 @@ function ClaimStep({ store }: { store: string | null }) {
         <p className="mt-1 text-sm text-[var(--brand-muted-2)]">
           Your account now manages this store.
         </p>
-        <Link
+        <a
           href={adminHref(claimedSlug)}
           className="mt-3 inline-block rounded-md bg-[var(--brand-ink)] px-5 py-2.5 text-xs font-medium uppercase tracking-[0.12em] text-white transition-colors hover:bg-[var(--brand-ink-hover)]"
         >
           Go to your dashboard →
-        </Link>
+        </a>
       </div>
     );
   } else if (state === "error") {
@@ -217,12 +220,8 @@ export default function Onboarding() {
         ))}
       </ol>
 
-      <Link
-        href={
-          store
-            ? `/admin?surface=storefront&tenant=${encodeURIComponent(store)}`
-            : "/admin"
-        }
+      <a
+        href={store ? storeAdminUrl(store) : "/admin"}
         className={`mt-8 inline-block rounded-md px-6 py-3 text-xs font-medium uppercase tracking-[0.12em] transition-colors ${
           allDone
             ? "bg-[var(--brand-accent)] text-[var(--brand-ink)] hover:bg-[var(--brand-accent-light)]"
@@ -230,7 +229,7 @@ export default function Onboarding() {
         }`}
       >
         {allDone ? "Go to your dashboard →" : "Continue in your dashboard"}
-      </Link>
+      </a>
     </div>
   );
 }

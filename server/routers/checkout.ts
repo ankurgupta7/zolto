@@ -6,6 +6,7 @@ import {
   getProductsByIds,
   createOrder,
   getOrderBySessionId,
+  getPaidOrders,
   getTenantById,
   getTenantSettings,
   reserveProducts,
@@ -299,6 +300,53 @@ export const checkoutRouter = router({
         await releaseProductReservations(tenantId, uniqueIds).catch(() => {});
         throw err;
       }
+    }),
+
+  // Admin: list this store's paid online orders (newest first) for the admin
+  // Orders page. Each order's comma-separated productIds are resolved to piece
+  // names so the UI can show what sold without a second round-trip. Scoped to
+  // the caller's own tenant — an admin only ever sees their store's orders.
+  listOrders: adminProcedure
+    .input(
+      z
+        .object({ limit: z.number().int().min(1).max(200).optional() })
+        .optional(),
+    )
+    .query(async ({ ctx, input }) => {
+      const tenantId = ctx.user.tenantId;
+      const rows = await getPaidOrders(tenantId, input?.limit ?? 100);
+
+      // Resolve all referenced product ids in one query, then map per order.
+      const allIds = Array.from(
+        new Set(
+          rows.flatMap((o) =>
+            o.productIds
+              .split(",")
+              .map((s) => parseInt(s.trim(), 10))
+              .filter((n) => Number.isFinite(n)),
+          ),
+        ),
+      );
+      const products = allIds.length
+        ? await getProductsByIds(tenantId, allIds)
+        : [];
+      const nameById = new Map(products.map((p) => [p.id, p.name]));
+
+      return rows.map((o) => ({
+        id: o.id,
+        status: o.status,
+        amountTotal: o.amountTotal,
+        currency: o.currency,
+        customerName: o.customerName,
+        customerEmail: o.customerEmail,
+        paymentMethod: o.paymentMethod,
+        createdAt: o.createdAt.toISOString(),
+        items: o.productIds
+          .split(",")
+          .map((s) => parseInt(s.trim(), 10))
+          .filter((n) => Number.isFinite(n))
+          .map((id) => ({ id, name: nameById.get(id) ?? `#${id}` })),
+      }));
     }),
 
   // Admin: manually re-trigger fulfillment for a Stripe session (e.g. missed webhook)
