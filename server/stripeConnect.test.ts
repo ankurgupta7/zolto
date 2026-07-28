@@ -3,9 +3,11 @@ import express from "express";
 import request from "supertest";
 
 const setTenantStripeConnectAccount = vi.fn();
+const getTenantById = vi.fn();
 vi.mock("./db", () => ({
   setTenantStripeConnectAccount: (...args: unknown[]) =>
     setTenantStripeConnectAccount(...args),
+  getTenantById: (...args: unknown[]) => getTenantById(...args),
 }));
 
 const oauthToken = vi.fn();
@@ -24,6 +26,7 @@ const ENV_KEYS = [
   "JWT_SECRET",
   "STRIPE_SECRET_KEY",
   "PUBLIC_BASE_URL",
+  "SITE_DOMAIN",
 ] as const;
 const originalEnv: Record<string, string | undefined> = {};
 
@@ -38,9 +41,11 @@ beforeEach(() => {
   process.env.JWT_SECRET = "a-test-jwt-secret-that-is-long-enough";
   process.env.STRIPE_SECRET_KEY = "sk_test_123";
   // Unset by default so the request-derived fallback is what's under test
-  // unless a specific test opts into PUBLIC_BASE_URL.
+  // unless a specific test opts into PUBLIC_BASE_URL / SITE_DOMAIN.
   delete process.env.PUBLIC_BASE_URL;
+  delete process.env.SITE_DOMAIN;
   getStripe.mockReturnValue({ oauth: { token: oauthToken } });
+  getTenantById.mockResolvedValue(undefined);
 });
 
 afterEach(() => {
@@ -121,6 +126,84 @@ describe("registerStripeConnectRoutes callback", () => {
     );
     expect(res.status).toBe(302);
     expect(res.headers.location).toContain("stripeConnect=error");
+  });
+
+  // REGRESSION: this callback always runs on the platform's canonical host
+  // (see getRedirectUri), so a relative "/admin" redirect resolves on the
+  // platform apex — which has no tenant admin route — instead of the
+  // tenant's own subdomain. Same class of bug as the redirect_uri fix above,
+  // one step later in the same flow.
+  describe("redirecting back to the tenant's own subdomain", () => {
+    beforeEach(() => {
+      process.env.PUBLIC_BASE_URL = "https://zolto.ch";
+      getTenantById.mockResolvedValue({ id: 42, slug: "blah" });
+    });
+
+    it("sends a successful connection to https://<slug>.<root>/admin, not the platform apex", async () => {
+      const state = await getSignedState(42);
+      oauthToken.mockResolvedValue({ stripe_user_id: "acct_new_123" });
+      const app = buildApp();
+
+      const res = await request(app).get(
+        `/api/stripe/connect/callback?code=ac_test&state=${encodeURIComponent(state)}`,
+      );
+
+      expect(res.status).toBe(302);
+      expect(res.headers.location).toBe(
+        "https://blah.zolto.ch/admin?stripeConnect=success",
+      );
+    });
+
+    it("sends a failed OAuth exchange back to the tenant's own subdomain too", async () => {
+      const state = await getSignedState(42);
+      oauthToken.mockRejectedValue(new Error("invalid_grant"));
+      const app = buildApp();
+
+      const res = await request(app).get(
+        `/api/stripe/connect/callback?code=ac_test&state=${encodeURIComponent(state)}`,
+      );
+
+      expect(res.headers.location).toBe(
+        "https://blah.zolto.ch/admin?stripeConnect=error",
+      );
+    });
+
+    it("sends a Stripe-reported error (e.g. the merchant clicked deny) back to the tenant's subdomain when state is present", async () => {
+      const state = await getSignedState(42);
+      const app = buildApp();
+
+      const res = await request(app).get(
+        `/api/stripe/connect/callback?error=access_denied&state=${encodeURIComponent(state)}`,
+      );
+
+      expect(res.status).toBe(302);
+      expect(res.headers.location).toBe(
+        "https://blah.zolto.ch/admin?stripeConnect=error&reason=access_denied",
+      );
+    });
+
+    it("falls back to the relative path when the tenant can't be resolved from state", async () => {
+      const app = buildApp();
+      const res = await request(app).get(
+        "/api/stripe/connect/callback?error=access_denied",
+      );
+      expect(res.headers.location).toBe(
+        "/admin?stripeConnect=error&reason=access_denied",
+      );
+    });
+
+    it("falls back to the relative path when PUBLIC_BASE_URL/SITE_DOMAIN are unset", async () => {
+      delete process.env.PUBLIC_BASE_URL;
+      const state = await getSignedState(42);
+      oauthToken.mockResolvedValue({ stripe_user_id: "acct_new_123" });
+      const app = buildApp();
+
+      const res = await request(app).get(
+        `/api/stripe/connect/callback?code=ac_test&state=${encodeURIComponent(state)}`,
+      );
+
+      expect(res.headers.location).toBe("/admin?stripeConnect=success");
+    });
   });
 
   it("400s when code or state is missing", async () => {

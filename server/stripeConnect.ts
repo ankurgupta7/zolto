@@ -43,7 +43,8 @@
 import type { Express, Request, Response } from "express";
 import { SignJWT, jwtVerify } from "jose";
 import { getStripe } from "./stripe";
-import { setTenantStripeConnectAccount } from "./db";
+import { getTenantById, setTenantStripeConnectAccount } from "./db";
+import { getPlatformRootDomain } from "./_core/platformDomain";
 
 const STATE_TTL_MS = 10 * 60 * 1000; // 10 minutes — just long enough to finish the OAuth round-trip
 
@@ -115,6 +116,33 @@ export async function buildConnectAuthorizeUrl(
   return url.toString();
 }
 
+/**
+ * Builds the URL to send the merchant back to after the OAuth round-trip.
+ * This callback always runs on the platform's canonical host (see
+ * getRedirectUri above), never the tenant's own subdomain — so a plain
+ * relative "/admin" redirect resolves on the platform apex, which has no
+ * tenant admin route (the apex is the marketing surface — see
+ * client/src/lib/surface.ts). When the tenant and the platform's root domain
+ * are both known, redirect to that tenant's own subdomain instead, matching
+ * the same <slug>.<root> convention client/src/lib/surface.ts's
+ * storeAdminUrl already uses. Falls back to the relative path otherwise
+ * (single-host self-hosted deploys with no subdomain split, or a callback we
+ * couldn't attribute to any tenant).
+ */
+async function buildAdminRedirect(
+  tenantId: number | null,
+  query: string,
+): Promise<string> {
+  const rootDomain = getPlatformRootDomain();
+  if (tenantId && rootDomain) {
+    const tenant = await getTenantById(tenantId);
+    if (tenant?.slug) {
+      return `https://${tenant.slug}.${rootDomain}/admin?${query}`;
+    }
+  }
+  return `/admin?${query}`;
+}
+
 export function registerStripeConnectRoutes(app: Express): void {
   app.get(
     "/api/stripe/connect/callback",
@@ -125,10 +153,21 @@ export function registerStripeConnectRoutes(app: Express): void {
       const error =
         typeof req.query.error === "string" ? req.query.error : null;
 
+      const jwtSecret = process.env.JWT_SECRET;
+      // Stripe echoes the `state` we sent on the authorize request back on
+      // BOTH success and error/denial redirects, so resolve it up front
+      // regardless of outcome — otherwise buildAdminRedirect above has no way
+      // to know which tenant's own subdomain to send an error back to.
+      const tenantId =
+        state && jwtSecret ? await verifyState(state, jwtSecret) : null;
+
       if (error) {
         res.redirect(
           302,
-          `/admin?stripeConnect=error&reason=${encodeURIComponent(error)}`,
+          await buildAdminRedirect(
+            tenantId,
+            `stripeConnect=error&reason=${encodeURIComponent(error)}`,
+          ),
         );
         return;
       }
@@ -136,14 +175,10 @@ export function registerStripeConnectRoutes(app: Express): void {
         res.status(400).send("Missing code or state");
         return;
       }
-
-      const jwtSecret = process.env.JWT_SECRET;
       if (!jwtSecret) {
         res.status(500).send("Server configuration incomplete");
         return;
       }
-
-      const tenantId = await verifyState(state, jwtSecret);
       if (!tenantId) {
         res
           .status(400)
@@ -167,10 +202,16 @@ export function registerStripeConnectRoutes(app: Express): void {
           throw new Error("Stripe OAuth response missing stripe_user_id");
         }
         await setTenantStripeConnectAccount(tenantId, connectedAccountId);
-        res.redirect(302, "/admin?stripeConnect=success");
+        res.redirect(
+          302,
+          await buildAdminRedirect(tenantId, "stripeConnect=success"),
+        );
       } catch (err) {
         console.error("[StripeConnect] OAuth exchange failed:", err);
-        res.redirect(302, "/admin?stripeConnect=error");
+        res.redirect(
+          302,
+          await buildAdminRedirect(tenantId, "stripeConnect=error"),
+        );
       }
     },
   );
