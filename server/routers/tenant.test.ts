@@ -197,7 +197,10 @@ describe("tenant.getStripeConnectUrl", () => {
     });
     const res = await tenantRouter
       .createCaller(
-        ctx({ openId: "google:sub-1", role: "admin", tenantId: 42 }),
+        ctx(
+          { openId: "google:sub-1", role: "admin", tenantId: 42 },
+          { id: 42, plan: "free" },
+        ),
       )
       .getStripeConnectUrl();
 
@@ -219,7 +222,10 @@ describe("tenant.getStripeConnectUrl", () => {
     });
     const res = await tenantRouter
       .createCaller(
-        ctx({ openId: "google:sub-1", role: "admin", tenantId: 42 }),
+        ctx(
+          { openId: "google:sub-1", role: "admin", tenantId: 42 },
+          { id: 42, plan: "free" },
+        ),
       )
       .getStripeConnectUrl();
     expect(res.connected).toBe(true);
@@ -233,7 +239,10 @@ describe("tenant.getStripeConnectUrl", () => {
     });
     const res = await tenantRouter
       .createCaller(
-        ctx({ openId: "google:sub-1", role: "admin", tenantId: 42 }),
+        ctx(
+          { openId: "google:sub-1", role: "admin", tenantId: 42 },
+          { id: 42, plan: "free" },
+        ),
       )
       .getStripeConnectUrl();
     expect(res).toEqual({ url: null, connected: false });
@@ -243,7 +252,10 @@ describe("tenant.getStripeConnectUrl", () => {
     await expect(
       tenantRouter
         .createCaller(
-          ctx({ openId: "google:sub-1", role: "user", tenantId: 42 }),
+          ctx(
+            { openId: "google:sub-1", role: "user", tenantId: 42 },
+            { id: 42, plan: "free" },
+          ),
         )
         .getStripeConnectUrl(),
     ).rejects.toThrow();
@@ -252,7 +264,26 @@ describe("tenant.getStripeConnectUrl", () => {
 
   it("requires authentication", async () => {
     await expect(
-      tenantRouter.createCaller(ctx(null)).getStripeConnectUrl(),
+      tenantRouter.createCaller(ctx(null, { id: 42, plan: "free" })).getStripeConnectUrl(),
+    ).rejects.toThrow();
+    expect(buildConnectAuthorizeUrl).not.toHaveBeenCalled();
+  });
+
+  it("rejects when admin of different tenant", async () => {
+    buildConnectAuthorizeUrl.mockResolvedValue("https://connect.stripe.com/x");
+    dbMock.getTenantById.mockResolvedValue({
+      id: 99,
+      stripeConnectedAccountId: null,
+    });
+    await expect(
+      tenantRouter
+        .createCaller(
+          ctx(
+            { openId: "google:sub-1", role: "admin", tenantId: 42 },
+            { id: 99, plan: "free" },
+          ),
+        )
+        .getStripeConnectUrl(),
     ).rejects.toThrow();
     expect(buildConnectAuthorizeUrl).not.toHaveBeenCalled();
   });

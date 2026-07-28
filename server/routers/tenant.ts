@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
+import { NOT_ADMIN_ERR_MSG } from "@shared/const";
 import {
   router,
   publicProcedure,
@@ -376,16 +377,24 @@ export const tenantRouter = router({
   // (separate from Zolto's own subscription billing — see
   // server/stripeConnect.ts). `url` is null when Connect isn't configured on
   // the platform yet (STRIPE_CONNECT_CLIENT_ID unset).
-  getStripeConnectUrl: adminProcedure.query(async ({ ctx }) => {
-    const [tenant, url] = await Promise.all([
-      getTenantById(ctx.user.tenantId),
-      buildConnectAuthorizeUrl(ctx.user.tenantId, ctx.req),
-    ]);
-    return {
-      url,
-      connected: Boolean(tenant?.stripeConnectedAccountId),
-    };
-  }),
+  getStripeConnectUrl: adminProcedure
+    .use(requireTenant)
+    .query(async ({ ctx }) => {
+      if (ctx.user!.tenantId !== ctx.tenant.id) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: NOT_ADMIN_ERR_MSG,
+        });
+      }
+      const [tenant, url] = await Promise.all([
+        getTenantById(ctx.tenant.id),
+        buildConnectAuthorizeUrl(ctx.tenant.id, ctx.req),
+      ]);
+      return {
+        url,
+        connected: Boolean(tenant?.stripeConnectedAccountId),
+      };
+    }),
 
   // ─── Superadmin: List all tenants (platform admin) ───────────────────────
   list: publicProcedure.query(async () => {
