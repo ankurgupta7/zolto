@@ -13,6 +13,8 @@ the source of truth for what has actually shipped is the code plus the
 |------|-----------|
 | [`zolto-business-plan.md`](./zolto-business-plan.md) | The business plan (v1.1). Executive summary, market, pricing, financials, risks, phase roadmap. Start here. |
 | [`monetization-code-roadmap.md`](./monetization-code-roadmap.md) | Maps each business phase to concrete code changes (schema, middleware, billing, feature gating). Historical + forward-looking. |
+| [`honest-pricing-strategy.md`](./honest-pricing-strategy.md) | **Shipped** pricing model: Free/Maker/Studio/Atelier, 0% take rate, metered AI photo credits. Source of truth in code: `shared/platform.ts`. |
+| [`pricing-pivot-agent-commerce.md`](./pricing-pivot-agent-commerce.md) | **Proposed, unreconciled** pivot: free in-person (native TWINT), a Stripe Connect skim on online/agent sales, two-tier Free/Pro launch. Contradicts the 0%-take pledge above — not yet implemented, flags exactly where. |
 | [`roadmap-backlog.md`](./roadmap-backlog.md) | Founder-captured backlog items not yet scheduled: migrate-in from Shopify/Square/Stripe/Worldline, the founder About page, and a TBD third item. |
 | [`phase1/content/about-founder.md`](./phase1/content/about-founder.md) | Draft copy for the casual, first-person founder "About me" page + open questions to finalize it. |
 | [`phase1/`](./phase1/) | The Phase 1 execution kit (Content Engine & Launch Partner). |
