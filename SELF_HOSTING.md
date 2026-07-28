@@ -462,6 +462,12 @@ Google OAuth requires an exact, pre-registered redirect URI and doesn't support 
 - Confirm Google Cloud Console's Authorized redirect URIs list contains exactly `https://<PUBLIC_BASE_URL host>/api/oauth/callback` — one entry covers every tenant, current and future.
 - The tenant is then redirected back to their own subdomain automatically after login (the session cookie is scoped to the whole `*.zolto.ch` family once `PUBLIC_BASE_URL` is set, not just the one host that issued it).
 
+**A tenant admin's "Connect Stripe" fails or redirects with `stripeConnect=error` on a tenant subdomain (e.g. `blah.zolto.ch`)**
+Same class of issue as the Google `redirect_uri_mismatch` above: Stripe also requires an exact, pre-registered redirect URI with no wildcard subdomains, so the app always routes the Connect OAuth round-trip through **`PUBLIC_BASE_URL`'s own host**, never whichever tenant subdomain the admin clicked "Connect Stripe" from.
+- Set `PUBLIC_BASE_URL=https://zolto.ch` (or `https://zolto.kalakosh.ch` if running alongside Kalakosh-ch) and restart the app.
+- Confirm the Stripe Dashboard's Connect OAuth settings list the redirect URI exactly as `https://<PUBLIC_BASE_URL host>/api/stripe/connect/callback` — one entry covers every tenant, current and future.
+- If `PUBLIC_BASE_URL` is unset entirely, the app falls back to the request's own host — this works only for whichever single host happens to match what's registered in Stripe, and fails for every other tenant subdomain.
+
 **Discord bot not connecting**
 Verify `DISCORD_BOT_TOKEN` is correct and the bot has been added to your server with **Message Content Intent** enabled.
 

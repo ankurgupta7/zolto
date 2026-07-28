@@ -23,6 +23,7 @@ const ENV_KEYS = [
   "STRIPE_CONNECT_CLIENT_ID",
   "JWT_SECRET",
   "STRIPE_SECRET_KEY",
+  "PUBLIC_BASE_URL",
 ] as const;
 const originalEnv: Record<string, string | undefined> = {};
 
@@ -36,6 +37,9 @@ beforeEach(() => {
   process.env.STRIPE_CONNECT_CLIENT_ID = "ca_test_client";
   process.env.JWT_SECRET = "a-test-jwt-secret-that-is-long-enough";
   process.env.STRIPE_SECRET_KEY = "sk_test_123";
+  // Unset by default so the request-derived fallback is what's under test
+  // unless a specific test opts into PUBLIC_BASE_URL.
+  delete process.env.PUBLIC_BASE_URL;
   getStripe.mockReturnValue({ oauth: { token: oauthToken } });
 });
 
@@ -57,7 +61,7 @@ describe("buildConnectAuthorizeUrl", () => {
     expect(await buildConnectAuthorizeUrl(42, fakeReq())).toBeNull();
   });
 
-  it("builds a Stripe Connect authorize URL with a signed state", async () => {
+  it("falls back to the request's own host when PUBLIC_BASE_URL is unset", async () => {
     const url = await buildConnectAuthorizeUrl(42, fakeReq());
     expect(url).not.toBeNull();
     const parsed = new URL(url!);
@@ -71,6 +75,30 @@ describe("buildConnectAuthorizeUrl", () => {
       "https://zolto.example/api/stripe/connect/callback",
     );
     expect(parsed.searchParams.get("state")).toEqual(expect.any(String));
+  });
+
+  // REGRESSION: same class of bug as Google OAuth's redirect_uri_mismatch on
+  // tenant subdomains (server/_core/oauth.ts). Stripe requires an exact,
+  // pre-registered redirect_uri, so it must always be the ONE canonical
+  // origin, never whichever tenant subdomain the admin clicked "Connect
+  // Stripe" from — otherwise only one tenant's subdomain would ever match
+  // what's registered in the Stripe Dashboard.
+  it("uses PUBLIC_BASE_URL's origin regardless of the request's own host", async () => {
+    process.env.PUBLIC_BASE_URL = "https://zolto.ch";
+    const url = await buildConnectAuthorizeUrl(42, fakeReq());
+    const parsed = new URL(url!);
+    expect(parsed.searchParams.get("redirect_uri")).toBe(
+      "https://zolto.ch/api/stripe/connect/callback",
+    );
+  });
+
+  it("ignores a malformed PUBLIC_BASE_URL and falls back to the request's host", async () => {
+    process.env.PUBLIC_BASE_URL = "not a url";
+    const url = await buildConnectAuthorizeUrl(42, fakeReq());
+    const parsed = new URL(url!);
+    expect(parsed.searchParams.get("redirect_uri")).toBe(
+      "https://zolto.example/api/stripe/connect/callback",
+    );
   });
 });
 

@@ -27,6 +27,16 @@
  *   JWT_SECRET                — reused to sign/verify the `state` param
  *                              (same secret as server/_core/oauth.ts).
  *
+ * Strongly recommended:
+ *   PUBLIC_BASE_URL           — canonical platform origin the OAuth redirect_uri
+ *                              is built from (see getRedirectUri below). Without
+ *                              it, the redirect_uri is derived from the request's
+ *                              own host, which breaks for every tenant subdomain
+ *                              except whichever one happens to be registered in
+ *                              the Stripe Dashboard's Connect OAuth settings —
+ *                              the same class of bug fixed for Google OAuth in
+ *                              server/_core/oauth.ts.
+ *
  * If STRIPE_CONNECT_CLIENT_ID (or JWT_SECRET) is unset, connecting is
  * disabled — buildConnectAuthorizeUrl returns null.
  */
@@ -58,9 +68,24 @@ async function verifyState(
   }
 }
 
+// Stripe requires an exact, pre-registered redirect_uri — no wildcard
+// subdomains. So the OAuth round-trip always uses ONE canonical origin
+// (PUBLIC_BASE_URL, set in every deploy mode), never the request's own host —
+// otherwise every tenant subdomain (blah.zolto.ch) would need its own entry
+// in the Stripe Dashboard's Connect OAuth settings, which doesn't scale for a
+// self-serve multi-tenant app. Falls back to the request's own origin only
+// when PUBLIC_BASE_URL isn't configured (e.g. a single-host self-hosted
+// deploy that hasn't set it). Same fix as server/_core/oauth.ts getRedirectUri
+// for the identical Google OAuth redirect_uri_mismatch bug.
 function getRedirectUri(req: Request): string {
-  // Support X-Forwarded-Proto for reverse proxies (Caddy) — same pattern as
-  // server/_core/oauth.ts getRedirectUri.
+  const base = process.env.PUBLIC_BASE_URL?.trim();
+  if (base) {
+    try {
+      return `${new URL(base).origin}/api/stripe/connect/callback`;
+    } catch {
+      // fall through to the request-derived origin
+    }
+  }
   const proto = req.headers["x-forwarded-proto"] ?? req.protocol ?? "https";
   const host = req.headers["x-forwarded-host"] ?? req.headers.host ?? "";
   return `${proto}://${host}/api/stripe/connect/callback`;
