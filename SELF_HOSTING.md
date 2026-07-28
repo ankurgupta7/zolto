@@ -247,6 +247,28 @@ PUBLIC_BASE_URL=https://yourdomain.com   # used for Stripe success/cancel redire
 If `STRIPE_SECRET_KEY` is left blank, the storefront hides online payment and
 customers are routed to the WhatsApp enquiry flow instead.
 
+**Stripe Connect (optional — lets tenants link their own Stripe account):**
+Separate from the platform's own `STRIPE_SECRET_KEY` above: Stripe Connect lets
+each *tenant* link their own Stripe account so their storefront's checkout and
+POS/Tap to Pay payouts go directly to them, not through the platform account.
+Without it, tenant admins see "Stripe Connect isn't set up on the platform yet"
+when they try to connect on the admin page — this is expected until configured.
+
+1. In the [Stripe Dashboard](https://dashboard.stripe.com) (the platform's own
+   account), go to **Settings → Connect → Settings** and enable **OAuth for
+   Standard accounts** if it isn't already.
+2. Copy the **Client ID** (`ca_...`) shown there.
+3. Add the OAuth redirect URI `https://yourdomain.com/api/stripe/connect/callback`
+   under the same Connect OAuth settings.
+
+```env
+STRIPE_CONNECT_CLIENT_ID=ca_your_connect_client_id
+```
+
+`JWT_SECRET` (set earlier, above) is reused to sign the OAuth `state` param, so
+it must also be set. Leave `STRIPE_CONNECT_CLIENT_ID` blank to keep this
+feature disabled.
+
 **POS Terminal / Tap to Pay (optional):**
 The Android and iOS market-stall apps authenticate requests with a shared API key and use Stripe Terminal for in-person payments. Add a second webhook endpoint at `https://yourdomain.com/api/pos/webhook` subscribed to `payment_intent.succeeded`.
 
@@ -397,6 +419,7 @@ whenever you suspect a payment is missing.
 | `S3_PUBLIC_URL`               | No       | Public CDN base URL for serving images                                                                      |
 | `STRIPE_SECRET_KEY`           | No       | Stripe secret key — enables card & TWINT checkout                                                           |
 | `STRIPE_WEBHOOK_SECRET`       | No       | Signing secret for `/api/stripe/webhook`                                                                    |
+| `STRIPE_CONNECT_CLIENT_ID`    | No       | Platform's Connect OAuth client ID (`ca_...`) — lets tenants link their own Stripe account                  |
 | `PUBLIC_BASE_URL`             | No       | Canonical site URL — Stripe redirects, Google OAuth's redirect_uri, and recognizing tenant subdomains all key off this |
 | `POS_API_KEY`                 | No       | Shared secret for the POS apps — Android and iOS (generate with `openssl rand -hex 32`)                     |
 | `STRIPE_POS_WEBHOOK_SECRET`   | No       | Signing secret for `/api/pos/webhook`                                                                       |
