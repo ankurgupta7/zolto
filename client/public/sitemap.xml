@@ -1,58 +1,80 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
 
   <!-- Homepage -->
   <url>
-    <loc>https://zolto.ch/</loc>
-    <lastmod>2026-07-28</lastmod>
-    <changefreq>weekly</changefreq>
+    <loc>https://kalakosh.ch/</loc>
+    <lastmod>2026-07-08</lastmod>
+    <changefreq>daily</changefreq>
     <priority>1.0</priority>
+    <xhtml:link rel="alternate" hreflang="de-ch" href="https://kalakosh.ch/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://kalakosh.ch/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://kalakosh.ch/"/>
+    <image:image>
+      <image:loc>https://kalakosh.ch/kalakosh-logo-banner.jpg</image:loc>
+      <image:title>Kalakosh Zürich - Handcrafted Jewellery</image:title>
+      <image:caption>Handcrafted silver, gemstone and pearl jewellery from Zürich</image:caption>
+    </image:image>
   </url>
 
-  <!-- Pricing -->
+  <!-- Shop -->
   <url>
-    <loc>https://zolto.ch/pricing</loc>
-    <lastmod>2026-07-28</lastmod>
-    <changefreq>monthly</changefreq>
+    <loc>https://kalakosh.ch/shop</loc>
+    <lastmod>2026-07-08</lastmod>
+    <changefreq>daily</changefreq>
     <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="de-ch" href="https://kalakosh.ch/shop"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://kalakosh.ch/shop"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://kalakosh.ch/shop"/>
   </url>
 
-  <!-- Sign Up -->
+  <!-- About -->
   <url>
-    <loc>https://zolto.ch/signup</loc>
-    <lastmod>2026-07-28</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
-  </url>
-
-  <!-- Blog -->
-  <url>
-    <loc>https://zolto.ch/blog</loc>
-    <lastmod>2026-07-28</lastmod>
+    <loc>https://kalakosh.ch/about</loc>
+    <lastmod>2026-07-08</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="de-ch" href="https://kalakosh.ch/about"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://kalakosh.ch/about"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://kalakosh.ch/about"/>
   </url>
 
-  <!-- Stories -->
+  <!-- FAQ -->
   <url>
-    <loc>https://zolto.ch/stories</loc>
-    <lastmod>2026-07-28</lastmod>
+    <loc>https://kalakosh.ch/faq</loc>
+    <lastmod>2026-07-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="de-ch" href="https://kalakosh.ch/faq"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://kalakosh.ch/faq"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://kalakosh.ch/faq"/>
+  </url>
+
+  <!-- Contact -->
+  <url>
+    <loc>https://kalakosh.ch/contact</loc>
+    <lastmod>2026-07-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="de-ch" href="https://kalakosh.ch/contact"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://kalakosh.ch/contact"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://kalakosh.ch/contact"/>
   </url>
 
-  <!-- Privacy -->
+  <!-- Policy -->
   <url>
-    <loc>https://zolto.ch/legal/privacy</loc>
-    <lastmod>2026-07-28</lastmod>
+    <loc>https://kalakosh.ch/policy</loc>
+    <lastmod>2026-07-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
 
-  <!-- Terms -->
+  <!-- Impressum -->
   <url>
-    <loc>https://zolto.ch/legal/terms</loc>
-    <lastmod>2026-07-28</lastmod>
+    <loc>https://kalakosh.ch/impressum</loc>
+    <lastmod>2026-07-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
