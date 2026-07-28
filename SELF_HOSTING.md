@@ -247,6 +247,28 @@ PUBLIC_BASE_URL=https://yourdomain.com   # used for Stripe success/cancel redire
 If `STRIPE_SECRET_KEY` is left blank, the storefront hides online payment and
 customers are routed to the WhatsApp enquiry flow instead.
 
+**Stripe Connect (optional — lets tenants link their own Stripe account):**
+Separate from the platform's own `STRIPE_SECRET_KEY` above: Stripe Connect lets
+each *tenant* link their own Stripe account so their storefront's checkout and
+POS/Tap to Pay payouts go directly to them, not through the platform account.
+Without it, tenant admins see "Stripe Connect isn't set up on the platform yet"
+when they try to connect on the admin page — this is expected until configured.
+
+1. In the [Stripe Dashboard](https://dashboard.stripe.com) (the platform's own
+   account), go to **Settings → Connect → Settings** and enable **OAuth for
+   Standard accounts** if it isn't already.
+2. Copy the **Client ID** (`ca_...`) shown there.
+3. Add the OAuth redirect URI `https://yourdomain.com/api/stripe/connect/callback`
+   under the same Connect OAuth settings.
+
+```env
+STRIPE_CONNECT_CLIENT_ID=ca_your_connect_client_id
+```
+
+`JWT_SECRET` (set earlier, above) is reused to sign the OAuth `state` param, so
+it must also be set. Leave `STRIPE_CONNECT_CLIENT_ID` blank to keep this
+feature disabled.
+
 **POS Terminal / Tap to Pay (optional):**
 The Android and iOS market-stall apps authenticate requests with a shared API key and use Stripe Terminal for in-person payments. Add a second webhook endpoint at `https://yourdomain.com/api/pos/webhook` subscribed to `payment_intent.succeeded`.
 
@@ -397,6 +419,7 @@ whenever you suspect a payment is missing.
 | `S3_PUBLIC_URL`               | No       | Public CDN base URL for serving images                                                                      |
 | `STRIPE_SECRET_KEY`           | No       | Stripe secret key — enables card & TWINT checkout                                                           |
 | `STRIPE_WEBHOOK_SECRET`       | No       | Signing secret for `/api/stripe/webhook`                                                                    |
+| `STRIPE_CONNECT_CLIENT_ID`    | No       | Platform's Connect OAuth client ID (`ca_...`) — lets tenants link their own Stripe account                  |
 | `PUBLIC_BASE_URL`             | No       | Canonical site URL — Stripe redirects, Google OAuth's redirect_uri, and recognizing tenant subdomains all key off this |
 | `POS_API_KEY`                 | No       | Shared secret for the POS apps — Android and iOS (generate with `openssl rand -hex 32`)                     |
 | `STRIPE_POS_WEBHOOK_SECRET`   | No       | Signing secret for `/api/pos/webhook`                                                                       |
@@ -438,6 +461,12 @@ Google OAuth requires an exact, pre-registered redirect URI and doesn't support 
 - Set `PUBLIC_BASE_URL=https://zolto.ch` (or `https://zolto.kalakosh.ch` if running alongside Kalakosh-ch) and restart the app.
 - Confirm Google Cloud Console's Authorized redirect URIs list contains exactly `https://<PUBLIC_BASE_URL host>/api/oauth/callback` — one entry covers every tenant, current and future.
 - The tenant is then redirected back to their own subdomain automatically after login (the session cookie is scoped to the whole `*.zolto.ch` family once `PUBLIC_BASE_URL` is set, not just the one host that issued it).
+
+**A tenant admin's "Connect Stripe" fails or redirects with `stripeConnect=error` on a tenant subdomain (e.g. `blah.zolto.ch`)**
+Same class of issue as the Google `redirect_uri_mismatch` above: Stripe also requires an exact, pre-registered redirect URI with no wildcard subdomains, so the app always routes the Connect OAuth round-trip through **`PUBLIC_BASE_URL`'s own host**, never whichever tenant subdomain the admin clicked "Connect Stripe" from.
+- Set `PUBLIC_BASE_URL=https://zolto.ch` (or `https://zolto.kalakosh.ch` if running alongside Kalakosh-ch) and restart the app.
+- Confirm the Stripe Dashboard's Connect OAuth settings list the redirect URI exactly as `https://<PUBLIC_BASE_URL host>/api/stripe/connect/callback` — one entry covers every tenant, current and future.
+- If `PUBLIC_BASE_URL` is unset entirely, the app falls back to the request's own host — this works only for whichever single host happens to match what's registered in Stripe, and fails for every other tenant subdomain.
 
 **Discord bot not connecting**
 Verify `DISCORD_BOT_TOKEN` is correct and the bot has been added to your server with **Message Content Intent** enabled.

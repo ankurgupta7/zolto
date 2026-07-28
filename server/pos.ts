@@ -986,7 +986,8 @@ export function registerPosRoutes(app: Express): void {
           return;
         }
 
-        const { tenantId, tenantSlug } = getPosTenant(req);
+        const { tenantId, tenantSlug, stripeConnectedAccountId } =
+          getPosTenant(req);
         const {
           productIds,
           allowHidden,
@@ -1009,32 +1010,49 @@ export function registerPosRoutes(app: Express): void {
         }
         const { lineItems, totalRappen } = resolved;
 
-        const stripeCustomer = await stripe.customers.create({
-          name: customerName || undefined,
-          email: customerEmail || undefined,
-          phone: customerPhone || undefined,
-        });
+        // Same direct-charge pattern as /api/pos/payment-intent above: when the
+        // tenant has connected their own Stripe account, the TWINT intent (and
+        // the customer it's attached to) is created ON that account so funds
+        // settle with the merchant instead of the platform. Platform-account
+        // creation is the fallback for single-tenant self-hosted deployments.
+        const stripeOpts = stripeConnectedAccountId
+          ? { stripeAccount: stripeConnectedAccountId }
+          : undefined;
 
-        const intent = await stripe.paymentIntents.create({
-          amount: totalRappen,
-          currency: "chf",
-          customer: stripeCustomer.id,
-          receipt_email: customerEmail || undefined,
-          payment_method_types: ["twint"],
-          payment_method_data: { type: "twint" },
-          confirm: true,
-          return_url: `${resolveBaseUrl(tenantSlug)}/pos/twint-return`,
-          // Merchant name shown in the TWINT app (22-char max). Stripe also reads
-          // the account business-profile name; keep it set per tenant there.
-          statement_descriptor: posStatementDescriptor(tenantSlug),
-          metadata: {
-            tenantId: String(tenantId),
-            productIds: (Array.isArray(productIds) ? productIds : []).join(","),
-            hasCustomItems: lineItems.some((i) => i.productId === null)
-              ? "true"
-              : "false",
+        const stripeCustomer = await stripe.customers.create(
+          {
+            name: customerName || undefined,
+            email: customerEmail || undefined,
+            phone: customerPhone || undefined,
           },
-        });
+          stripeOpts,
+        );
+
+        const intent = await stripe.paymentIntents.create(
+          {
+            amount: totalRappen,
+            currency: "chf",
+            customer: stripeCustomer.id,
+            receipt_email: customerEmail || undefined,
+            payment_method_types: ["twint"],
+            payment_method_data: { type: "twint" },
+            confirm: true,
+            return_url: `${resolveBaseUrl(tenantSlug)}/pos/twint-return`,
+            // Merchant name shown in the TWINT app (22-char max). Stripe also reads
+            // the account business-profile name; keep it set per tenant there.
+            statement_descriptor: posStatementDescriptor(tenantSlug),
+            metadata: {
+              tenantId: String(tenantId),
+              productIds: (Array.isArray(productIds) ? productIds : []).join(
+                ",",
+              ),
+              hasCustomItems: lineItems.some((i) => i.productId === null)
+                ? "true"
+                : "false",
+            },
+          },
+          stripeOpts,
+        );
 
         const redirectUrl = intent.next_action?.redirect_to_url?.url;
         if (!redirectUrl) {

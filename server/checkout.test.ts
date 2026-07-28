@@ -404,6 +404,21 @@ describe("checkout.createSession", () => {
     ).toBeLessThanOrEqual(22);
   });
 
+  it("pins application_fee_amount at 0 — Zolto takes no cut of the direct charge", async () => {
+    getProductsByIds.mockResolvedValue([sampleProduct]);
+    checkoutSessionsCreate.mockResolvedValue({
+      id: "cs_test_fee",
+      url: "https://checkout.stripe.com/cs_test",
+      amount_total: 18500,
+    });
+
+    const caller = appRouter.createCaller(makeCtx());
+    await caller.checkout.createSession({ productIds: [1] });
+
+    const sessionArgs = checkoutSessionsCreate.mock.calls[0][0];
+    expect(sessionArgs.payment_intent_data.application_fee_amount).toBe(0);
+  });
+
   // ─── Shipping fee logic ───────────────────────────────────────────────────
 
   it("adds free CH shipping when the subtotal is at or above CHF 50", async () => {
