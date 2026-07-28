@@ -1,13 +1,19 @@
 /**
  * Caddy on-demand-TLS "ask" endpoint — covers two kinds of tenant hostnames:
  *
- * 1. Platform subdomains (blah.zolto.ch) — every tenant's default storefront.
- *    We answer 200 for any subdomain of SITE_DOMAIN whose left-most label
- *    matches a real tenant slug. No plan gate: this is the free-tier home
- *    every tenant gets, not the paid custom-domain feature.
+ * 1. Platform subdomains (blah.zolto.ch, or blah.zolto.kalakosh.ch when run
+ *    alongside Kalakosh-ch) — every tenant's default storefront. We answer
+ *    200 for any subdomain of the platform's root domain whose left-most
+ *    label matches a real tenant slug. No plan gate: this is the free-tier
+ *    home every tenant gets, not the paid custom-domain feature.
  * 2. Tenant custom domains (shop.example.com) — answer 200 only for domains
  *    a tenant actually registered in their settings, and only when their
  *    plan still includes the custom-domain feature.
+ *
+ * The platform root domain is read from PUBLIC_BASE_URL (set in every deploy
+ * mode — standalone or alongside Kalakosh-ch) rather than SITE_DOMAIN, which
+ * only applies to Zolto's own bundled Caddy and would be wrong/unset when a
+ * different Caddy (e.g. Kalakosh-ch's) is fronting the app.
  *
  * Caddy calls this before minting a certificate for either case:
  *
@@ -30,6 +36,18 @@ import { PLAN_FEATURES, type PlanId } from "./_core/trpc";
 
 const HOSTNAME_RE = /^[a-z0-9]+(-[a-z0-9]+)*(\.[a-z0-9]+(-[a-z0-9]+)*)+$/;
 
+function platformRootDomain(): string {
+  const base = process.env.PUBLIC_BASE_URL?.trim();
+  if (base) {
+    try {
+      return new URL(base).hostname.toLowerCase();
+    } catch {
+      // fall through to SITE_DOMAIN
+    }
+  }
+  return (process.env.SITE_DOMAIN ?? "").toLowerCase();
+}
+
 export function registerDomainAsk(app: Express): void {
   app.get("/api/domain-ask", async (req: Request, res: Response) => {
     const domain = String(req.query.domain ?? "").toLowerCase();
@@ -38,7 +56,7 @@ export function registerDomainAsk(app: Express): void {
       return;
     }
     try {
-      const root = (process.env.SITE_DOMAIN ?? "").toLowerCase();
+      const root = platformRootDomain();
       if (root && domain.endsWith(`.${root}`)) {
         const slug = domain.slice(0, -(root.length + 1));
         if (!slug || slug === "www" || slug.includes(".")) {

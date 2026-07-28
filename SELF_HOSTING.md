@@ -74,6 +74,29 @@ In this mode Zolto runs **no Caddy of its own and binds no host ports**, so ther
 
 Both stacks are independent — separate databases, separate deploys — they only share the reverse-proxy network.
 
+**Tenant subdomains in this mode:** Zolto's own bundled Caddyfile isn't used here, so its `*.{$SITE_DOMAIN}` block doesn't apply — tenant subdomains need the equivalent wildcard block added to the **Kalakosh-ch** Caddyfile instead:
+
+1. **Wildcard DNS:** add `*.zolto.kalakosh.ch A <server-ip>` alongside the existing `zolto.kalakosh.ch` record.
+2. **Add a wildcard block to the Kalakosh-ch Caddyfile**, using on-demand TLS gated by Zolto's `/api/domain-ask` endpoint (reachable over the same `kalakosh-shared` network):
+
+   ```
+   {
+       on_demand_tls {
+           ask http://<zolto-app-container-name>:3000/api/domain-ask
+       }
+   }
+
+   *.zolto.kalakosh.ch {
+       tls {
+           on_demand
+       }
+       reverse_proxy <zolto-app-container-name>:3000
+   }
+   ```
+
+   Replace `<zolto-app-container-name>` with whatever the Zolto app container is actually named on the shared network (check `docker compose ps` in the Zolto stack — commonly `zolto-app-1` or similar). If the Kalakosh-ch Caddy already has its own `on_demand_tls` global block for something else, Caddy only allows one `ask` URL for the whole instance — you'll need to point that single `ask` at an endpoint that can distinguish Kalakosh's own on-demand hosts from Zolto's tenant subdomains (or fold the check into whichever service already backs it).
+3. The `/api/domain-ask` endpoint already reads `PUBLIC_BASE_URL` (which you set to `https://zolto.kalakosh.ch` in step 3 above) to know the platform's root domain, so no extra Zolto-side config is needed — it'll recognize `blah.zolto.kalakosh.ch` and check `blah` against the tenants table correctly once the DNS and Caddy block above are in place.
+
 To run Zolto **standalone** instead (its own domain/IP with its own Caddy), see [Step 7 — Configure Caddy](#step-7--configure-caddy) and start it with `docker compose --profile standalone up -d`.
 
 ---
