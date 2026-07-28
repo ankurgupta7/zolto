@@ -198,6 +198,20 @@ export const tenantRouter = router({
     return stripPosApiKey(ctx.tenant);
   }),
 
+  // ─── Protected: Which store does the signed-in user belong to? ─────────────
+  // Host-INDEPENDENT (unlike `me`, which resolves the tenant from the request
+  // host): resolves from ctx.user.tenantId, so it works on the marketing
+  // surface too. Powers the "go to your store" affordance for a returning
+  // merchant who landed on zolto.ch and forgot their store's address. Returns
+  // just what a link needs (slug + name), never the POS key; null if the user
+  // isn't attached to a store.
+  myStore: protectedProcedure.query(async ({ ctx }) => {
+    if (!ctx.user.tenantId) return null;
+    const tenant = await getTenantById(ctx.user.tenantId);
+    if (!tenant) return null;
+    return { slug: tenant.slug, name: tenant.name };
+  }),
+
   // ─── Admin: rotate the POS API key (show-once) ─────────────────────────────
   // The old key stops working the moment this returns — every POS terminal for
   // this tenant must be reconfigured with the new key. Like signup, the

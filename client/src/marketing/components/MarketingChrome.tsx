@@ -1,5 +1,8 @@
 import { Link } from "wouter";
 import type { ReactNode } from "react";
+import { Store } from "lucide-react";
+import { trpc } from "@/lib/trpc";
+import { storeAdminUrl } from "@/lib/surface";
 
 /**
  * Zolto marketing chrome — nav + footer.
@@ -41,7 +44,39 @@ export function BrushMark({ className }: { className?: string }) {
   );
 }
 
+/**
+ * "Go to your store" shortcut — for a signed-in merchant who lands back on the
+ * marketing site (zolto.ch) and has forgotten their store's address. Uses the
+ * host-independent tenant.myStore, and a real anchor (not a wouter <Link>) so
+ * the browser crosses from the marketing surface to the storefront/admin
+ * (see lib/surface.storeAdminUrl). Renders nothing for logged-out visitors, so
+ * the acquisition CTA is unchanged for them.
+ */
+export function StoreShortcut() {
+  const me = trpc.auth.me.useQuery(undefined, { retry: false });
+  const store = trpc.tenant.myStore.useQuery(undefined, {
+    retry: false,
+    enabled: !!me.data,
+  });
+
+  if (!me.data || !store.data) return null;
+
+  return (
+    <a
+      href={storeAdminUrl(store.data.slug)}
+      className="inline-flex items-center gap-2 rounded-md bg-[var(--brand-ink)] px-4 py-2 text-xs font-medium uppercase tracking-[0.12em] text-white transition-colors hover:bg-[var(--brand-ink-hover)]"
+    >
+      <Store className="h-3.5 w-3.5" />
+      <span className="hidden sm:inline">Go to your store</span>
+      <span className="sm:hidden">My store</span>
+    </a>
+  );
+}
+
 export function MarketingNav() {
+  const me = trpc.auth.me.useQuery(undefined, { retry: false });
+  const signedIn = !!me.data;
+
   return (
     <header className="sticky top-0 z-50 border-b border-[var(--brand-border)] bg-[var(--brand-ground)]/90 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
@@ -61,12 +96,16 @@ export function MarketingNav() {
               {item.label}
             </Link>
           ))}
-          <Link
-            href="/signup"
-            className="rounded-md bg-[var(--brand-ink)] px-4 py-2 text-xs font-medium uppercase tracking-[0.12em] text-white transition-colors hover:bg-[var(--brand-ink-hover)]"
-          >
-            Start free
-          </Link>
+          {signedIn ? (
+            <StoreShortcut />
+          ) : (
+            <Link
+              href="/signup"
+              className="rounded-md bg-[var(--brand-ink)] px-4 py-2 text-xs font-medium uppercase tracking-[0.12em] text-white transition-colors hover:bg-[var(--brand-ink-hover)]"
+            >
+              Start free
+            </Link>
+          )}
         </nav>
       </div>
     </header>

@@ -1,5 +1,5 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
+import { render, screen, cleanup } from "@testing-library/react";
 import { AdminLayout } from "./AdminLayout";
 
 // Display state comes from two injected sources; both are mocked so the test
@@ -21,6 +21,8 @@ function asViewer(role: string, plan: string) {
 beforeEach(() => {
   vi.clearAllMocks();
 });
+
+afterEach(() => cleanup());
 
 describe("AdminLayout", () => {
   it("renders both plane groups for an admin", () => {

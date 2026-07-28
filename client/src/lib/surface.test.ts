@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { resolveSurface, tenantSlugFromHost, isDevHost } from "./surface";
+import {
+  resolveSurface,
+  tenantSlugFromHost,
+  isDevHost,
+  storeAdminUrl,
+  storeHomeUrl,
+} from "./surface";
 
 describe("isDevHost", () => {
   it("treats localhost / loopback / .local as dev", () => {
@@ -83,5 +89,34 @@ describe("resolveSurface", () => {
         search: "?surface=storefront&tenant=demo",
       }),
     ).toEqual({ surface: "storefront", tenantSlug: "demo" });
+  });
+});
+
+describe("storeAdminUrl / storeHomeUrl (cross-surface navigation)", () => {
+  it("sends the browser to the tenant subdomain from the platform apex", () => {
+    expect(storeAdminUrl("kalakosh", "zolto.ch")).toBe(
+      "https://kalakosh.zolto.ch/admin",
+    );
+    expect(storeAdminUrl("kalakosh", "www.zolto.ch")).toBe(
+      "https://kalakosh.zolto.ch/admin",
+    );
+    expect(storeHomeUrl("kalakosh", "zolto.ch")).toBe(
+      "https://kalakosh.zolto.ch/",
+    );
+  });
+
+  it("stays same-origin and forces the storefront surface in dev / preview", () => {
+    expect(storeAdminUrl("kalakosh", "localhost")).toBe(
+      "/admin?surface=storefront&tenant=kalakosh",
+    );
+    expect(storeHomeUrl("kalakosh", "localhost")).toBe(
+      "/?surface=storefront&tenant=kalakosh",
+    );
+  });
+
+  it("encodes the slug in the query-param form", () => {
+    expect(storeAdminUrl("a b", "localhost")).toBe(
+      "/admin?surface=storefront&tenant=a%20b",
+    );
   });
 });

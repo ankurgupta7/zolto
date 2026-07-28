@@ -7,7 +7,7 @@
  * display (hidden vs locked vs open) — the server enforces access.
  */
 
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import * as icons from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -46,11 +46,32 @@ export function AdminLayout({
   const groups = groupNavByPlane(resolveNavAccess(ADMIN_NAV, { role, plan }));
   const [location] = useLocation();
 
+  // Mobile: the sidebar is an off-canvas drawer (fixed sidebars squash the page
+  // on a phone). Closes whenever the route changes so a tap-through doesn't
+  // leave it open over the new page.
+  const [navOpen, setNavOpen] = useState(false);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: close the drawer on navigation
+  useEffect(() => {
+    setNavOpen(false);
+  }, [location]);
+
   return (
     <div className="flex min-h-screen bg-background">
+      {/* Mobile backdrop */}
+      {navOpen && (
+        <button
+          type="button"
+          aria-label="Close navigation"
+          onClick={() => setNavOpen(false)}
+          className="fixed inset-0 z-30 bg-black/40 md:hidden"
+        />
+      )}
+
       <aside
         aria-label="Admin navigation"
-        className="w-60 shrink-0 border-r bg-muted/30 px-3 py-4"
+        className={`fixed inset-y-0 left-0 z-40 w-60 shrink-0 overflow-y-auto border-r bg-muted/30 px-3 py-4 transition-transform md:static md:z-auto md:translate-x-0 ${
+          navOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
       >
         <nav className="flex flex-col gap-6">
           {groups.map((group) => (
@@ -95,12 +116,21 @@ export function AdminLayout({
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-14 items-center border-b px-6">
+        <header className="flex h-14 items-center gap-3 border-b px-4 md:px-6">
+          <button
+            type="button"
+            aria-label="Open navigation"
+            aria-expanded={navOpen}
+            onClick={() => setNavOpen(true)}
+            className="-ml-1 rounded-md p-2 text-muted-foreground hover:bg-accent hover:text-foreground md:hidden"
+          >
+            <icons.Menu className="h-5 w-5" aria-hidden="true" />
+          </button>
           <h1 className="text-lg font-semibold tracking-tight">
             {title ?? "Admin"}
           </h1>
         </header>
-        <main className="flex-1 p-6">{children}</main>
+        <main className="flex-1 p-4 md:p-6">{children}</main>
       </div>
     </div>
   );

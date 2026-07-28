@@ -35,6 +35,21 @@ import MarketingApp from "./marketing/MarketingApp";
 import { ADMIN_NAV } from "./admin/nav";
 import AdminLayout from "./components/admin/AdminLayout";
 import AdminPlaceholder from "./components/admin/AdminPlaceholder";
+import Storefront from "./pages/admin/Storefront";
+import Domain from "./pages/admin/Domain";
+import Channels from "./pages/admin/Channels";
+import Pos from "./pages/admin/Pos";
+import Orders from "./pages/admin/Orders";
+import Reconciliation from "./pages/admin/Reconciliation";
+import AdminInsights from "./pages/admin/Insights";
+import AdminImport from "./pages/admin/Import";
+import ShopProfile from "./pages/admin/ShopProfile";
+import Team from "./pages/admin/Team";
+import Credits from "./pages/admin/Credits";
+import Keys from "./pages/admin/Keys";
+import DataPrivacy from "./pages/admin/DataPrivacy";
+import Support from "./pages/admin/Support";
+import Legal from "./pages/admin/Legal";
 
 function ScrollToTop() {
   const [location] = useLocation();
@@ -69,8 +84,26 @@ function useSurface(): SurfaceResolution {
  * The legacy routes below stay live until their sections are extracted.
  */
 const ADMIN_PAGES: Record<string, ComponentType> = {
+  // Store plane
   home: Admin,
+  products: Admin, // the catalogue manager (monolith) until Home splits into a dashboard
+  import: AdminImport,
+  orders: Orders,
+  reconciliation: Reconciliation,
+  storefront: Storefront,
+  domain: Domain,
+  channels: Channels,
+  pos: Pos,
+  insights: AdminInsights,
+  // Account plane
+  account: ShopProfile,
+  team: Team,
   plan: Billing,
+  credits: Credits,
+  keys: Keys,
+  data: DataPrivacy,
+  support: Support,
+  legal: Legal,
 };
 
 function StorefrontRouter() {

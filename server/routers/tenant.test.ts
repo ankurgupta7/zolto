@@ -371,3 +371,33 @@ describe("tenant onboarding mutations", () => {
     expect(set).not.toHaveBeenCalled();
   });
 });
+
+describe("tenant.myStore", () => {
+  it("requires an authenticated user", async () => {
+    await expect(
+      tenantRouter.createCaller(ctx(null)).myStore(),
+    ).rejects.toThrow();
+  });
+
+  it("returns the signed-in user's store slug and name (host-independent)", async () => {
+    dbMock.getTenantById.mockResolvedValue({
+      id: 7,
+      slug: "kalakosh",
+      name: "Kalakosh",
+      posApiKey: "hash",
+    });
+    const res = await tenantRouter
+      .createCaller(ctx({ openId: "u1", role: "admin", tenantId: 7 }))
+      .myStore();
+    expect(dbMock.getTenantById).toHaveBeenCalledWith(7);
+    expect(res).toEqual({ slug: "kalakosh", name: "Kalakosh" });
+  });
+
+  it("returns null when the user isn't attached to a store", async () => {
+    const res = await tenantRouter
+      .createCaller(ctx({ openId: "u1", role: "customer" }))
+      .myStore();
+    expect(res).toBeNull();
+    expect(dbMock.getTenantById).not.toHaveBeenCalled();
+  });
+});

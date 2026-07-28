@@ -74,6 +74,29 @@ In this mode Zolto runs **no Caddy of its own and binds no host ports**, so ther
 
 Both stacks are independent — separate databases, separate deploys — they only share the reverse-proxy network.
 
+**Tenant subdomains in this mode:** Zolto's own bundled Caddyfile isn't used here, so its `*.{$SITE_DOMAIN}` block doesn't apply — tenant subdomains need the equivalent wildcard block added to the **Kalakosh-ch** Caddyfile instead:
+
+1. **Wildcard DNS:** add `*.zolto.kalakosh.ch A <server-ip>` alongside the existing `zolto.kalakosh.ch` record.
+2. **Add a wildcard block to the Kalakosh-ch Caddyfile**, using on-demand TLS gated by Zolto's `/api/domain-ask` endpoint (reachable over the same `kalakosh-shared` network):
+
+   ```
+   {
+       on_demand_tls {
+           ask http://<zolto-app-container-name>:3000/api/domain-ask
+       }
+   }
+
+   *.zolto.kalakosh.ch {
+       tls {
+           on_demand
+       }
+       reverse_proxy <zolto-app-container-name>:3000
+   }
+   ```
+
+   Replace `<zolto-app-container-name>` with whatever the Zolto app container is actually named on the shared network (check `docker compose ps` in the Zolto stack — commonly `zolto-app-1` or similar). If the Kalakosh-ch Caddy already has its own `on_demand_tls` global block for something else, Caddy only allows one `ask` URL for the whole instance — you'll need to point that single `ask` at an endpoint that can distinguish Kalakosh's own on-demand hosts from Zolto's tenant subdomains (or fold the check into whichever service already backs it).
+3. The `/api/domain-ask` endpoint already reads `PUBLIC_BASE_URL` (which you set to `https://zolto.kalakosh.ch` in step 3 above) to know the platform's root domain, so no extra Zolto-side config is needed — it'll recognize `blah.zolto.kalakosh.ch` and check `blah` against the tenants table correctly once the DNS and Caddy block above are in place.
+
 To run Zolto **standalone** instead (its own domain/IP with its own Caddy), see [Step 7 — Configure Caddy](#step-7--configure-caddy) and start it with `docker compose --profile standalone up -d`.
 
 ---
@@ -267,6 +290,15 @@ Leave blank to skip backups.
 
 Zolto's bundled Caddy is only used for **standalone** deploys (its own domain/IP) and lives behind the `standalone` compose profile. Point `SITE_DOMAIN` (in `.env`) at your domain so Caddy provisions HTTPS automatically.
 
+**Every tenant gets a storefront at `<slug>.{SITE_DOMAIN}`** (e.g. `blah.zolto.ch`), so DNS needs a **wildcard** record, not just the apex:
+
+```
+A     zolto.ch        <server-ip>
+A     *.zolto.ch      <server-ip>
+```
+
+One wildcard `A` record covers every tenant subdomain — you never register a new DNS entry per tenant. The bundled Caddyfile already has a `*.{$SITE_DOMAIN}` block wired to on-demand TLS: the first time `blah.zolto.ch` is visited, Caddy asks the app (`/api/domain-ask`) whether `blah` is a real tenant slug, and only then requests a Let's Encrypt certificate for that specific hostname (a real wildcard certificate isn't possible over plain HTTP-01, so Caddy issues one cert per subdomain, on demand). Nothing else to configure — this works as soon as the wildcard DNS record resolves to your server.
+
 ---
 
 ## Step 8 — Start Everything
@@ -392,6 +424,12 @@ The app container may still be starting. Check: `docker compose logs app`. If it
 
 **SSL certificate not issued**
 Ensure your domain's DNS A record points to the correct server IP and has propagated. Check: `docker compose logs caddy`.
+
+**`ERR_SSL_PROTOCOL_ERROR` on a tenant subdomain (e.g. `blah.zolto.ch`)**
+Almost always one of:
+- No wildcard DNS record. An `A` record for the apex (`zolto.ch`) does **not** cover subdomains — you also need `*.zolto.ch` pointing at the server IP (see Step 7).
+- `blah` isn't an actual tenant slug yet, or the tenant record hasn't propagated to the DB the app is reading. Caddy's on-demand TLS refuses to mint a cert for hostnames `/api/domain-ask` doesn't recognize — check `docker compose logs app` for `[DomainAsk]` lines, or ask the endpoint directly: `docker compose exec app curl -s "http://localhost:3000/api/domain-ask?domain=blah.zolto.ch" -o /dev/null -w '%{http_code}\n'` (200 = tenant found, 404 = no such slug).
+- DNS hasn't propagated yet after adding the wildcard record — give it a few minutes and retry.
 
 **Discord bot not connecting**
 Verify `DISCORD_BOT_TOKEN` is correct and the bot has been added to your server with **Message Content Intent** enabled.

@@ -61,6 +61,53 @@ export interface ResolveOptions {
   defaultTenantSlug?: string;
 }
 
+/**
+ * Absolute URL to a tenant's storefront home. Cross-surface navigation MUST be
+ * a real (full-page) navigation, not a wouter <Link>: the surface is resolved
+ * once at app mount, so a client-side route change from the marketing app to
+ * /admin just 404s inside the marketing router (it has no such route). From the
+ * platform apex we send the browser to the tenant's own subdomain; in dev /
+ * preview (where subdomains aren't available) we stay same-origin and force the
+ * storefront surface with query params.
+ */
+export function storefrontOrigin(
+  slug: string,
+  hostname: string,
+): { origin: string; needsSurfaceParam: boolean } {
+  const host = hostname.split(":")[0].toLowerCase();
+  if (host === PLATFORM_APEX || host === `www.${PLATFORM_APEX}`) {
+    return { origin: `https://${slug}.${PLATFORM_APEX}`, needsSurfaceParam: false };
+  }
+  // Dev / preview / custom host: same origin, force the storefront surface.
+  return { origin: "", needsSurfaceParam: true };
+}
+
+/** Full-page-navigation URL to the tenant admin dashboard. */
+export function storeAdminUrl(
+  slug: string,
+  hostname: string = typeof window !== "undefined"
+    ? window.location.hostname
+    : "",
+): string {
+  const { origin, needsSurfaceParam } = storefrontOrigin(slug, hostname);
+  return needsSurfaceParam
+    ? `/admin?surface=storefront&tenant=${encodeURIComponent(slug)}`
+    : `${origin}/admin`;
+}
+
+/** Full-page-navigation URL to the tenant's public storefront home. */
+export function storeHomeUrl(
+  slug: string,
+  hostname: string = typeof window !== "undefined"
+    ? window.location.hostname
+    : "",
+): string {
+  const { origin, needsSurfaceParam } = storefrontOrigin(slug, hostname);
+  return needsSurfaceParam
+    ? `/?surface=storefront&tenant=${encodeURIComponent(slug)}`
+    : `${origin}/`;
+}
+
 export function resolveSurface({
   hostname,
   search = "",
