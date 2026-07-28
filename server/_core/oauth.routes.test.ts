@@ -15,6 +15,8 @@ const ENV_KEYS = [
   "GOOGLE_CLIENT_SECRET",
   "ADMIN_EMAIL",
   "JWT_SECRET",
+  "PUBLIC_BASE_URL",
+  "SITE_DOMAIN",
 ] as const;
 const originalEnv: Record<string, string | undefined> = {};
 
@@ -31,6 +33,8 @@ beforeEach(() => {
   process.env.GOOGLE_CLIENT_SECRET = "client-secret";
   process.env.ADMIN_EMAIL = "admin@example.com";
   process.env.JWT_SECRET = "a-test-jwt-secret-that-is-long-enough";
+  delete process.env.PUBLIC_BASE_URL;
+  delete process.env.SITE_DOMAIN;
   upsertUser.mockResolvedValue(undefined);
 });
 
@@ -59,7 +63,7 @@ describe("GET /api/oauth/login", () => {
     );
   });
 
-  it("honours X-Forwarded-Proto and X-Forwarded-Host for the redirect URI", async () => {
+  it("honours X-Forwarded-Proto and X-Forwarded-Host for the redirect URI when PUBLIC_BASE_URL is unset", async () => {
     const res = await request(makeApp())
       .get("/api/oauth/login")
       .set("X-Forwarded-Proto", "https")
@@ -68,6 +72,51 @@ describe("GET /api/oauth/login", () => {
     expect(loc.searchParams.get("redirect_uri")).toBe(
       "https://custom.zolto.ch/api/oauth/callback",
     );
+  });
+
+  it("uses the canonical PUBLIC_BASE_URL origin for the redirect URI, ignoring a tenant subdomain's own host", async () => {
+    process.env.PUBLIC_BASE_URL = "https://zolto.ch";
+    const res = await request(makeApp())
+      .get("/api/oauth/login")
+      .set("X-Forwarded-Proto", "https")
+      .set("X-Forwarded-Host", "blah.zolto.ch");
+    const loc = new URL(res.headers.location);
+    // Google only ever sees one registered redirect_uri, regardless of which
+    // tenant subdomain the merchant started the login from.
+    expect(loc.searchParams.get("redirect_uri")).toBe(
+      "https://zolto.ch/api/oauth/callback",
+    );
+  });
+
+  it("stashes a cross-subdomain next target as an absolute URL, cookie scoped to the shared root domain", async () => {
+    process.env.PUBLIC_BASE_URL = "https://zolto.ch";
+    const res = await request(makeApp())
+      .get(
+        "/api/oauth/login?next=" +
+          encodeURIComponent("https://blah.zolto.ch/admin"),
+      )
+      .set("X-Forwarded-Proto", "https")
+      .set("X-Forwarded-Host", "blah.zolto.ch");
+    const setCookie = (res.headers["set-cookie"] as unknown as string[]).join(
+      ";",
+    );
+    expect(decodeURIComponent(setCookie)).toContain(
+      "oauth_next=https://blah.zolto.ch/admin",
+    );
+    // Widened to the shared root domain so it's readable once Google
+    // redirects the browser back to the canonical zolto.ch host.
+    expect(setCookie.toLowerCase()).toContain("domain=.zolto.ch");
+  });
+
+  it("rejects a next target on an unrelated host even with PUBLIC_BASE_URL set", async () => {
+    process.env.PUBLIC_BASE_URL = "https://zolto.ch";
+    const res = await request(makeApp()).get(
+      "/api/oauth/login?next=" + encodeURIComponent("https://evil.example.com/"),
+    );
+    const setCookie = (res.headers["set-cookie"] as unknown as string[]).join(
+      ";",
+    );
+    expect(setCookie).toContain("oauth_next=;");
   });
 
   it("stashes a safe next path in a short-lived cookie", async () => {
@@ -196,6 +245,24 @@ describe("GET /api/oauth/callback", () => {
     const res = await request(makeApp())
       .get("/api/oauth/callback?code=abc")
       .set("Cookie", "oauth_next=https://evil.com");
+    expect(res.headers.location).toBe("/");
+  });
+
+  it("redirects a tenant admin back to their own subdomain after the canonical-host callback", async () => {
+    process.env.PUBLIC_BASE_URL = "https://zolto.ch";
+    mockGoogle({ email: "someone@example.com" });
+    const res = await request(makeApp())
+      .get("/api/oauth/callback?code=abc")
+      .set("Cookie", "oauth_next=https://blah.zolto.ch/admin");
+    expect(res.headers.location).toBe("https://blah.zolto.ch/admin");
+  });
+
+  it("still rejects a stashed next target on an unrelated host when PUBLIC_BASE_URL is set", async () => {
+    process.env.PUBLIC_BASE_URL = "https://zolto.ch";
+    mockGoogle({ email: "someone@example.com" });
+    const res = await request(makeApp())
+      .get("/api/oauth/callback?code=abc")
+      .set("Cookie", "oauth_next=https://evil.example.com/");
     expect(res.headers.location).toBe("/");
   });
 

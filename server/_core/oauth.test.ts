@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { SignJWT } from "jose";
-import { verifySessionJwt, sanitizeNextPath } from "./oauth";
+import { verifySessionJwt, sanitizeNextPath, sanitizeNextTarget } from "./oauth";
 
 const SECRET = "test-jwt-secret-at-least-32-characters-long";
 const OTHER_SECRET = "different-jwt-secret-also-32-characters-plus";
@@ -106,5 +106,58 @@ describe("sanitizeNextPath", () => {
 
   it("rejects an over-long path", () => {
     expect(sanitizeNextPath(`/${"a".repeat(600)}`)).toBeNull();
+  });
+});
+
+describe("sanitizeNextTarget", () => {
+  it("accepts a relative path exactly like sanitizeNextPath, regardless of root domain", () => {
+    expect(sanitizeNextTarget("/claim/x", "zolto.ch")).toBe("/claim/x");
+    expect(sanitizeNextTarget("/claim/x", null)).toBe("/claim/x");
+  });
+
+  it("accepts an absolute https URL on the platform root domain", () => {
+    expect(sanitizeNextTarget("https://zolto.ch/admin", "zolto.ch")).toBe(
+      "https://zolto.ch/admin",
+    );
+  });
+
+  it("accepts an absolute https URL on a tenant subdomain", () => {
+    expect(
+      sanitizeNextTarget("https://blah.zolto.ch/admin?x=1", "zolto.ch"),
+    ).toBe("https://blah.zolto.ch/admin?x=1");
+  });
+
+  it("rejects an absolute URL when no root domain is configured", () => {
+    expect(sanitizeNextTarget("https://blah.zolto.ch/admin", null)).toBeNull();
+  });
+
+  it("rejects an absolute URL on an unrelated host", () => {
+    expect(
+      sanitizeNextTarget("https://evil.example.com/", "zolto.ch"),
+    ).toBeNull();
+  });
+
+  it("rejects a host that merely ends with the same characters (evilzolto.ch)", () => {
+    expect(
+      sanitizeNextTarget("https://evilzolto.ch/admin", "zolto.ch"),
+    ).toBeNull();
+  });
+
+  it("rejects a non-https absolute URL", () => {
+    expect(
+      sanitizeNextTarget("http://blah.zolto.ch/admin", "zolto.ch"),
+    ).toBeNull();
+  });
+
+  it("rejects control characters and over-long input", () => {
+    expect(sanitizeNextTarget("https://zolto.ch/a\nb", "zolto.ch")).toBeNull();
+    expect(
+      sanitizeNextTarget(`https://zolto.ch/${"a".repeat(600)}`, "zolto.ch"),
+    ).toBeNull();
+  });
+
+  it("rejects non-strings", () => {
+    expect(sanitizeNextTarget(undefined, "zolto.ch")).toBeNull();
+    expect(sanitizeNextTarget(42, "zolto.ch")).toBeNull();
   });
 });
