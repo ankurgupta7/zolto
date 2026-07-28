@@ -13,7 +13,21 @@
 #   - ":80" — a port-only address, plain HTTP on the mapped port for any
 #     hostname/IP, no TLS. Use this while testing by IP before DNS is
 #     pointed at the server.
+#
+# Tenant storefronts live on subdomains (blah.zolto.ch). Wildcard hostnames
+# can't get a normal ACME cert over HTTP-01 (that needs a DNS-01 challenge,
+# which isn't configured here), so the *.{$SITE_DOMAIN} block below uses
+# Caddy's on-demand TLS instead: Caddy asks the app whether a slug is a real
+# tenant before it requests a cert for that specific subdomain. Make sure
+# `*.{$SITE_DOMAIN}` (e.g. *.zolto.ch) has an A/AAAA record pointing at this
+# server — see SELF_HOSTING.md.
 # ─────────────────────────────────────────────────────────────────────────────
+
+{
+    on_demand_tls {
+        ask http://app:3000/api/domain-ask
+    }
+}
 
 {$SITE_DOMAIN} {
     # Reverse proxy all traffic to the Node.js app
@@ -40,4 +54,30 @@
 # Redirect www → apex (no-op when SITE_DOMAIN is ":80").
 www.{$SITE_DOMAIN} {
     redir https://{$SITE_DOMAIN}{uri} permanent
+}
+
+# Tenant storefronts (blah.zolto.ch, ada-studio.zolto.ch, ...). Matches a
+# single subdomain label — not deeper subdomains. On-demand TLS mints a cert
+# per tenant the first time their subdomain is visited, gated by
+# /api/domain-ask so strangers can't drive cert issuance for hostnames that
+# don't map to a real tenant.
+*.{$SITE_DOMAIN} {
+    tls {
+        on_demand
+    }
+
+    reverse_proxy app:3000
+
+    encode gzip
+
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "SAMEORIGIN"
+        Referrer-Policy "strict-origin-when-cross-origin"
+    }
+
+    log {
+        output file /var/log/caddy/access-tenants.log
+    }
 }

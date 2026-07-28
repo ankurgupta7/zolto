@@ -267,6 +267,15 @@ Leave blank to skip backups.
 
 Zolto's bundled Caddy is only used for **standalone** deploys (its own domain/IP) and lives behind the `standalone` compose profile. Point `SITE_DOMAIN` (in `.env`) at your domain so Caddy provisions HTTPS automatically.
 
+**Every tenant gets a storefront at `<slug>.{SITE_DOMAIN}`** (e.g. `blah.zolto.ch`), so DNS needs a **wildcard** record, not just the apex:
+
+```
+A     zolto.ch        <server-ip>
+A     *.zolto.ch      <server-ip>
+```
+
+One wildcard `A` record covers every tenant subdomain — you never register a new DNS entry per tenant. The bundled Caddyfile already has a `*.{$SITE_DOMAIN}` block wired to on-demand TLS: the first time `blah.zolto.ch` is visited, Caddy asks the app (`/api/domain-ask`) whether `blah` is a real tenant slug, and only then requests a Let's Encrypt certificate for that specific hostname (a real wildcard certificate isn't possible over plain HTTP-01, so Caddy issues one cert per subdomain, on demand). Nothing else to configure — this works as soon as the wildcard DNS record resolves to your server.
+
 ---
 
 ## Step 8 — Start Everything
@@ -392,6 +401,12 @@ The app container may still be starting. Check: `docker compose logs app`. If it
 
 **SSL certificate not issued**
 Ensure your domain's DNS A record points to the correct server IP and has propagated. Check: `docker compose logs caddy`.
+
+**`ERR_SSL_PROTOCOL_ERROR` on a tenant subdomain (e.g. `blah.zolto.ch`)**
+Almost always one of:
+- No wildcard DNS record. An `A` record for the apex (`zolto.ch`) does **not** cover subdomains — you also need `*.zolto.ch` pointing at the server IP (see Step 7).
+- `blah` isn't an actual tenant slug yet, or the tenant record hasn't propagated to the DB the app is reading. Caddy's on-demand TLS refuses to mint a cert for hostnames `/api/domain-ask` doesn't recognize — check `docker compose logs app` for `[DomainAsk]` lines, or ask the endpoint directly: `docker compose exec app curl -s "http://localhost:3000/api/domain-ask?domain=blah.zolto.ch" -o /dev/null -w '%{http_code}\n'` (200 = tenant found, 404 = no such slug).
+- DNS hasn't propagated yet after adding the wildcard record — give it a few minutes and retry.
 
 **Discord bot not connecting**
 Verify `DISCORD_BOT_TOKEN` is correct and the bot has been added to your server with **Message Content Intent** enabled.
