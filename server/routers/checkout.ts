@@ -56,6 +56,12 @@ const FREE_SHIPPING_THRESHOLD_RAPPEN = 5000; // CHF 50.00
 const CH_FLAT_SHIPPING_FEE_RAPPEN = 800; // CHF 8.00
 const EU_FLAT_SHIPPING_FEE_RAPPEN = 1500; // CHF 15.00
 
+// [PLACEHOLDER] Zolto's cut of each direct charge, in the smallest currency
+// unit (Rappen). Kept at 0 to honor the "we take no cut" promise in
+// docs/planning/phase1/marketing/pricing-page-copy.md — change this (and that
+// doc) together if the platform ever starts monetizing storefront checkout.
+const PLATFORM_APPLICATION_FEE_RAPPEN = 0;
+
 // Deliberately does NOT trust client-supplied origin (request body or Origin
 // header) — those are attacker-controllable and would let a direct API
 // caller redirect the post-payment flow (and leak the Stripe session id) to
@@ -199,8 +205,10 @@ export const checkoutRouter = router({
 
       // The second argument's `stripeAccount` runs this call on the tenant's
       // own connected Standard account (a "direct charge") using Zolto's
-      // platform key — funds settle straight to the tenant, no application
-      // fee, no raw tenant Stripe key ever touches Zolto's servers.
+      // platform key — funds settle straight to the tenant, no raw tenant
+      // Stripe key ever touches Zolto's servers. application_fee_amount
+      // (below, in payment_intent_data) is the platform's cut of that direct
+      // charge — pinned to 0 (see PLATFORM_APPLICATION_FEE_RAPPEN above).
       //
       // Wrapped so a Stripe/DB failure after the reservation above doesn't
       // leave a phantom hold on these pieces until it times out on its own.
@@ -268,6 +276,7 @@ export const checkoutRouter = router({
               statement_descriptor: (ctx.tenant.name || "ZOLTO STORE")
                 .slice(0, 22)
                 .toUpperCase(),
+              application_fee_amount: PLATFORM_APPLICATION_FEE_RAPPEN,
             },
             success_url: `${baseUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
             cancel_url: `${baseUrl}/checkout/cancel`,

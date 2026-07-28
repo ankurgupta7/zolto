@@ -100,6 +100,22 @@ function makeFakeStripe() {
   };
 }
 
+function makeFakeTwintStripe(
+  nextAction: unknown = {
+    redirect_to_url: { url: "https://hooks.stripe.com/twint/pi_1" },
+  },
+) {
+  return {
+    customers: { create: vi.fn().mockResolvedValue({ id: "cus_123" }) },
+    paymentIntents: {
+      create: vi.fn().mockResolvedValue({
+        id: "pi_twint_1",
+        next_action: nextAction,
+      }),
+    },
+  };
+}
+
 describe("GET /api/pos/categories", () => {
   const OLD_KEY = process.env.POS_API_KEY;
 
@@ -876,22 +892,6 @@ describe("POST /api/pos/manual-sale (cash)", () => {
 describe("POST /api/pos/twint-intent", () => {
   const OLD_KEY = process.env.POS_API_KEY;
 
-  function makeFakeTwintStripe(
-    nextAction: unknown = {
-      redirect_to_url: { url: "https://hooks.stripe.com/twint/pi_1" },
-    },
-  ) {
-    return {
-      customers: { create: vi.fn().mockResolvedValue({ id: "cus_123" }) },
-      paymentIntents: {
-        create: vi.fn().mockResolvedValue({
-          id: "pi_twint_1",
-          next_action: nextAction,
-        }),
-      },
-    };
-  }
-
   beforeEach(() => {
     process.env.POS_API_KEY = "test-pos-key";
   });
@@ -927,6 +927,7 @@ describe("POST /api/pos/twint-intent", () => {
         payment_method_types: ["twint"],
         confirm: true,
       }),
+      undefined,
     );
     expect(db.insertValuesSpy).toHaveBeenNthCalledWith(
       1,
@@ -957,6 +958,7 @@ describe("POST /api/pos/twint-intent", () => {
     expect(res.body.totalRappen).toBe(3000);
     expect(fakeStripe.paymentIntents.create).toHaveBeenCalledWith(
       expect.objectContaining({ amount: 3000 }),
+      undefined,
     );
   });
 
@@ -1149,6 +1151,52 @@ describe("POST /api/pos/payment-intent on a connected account", () => {
     expect(fakeStripe.paymentIntents.create).toHaveBeenCalledWith(
       expect.objectContaining({ amount: 5000, currency: "eur" }),
       { stripeAccount: "acct_connected" },
+    );
+  });
+});
+
+describe("POST /api/pos/twint-intent on a connected account", () => {
+  it("creates the customer and twint intent on the tenant's Stripe account, not the platform's", async () => {
+    const db = makeFakeDb([{ id: 1, price: "50.00" }]);
+    vi.mocked(getDb).mockResolvedValueOnce(db as never);
+    const fakeStripe = makeFakeTwintStripe();
+    vi.mocked(getStripe).mockReturnValueOnce(fakeStripe as never);
+
+    const res = await request(makeApp())
+      .post("/api/pos/twint-intent")
+      .set("x-pos-key", "connected-pos-key")
+      .send({ productIds: [1], customerPhone: "0791234567" });
+
+    expect(res.status).toBe(200);
+    expect(fakeStripe.customers.create).toHaveBeenCalledWith(
+      expect.anything(),
+      { stripeAccount: "acct_connected" },
+    );
+    expect(fakeStripe.paymentIntents.create).toHaveBeenCalledWith(
+      expect.objectContaining({ payment_method_types: ["twint"] }),
+      { stripeAccount: "acct_connected" },
+    );
+  });
+
+  it("falls back to the platform account when the tenant hasn't connected Stripe (self-hosted single-tenant)", async () => {
+    const db = makeFakeDb([{ id: 1, price: "50.00" }]);
+    vi.mocked(getDb).mockResolvedValueOnce(db as never);
+    const fakeStripe = makeFakeTwintStripe();
+    vi.mocked(getStripe).mockReturnValueOnce(fakeStripe as never);
+
+    const res = await request(makeApp())
+      .post("/api/pos/twint-intent")
+      .set("x-pos-key", "test-pos-key")
+      .send({ productIds: [1], customerPhone: "0791234567" });
+
+    expect(res.status).toBe(200);
+    expect(fakeStripe.customers.create).toHaveBeenCalledWith(
+      expect.anything(),
+      undefined,
+    );
+    expect(fakeStripe.paymentIntents.create).toHaveBeenCalledWith(
+      expect.objectContaining({ payment_method_types: ["twint"] }),
+      undefined,
     );
   });
 });
