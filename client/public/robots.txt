@@ -2,19 +2,20 @@ User-agent: *
 Allow: /
 
 # Sitemap location
-Sitemap: https://kalakosh.ch/sitemap.xml
+Sitemap: https://zolto.ch/sitemap.xml
 
-# Disallow admin routes
-Disallow: /admin
+# Marketing & Platform Pages
+Allow: /
+Allow: /pricing
+Allow: /signup
+Allow: /blog
+Allow: /stories
+Allow: /legal
+
+# Disallow tenant stores (they have their own sitemaps)
+Disallow: /shop
+Disallow: /product/
+Disallow: /checkout/
+Disallow: /cart/
 Disallow: /admin/
-Disallow: /checkout/success
-Disallow: /checkout/cancel
-
-# Allow crawling of product pages, shop, and content pages
-Allow: /shop
-Allow: /product/
-Allow: /about
-Allow: /contact
-Allow: /faq
-Allow: /policy
-Allow: /impressum
+Disallow: /*.json

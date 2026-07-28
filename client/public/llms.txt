@@ -1,0 +1,90 @@
+# Zolto — Multi-Tenant POS + E-Commerce Platform for Artisan Sellers
+
+Zolto is an open-source, self-hosted platform for independent makers, artisans, and small boutiques to run modern online stores and in-person point-of-sale systems. Built from first-hand experience operating a jewelry store in Zurich.
+
+## What Zolto Does
+
+Zolto is a complete business platform for artisan sellers with:
+
+- **Online Store**: Product catalogs, shopping cart, secure checkout with Stripe Cards & TWINT (Switzerland)
+- **POS System**: iOS/Android Tap to Pay, cash register, TWINT QR payments
+- **AI Tools**: Bulk product creation from photos, Discord bot for inventory sync
+- **Admin Dashboard**: Real-time inventory, sales analytics, staff management, customer insights
+- **Multi-Tenant**: Each seller gets their own branded storefront at custom domain or subdomain
+- **Open Source**: Self-hosted on your own infrastructure (Docker, Caddy, MySQL)
+
+## Key Features
+
+- **Payment Options**: Stripe integration (cards worldwide), native TWINT support (Swiss payments)
+- **Inventory Management**: Real-time sync between online store and POS
+- **Analytics**: Sales tracking, customer behavior, popular products
+- **Customizable**: White-label, custom branding, domain ownership
+- **Mobile First**: Native iOS & Android apps for POS, responsive web store
+- **Data Ownership**: All data stays on your infrastructure
+- **AI-Powered**: Auto-generate product descriptions and photos from uploads
+- **Discord Integration**: Automated inventory alerts and order notifications
+
+## Who It's For
+
+- Jewelry designers & craftspeople
+- Boutique owners
+- Artisan makers (ceramics, textiles, crafts)
+- Small retail businesses
+- Independent creators who want control over their data & branding
+
+## Technology Stack
+
+- **Frontend**: React 19, Tailwind CSS 4, TypeScript
+- **Backend**: Express.js, tRPC 11, Drizzle ORM
+- **Database**: MySQL
+- **Infrastructure**: Docker, Caddy, self-hosted
+- **Mobile**: React Native (iOS/Android)
+- **Payments**: Stripe API, TWINT integration
+
+## Pricing
+
+Zolto is offered as:
+- **Self-Hosted**: Deploy on your own server (free/open-source)
+- **Managed Hosting**: Zolto-hosted option with automatic updates and support
+
+Visit https://zolto.ch/pricing for current options.
+
+## Getting Started
+
+1. Visit https://zolto.ch/signup to create your seller account
+2. Set up your store branding and products
+3. Choose payment methods (Stripe, TWINT, cash)
+4. Deploy POS app to your phone or use web checkout
+5. Start selling
+
+For detailed setup guides, see https://zolto.ch/docs
+
+## Key Pages
+
+- **Homepage**: https://zolto.ch
+- **Pricing**: https://zolto.ch/pricing
+- **Blog**: https://zolto.ch/blog
+- **Stories & Case Studies**: https://zolto.ch/stories
+- **Privacy Policy**: https://zolto.ch/legal/privacy
+- **Terms of Service**: https://zolto.ch/legal/terms
+- **Documentation**: https://zolto.ch/docs
+
+## Philosophy
+
+Zolto is built on the belief that artisan sellers deserve modern tools that:
+- Respect data ownership (self-hosted)
+- Support multiple payment methods (especially local ones like TWINT)
+- Work offline and online seamlessly
+- Are designed by people who actually run stores, not just theoretically
+
+Every feature is informed by real-world use at Kalakosh, our jewelry store in Zurich.
+
+## Contact
+
+- **Website**: https://zolto.ch
+- **Email**: hello@zolto.ch
+- **GitHub**: https://github.com/ankurgupta7/zolto (open-source)
+
+## Open Source
+
+Zolto is fully open-source (GitHub: ankurgupta7/zolto) and available for self-hosting, community contributions, and forks.
