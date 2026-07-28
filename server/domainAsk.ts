@@ -33,20 +33,9 @@ import {
   getTenantBySlug,
 } from "./db";
 import { PLAN_FEATURES, type PlanId } from "./_core/trpc";
+import { getPlatformRootDomain } from "./_core/platformDomain";
 
 const HOSTNAME_RE = /^[a-z0-9]+(-[a-z0-9]+)*(\.[a-z0-9]+(-[a-z0-9]+)*)+$/;
-
-function platformRootDomain(): string {
-  const base = process.env.PUBLIC_BASE_URL?.trim();
-  if (base) {
-    try {
-      return new URL(base).hostname.toLowerCase();
-    } catch {
-      // fall through to SITE_DOMAIN
-    }
-  }
-  return (process.env.SITE_DOMAIN ?? "").toLowerCase();
-}
 
 export function registerDomainAsk(app: Express): void {
   app.get("/api/domain-ask", async (req: Request, res: Response) => {
@@ -56,7 +45,7 @@ export function registerDomainAsk(app: Express): void {
       return;
     }
     try {
-      const root = platformRootDomain();
+      const root = getPlatformRootDomain();
       if (root && domain.endsWith(`.${root}`)) {
         const slug = domain.slice(0, -(root.length + 1));
         if (!slug || slug === "www" || slug.includes(".")) {

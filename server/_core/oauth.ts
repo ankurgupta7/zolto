@@ -21,26 +21,58 @@ import { SignJWT, jwtVerify } from "jose";
 import { parse as parseCookieHeader } from "cookie";
 import * as db from "../db";
 import { getSessionCookieOptions } from "./cookies";
+import { getPlatformRootDomain } from "./platformDomain";
 
 // Cookie that carries the post-login redirect target across the OAuth round-trip
 // (set on /login, consumed on /callback). Kept separate from the session cookie.
 const NEXT_COOKIE = "oauth_next";
 
+function isSafeNextString(raw: unknown): raw is string {
+  if (typeof raw !== "string") return false;
+  if (raw.length === 0 || raw.length > 512) return false;
+  // No control chars or whitespace (defends against header/redirect smuggling).
+  for (let i = 0; i < raw.length; i++) {
+    if (raw.charCodeAt(i) <= 0x20) return false;
+  }
+  return true;
+}
+
 // Validate a post-login redirect target. Only same-origin absolute paths are
 // allowed, so a crafted `?next=` can't turn login into an open redirect to an
 // attacker's site. Returns the safe path or null.
 export function sanitizeNextPath(raw: unknown): string | null {
-  if (typeof raw !== "string") return null;
-  if (raw.length === 0 || raw.length > 512) return null;
+  if (!isSafeNextString(raw)) return null;
   // Must start with a single "/" (a rooted path), never "//" or "/\" (which
   // browsers treat as protocol-relative → another origin).
   if (!raw.startsWith("/")) return null;
   if (raw.startsWith("//") || raw.startsWith("/\\")) return null;
-  // No control chars or whitespace (defends against header/redirect smuggling).
-  for (let i = 0; i < raw.length; i++) {
-    if (raw.charCodeAt(i) <= 0x20) return null;
-  }
   return raw;
+}
+
+// Like sanitizeNextPath, but also allows an absolute https URL when it points
+// at the platform's own root domain or one of its tenant subdomains. Needed
+// because OAuth always round-trips through one canonical host (see
+// getRedirectUri below) — a tenant admin signing in from blah.zolto.ch needs
+// to land back on blah.zolto.ch, not the canonical host's homepage, and that
+// return target is a different origin than the callback itself. Still never
+// allows redirecting to an unrelated host.
+export function sanitizeNextTarget(
+  raw: unknown,
+  rootDomain: string | null,
+): string | null {
+  const relative = sanitizeNextPath(raw);
+  if (relative) return relative;
+  if (!isSafeNextString(raw) || !rootDomain) return null;
+  let url: URL;
+  try {
+    url = new URL(raw);
+  } catch {
+    return null;
+  }
+  if (url.protocol !== "https:") return null;
+  const host = url.hostname.toLowerCase();
+  if (host !== rootDomain && !host.endsWith(`.${rootDomain}`)) return null;
+  return `${url.origin}${url.pathname}${url.search}`;
 }
 
 // ── Config ────────────────────────────────────────────────────────────────────
@@ -63,8 +95,23 @@ function getConfig() {
   return { clientId, clientSecret, adminEmail, jwtSecret };
 }
 
+// Google requires an exact, pre-registered redirect_uri — no wildcard
+// subdomains. So the OAuth round-trip always uses ONE canonical origin
+// (PUBLIC_BASE_URL, set in every deploy mode), never the request's own host —
+// otherwise every tenant subdomain (blah.zolto.ch) would need its own entry
+// in Google Cloud Console's authorized redirect URIs, which doesn't scale for
+// a self-serve multi-tenant app. Falls back to the request's own origin only
+// when PUBLIC_BASE_URL isn't configured (e.g. a single-host self-hosted
+// deploy that hasn't set it).
 function getRedirectUri(req: Request): string {
-  // Support X-Forwarded-Proto for reverse proxies (Caddy)
+  const base = process.env.PUBLIC_BASE_URL?.trim();
+  if (base) {
+    try {
+      return `${new URL(base).origin}/api/oauth/callback`;
+    } catch {
+      // fall through to the request-derived origin
+    }
+  }
   const proto = req.headers["x-forwarded-proto"] ?? req.protocol ?? "https";
   const host = req.headers["x-forwarded-host"] ?? req.headers.host ?? "";
   return `${proto}://${host}/api/oauth/callback`;
@@ -177,15 +224,19 @@ export function registerOAuthRoutes(app: Express) {
     }
 
     // Remember where to send the user back after login (e.g. the signup claim
-    // page). Stashed in a short-lived cookie and consumed on the callback.
-    const next = sanitizeNextPath(req.query.next);
+    // page, or a tenant's own admin subdomain). Stashed in a short-lived
+    // cookie and consumed on the callback. The cookie itself is scoped by
+    // getSessionCookieOptions, which widens its domain across the platform's
+    // subdomains when applicable, so it survives the hop from a tenant
+    // subdomain to the canonical host the callback runs on.
+    const next = sanitizeNextTarget(req.query.next, getPlatformRootDomain());
     if (next) {
       res.cookie(NEXT_COOKIE, next, {
         ...getSessionCookieOptions(req),
         maxAge: 10 * 60 * 1000, // 10 minutes — just long enough to finish OAuth
       });
     } else {
-      res.clearCookie(NEXT_COOKIE);
+      res.clearCookie(NEXT_COOKIE, getSessionCookieOptions(req));
     }
 
     const redirectUri = getRedirectUri(req);
@@ -263,12 +314,16 @@ export function registerOAuthRoutes(app: Express) {
         maxAge: ONE_YEAR_MS,
       });
 
-      // Send the user back where they started (the claim page), if a safe next
-      // was stashed on login; otherwise the platform admin lands on /admin and a
-      // fresh self-serve user on the home page.
+      // Send the user back where they started (the claim page, or their own
+      // tenant subdomain), if a safe next was stashed on login; otherwise the
+      // platform admin lands on /admin and a fresh self-serve user on the
+      // home page.
       const cookies = parseCookieHeader(req.headers.cookie ?? "");
-      const next = sanitizeNextPath(cookies[NEXT_COOKIE]);
-      res.clearCookie(NEXT_COOKIE);
+      const next = sanitizeNextTarget(
+        cookies[NEXT_COOKIE],
+        getPlatformRootDomain(),
+      );
+      res.clearCookie(NEXT_COOKIE, getSessionCookieOptions(req));
       res.redirect(302, next ?? (isPlatformAdmin ? "/admin" : "/"));
     } catch (err) {
       console.error("[GoogleOAuth] Callback error:", err);

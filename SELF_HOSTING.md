@@ -397,7 +397,7 @@ whenever you suspect a payment is missing.
 | `S3_PUBLIC_URL`               | No       | Public CDN base URL for serving images                                                                      |
 | `STRIPE_SECRET_KEY`           | No       | Stripe secret key — enables card & TWINT checkout                                                           |
 | `STRIPE_WEBHOOK_SECRET`       | No       | Signing secret for `/api/stripe/webhook`                                                                    |
-| `PUBLIC_BASE_URL`             | No       | Canonical site URL for Stripe success/cancel redirects                                                      |
+| `PUBLIC_BASE_URL`             | No       | Canonical site URL — Stripe redirects, Google OAuth's redirect_uri, and recognizing tenant subdomains all key off this |
 | `POS_API_KEY`                 | No       | Shared secret for the POS apps — Android and iOS (generate with `openssl rand -hex 32`)                     |
 | `STRIPE_POS_WEBHOOK_SECRET`   | No       | Signing secret for `/api/pos/webhook`                                                                       |
 | `STRIPE_LOCATION_ID`          | No       | Stripe Terminal Location ID served to POS apps at runtime via `GET /api/pos/config` — not baked into builds |
@@ -408,6 +408,8 @@ whenever you suspect a payment is missing.
 | `BACKUP_S3_ENDPOINT`          | No       | Endpoint for secondary backup provider (e.g. Backblaze B2)                                                  |
 | `BACKUP_GITHUB_REPO`          | No       | Private GitHub repo for weekly SQL + CSV backup commits                                                     |
 | `BACKUP_GITHUB_TOKEN`         | No       | Fine-grained PAT with Contents: Read & Write for the backup repo                                            |
+
+`PUBLIC_BASE_URL` is technically optional (a single-host deploy without it still works, deriving everything from the incoming request), but strongly recommended once tenant subdomains are in play — see the troubleshooting entry below.
 
 ---
 
@@ -430,6 +432,12 @@ Almost always one of:
 - No wildcard DNS record. An `A` record for the apex (`zolto.ch`) does **not** cover subdomains — you also need `*.zolto.ch` pointing at the server IP (see Step 7).
 - `blah` isn't an actual tenant slug yet, or the tenant record hasn't propagated to the DB the app is reading. Caddy's on-demand TLS refuses to mint a cert for hostnames `/api/domain-ask` doesn't recognize — check `docker compose logs app` for `[DomainAsk]` lines, or ask the endpoint directly: `docker compose exec app curl -s "http://localhost:3000/api/domain-ask?domain=blah.zolto.ch" -o /dev/null -w '%{http_code}\n'` (200 = tenant found, 404 = no such slug).
 - DNS hasn't propagated yet after adding the wildcard record — give it a few minutes and retry.
+
+**"Error 400: redirect_uri_mismatch" signing in with Google on a tenant subdomain (e.g. `blah.zolto.ch`)**
+Google OAuth requires an exact, pre-registered redirect URI and doesn't support wildcard subdomains, so the app always routes the OAuth round-trip through **`PUBLIC_BASE_URL`'s own host** — never whichever tenant subdomain the merchant started from. This error means that host mismatch is happening anyway, which points to `PUBLIC_BASE_URL` not being set (or set wrong) in `.env`:
+- Set `PUBLIC_BASE_URL=https://zolto.ch` (or `https://zolto.kalakosh.ch` if running alongside Kalakosh-ch) and restart the app.
+- Confirm Google Cloud Console's Authorized redirect URIs list contains exactly `https://<PUBLIC_BASE_URL host>/api/oauth/callback` — one entry covers every tenant, current and future.
+- The tenant is then redirected back to their own subdomain automatically after login (the session cookie is scoped to the whole `*.zolto.ch` family once `PUBLIC_BASE_URL` is set, not just the one host that issued it).
 
 **Discord bot not connecting**
 Verify `DISCORD_BOT_TOKEN` is correct and the bot has been added to your server with **Message Content Intent** enabled.

@@ -880,7 +880,7 @@ export default function Admin() {
             Please sign in to access the admin panel.
           </p>
           <a
-            href={getLoginUrl()}
+            href={getLoginUrl(window.location.href)}
             className="inline-flex items-center gap-2 bg-[var(--brand-ink)] text-white px-8 py-3.5 text-sm uppercase tracking-[0.15em] font-sans hover:bg-[var(--brand-ink-hover)] transition-colors"
           >
             Sign In

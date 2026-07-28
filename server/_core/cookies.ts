@@ -1,12 +1,5 @@
 import type { CookieOptions, Request } from "express";
-
-const _LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "::1"]);
-
-function _isIpAddress(host: string) {
-  // Basic IPv4 check and IPv6 presence detection.
-  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(host)) return true;
-  return host.includes(":");
-}
+import { getPlatformRootDomain, isPlatformHost } from "./platformDomain";
 
 function isSecureRequest(req: Request) {
   if (req.protocol === "https") return true;
@@ -21,25 +14,30 @@ function isSecureRequest(req: Request) {
   return protoList.some((proto) => proto.trim().toLowerCase() === "https");
 }
 
+function requestHostname(req: Request): string | undefined {
+  const forwarded = req.headers["x-forwarded-host"];
+  const raw = (Array.isArray(forwarded) ? forwarded[0] : forwarded) ?? req.headers.host;
+  return raw?.split(":")[0].toLowerCase();
+}
+
+/**
+ * Session cookie options. On the platform's own domain (zolto.ch, or
+ * zolto.kalakosh.ch alongside Kalakosh-ch) and its tenant subdomains, the
+ * cookie domain is widened to `.{root}` so a session established on one host
+ * (e.g. the canonical host Google OAuth redirects back to) is also valid on
+ * every tenant subdomain — see oauth.ts's cross-subdomain login flow. Tenant
+ * custom domains (shop.example.com) and local dev fall back to a host-only
+ * cookie, since widening to a foreign domain isn't possible (or meaningful).
+ */
 export function getSessionCookieOptions(
   req: Request,
 ): Pick<CookieOptions, "domain" | "httpOnly" | "path" | "sameSite" | "secure"> {
-  // const hostname = req.hostname;
-  // const shouldSetDomain =
-  //   hostname &&
-  //   !LOCAL_HOSTS.has(hostname) &&
-  //   !isIpAddress(hostname) &&
-  //   hostname !== "127.0.0.1" &&
-  //   hostname !== "::1";
-
-  // const domain =
-  //   shouldSetDomain && !hostname.startsWith(".")
-  //     ? `.${hostname}`
-  //     : shouldSetDomain
-  //       ? hostname
-  //       : undefined;
+  const root = getPlatformRootDomain();
+  const hostname = requestHostname(req);
+  const domain = isPlatformHost(hostname, root) ? `.${root}` : undefined;
 
   return {
+    domain,
     httpOnly: true,
     path: "/",
     sameSite: "none",
