@@ -289,8 +289,8 @@ export const tenantRouter = router({
 
   // ─── Admin: Update tenant settings ────────────────────────────────────────
   // Paid-tier fields are gated by the tenant's plan (PLAN_FEATURES):
-  //   publicDomain — custom domain, from the Maker plan up
-  //   currency     — anything other than CHF needs multi-currency (Studio up)
+  //   publicDomain — custom domain, Pro plan
+  //   currency     — anything other than CHF needs multi-currency (Pro plan)
   // The checks live inline (not as middleware) because the same procedure also
   // accepts ungated branding fields on every plan.
   updateSettings: publicProcedure
@@ -338,7 +338,7 @@ export const tenantRouter = router({
         throw new TRPCError({
           code: "FORBIDDEN",
           message:
-            "A custom domain requires the Maker plan or above. Please upgrade.",
+            "A custom domain requires the Pro plan. Please upgrade.",
         });
       }
       if (
@@ -349,7 +349,7 @@ export const tenantRouter = router({
         throw new TRPCError({
           code: "FORBIDDEN",
           message:
-            "Multi-currency checkout requires the Studio plan or above. Please upgrade.",
+            "Multi-currency checkout requires the Pro plan. Please upgrade.",
         });
       }
 

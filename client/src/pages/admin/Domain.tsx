@@ -1,5 +1,5 @@
 /**
- * Domain (store plane, Maker+) — connect a custom domain to the storefront.
+ * Domain (store plane, Pro) — connect a custom domain to the storefront.
  * tenant.domainStatus does a live DNS check for whether the saved domain's
  * CNAME points at the platform; Caddy's on-demand TLS issues a cert once it
  * does. Plan-gated: the server rejects publicDomain on Free, so we upsell.
@@ -46,7 +46,7 @@ export default function Domain() {
           title="Domain"
           description="Use your own web address for your storefront."
         />
-        <PlanGate requiredPlan="maker" feature="A custom domain" />
+        <PlanGate requiredPlan="pro" feature="A custom domain" />
       </div>
     );
   }

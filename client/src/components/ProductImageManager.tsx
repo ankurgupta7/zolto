@@ -42,14 +42,26 @@ export default function ProductImageManager({ productId, productName }: Props) {
   const { data: billingStatus } = trpc.billing.getStatus.useQuery(undefined, {
     enabled: expanded,
   });
-  const creditBalance = billingStatus?.photoCredits.balance ?? null;
+  // null = unmetered (Pro); a number = shots left this month (Free allowance).
+  const remaining =
+    billingStatus == null || billingStatus.ai.allowancePerMonth === null
+      ? null
+      : Math.max(
+          0,
+          billingStatus.ai.allowancePerMonth -
+            (billingStatus.ai.usedThisMonth ?? 0),
+        );
 
   const aiPhotoMutation = trpc.billing.generateProductPhoto.useMutation({
-    onSuccess: ({ balance }) => {
+    onSuccess: ({ remainingThisMonth }) => {
       utils.products.getImages.invalidate({ productId });
       utils.billing.getStatus.invalidate();
       utils.billing.photoCreditHistory.invalidate();
-      toast.success(`AI photo added — ${balance} credits left`);
+      toast.success(
+        remainingThisMonth === null
+          ? "AI photo added"
+          : `AI photo added — ${remainingThisMonth} left this month`,
+      );
     },
     onError: (err) => toast.error(err.message),
   });
@@ -182,15 +194,16 @@ export default function ProductImageManager({ productId, productName }: Props) {
             </p>
           )}
 
-          {/* AI photo generation — 1 credit per image, uses the product's
-              main photo as the source (see server/photoCredits.ts). */}
+          {/* AI photo generation — unmetered on Pro, monthly allowance on
+              Free; uses the product's main photo as the source
+              (see server/photoCredits.ts). */}
           <div className="mt-3 pt-3 border-t border-[var(--brand-border)]">
             <p className="text-xs font-sans text-muted-foreground mb-2 flex items-center gap-1.5">
               <Sparkles size={12} className="text-[var(--brand-accent)]" />
               Restyle the main photo with AI
-              {creditBalance !== null && (
+              {remaining !== null && (
                 <span className="ml-auto">
-                  {creditBalance} credit{creditBalance === 1 ? "" : "s"} left
+                  {remaining} shot{remaining === 1 ? "" : "s"} left this month
                 </span>
               )}
             </p>
@@ -208,15 +221,15 @@ export default function ProductImageManager({ productId, productName }: Props) {
               </select>
               <button
                 type="button"
-                disabled={aiPhotoMutation.isPending || creditBalance === 0}
+                disabled={aiPhotoMutation.isPending || remaining === 0}
                 onClick={() =>
                   aiPhotoMutation.mutate({ productId, stylePrompt: aiStyle })
                 }
                 className="flex items-center gap-1.5 text-xs uppercase tracking-[0.12em] font-sans border border-[var(--brand-accent)]/40 text-[var(--brand-accent)] px-3 py-1.5 hover:bg-[var(--brand-surface)] transition-colors disabled:opacity-50"
                 title={
-                  creditBalance === 0
-                    ? "No AI photo credits left — top up under Plan & Billing"
-                    : "Generate an AI-styled image (uses 1 credit)"
+                  remaining === 0
+                    ? "Monthly AI photo allowance used — upgrade to Pro for unmetered AI"
+                    : "Generate an AI-styled image"
                 }
               >
                 {aiPhotoMutation.isPending ? (
@@ -224,16 +237,16 @@ export default function ProductImageManager({ productId, productName }: Props) {
                 ) : (
                   <Sparkles size={12} />
                 )}
-                Generate (1 credit)
+                Generate
               </button>
             </div>
-            {creditBalance === 0 && (
+            {remaining === 0 && (
               <p className="text-xs font-sans text-muted-foreground mt-1.5">
-                Out of credits — top up under{" "}
+                Allowance used for this month — upgrade to Pro under{" "}
                 <a href="/admin/billing" className="underline">
                   Plan &amp; Billing
-                </a>
-                .
+                </a>{" "}
+                for unmetered AI.
               </p>
             )}
             <p className="text-[10px] font-sans text-muted-foreground/70 mt-1.5">

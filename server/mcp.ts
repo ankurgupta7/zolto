@@ -8,7 +8,8 @@ import {
   PLANS,
   FAQS,
   HOW_TO_START,
-  AI_PHOTO_CREDITS,
+  REVENUE_SHARE,
+  PRO_BREAK_EVEN_ONLINE_CHF,
 } from "@shared/platform";
 import { getVisibleProducts, getVisibleProductById } from "./db";
 import { resolveBaseUrl } from "./seo";
@@ -263,19 +264,19 @@ function runPlatformTool(name: string, ctx: McpContext) {
           id: p.id,
           name: p.name,
           pricePerMonth: p.priceChf,
-          includedPhotoCredits: p.includedPhotoCredits,
+          onlineFeePercent: p.onlineFeeBps / 100,
+          aiPhotoAllowancePerMonth: p.aiPhotoAllowancePerMonth,
+          maxProducts: p.maxProducts,
+          storageGb: p.storageGb,
           includes: p.features,
         })),
-        addOns: [
-          {
-            id: AI_PHOTO_CREDITS.id,
-            name: AI_PHOTO_CREDITS.name,
-            price: AI_PHOTO_CREDITS.priceChf,
-            unit: AI_PHOTO_CREDITS.unit,
-            billing: "pay-as-you-go, credits never expire",
-            description: AI_PHOTO_CREDITS.blurb,
-          },
-        ],
+        platformFee: {
+          percent: REVENUE_SHARE.freeBps / 100,
+          appliesTo: REVENUE_SHARE.appliesTo,
+          inPerson: "0% — in-person sales are never charged by Zolto",
+          removedBy: "the Pro plan",
+          proBreakEvenOnlineChfPerMonth: PRO_BREAK_EVEN_ONLINE_CHF,
+        },
         pricingUrl: `${base}/pricing`,
       });
     case "how_to_start":

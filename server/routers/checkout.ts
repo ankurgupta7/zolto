@@ -14,6 +14,7 @@ import {
   PRODUCT_RESERVATION_TTL_MS,
 } from "../db";
 import { fulfillOrder, getStripe, isStripeConfigured } from "../stripe";
+import { PLANS, REVENUE_SHARE } from "@shared/platform";
 
 // ─── Checkout router ────────────────────────────────────────────────────────
 
@@ -56,11 +57,18 @@ const FREE_SHIPPING_THRESHOLD_RAPPEN = 5000; // CHF 50.00
 const CH_FLAT_SHIPPING_FEE_RAPPEN = 800; // CHF 8.00
 const EU_FLAT_SHIPPING_FEE_RAPPEN = 1500; // CHF 15.00
 
-// [PLACEHOLDER] Zolto's cut of each direct charge, in the smallest currency
-// unit (Rappen). Kept at 0 to honor the "we take no cut" promise in
-// docs/planning/phase1/marketing/pricing-page-copy.md — change this (and that
-// doc) together if the platform ever starts monetizing storefront checkout.
-const PLATFORM_APPLICATION_FEE_RAPPEN = 0;
+// Zolto's platform fee on ONLINE + AGENT-originated orders, per the pricing
+// pivot (docs/planning/pricing-pivot-agent-commerce.md): Free-plan tenants
+// pay REVENUE_SHARE.freeBps (1%) as a Stripe Connect application fee on the
+// direct charge; Pro removes it. Computed on the product subtotal only —
+// never on shipping — and in-person POS sales never carry a fee
+// (server/pos.ts). An unknown plan value bills like Free, matching the DB
+// default.
+function platformFeeRappen(plan: string, subtotalRappen: number): number {
+  const bps =
+    PLANS.find((p) => p.id === plan)?.onlineFeeBps ?? REVENUE_SHARE.freeBps;
+  return Math.round((subtotalRappen * bps) / 10_000);
+}
 
 // Deliberately does NOT trust client-supplied origin (request body or Origin
 // header) — those are attacker-controllable and would let a direct API
@@ -89,6 +97,11 @@ export const checkoutRouter = router({
     .input(
       z.object({
         productIds: z.array(z.number().int().positive()).min(1).max(50),
+        // Sales-channel attribution: "agent" when the cart was assembled by
+        // an AI agent (store chat / MCP), "web" for the normal storefront.
+        // Both are "online" for fee purposes; the split feeds the pivot's
+        // north-star metric (vendors with ≥1 online/agent sale per month).
+        channel: z.enum(["web", "agent"]).default("web"),
       }),
     )
     .mutation(async ({ input, ctx }) => {
@@ -121,7 +134,7 @@ export const checkoutRouter = router({
       }
 
       // Prices and shipping are charged in the tenant's own currency
-      // (tenantSettings.currency; multi-currency is a Studio plan feature,
+      // (tenantSettings.currency; multi-currency is a Pro plan feature,
       // gated in tenant.updateSettings). Stripe wants lowercase ISO.
       const tenantSettings = await getTenantSettings(tenantId);
       const currency = (tenantSettings?.currency || "chf").toLowerCase();
@@ -203,12 +216,16 @@ export const checkoutRouter = router({
           ? 0
           : CH_FLAT_SHIPPING_FEE_RAPPEN;
 
+      // Zolto's cut of this direct charge (1% of the product subtotal for
+      // Free-plan tenants, 0 for Pro — see platformFeeRappen above).
+      const feeRappen = platformFeeRappen(ctx.tenant.plan, subtotalRappen);
+
       // The second argument's `stripeAccount` runs this call on the tenant's
       // own connected Standard account (a "direct charge") using Zolto's
       // platform key — funds settle straight to the tenant, no raw tenant
       // Stripe key ever touches Zolto's servers. application_fee_amount
       // (below, in payment_intent_data) is the platform's cut of that direct
-      // charge — pinned to 0 (see PLATFORM_APPLICATION_FEE_RAPPEN above).
+      // charge; it is omitted entirely when the fee is 0 (Pro plan).
       //
       // Wrapped so a Stripe/DB failure after the reservation above doesn't
       // leave a phantom hold on these pieces until it times out on its own.
@@ -276,11 +293,14 @@ export const checkoutRouter = router({
               statement_descriptor: (ctx.tenant.name || "ZOLTO STORE")
                 .slice(0, 22)
                 .toUpperCase(),
-              application_fee_amount: PLATFORM_APPLICATION_FEE_RAPPEN,
+              ...(feeRappen > 0 ? { application_fee_amount: feeRappen } : {}),
             },
             success_url: `${baseUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
             cancel_url: `${baseUrl}/checkout/cancel`,
-            metadata: { productIds: uniqueIds.join(",") },
+            metadata: {
+              productIds: uniqueIds.join(","),
+              channel: input.channel,
+            },
             // Matches the reservation TTL above (30 min, Stripe's own minimum
             // for expires_at) so the hold on these pieces never outlives the
             // session that placed it.
@@ -302,6 +322,8 @@ export const checkoutRouter = router({
           amountTotal,
           currency,
           productIds: uniqueIds.join(","),
+          channel: input.channel,
+          platformFeeRappen: feeRappen,
         });
 
         return { url: session.url, sessionId: session.id };

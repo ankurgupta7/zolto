@@ -14,7 +14,9 @@ const testRouter = router({
   domainGated: publicProcedure
     .use(checkFeature("customDomain"))
     .query(() => "ok"),
-  ssoGated: publicProcedure.use(checkFeature("sso")).query(() => "ok"),
+  multiCurrencyGated: publicProcedure
+    .use(checkFeature("multiCurrency"))
+    .query(() => "ok"),
 });
 
 function ctx(overrides: Partial<TrpcContext> = {}): TrpcContext {
@@ -66,24 +68,20 @@ describe("requireTenant", () => {
 
 describe("checkFeature", () => {
   it("allows a plan that includes the feature", async () => {
-    const caller = testRouter.createCaller(ctx({ tenant: tenant("maker") }));
+    const caller = testRouter.createCaller(ctx({ tenant: tenant("pro") }));
     expect(await caller.domainGated()).toBe("ok");
   });
 
-  it("suggests upgrading to Maker from the free plan", async () => {
+  it("suggests upgrading to Pro from the free plan", async () => {
     const caller = testRouter.createCaller(ctx({ tenant: tenant("free") }));
-    await expect(caller.domainGated()).rejects.toThrow(/Maker plan/);
+    await expect(caller.domainGated()).rejects.toThrow(/Pro plan/);
   });
 
-  it("suggests Atelier when a mid-tier plan lacks the feature", async () => {
-    const caller = testRouter.createCaller(ctx({ tenant: tenant("studio") }));
-    await expect(caller.ssoGated()).rejects.toThrow(/Atelier plan/);
-  });
-
-  it("gives a plain message on the top plan", async () => {
-    // Atelier has no upgrade path, so the error doesn't name a next plan.
-    const caller = testRouter.createCaller(ctx({ tenant: tenant("atelier") }));
-    expect(await caller.ssoGated()).toBe("ok");
+  it("gates multi-currency to Pro as well", async () => {
+    const caller = testRouter.createCaller(ctx({ tenant: tenant("free") }));
+    await expect(caller.multiCurrencyGated()).rejects.toThrow(/Pro plan/);
+    const pro = testRouter.createCaller(ctx({ tenant: tenant("pro") }));
+    expect(await pro.multiCurrencyGated()).toBe("ok");
   });
 
   it("fails without a tenant context", async () => {

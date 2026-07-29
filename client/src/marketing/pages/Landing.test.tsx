@@ -37,9 +37,11 @@ describe("Landing", () => {
     renderLanding();
     // The comparison section calls out the legacy players by name…
     expect(screen.getByText(/Stripe, SumUp and Worldline/i)).toBeTruthy();
-    // …and the pricing pledge ("never charge for anything not charged to us").
+    // …and the pricing pledge (free in person; fee only online).
     // Appears in both the pledge card and the comparison table row.
-    expect(screen.getAllByText(/never charge/i).length).toBeGreaterThan(0);
+    expect(
+      screen.getAllByText(/selling in person is free/i).length,
+    ).toBeGreaterThan(0);
   });
 
   it("shows the scan → tap → reconcile selling loop", () => {

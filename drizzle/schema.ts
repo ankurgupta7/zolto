@@ -21,10 +21,9 @@ export const tenants = mysqlTable("tenants", {
   name: varchar("name", { length: 255 }).notNull(),
   domain: varchar("domain", { length: 255 }), // custom domain or null
   // Plan ids match the marketing source of truth (shared/platform.ts PLANS):
-  // free / maker / studio / atelier. Signup defaults to "free".
-  plan: mysqlEnum("plan", ["free", "maker", "studio", "atelier"])
-    .default("free")
-    .notNull(),
+  // free / pro. Signup defaults to "free". Free carries the 1% platform fee
+  // on online/agent orders; Pro removes it (see PLANS[].onlineFeeBps).
+  plan: mysqlEnum("plan", ["free", "pro"]).default("free").notNull(),
   stripeCustomerId: varchar("stripe_customer_id", { length: 255 }),
   stripeSubscriptionId: varchar("stripe_subscription_id", { length: 255 }),
   // Stripe Connect (Standard) account for THIS tenant's own storefront
@@ -261,6 +260,13 @@ export const orders = mysqlTable("orders", {
   currency: varchar("currency", { length: 10 }).default("chf").notNull(),
   productIds: varchar("productIds", { length: 512 }).notNull(),
   paymentMethod: varchar("paymentMethod", { length: 32 }),
+  // Sales channel: "web" (storefront) or "agent" (AI-agent-originated, e.g.
+  // store chat / MCP). In-person sales live in posOrders, so together the
+  // three channels are cleanly separable — the pivot's north-star metric.
+  channel: mysqlEnum("channel", ["web", "agent"]).default("web").notNull(),
+  // Zolto's platform fee (Stripe Connect application fee) taken on this
+  // order, in Rappen. 0 on the Pro plan and for pre-pivot orders.
+  platformFeeRappen: int("platform_fee_rappen").default(0).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

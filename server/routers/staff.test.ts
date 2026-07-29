@@ -30,7 +30,7 @@ const tenant = {
   id: 42,
   slug: "aurora",
   name: "Aurora",
-  plan: "maker",
+  plan: "pro",
 } as never;
 const admin = {
   id: 1,
@@ -62,7 +62,7 @@ describe("staff.list", () => {
   it("returns roster, invites, and seat usage vs the plan", async () => {
     const caller = staffRouter.createCaller(ctx());
     const res = await caller.list();
-    expect(res.seatLimit).toBe(3); // maker
+    expect(res.seatLimit).toBe(3); // pro
     expect(res.seatsUsed).toBe(1);
     expect(res.staff[0].email).toBe("o@a.example");
   });
@@ -169,7 +169,7 @@ describe("staff.claimInvite", () => {
 
   it("moves the caller onto the tenant as staff", async () => {
     dbMock.getStaffInviteByToken.mockResolvedValue(invite);
-    dbMock.getTenantById.mockResolvedValue(tenant); // maker, 3 seats
+    dbMock.getTenantById.mockResolvedValue(tenant); // pro, 3 seats
     dbMock.countTenantStaff.mockResolvedValue(2);
     const res = await staffRouter
       .createCaller(ctx(newUser, null))

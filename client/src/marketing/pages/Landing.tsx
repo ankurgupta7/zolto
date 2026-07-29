@@ -322,8 +322,8 @@ export default function Landing() {
             Your store, live this week.
           </h2>
           <p className="mt-4 text-white/70">
-            Free to start. 14-day trial on paid plans. No card required to
-            explore — and no card reader, ever.
+            Free to sell in person, forever. 14-day trial on Pro. No card
+            required to explore — and no card reader, ever.
           </p>
           <Link
             href="/signup"

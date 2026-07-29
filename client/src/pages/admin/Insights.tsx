@@ -1,7 +1,7 @@
 /**
- * Insights (store plane, Studio+) — a stats dashboard for the last 30 days plus
+ * Insights (store plane, Pro) — a stats dashboard for the last 30 days plus
  * an on-demand AI narrative. Stats come from insights.summary (available on any
- * plan); the narrative is insights.narrative, which the server gates to Studio+
+ * plan); the narrative is insights.narrative, which the server gates to Pro
  * advanced analytics — a FORBIDDEN there renders the upsell rather than an error.
  */
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -134,7 +134,7 @@ export default function Insights() {
             description="A written read on what's selling and what to change next."
           >
             {narrativeForbidden ? (
-              <PlanGate requiredPlan="studio" feature="AI insights" />
+              <PlanGate requiredPlan="pro" feature="AI insights" />
             ) : narrative.data ? (
               <p className="whitespace-pre-line text-sm leading-relaxed text-foreground">
                 {narrative.data.narrative}

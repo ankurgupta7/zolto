@@ -64,7 +64,7 @@ describe("insights.summary", () => {
 
   it("defaults the currency to chf when no settings exist", async () => {
     dbMock.getTenantSettings.mockResolvedValue(null);
-    await insightsRouter.createCaller(ctx("maker")).summary();
+    await insightsRouter.createCaller(ctx("free")).summary();
     expect(insightsMock.computeInsights).toHaveBeenCalledWith(42, "chf");
   });
 });
@@ -73,18 +73,18 @@ describe("insights.narrative", () => {
   it("is FORBIDDEN on the free plan (basic analytics)", async () => {
     await expect(
       insightsRouter.createCaller(ctx("free")).narrative(),
-    ).rejects.toThrow(/Studio plan/);
+    ).rejects.toThrow(/Pro plan/);
     expect(insightsMock.generateInsightsNarrative).not.toHaveBeenCalled();
   });
 
-  it("is FORBIDDEN on the maker plan (basic analytics)", async () => {
+  it("is FORBIDDEN on the free plan (basic analytics)", async () => {
     await expect(
-      insightsRouter.createCaller(ctx("maker")).narrative(),
-    ).rejects.toThrow(/Studio plan/);
+      insightsRouter.createCaller(ctx("free")).narrative(),
+    ).rejects.toThrow(/Pro plan/);
   });
 
-  it("returns the narrative on studio (advanced analytics)", async () => {
-    const res = await insightsRouter.createCaller(ctx("studio")).narrative();
+  it("returns the narrative on pro (advanced analytics)", async () => {
+    const res = await insightsRouter.createCaller(ctx("pro")).narrative();
     expect(res.narrative).toContain("Observations");
     expect(insightsMock.generateInsightsNarrative).toHaveBeenCalledWith(
       "Aurora",
@@ -92,8 +92,4 @@ describe("insights.narrative", () => {
     );
   });
 
-  it("returns the narrative on atelier (advanced analytics)", async () => {
-    const res = await insightsRouter.createCaller(ctx("atelier")).narrative();
-    expect(res.narrative).toBeTruthy();
-  });
 });

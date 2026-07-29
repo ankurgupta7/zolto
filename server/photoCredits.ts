@@ -1,27 +1,36 @@
 /**
- * AI photo credits — service layer.
+ * AI photo generation — service layer.
  *
- * Credits are metered because image generation has a real per-image cost
- * (unlike near-free text AI). Balance lives in the append-only
- * photo_credit_ledger table (see drizzle/schema.ts); plans include a monthly
- * bucket (shared/platform.ts PLANS[].includedPhotoCredits, granted by
- * server/billing.ts) and extra credits are pay-as-you-go purchases.
+ * Post-pivot (two-tier pricing), AI photo generation is plan-based, never
+ * sold per query: the Free plan includes a monthly allowance
+ * (PLANS[].aiPhotoAllowancePerMonth, the "taste of AI"), and Pro is
+ * unmetered (allowance null). Usage is logged in the append-only
+ * photo_credit_ledger table for audit and for counting the Free allowance.
  */
 
 import { TRPCError } from "@trpc/server";
+import { PLANS, PRO_PLAN } from "@shared/platform";
 import {
   addPhotoCreditEntry,
   addProductImage,
-  consumePhotoCredit,
-  getPhotoCreditBalance,
+  countPhotoGenerationsThisMonth,
+  recordPhotoGeneration,
   getProductById,
 } from "./db";
 import { generateImage } from "./_core/imageGeneration";
 
-export { getPhotoCreditBalance };
+export { countPhotoGenerationsThisMonth };
 
-/** How many credits one generation costs. Kept a constant so pricing copy stays honest. */
-export const CREDITS_PER_GENERATION = 1;
+/**
+ * The plan's monthly AI photo allowance: a number for metered plans (Free),
+ * null for unmetered (Pro). Unknown plan values behave like Free.
+ */
+export function photoAllowanceForPlan(plan: string): number | null {
+  const p = PLANS.find((x) => x.id === plan);
+  if (!p)
+    return PLANS.find((x) => x.id === "free")?.aiPhotoAllowancePerMonth ?? 0;
+  return p.aiPhotoAllowancePerMonth;
+}
 
 /**
  * Generate an AI-styled product photo and attach it to the product's gallery.
@@ -35,11 +44,13 @@ export const CREDITS_PER_GENERATION = 1;
  */
 export async function generateStyledProductPhoto(params: {
   tenantId: number;
+  /** The tenant's plan id — decides metered (Free) vs unmetered (Pro). */
+  plan: string;
   productId: number;
   /** What to do with the source photo, e.g. "clean catalogue shot on white". */
   stylePrompt: string;
-}): Promise<{ imageUrl: string; balance: number }> {
-  const { tenantId, productId, stylePrompt } = params;
+}): Promise<{ imageUrl: string; remainingThisMonth: number | null }> {
+  const { tenantId, plan, productId, stylePrompt } = params;
 
   const product = await getProductById(tenantId, productId);
   if (!product) {
@@ -58,12 +69,16 @@ export async function generateStyledProductPhoto(params: {
     });
   }
 
-  const consumed = await consumePhotoCredit(tenantId, `product:${productId}`);
+  const allowance = photoAllowanceForPlan(plan);
+  const consumed = await recordPhotoGeneration(
+    tenantId,
+    allowance,
+    `product:${productId}`,
+  );
   if (!consumed) {
     throw new TRPCError({
       code: "FORBIDDEN",
-      message:
-        "No AI photo credits left. Buy a pay-as-you-go pack or wait for your plan's monthly bucket.",
+      message: `You've used all ${allowance} AI photo shots included this month. Upgrade to ${PRO_PLAN.name} for unmetered AI, or your allowance resets next month.`,
     });
   }
 
@@ -76,11 +91,11 @@ export async function generateStyledProductPhoto(params: {
     if (!result.url) throw new Error("Image service returned no URL");
     imageUrl = result.url;
   } catch (err) {
-    // Generation failed — refund the credit so the merchant never pays for
-    // an image they didn't receive.
+    // Generation failed — refund the allowance slot so the merchant never
+    // pays (in allowance) for an image they didn't receive.
     await addPhotoCreditEntry({
       tenantId,
-      delta: CREDITS_PER_GENERATION,
+      delta: 1,
       kind: "manual_adjustment",
       ref: `product:${productId}`,
       note: "Refund: photo generation failed",
@@ -101,6 +116,12 @@ export async function generateStyledProductPhoto(params: {
     sortOrder: Date.now() % 1_000_000,
   });
 
-  const balance = await getPhotoCreditBalance(tenantId);
-  return { imageUrl, balance };
+  const remainingThisMonth =
+    allowance === null
+      ? null
+      : Math.max(
+          0,
+          allowance - (await countPhotoGenerationsThisMonth(tenantId)),
+        );
+  return { imageUrl, remainingThisMonth };
 }

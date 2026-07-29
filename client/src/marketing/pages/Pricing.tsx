@@ -3,7 +3,9 @@ import { PLANS, formatPrice } from "../plans";
 import {
   PRICING_PROMISE,
   COST_COMPARISON,
-  AI_PHOTO_CREDITS,
+  PRO_BREAK_EVEN_ONLINE_CHF,
+  PRO_PLAN,
+  REVENUE_SHARE,
 } from "@shared/platform";
 
 const FAQ = [
@@ -32,7 +34,9 @@ export default function Pricing() {
           Simple pricing for makers.
         </h1>
         <p className="mx-auto mt-4 max-w-xl text-[var(--brand-muted-2)]">
-          Start free. Upgrade when you're ready. No hidden fees, no surprises.
+          Selling in person is free, forever. We only earn on the online and
+          AI-agent sales we bring you — {REVENUE_SHARE.percentLabel} on Free, or
+          a flat Pro plan that removes it.
         </p>
       </div>
 
@@ -69,7 +73,7 @@ export default function Pricing() {
               <span className="text-sm">/yr</span>
             </p>
             <p className="mt-4 text-[11px] uppercase tracking-[0.16em] text-[var(--brand-accent)]">
-              Zolto Maker
+              Zolto {PRO_PLAN.name}
             </p>
             <p className="mt-1 font-serif text-4xl font-bold text-[var(--brand-ink)] tabular-nums">
               {formatPrice(COST_COMPARISON.usPerMonthChf)}
@@ -84,8 +88,8 @@ export default function Pricing() {
         </div>
       </div>
 
-      {/* Plan cards */}
-      <div className="mt-14 grid gap-6 lg:grid-cols-4">
+      {/* Plan cards — two boxes only */}
+      <div className="mx-auto mt-14 grid max-w-3xl gap-6 md:grid-cols-2">
         {PLANS.map((plan) => (
           <div
             key={plan.id}
@@ -123,11 +127,7 @@ export default function Pricing() {
               ))}
             </ul>
             <Link
-              href={
-                plan.id === "atelier"
-                  ? "/signup?plan=atelier"
-                  : `/signup?plan=${plan.id}`
-              }
+              href={`/signup?plan=${plan.id}`}
               className={`mt-8 rounded-md px-4 py-2.5 text-center text-xs font-medium uppercase tracking-[0.12em] transition-colors ${
                 plan.highlight
                   ? "bg-[var(--brand-accent)] text-[var(--brand-ink)] hover:bg-[var(--brand-accent-light)]"
@@ -141,33 +141,36 @@ export default function Pricing() {
       </div>
 
       {/*
-        Metered add-on — the one AI feature with a real per-use cost. Surfaced
-        openly (not hidden as "unlimited") so the plans match the pledge: we
-        meter what genuinely costs us per use, and never charge for what doesn't.
+        The fee, explained in the open — the one number that pays for the
+        Free plan. Rendered from REVENUE_SHARE so page copy can't drift from
+        what checkout actually charges.
       */}
       <div className="mx-auto mt-12 max-w-3xl rounded-2xl border border-[var(--brand-border)] bg-white p-8 md:p-10">
         <div className="flex flex-wrap items-baseline justify-between gap-3">
           <div>
             <p className="font-hand text-xl leading-none text-[var(--brand-accent)]">
-              pay only for what you use
+              the only fee we charge
             </p>
             <h2 className="mt-2 font-serif text-2xl text-[var(--brand-text)]">
-              {AI_PHOTO_CREDITS.name}
+              {REVENUE_SHARE.percentLabel} on {REVENUE_SHARE.appliesTo} —
+              nothing in person
             </h2>
           </div>
           <p className="font-serif text-3xl text-[var(--brand-ink)] tabular-nums">
-            {formatPrice(AI_PHOTO_CREDITS.priceChf)}
+            {REVENUE_SHARE.percentLabel}
             <span className="text-sm text-[var(--brand-muted)]">
               {" "}
-              {AI_PHOTO_CREDITS.unit}
+              online only
             </span>
           </p>
         </div>
-        <p className="mt-3 text-[var(--brand-muted-2)]">
-          {AI_PHOTO_CREDITS.blurb}
-        </p>
         <ul className="mt-5 grid gap-2.5">
-          {AI_PHOTO_CREDITS.points.map((point) => (
+          {[
+            "At the market stall, Zolto adds nothing — take TWINT QR and Tap to Pay all season for CHF 0.",
+            `Online and AI-agent orders on the Free plan carry a ${REVENUE_SHARE.percentLabel} platform fee, taken automatically inside the Stripe payment — no separate bill, and a month with no online sales costs CHF 0.`,
+            `${PRO_PLAN.name} (CHF ${PRO_PLAN.priceChf}/month) removes the fee entirely. Past about CHF ${PRO_BREAK_EVEN_ONLINE_CHF.toLocaleString("en-US")}/month online it's the cheaper option — your dashboard will tell you when.`,
+            "AI is never the meter: descriptions, translations and chat aren't counted, and Pro's AI is unmetered. Plans scale on products, photos and storage.",
+          ].map((point) => (
             <li
               key={point}
               className="flex gap-2.5 text-sm leading-relaxed text-[var(--brand-muted-2)]"
@@ -179,10 +182,6 @@ export default function Pricing() {
             </li>
           ))}
         </ul>
-        <p className="mt-5 text-sm text-[var(--brand-muted)]">
-          Paid plans include a monthly bucket of credits — Maker 10, Studio 40,
-          Atelier 150. Need more? Top up any time; credits never expire.
-        </p>
       </div>
 
       {/*

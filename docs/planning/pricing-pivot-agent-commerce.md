@@ -1,14 +1,39 @@
 # Zolto — Pricing Pivot: Free In-Person, Skim Online/Agent Sales
 
-> Companion to `./honest-pricing-strategy.md` (the currently-shipped model) and
-> `./zolto-business-plan.md` (§4). This document is a **handoff, not yet
-> implemented** — it proposes a different pricing philosophy than the one live
-> in code today and flags exactly where the two disagree.
-> Document version: 1.0 (new proposal, unreconciled)
+> Companion to `./zolto-business-plan.md` (§4). **This is the shipped pricing
+> model.** It supersedes `./honest-pricing-strategy.md`, which described the
+> retired four-tier / 0%-take model and is kept only as history.
+> Document version: 2.0 (implemented)
 
 ---
 
-## 0. Read this first: this contradicts the shipped pledge
+## 0. Status: shipped
+
+The pivot below is **implemented in code**, superseding the previous
+0%-take pledge by explicit owner decision. What changed:
+
+| Area | File | Change |
+|---|---|---|
+| Plans + fee constants | `shared/platform.ts` | Two tiers (Free / Pro CHF 25), `REVENUE_SHARE`, `PRO_BREAK_EVEN_ONLINE_CHF`, rewritten `PRICING_PROMISE` |
+| DB | `drizzle/schema.ts`, `drizzle/0008_two_tier_pricing.sql` | `tenants.plan` enum → `free`/`pro` (paid tiers backfilled to `pro`); `orders.channel` (`web`/`agent`) + `orders.platform_fee_rappen` |
+| Online skim | `server/routers/checkout.ts` | `application_fee_amount` = 1% of product subtotal for Free tenants, omitted for Pro; `channel` input recorded on the order |
+| In-person | `server/pos.ts` | Untouched — POS sales carry no platform fee on any plan |
+| Subscription billing | `server/billing.ts` | Single `STRIPE_PRICE_PRO`; photo-credit packs retired (stale sessions logged, not processed) |
+| Feature gating | `server/_core/trpc.ts` | `PLAN_FEATURES` collapsed to `free`/`pro`; upgrade path names Pro |
+| AI metering | `server/photoCredits.ts`, `server/db.ts` | Per-query credits replaced by a monthly plan allowance (Free 5, Pro unmetered); ledger is now a usage log |
+| Scale metering | `server/db.ts` `createProduct` | Catalogue cap enforced at the single write choke point, so every intake channel obeys it |
+| Upsell engine | `server/routers/billing.ts`, `client/src/pages/Billing.tsx` | `getMonthlyOnlineSales` + break-even math → "you'd save CHF X on Pro this month" |
+| Marketing/agent surfaces | `Pricing.tsx`, `Landing.tsx`, `shared/marketing.ts`, `server/mcp.ts` | Fee model disclosed on the pricing page, in `/llms.txt`, `/llms-full.txt`, and MCP `get_pricing` |
+
+Full suite green (1158 passing) and `tsc --noEmit` clean at the time of
+writing. **Still open before launch:** the native TWINT rail (§3) is not
+built — in-person still runs on Stripe TWINT, which is correct on fee
+grounds (Zolto takes nothing in person either way) but not yet the
+cheapest rail for the vendor.
+
+---
+
+## 0b. History: what this superseded
 
 `honest-pricing-strategy.md` v1.2 and `shared/platform.ts` (`PRICING_PROMISE`)
 are **live in code and covered by tests**:
@@ -24,22 +49,12 @@ are **live in code and covered by tests**:
 - Current tiers are **Free / Maker (19) / Studio (49) / Atelier (99)**, priced
   around domain/support/seats/SLA, not a sales skim (`shared/platform.ts:151`).
 
-The plan below proposes the opposite: a **0.5–1% Stripe Connect
-`application_fee` on online + agent-originated sales**, and a collapse to
-**two tiers (Free / Pro) for launch**. Both are direct reversals of a written,
-tested, public pledge — that's a business decision, not a docs edit, so this
-document stops short of touching `PRICING_PROMISE`, the fee constant, or the
-tests. **Do not flip `PLATFORM_APPLICATION_FEE_RAPPEN` or reword
-`PRICING_PROMISE` until this plan (or a reconciled version of it) is
-explicitly approved** — the code comment already anticipates this exact fork
-and was written so the two changes land together, deliberately, not as a
-silent drift.
-
-Useful fact for scoping: the online-skim mechanism already has a placeholder
-wired end-to-end (`checkout.ts:279` passes `application_fee_amount` into the
-Stripe session) — turning the skim on for **online** checkout is a
-one-constant change plus copy/test updates. The **agent-originated** and
-**native TWINT** pieces below are the actual new build.
+All three were reversed together, deliberately, in the same change — the
+old code comment on the fee constant had anticipated exactly this fork and
+asked for precisely that. The pledge was **rewritten rather than deleted**:
+Zolto still never holds a vendor's money and still charges nothing on
+in-person sales; what changed is that online and agent-originated orders now
+carry a disclosed 1% on the Free plan.
 
 ---
 
@@ -51,28 +66,31 @@ create, and give a graduation path that rewards vendor growth.
 
 ---
 
-## 2. Decisions locked (as handed off — not yet reconciled with the pledge above)
+## 2. Decisions locked (shipped, except where noted)
 
 1. **Free tier** — mobile store, POS, inventory + POS sync, and a taste of AI.
    CHF 0/month. In-person payments run through **native TWINT QR (1.3%);
    Zolto takes nothing in-person.**
-2. **Revenue share** — a **~0.5–1% Stripe Connect `application_fee` on online
-   + agent-originated sales only.** Zero in a month with no online sales
-   (the seasonality answer).
-3. **Pro tier (~CHF 19–29/mo)** — removes the skim, unlocks full/unmetered AI
-   + the agent layer (llms.txt, MCP, chat-agent). Metered on **scale**
-   (products, photos, storage), **never on AI queries**.
+2. **Revenue share — shipped at 1%** (`REVENUE_SHARE.freeBps = 100`), as a
+   Stripe Connect `application_fee` on online + agent-originated sales only,
+   computed on the product subtotal and never on shipping. Zero in a month
+   with no online sales (the seasonality answer).
+3. **Pro tier — shipped at CHF 25/mo** (midpoint of the 19–29 range; revisit
+   after launch data). Removes the skim, unlocks unmetered AI. Metered on
+   **scale** (200 → 5,000 products, 5 → 50 GB), **never on AI queries**.
+   Note the agent layer (llms.txt, MCP, store chat) deliberately stays **on
+   in Free** — it is the discovery wedge, monetized by the skim.
 4. **Business tier (later, ~CHF 39–59)** — multi-stall/location, team seats,
    priority support, advanced agent analytics. For the SMB wave, not launch.
-5. **Upsell trigger** — Pro beats a 1% skim once online sales pass ~CHF
-   2,500/month. Surface "you'd save CHF X on Pro this month" in-app.
+5. **Upsell trigger — shipped.** Pro beats the 1% skim once online sales pass
+   CHF 2,500/month (`PRO_BREAK_EVEN_ONLINE_CHF`, derived from the price and
+   fee so it can never drift). The in-app prompt appears on the Billing page
+   the moment the month's fees exceed Pro's price.
 
 **Killed (do not build):** the CHF 2/mo hosting tier, the no-AI basic tier,
-AI-query metering, and the separate "AI marketing" carve-out. (Note: today's
-shipped model never had these either — it has Free/Maker/Studio/Atelier and
-metered AI *photo credits*, not AI-query metering. The "kill list" reads as
-if written against the business-plan's original four-tier sketch, not against
-what's actually live — see §7.)
+AI-query metering, and the separate "AI marketing" carve-out. The
+pay-per-image AI photo credits (CHF 1/image) are retired along with them —
+AI is now a plan allowance, never a per-query purchase.
 
 ---
 
@@ -100,23 +118,23 @@ to build and support alongside Stripe Connect.
 
 ## 4. Build workstreams
 
-- **Stripe Connect fee activation:** flip `PLATFORM_APPLICATION_FEE_RAPPEN`
-  (or replace the flat constant with a % calculation) for online sales;
-  scope an equivalent fee path for agent-originated sales if they don't
-  already flow through the same checkout function.
-- **Native TWINT QR:** in-person integration; verify effective rate before
-  wiring (see open questions).
-- **Tier gating:** feature flags for Free vs Pro. Agent layer stays **on in
-  Free** (it's the discovery wedge) and is monetized via the skim; Pro swaps
-  skim for a flat fee + unmetered AI + more scale. Collapsing today's four
-  tiers (Free/Maker/Studio/Atelier) to two (Free/Pro) is itself a change —
-  decide whether Maker/Studio/Atelier retire or fold into "Pro" + "Business."
-- **Upsell engine:** track online sales per vendor, compute skim-vs-Pro
-  break-even, trigger the in-app prompt.
-- **Scale metering:** enforce tier limits on products/photos/storage only.
-  (This can likely reuse the existing `includedPhotoCredits` / AI Photo
-  Credits metering already shipped in `shared/platform.ts`, rather than
-  building new metering from scratch.)
+- ✅ **Stripe Connect fee activation** — the flat `PLATFORM_APPLICATION_FEE_RAPPEN`
+  constant is replaced by `platformFeeRappen(plan, subtotal)`, reading
+  `PLANS[].onlineFeeBps`. Agent-originated sales flow through the same
+  `checkout.createSession`, so they pick up the fee automatically; the
+  `channel` input only changes attribution.
+- ⬜ **Native TWINT QR** — not built. In-person still runs on Stripe TWINT
+  (`/api/pos/twint-intent`), fee-free to the vendor from Zolto either way.
+  Verify the effective rate before committing to a second acquirer.
+- ✅ **Tier gating** — `PLAN_FEATURES` is `free`/`pro`. The agent layer
+  (llms.txt, MCP, store chat) is deliberately **ungated**: it is the
+  discovery wedge, monetized by the skim, not by a paywall.
+- ✅ **Upsell engine** — `getMonthlyOnlineSales` + `PRO_BREAK_EVEN_ONLINE_CHF`
+  drive `billing.getStatus().upsell`, rendered on the Billing page.
+- ✅ **Scale metering** — `maxProducts` enforced in `createProduct` (the one
+  write choke point every intake channel shares). Storage caps are declared
+  in `PLANS[].storageGb` and surfaced in the UI but not yet enforced at
+  upload time — the next metering task.
 
 ---
 
@@ -130,65 +148,55 @@ to build and support alongside Stripe Connect.
   (proves the differentiator and tracks it against Shopify's free Agentic
   plan encroaching).
 
-None of this exists in the codebase yet (no `usage_events`-style table, no
-per-channel sales attribution). It's the same gap flagged in
-`honest-pricing-strategy.md` §11 ("Metering implementation needs a
-`usage_events` table") — the two plans can likely share that build.
+**The data layer for all of this now exists.** `orders.channel`
+(`web`/`agent`) and `orders.platform_fee_rappen` make online GMV, skim
+revenue, and agent-originated sales queryable per tenant and per month
+(`getMonthlyOnlineSales`); in-person sales stay in `pos_orders`, so the
+three channels are cleanly separable. What's left is the **platform-side
+dashboard** that aggregates this across tenants to compute the north-star
+number — the per-tenant half is already live in the merchant's own Billing
+page.
 
 ---
 
-## 6. Open questions to close before/at launch
+## 6. Open questions still to close
 
-- Exact skim %: 0.5 vs 1 — model against the ~CHF 50 basket and expected
-  online volume (note: 1% puts online effective rate slightly above Square
-  Free, so the bundle has to visibly earn it).
-- Pro price: CHF 19 vs 29 — test. (Shipped `Maker` tier is already CHF 19 —
-  if Pro absorbs Maker, this may already be answered.)
+- **Skim %: shipped at 1%, revisit with data.** One constant
+  (`REVENUE_SHARE.freeBps`) moves it to 0.5% — the pricing page, llms briefs,
+  and MCP all render from it, so no copy hunt is needed.
+- **Pro price: shipped at CHF 25**, the midpoint of the 19–29 range. Same
+  property: `PLANS` is the only place it lives, and the break-even number
+  recomputes itself.
 - **Verify TWINT-via-Stripe effective rate against native 1.3%** and decide
-  the in-person rail accordingly.
+  the in-person rail. Still open, and the last thing blocking the "in-person
+  is the cheapest rail" claim from being literally true.
+- **VAT: inclusive vs exclusive** (business-plan §7.1) — inherited from the
+  previous pricing doc, still unresolved, and now applies to Pro and to the
+  platform fee.
 - Off-season: is skim-only enough, or do we also offer Pro pause / annual
   billing?
 - Speed vs Shopify Agentic: how fast to ship agent-layer prominence.
-- **New, raised by this doc:** does this pivot replace or coexist with the
-  shipped `PRICING_PROMISE` ("we take 0% of your sales")? If it replaces it,
-  the pledge copy, Pricing page, `/llms.txt`, `/llms-full.txt`, and the
-  platform MCP `get_pricing` tool all need to change together (same pattern
-  `honest-pricing-strategy.md` §7.1 used to reconcile its own earlier
-  contradiction) — and `checkout.test.ts`'s "Zolto takes no cut" test needs
-  to be rewritten to assert the new (non-zero) fee instead of deleted.
+- **Grandfathering:** existing paid tenants were backfilled to Pro by
+  migration `0008`, but their Stripe subscriptions still bill at the old
+  Maker/Studio/Atelier prices. Someone must migrate those subscriptions
+  by hand (or decide to grandfather them) before the old Stripe Prices are
+  archived.
 
 ---
 
-## 7. Reconciliation note for whoever picks this up
+## 7. Sequencing
 
-This handoff reads like it was written against the **business plan's original
-four-tier sketch** (business-plan §3.1 pre-`honest-pricing-strategy.md`), not
-against the **currently shipped** Free/Maker/Studio/Atelier + 0%-take +
-pay-per-use-photo-credits model. Two things worth resolving before Phase 1
-work starts, so engineering isn't asked to build against a moving target:
-
-1. Confirm whether this pivot **supersedes** `honest-pricing-strategy.md`
-   (i.e., the 0%-take pledge is retired in favor of a disclosed skim) or is
-   meant to **extend** it (e.g., skim only applies to a new "agent-originated"
-   channel the honest-pricing doc didn't anticipate, while direct storefront
-   checkout stays at 0% as pledged).
-2. If it supersedes: this is a public-facing promise reversal, not just a
-   pricing-table edit — it should go through the same explicit,
-   human-reviewed path business-plan §1.3/§8.1 requires for billing changes
-   ("No AI-authored change to billing ships without a human merge").
+- ✅ **Phase 1 (launch):** Free + Stripe Connect online skim, two boxes only,
+  old tiers retired. *Except* the native TWINT rail, still open.
+- 🔶 **Phase 2:** upsell engine ✅ shipped (per-tenant); platform-wide
+  instrumentation dashboards still to build.
+- ⬜ **Phase 3:** Business tier once the agent layer and multi-location are
+  proven.
 
 ---
 
-## 8. Sequencing (as handed off)
-
-- **Phase 1 (launch):** Free + native TWINT in-person + Stripe Connect online
-  skim. Two boxes only — Free and Pro. Retire the old tiers.
-- **Phase 2:** upsell engine + instrumentation dashboards.
-- **Phase 3:** Business tier once agent layer and multi-location are proven.
-
----
-
-> Recorded as handed off, cross-referenced against the shipped code and the
-> existing `honest-pricing-strategy.md` so the next actor can see exactly
-> where the two plans agree, where they conflict, and what in code would
-> need to move (and where) if this version is the one that ships.
+> The model in this document is the one in the code. If you change a price,
+> a fee, or a limit, change it in `shared/platform.ts` — the pricing page,
+> `/llms.txt`, `/llms-full.txt`, MCP `get_pricing`, the admin Billing page,
+> and checkout's fee math all derive from it, and the tests in
+> `shared/platform.test.ts` will hold the story together.

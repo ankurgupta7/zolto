@@ -10,7 +10,6 @@ import Billing from "./Billing";
 
 const mocks = vi.hoisted(() => ({
   planCheckoutMutate: vi.fn(),
-  creditCheckoutMutate: vi.fn(),
   statusInvalidate: vi.fn(),
   historyInvalidate: vi.fn(),
   authState: {
@@ -22,21 +21,34 @@ const mocks = vi.hoisted(() => ({
     plan: "free",
     subscriptionStatus: "trialing",
     trialEndsAt: null,
-    photoCredits: {
-      balance: 7,
-      monthlyBucket: 0,
-      priceChf: 1,
-      unit: "per image",
+    ai: { allowancePerMonth: 5, usedThisMonth: 2 },
+    onlineFees: {
+      feePercentLabel: "1%",
+      appliesTo: "online and AI-agent orders",
+      monthGmvChf: 3200,
+      monthAgentGmvChf: 500,
+      monthOrderCount: 12,
+      monthFeeChf: 32,
     },
+    upsell: { breakEvenOnlineChf: 2500, proPriceChf: 25, savingsChf: 7 },
     plans: [
-      { id: "free", name: "Free", priceChf: 0, includedPhotoCredits: 0 },
-      { id: "maker", name: "Maker", priceChf: 19, includedPhotoCredits: 10 },
-      { id: "studio", name: "Studio", priceChf: 49, includedPhotoCredits: 40 },
       {
-        id: "atelier",
-        name: "Atelier",
-        priceChf: 99,
-        includedPhotoCredits: 150,
+        id: "free",
+        name: "Free",
+        priceChf: 0,
+        onlineFeeBps: 100,
+        aiPhotoAllowancePerMonth: 5,
+        maxProducts: 200,
+        storageGb: 5,
+      },
+      {
+        id: "pro",
+        name: "Pro",
+        priceChf: 25,
+        onlineFeeBps: 0,
+        aiPhotoAllowancePerMonth: null,
+        maxProducts: 5000,
+        storageGb: 50,
       },
     ],
     billingConfigured: true,
@@ -92,12 +104,6 @@ vi.mock("@/lib/trpc", () => ({
           isPending: false,
         }),
       },
-      purchasePhotoCredits: {
-        useMutation: () => ({
-          mutate: mocks.creditCheckoutMutate,
-          isPending: false,
-        }),
-      },
     },
     staff: {
       list: {
@@ -143,39 +149,63 @@ beforeEach(() => {
 afterEach(() => cleanup());
 
 describe("Billing page", () => {
-  it("shows the current plan and all four tiers", () => {
+  it("shows the current plan and both tiers", () => {
     render(<Billing />);
     expect(screen.getByText("Plan & Billing")).toBeTruthy();
     expect(screen.getByText("Current")).toBeTruthy();
-    for (const name of ["Maker", "Studio", "Atelier"]) {
-      expect(screen.getByText(name)).toBeTruthy();
-    }
-    expect(screen.getByText("CHF 19")).toBeTruthy();
+    expect(screen.getByText("Pro")).toBeTruthy();
+    expect(screen.getByText("CHF 25")).toBeTruthy();
+    // Retired tiers stay retired.
+    expect(screen.queryByText("Maker")).toBeNull();
+    expect(screen.queryByText("Studio")).toBeNull();
+    expect(screen.queryByText("Atelier")).toBeNull();
   });
 
-  it("shows the credit balance and top-up packs", () => {
+  it("shows this month's online sales, fee, and agent split", () => {
     render(<Billing />);
-    expect(screen.getByText("7")).toBeTruthy();
-    expect(screen.getByText("+25")).toBeTruthy();
+    expect(screen.getByText("CHF 3,200")).toBeTruthy();
+    expect(screen.getByText("CHF 32")).toBeTruthy();
+    expect(screen.getByText(/via AI agents/)).toBeTruthy();
+    expect(screen.getByText(/never carry a Zolto fee/)).toBeTruthy();
   });
 
-  it("starts a plan checkout when Upgrade is clicked", () => {
+  it("surfaces the skim-vs-Pro upsell once savings go positive", () => {
+    render(<Billing />);
+    expect(screen.getByText(/You'd save CHF 7 on Pro/)).toBeTruthy();
+    fireEvent.click(screen.getByText("Upgrade now"));
+    expect(mocks.planCheckoutMutate).toHaveBeenCalledWith({ plan: "pro" });
+  });
+
+  it("hides the upsell on Pro and shows unmetered AI", () => {
+    const original = mocks.statusData;
+    mocks.statusData = {
+      ...original,
+      plan: "pro",
+      ai: { allowancePerMonth: null, usedThisMonth: null },
+      upsell: null,
+    } as never;
+    render(<Billing />);
+    expect(screen.queryByText(/You'd save/)).toBeNull();
+    expect(screen.getByText("Unmetered")).toBeTruthy();
+    mocks.statusData = original;
+  });
+
+  it("shows the Free plan's AI allowance usage", () => {
+    render(<Billing />);
+    expect(screen.getByText("2")).toBeTruthy();
+    expect(screen.getByText(/of 5 used this month/)).toBeTruthy();
+  });
+
+  it("starts a Pro checkout when Upgrade is clicked", () => {
     render(<Billing />);
     const upgrades = screen.getAllByText("Upgrade");
-    fireEvent.click(upgrades[0]); // Maker
-    expect(mocks.planCheckoutMutate).toHaveBeenCalledWith({ plan: "maker" });
+    fireEvent.click(upgrades[0]);
+    expect(mocks.planCheckoutMutate).toHaveBeenCalledWith({ plan: "pro" });
   });
 
-  it("starts a credit checkout when a pack is clicked", () => {
+  it("renders the AI generation log with signed deltas", () => {
     render(<Billing />);
-    fireEvent.click(screen.getByText("+50"));
-    expect(mocks.creditCheckoutMutate).toHaveBeenCalledWith({ quantity: 50 });
-  });
-
-  it("renders the credit ledger with signed deltas", () => {
-    render(<Billing />);
-    // "+10" also matches a top-up pack button, so scope to the ledger kind.
-    expect(screen.getByText("Monthly plan bucket")).toBeTruthy();
+    expect(screen.getByText("Plan bucket (pre-pivot)")).toBeTruthy();
     expect(screen.getByText("AI photo generated")).toBeTruthy();
     expect(screen.getByText("-1")).toBeTruthy();
   });

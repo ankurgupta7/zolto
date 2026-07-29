@@ -31,7 +31,7 @@ import {
   PLANS,
   FAQS,
   HOW_TO_START,
-  AI_PHOTO_CREDITS,
+  PRICING_PROMISE,
 } from "./platform";
 
 export interface MakerIdentity {
@@ -269,7 +269,7 @@ ${PLATFORM.pricingSummary}
 
 ${planLines}
 
-**Add-on — ${AI_PHOTO_CREDITS.name}:** CHF ${AI_PHOTO_CREDITS.priceChf} ${AI_PHOTO_CREDITS.unit}, pay-as-you-go, credits never expire. ${AI_PHOTO_CREDITS.blurb}
+**The fee model in one line:** ${PRICING_PROMISE.pledge}
 
 ## How a maker gets started
 
@@ -330,11 +330,11 @@ ${features}
 
 ${plans}
 
-### Add-on: ${AI_PHOTO_CREDITS.name} — CHF ${AI_PHOTO_CREDITS.priceChf} ${AI_PHOTO_CREDITS.unit}
+### The fee model — ${PRICING_PROMISE.headline}
 
-${AI_PHOTO_CREDITS.blurb}
+${PRICING_PROMISE.pledge}
 
-${AI_PHOTO_CREDITS.points.map((p) => `- ${p}`).join("\n")}
+${PRICING_PROMISE.points.map((p) => `- ${p}`).join("\n")}
 
 ---
 

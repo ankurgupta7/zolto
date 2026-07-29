@@ -52,6 +52,7 @@ import {
   type TenantSetting,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
+import { PLANS } from "@shared/platform";
 import { hashPosApiKey } from "./posApiKey";
 import {
   DEFAULT_TENANT_ID,
@@ -292,7 +293,25 @@ export async function getProductByDiscordMessageId(
 }
 
 export async function createProduct(data: WithOptionalTenant<InsertProduct>) {
-  return withDbOrThrow((db) => db.insert(products).values(withTenant(data)));
+  const row = withTenant(data);
+  // Scale metering (two-tier pricing): plans cap catalogue size, never AI
+  // usage (shared/platform.ts PLANS[].maxProducts). Enforced at this single
+  // choke point so every intake channel — admin UI, CSV import, bulk photo
+  // upload, Discord/WhatsApp/Slack — hits the same limit. Fails open when
+  // the tenant row can't be loaded so a broken lookup never blocks writes.
+  const tenant = await getTenantById(row.tenantId);
+  const cap = tenant
+    ? PLANS.find((p) => p.id === tenant.plan)?.maxProducts
+    : undefined;
+  if (cap !== undefined) {
+    const count = await countTenantProducts(row.tenantId);
+    if (count >= cap) {
+      throw new Error(
+        `Your catalogue is at its ${cap}-product limit on the ${tenant!.plan} plan — upgrade for more room.`,
+      );
+    }
+  }
+  return withDbOrThrow((db) => db.insert(products).values(row));
 }
 
 export async function setProductVisibility(
@@ -660,6 +679,49 @@ export async function getPaidOrders(
         .orderBy(desc(orders.createdAt))
         .limit(limit),
     [],
+  );
+}
+
+/**
+ * This calendar month's (UTC) paid ONLINE + AGENT sales, for the skim-vs-Pro
+ * upsell: total GMV, the platform fees actually taken, and the agent-channel
+ * split. In-person (POS) sales live elsewhere and never enter this number.
+ */
+export async function getMonthlyOnlineSales(tenantId: number): Promise<{
+  gmvRappen: number;
+  feeRappen: number;
+  agentGmvRappen: number;
+  orderCount: number;
+}> {
+  const monthStart = new Date();
+  monthStart.setUTCDate(1);
+  monthStart.setUTCHours(0, 0, 0, 0);
+  return withDb(
+    async (db) => {
+      const rows = await db
+        .select({
+          gmvRappen: sql<number>`COALESCE(SUM(${orders.amountTotal}), 0)`,
+          feeRappen: sql<number>`COALESCE(SUM(${orders.platformFeeRappen}), 0)`,
+          agentGmvRappen: sql<number>`COALESCE(SUM(CASE WHEN ${orders.channel} = 'agent' THEN ${orders.amountTotal} ELSE 0 END), 0)`,
+          orderCount: sql<number>`COUNT(*)`,
+        })
+        .from(orders)
+        .where(
+          and(
+            eq(orders.tenantId, tenantId),
+            eq(orders.status, "paid"),
+            gte(orders.createdAt, monthStart),
+          ),
+        );
+      const r = rows[0];
+      return {
+        gmvRappen: Number(r?.gmvRappen ?? 0),
+        feeRappen: Number(r?.feeRappen ?? 0),
+        agentGmvRappen: Number(r?.agentGmvRappen ?? 0),
+        orderCount: Number(r?.orderCount ?? 0),
+      };
+    },
+    { gmvRappen: 0, feeRappen: 0, agentGmvRappen: 0, orderCount: 0 },
   );
 }
 
@@ -1189,9 +1251,7 @@ export async function updateProductTranslations(
     db
       .update(products)
       .set(translations)
-      .where(
-        and(eq(products.id, productId), eq(products.tenantId, tenantId)),
-      ),
+      .where(and(eq(products.id, productId), eq(products.tenantId, tenantId))),
   );
 }
 
@@ -1286,20 +1346,36 @@ export async function updateTenantBilling(
   );
 }
 
-// ─── Photo credit ledger (AI photo metering) ─────────────────────────────────
-// Balance = SUM(delta) for the tenant. Grants are positive entries
-// (monthly_grant/purchase/manual_adjustment), consumption is -1 per image.
-// Append-only: never update or delete rows, correct with a manual_adjustment.
+// ─── Photo generation ledger (AI usage log) ──────────────────────────────────
+// Post-pivot (two-tier pricing), the ledger is a usage log, not a purchasable
+// balance: consumption is -1 per image, failed generations are refunded with
+// a +1 manual_adjustment. Free-plan usage this month = -SUM(delta) over the
+// current calendar month (refunds cancel out); Pro is unmetered and skips
+// the allowance check entirely. Append-only: never update or delete rows.
 
-export async function getPhotoCreditBalance(tenantId: number): Promise<number> {
+/**
+ * Net AI photo generations this calendar month (UTC), refunds netted out.
+ * Drives the Free plan's monthly allowance (PLANS[].aiPhotoAllowancePerMonth).
+ */
+export async function countPhotoGenerationsThisMonth(
+  tenantId: number,
+): Promise<number> {
+  const monthStart = new Date();
+  monthStart.setUTCDate(1);
+  monthStart.setUTCHours(0, 0, 0, 0);
   return withDb(async (db) => {
     const rows = await db
       .select({
-        balance: sql<number>`COALESCE(SUM(${photoCreditLedger.delta}), 0)`,
+        used: sql<number>`COALESCE(-SUM(${photoCreditLedger.delta}), 0)`,
       })
       .from(photoCreditLedger)
-      .where(eq(photoCreditLedger.tenantId, tenantId));
-    return Number(rows[0]?.balance ?? 0);
+      .where(
+        and(
+          eq(photoCreditLedger.tenantId, tenantId),
+          gte(photoCreditLedger.createdAt, monthStart),
+        ),
+      );
+    return Math.max(0, Number(rows[0]?.used ?? 0));
   }, 0);
 }
 
@@ -1325,20 +1401,24 @@ export async function addPhotoCreditEntry(entry: {
 }
 
 /**
- * Consume one credit for an AI photo generation. Returns false (and writes
- * nothing) when the tenant has no credits left, so callers can distinguish
- * "no balance" from a successful deduction. The check-then-insert is not a
- * serializable transaction; the only consumer is the admin product editor,
- * where two simultaneous generations by the same merchant are unlikely, and
- * the worst case is one extra image granted — a deliberate availability-over-
- * strictness tradeoff for a goodwill-priced feature.
+ * Record one AI photo generation against the tenant's monthly allowance.
+ * `allowancePerMonth: null` means unmetered (Pro) — the usage is still
+ * logged, but never refused. Returns false (and writes nothing) when a
+ * metered tenant has exhausted this month's allowance. The check-then-insert
+ * is not a serializable transaction; the only consumer is the admin product
+ * editor, where two simultaneous generations by the same merchant are
+ * unlikely, and the worst case is one extra image granted — a deliberate
+ * availability-over-strictness tradeoff for a goodwill-priced feature.
  */
-export async function consumePhotoCredit(
+export async function recordPhotoGeneration(
   tenantId: number,
+  allowancePerMonth: number | null,
   ref?: string | null,
 ): Promise<boolean> {
-  const balance = await getPhotoCreditBalance(tenantId);
-  if (balance <= 0) return false;
+  if (allowancePerMonth !== null) {
+    const used = await countPhotoGenerationsThisMonth(tenantId);
+    if (used >= allowancePerMonth) return false;
+  }
   await addPhotoCreditEntry({
     tenantId,
     delta: -1,

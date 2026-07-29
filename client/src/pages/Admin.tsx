@@ -1111,7 +1111,7 @@ export default function Admin() {
         {/* Live setup checklist (server-derived; dismissible) */}
         <OnboardingChecklist />
 
-        {/* Sales & inventory insights (stats for all plans, AI narrative Studio+) */}
+        {/* Sales & inventory insights (stats for all plans, AI narrative on Pro) */}
         <InsightsCard />
 
         {/* Add Product Form */}

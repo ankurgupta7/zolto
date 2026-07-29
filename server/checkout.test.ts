@@ -89,6 +89,7 @@ function makeCtx(role: "admin" | "user" | null = null): TrpcContext {
     tenant: {
       id: TEST_TENANT_ID,
       name: "Test Store",
+      plan: "free",
       stripeConnectedAccountId: TEST_CONNECTED_ACCOUNT_ID,
     } as TrpcContext["tenant"],
     req: { protocol: "https", headers: {} } as TrpcContext["req"],
@@ -404,8 +405,8 @@ describe("checkout.createSession", () => {
     ).toBeLessThanOrEqual(22);
   });
 
-  it("pins application_fee_amount at 0 — Zolto takes no cut of the direct charge", async () => {
-    getProductsByIds.mockResolvedValue([sampleProduct]);
+  it("takes the 1% platform fee on the product subtotal for Free-plan tenants", async () => {
+    getProductsByIds.mockResolvedValue([sampleProduct]); // CHF 185.00
     checkoutSessionsCreate.mockResolvedValue({
       id: "cs_test_fee",
       url: "https://checkout.stripe.com/cs_test",
@@ -416,7 +417,58 @@ describe("checkout.createSession", () => {
     await caller.checkout.createSession({ productIds: [1] });
 
     const sessionArgs = checkoutSessionsCreate.mock.calls[0][0];
-    expect(sessionArgs.payment_intent_data.application_fee_amount).toBe(0);
+    // 1% of 18500 Rappen — computed on the subtotal, never on shipping.
+    expect(sessionArgs.payment_intent_data.application_fee_amount).toBe(185);
+    // The fee is recorded on the order for skim-revenue instrumentation.
+    expect(createOrder).toHaveBeenCalledWith(
+      expect.objectContaining({ platformFeeRappen: 185, channel: "web" }),
+    );
+  });
+
+  it("takes no platform fee on the Pro plan", async () => {
+    getProductsByIds.mockResolvedValue([sampleProduct]);
+    checkoutSessionsCreate.mockResolvedValue({
+      id: "cs_test_fee_pro",
+      url: "https://checkout.stripe.com/cs_test",
+      amount_total: 18500,
+    });
+
+    const ctx = makeCtx();
+    ctx.tenant = {
+      ...ctx.tenant,
+      plan: "pro",
+    } as TrpcContext["tenant"];
+    const caller = appRouter.createCaller(ctx);
+    await caller.checkout.createSession({ productIds: [1] });
+
+    const sessionArgs = checkoutSessionsCreate.mock.calls[0][0];
+    // Omitted entirely, not passed as 0 — Pro keeps every online sale.
+    expect(
+      "application_fee_amount" in sessionArgs.payment_intent_data,
+    ).toBe(false);
+    expect(createOrder).toHaveBeenCalledWith(
+      expect.objectContaining({ platformFeeRappen: 0 }),
+    );
+  });
+
+  it("attributes agent-originated checkouts as their own channel", async () => {
+    getProductsByIds.mockResolvedValue([sampleProduct]);
+    checkoutSessionsCreate.mockResolvedValue({
+      id: "cs_test_agent",
+      url: "https://checkout.stripe.com/cs_test",
+      amount_total: 18500,
+    });
+
+    const caller = appRouter.createCaller(makeCtx());
+    await caller.checkout.createSession({ productIds: [1], channel: "agent" });
+
+    const sessionArgs = checkoutSessionsCreate.mock.calls[0][0];
+    expect(sessionArgs.metadata.channel).toBe("agent");
+    // Agent orders are online orders — the Free-plan fee applies the same.
+    expect(sessionArgs.payment_intent_data.application_fee_amount).toBe(185);
+    expect(createOrder).toHaveBeenCalledWith(
+      expect.objectContaining({ channel: "agent" }),
+    );
   });
 
   // ─── Shipping fee logic ───────────────────────────────────────────────────

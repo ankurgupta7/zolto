@@ -292,29 +292,34 @@ describe("Platform MCP (no tenant / marketing surface)", () => {
     });
   });
 
-  it("get_pricing returns CHF plans with a free trial and the photo-credit add-on", async () => {
+  it("get_pricing returns the two CHF plans and the online platform fee", async () => {
     const r = await call("get_pricing");
     const sc = r.structuredContent as {
       currency: string;
       freeTrialDays: number;
       plans: {
-        name: string;
+        id: string;
         pricePerMonth: number;
-        includedPhotoCredits: number;
+        onlineFeePercent: number;
+        aiPhotoAllowancePerMonth: number | null;
       }[];
-      addOns: { id: string; name: string; price: number; unit: string }[];
+      platformFee: { percent: number; proBreakEvenOnlineChfPerMonth: number };
     };
     expect(sc.currency).toBe("CHF");
     expect(sc.freeTrialDays).toBe(14);
-    expect(sc.plans.some((p) => p.pricePerMonth === 0)).toBe(true);
-    // Every plan exposes its monthly photo-credit bucket…
-    expect(
-      sc.plans.every((p) => typeof p.includedPhotoCredits === "number"),
-    ).toBe(true);
-    // …and the metered AI-photo add-on is advertised, not hidden as "unlimited".
-    const credits = sc.addOns.find((a) => a.id === "ai-photo-credits");
-    expect(credits).toBeTruthy();
-    expect(credits!.price).toBeGreaterThan(0);
+    expect(sc.plans.map((p) => p.id)).toEqual(["free", "pro"]);
+    // Free carries the 1% online/agent fee and a monthly AI taste; Pro is
+    // fee-free with unmetered AI.
+    const free = sc.plans.find((p) => p.id === "free")!;
+    const pro = sc.plans.find((p) => p.id === "pro")!;
+    expect(free.pricePerMonth).toBe(0);
+    expect(free.onlineFeePercent).toBe(1);
+    expect(free.aiPhotoAllowancePerMonth).toBeGreaterThan(0);
+    expect(pro.onlineFeePercent).toBe(0);
+    expect(pro.aiPhotoAllowancePerMonth).toBeNull();
+    // The fee block explains the model to agents, break-even included.
+    expect(sc.platformFee.percent).toBe(1);
+    expect(sc.platformFee.proBreakEvenOnlineChfPerMonth).toBe(2500);
   });
 
   it("list_features and how_to_start return content", async () => {

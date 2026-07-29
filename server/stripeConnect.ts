@@ -3,8 +3,10 @@
  * for their storefront's checkout, separate from Zolto's own
  * stripe_customer_id/stripe_subscription_id (Zolto billing the tenant for the
  * platform subscription — see server/stripe.ts). A tenant's customers pay
- * into their connected account directly; Zolto never touches that money and
- * takes no cut (see docs/planning/phase1/marketing/pricing-page-copy.md).
+ * into their connected account directly; Zolto never holds that money. On the
+ * Free plan a 1% platform fee is taken on online/agent orders as a Stripe
+ * application fee on the direct charge (server/routers/checkout.ts); Pro
+ * removes it. See docs/planning/pricing-pivot-agent-commerce.md.
  *
  * Flow:
  *   1. An admin calls tenant.getStripeConnectUrl (server/routers/tenant.ts) →

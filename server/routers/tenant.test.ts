@@ -310,28 +310,28 @@ describe("tenant.updateSettings plan gates", () => {
     const { caller, set } = tenantCtx("free");
     await expect(
       caller.updateSettings({ publicDomain: "shop.example.com" }),
-    ).rejects.toThrow(/Maker plan/);
+    ).rejects.toThrow(/Pro plan/);
     expect(set).not.toHaveBeenCalled();
   });
 
-  it("allows a custom domain from the Maker plan up", async () => {
-    const { caller, set } = tenantCtx("maker");
+  it("allows a custom domain on the Pro plan", async () => {
+    const { caller, set } = tenantCtx("pro");
     await expect(
       caller.updateSettings({ publicDomain: "shop.example.com" }),
     ).resolves.toEqual({ success: true });
     expect(set).toHaveBeenCalled();
   });
 
-  it("rejects multi-currency on the Maker plan", async () => {
-    const { caller, set } = tenantCtx("maker");
+  it("rejects multi-currency on the free plan", async () => {
+    const { caller, set } = tenantCtx("free");
     await expect(caller.updateSettings({ currency: "eur" })).rejects.toThrow(
-      /Studio plan/,
+      /Pro plan/,
     );
     expect(set).not.toHaveBeenCalled();
   });
 
-  it("allows multi-currency from the Studio plan up", async () => {
-    const { caller, set } = tenantCtx("studio");
+  it("allows multi-currency on the Pro plan", async () => {
+    const { caller, set } = tenantCtx("pro");
     await expect(caller.updateSettings({ currency: "eur" })).resolves.toEqual({
       success: true,
     });
@@ -355,7 +355,7 @@ describe("tenant.updateSettings plan gates", () => {
   });
 
   it("rejects malformed domains", async () => {
-    const { caller, set } = tenantCtx("atelier");
+    const { caller, set } = tenantCtx("pro");
     await expect(
       caller.updateSettings({ publicDomain: "https://shop.example.com/" }),
     ).rejects.toThrow();

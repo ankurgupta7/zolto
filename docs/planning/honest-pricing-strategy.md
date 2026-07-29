@@ -1,5 +1,21 @@
 # Zolto — Honest Pricing Strategy
 
+> ## ⚠️ SUPERSEDED — historical record only
+>
+> This document describes the **retired** pricing model: four tiers
+> (Free / Maker 19 / Studio 49 / Atelier 99), a 0%-take pledge, and
+> pay-per-image AI photo credits. None of that is in the code any more.
+>
+> **The shipped model is [`./pricing-pivot-agent-commerce.md`](./pricing-pivot-agent-commerce.md):**
+> two tiers (Free / Pro CHF 25), free in person forever, a disclosed 1%
+> platform fee on online + AI-agent orders for Free-plan tenants, and AI
+> included by plan allowance rather than sold per query.
+>
+> Kept because the reasoning below — charge where cost is real, never gate
+> zero-marginal-cost features, never hold a merchant's money or their data —
+> still shapes the current model. The *numbers and tiers* are obsolete; do
+> not implement anything from this file.
+
 > Companion to `./zolto-business-plan.md` (§4) and `./monetization-code-roadmap.md`.
 > This document refines the "four flat tiers" sketch in the business plan into a
 > **cost-honest** model: we charge where our cost is real and variable, we keep the

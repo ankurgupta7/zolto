@@ -1,5 +1,5 @@
 /**
- * Insights router — basic stats for every plan, AI narrative on Studio+
+ * Insights router — basic stats for every plan, AI narrative on Pro
  * (PLAN_FEATURES.analytics === "advanced"). The plan check is inline because
  * analytics is a tiered feature, not a boolean.
  */
@@ -24,14 +24,14 @@ export const insightsRouter = router({
     return computeInsights(ctx.tenant.id, settings?.currency || "chf");
   }),
 
-  /** LLM narrative — Studio+ only (advanced analytics). */
+  /** LLM narrative — Pro only (advanced analytics). */
   narrative: tenantAdmin.query(async ({ ctx }) => {
     const features = PLAN_FEATURES[ctx.tenant.plan as PlanId];
     if (features?.analytics !== "advanced") {
       throw new TRPCError({
         code: "FORBIDDEN",
         message:
-          "AI insights are part of the Studio plan's advanced analytics. Please upgrade.",
+          "AI insights are part of the Pro plan's advanced analytics. Please upgrade.",
       });
     }
     const settings = await getTenantSettings(ctx.tenant.id);

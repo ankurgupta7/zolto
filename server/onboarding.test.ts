@@ -18,7 +18,7 @@ import type { Tenant } from "../drizzle/schema";
 function tenant(over: Partial<Tenant> = {}): Tenant {
   return {
     id: 42,
-    plan: "maker",
+    plan: "pro",
     stripeConnectedAccountId: null,
     terminalLocationId: null,
     onboardingStep: 0,
@@ -26,11 +26,7 @@ function tenant(over: Partial<Tenant> = {}): Tenant {
   } as Tenant;
 }
 
-const PRICE_ENV_VARS = [
-  "STRIPE_PRICE_MAKER",
-  "STRIPE_PRICE_STUDIO",
-  "STRIPE_PRICE_ATELIER",
-] as const;
+const PRICE_ENV_VARS = ["STRIPE_PRICE_PRO"] as const;
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -46,11 +42,11 @@ afterEach(() => {
 });
 
 describe("deriveOnboardingStatus", () => {
-  it("starts with everything open on a fresh maker tenant", async () => {
+  it("starts with everything open on a fresh Pro tenant", async () => {
     const s = await deriveOnboardingStatus(tenant());
     expect(s.allDone).toBe(false);
     expect(s.doneCount).toBe(0);
-    // maker: 8 tasks (includes staff seats + custom domain)
+    // pro: 8 tasks (includes staff seats + custom domain)
     expect(s.totalCount).toBe(8);
     expect(s.tasks.map((t) => t.id)).toEqual([
       "claim-admin",
@@ -109,20 +105,14 @@ describe("deriveOnboardingStatus", () => {
     expect(s.tasks.find((t) => t.id === "first-ai-photo")!.done).toBe(true);
   });
 
-  it("blocks first-ai-photo on the free plan when billing isn't configured", async () => {
-    delete process.env.STRIPE_PRICE_STUDIO; // billing not fully configured
-    const s = await deriveOnboardingStatus(tenant({ plan: "free" }));
-    expect(
-      s.tasks.find((t) => t.id === "first-ai-photo")!.blockedReason,
-    ).toMatch(/aren.t purchasable/);
-  });
-
-  it("does NOT block first-ai-photo when the plan has a monthly bucket", async () => {
-    delete process.env.STRIPE_PRICE_STUDIO;
-    const s = await deriveOnboardingStatus(tenant({ plan: "studio" })); // 40/mo bucket
-    expect(
-      s.tasks.find((t) => t.id === "first-ai-photo")!.blockedReason,
-    ).toBeUndefined();
+  it("never blocks first-ai-photo — every plan includes an AI allowance", async () => {
+    delete process.env.STRIPE_PRICE_PRO; // even with billing unconfigured
+    for (const plan of ["free", "pro"] as const) {
+      const s = await deriveOnboardingStatus(tenant({ plan }));
+      expect(
+        s.tasks.find((t) => t.id === "first-ai-photo")!.blockedReason,
+      ).toBeUndefined();
+    }
   });
 
   it("hides plan-gated tasks on the free plan", async () => {
