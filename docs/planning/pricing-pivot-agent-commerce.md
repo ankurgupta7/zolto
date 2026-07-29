@@ -182,11 +182,8 @@ page.
 - Off-season: is skim-only enough, or do we also offer Pro pause / annual
   billing?
 - Speed vs Shopify Agentic: how fast to ship agent-layer prominence.
-- **Grandfathering:** existing paid tenants were backfilled to Pro by
-  migration `0008`, but their Stripe subscriptions still bill at the old
-  Maker/Studio/Atelier prices. Someone must migrate those subscriptions
-  by hand (or decide to grandfather them) before the old Stripe Prices are
-  archived.
+- **Grandfathering:** handled in code, but still needs one human decision —
+  see the runbook in §8.
 
 ---
 
@@ -206,3 +203,85 @@ page.
 > `/llms.txt`, `/llms-full.txt`, MCP `get_pricing`, the admin Billing page,
 > and checkout's fee math all derive from it, and the tests in
 > `shared/platform.test.ts` will hold the story together.
+
+---
+
+## 8. Runbook: legacy subscribers (pre-pivot paid tenants)
+
+Migration `0008` moved every Maker/Studio/Atelier tenant to `plan = 'pro'`.
+Their **Stripe subscriptions were not touched**, so they still bill at the old
+price. An ex-Atelier tenant therefore pays CHF 99/month for a plan we sell at
+CHF 25.
+
+### What the code now does about it
+
+- `planForPriceId` maps the retired Price ids back to `pro`
+  (`LEGACY_PRICE_ENV` in `server/billing.ts`). Without this, those
+  subscriptions resolved to `null`, the plan write was skipped, and a legacy
+  subscriber's plan **silently stopped tracking Stripe** — a cancellation or
+  payment failure would not have moved them off Pro.
+- `handleSubscriptionUpdated` records what they actually pay in
+  `tenants.plan_price_override` (a column that existed unused since the
+  original roadmap), and clears it the moment they move onto the real Pro
+  price. It also logs a warning naming the tenant and the price.
+- The merchant's Billing page shows the real figure and says we won't quietly
+  leave them there. Telling someone paying CHF 99 that their plan costs CHF 25
+  would be a lie by omission.
+- Retired tiers still cannot be **sold**: `PRICE_ENV` (the forward mapping) has
+  only `pro`, so `createPlanCheckout` rejects them, and `isBillingConfigured`
+  ignores them.
+
+### What a human still has to do
+
+Set `STRIPE_PRICE_MAKER` / `_STUDIO` / `_ATELIER` in the environment to the
+retired Price ids — otherwise the mapping above can't recognise them and
+legacy subscribers go back to silently desyncing.
+
+Then decide, per tenant, and act in Stripe:
+
+1. **Move them to Pro** (recommended where the old price is higher). Update
+   the subscription item to the Pro Price with proration. The next webhook
+   clears `plan_price_override` automatically.
+2. **Deliberately grandfather** (only sensible if the old price is *lower*
+   than Pro). Nothing to do — the override keeps the UI honest.
+
+Find them with:
+
+```sql
+SELECT id, slug, plan, plan_price_override, stripe_subscription_id
+FROM tenants
+WHERE plan_price_override IS NOT NULL;
+```
+
+That column populates as each subscription's next webhook arrives, so allow a
+billing cycle for the list to fill, or replay `customer.subscription.updated`
+from the Stripe dashboard to populate it immediately.
+
+**Do not archive the old Stripe Prices** until this list is empty — archiving
+a Price that live subscriptions still reference is how billing breaks quietly.
+
+---
+
+## 9. Verification status of the fee path
+
+The platform fee is the revenue mechanism of this whole model, so it's worth
+being precise about what has and hasn't been proven:
+
+- ✅ **Unit-tested** end to end with a mocked Stripe: fee maths, plan
+  conditionality, channel attribution, subtotal-not-shipping basis.
+- ⚠️ **Integration tests written, not yet run.** `server/stripe.integration.test.ts`
+  now creates a real test-mode connected account and asserts that a direct
+  charge with `application_fee_amount` is accepted (plus the agent-channel
+  and Pro/no-fee variants). They `describe.skip` without
+  `STRIPE_TEST_SECRET_KEY`, and no such key was available where this was
+  written. **Run `pnpm test:integration` with a Stripe test key before
+  launch** — this is the last unproven link in the revenue path.
+- ✅ **Failure contained regardless.** A rejected application fee fails the
+  *entire* `checkout.sessions.create` call, which would take a vendor's
+  storefront offline rather than cost Zolto 1%. `createStorefrontCheckoutSession`
+  now retries once without the fee when — and only when — the error is
+  fee-specific (`isPlatformFeeRejection`), logs loudly, and records `0` on the
+  order. An un-monetized sale beats a lost one. If the integration run above
+  comes back clean, this path should never fire; if it fires in production,
+  the Connect relationship is misconfigured and the log says so.
+

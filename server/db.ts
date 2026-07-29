@@ -1337,7 +1337,13 @@ export async function getTenantByStripeSubscriptionId(
 export async function updateTenantBilling(
   tenantId: number,
   fields: Partial<
-    Pick<Tenant, "plan" | "subscriptionStatus" | "stripeSubscriptionId">
+    Pick<
+      Tenant,
+      | "plan"
+      | "subscriptionStatus"
+      | "stripeSubscriptionId"
+      | "planPriceOverride"
+    >
   >,
 ): Promise<void> {
   if (Object.keys(fields).length === 0) return;

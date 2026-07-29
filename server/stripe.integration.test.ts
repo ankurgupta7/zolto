@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeAll } from "vitest";
+import { describe, expect, it, beforeAll, afterAll } from "vitest";
 import Stripe from "stripe";
 
 /**
@@ -283,3 +283,172 @@ describeIf("Stripe Integration — Webhook Verification", () => {
     });
   });
 });
+
+// ─── Stripe Connect: direct charge + platform fee ────────────────────────────
+//
+// This is the revenue mechanism of the whole pricing model
+// (docs/planning/pricing-pivot-agent-commerce.md): a Free-plan tenant's
+// customer pays into the TENANT's own connected account (a direct charge),
+// and Zolto's 1% rides along as application_fee_amount.
+//
+// It matters that this is tested against the real API rather than a mock,
+// because the failure mode is not "the fee is skipped" — Stripe rejects the
+// whole `checkout.sessions.create` call, so EVERY online sale for that vendor
+// fails. server/checkoutSession.ts carries a fallback for exactly that case;
+// these tests are how we find out whether the fallback is ever needed.
+
+describeIf(
+  "Stripe Integration — Connect direct charge with platform fee",
+  () => {
+    let stripe: Stripe;
+    let connectedAccountId: string;
+
+    beforeAll(async () => {
+      stripe = getStripe();
+      // A Standard account mirrors what tenants link via OAuth in production.
+      // Test-mode accounts are free to create and need no onboarding to accept
+      // a Checkout Session, which is all we're exercising here.
+      const account = await stripe.accounts.create({
+        type: "standard",
+        country: "CH",
+        email: `zolto-integration-${Date.now()}@example.com`,
+      });
+      connectedAccountId = account.id;
+    }, 30_000);
+
+    afterAll(async () => {
+      // Test-mode accounts can be deleted; don't leave litter behind.
+      if (connectedAccountId) {
+        await stripe.accounts.del(connectedAccountId).catch(() => {});
+      }
+    });
+
+    it("accepts application_fee_amount on a direct charge (the Free-plan skim)", async () => {
+      const session = await stripe.checkout.sessions.create(
+        {
+          mode: "payment",
+          payment_method_types: ["card"],
+          line_items: [
+            {
+              quantity: 1,
+              price_data: {
+                currency: "chf",
+                unit_amount: 6500, // CHF 65.00
+                product_data: { name: "Perlenkette" },
+              },
+            },
+          ],
+          payment_intent_data: {
+            statement_descriptor: "ZOLTO TEST",
+            // 1% of the CHF 65 subtotal — what a Free-plan tenant is charged.
+            application_fee_amount: 65,
+          },
+          success_url: "https://example.com/checkout/success",
+          cancel_url: "https://example.com/checkout/cancel",
+          metadata: { productIds: "1", channel: "web" },
+        },
+        { stripeAccount: connectedAccountId },
+      );
+
+      expect(session.id).toMatch(/^cs_test_/);
+      expect(session.status).toBe("open");
+      expect(session.amount_total).toBe(6500);
+
+      await stripe.checkout.sessions
+        .expire(session.id, { stripeAccount: connectedAccountId } as never)
+        .catch(() => {});
+    }, 30_000);
+
+    it("accepts an agent-originated session identically to a web one", async () => {
+      // The agent path must not be a special case at the Stripe layer — same
+      // call, same fee, only the metadata channel differs.
+      const session = await stripe.checkout.sessions.create(
+        {
+          mode: "payment",
+          payment_method_types: ["card"],
+          line_items: [
+            {
+              quantity: 1,
+              price_data: {
+                currency: "chf",
+                unit_amount: 6500,
+                product_data: { name: "Perlenkette" },
+              },
+            },
+          ],
+          payment_intent_data: { application_fee_amount: 65 },
+          success_url: "https://example.com/checkout/success",
+          cancel_url: "https://example.com/checkout/cancel",
+          metadata: { productIds: "1", channel: "agent" },
+        },
+        { stripeAccount: connectedAccountId },
+      );
+
+      expect(session.id).toMatch(/^cs_test_/);
+      expect(session.metadata?.channel).toBe("agent");
+
+      await stripe.checkout.sessions
+        .expire(session.id, { stripeAccount: connectedAccountId } as never)
+        .catch(() => {});
+    }, 30_000);
+
+    it("omits the fee entirely for Pro tenants without breaking the charge", async () => {
+      const session = await stripe.checkout.sessions.create(
+        {
+          mode: "payment",
+          payment_method_types: ["card"],
+          line_items: [
+            {
+              quantity: 1,
+              price_data: {
+                currency: "chf",
+                unit_amount: 6500,
+                product_data: { name: "Perlenkette" },
+              },
+            },
+          ],
+          // Pro: no application_fee_amount key at all.
+          payment_intent_data: { statement_descriptor: "ZOLTO TEST" },
+          success_url: "https://example.com/checkout/success",
+          cancel_url: "https://example.com/checkout/cancel",
+          metadata: { productIds: "1", channel: "web" },
+        },
+        { stripeAccount: connectedAccountId },
+      );
+
+      expect(session.id).toMatch(/^cs_test_/);
+
+      await stripe.checkout.sessions
+        .expire(session.id, { stripeAccount: connectedAccountId } as never)
+        .catch(() => {});
+    }, 30_000);
+
+    it("rejects a fee larger than the charge — the bound our maths must respect", async () => {
+      // Documents WHY platformFeeRappen is computed on the subtotal and capped
+      // by construction: an over-large fee is a hard API error, i.e. a failed
+      // sale. If Stripe ever stops rejecting this, revisit the fallback.
+      await expect(
+        stripe.checkout.sessions.create(
+          {
+            mode: "payment",
+            payment_method_types: ["card"],
+            line_items: [
+              {
+                quantity: 1,
+                price_data: {
+                  currency: "chf",
+                  unit_amount: 1000,
+                  product_data: { name: "Cheap thing" },
+                },
+              },
+            ],
+            payment_intent_data: { application_fee_amount: 5000 },
+            success_url: "https://example.com/success",
+            cancel_url: "https://example.com/cancel",
+          },
+          { stripeAccount: connectedAccountId },
+        ),
+      ).rejects.toThrow();
+    }, 30_000);
+  },
+);

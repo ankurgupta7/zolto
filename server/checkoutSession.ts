@@ -107,6 +107,47 @@ export function platformFeeRappen(
   return Math.round((subtotalRappen * bps) / 10_000);
 }
 
+/**
+ * Does this Stripe error mean "your platform fee is not acceptable", as
+ * opposed to something genuinely wrong with the order?
+ *
+ * Deliberately narrow. A false positive here would retry a real failure with
+ * the fee stripped and hand the vendor a charge we can't earn on; a false
+ * negative just means we surface the error, which is the safe direction. So
+ * we match only on Stripe telling us the fee parameter is the problem, or on
+ * a permissions error — the shape a Connect relationship that can't take fees
+ * actually produces. Amount/currency/card errors are left to propagate.
+ */
+export function isPlatformFeeRejection(err: unknown): boolean {
+  if (!err || typeof err !== "object") return false;
+  const e = err as {
+    type?: string;
+    code?: string;
+    param?: string;
+    message?: string;
+  };
+
+  // Stripe points at the offending parameter when it can.
+  if (e.param && /application_fee/i.test(e.param)) return true;
+
+  // The platform isn't permitted to collect fees on this account.
+  if (e.type === "StripePermissionError") return true;
+  if (
+    e.code &&
+    /application_fees?_not_allowed|platform_account_required/i.test(e.code)
+  ) {
+    return true;
+  }
+
+  // Last resort: an invalid-request error that names application fees. Scoped
+  // to invalid_request so a card decline mentioning "fee" can't match.
+  return (
+    e.type === "StripeInvalidRequestError" &&
+    typeof e.message === "string" &&
+    /application fee/i.test(e.message)
+  );
+}
+
 export interface CreateCheckoutResult {
   url: string;
   sessionId: string;
@@ -233,81 +274,105 @@ export async function createStorefrontCheckoutSession(params: {
   // — funds settle straight to the tenant, no raw tenant Stripe key ever
   // touches Zolto's servers. application_fee_amount is the platform's cut of
   // that direct charge; omitted entirely when the fee is 0 (Pro plan).
-  //
-  // Wrapped so a Stripe/DB failure after the reservation above doesn't leave
-  // a phantom hold on these pieces until it times out on its own.
-  try {
-    const session = await stripe.checkout.sessions.create(
+  const buildParams = (fee: number) => ({
+    mode: "payment" as const,
+    // Credit & debit cards plus TWINT (Swiss mobile payment)
+    payment_method_types: ["card", "twint"] as ("card" | "twint")[],
+    line_items: lineItems,
+    // Without this, one-time "payment" mode sessions never create a Stripe
+    // Customer, so the dashboard's Customers count stays at 0.
+    customer_creation: "always" as const,
+    billing_address_collection: "required" as const,
+    shipping_address_collection: {
+      allowed_countries: [...SHIPPING_COUNTRIES],
+    },
+    // Stripe Checkout shows every option to every customer regardless of the
+    // address they enter — it doesn't filter shipping_options by destination
+    // country within a single session config. The customer picks the option
+    // matching their own country from the two labeled choices below; this is
+    // the standard workaround for per-country flat rates without a custom
+    // shipping-rate lookup.
+    shipping_options: [
       {
-        mode: "payment",
-        // Credit & debit cards plus TWINT (Swiss mobile payment)
-        payment_method_types: ["card", "twint"],
-        line_items: lineItems,
-        // Without this, one-time "payment" mode sessions never create a
-        // Stripe Customer, so the dashboard's Customers count stays at 0.
-        customer_creation: "always",
-        billing_address_collection: "required",
-        shipping_address_collection: {
-          allowed_countries: [...SHIPPING_COUNTRIES],
-        },
-        // Stripe Checkout shows every option to every customer regardless of
-        // the address they enter — it doesn't filter shipping_options by
-        // destination country within a single session config. The customer
-        // picks the option matching their own country from the two labeled
-        // choices below; this is the standard workaround for per-country flat
-        // rates without a custom shipping-rate lookup.
-        shipping_options: [
-          {
-            shipping_rate_data: {
-              type: "fixed_amount",
-              fixed_amount: { amount: chShippingFeeRappen, currency },
-              display_name:
-                chShippingFeeRappen === 0
-                  ? "Free shipping (Switzerland)"
-                  : "Standard shipping (Switzerland)",
-              delivery_estimate: {
-                minimum: { unit: "business_day", value: 2 },
-                maximum: { unit: "business_day", value: 3 },
-              },
-            },
+        shipping_rate_data: {
+          type: "fixed_amount" as const,
+          fixed_amount: { amount: chShippingFeeRappen, currency },
+          display_name:
+            chShippingFeeRappen === 0
+              ? "Free shipping (Switzerland)"
+              : "Standard shipping (Switzerland)",
+          delivery_estimate: {
+            minimum: { unit: "business_day" as const, value: 2 },
+            maximum: { unit: "business_day" as const, value: 3 },
           },
-          {
-            shipping_rate_data: {
-              type: "fixed_amount",
-              fixed_amount: { amount: EU_FLAT_SHIPPING_FEE_RAPPEN, currency },
-              display_name: "Standard shipping (EU)",
-              delivery_estimate: {
-                minimum: { unit: "business_day", value: 4 },
-                maximum: { unit: "business_day", value: 7 },
-              },
-            },
-          },
-        ],
-        phone_number_collection: { enabled: true },
-        locale: "auto",
-        // Controls the merchant name shown on TWINT and bank statements.
-        // 22-char max. The Stripe account business profile name (on the
-        // tenant's OWN connected account) also affects TWINT display.
-        // NOTE: must be inside payment_intent_data for Checkout Sessions;
-        // top-level statement_descriptor is rejected by newer Stripe APIs.
-        payment_intent_data: {
-          statement_descriptor: (tenant.name || "ZOLTO STORE")
-            .slice(0, 22)
-            .toUpperCase(),
-          ...(feeRappen > 0 ? { application_fee_amount: feeRappen } : {}),
         },
-        success_url: `${baseUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${baseUrl}/checkout/cancel`,
-        metadata: { productIds: uniqueIds.join(","), channel },
-        // Matches the reservation TTL above (30 min, Stripe's own minimum for
-        // expires_at) so the hold on these pieces never outlives the session
-        // that placed it.
-        expires_at: Math.floor(
-          (Date.now() + PRODUCT_RESERVATION_TTL_MS) / 1000,
-        ),
       },
-      { stripeAccount: connectedAccountId },
-    );
+      {
+        shipping_rate_data: {
+          type: "fixed_amount" as const,
+          fixed_amount: { amount: EU_FLAT_SHIPPING_FEE_RAPPEN, currency },
+          display_name: "Standard shipping (EU)",
+          delivery_estimate: {
+            minimum: { unit: "business_day" as const, value: 4 },
+            maximum: { unit: "business_day" as const, value: 7 },
+          },
+        },
+      },
+    ],
+    phone_number_collection: { enabled: true },
+    locale: "auto" as const,
+    // Controls the merchant name shown on TWINT and bank statements. 22-char
+    // max. The Stripe account business profile name (on the tenant's OWN
+    // connected account) also affects TWINT display.
+    // NOTE: must be inside payment_intent_data for Checkout Sessions;
+    // top-level statement_descriptor is rejected by newer Stripe APIs.
+    payment_intent_data: {
+      statement_descriptor: (tenant.name || "ZOLTO STORE")
+        .slice(0, 22)
+        .toUpperCase(),
+      ...(fee > 0 ? { application_fee_amount: fee } : {}),
+    },
+    success_url: `${baseUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${baseUrl}/checkout/cancel`,
+    metadata: { productIds: uniqueIds.join(","), channel },
+    // Matches the reservation TTL above (30 min, Stripe's own minimum for
+    // expires_at) so the hold on these pieces never outlives the session that
+    // placed it.
+    expires_at: Math.floor((Date.now() + PRODUCT_RESERVATION_TTL_MS) / 1000),
+  });
+
+  // Wrapped so a Stripe/DB failure after the reservation above doesn't leave a
+  // phantom hold on these pieces until it times out on its own.
+  try {
+    let chargedFeeRappen = feeRappen;
+    let session;
+    try {
+      session = await stripe.checkout.sessions.create(buildParams(feeRappen), {
+        stripeAccount: connectedAccountId,
+      });
+    } catch (err) {
+      // A rejected application fee fails the ENTIRE session creation, not just
+      // the fee — so without this, a Connect misconfiguration would take a
+      // vendor's whole online storefront down rather than cost us 1%. Retry
+      // once without the fee: an un-monetized sale is strictly better than a
+      // lost one, and the loud log plus the 0 recorded on an otherwise
+      // fee-bearing order is how we find out it happened.
+      if (feeRappen > 0 && isPlatformFeeRejection(err)) {
+        console.error(
+          `[Checkout] Stripe rejected the platform fee for tenant ${tenantId} ` +
+            `(connected account ${connectedAccountId}). Retrying WITHOUT the fee ` +
+            `so the sale still completes — this order earns Zolto nothing. ` +
+            `Check the Connect relationship. Original error:`,
+          err,
+        );
+        session = await stripe.checkout.sessions.create(buildParams(0), {
+          stripeAccount: connectedAccountId,
+        });
+        chargedFeeRappen = 0;
+      } else {
+        throw err;
+      }
+    }
 
     const amountTotal = session.amount_total ?? subtotalRappen;
 
@@ -319,7 +384,7 @@ export async function createStorefrontCheckoutSession(params: {
       currency,
       productIds: uniqueIds.join(","),
       channel,
-      platformFeeRappen: feeRappen,
+      platformFeeRappen: chargedFeeRappen,
     });
 
     return {
@@ -327,7 +392,7 @@ export async function createStorefrontCheckoutSession(params: {
       sessionId: session.id,
       amountTotal,
       currency,
-      platformFeeRappen: feeRappen,
+      platformFeeRappen: chargedFeeRappen,
       items: items.map((p) => ({ id: p.id, name: p.name, price: p.price })),
     };
   } catch (err) {

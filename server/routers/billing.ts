@@ -45,10 +45,18 @@ export const billingRouter = router({
     ]);
     const onFree = ctx.tenant.plan !== "pro";
     const skimChf = online.feeRappen / 100;
+    // Grandfathered subscribers still bill at a retired tier's price; show
+    // them what they actually pay rather than Pro's list price.
+    const legacyPriceChf = ctx.tenant.planPriceOverride
+      ? Number(ctx.tenant.planPriceOverride)
+      : null;
+
     return {
       plan: ctx.tenant.plan,
       subscriptionStatus: ctx.tenant.subscriptionStatus,
       trialEndsAt: ctx.tenant.trialEndsAt,
+      /** Non-null only while a tenant is billed at a pre-pivot price. */
+      legacyPriceChf,
       ai: {
         /** null = unmetered (Pro). */
         allowancePerMonth: allowance,

@@ -25,6 +25,7 @@ vi.mock("./stripe", () => ({
 import {
   CheckoutError,
   createStorefrontCheckoutSession,
+  isPlatformFeeRejection,
   platformFeeRappen,
 } from "./checkoutSession";
 import type { Tenant } from "../drizzle/schema";
@@ -175,5 +176,169 @@ describe("createStorefrontCheckoutSession", () => {
     expect(createOrder).toHaveBeenCalledWith(
       expect.objectContaining({ productIds: "1" }),
     );
+  });
+});
+
+/**
+ * Stripe rejecting the application fee fails the WHOLE session creation, so
+ * without a fallback a Connect misconfiguration takes a vendor's storefront
+ * offline rather than costing Zolto 1%.
+ */
+describe("platform fee rejection", () => {
+  function stripeErr(props: Record<string, unknown>) {
+    return Object.assign(new Error(String(props.message ?? "boom")), props);
+  }
+
+  describe("isPlatformFeeRejection", () => {
+    it("recognises the fee parameter being named", () => {
+      expect(
+        isPlatformFeeRejection(
+          stripeErr({
+            type: "StripeInvalidRequestError",
+            param: "payment_intent_data[application_fee_amount]",
+          }),
+        ),
+      ).toBe(true);
+    });
+
+    it("recognises a Connect permissions failure", () => {
+      expect(
+        isPlatformFeeRejection(stripeErr({ type: "StripePermissionError" })),
+      ).toBe(true);
+      expect(
+        isPlatformFeeRejection(
+          stripeErr({
+            type: "StripeError",
+            code: "application_fees_not_allowed",
+          }),
+        ),
+      ).toBe(true);
+    });
+
+    it("recognises an invalid request that names application fees", () => {
+      expect(
+        isPlatformFeeRejection(
+          stripeErr({
+            type: "StripeInvalidRequestError",
+            message: "You cannot collect an application fee on this account.",
+          }),
+        ),
+      ).toBe(true);
+    });
+
+    it("does NOT swallow unrelated failures", () => {
+      // These must propagate — retrying them fee-free would hide a real bug.
+      expect(
+        isPlatformFeeRejection(stripeErr({ type: "StripeCardError" })),
+      ).toBe(false);
+      expect(
+        isPlatformFeeRejection(
+          stripeErr({
+            type: "StripeInvalidRequestError",
+            param: "line_items[0][price]",
+          }),
+        ),
+      ).toBe(false);
+      expect(
+        isPlatformFeeRejection(
+          stripeErr({ type: "StripeAPIError", message: "service unavailable" }),
+        ),
+      ).toBe(false);
+      expect(isPlatformFeeRejection(new Error("plain"))).toBe(false);
+      expect(isPlatformFeeRejection(null)).toBe(false);
+      expect(isPlatformFeeRejection("nope")).toBe(false);
+    });
+
+    it("does not match a card error that merely mentions a fee", () => {
+      expect(
+        isPlatformFeeRejection(
+          stripeErr({
+            type: "StripeCardError",
+            message: "Card declined: application fee dispute",
+          }),
+        ),
+      ).toBe(false);
+    });
+  });
+
+  it("still completes the sale when Stripe rejects the fee, recording zero taken", async () => {
+    sessionsCreate
+      .mockRejectedValueOnce(
+        stripeErr({
+          type: "StripeInvalidRequestError",
+          param: "payment_intent_data[application_fee_amount]",
+        }),
+      )
+      .mockResolvedValueOnce({
+        id: "cs_retry",
+        url: "https://checkout.stripe.com/cs_retry",
+        amount_total: 18500,
+      });
+
+    const result = await run();
+
+    // The buyer gets a working checkout — losing 1% beats losing the order.
+    expect(result.url).toBe("https://checkout.stripe.com/cs_retry");
+    expect(sessionsCreate).toHaveBeenCalledTimes(2);
+    // First attempt carried the fee, retry dropped it entirely.
+    expect(
+      sessionsCreate.mock.calls[0][0].payment_intent_data
+        .application_fee_amount,
+    ).toBe(185);
+    expect(
+      "application_fee_amount" in
+        sessionsCreate.mock.calls[1][0].payment_intent_data,
+    ).toBe(false);
+    // The order tells the truth: we earned nothing on it.
+    expect(result.platformFeeRappen).toBe(0);
+    expect(createOrder).toHaveBeenCalledWith(
+      expect.objectContaining({ platformFeeRappen: 0 }),
+    );
+    // And the stock stays held for the buyer who is now paying.
+    expect(releaseProductReservations).not.toHaveBeenCalled();
+  });
+
+  it("logs loudly enough to be noticed, since revenue is silently lost", async () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    sessionsCreate
+      .mockRejectedValueOnce(stripeErr({ type: "StripePermissionError" }))
+      .mockResolvedValueOnce({ id: "cs_r", url: "u", amount_total: 18500 });
+
+    await run();
+
+    expect(spy).toHaveBeenCalled();
+    expect(String(spy.mock.calls[0][0])).toMatch(/rejected the platform fee/i);
+    spy.mockRestore();
+  });
+
+  it("does not retry for a Pro tenant — there was no fee to reject", async () => {
+    sessionsCreate.mockRejectedValue(
+      stripeErr({
+        type: "StripeInvalidRequestError",
+        param: "payment_intent_data[application_fee_amount]",
+      }),
+    );
+    await expect(
+      run({ tenant: { ...tenant, plan: "pro" } as Tenant }),
+    ).rejects.toThrow();
+    expect(sessionsCreate).toHaveBeenCalledTimes(1);
+    expect(releaseProductReservations).toHaveBeenCalledWith(7, [1]);
+  });
+
+  it("gives up (and releases stock) if the fee-free retry also fails", async () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    sessionsCreate
+      .mockRejectedValueOnce(
+        stripeErr({
+          type: "StripeInvalidRequestError",
+          param: "payment_intent_data[application_fee_amount]",
+        }),
+      )
+      .mockRejectedValueOnce(new Error("stripe still down"));
+
+    await expect(run()).rejects.toThrow(/stripe still down/);
+    expect(releaseProductReservations).toHaveBeenCalledWith(7, [1]);
+    expect(createOrder).not.toHaveBeenCalled();
+    spy.mockRestore();
   });
 });
