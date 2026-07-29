@@ -25,8 +25,14 @@ The pivot below is **implemented in code**, superseding the previous
 | Upsell engine | `server/routers/billing.ts`, `client/src/pages/Billing.tsx` | `getMonthlyOnlineSales` + break-even math → "you'd save CHF X on Pro this month" |
 | Marketing/agent surfaces | `Pricing.tsx`, `Landing.tsx`, `shared/marketing.ts`, `server/mcp.ts` | Fee model disclosed on the pricing page, in `/llms.txt`, `/llms-full.txt`, and MCP `get_pricing` |
 
-Full suite green (1158 passing) and `tsc --noEmit` clean at the time of
-writing. **Still open before launch:** the native TWINT rail (§3) is not
+**The agent half of this model is now real:** every storefront's MCP endpoint
+gained a `create_checkout` tool, so any AI agent can buy from a merchant
+directly and the resulting order is attributed `channel: "agent"` and carries
+the fee. Before that, nothing in the product could produce an agent-originated
+sale — the differentiating revenue was unreachable. See
+[`./feature-backlog-assessment.md`](./feature-backlog-assessment.md).
+
+Full suite green and `tsc --noEmit` clean at the time of writing. **Still open before launch:** the native TWINT rail (§3) is not
 built — in-person still runs on Stripe TWINT, which is correct on fee
 grounds (Zolto takes nothing in person either way) but not yet the
 cheapest rail for the vendor.

@@ -20,7 +20,8 @@ const MAX_LISTED = 50;
 /**
  * A tenant storefront's `/llms.txt` (llmstxt.org format): a compact, link-first
  * brief an LLM can read to understand the shop and its live catalogue, plus how
- * to query it programmatically (MCP). Product-aware — generated from the store's
+ * to query it programmatically (MCP) — including buying from it directly.
+ * Product-aware — generated from the store's
  * visible, in-stock catalogue.
  */
 export function renderStorefrontLlmsTxt(
@@ -74,8 +75,13 @@ export function renderStorefrontLlmsTxt(
   lines.push("## For AI agents");
   lines.push("");
   lines.push(
-    `- Model Context Protocol (MCP) endpoint: ${base}/mcp — JSON-RPC 2.0 over HTTP. Tools: \`search_products\`, \`get_product\`, \`list_categories\`, \`get_store_info\`.`,
+    `- Model Context Protocol (MCP) endpoint: ${base}/mcp — JSON-RPC 2.0 over HTTP. Tools: \`search_products\`, \`get_product\`, \`list_categories\`, \`get_store_info\`, \`create_checkout\`.`,
   );
+  if (tenant.stripeConnectedAccountId) {
+    lines.push(
+      "- **You can buy here directly.** `create_checkout` returns a Stripe Checkout link for the buyer; payment goes straight to this merchant's own account. No marketplace, no intermediary, no account needed with anyone but the merchant.",
+    );
+  }
   lines.push(`- Full catalogue: ${base}/shop`);
   lines.push(
     "- Shipping: CHF 8 within Switzerland (free over CHF 50), CHF 15 to the EU.",

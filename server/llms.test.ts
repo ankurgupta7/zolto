@@ -8,6 +8,7 @@ const tenant = {
   id: 7,
   name: "Kalakosh",
   slug: "kalakosh",
+  stripeConnectedAccountId: "acct_kalakosh",
 } as unknown as Tenant;
 
 let nextId = 1;
@@ -67,6 +68,29 @@ describe("renderStorefrontLlmsTxt", () => {
     expect(txt).toContain("Earrings: 1 item(s)");
     expect(txt).toContain("https://kalakosh.ch/mcp");
     expect(txt).not.toContain("https://kalakosh.ch//");
+  });
+
+  it("tells agents they can buy here, and names the tool", () => {
+    const txt = renderStorefrontLlmsTxt(
+      tenant,
+      [makeProduct({ id: 1 })],
+      "https://kalakosh.ch",
+    );
+    expect(txt).toContain("create_checkout");
+    expect(txt).toContain("You can buy here directly");
+    // The disintermediation claim is the whole wedge — say it plainly.
+    expect(txt).toMatch(/straight to this merchant/i);
+  });
+
+  it("does not promise buying when the merchant hasn't connected Stripe", () => {
+    const txt = renderStorefrontLlmsTxt(
+      { ...tenant, stripeConnectedAccountId: null } as Tenant,
+      [makeProduct({ id: 1 })],
+      "https://kalakosh.ch",
+    );
+    expect(txt).not.toContain("You can buy here directly");
+    // The tool is still listed — it exists; it just can't succeed yet.
+    expect(txt).toContain("create_checkout");
   });
 
   it("summarises the tail when there are many products", () => {

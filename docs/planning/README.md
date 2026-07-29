@@ -14,6 +14,7 @@ the source of truth for what has actually shipped is the code plus the
 | [`zolto-business-plan.md`](./zolto-business-plan.md) | The business plan (v1.1). Executive summary, market, pricing, financials, risks, phase roadmap. Start here. |
 | [`monetization-code-roadmap.md`](./monetization-code-roadmap.md) | Maps each business phase to concrete code changes (schema, middleware, billing, feature gating). Historical + forward-looking. |
 | [`pricing-pivot-agent-commerce.md`](./pricing-pivot-agent-commerce.md) | **The shipped pricing model.** Free in person forever; 1% platform fee on online + AI-agent orders (Free plan); Pro CHF 25/mo removes it and unmeters AI. Source of truth in code: `shared/platform.ts`. |
+| [`feature-backlog-assessment.md`](./feature-backlog-assessment.md) | What we're building from the product backlog and what we're deliberately not. Records the agent-commerce wedge (shipped) and why hyper-local demand intelligence waits for real data. |
 | [`honest-pricing-strategy.md`](./honest-pricing-strategy.md) | **Superseded — history only.** The retired four-tier / 0%-take / photo-credit model. Its principles still inform the current pricing; its numbers are obsolete. |
 | [`roadmap-backlog.md`](./roadmap-backlog.md) | Founder-captured backlog items not yet scheduled: migrate-in from Shopify/Square/Stripe/Worldline, the founder About page, and a TBD third item. |
 | [`phase1/content/about-founder.md`](./phase1/content/about-founder.md) | Draft copy for the casual, first-person founder "About me" page + open questions to finalize it. |

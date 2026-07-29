@@ -6,16 +6,32 @@ import {
   handleMcpMessage,
   MCP_TOOLS,
   MCP_PROTOCOL_VERSION,
+  resetMcpRateLimits,
   type McpContext,
   type McpDeps,
 } from "./mcp";
+import { CheckoutError } from "./checkoutSession";
 
 const tenant = {
   id: 7,
   name: "Kalakosh",
   slug: "kalakosh",
   domain: "kalakosh.ch",
+  plan: "free",
+  stripeConnectedAccountId: "acct_kalakosh",
 } as unknown as Tenant;
+
+/** A successful checkout, as the shared service would return it. */
+const checkoutOk = {
+  url: "https://checkout.stripe.com/cs_agent_1",
+  sessionId: "cs_agent_1",
+  amountTotal: 6500,
+  currency: "chf",
+  platformFeeRappen: 65,
+  items: [{ id: 1, name: "Perlenkette", price: "65.00" }],
+};
+
+const createCheckout = vi.fn();
 
 let nextId = 1;
 function makeProduct(p: Partial<Product>): Product {
@@ -43,14 +59,18 @@ function makeProduct(p: Partial<Product>): Product {
   } as Product;
 }
 
-function buildCtx(products: Product[]): McpContext {
+function buildCtx(
+  products: Product[],
+  overrides: Partial<McpContext> = {},
+): McpContext {
   const deps: McpDeps = {
     getVisibleProducts: vi.fn(async () => products),
     getVisibleProductById: vi.fn(async (_t, id) =>
       products.find((p) => p.id === id),
     ),
+    createCheckout,
   };
-  return { tenant, baseUrl: "https://kalakosh.ch/", deps };
+  return { tenant, baseUrl: "https://kalakosh.ch/", deps, ...overrides };
 }
 
 const req = (method: string, params?: unknown, id: number | null = 1) => ({
@@ -75,6 +95,7 @@ describe("MCP JSON-RPC lifecycle", () => {
     const res = await handleMcpMessage(req("tools/list"), ctx);
     const tools = (res?.result as { tools: { name: string }[] }).tools;
     expect(tools.map((t) => t.name).sort()).toEqual([
+      "create_checkout",
       "get_product",
       "get_store_info",
       "list_categories",
@@ -353,6 +374,158 @@ describe("Platform MCP (no tenant / marketing surface)", () => {
     // storefront tool without a store → helpful isError, not a crash
     const result = res?.result as { isError?: boolean };
     expect(result.isError).toBe(true);
+  });
+});
+
+// ── Agent commerce (create_checkout) ──────────────────────────────────────────
+
+describe("create_checkout — agents buying from the merchant directly", () => {
+  const product = makeProduct({ id: 1, name: "Perlenkette" });
+
+  async function call(args: unknown, ctx = buildCtx([product])) {
+    const res = await handleMcpMessage(
+      req("tools/call", { name: "create_checkout", arguments: args }),
+      ctx,
+    );
+    return res?.result as {
+      isError?: boolean;
+      structuredContent?: Record<string, unknown>;
+      content: { text: string }[];
+    };
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    resetMcpRateLimits();
+    createCheckout.mockResolvedValue(checkoutOk);
+  });
+
+  it("returns a payment link for the buyer, not a completed purchase", async () => {
+    const result = await call({ product_ids: [1] });
+    expect(result.isError).toBeUndefined();
+    expect(result.structuredContent).toMatchObject({
+      checkoutUrl: "https://checkout.stripe.com/cs_agent_1",
+      currency: "CHF",
+      itemsSubtotal: "65.00",
+      expiresInMinutes: 30,
+    });
+    // The agent is told shipping is still to come — the subtotal is not a total.
+    expect(result.structuredContent!.note).toMatch(/Shipping is chosen/i);
+  });
+
+  it("always attributes the sale to the agent channel", async () => {
+    await call({ product_ids: [1] });
+    expect(createCheckout).toHaveBeenCalledWith(
+      expect.objectContaining({ channel: "agent", productIds: [1] }),
+    );
+  });
+
+  it("creates the checkout on the merchant's own account, via the same service as the web cart", async () => {
+    await call({ product_ids: [1] });
+    const arg = createCheckout.mock.calls[0][0];
+    expect(arg.tenant).toBe(tenant);
+    expect(arg.baseUrl).toBe("https://kalakosh.ch");
+  });
+
+  it("surfaces a sold-out race as a readable tool error", async () => {
+    createCheckout.mockRejectedValue(
+      new CheckoutError("CONFLICT", "Already sold: Perlenkette."),
+    );
+    const result = await call({ product_ids: [1] });
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toMatch(/Already sold/);
+  });
+
+  it("surfaces a store that hasn't connected payments yet", async () => {
+    createCheckout.mockRejectedValue(
+      new CheckoutError(
+        "NOT_CONNECTED",
+        "This store hasn't connected online payments yet. Please enquire via WhatsApp.",
+      ),
+    );
+    const result = await call({ product_ids: [1] });
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toMatch(/hasn't connected online payments/);
+  });
+
+  it("does not leak internal failures to the agent", async () => {
+    createCheckout.mockRejectedValue(
+      new Error("connect ECONNREFUSED 10.0.0.5:3306"),
+    );
+    const result = await call({ product_ids: [1] });
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).not.toMatch(/ECONNREFUSED|3306/);
+  });
+
+  it("validates product_ids before touching checkout", async () => {
+    for (const bad of [
+      {},
+      { product_ids: [] },
+      { product_ids: "1" },
+      { product_ids: [0] },
+      { product_ids: [-3] },
+      { product_ids: [1.5] },
+      { product_ids: ["abc"] },
+    ]) {
+      const result = await call(bad);
+      expect(result.isError).toBe(true);
+    }
+    expect(createCheckout).not.toHaveBeenCalled();
+  });
+
+  it("refuses a cart larger than the shared maximum", async () => {
+    const result = await call({
+      product_ids: Array.from({ length: 51 }, (_, i) => i + 1),
+    });
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toMatch(/at most 50/);
+    expect(createCheckout).not.toHaveBeenCalled();
+  });
+
+  it("rate limits a looping agent so it cannot hold the whole catalogue", async () => {
+    const ctx = buildCtx([product], { clientKey: "203.0.113.9" });
+    for (let i = 0; i < 10; i++) {
+      expect((await call({ product_ids: [1] }, ctx)).isError).toBeUndefined();
+    }
+    const blocked = await call({ product_ids: [1] }, ctx);
+    expect(blocked.isError).toBe(true);
+    expect(blocked.content[0].text).toMatch(/Too many checkouts/);
+    expect(createCheckout).toHaveBeenCalledTimes(10);
+  });
+
+  it("does not let one caller's limit block a different buyer", async () => {
+    const noisy = buildCtx([product], { clientKey: "203.0.113.9" });
+    for (let i = 0; i < 11; i++) await call({ product_ids: [1] }, noisy);
+
+    const other = buildCtx([product], { clientKey: "198.51.100.4" });
+    expect((await call({ product_ids: [1] }, other)).isError).toBeUndefined();
+  });
+});
+
+describe("get_store_info — buyability", () => {
+  async function storeInfo(ctx: McpContext) {
+    const res = await handleMcpMessage(
+      req("tools/call", { name: "get_store_info", arguments: {} }),
+      ctx,
+    );
+    return (res?.result as { structuredContent: Record<string, unknown> })
+      .structuredContent;
+  }
+
+  it("tells an agent it can buy when the merchant has connected Stripe", async () => {
+    const info = await storeInfo(buildCtx([]));
+    expect(info.canBuyHere).toBe(true);
+    expect(info.checkout).toMatch(/create_checkout/);
+  });
+
+  it("tells an agent to buy elsewhere when the merchant has not", async () => {
+    const info = await storeInfo(
+      buildCtx([], {
+        tenant: { ...tenant, stripeConnectedAccountId: null } as Tenant,
+      }),
+    );
+    expect(info.canBuyHere).toBe(false);
+    expect(info.checkout).toMatch(/in person|contacting the merchant/i);
   });
 });
 
