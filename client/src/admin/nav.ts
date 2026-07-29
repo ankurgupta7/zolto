@@ -37,26 +37,147 @@ export interface AdminNavItem {
 
 export const ADMIN_NAV: AdminNavItem[] = [
   // ── Store plane — "My shop" ──────────────────────────────────────────────
-  { id: "home", plane: "store", label: "Home", icon: "LayoutDashboard", path: "/admin" },
-  { id: "products", plane: "store", label: "Products", icon: "Package", path: "/admin/products" },
-  { id: "import", plane: "store", label: "Import", icon: "Upload", path: "/admin/products/import" },
-  { id: "orders", plane: "store", label: "Orders", icon: "Receipt", path: "/admin/orders" },
-  { id: "reconciliation", plane: "store", label: "Reconciliation", icon: "ClipboardCheck", path: "/admin/reconciliation" },
-  { id: "storefront", plane: "store", label: "Storefront", icon: "Palette", path: "/admin/storefront" },
-  { id: "domain", plane: "store", label: "Domain", icon: "Globe", path: "/admin/domain", requiredPlan: "pro" },
-  { id: "channels", plane: "store", label: "Channels", icon: "MessagesSquare", path: "/admin/channels" },
+  {
+    id: "home",
+    plane: "store",
+    label: "Home",
+    icon: "LayoutDashboard",
+    path: "/admin",
+  },
+  {
+    id: "products",
+    plane: "store",
+    label: "Products",
+    icon: "Package",
+    path: "/admin/products",
+  },
+  {
+    id: "import",
+    plane: "store",
+    label: "Import",
+    icon: "Upload",
+    path: "/admin/products/import",
+  },
+  {
+    id: "orders",
+    plane: "store",
+    label: "Orders",
+    icon: "Receipt",
+    path: "/admin/orders",
+  },
+  {
+    id: "reconciliation",
+    plane: "store",
+    label: "Reconciliation",
+    icon: "ClipboardCheck",
+    path: "/admin/reconciliation",
+  },
+  {
+    id: "storefront",
+    plane: "store",
+    label: "Storefront",
+    icon: "Palette",
+    path: "/admin/storefront",
+  },
+  {
+    id: "domain",
+    plane: "store",
+    label: "Domain",
+    icon: "Globe",
+    path: "/admin/domain",
+    requiredPlan: "pro",
+  },
+  {
+    id: "channels",
+    plane: "store",
+    label: "Channels",
+    icon: "MessagesSquare",
+    path: "/admin/channels",
+  },
   { id: "pos", plane: "store", label: "POS", icon: "Nfc", path: "/admin/pos" },
-  { id: "insights", plane: "store", label: "Insights", icon: "BarChart3", path: "/admin/insights", requiredPlan: "pro" },
+  {
+    id: "insights",
+    plane: "store",
+    label: "Insights",
+    icon: "BarChart3",
+    path: "/admin/insights",
+    requiredPlan: "pro",
+  },
 
   // ── Account plane — "My Zolto account" (owner/admin by default) ─────────
-  { id: "account", plane: "account", label: "Shop profile", icon: "Store", path: "/admin/account", requiredRole: "admin" },
-  { id: "team", plane: "account", label: "Team", icon: "Users", path: "/admin/account/team", requiredRole: "admin" },
-  { id: "plan", plane: "account", label: "Plan & billing", icon: "CreditCard", path: "/admin/account/plan", requiredRole: "admin" },
-  { id: "credits", plane: "account", label: "AI usage", icon: "Sparkles", path: "/admin/account/credits", requiredRole: "admin" },
-  { id: "keys", plane: "account", label: "Keys & access", icon: "KeyRound", path: "/admin/account/keys", requiredRole: "admin" },
-  { id: "data", plane: "account", label: "Data & privacy", icon: "DatabaseBackup", path: "/admin/account/data", requiredRole: "admin" },
-  { id: "support", plane: "account", label: "Support", icon: "LifeBuoy", path: "/admin/account/support" },
-  { id: "legal", plane: "account", label: "Legal & invoices", icon: "FileText", path: "/admin/account/legal", requiredRole: "admin" },
+  {
+    id: "account",
+    plane: "account",
+    label: "Shop profile",
+    icon: "Store",
+    path: "/admin/account",
+    requiredRole: "admin",
+  },
+  {
+    id: "team",
+    plane: "account",
+    label: "Team",
+    icon: "Users",
+    path: "/admin/account/team",
+    requiredRole: "admin",
+  },
+  {
+    id: "plan",
+    plane: "account",
+    label: "Plan & billing",
+    icon: "CreditCard",
+    path: "/admin/account/plan",
+    requiredRole: "admin",
+  },
+  {
+    id: "credits",
+    plane: "account",
+    label: "AI usage",
+    icon: "Sparkles",
+    path: "/admin/account/credits",
+    requiredRole: "admin",
+  },
+  {
+    id: "keys",
+    plane: "account",
+    label: "Keys & access",
+    icon: "KeyRound",
+    path: "/admin/account/keys",
+    requiredRole: "admin",
+  },
+  {
+    id: "data",
+    plane: "account",
+    label: "Data & privacy",
+    icon: "DatabaseBackup",
+    path: "/admin/account/data",
+    requiredRole: "admin",
+  },
+  {
+    id: "support",
+    plane: "account",
+    label: "Support",
+    icon: "LifeBuoy",
+    path: "/admin/account/support",
+  },
+  {
+    id: "legal",
+    plane: "account",
+    label: "Legal & invoices",
+    icon: "FileText",
+    path: "/admin/account/legal",
+    requiredRole: "admin",
+  },
+
+  // ── Zolto's own operations — the platform owner only ─────────────────────
+  {
+    id: "platform",
+    plane: "account",
+    label: "Platform metrics",
+    icon: "Activity",
+    path: "/admin/account/platform",
+    requiredRole: "superadmin",
+  },
 ];
 
 // ─── Access resolution ──────────────────────────────────────────────────────
@@ -68,10 +189,13 @@ export interface ResolvedNavItem extends AdminNavItem {
   access: NavAccess;
 }
 
+// The platform owner acts as a tenant admin everywhere in the store/account
+// planes, and additionally sees the platform plane — hence a rank ABOVE admin
+// rather than equal to it. Anything gated at "admin" stays visible to them.
 const ROLE_RANK: Record<AdminRole, number> = {
   staff: 0,
   admin: 1,
-  superadmin: 1, // platform owner acts as a tenant admin in the admin area
+  superadmin: 2,
 };
 
 /**
@@ -126,7 +250,9 @@ const PLANE_TITLES: Record<AdminPlane, string> = {
 export function groupNavByPlane(items: ResolvedNavItem[]): NavGroup[] {
   const groups: NavGroup[] = [];
   for (const plane of ["store", "account"] as const) {
-    const visible = items.filter((i) => i.plane === plane && i.access !== "hidden");
+    const visible = items.filter(
+      (i) => i.plane === plane && i.access !== "hidden",
+    );
     if (visible.length > 0) {
       groups.push({ plane, title: PLANE_TITLES[plane], items: visible });
     }

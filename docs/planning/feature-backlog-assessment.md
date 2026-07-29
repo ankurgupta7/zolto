@@ -16,7 +16,7 @@ half-built ones. So this document says no to more things than it says yes to.
 | # | Feature | Verdict | Why |
 |---|---|---|---|
 | 2 | Merchant-owned, agent-neutral storefront | ✅ **Built** | The sharpest wedge, and the pricing model doesn't work without it |
-| 1 | Camera-first "point & sell" onboarding | 🔶 **Mostly already exists** — finish it, don't restart | The pipeline is shipped; the gaps are narrow |
+| 1 | Camera-first "point & sell" onboarding | ✅ **Gaps closed** | Price suggestion + four languages now ship; see below |
 | 3 | Hyper-local demand & pricing intelligence | ⛔ **Not now** | We'd be inventing the data it needs |
 | 4 | Chat / WhatsApp-native reserving | ⏸ Later | Overlaps #2; revisit once agent traffic is real |
 | 5 | Swiss-dialect voice operation | ⏸ Later | Real moat, specialist build, not a launch dependency |
@@ -78,25 +78,49 @@ differentiating half, unbuildable revenue. This closes that loop.
   it can be bought from, and `get_store_info` reports `canBuyHere` so an agent
   doesn't have to attempt a purchase to discover whether the merchant has
   connected payments. A tool no agent knows about is not a wedge.
+- **Discovery — `find_stores` on the platform MCP.** An agent at zolto.com can
+  now list merchant storefronts and receive, for each one, that merchant's own
+  storefront URL, llms.txt, and MCP endpoint. It is a directory, not a
+  marketplace, and the distinction is load-bearing: Shopify's agentic model
+  requires Shopify to remain the intermediary that owns the agent relationship
+  and takes the cut, whereas this introduces the agent to the merchant and
+  then gets out of the way — the transaction and the money never touch Zolto.
+  Only stores with visible, in-stock products are listed, so an agent is never
+  sent to a dead end. If a merchant ever asks to be delisted, that belongs in
+  tenant settings as an explicit opt-out.
 
 ---
 
-## 🔶 #1 — Camera-first onboarding (mostly already exists)
+## ✅ #1 — Camera-first onboarding (gaps closed)
 
-The handoff describes this as new. Most of it is already shipped: bulk photo
-upload with AI analysis, AI descriptions and translation, photo→product intake
-over WhatsApp/Slack/Discord, AI photo restyling, and per-product locales.
+The handoff described this as new. Most of it was already shipped — bulk photo
+upload with AI analysis, descriptions and translation, photo→product intake
+over WhatsApp/Slack/Discord, AI photo restyling, per-product locales — so the
+work was finishing it, not rebuilding it.
 
-What is genuinely missing is narrower than the handoff implies:
+**Price suggestion, grounded rather than guessed.** `bulkAnalyze` now proposes
+a price. The important design choice is what it's based on: the merchant's own
+live catalogue (`getCategoryPriceStats` — per-category min/max/**median**,
+median so one CHF 900 statement piece can't drag the suggestion for CHF 45
+studs). A model guessing a market price from a photo would be inventing
+authority it doesn't have.
 
-1. **Local price suggestion** — nothing today proposes a price.
-2. **All four languages at once** — translation exists, but the flow doesn't
-   fan out to DE/FR/IT/EN in a single pass.
-3. **A camera-first *entry point*** — the capability is reachable through
-   admin screens and chat channels, not as "open app, point at crate."
+**A store with no pricing history gets no suggestion at all** — the field
+stays empty and says "set your own price." This is the part worth defending: a
+new maker is exactly the person most likely to accept whatever number we show,
+so a confident guess there could have them mis-price their own work for
+months. An empty field is the honest answer. The same rule holds when the
+model returns something nonsensical (zero, negative) and on the AI-failure
+path. When a price *is* suggested, the merchant sees the reasoning next to it
+("in line with your other Rings, CHF 50–120") and can overrule it.
 
-That's a focused piece of work on top of a working pipeline, not a new
-subsystem. Worth doing next; not worth rebuilding from scratch.
+**Four languages, including Italian.** Switzerland has four national
+languages; the schema had DE/FR/EN only, so a Ticino customer got German.
+Migration `0009` adds `nameIt`/`descriptionIt`, `localize.ts` routes `it-*`,
+and both the drafting and translation paths now fan out to DE/FR/IT/EN.
+
+**Still open:** the camera-first *entry point* ("open app, point at crate") is
+UX surfacing rather than capability — everything behind it now exists.
 
 ---
 

@@ -10,6 +10,7 @@ import {
   updateProduct,
   deleteProduct,
   getAllProducts,
+  getCategoryPriceStats,
   getProductById,
   getVisibleProductById,
   getVisibleProducts,
@@ -237,6 +238,24 @@ export const productsRouter = router({
     .mutation(async ({ input, ctx }) => {
       const { invokeLLM } = await import("../_core/llm");
       const storeName = ctx.tenant?.name ?? "the store";
+
+      // Ground the price suggestion in what THIS merchant already charges.
+      // With no catalogue there is nothing to ground on, and we deliberately
+      // suggest nothing rather than have a model invent a market price a
+      // maker might accept and mis-price their own work by.
+      const priceStats = await getCategoryPriceStats(ctx.user.tenantId);
+      const priceGuidance = priceStats.length
+        ? `The merchant's existing prices, per category (CHF): ${priceStats
+            .map(
+              (p) =>
+                `${p.category} — ${p.count} item(s), ${p.minChf}–${p.maxChf}, typically ${p.medianChf}`,
+            )
+            .join("; ")}.
+- suggested_price: a number in CHF, in line with the merchant's OWN prices for that category above. Adjust modestly for apparent size, materials and complexity. If the category has no history, use the closest category as a guide.
+- price_basis: one short sentence in English saying what you based it on, e.g. "in line with your other Necklaces (CHF 45-120)". The merchant sees this and decides.`
+        : `- suggested_price: use 0. This merchant has no priced items yet, so there is no honest basis for a suggestion and they must set the price themselves.
+- price_basis: use "No pricing history yet — set your own price."`;
+
       const results = await Promise.all(
         input.groups.map(async (group) => {
           try {
@@ -251,7 +270,7 @@ export const productsRouter = router({
                 {
                   role: "system",
                   content: `You are a product copywriter for "${storeName}", a jewellery boutique.
-Analyse the provided photo(s) of a jewellery piece and return a JSON object with bilingual product details (German + English).
+Analyse the provided photo(s) of a jewellery piece and return a JSON object with multilingual product details and a grounded price suggestion.
 
 Available categories (keep these in English exactly as shown): ${PRODUCT_CATEGORIES.map((c) => `"${c}"`).join(", ")}
 
@@ -260,6 +279,9 @@ Rules:
 - name_en: same product name in English (2–5 words), e.g. "Moonstone Drop Earrings", "Labradorite Cuff Bracelet", "Baroque Pearl Necklace".
 - description: EXACTLY ONE sentence in Swiss German (use "ss" not "ß"). Name the specific stone/pearl variety and material. Make it poetic and sensory — evoke colour, lustre, texture, and feeling. e.g. "Tief-violette Amethyst-Cabochons schimmern in einem handgefertigten Sterlingsilber-Rahmen – eleganz, die den Blick anzieht."
 - description_en: EXACTLY ONE sentence in English. Same jewel specificity and lyrical tone. e.g. "Deep-violet amethyst cabochons shimmer in a hand-wrought sterling-silver setting — elegance that draws every eye."
+- name_fr / description_fr: the same name and one-sentence description in French.
+- name_it / description_it: the same name and one-sentence description in Italian. (Switzerland sells in four languages; a Ticino or Romandy customer should not get German.)
+${priceGuidance}
 - category: must be exactly one of the body-part-based English values; infer from what you see:
   * Necklaces → necklaces, pendants, chokers, lariats, collar pieces
   * Earrings → studs, drop earrings, hoops, chandeliers, ear cuffs
@@ -312,6 +334,32 @@ Return ONLY valid JSON, no markdown, no explanation.`,
                         description:
                           "One lyrical sentence in English naming the specific stone/pearl",
                       },
+                      name_fr: {
+                        type: "string",
+                        description: "Product name in French (2-5 words)",
+                      },
+                      description_fr: {
+                        type: "string",
+                        description: "One sentence in French",
+                      },
+                      name_it: {
+                        type: "string",
+                        description: "Product name in Italian (2-5 words)",
+                      },
+                      description_it: {
+                        type: "string",
+                        description: "One sentence in Italian",
+                      },
+                      suggested_price: {
+                        type: "number",
+                        description:
+                          "Suggested price in CHF based on the merchant's own catalogue, or 0 when there is no basis",
+                      },
+                      price_basis: {
+                        type: "string",
+                        description:
+                          "Short plain-language justification the merchant reads before accepting",
+                      },
                       category: {
                         type: "string",
                         enum: [...PRODUCT_CATEGORIES],
@@ -323,6 +371,12 @@ Return ONLY valid JSON, no markdown, no explanation.`,
                       "name_en",
                       "description",
                       "description_en",
+                      "name_fr",
+                      "description_fr",
+                      "name_it",
+                      "description_it",
+                      "suggested_price",
+                      "price_basis",
                       "category",
                     ],
                     additionalProperties: false,
@@ -339,6 +393,15 @@ Return ONLY valid JSON, no markdown, no explanation.`,
                 : JSON.stringify(rawContent);
             const parsed = JSON.parse(content);
 
+            // A zero/absent suggestion means "no honest basis" — surface it
+            // as null so the UI leaves the field empty instead of pre-filling
+            // a number the merchant might not question.
+            const suggested = Number(parsed.suggested_price);
+            const suggestedPrice =
+              Number.isFinite(suggested) && suggested > 0
+                ? Math.round(suggested * 100) / 100
+                : null;
+
             return {
               groupId: group.groupId,
               success: true as const,
@@ -346,6 +409,14 @@ Return ONLY valid JSON, no markdown, no explanation.`,
               nameEn: parsed.name_en as string,
               description: parsed.description as string,
               descriptionEn: parsed.description_en as string,
+              nameFr: (parsed.name_fr as string) ?? null,
+              descriptionFr: (parsed.description_fr as string) ?? null,
+              nameIt: (parsed.name_it as string) ?? null,
+              descriptionIt: (parsed.description_it as string) ?? null,
+              suggestedPrice,
+              priceBasis: suggestedPrice
+                ? ((parsed.price_basis as string) ?? null)
+                : null,
               category: parsed.category as ProductCategory,
             };
           } catch (err) {
@@ -363,6 +434,13 @@ Return ONLY valid JSON, no markdown, no explanation.`,
               nameEn: "Jewelry Piece",
               description: "Handgefertigtes Schmueckstück.",
               descriptionEn: "Handcrafted jewelry piece.",
+              nameFr: null,
+              descriptionFr: null,
+              nameIt: null,
+              descriptionIt: null,
+              // Never guess a price on the failure path.
+              suggestedPrice: null,
+              priceBasis: null,
               category: "Other" as const,
             };
           }
@@ -812,7 +890,7 @@ Return ONLY valid JSON, no markdown.`,
       return { updated };
     }),
 
-  // Admin: translate one product into all supported locales (de/en/fr).
+  // Admin: translate one product into all supported locales (de/en/fr/it).
   // Unlike previewAutoTranslateAll (English-only batch flow for one store),
   // this fills every missing locale field in a single pass, grounded in the
   // merchant's primary name/description. Storefront picks the visitor's
@@ -844,6 +922,8 @@ Return ONLY valid JSON, no markdown.`,
         locales.push("de");
       if (want(product.nameFr) || want(product.descriptionFr))
         locales.push("fr");
+      if (want(product.nameIt) || want(product.descriptionIt))
+        locales.push("it");
       if (locales.length === 0) {
         return { translated: [], skipped: true };
       }
@@ -905,6 +985,11 @@ Return ONLY valid JSON, no markdown.`,
         patch.nameFr = loc.fr.name.slice(0, 255);
         if (loc.fr.description) patch.descriptionFr = loc.fr.description;
         done.push("fr");
+      }
+      if (locales.includes("it") && loc.it?.name) {
+        patch.nameIt = loc.it.name.slice(0, 255);
+        if (loc.it.description) patch.descriptionIt = loc.it.description;
+        done.push("it");
       }
       if (done.length === 0) {
         throw new TRPCError({

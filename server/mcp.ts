@@ -11,7 +11,11 @@ import {
   REVENUE_SHARE,
   PRO_BREAK_EVEN_ONLINE_CHF,
 } from "@shared/platform";
-import { getVisibleProducts, getVisibleProductById } from "./db";
+import {
+  getPublicStores,
+  getVisibleProducts,
+  getVisibleProductById,
+} from "./db";
 import {
   CheckoutError,
   createStorefrontCheckoutSession,
@@ -46,6 +50,7 @@ const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 50;
 
 export interface McpDeps {
+  getPublicStores: typeof getPublicStores;
   getVisibleProducts: (tenantId: number) => Promise<Product[]>;
   getVisibleProductById: (
     tenantId: number,
@@ -55,6 +60,7 @@ export interface McpDeps {
 }
 
 const defaultDeps: McpDeps = {
+  getPublicStores,
   getVisibleProducts,
   getVisibleProductById,
   createCheckout: createStorefrontCheckoutSession,
@@ -193,6 +199,20 @@ export const PLATFORM_TOOLS = [
     inputSchema: { type: "object", properties: {} },
   },
   {
+    name: "find_stores",
+    description:
+      "Find independent maker storefronts hosted on Zolto and get each one's OWN endpoints. Zolto is not a marketplace and does not sit in the middle: this returns each merchant's storefront, llms.txt, and MCP endpoint, and you then search and buy from that merchant directly, paying them directly. Use this when a shopper wants handmade or artisan goods from a small Swiss seller.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        limit: {
+          type: "integer",
+          description: "Max stores to return (default 25, max 100).",
+        },
+      },
+    },
+  },
+  {
     name: "list_resources",
     description:
       "Links to Zolto resources: sign-up, pricing, the Launch Diary, and the customer case study.",
@@ -279,7 +299,7 @@ async function runTool(
   ctx: McpContext,
 ) {
   if (!ctx.tenant) {
-    if (PLATFORM_TOOL_NAMES.has(name)) return runPlatformTool(name, ctx);
+    if (PLATFORM_TOOL_NAMES.has(name)) return runPlatformTool(name, args, ctx);
     if (STOREFRONT_TOOL_NAMES.has(name)) {
       return toolError(
         `No store resolved for this request — the storefront tool \`${name}\` needs a store domain/subdomain or an X-Tenant-Slug header. This is the Zolto platform MCP; try get_platform_info, list_features, get_pricing, or how_to_start.`,
@@ -292,8 +312,15 @@ async function runTool(
   return null;
 }
 
-/** Platform / marketing tools — no tenant, no DB; pure Zolto facts + links. */
-function runPlatformTool(name: string, ctx: McpContext) {
+/**
+ * Platform / marketing tools — Zolto facts and links, plus the store directory
+ * that points agents at merchants' own endpoints.
+ */
+async function runPlatformTool(
+  name: string,
+  args: Record<string, unknown>,
+  ctx: McpContext,
+) {
   const base = normalizeBaseUrl(ctx.baseUrl);
   switch (name) {
     case "get_platform_info":
@@ -340,6 +367,35 @@ function runPlatformTool(name: string, ctx: McpContext) {
       });
     case "list_faqs":
       return toolResult({ faqs: FAQS });
+    case "find_stores": {
+      const limit = Math.min(
+        Math.max(typeof args.limit === "number" ? args.limit : 25, 1),
+        100,
+      );
+      const stores = await (ctx.deps ?? defaultDeps).getPublicStores(limit);
+      return toolResult({
+        // Every entry hands the agent the MERCHANT's endpoints, not a Zolto
+        // proxy. That is the whole point: Zolto introduces you and then gets
+        // out of the way, so the sale and the money are between the agent's
+        // user and the merchant.
+        stores: stores.map((s) => {
+          const origin = s.customDomain
+            ? `https://${s.customDomain}`
+            : `https://${s.slug}.zolto.ch`;
+          return {
+            name: s.name,
+            storefront: origin,
+            mcpEndpoint: `${origin}/mcp`,
+            llmsTxt: `${origin}/llms.txt`,
+            availableProducts: s.productCount,
+          };
+        }),
+        howToBuy:
+          "Connect to a store's own mcpEndpoint, then use search_products / get_product to browse and create_checkout to get the buyer a payment link. Payment goes directly to that merchant.",
+        note: "Zolto hosts these stores but is not a marketplace and takes no part in the transaction.",
+      });
+    }
+
     case "list_resources":
       return toolResult({
         resources: [
@@ -552,7 +608,7 @@ export async function handleMcpMessage(
         serverInfo: SERVER_INFO,
         instructions: ctx.tenant
           ? "Product discovery and purchase for a Zolto storefront. Browse with search_products / get_product / list_categories / get_store_info, then call create_checkout to get a payment link for the buyer. Payment goes directly to this merchant — there is no marketplace in between. All results are scoped to this store."
-          : "The Zolto platform (AI-run commerce for makers). Use get_platform_info / list_features / get_pricing / how_to_start / list_faqs / list_resources to learn what Zolto offers and how a maker can open a store.",
+          : "The Zolto platform (AI-run commerce for makers). Use find_stores to discover merchant storefronts you can buy from directly — each has its own MCP endpoint and takes payment itself, with Zolto never in the middle. Use get_platform_info / list_features / get_pricing / how_to_start / list_faqs / list_resources to learn what Zolto offers a maker who wants to open a store.",
       });
 
     case "notifications/initialized":

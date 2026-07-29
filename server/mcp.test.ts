@@ -32,6 +32,7 @@ const checkoutOk = {
 };
 
 const createCheckout = vi.fn();
+const getPublicStores = vi.fn(async () => []);
 
 let nextId = 1;
 function makeProduct(p: Partial<Product>): Product {
@@ -69,6 +70,7 @@ function buildCtx(
       products.find((p) => p.id === id),
     ),
     createCheckout,
+    getPublicStores,
   };
   return { tenant, baseUrl: "https://kalakosh.ch/", deps, ...overrides };
 }
@@ -377,6 +379,109 @@ describe("Platform MCP (no tenant / marketing surface)", () => {
   });
 });
 
+// ── Agent discovery (find_stores) ─────────────────────────────────────────────
+
+describe("find_stores — the platform hands agents each merchant's own endpoint", () => {
+  /** Platform surface = no tenant resolved (e.g. zolto.com itself). */
+  function platformCtx(): McpContext {
+    return {
+      tenant: null,
+      baseUrl: "https://zolto.com",
+      deps: {
+        getVisibleProducts: vi.fn(async () => []),
+        getVisibleProductById: vi.fn(async () => undefined),
+        createCheckout,
+        getPublicStores,
+      },
+    };
+  }
+
+  async function call(args: unknown = {}) {
+    const res = await handleMcpMessage(
+      req("tools/call", { name: "find_stores", arguments: args }),
+      platformCtx(),
+    );
+    return (res?.result as { structuredContent: Record<string, unknown> })
+      .structuredContent;
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getPublicStores.mockResolvedValue([
+      {
+        slug: "kalakosh",
+        name: "Kalakosh",
+        customDomain: null,
+        productCount: 12,
+      },
+      {
+        slug: "aurora",
+        name: "Aurora",
+        customDomain: "aurora-jewels.ch",
+        productCount: 4,
+      },
+    ] as never);
+  });
+
+  it("is offered on the platform surface, not on a storefront", async () => {
+    const platform = await handleMcpMessage(req("tools/list"), platformCtx());
+    const platformTools = (
+      platform?.result as { tools: { name: string }[] }
+    ).tools.map((t) => t.name);
+    expect(platformTools).toContain("find_stores");
+
+    const store = await handleMcpMessage(req("tools/list"), buildCtx([]));
+    const storeTools = (
+      store?.result as { tools: { name: string }[] }
+    ).tools.map((t) => t.name);
+    expect(storeTools).not.toContain("find_stores");
+  });
+
+  it("returns each merchant's OWN endpoints — never a Zolto proxy", async () => {
+    const out = await call();
+    const stores = out.stores as Record<string, unknown>[];
+    expect(stores[0]).toMatchObject({
+      name: "Kalakosh",
+      storefront: "https://kalakosh.zolto.ch",
+      mcpEndpoint: "https://kalakosh.zolto.ch/mcp",
+      llmsTxt: "https://kalakosh.zolto.ch/llms.txt",
+    });
+    // Nothing points back at the platform host — that's the disintermediation.
+    expect(JSON.stringify(stores)).not.toContain("zolto.com");
+  });
+
+  it("prefers a merchant's own custom domain when they have one", async () => {
+    const out = await call();
+    const stores = out.stores as Record<string, unknown>[];
+    expect(stores[1]).toMatchObject({
+      storefront: "https://aurora-jewels.ch",
+      mcpEndpoint: "https://aurora-jewels.ch/mcp",
+    });
+  });
+
+  it("tells the agent how to buy, and that Zolto is not in the middle", async () => {
+    const out = await call();
+    expect(String(out.howToBuy)).toMatch(/create_checkout/);
+    expect(String(out.howToBuy)).toMatch(/directly to that merchant/i);
+    expect(String(out.note)).toMatch(/not a marketplace/i);
+  });
+
+  it("clamps limit into a sane range", async () => {
+    await call({ limit: 5000 });
+    expect(getPublicStores).toHaveBeenCalledWith(100);
+    await call({ limit: 0 });
+    expect(getPublicStores).toHaveBeenCalledWith(1);
+    await call({});
+    expect(getPublicStores).toHaveBeenCalledWith(25);
+  });
+
+  it("returns an empty directory rather than failing when nothing is listed", async () => {
+    getPublicStores.mockResolvedValue([] as never);
+    const out = await call();
+    expect(out.stores).toEqual([]);
+  });
+});
+
 // ── Agent commerce (create_checkout) ──────────────────────────────────────────
 
 describe("create_checkout — agents buying from the merchant directly", () => {
@@ -535,12 +640,14 @@ const mocks = vi.hoisted(() => ({
   getTenantBySlug: vi.fn(),
   getVisibleProducts: vi.fn(),
   getVisibleProductById: vi.fn(),
+  getPublicStores: vi.fn(async () => []),
 }));
 
 vi.mock("./db", () => ({
   getTenantBySlug: (...a: unknown[]) => mocks.getTenantBySlug(...a),
   getVisibleProducts: (...a: unknown[]) => mocks.getVisibleProducts(...a),
   getVisibleProductById: (...a: unknown[]) => mocks.getVisibleProductById(...a),
+  getPublicStores: (...a: unknown[]) => mocks.getPublicStores(...a),
 }));
 
 describe("POST /mcp (Streamable HTTP)", () => {

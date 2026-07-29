@@ -284,8 +284,9 @@ ${HOW_TO_START.map((s, i) => `${i + 1}. ${s}`).join("\n")}
 
 ## For AI agents
 
-- **Platform MCP** (this domain): \`${base}/mcp\` — JSON-RPC 2.0 over HTTP (Streamable HTTP). Tools: \`get_platform_info\`, \`list_features\`, \`get_pricing\`, \`how_to_start\`, \`list_faqs\`, \`list_resources\`.
-- **Storefront MCP** (each store domain): \`https://<store-domain>/mcp\` for product discovery — \`search_products\`, \`get_product\`, \`list_categories\`, \`get_store_info\`.
+- **Platform MCP** (this domain): \`${base}/mcp\` — JSON-RPC 2.0 over HTTP (Streamable HTTP). Tools: \`find_stores\`, \`get_platform_info\`, \`list_features\`, \`get_pricing\`, \`how_to_start\`, \`list_faqs\`, \`list_resources\`.
+- **Shopping for someone?** Call \`find_stores\` to get merchant storefronts and each one's own MCP endpoint. Zolto is not a marketplace: you buy from the merchant, and the money goes to the merchant.
+- **Storefront MCP** (each store domain): \`https://<store-domain>/mcp\` — \`search_products\`, \`get_product\`, \`list_categories\`, \`get_store_info\`, and \`create_checkout\` to buy.
 - Full details for LLMs: ${base}/llms-full.txt
 - Sitemap: ${base}/sitemap.xml
 `;

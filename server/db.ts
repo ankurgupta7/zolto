@@ -725,6 +725,319 @@ export async function getMonthlyOnlineSales(tenantId: number): Promise<{
   );
 }
 
+/**
+ * Platform-wide metrics for the operator (superadmin), for the current
+ * calendar month in UTC.
+ *
+ * The headline number is the one the pricing model lives or dies on
+ * (docs/planning/pricing-pivot-agent-commerce.md §5): **what share of free
+ * in-person vendors make at least one online or agent sale in a month.** A
+ * free vendor who only ever sells at their stall pays Zolto CHF 0 forever, by
+ * design — so this ratio, not signups, is the business.
+ *
+ * "In-person vendor" means a tenant with a paid POS order this month;
+ * in-person sales live in pos_orders and never carry a platform fee, while
+ * online/agent sales live in orders with a channel. That separation is what
+ * makes the ratio computable at all.
+ */
+export interface PlatformMetrics {
+  month: string;
+  tenants: { total: number; free: number; pro: number };
+  /** The north star, plus the counts it is derived from. */
+  northStar: {
+    freeInPersonVendors: number;
+    freeInPersonVendorsSellingOnline: number;
+    /** Percentage, 0-100, rounded to one decimal. Null when there are none. */
+    conversionPct: number | null;
+  };
+  online: {
+    gmvChf: number;
+    feeChf: number;
+    orders: number;
+    /** Agent-originated subset — the differentiator, tracked separately. */
+    agentGmvChf: number;
+    agentOrders: number;
+    sellingTenants: number;
+  };
+  inPerson: { gmvChf: number; orders: number; sellingTenants: number };
+  subscriptions: {
+    active: number;
+    trialing: number;
+    pastDue: number;
+    canceled: number;
+  };
+}
+
+/**
+ * Publicly discoverable storefronts, for the platform's agent-facing directory
+ * (`find_stores` in server/mcp.ts).
+ *
+ * Only stores that already have something to sell are listed — a tenant with
+ * no visible, in-stock products would be a dead end for an agent and a bad
+ * first impression for the merchant. Nothing here is private: it is the same
+ * information a web crawler gets from the storefront, and "be found by AI
+ * assistants" is the platform's advertised value proposition
+ * (shared/platform.ts FEATURES). If a merchant ever asks to be delisted, that
+ * belongs in tenant_settings as an explicit opt-out rather than here.
+ */
+/**
+ * Per-category price statistics for one merchant's own live catalogue.
+ *
+ * Grounds the AI's price suggestion in what THIS merchant already charges,
+ * rather than letting a model guess a market price from a photo. A brand-new
+ * store returns nothing, and the caller must then suggest nothing at all —
+ * an invented price is worse than an empty field, because the merchant may
+ * accept it and mis-price their own work.
+ */
+export async function getCategoryPriceStats(
+  tenantId: number,
+): Promise<
+  {
+    category: string;
+    count: number;
+    minChf: number;
+    maxChf: number;
+    medianChf: number;
+  }[]
+> {
+  return withDb(async (db) => {
+    const rows = await db
+      .select({ category: products.category, price: products.price })
+      .from(products)
+      .where(and(eq(products.tenantId, tenantId), eq(products.visible, true)));
+
+    const byCategory = new Map<string, number[]>();
+    for (const r of rows) {
+      const price = Number(r.price);
+      if (!Number.isFinite(price) || price <= 0) continue;
+      const list = byCategory.get(r.category) ?? [];
+      list.push(price);
+      byCategory.set(r.category, list);
+    }
+
+    return Array.from(byCategory.entries()).map(([category, prices]) => {
+      prices.sort((a, b) => a - b);
+      const mid = Math.floor(prices.length / 2);
+      // Median, not mean: one CHF 900 statement piece shouldn't drag the
+      // suggestion for a CHF 45 pair of studs.
+      const medianChf =
+        prices.length % 2 === 0
+          ? (prices[mid - 1] + prices[mid]) / 2
+          : prices[mid];
+      return {
+        category,
+        count: prices.length,
+        minChf: prices[0],
+        maxChf: prices[prices.length - 1],
+        medianChf: Math.round(medianChf * 100) / 100,
+      };
+    });
+  }, []);
+}
+
+export async function getPublicStores(limit = 100): Promise<
+  {
+    slug: string;
+    name: string;
+    customDomain: string | null;
+    productCount: number;
+  }[]
+> {
+  return withDb(async (db) => {
+    const rows = await db
+      .select({
+        slug: tenants.slug,
+        name: tenants.name,
+        customDomain: tenantSettings.publicDomain,
+        productCount: sql<number>`COUNT(${products.id})`,
+      })
+      .from(tenants)
+      .leftJoin(tenantSettings, eq(tenantSettings.tenantId, tenants.id))
+      .innerJoin(
+        products,
+        and(
+          eq(products.tenantId, tenants.id),
+          eq(products.visible, true),
+          eq(products.sold, false),
+          gt(products.quantity, 0),
+          isNotNull(products.imageUrl),
+        ),
+      )
+      .groupBy(
+        tenants.id,
+        tenants.slug,
+        tenants.name,
+        tenantSettings.publicDomain,
+      )
+      .orderBy(desc(sql`COUNT(${products.id})`))
+      .limit(limit);
+    return rows.map((r) => ({
+      slug: r.slug,
+      name: r.name,
+      customDomain: r.customDomain ?? null,
+      productCount: Number(r.productCount),
+    }));
+  }, []);
+}
+
+export async function getPlatformMetrics(): Promise<PlatformMetrics> {
+  const monthStart = new Date();
+  monthStart.setUTCDate(1);
+  monthStart.setUTCHours(0, 0, 0, 0);
+  const month = monthStart.toISOString().slice(0, 7);
+
+  const empty: PlatformMetrics = {
+    month,
+    tenants: { total: 0, free: 0, pro: 0 },
+    northStar: {
+      freeInPersonVendors: 0,
+      freeInPersonVendorsSellingOnline: 0,
+      conversionPct: null,
+    },
+    online: {
+      gmvChf: 0,
+      feeChf: 0,
+      orders: 0,
+      agentGmvChf: 0,
+      agentOrders: 0,
+      sellingTenants: 0,
+    },
+    inPerson: { gmvChf: 0, orders: 0, sellingTenants: 0 },
+    subscriptions: { active: 0, trialing: 0, pastDue: 0, canceled: 0 },
+  };
+
+  return withDb(async (db) => {
+    const [
+      planRows,
+      statusRows,
+      onlineRows,
+      posRows,
+      onlineTenants,
+      posTenants,
+    ] = await Promise.all([
+      db
+        .select({ plan: tenants.plan, n: sql<number>`COUNT(*)` })
+        .from(tenants)
+        .groupBy(tenants.plan),
+      db
+        .select({
+          status: tenants.subscriptionStatus,
+          n: sql<number>`COUNT(*)`,
+        })
+        .from(tenants)
+        .groupBy(tenants.subscriptionStatus),
+      db
+        .select({
+          gmv: sql<number>`COALESCE(SUM(${orders.amountTotal}), 0)`,
+          fee: sql<number>`COALESCE(SUM(${orders.platformFeeRappen}), 0)`,
+          n: sql<number>`COUNT(*)`,
+          agentGmv: sql<number>`COALESCE(SUM(CASE WHEN ${orders.channel} = 'agent' THEN ${orders.amountTotal} ELSE 0 END), 0)`,
+          agentN: sql<number>`COALESCE(SUM(CASE WHEN ${orders.channel} = 'agent' THEN 1 ELSE 0 END), 0)`,
+        })
+        .from(orders)
+        .where(
+          and(eq(orders.status, "paid"), gte(orders.createdAt, monthStart)),
+        ),
+      db
+        .select({
+          gmv: sql<number>`COALESCE(SUM(${posOrders.totalRappen}), 0)`,
+          n: sql<number>`COUNT(*)`,
+        })
+        .from(posOrders)
+        .where(
+          and(
+            eq(posOrders.status, "paid"),
+            gte(posOrders.createdAt, monthStart),
+          ),
+        ),
+      // Distinct tenants selling through each channel this month. Kept as id
+      // lists (not just counts) because the north star is an INTERSECTION —
+      // the same vendor must appear in both to count.
+      db
+        .selectDistinct({ tenantId: orders.tenantId })
+        .from(orders)
+        .where(
+          and(eq(orders.status, "paid"), gte(orders.createdAt, monthStart)),
+        ),
+      db
+        .selectDistinct({ tenantId: posOrders.tenantId })
+        .from(posOrders)
+        .where(
+          and(
+            eq(posOrders.status, "paid"),
+            gte(posOrders.createdAt, monthStart),
+          ),
+        ),
+    ]);
+
+    const freeTenantIds = new Set(
+      (
+        await db
+          .select({ id: tenants.id })
+          .from(tenants)
+          .where(eq(tenants.plan, "free"))
+      ).map((r) => r.id),
+    );
+
+    const onlineIds = new Set(onlineTenants.map((r) => r.tenantId));
+    const posIds = new Set(posTenants.map((r) => r.tenantId));
+
+    // The denominator is free vendors who actually sold in person this month —
+    // not every free signup. A tenant who sold nothing anywhere is dormant,
+    // and counting them would flatter or depress the ratio for the wrong
+    // reason.
+    const freeInPerson = Array.from(posIds).filter((id) =>
+      freeTenantIds.has(id),
+    );
+    const converted = freeInPerson.filter((id) => onlineIds.has(id));
+
+    const planCounts = Object.fromEntries(
+      planRows.map((r) => [r.plan, Number(r.n)]),
+    );
+    const statusCounts = Object.fromEntries(
+      statusRows.map((r) => [r.status ?? "unknown", Number(r.n)]),
+    );
+    const o = onlineRows[0];
+    const p = posRows[0];
+
+    return {
+      month,
+      tenants: {
+        total: planRows.reduce((sum, r) => sum + Number(r.n), 0),
+        free: planCounts.free ?? 0,
+        pro: planCounts.pro ?? 0,
+      },
+      northStar: {
+        freeInPersonVendors: freeInPerson.length,
+        freeInPersonVendorsSellingOnline: converted.length,
+        conversionPct:
+          freeInPerson.length === 0
+            ? null
+            : Math.round((converted.length / freeInPerson.length) * 1000) / 10,
+      },
+      online: {
+        gmvChf: Number(o?.gmv ?? 0) / 100,
+        feeChf: Number(o?.fee ?? 0) / 100,
+        orders: Number(o?.n ?? 0),
+        agentGmvChf: Number(o?.agentGmv ?? 0) / 100,
+        agentOrders: Number(o?.agentN ?? 0),
+        sellingTenants: onlineIds.size,
+      },
+      inPerson: {
+        gmvChf: Number(p?.gmv ?? 0) / 100,
+        orders: Number(p?.n ?? 0),
+        sellingTenants: posIds.size,
+      },
+      subscriptions: {
+        active: statusCounts.active ?? 0,
+        trialing: statusCounts.trialing ?? 0,
+        pastDue: statusCounts.past_due ?? 0,
+        canceled: statusCounts.canceled ?? 0,
+      },
+    };
+  }, empty);
+}
+
 export async function getBulkUploadLogs(
   tenantId: number,
   limit = 100,
@@ -1243,6 +1556,8 @@ export async function updateProductTranslations(
       | "descriptionDe"
       | "nameFr"
       | "descriptionFr"
+      | "nameIt"
+      | "descriptionIt"
     >
   >,
 ): Promise<void> {

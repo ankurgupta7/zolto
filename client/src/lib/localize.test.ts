@@ -49,3 +49,30 @@ describe("localize", () => {
     expect(localizedDescription(bare, "en")).toBe("Ein Ring");
   });
 });
+
+describe("Italian (Ticino)", () => {
+  const italian = {
+    name: "Perlenkette",
+    description: "Handgefertigt",
+    nameIt: "Collana di perle",
+    descriptionIt: "Fatto a mano",
+  };
+
+  it("prefers Italian content for an it-CH visitor", () => {
+    expect(localizedName(italian, "it-CH")).toBe("Collana di perle");
+    expect(localizedDescription(italian, "it-CH")).toBe("Fatto a mano");
+  });
+
+  it("falls back to the merchant's own text when Italian is missing", () => {
+    const untranslated = { name: "Perlenkette", description: "Handgefertigt" };
+    expect(localizedName(untranslated, "it")).toBe("Perlenkette");
+  });
+
+  it("does not hand an Italian visitor the German translation", () => {
+    // The bug this guards: a fallthrough that treats any non-en/fr locale as
+    // German would silently serve Ticino the wrong language.
+    expect(localizedName({ ...italian, nameDe: "Perlenkette DE" }, "it")).toBe(
+      "Collana di perle",
+    );
+  });
+});

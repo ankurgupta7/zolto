@@ -154,6 +154,14 @@ to build and support alongside Stripe Connect.
   (proves the differentiator and tracks it against Shopify's free Agentic
   plan encroaching).
 
+**Shipped: the operator dashboard.** `platform.metrics` (superadmin only) and
+`/admin/account/platform` compute and display the north star — the share of
+free in-person vendors who also sold online or via an agent this month —
+alongside online GMV, fees earned, the agent-originated split, in-person GMV
+(never monetized), Pro conversion, and subscription health. The denominator is
+free vendors who *actually sold in person* this month, not every free signup:
+counting dormant tenants would move the ratio for the wrong reason.
+
 **The data layer for all of this now exists.** `orders.channel`
 (`web`/`agent`) and `orders.platform_fee_rappen` make online GMV, skim
 revenue, and agent-originated sales queryable per tenant and per month
@@ -191,8 +199,8 @@ page.
 
 - ✅ **Phase 1 (launch):** Free + Stripe Connect online skim, two boxes only,
   old tiers retired. *Except* the native TWINT rail, still open.
-- 🔶 **Phase 2:** upsell engine ✅ shipped (per-tenant); platform-wide
-  instrumentation dashboards still to build.
+- ✅ **Phase 2:** upsell engine (per-tenant) and the platform-wide metrics
+  dashboard are both shipped.
 - ⬜ **Phase 3:** Business tier once the agent layer and multi-location are
   proven.
 

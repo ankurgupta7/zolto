@@ -48,6 +48,8 @@ interface ReviewCard {
   descriptionEn: string;
   category: ProductCategory;
   price: string;
+  /** Why the AI proposed this price — shown so the merchant can judge it. */
+  priceBasis: string | null;
   confirmed: boolean;
   aiSuccess: boolean;
 }
@@ -338,7 +340,12 @@ export default function BulkUpload() {
           descriptionEn:
             aiResult?.descriptionEn ?? "Handcrafted jewelry piece.",
           category: (aiResult?.category as ProductCategory) ?? "Other",
-          price: "",
+          // Pre-filled only when the AI had the merchant's own catalogue to
+          // ground it; otherwise left blank on purpose (server returns null).
+          price: aiResult?.suggestedPrice
+            ? String(aiResult.suggestedPrice)
+            : "",
+          priceBasis: aiResult?.priceBasis ?? null,
           confirmed: true,
           aiSuccess: aiResult?.success ?? false,
         };
@@ -409,6 +416,7 @@ export default function BulkUpload() {
           description: "Handgefertigtes Schmuckstück.",
           descriptionEn: "Handcrafted jewelry piece.",
           category: "Other" as ProductCategory,
+          priceBasis: null,
           price: "",
           confirmed: true,
           aiSuccess: false,
@@ -1260,6 +1268,12 @@ export default function BulkUpload() {
                                 placeholder={t("bulkUpload.pricePlaceholder")}
                                 className="w-full border border-[var(--brand-ink)]/20 px-3 py-2 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] transition-colors bg-transparent"
                               />
+                              {card.priceBasis && (
+                                <p className="mt-1.5 text-[11px] font-sans text-muted-foreground">
+                                  {card.priceBasis} — change it if that's not
+                                  right.
+                                </p>
+                              )}
                             </div>
 
                             {/* Description DE */}

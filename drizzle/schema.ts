@@ -183,6 +183,8 @@ export const products = mysqlTable("products", {
   descriptionDe: text("descriptionDe"),
   nameFr: varchar("nameFr", { length: 255 }),
   descriptionFr: text("descriptionFr"),
+  nameIt: varchar("nameIt", { length: 255 }),
+  descriptionIt: text("descriptionIt"),
   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
   category: mysqlEnum("category", PRODUCT_CATEGORIES).notNull(),
   imageKey: varchar("imageKey", { length: 512 }),
