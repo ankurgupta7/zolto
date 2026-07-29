@@ -305,6 +305,25 @@ describeIf(
 
     beforeAll(async () => {
       stripe = getStripe();
+
+      // Reachability first, so a blocked network can't masquerade as "Stripe
+      // rejected our platform fee". Those two need telling apart instantly:
+      // one is an infrastructure problem, the other means every online sale
+      // on the Free plan is broken. The Stripe SDK surfaces a proxy's HTML
+      // error page as "Invalid JSON received from the Stripe API", which
+      // reads like the latter and is actually the former.
+      try {
+        await stripe.balance.retrieve();
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        throw new Error(
+          "Cannot reach the Stripe API, so the platform-fee path was NOT " +
+            "verified. This is a connectivity/egress problem, not a Stripe " +
+            "rejection — do not read it as the fee being broken. " +
+            `Underlying error: ${msg}`,
+        );
+      }
+
       // A Standard account mirrors what tenants link via OAuth in production.
       // Test-mode accounts are free to create and need no onboarding to accept
       // a Checkout Session, which is all we're exercising here.
