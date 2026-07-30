@@ -19,8 +19,13 @@ export async function injectHeadForRequest(
 ): Promise<string> {
   try {
     const host = (req.headers.host as string) || "";
-    if (isMarketingHost(host, req.url)) {
-      return injectMarketingHead(html, req.path, resolveBaseUrl(req));
+    // originalUrl is the one field Express never rewrites when a handler is
+    // mounted, so the route survives regardless of how this is wired up.
+    // isMarketingHost expects a query string, not a path — passing req.url
+    // meant ?surface=marketing never matched.
+    const [routePath, search = ""] = req.originalUrl.split("?");
+    if (isMarketingHost(host, search)) {
+      return injectMarketingHead(html, routePath, resolveBaseUrl(req));
     }
 
     const tenant = await resolveTenantFromRequest(req);
