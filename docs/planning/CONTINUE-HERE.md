@@ -15,59 +15,76 @@ pushed. Nothing is stashed or uncommitted.
 
 ---
 
-## 0a. ✅ SOLVED — the merchant was signed in but not their store's admin
+## 0a. ⛔ The deployed database appears to be freshly seeded and empty
 
-**Symptom chain, for the record, because it misled us three times:** a merchant
-tapped **Connect Stripe** and got *"Stripe Connect isn't set up on the platform
-yet. Contact support."* It looked like a payments/config problem. It wasn't.
+**Check this before anything else, and before writing any new data.**
 
-**Root cause.** The signed-in user's `users.role` was not `admin`, so
-`adminProcedure`'s middleware rejected `tenant.getStripeConnectUrl` with
-`NOT_ADMIN_ERR_MSG` — *"You do not have required permission (10002)"*. The
-client had no URL, and the old copy translated "no URL" into "the platform
-isn't set up".
+`bash deploy/tenant-admin.sh` on the live server returned exactly one store and
+no users:
 
-**Why the logs were empty and that was itself the clue.**
-`docker compose logs app | grep StripeConnect` printed nothing even with the
-per-tenant logging in place, because `adminProcedure` throws in *middleware*,
-before the query body where that log lives. Empty log + a permission error is
-the signature of a role problem, not a config one.
-
-**Why the role was wrong — the real defect.** Signup creates a *pending* admin
-row plus a one-time claim token; the owner becomes admin only when the browser
-redeems it through `tenant.claimAdmin`. That token is kept in
-**`sessionStorage` on the marketing origin** (`zolto.ch`), so the claim is lost
-whenever the owner doesn't return to `zolto.ch/onboarding` **in the same tab** —
-most obviously by going straight to `<slug>.zolto.ch/admin`, which is a
-*different origin*. Mobile Safari makes that more likely. The owner then has a
-working login, a real store, and no admin rights over it.
-
-**Immediate fix (operator, read-only by default):**
-
-```bash
-bash deploy/tenant-admin.sh                          # which stores have admins = 0
-bash deploy/tenant-admin.sh <slug>                   # that store's users + Connect state
-bash deploy/tenant-admin.sh <slug> --promote <email> # grant admin
+```
+id  slug      name            plan  admins  users
+1   platform  Zolto Platform  free  0       0
 ```
 
-It only promotes an account that has already signed in, refuses ambiguous
-emails, escapes the email before use, and burns any stale pending-claim row so
-an old token can't later re-point ownership. Then sign out, back in, retry.
+`deploy/lib/db.sh` seeds tenant #1 as `platform` / "Zolto Platform" by default,
+so **that is precisely what an empty, freshly-initialised database looks like.**
+The `blah1` store the merchant was using does not exist in it, and there are no
+user rows at all. The `db` container was ~5 minutes old in the same deploy
+output.
 
-**Still to fix properly (top of the queue):** the claim hand-off is fragile by
-design. A token in `sessionStorage` on one origin cannot survive a journey that
-legitimately ends on another. Options, roughly in order of preference:
+**So the (10002) permission error has a simpler explanation than the one I gave
+before:** with no user row, `ctx.user` is null and `adminProcedure` rejects
+every admin call with `NOT_ADMIN_ERR_MSG`. A surviving session cookie makes the
+browser still look signed in. The claim-token theory below is a *real* latent
+bug, but it is **not** what happened here.
 
-1. Put the claim token in the post-OAuth **redirect URL** rather than
+**Do this first, in order:**
+
+```bash
+ls -la backups/                    # is there a backup to restore?
+bash deploy/inspect-db.sh          # read-only: what is actually in there
+./deploy/recover-from-backup.sh    # only if a backup exists
+```
+
+Backups are scheduled weekly (Sunday 02:00 → `/root/zolto/backups/`), so
+depending on timing a restore may lose little or nothing. **Do not create a new
+tenant or sign up again until this is settled** — writing fresh data on top can
+turn a recoverable database into an unrecoverable one.
+
+If it turns out no data was lost (e.g. the signup was never completed against
+*this* database), then just sign up again and the flow proceeds normally.
+
+### The latent claim-token bug — still worth fixing, separately
+
+Signup mints a *pending* admin row plus a one-time claim token, and the owner
+becomes admin only when the browser redeems it via `tenant.claimAdmin`. The
+token lives in **`sessionStorage` on the marketing origin** (`zolto.ch`), so it
+is lost whenever the owner doesn't return to `zolto.ch/onboarding` **in the same
+tab** — most obviously by going straight to `<slug>.zolto.ch/admin`, a
+*different origin*. Mobile Safari makes that more likely. The owner then has a
+working login, a real store, and no rights over it.
+
+`deploy/tenant-admin.sh <slug> --promote <email>` repairs that case. Real fixes,
+in order of preference:
+
+1. Carry the claim token in the post-OAuth **redirect URL** instead of
    `sessionStorage`, so it survives tab and origin changes.
-2. Accept `claimAdmin` from the tenant subdomain too, and have `/admin` redeem
-   a token found in its own query string.
-3. Auto-promote the signup email on first sign-in for a tenant that has **zero**
-   admins — narrow, idempotent, and closes the window entirely.
+2. Accept `claimAdmin` from the tenant subdomain, redeeming a token from its own
+   query string.
+3. Auto-promote the signup email on first sign-in when a tenant has **zero**
+   admins — narrow, idempotent, closes the window entirely.
 
-Also worth doing: when a signed-in user has no admin rights on the store
-they're viewing, say so plainly instead of surfacing `(10002)`. And nothing in
-`deploy/` validates required env vars.
+### Two other things this incident exposed
+
+- **`(10002)` should never reach a merchant.** When a signed-in user has no
+  rights on the store they're viewing, say that plainly. This cryptic code sent
+  us chasing Stripe for three rounds.
+- **The older `deploy/*.sh` scripts still `source` `.env`**, which *executes*
+  values containing shell metacharacters — `RESEND_FROM_EMAIL=Zolto
+  <orders@zolto.ch>` breaks `inspect-db.sh` today. `deploy/lib/env.sh`
+  (`load_dotenv`) exists precisely to fix this and `tenant-admin.sh` now uses
+  it; the rest should be migrated.
 
 ---
 

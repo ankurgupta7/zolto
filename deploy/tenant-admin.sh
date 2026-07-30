@@ -2,19 +2,22 @@
 # deploy/tenant-admin.sh — show who owns a store, and promote a user to its admin.
 #
 # WHY THIS EXISTS
-# Signup creates a *pending* admin row plus a one-time claim token, and the
-# owner becomes admin only when the browser redeems it via tenant.claimAdmin
-# (see server/routers/tenant.ts). The token is stashed in **sessionStorage on
-# the marketing origin** (zolto.ch), so the claim is lost whenever the owner
-# doesn't land back on zolto.ch/onboarding in the same tab — for example by
-# going straight to <slug>.zolto.ch/admin, which is a *different origin*, or by
-# OAuth returning in a new tab. Mobile Safari makes that more likely, not less.
+# Every adminProcedure rejects a caller who isn't role admin/superadmin with
+# "You do not have required permission (10002)". On the "Connect Stripe" button
+# that reads as a payments problem, and it is not. There are three distinct
+# causes and they need different fixes:
 #
-# When that happens the owner is signed in but still role='customer', and every
-# adminProcedure fails with "You do not have required permission (10002)" —
-# including "Connect Stripe", which then looks like a payments problem.
+#   1. The database has no users at all — usually a recreated volume. NOTHING
+#      here can help; restore a backup instead. The listing warns about this.
+#   2. A store exists with users but no admin: the owner signed in yet never
+#      redeemed the signup claim token. The token lives in sessionStorage on the
+#      MARKETING origin (zolto.ch), so it is lost if the owner lands on
+#      <slug>.zolto.ch (a different origin) or in a new tab — likely on mobile.
+#      `--promote` is the fix.
+#   3. The session's user row is gone while the cookie survives, so ctx.user is
+#      null. Signing out and back in re-creates it.
 #
-# This script is the operator's way out. Default is READ ONLY.
+# Default is READ ONLY.
 #
 #   Usage:
 #     bash deploy/tenant-admin.sh                      # list stores + their users
@@ -34,10 +37,16 @@ if [ ! -f .env ]; then
   exit 1
 fi
 
-set -a
-# shellcheck source=/dev/null
-source <(grep -v '^\s*#' .env | grep -v '^\s*$')
-set +a
+# Parse .env literally via the shared loader. NEVER `source` it: values like
+# RESEND_FROM_EMAIL=Zolto <orders@zolto.ch> contain shell metacharacters and
+# would be EXECUTED, not read — which is exactly why deploy/lib/env.sh exists
+# (see its header). The older deploy/*.sh scripts still use the unsafe pattern.
+# shellcheck source=lib/env.sh
+. "$(dirname "$0")/lib/env.sh"
+load_dotenv .env || {
+  echo "ERROR: could not read .env" >&2
+  exit 1
+}
 
 : "${MYSQL_USER:?MYSQL_USER not set in .env}"
 : "${MYSQL_PASSWORD:?MYSQL_PASSWORD not set in .env}"
@@ -61,21 +70,53 @@ EMAIL="${3:-}"
 if [ -z "$SLUG" ]; then
   echo "── Stores ──────────────────────────────────────────────────────"
   $MYSQL -e "SELECT t.id, t.slug, t.name, t.plan,
-       SUM(u.role IN ('admin','superadmin')) AS admins,
+       COALESCE(SUM(u.role IN ('admin','superadmin')), 0) AS admins,
        COUNT(u.id) AS users
      FROM tenants t LEFT JOIN users u ON u.tenant_id = t.id
      GROUP BY t.id, t.slug, t.name, t.plan ORDER BY t.id;"
   echo
-  echo "A store showing admins = 0 cannot use ANY admin feature — its owner"
-  echo "never redeemed the claim token. Fix with:"
-  echo "  bash deploy/tenant-admin.sh <slug> --promote <email>"
+
+  TOTAL_TENANTS="$($MYSQL -N -s -e "SELECT COUNT(*) FROM tenants;" 2>/dev/null)"
+  TOTAL_USERS="$($MYSQL -N -s -e "SELECT COUNT(*) FROM users;" 2>/dev/null)"
+  echo "Totals: ${TOTAL_TENANTS:-?} store(s), ${TOTAL_USERS:-?} user(s)."
+  echo
+
+  # Distinguish the two very different empty states. Telling an operator "the
+  # owner never redeemed the claim token" when the database simply has no users
+  # would send them to fix the wrong thing.
+  if [ "${TOTAL_USERS:-0}" = "0" ]; then
+    cat <<'WARN'
+⚠  There are NO users in this database at all.
+
+That is not a claim-token problem — nothing exists to promote. Either no one
+has ever signed in against this database, or its data is gone (a recreated
+volume, a fresh `docker compose down -v`, a restore that did not happen).
+
+STOP and check before creating anything on top of it:
+  ls -la backups/                     # is there a backup to restore from?
+  docker compose exec -T db mysql ... # or: bash deploy/inspect-db.sh
+  ./deploy/recover-from-backup.sh     # restore path, if a backup exists
+
+Writing new data first can make a recoverable database unrecoverable.
+WARN
+  else
+    echo "A store showing admins = 0 but users > 0 means its owner signed in"
+    echo "yet never redeemed the claim token. Fix with:"
+    echo "  bash deploy/tenant-admin.sh <slug> --promote <email>"
+    echo
+    echo "A store showing users = 0 means nobody has ever signed in to it."
+  fi
   exit 0
 fi
 
 SLUG_E="$(esc "$SLUG")"
 TENANT_ID="$($MYSQL -N -s -e "SELECT id FROM tenants WHERE slug='${SLUG_E}' LIMIT 1;" 2>/dev/null)"
 if [ -z "$TENANT_ID" ]; then
-  echo "ERROR: no store with slug '${SLUG}'." >&2
+  echo "ERROR: no store with slug '${SLUG}' exists in this database." >&2
+  echo "Stores that do exist:" >&2
+  $MYSQL -N -s -e "SELECT slug FROM tenants ORDER BY id;" 2>/dev/null | sed 's/^/  - /' >&2
+  echo "(If the store you expected is missing, the database may have been" >&2
+  echo " reset — check backups/ before recreating it.)" >&2
   exit 1
 fi
 
