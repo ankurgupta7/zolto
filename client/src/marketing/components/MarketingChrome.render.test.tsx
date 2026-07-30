@@ -9,7 +9,7 @@ import {
 } from "@testing-library/react";
 import { Router } from "wouter";
 import { memoryLocation } from "wouter/memory-location";
-import { MarketingNav, StoreShortcut, signInHref } from "./MarketingChrome";
+import { MarketingNav, StoreShortcut, SIGN_IN_PATH } from "./MarketingChrome";
 
 const mocks = vi.hoisted(() => ({
   meData: undefined as unknown,
@@ -89,16 +89,10 @@ describe("StoreShortcut (marketing 'go to your store')", () => {
   });
 });
 
-describe("signInHref", () => {
-  it("points at the server OAuth route, not the new-store signup form", () => {
-    const href = signInHref();
-    expect(href.startsWith("/api/oauth/login")).toBe(true);
-    expect(href).not.toContain("/signup");
-  });
-
-  it("asks to return the visitor to the page they started from", () => {
-    const href = signInHref();
-    expect(href).toContain(`next=${encodeURIComponent(window.location.href)}`);
+describe("SIGN_IN_PATH", () => {
+  it("sends a returning merchant to the sign-in bounce, not the signup form", () => {
+    // /signup only ever creates a *new* tenant — the bug this replaced.
+    expect(SIGN_IN_PATH).toBe("/signin");
   });
 });
 
@@ -117,7 +111,7 @@ describe("MarketingNav — auth slot", () => {
   it("offers sign-in and signup to a logged-out visitor", () => {
     renderNav();
     const signIn = screen.getByRole("link", { name: "Sign in" });
-    expect(signIn.getAttribute("href")).toBe(signInHref());
+    expect(signIn.getAttribute("href")).toBe(SIGN_IN_PATH);
     expect(
       screen.getAllByRole("link", { name: "Start free" }).length,
     ).toBeGreaterThan(0);
@@ -163,7 +157,7 @@ describe("MarketingNav — mobile navigation", () => {
     // Returning merchants get their way back in from the sheet too.
     expect(
       within(nav).getByRole("link", { name: "Sign in" }).getAttribute("href"),
-    ).toBe(signInHref());
+    ).toBe(SIGN_IN_PATH);
   });
 
   it("omits sign-in from the menu for an already-signed-in merchant", async () => {

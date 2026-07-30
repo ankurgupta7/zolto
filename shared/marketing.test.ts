@@ -11,6 +11,7 @@ import {
   renderMarketingLlmsFullTxt,
   normalizeBaseUrl,
   AI_CRAWLERS,
+  NOINDEX_PATHS,
 } from "./marketing";
 
 describe("marketing identity gate", () => {
@@ -104,6 +105,22 @@ describe("renderRobotsTxt", () => {
     expect(txt).toContain("User-agent: *");
     expect(txt).toContain("Allow: /");
     expect(txt).toContain("Sitemap: https://zolto.com/sitemap.xml");
+  });
+
+  it("keeps the /signin bounce out of the index", () => {
+    const txt = renderRobotsTxt("https://zolto.com");
+    // It only runs the OAuth handshake and forwards on — no content to crawl.
+    for (const path of NOINDEX_PATHS) {
+      expect(txt).toContain(`Disallow: ${path}`);
+    }
+    expect(NOINDEX_PATHS).toContain("/signin");
+  });
+
+  it("never advertises a noindex route in the sitemap", () => {
+    const paths = marketingSitemapEntries().map((e) => e.path);
+    for (const path of NOINDEX_PATHS) {
+      expect(paths).not.toContain(path);
+    }
   });
 
   it("explicitly welcomes AI crawlers and advertises llms.txt", () => {

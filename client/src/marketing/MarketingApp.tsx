@@ -5,6 +5,7 @@ import { Container } from "./components/Container";
 import Landing from "./pages/Landing";
 import Pricing from "./pages/Pricing";
 import Signup from "./pages/Signup";
+import SignIn from "./pages/SignIn";
 import Onboarding from "./pages/Onboarding";
 import Blog from "./pages/Blog";
 import BlogPost from "./pages/BlogPost";
@@ -50,6 +51,7 @@ export default function MarketingApp() {
         <Route path="/" component={Landing} />
         <Route path="/pricing" component={Pricing} />
         <Route path="/signup" component={Signup} />
+        <Route path="/signin" component={SignIn} />
         <Route path="/onboarding" component={Onboarding} />
         <Route path="/blog" component={Blog} />
         <Route path="/blog/:slug" component={BlogPost} />

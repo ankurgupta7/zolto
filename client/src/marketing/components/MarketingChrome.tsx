@@ -3,7 +3,6 @@ import { Link, useLocation } from "wouter";
 import type { ReactNode } from "react";
 import { Menu, Store } from "lucide-react";
 import { trpc } from "@/lib/trpc";
-import { getLoginUrl } from "@/const";
 import { storeAdminUrl } from "@/lib/surface";
 import {
   Sheet,
@@ -33,18 +32,13 @@ const NAV = [
 /**
  * Sign-in target for a *returning* merchant.
  *
- * This must not point at /signup: that page only creates a brand-new tenant, so
+ * Deliberately not /signup: that page only creates a brand-new tenant, so
  * sending an existing merchant there offers them a second store rather than a
- * way back into the one they have. Auth is Google OAuth handled by the server at
- * /api/oauth/login, so this is a real navigation (not a wouter route) and we ask
- * to be returned to the page the visitor started from — once they're back, the
- * nav swaps in StoreShortcut, which knows their slug and links to their admin.
+ * way back into the one they have. /signin is a bounce page that runs the OAuth
+ * handshake and then drops them straight into their own store admin — see
+ * pages/SignIn.tsx for why that second hop can't happen from here.
  */
-export function signInHref(): string {
-  return getLoginUrl(
-    typeof window === "undefined" ? "/" : window.location.href,
-  );
-}
+export const SIGN_IN_PATH = "/signin";
 
 /**
  * The Zolto brush-Z mark — the signature gold-on-mahogany lockup (matches
@@ -134,12 +128,12 @@ function AuthActions({ compact = false }: { compact?: boolean }) {
   return (
     <>
       {!compact && (
-        <a
-          href={signInHref()}
+        <Link
+          href={SIGN_IN_PATH}
           className="text-sm text-[var(--brand-muted-2)] transition-colors hover:text-[var(--brand-ink)]"
         >
           Sign in
-        </a>
+        </Link>
       )}
       <Link
         href="/signup"
@@ -196,12 +190,13 @@ function MobileMenu({
             </Link>
           ))}
           {!me.isLoading && !me.data && (
-            <a
-              href={signInHref()}
+            <Link
+              href={SIGN_IN_PATH}
+              onClick={close}
               className="border-b border-[var(--brand-border)] py-3.5 text-sm text-[var(--brand-muted-2)] transition-colors hover:text-[var(--brand-ink)]"
             >
               Sign in
-            </a>
+            </Link>
           )}
         </nav>
       </SheetContent>
