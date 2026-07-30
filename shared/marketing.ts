@@ -219,9 +219,21 @@ export const AI_CRAWLERS = [
  * Render robots.txt. Allows everything, then explicitly welcomes AI crawlers,
  * and advertises both the sitemap and the LLM guide (/llms.txt).
  */
+/**
+ * Marketing routes that exist but must never be indexed. /signin is a bounce:
+ * it runs the OAuth handshake and forwards to the merchant's own admin, so it
+ * has no content of its own and a crawler following it only burns budget on a
+ * redirect. It stays out of the sitemap for the same reason.
+ */
+export const NOINDEX_PATHS = ["/signin"];
+
 export function renderRobotsTxt(baseUrl: string): string {
   const base = normalizeBaseUrl(baseUrl);
-  const lines = ["User-agent: *", "Allow: /", ""];
+  const lines = ["User-agent: *", "Allow: /"];
+  for (const path of NOINDEX_PATHS) {
+    lines.push(`Disallow: ${path}`);
+  }
+  lines.push("");
   lines.push(
     "# AI assistants and agents are explicitly welcome to read this site.",
   );

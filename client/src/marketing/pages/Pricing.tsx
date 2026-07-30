@@ -1,4 +1,5 @@
 import { Link } from "wouter";
+import { Container } from "../components/Container";
 import { PLANS, formatPrice } from "../plans";
 import {
   PRICING_PROMISE,
@@ -25,7 +26,7 @@ const FAQ = [
 
 export default function Pricing() {
   return (
-    <div className="mx-auto max-w-6xl px-6 py-20">
+    <Container className="py-20">
       <div className="text-center">
         <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
           fair &amp; simple
@@ -186,23 +187,16 @@ export default function Pricing() {
 
       {/*
         Social proof: the pricing-page-copy.md includes a named Kalakosh/Sheena Arora
-        testimonial. It is intentionally NOT shipped here yet — using a real person's
-        name and story in marketing requires a signed content/publicity release
-        (business-plan §5.1, phase1/legal/content-release-form.md). Swap in the real
-        quote once that's signed.
+        testimonial. Nothing is rendered here yet — using a real person's name and
+        story in marketing requires a signed content/publicity release (business-plan
+        §5.1, phase1/legal/content-release-form.md).
+
+        An anonymized stand-in used to sit here, captioned "(testimonial pending
+        release)". That caption was visible to real visitors, which reads as an
+        unfinished page and undercuts the honesty the pledge above is selling — a
+        quote nobody vouches for is worth less than no quote. Drop the real
+        blockquote in once the release is signed.
       */}
-      <blockquote className="mx-auto mt-20 max-w-2xl rounded-xl border border-[var(--brand-border)] bg-white p-8 text-center">
-        <p className="font-serif text-xl italic text-[var(--brand-text)]">
-          “I went from selling only at markets to my first online order in a few
-          days — without learning a new platform or hiring anyone.”
-        </p>
-        <footer className="mt-4 text-sm text-[var(--brand-muted)]">
-          — Pilot maker, Zurich{" "}
-          <span className="text-[var(--brand-muted)]/70">
-            (testimonial pending release)
-          </span>
-        </footer>
-      </blockquote>
 
       {/* FAQ */}
       <div className="mx-auto mt-20 max-w-2xl">
@@ -223,6 +217,6 @@ export default function Pricing() {
           ))}
         </dl>
       </div>
-    </div>
+    </Container>
   );
 }

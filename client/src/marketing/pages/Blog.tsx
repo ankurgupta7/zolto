@@ -1,6 +1,7 @@
 import { Link } from "wouter";
 import { DIARY_POSTS, CASE_STUDY } from "../content/launchContent";
 import { useDocumentMeta } from "../lib/useDocumentMeta";
+import { Container } from "../components/Container";
 
 function PostCard({
   href,
@@ -51,7 +52,7 @@ export default function Blog() {
   });
 
   return (
-    <div className="mx-auto max-w-5xl px-6 py-20">
+    <Container width="5xl" className="py-20">
       <div className="max-w-2xl">
         <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
           The Launch Diary
@@ -89,6 +90,6 @@ export default function Blog() {
           meta={CASE_STUDY.readingTime}
         />
       </div>
-    </div>
+    </Container>
   );
 }

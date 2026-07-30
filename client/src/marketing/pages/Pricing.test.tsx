@@ -71,4 +71,24 @@ describe("Pricing", () => {
       screen.getAllByText(/Selling in person is free/i).length,
     ).toBeGreaterThan(0);
   });
+
+  it("ships no unattributed testimonial while the release is unsigned", () => {
+    renderPricing();
+    // The stand-in quote was captioned "(testimonial pending release)" in the
+    // live UI, which reads as an unfinished page. Nothing shows until the real,
+    // released quote replaces it.
+    expect(screen.queryByText(/testimonial pending release/i)).toBeNull();
+    expect(screen.queryByText(/Pilot maker, Zurich/i)).toBeNull();
+    expect(screen.queryByRole("blockquote")).toBeNull();
+  });
+
+  it("sends every plan CTA to signup carrying that plan", () => {
+    renderPricing();
+    for (const id of ["free", "maker", "studio", "atelier"]) {
+      const hrefs = screen
+        .getAllByRole("link")
+        .map((a) => a.getAttribute("href"));
+      expect(hrefs).toContain(`/signup?plan=${id}`);
+    }
+  });
 });
