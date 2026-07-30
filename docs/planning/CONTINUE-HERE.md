@@ -55,6 +55,29 @@ turn a recoverable database into an unrecoverable one.
 If it turns out no data was lost (e.g. the signup was never completed against
 *this* database), then just sign up again and the flow proceeds normally.
 
+**⚠ Expect `backups/` to be empty, and don't read that as proof of data loss.**
+`backup.sh` and `recover-from-backup.sh` both loaded `.env` with
+`export $(grep -v '^#' .env | xargs)`. That word-splits every value, so
+`RESEND_FROM_EMAIL=Zolto <orders@zolto.ch>` became two arguments, `export`
+rejected `<orders@zolto.ch>` as an invalid identifier, and `set -euo pipefail`
+aborted the script **at line 3, before a single byte was dumped**. Reproduced
+against a copy of that `.env`:
+
+```
+old.sh: line 3: export: `<orders@zolto.ch>': not a valid identifier
+exit=1
+```
+
+So the weekly cron has very likely been failing silently since that variable was
+added, and the same bug made the *recovery* script unusable on exactly the
+server that needed it. Both are fixed now (`load_dotenv`). Two consequences:
+
+- Check the cron/systemd log for that `not a valid identifier` line to date the
+  breakage — and check S3/GitHub backup destinations too, since a run that
+  aborted at line 3 never reached them either.
+- Once the database question is settled, **run `./deploy/backup.sh` manually and
+  confirm it produces an archive** before trusting the schedule again.
+
 ### The latent claim-token bug — still worth fixing, separately
 
 Signup mints a *pending* admin row plus a one-time claim token, and the owner
@@ -80,11 +103,14 @@ in order of preference:
 - **`(10002)` should never reach a merchant.** When a signed-in user has no
   rights on the store they're viewing, say that plainly. This cryptic code sent
   us chasing Stripe for three rounds.
-- **The older `deploy/*.sh` scripts still `source` `.env`**, which *executes*
-  values containing shell metacharacters — `RESEND_FROM_EMAIL=Zolto
-  <orders@zolto.ch>` breaks `inspect-db.sh` today. `deploy/lib/env.sh`
-  (`load_dotenv`) exists precisely to fix this and `tenant-admin.sh` now uses
-  it; the rest should be migrated.
+- **Unsafe `.env` loading had spread to four scripts, and one of them was the
+  recovery path.** `inspect-db.sh` used `source <(...)`, which *executes* the
+  file — it died on `MYSQL_PASSWORD=p@ss(word)` before running a query.
+  `backup.sh` and `recover-from-backup.sh` used `export $(... | xargs)`, which
+  aborted under `set -e` (see the warning above). All four now use
+  `load_dotenv` from `deploy/lib/env.sh`, and `env.test.sh` carries the real
+  `RESEND_FROM_EMAIL` value as a regression case. **Don't reintroduce either
+  pattern** — `.env` holds human-pasted secrets and must never be run as code.
 
 ---
 

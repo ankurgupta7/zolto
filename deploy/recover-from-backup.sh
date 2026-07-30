@@ -24,7 +24,17 @@ if [ ! -f .env ]; then
   echo "ERROR: .env not found. Run from the project root." >&2
   exit 1
 fi
-export $(grep -v '^#' .env | xargs)
+# Parse .env literally via the shared loader. The old `export $(grep ... | xargs)`
+# word-split every value: RESEND_FROM_EMAIL=Zolto <orders@zolto.ch> became two
+# arguments, `export` rejected the second as an invalid identifier, and `set -e`
+# aborted — so the recovery path was unusable on exactly the servers that needed
+# it. See deploy/lib/env.sh.
+# shellcheck source=lib/env.sh
+. "$(dirname "$0")/lib/env.sh"
+load_dotenv .env || {
+  echo "ERROR: could not read .env" >&2
+  exit 1
+}
 
 # ── Shared S3 helper ─────────────────────────────────────────────────────────
 # Runs aws-cli in a throwaway container using the S3 credentials from .env.
