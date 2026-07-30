@@ -52,7 +52,18 @@
 }
 
 # Redirect www → apex (no-op when SITE_DOMAIN is ":80").
+#
+# This needs `on_demand` for the same reason the tenant block below does: the
+# wildcard site covers www.{$SITE_DOMAIN} too, so Caddy does not provision a
+# certificate for it up front and falls through to on-demand at handshake
+# time. Without this the hostname has no certificate at all and Caddy aborts
+# the TLS handshake, which looks like the site being unreachable rather than
+# a redirect. /api/domain-ask answers 200 for the "www" label specifically.
 www.{$SITE_DOMAIN} {
+    tls {
+        on_demand
+    }
+
     redir https://{$SITE_DOMAIN}{uri} permanent
 }
 
