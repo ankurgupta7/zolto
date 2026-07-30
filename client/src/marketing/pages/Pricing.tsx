@@ -7,22 +7,19 @@ import {
   PRO_BREAK_EVEN_ONLINE_CHF,
   PRO_PLAN,
   REVENUE_SHARE,
+  faqsByCategory,
 } from "@shared/platform";
 
-const FAQ = [
-  {
-    q: "Can I upgrade or downgrade anytime?",
-    a: "Yes. Changes take effect at your next billing cycle.",
-  },
-  {
-    q: "Is there a contract?",
-    a: "No. All paid plans are month-to-month. Cancel anytime.",
-  },
-  {
-    q: "Do prices include VAT?",
-    a: "Taxes are shown at checkout based on your location. See our terms for details.",
-  },
-];
+// Sourced from the shared FAQ set so these answers also reach the FAQPage
+// schema, /llms.txt and MCP — they used to live only in this file, which meant
+// an AI assistant asking "is there a contract?" had nothing to read.
+const FAQ = faqsByCategory("Pricing & billing").filter((f) =>
+  [
+    "Can I upgrade or downgrade anytime?",
+    "Is there a contract?",
+    "Do prices include VAT?",
+  ].includes(f.q),
+);
 
 export default function Pricing() {
   return (

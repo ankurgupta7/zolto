@@ -3,7 +3,7 @@ import { render, screen, cleanup } from "@testing-library/react";
 import { Router } from "wouter";
 import { memoryLocation } from "wouter/memory-location";
 import Pricing from "./Pricing";
-import { PRO_PLAN, REVENUE_SHARE } from "@shared/platform";
+import { PLANS, PRO_PLAN, REVENUE_SHARE } from "@shared/platform";
 
 afterEach(cleanup);
 
@@ -43,9 +43,9 @@ describe("Pricing", () => {
 
   it("explains the fee: free in person, 1% online, Pro removes it", () => {
     renderPricing();
-    expect(
-      screen.getAllByText(/Zolto adds nothing/i).length,
-    ).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Zolto adds nothing/i).length).toBeGreaterThan(
+      0,
+    );
     expect(screen.getAllByText(/CHF 0/).length).toBeGreaterThan(0);
     // Break-even upsell number is on the page.
     expect(screen.getAllByText(/2,500/).length).toBeGreaterThan(0);
@@ -84,11 +84,17 @@ describe("Pricing", () => {
 
   it("sends every plan CTA to signup carrying that plan", () => {
     renderPricing();
-    for (const id of ["free", "maker", "studio", "atelier"]) {
-      const hrefs = screen
-        .getAllByRole("link")
-        .map((a) => a.getAttribute("href"));
-      expect(hrefs).toContain(`/signup?plan=${id}`);
+    const hrefs = screen
+      .getAllByRole("link")
+      .map((a) => a.getAttribute("href"));
+    // Derived from PLANS rather than a hard-coded list: this used to name the
+    // retired four-tier ids (maker/studio/atelier), which contradicted the
+    // assertion above that those tiers must not resurface, and failed once the
+    // pricing pivot landed. Sourcing it from the plans keeps it true after the
+    // next packaging change too.
+    expect(PLANS.length).toBeGreaterThan(0);
+    for (const plan of PLANS) {
+      expect(hrefs).toContain(`/signup?plan=${plan.id}`);
     }
   });
 });

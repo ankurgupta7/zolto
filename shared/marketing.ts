@@ -32,7 +32,9 @@ import {
   FAQS,
   HOW_TO_START,
   PRICING_PROMISE,
+  COMPETITORS,
 } from "./platform";
+import { SEGMENTS } from "./segments";
 
 export interface MakerIdentity {
   /** Brand name, or a neutral stand-in while unreleased. */
@@ -110,6 +112,15 @@ export const BLOG_POSTS: BlogPostRef[] = [
   { slug: "launch-diary-3", lastmod: "2026-08-03" },
 ];
 
+/**
+ * The first-party research page's slug and publication date. Lives here with the
+ * other route constants (BLOG_POSTS, STORY_SLUG) so the sitemap and llms brief
+ * can reference the route without importing the content module — shared/research
+ * imports these, not the other way round, which keeps the dependency acyclic.
+ */
+export const RESEARCH_SLUG = "first-month-online";
+export const RESEARCH_PUBLISHED = "2026-08-03";
+
 export interface SitemapEntry {
   path: string;
   lastmod: string;
@@ -133,6 +144,40 @@ export function marketingSitemapEntries(): SitemapEntry[] {
       priority: 0.9,
     },
     {
+      path: "/faq",
+      lastmod: "2026-07-30",
+      changefreq: "monthly",
+      priority: 0.8,
+    },
+    {
+      path: "/compare",
+      lastmod: "2026-07-30",
+      changefreq: "monthly",
+      priority: 0.7,
+    },
+    ...COMPETITORS.map(
+      (c): SitemapEntry => ({
+        path: `/compare/zolto-vs-${c.id}`,
+        lastmod: "2026-07-30",
+        changefreq: "monthly",
+        priority: 0.8,
+      }),
+    ),
+    {
+      path: "/for",
+      lastmod: "2026-07-30",
+      changefreq: "monthly",
+      priority: 0.7,
+    },
+    ...SEGMENTS.map(
+      (s): SitemapEntry => ({
+        path: `/for/${s.id}`,
+        lastmod: "2026-07-30",
+        changefreq: "monthly",
+        priority: 0.8,
+      }),
+    ),
+    {
       path: "/signup",
       lastmod: "2026-07-20",
       changefreq: "monthly",
@@ -155,6 +200,12 @@ export function marketingSitemapEntries(): SitemapEntry[] {
     {
       path: `/stories/${STORY_SLUG}`,
       lastmod: storyLastmod,
+      changefreq: "monthly",
+      priority: 0.8,
+    },
+    {
+      path: `/research/${RESEARCH_SLUG}`,
+      lastmod: RESEARCH_PUBLISHED,
       changefreq: "monthly",
       priority: 0.8,
     },
@@ -209,9 +260,11 @@ export const AI_CRAWLERS = [
   "ClaudeBot", // Anthropic
   "Claude-Web",
   "anthropic-ai",
-  "PerplexityBot",
+  "PerplexityBot", // Perplexity's index crawler
+  "Perplexity-User", // Perplexity fetching for a specific user request
   "Google-Extended", // Gemini/Vertex training
   "Applebot-Extended",
+  "bingbot", // Copilot's answers ride Bing's index
   "CCBot", // Common Crawl
 ] as const;
 
@@ -227,18 +280,31 @@ export const AI_CRAWLERS = [
  */
 export const NOINDEX_PATHS = ["/signin"];
 
-export function renderRobotsTxt(baseUrl: string): string {
+/**
+ * Render robots.txt. Allows everything except `noindexPaths`, explicitly welcomes
+ * AI crawlers, and advertises both the sitemap and the LLM guide (/llms.txt).
+ *
+ * The per-bot groups repeat the disallow list: a robots.txt agent obeys only the
+ * single most specific group that matches it, so a bare `Allow: /` under
+ * `User-agent: GPTBot` would silently exempt that bot from the `*` disallows.
+ *
+ * `noindexPaths` is a parameter because storefronts and the marketing surface
+ * have different funnels to keep out of the index (see
+ * STOREFRONT_NOINDEX_PATHS in ./storefront).
+ */
+export function renderRobotsTxt(
+  baseUrl: string,
+  noindexPaths: readonly string[] = NOINDEX_PATHS,
+): string {
   const base = normalizeBaseUrl(baseUrl);
-  const lines = ["User-agent: *", "Allow: /"];
-  for (const path of NOINDEX_PATHS) {
-    lines.push(`Disallow: ${path}`);
-  }
-  lines.push("");
+  const disallows = noindexPaths.map((p) => `Disallow: ${p}`);
+
+  const lines = ["User-agent: *", "Allow: /", ...disallows, ""];
   lines.push(
     "# AI assistants and agents are explicitly welcome to read this site.",
   );
   for (const bot of AI_CRAWLERS) {
-    lines.push(`User-agent: ${bot}`, "Allow: /", "");
+    lines.push(`User-agent: ${bot}`, "Allow: /", ...disallows, "");
   }
   lines.push(
     `# Machine-readable guide for LLMs: ${base}/llms.txt`,
@@ -291,6 +357,10 @@ ${HOW_TO_START.map((s, i) => `${i + 1}. ${s}`).join("\n")}
 
 - [Sign up free](${base}/signup): open a store — no card required.
 - [Pricing](${base}/pricing): plans and pricing for makers.
+- [FAQ](${base}/faq): what it costs, how setup works, getting paid, selling in person and online.
+- [Comparisons](${base}/compare): ${PLATFORM.name} vs ${COMPETITORS.map((c) => c.name).join(", ")} — including when each of them is the better choice.
+- [Research](${base}/research/${RESEARCH_SLUG}): first-party data from a maker's first 30 days online — 12 orders, CHF 61 average, 2.5% conversion, with method and limits stated.
+- [Who it's for](${base}/for): ${SEGMENTS.map((s) => `[${s.name}](${base}/for/${s.id})`).join(", ")} — what changes for each kind of seller.
 - [Launch Diary](${base}/blog): a real maker's store launch, documented week by week.
 - [Case study](${base}/stories/${STORY_SLUG}): how a maker launched in 3 days.
 

@@ -9,6 +9,7 @@ import ImageLightbox from "@/components/ImageLightbox";
 import { useCart } from "@/contexts/CartContext";
 import { useTenant } from "@/contexts/TenantContext";
 import { whatsappHref } from "@/lib/branding";
+import { productJsonLd } from "@shared/storefront";
 import {
   Carousel,
   CarouselContent,
@@ -167,47 +168,30 @@ export default function ProductDetail() {
     ? `https://wa.me/${branding.whatsappNumber}?text=${encodeURIComponent(enquiryText)}`
     : whatsappHref(branding);
 
+  // Built with the same shared builder the server uses for crawler-facing HTML
+  // (server/storefrontSeo.ts), so the JS and non-JS representations of this page
+  // can't drift apart.
   const productSchema = product
     ? {
         "@context": "https://schema.org",
-        "@type": "Product",
-        name: displayName,
-        description: displayDescription,
-        image: allImages.map((img) => img.imageUrl),
-        sku: `SKU-${product.id}`,
-        brand: {
-          "@type": "Brand",
-          name: branding.storeName,
-        },
-        category: product.category,
-        offers: {
-          "@type": "Offer",
-          url: productUrl,
-          priceCurrency: currencyCode,
-          price: Number(product.price).toFixed(2),
-          availability: product.sold
-            ? "https://schema.org/OutOfStock"
-            : "https://schema.org/InStock",
-          itemCondition: "https://schema.org/NewCondition",
-          seller: {
-            "@type": "Organization",
-            name: branding.storeName,
+        ...productJsonLd(
+          {
+            id: product.id,
+            name: displayName,
+            description: displayDescription,
+            price: product.price,
+            category: product.category,
+            images: allImages.map((img) => img.imageUrl),
+            sold: product.sold,
+            quantity: product.quantity,
           },
-          shippingDetails: {
-            "@type": "OfferShippingDetails",
-            shippingRate: {
-              "@type": "MonetaryAmount",
-              value: "0",
-              currency: currencyCode,
-            },
-            shippingDestination: {
-              "@type": "DefinedRegion",
-            },
+          {
+            storeName: branding.storeName,
+            baseUrl:
+              typeof window !== "undefined" ? window.location.origin : "",
+            currency: currencyCode,
           },
-        },
-        ...(product.sold && {
-          availability: "https://schema.org/OutOfStock",
-        }),
+        ),
       }
     : null;
 
