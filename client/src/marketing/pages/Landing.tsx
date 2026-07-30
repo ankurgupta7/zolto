@@ -13,6 +13,7 @@ import {
   PhotoToListing,
   MarketStallScene,
 } from "../components/MarketingIllustrations";
+import { Container } from "../components/Container";
 
 export default function Landing() {
   return (
@@ -23,7 +24,7 @@ export default function Landing() {
 
       {/* ── Hero — "on your side" voice on the storefront's mahogany band ── */}
       <section className="bg-[var(--brand-ink)]">
-        <div className="mx-auto grid max-w-6xl items-center gap-10 px-6 pb-20 pt-20 md:grid-cols-2">
+        <Container className="grid items-center gap-10 pb-20 pt-20 md:grid-cols-2">
           <div>
             <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
               for people who make things
@@ -65,12 +66,15 @@ export default function Landing() {
           <div className="hidden justify-center text-[var(--brand-accent)]/80 md:flex">
             <MarketStallScene className="w-full max-w-md" />
           </div>
-        </div>
+        </Container>
       </section>
 
       {/* ── Cost strip (Direction A) — a year with the old guard vs a month here ── */}
       <section className="bg-[var(--brand-ink-deep)]">
-        <div className="mx-auto grid max-w-4xl items-center gap-6 px-6 py-12 text-center sm:grid-cols-[1fr_auto_1fr]">
+        <Container
+          width="4xl"
+          className="grid items-center gap-6 py-12 text-center sm:grid-cols-[1fr_auto_1fr]"
+        >
           <div>
             <p className="text-[11px] uppercase tracking-[0.2em] text-white/45">
               {COST_COMPARISON.themLabel}
@@ -99,12 +103,12 @@ export default function Landing() {
               {COST_COMPARISON.usNote}
             </p>
           </div>
-        </div>
+        </Container>
       </section>
 
       {/* ── The pledge (Direction B) — the heart of the positioning ── */}
       <section className="border-b border-[var(--brand-border)] bg-[var(--brand-surface-2)]">
-        <div className="mx-auto max-w-3xl px-6 py-20">
+        <Container width="3xl" className="py-20">
           <div className="relative rounded-2xl border border-[var(--brand-border)] bg-white p-9 shadow-[0_20px_50px_-34px_rgba(45,38,32,0.4)] md:p-11">
             <span className="absolute -top-3 left-9 bg-white px-2.5 font-hand text-xl text-[var(--brand-accent)]">
               our pledge to makers
@@ -129,12 +133,12 @@ export default function Landing() {
               — the Zolto team
             </p>
           </div>
-        </div>
+        </Container>
       </section>
 
       {/* ── Why not the old guard (Direction A) — the comparison table ── */}
       <section className="bg-[var(--brand-surface)]">
-        <div className="mx-auto max-w-4xl px-6 py-20">
+        <Container width="4xl" className="py-20">
           <div className="mb-10 text-center">
             <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
               the honest comparison
@@ -182,11 +186,11 @@ export default function Landing() {
               </tbody>
             </table>
           </div>
-        </div>
+        </Container>
       </section>
 
       {/* ── How it works — one inventory + photo→listing (kept illustrations) ── */}
-      <section id="product" className="mx-auto max-w-6xl px-6 py-20">
+      <Container as="section" id="product" className="py-20">
         <div className="mb-14 text-center">
           <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
             here&rsquo;s how it works
@@ -227,11 +231,11 @@ export default function Landing() {
             <PhotoToListing />
           </div>
         </div>
-      </section>
+      </Container>
 
       {/* ── AI-native selling loop (Direction C) — the flagship pillar ── */}
       <section className="bg-white">
-        <div className="mx-auto max-w-6xl px-6 py-20">
+        <Container className="py-20">
           <div className="mb-12 text-center">
             <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
               AI that&rsquo;s fine with messy
@@ -309,12 +313,12 @@ export default function Landing() {
               ))}
             </div>
           </div>
-        </div>
+        </Container>
       </section>
 
       {/* ── CTA ── */}
       <section className="bg-[var(--brand-ink)]">
-        <div className="mx-auto max-w-4xl px-6 py-20 text-center">
+        <Container width="4xl" className="py-20 text-center">
           <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
             ready when you are
           </p>
@@ -331,7 +335,7 @@ export default function Landing() {
           >
             Create your store →
           </Link>
-        </div>
+        </Container>
       </section>
     </>
   );

@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Route, Switch, useLocation } from "wouter";
 import { MarketingShell } from "./components/MarketingChrome";
+import { Container } from "./components/Container";
 import Landing from "./pages/Landing";
 import Pricing from "./pages/Pricing";
 import Signup from "./pages/Signup";
@@ -21,7 +22,7 @@ function ScrollToTop() {
 
 function NotFound() {
   return (
-    <div className="mx-auto max-w-xl px-6 py-32 text-center">
+    <Container width="xl" className="py-32 text-center">
       <h1 className="font-serif text-3xl text-[var(--brand-text)]">
         Page not found
       </h1>
@@ -31,7 +32,7 @@ function NotFound() {
       >
         Back to home
       </a>
-    </div>
+    </Container>
   );
 }
 

@@ -1,3 +1,5 @@
+import { Container } from "../components/Container";
+
 interface Section {
   heading: string;
   body: string[];
@@ -15,7 +17,7 @@ function LegalLayout({
   sections: Section[];
 }) {
   return (
-    <div className="mx-auto max-w-3xl px-6 py-20">
+    <Container width="3xl" className="py-20">
       <h1 className="font-serif text-4xl text-[var(--brand-text)]">{title}</h1>
       <p className="mt-2 text-xs uppercase tracking-widest text-[var(--brand-muted)]">
         {updated}
@@ -45,7 +47,7 @@ function LegalLayout({
         legal advice. Merchants remain responsible for their own storefront's
         customer-facing policies.
       </p>
-    </div>
+    </Container>
   );
 }
 

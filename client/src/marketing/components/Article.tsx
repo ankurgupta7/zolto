@@ -1,6 +1,7 @@
 import { Link } from "wouter";
 import type { Article, Block } from "../content/launchContent";
 import { useDocumentMeta } from "../lib/useDocumentMeta";
+import { Container } from "./Container";
 
 function JsonLd({ schema }: { schema: Record<string, unknown> }) {
   return (
@@ -195,7 +196,7 @@ export function ArticleView({ article }: { article: Article }) {
   );
 
   return (
-    <article className="mx-auto max-w-3xl px-6 py-16">
+    <Container as="article" width="3xl" className="py-16">
       <JsonLd schema={article.schema} />
 
       <Link
@@ -242,6 +243,6 @@ export function ArticleView({ article }: { article: Article }) {
         This series documents a real maker's first online-store launch on Zolto.
         No growth hacks, no cherry-picked metrics — just what happened.
       </p>
-    </article>
+    </Container>
   );
 }

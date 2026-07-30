@@ -1,6 +1,7 @@
 import { Link, useRoute } from "wouter";
 import { getDiaryPost } from "../content/launchContent";
 import { ArticleView } from "../components/Article";
+import { Container } from "../components/Container";
 
 /** Renders a single Launch Diary post at /blog/:slug, or a not-found notice. */
 export default function BlogPost() {
@@ -10,7 +11,7 @@ export default function BlogPost() {
 
   if (!article) {
     return (
-      <div className="mx-auto max-w-xl px-6 py-32 text-center">
+      <Container width="xl" className="py-32 text-center">
         <h1 className="font-serif text-3xl text-[var(--brand-text)]">
           Post not found
         </h1>
@@ -23,7 +24,7 @@ export default function BlogPost() {
         >
           ← Back to all posts
         </Link>
-      </div>
+      </Container>
     );
   }
 
