@@ -48,7 +48,32 @@ The previous session could not run it: the sandbox's egress proxy denied
 |---|---|---|
 | **Green** | The fee works on a real direct charge. Revenue path proven end to end. | Update §9 of `pricing-pivot-agent-commerce.md` from ⚠️ to ✅, then move to §1 below. |
 | **"Cannot reach the Stripe API…"** | Still a network/egress problem, *not* a Stripe rejection. | Fix connectivity and re-run. Do not interpret this as the fee being broken — that distinction is why the preflight exists. |
+| **"No connected account available…"** | Test-environment gap, still not a fee rejection. | Set `STRIPE_TEST_CONNECTED_ACCOUNT_ID` to an existing test-mode `acct_...`, or link one via Zolto's own Connect OAuth flow. The suite deliberately does **not** create accounts — see below. |
 | **Connect block fails some other way** | This is the finding we were looking for. | Read the Stripe error properly. Likely the platform account's Connect capabilities or the platform/connected relationship. Fix before launch — the fallback keeps sales alive but earns nothing. |
+
+### Run history (read this before re-diagnosing)
+
+**2026-07-29, first real run against Stripe test mode.** Four `stripe.integration.test.ts`
+tests passed (statement descriptor, both shipping cases, TWINT), so the platform
+account and basic connectivity are fine. But:
+
+- **The four fee tests never ran.** The fixture called `stripe.accounts.create`
+  (Accounts v1), which Stripe now rejects for new integrations, so `beforeAll`
+  died and the suite skipped. **The platform fee is still unverified.** Fixed
+  by borrowing an existing connected account instead of creating one — which
+  also matches production, where Zolto only ever OAuth-links accounts it
+  receives (`server/stripeConnect.ts`) and never creates them.
+- **`billing.integration.test.ts` had 7 real failures**, all from that file
+  still testing the pre-pivot world (`maker`/`studio`/`atelier`,
+  `createPhotoCreditCheckoutSession`, `monthlyPhotoCredits`). It self-skips
+  without a Stripe key, so it never went red during the pivot. Now rewritten
+  for two tiers, and it additionally proves the legacy-price mapping
+  end-to-end. Note `planForPriceId(oldMakerPrice) === "pro"` is **correct** —
+  that's the grandfathering path, not a bug.
+
+Both suites now preflight `stripe.balance.retrieve()` and fail with an explicit
+"Cannot reach the Stripe API" rather than the SDK's misleading "Invalid JSON
+received from the Stripe API".
 
 There is already a runtime safety net either way:
 `createStorefrontCheckoutSession` retries once **without** the fee when — and

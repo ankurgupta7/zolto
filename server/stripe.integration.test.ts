@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeAll, afterAll } from "vitest";
+import { describe, expect, it, beforeAll } from "vitest";
 import Stripe from "stripe";
 
 /**
@@ -297,6 +297,41 @@ describeIf("Stripe Integration — Webhook Verification", () => {
 // fails. server/checkoutSession.ts carries a fallback for exactly that case;
 // these tests are how we find out whether the fallback is ever needed.
 
+/**
+ * Find a connected account to run the direct-charge tests against.
+ *
+ * Deliberately does NOT create one. Zolto never creates connected accounts in
+ * production — tenants link their OWN existing Stripe account over Connect
+ * OAuth (server/stripeConnect.ts `stripe.oauth.token`), and we only ever
+ * receive an account id. Creating one here also broke: Stripe now rejects
+ * Accounts v1 for new integrations, which killed this whole suite and skipped
+ * the fee tests silently. Borrowing an existing account is both closer to
+ * production and immune to that.
+ */
+async function resolveConnectedAccount(stripe: Stripe): Promise<string> {
+  const fromEnv = process.env.STRIPE_TEST_CONNECTED_ACCOUNT_ID;
+  if (fromEnv) return fromEnv;
+
+  try {
+    const list = await stripe.accounts.list({ limit: 1 });
+    const id = list.data[0]?.id;
+    if (id) return id;
+  } catch {
+    // Listing may also be restricted; fall through to the guidance below.
+  }
+
+  // Fail loudly rather than skipping. A silent skip is exactly how the fee
+  // path stayed unverified in the first place.
+  throw new Error(
+    "No connected account available, so the platform fee was NOT verified. " +
+      "This is a test-environment gap, not a Stripe rejection of the fee. Fix by either: " +
+      "(a) set STRIPE_TEST_CONNECTED_ACCOUNT_ID to an existing test-mode connected account (acct_...); " +
+      "(b) link one through Zolto's own Connect OAuth flow, which is what production does; or " +
+      "(c) create one via Accounts v2 (POST /v2/core/accounts) or by enabling Accounts v1 " +
+      "support at https://dashboard.stripe.com/settings/features/feat_accounts_v1_support.",
+  );
+}
+
 describeIf(
   "Stripe Integration — Connect direct charge with platform fee",
   () => {
@@ -324,23 +359,11 @@ describeIf(
         );
       }
 
-      // A Standard account mirrors what tenants link via OAuth in production.
-      // Test-mode accounts are free to create and need no onboarding to accept
-      // a Checkout Session, which is all we're exercising here.
-      const account = await stripe.accounts.create({
-        type: "standard",
-        country: "CH",
-        email: `zolto-integration-${Date.now()}@example.com`,
-      });
-      connectedAccountId = account.id;
+      connectedAccountId = await resolveConnectedAccount(stripe);
     }, 30_000);
 
-    afterAll(async () => {
-      // Test-mode accounts can be deleted; don't leave litter behind.
-      if (connectedAccountId) {
-        await stripe.accounts.del(connectedAccountId).catch(() => {});
-      }
-    });
+    // Nothing to tear down: we borrow an existing connected account rather
+    // than creating one, so there is no account of ours to delete.
 
     it("accepts application_fee_amount on a direct charge (the Free-plan skim)", async () => {
       const session = await stripe.checkout.sessions.create(
