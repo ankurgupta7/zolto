@@ -15,7 +15,7 @@
     "test:e2e": "playwright test --config e2e/playwright.config.ts",
     "test:integration": "vitest run server/stripe.integration.test.ts server/billing.integration.test.ts",
     "test:coverage": "vitest run --coverage",
-    "test:deploy-scripts": "bash deploy/lib/db.test.sh && bash deploy/lib/tenant-migration.test.sh && bash deploy/lib/stripe-connect-migration.test.sh && bash deploy/lib/product-reservation-migration.test.sh && bash deploy/lib/tenant-signup-migration.test.sh && bash deploy/lib/env.test.sh",
+    "test:deploy-scripts": "bash deploy/lib/db.test.sh && bash deploy/lib/tenant-migration.test.sh && bash deploy/lib/stripe-connect-migration.test.sh && bash deploy/lib/product-reservation-migration.test.sh && bash deploy/lib/tenant-signup-migration.test.sh && bash deploy/lib/env.test.sh && bash deploy/lib/caddy.test.sh",
     "db:push": "drizzle-kit generate && drizzle-kit migrate",
     "db:sync": "drizzle-kit push --force",
     "seed:e2e": "tsx scripts/seed-e2e.ts"

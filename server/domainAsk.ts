@@ -5,7 +5,9 @@
  *    alongside Kalakosh-ch) — every tenant's default storefront. We answer
  *    200 for any subdomain of the platform's root domain whose left-most
  *    label matches a real tenant slug. No plan gate: this is the free-tier
- *    home every tenant gets, not the paid custom-domain feature.
+ *    home every tenant gets, not the paid custom-domain feature. `www` is
+ *    allowed too — it is the platform's own hostname rather than a tenant,
+ *    but it needs a certificate like any other subdomain (see below).
  * 2. Tenant custom domains (shop.example.com) — answer 200 only for domains
  *    a tenant actually registered in their settings, and only when their
  *    plan still includes the custom-domain feature.
@@ -48,8 +50,18 @@ export function registerDomainAsk(app: Express): void {
       const root = getPlatformRootDomain();
       if (root && domain.endsWith(`.${root}`)) {
         const slug = domain.slice(0, -(root.length + 1));
-        if (!slug || slug === "www" || slug.includes(".")) {
+        if (!slug || slug.includes(".")) {
           res.status(404).end();
+          return;
+        }
+        // "www" is the platform's own hostname, not a tenant slug. It still
+        // needs a certificate: the Caddyfile's www block only redirects to the
+        // apex, and because the wildcard site owns on-demand TLS for this root
+        // domain, www's cert comes through this same ask. Answering 404 here
+        // left www.<root> permanently un-issuable — Caddy aborted every
+        // handshake with a TLS internal error, so the hostname was unreachable.
+        if (slug === "www") {
+          res.status(200).end();
           return;
         }
         const tenant = await getTenantBySlug(slug);
