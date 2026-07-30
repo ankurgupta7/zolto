@@ -1,6 +1,13 @@
 # AI Traffic Alignment — closing the gaps against the WebFX 600K-session study
 
-**Status:** in progress · **Owner:** — · **Started:** 2026-07-30
+**Status:** all four phases shipped · **Owner:** — · **Started:** 2026-07-30
+
+> **Where this stands.** Phases 1–4 are done and on
+> `claude/report-findings-summary-0xreiw`. Three things are deliberately left
+> open, each because it needs a human decision rather than code — see
+> [§4 Deferred](#deferred-deliberately-not-in-this-plan) and the G11 note:
+> naming a real author (G10's gate), sourcing the CHF 2,000/year incumbent
+> figure (G11), and blog/location content (G7, G9).
 
 This plan maps Zolto against the findings in WebFX's
 ["What 600,000 AI Sessions Reveal About the Content That Wins AI Traffic"](https://www.webfx.com/blog/ai/what-content-earns-ai-traffic/)
@@ -242,11 +249,23 @@ state. The options are (a) source it to real published rates and cite them,
 (b) reframe it as a first-party estimate with its basis stated, the way the
 research page does, or (c) drop the number. That's an operator decision.
 
-### Phase 4 — Segment coverage  *(closes G8; G7 and G9 are content work)*
+### Phase 4 — Segment coverage  *(closes G8; G7 and G9 are content work)* ✅ **Done**
 
-- [ ] Industry/audience pages for Zolto's named segments
-- [ ] Wired into sitemap, SEO and `llms.txt`
-- [ ] Tests
+- [x] `shared/segments.ts` + `/for` and `/for/{jewelry-makers,
+      ceramics-and-pottery, market-stalls, boutiques}`
+- [x] Wired into sitemap, `getMarketingSeo()`, `/llms.txt` and the nav
+- [x] Tests — `segments.test.ts` (7), `Segment.test.tsx` (6),
+      `marketingSeo.test.ts` extended
+
+**Grounding rule:** segments reference features **by id** from `FEATURES`, never
+by retyped copy, so a segment page cannot promise a capability Zolto doesn't
+ship. `segmentFeatures()` throws on an unknown id rather than silently dropping
+it, and a test asserts every id still resolves. Marketing copy that drifts from
+the product is worse than no page.
+
+**Also landed:** an invariant test that every URL in `marketingSitemapEntries()`
+resolves to real SEO. `shared/marketing.ts` promised the sitemap "never
+advertises a 404"; that's now enforced rather than intended.
 
 ### Deferred (deliberately not in this plan)
 
@@ -275,3 +294,16 @@ The study measures referral traffic, so the honest check is the same one it used
    marketing URLs.
 4. Longer-term: segment AI referral traffic by page type in analytics and compare
    the shape against the study's distribution.
+
+### Where it got to
+
+| | Before | After |
+|---|---|---|
+| Marketing URLs in the sitemap | 9 | 21 |
+| Storefront routes with server-rendered SEO | 0 | 6 (`/`, `/shop`, `/product/:id`, `/about`, `/contact`, `/faq`) |
+| Storefront sitemap | served the marketing one | own pages + live product URLs |
+| Page types the study ranks highest | homepage, pricing, blog | + FAQ, comparison, research, segment |
+
+Not yet measurable: the study tracks *referral traffic*, and none of this has
+been live long enough to show up. Treat the table as work completed, not results
+achieved — the check in steps 1–4 above is what tells us whether it worked.
