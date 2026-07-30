@@ -5,7 +5,10 @@ import { registerUploadsProxy } from "./uploadsProxy";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { registerStripeWebhook } from "../stripe";
-import { registerStripeConnectRoutes } from "../stripeConnect";
+import {
+  logConnectConfigStatus,
+  registerStripeConnectRoutes,
+} from "../stripeConnect";
 import { registerPosWebhook, registerPosRoutes } from "../pos";
 import { registerReconciliationRoutes } from "../reconciliationRoutes";
 import { registerPosAttributionRoutes } from "../posAttributionRoutes";
@@ -43,6 +46,9 @@ export async function createApp(): Promise<express.Express> {
   registerUploadsProxy(app);
   registerOAuthRoutes(app);
   registerStripeConnectRoutes(app);
+  // Surface a Connect misconfiguration at boot rather than letting a merchant
+  // discover it by tapping "Connect Stripe".
+  logConnectConfigStatus();
 
   // POS Terminal API
   registerPosRoutes(app);

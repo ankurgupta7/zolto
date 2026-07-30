@@ -15,6 +15,35 @@ pushed. Nothing is stashed or uncommitted.
 
 ---
 
+## 0a. ⛔ Connect is not configured on the deployed platform — fix this first
+
+A live tenant (`blah1.zolto.ch`) tapped **Connect Stripe** and got *"Stripe
+Connect isn't set up on the platform yet. Contact support."* That message is
+**correct behaviour**, not a bug: `buildConnectAuthorizeUrl` returns null when
+`STRIPE_CONNECT_CLIENT_ID` or `JWT_SECRET` is unset on the running server.
+
+**This is bigger than the platform fee.** Until it's set, no tenant can link a
+Stripe account, so **no tenant can accept online or agent payments at all** —
+the whole channel the pricing model monetizes is dark. In-person POS is
+unaffected (it runs on the tenant's own Terminal/TWINT path and never carried a
+fee anyway). It is also why the fee tests had no properly-configured connected
+account to borrow.
+
+**Fix:** set both vars in the **deployed** `.env` and restart. The operator has
+a client id (`ca_…`) already; it simply isn't on the server. Then link a real
+account through the flow — that gives the integration suite a genuine account
+and reproduces production exactly.
+
+The startup log now warns when this is missing, and
+`buildConnectAuthorizeUrl` logs which var is unset and which tenant hit it. The
+merchant-facing message stays deliberately generic — it must not leak
+deployment detail — so those logs are the operator's only signal. Nothing in
+`deploy/` validates required env vars; adding that check is a worthwhile
+follow-up, since this class of failure otherwise ships silently and is
+discovered by a merchant.
+
+---
+
 ## 0. The one thing blocking launch
 
 **Run the Stripe Connect integration suite and read the answer.** Everything

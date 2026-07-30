@@ -95,6 +95,42 @@ function getRedirectUri(req: Request): string {
 }
 
 /**
+ * Which env vars Connect needs, and which of them are missing.
+ *
+ * Exported so the operator can be told *which* var is unset. Without this the
+ * only symptom is a tenant tapping "Connect Stripe" and being told to contact
+ * support, with nothing in the logs saying why — and until Connect is
+ * configured NO tenant can accept online payments at all, so this silently
+ * disables the entire online channel.
+ */
+export function connectConfigStatus(): {
+  configured: boolean;
+  missing: string[];
+} {
+  const missing: string[] = [];
+  if (!process.env.STRIPE_CONNECT_CLIENT_ID) {
+    missing.push("STRIPE_CONNECT_CLIENT_ID");
+  }
+  if (!process.env.JWT_SECRET) missing.push("JWT_SECRET");
+  return { configured: missing.length === 0, missing };
+}
+
+/**
+ * Log Connect's configuration state once at boot, so a misconfigured deploy is
+ * visible in the startup log rather than discovered by a merchant.
+ */
+export function logConnectConfigStatus(): void {
+  const { configured, missing } = connectConfigStatus();
+  if (configured) return;
+  console.warn(
+    `[StripeConnect] NOT CONFIGURED — missing ${missing.join(", ")}. ` +
+      "No tenant can link their Stripe account, so online and agent sales are " +
+      "disabled platform-wide (in-person POS is unaffected). Set these in the " +
+      "deployed .env and restart.",
+  );
+}
+
+/**
  * Builds the Stripe Connect OAuth authorize URL for a tenant to link their
  * own Standard account. Returns null when Connect isn't configured
  * (STRIPE_CONNECT_CLIENT_ID / JWT_SECRET unset) so callers can surface a
@@ -104,9 +140,18 @@ export async function buildConnectAuthorizeUrl(
   tenantId: number,
   req: Request,
 ): Promise<string | null> {
-  const clientId = process.env.STRIPE_CONNECT_CLIENT_ID;
-  const jwtSecret = process.env.JWT_SECRET;
-  if (!clientId || !jwtSecret) return null;
+  const { configured, missing } = connectConfigStatus();
+  if (!configured) {
+    // Named explicitly: the tenant-facing message stays generic (it must not
+    // leak deployment detail), so this log is the operator's only clue.
+    console.warn(
+      `[StripeConnect] Tenant ${tenantId} tried to connect Stripe but ` +
+        `Connect is not configured — missing ${missing.join(", ")}.`,
+    );
+    return null;
+  }
+  const clientId = process.env.STRIPE_CONNECT_CLIENT_ID as string;
+  const jwtSecret = process.env.JWT_SECRET as string;
 
   const state = await signState(tenantId, jwtSecret);
   const url = new URL("https://connect.stripe.com/oauth/authorize");
