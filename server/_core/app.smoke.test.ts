@@ -45,16 +45,28 @@ describe("app smoke: the server boots and assembles", () => {
 });
 
 describe("app smoke: SEO & agent discovery routes", () => {
-  it("serves /robots.txt as text", async () => {
+  // These assert the *generated* documents, not just their shape. The repo
+  // used to carry a client/public/robots.txt and sitemap.xml describing a
+  // different site entirely; both satisfied "looks like robots text" / "looks
+  // like a sitemap". Pin the details only the generator produces, so content
+  // pointing at the wrong domain can't pass as correct again.
+  it("serves the generated /robots.txt, welcoming AI crawlers", async () => {
     const res = await request(app).get("/robots.txt");
     expect(res.status).toBe(200);
     expect(res.text).toMatch(/User-agent/i);
+    expect(res.text).toContain("ClaudeBot");
+    expect(res.text).toContain("/llms.txt");
+    expect(res.text).toMatch(/^Sitemap: .*\/sitemap\.xml$/m);
+    expect(res.text).not.toContain("kalakosh.ch");
   });
 
-  it("serves /sitemap.xml as XML", async () => {
+  it("serves the generated /sitemap.xml covering the marketing routes", async () => {
     const res = await request(app).get("/sitemap.xml");
     expect(res.status).toBe(200);
     expect(res.text).toContain("<urlset");
+    expect(res.text).toContain("/pricing</loc>");
+    expect(res.text).toContain("/blog</loc>");
+    expect(res.text).not.toContain("kalakosh.ch");
   });
 
   it("serves /llms.txt", async () => {
