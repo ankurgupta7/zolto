@@ -46,6 +46,7 @@ import AdminImport from "./pages/admin/Import";
 import ShopProfile from "./pages/admin/ShopProfile";
 import Team from "./pages/admin/Team";
 import Credits from "./pages/admin/Credits";
+import Platform from "./pages/admin/Platform";
 import Keys from "./pages/admin/Keys";
 import DataPrivacy from "./pages/admin/DataPrivacy";
 import Support from "./pages/admin/Support";
@@ -104,6 +105,7 @@ const ADMIN_PAGES: Record<string, ComponentType> = {
   data: DataPrivacy,
   support: Support,
   legal: Legal,
+  platform: Platform,
 };
 
 function StorefrontRouter() {

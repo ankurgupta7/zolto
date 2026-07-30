@@ -15,7 +15,6 @@ import {
   getTenantSettings,
   hasPhotoConsumption,
 } from "./db";
-import { isBillingConfigured, monthlyPhotoCredits } from "./billing";
 import { PLAN_FEATURES, type PlanId } from "./_core/trpc";
 
 export interface OnboardingTask {
@@ -87,24 +86,15 @@ export async function deriveOnboardingStatus(
     done: Boolean(tenant.stripeConnectedAccountId),
   });
 
-  const aiTask: OnboardingTask = {
+  // Every plan can act on this: Free includes a monthly allowance of AI
+  // photo shots (the "taste of AI"), and Pro is unmetered.
+  tasks.push({
     id: "first-ai-photo",
     title: "Style a product photo with AI",
-    body: "Turn one phone photo into a clean catalogue shot — costs one credit.",
+    body: "Turn one phone photo into a clean catalogue shot — included with your plan.",
     href: "/admin",
     done: aiPhotoUsed,
-  };
-  // Free plan has no monthly bucket, so its only way to get credits is buying
-  // a pack — impossible when this deployment hasn't configured billing prices.
-  if (
-    !aiPhotoUsed &&
-    monthlyPhotoCredits(tenant.plan) === 0 &&
-    !isBillingConfigured()
-  ) {
-    aiTask.blockedReason =
-      "Photo credits aren't purchasable on this deployment yet.";
-  }
-  tasks.push(aiTask);
+  });
 
   // Plan-gated tasks only appear when the plan includes the feature — a free
   // merchant never sees tasks they can't act on.

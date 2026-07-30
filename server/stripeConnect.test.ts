@@ -18,6 +18,8 @@ vi.mock("./stripe", () => ({
 
 import {
   buildConnectAuthorizeUrl,
+  connectConfigStatus,
+  logConnectConfigStatus,
   registerStripeConnectRoutes,
 } from "./stripeConnect";
 
@@ -55,6 +57,51 @@ afterEach(() => {
   }
 });
 
+/**
+ * A merchant hitting "Connect Stripe" and being told to contact support is the
+ * ONLY symptom of an unconfigured platform, and until it's fixed no tenant can
+ * accept online payments at all. So the missing var has to reach the logs.
+ */
+describe("connectConfigStatus", () => {
+  it("names each missing variable", () => {
+    delete process.env.STRIPE_CONNECT_CLIENT_ID;
+    delete process.env.JWT_SECRET;
+    expect(connectConfigStatus()).toEqual({
+      configured: false,
+      missing: ["STRIPE_CONNECT_CLIENT_ID", "JWT_SECRET"],
+    });
+
+    process.env.STRIPE_CONNECT_CLIENT_ID = "ca_test";
+    expect(connectConfigStatus()).toEqual({
+      configured: false,
+      missing: ["JWT_SECRET"],
+    });
+
+    process.env.JWT_SECRET = "s3cret";
+    expect(connectConfigStatus()).toEqual({ configured: true, missing: [] });
+  });
+
+  it("warns at boot when unconfigured, and stays quiet when it is", () => {
+    const spy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    delete process.env.STRIPE_CONNECT_CLIENT_ID;
+    logConnectConfigStatus();
+    expect(spy).toHaveBeenCalled();
+    // The warning must say what breaks, not just that something is unset.
+    const text = String(spy.mock.calls[0][0]);
+    expect(text).toContain("STRIPE_CONNECT_CLIENT_ID");
+    expect(text).toMatch(/online and agent sales are\s+disabled/i);
+    // …and must not claim in-person is affected, because it isn't.
+    expect(text).toMatch(/in-person POS is unaffected/i);
+
+    spy.mockClear();
+    process.env.STRIPE_CONNECT_CLIENT_ID = "ca_test";
+    process.env.JWT_SECRET = "s3cret";
+    logConnectConfigStatus();
+    expect(spy).not.toHaveBeenCalled();
+    spy.mockRestore();
+  });
+});
+
 describe("buildConnectAuthorizeUrl", () => {
   it("returns null when STRIPE_CONNECT_CLIENT_ID is unset", async () => {
     delete process.env.STRIPE_CONNECT_CLIENT_ID;
@@ -64,6 +111,16 @@ describe("buildConnectAuthorizeUrl", () => {
   it("returns null when JWT_SECRET is unset", async () => {
     delete process.env.JWT_SECRET;
     expect(await buildConnectAuthorizeUrl(42, fakeReq())).toBeNull();
+  });
+
+  it("logs which variable is missing, naming the tenant that hit it", async () => {
+    const spy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    delete process.env.STRIPE_CONNECT_CLIENT_ID;
+    await buildConnectAuthorizeUrl(42, fakeReq());
+    const text = String(spy.mock.calls[0]?.[0] ?? "");
+    expect(text).toContain("Tenant 42");
+    expect(text).toContain("STRIPE_CONNECT_CLIENT_ID");
+    spy.mockRestore();
   });
 
   it("falls back to the request's own host when PUBLIC_BASE_URL is unset", async () => {

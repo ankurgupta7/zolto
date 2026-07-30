@@ -19,7 +19,7 @@ import {
   deleteProduct,
   addInstagramPost,
   insertBulkUploadLog,
-  getPhotoCreditBalance,
+  countPhotoGenerationsThisMonth,
   getTenantStaff,
   countTenantStaff,
   getPendingStaffInvites,
@@ -31,7 +31,7 @@ import {
   hasPhotoConsumption,
   getPhotoCreditHistory,
   addPhotoCreditEntry,
-  consumePhotoCredit,
+  recordPhotoGeneration,
 } from "./db";
 
 describe("db helpers when the database is unavailable", () => {
@@ -70,15 +70,17 @@ describe("db helpers when the database is unavailable", () => {
     ).resolves.toBeUndefined();
   });
 
-  it("photo credit reads degrade to zero/empty, writes throw", async () => {
-    await expect(getPhotoCreditBalance(1)).resolves.toBe(0);
+  it("photo usage reads degrade to zero/empty, writes throw", async () => {
+    await expect(countPhotoGenerationsThisMonth(1)).resolves.toBe(0);
     await expect(getPhotoCreditHistory(1)).resolves.toEqual([]);
     await expect(
       addPhotoCreditEntry({ tenantId: 1, delta: 10, kind: "purchase" }),
     ).rejects.toThrow(/Database not available/);
-    // With the DB down the balance reads as 0, so consumption fails closed —
-    // better to refuse a generation than to give one away untracked.
-    await expect(consumePhotoCredit(1)).resolves.toBe(false);
+    // With the DB down, recording a generation throws at the write — the
+    // generation is refused rather than given away untracked.
+    await expect(recordPhotoGeneration(1, 5)).rejects.toThrow(
+      /Database not available/,
+    );
   });
 
   it("onboarding derivation reads degrade to zero/false", async () => {

@@ -31,7 +31,7 @@ import {
   PLANS,
   FAQS,
   HOW_TO_START,
-  AI_PHOTO_CREDITS,
+  PRICING_PROMISE,
 } from "./platform";
 
 export interface MakerIdentity {
@@ -269,7 +269,7 @@ ${PLATFORM.pricingSummary}
 
 ${planLines}
 
-**Add-on — ${AI_PHOTO_CREDITS.name}:** CHF ${AI_PHOTO_CREDITS.priceChf} ${AI_PHOTO_CREDITS.unit}, pay-as-you-go, credits never expire. ${AI_PHOTO_CREDITS.blurb}
+**The fee model in one line:** ${PRICING_PROMISE.pledge}
 
 ## How a maker gets started
 
@@ -284,8 +284,9 @@ ${HOW_TO_START.map((s, i) => `${i + 1}. ${s}`).join("\n")}
 
 ## For AI agents
 
-- **Platform MCP** (this domain): \`${base}/mcp\` — JSON-RPC 2.0 over HTTP (Streamable HTTP). Tools: \`get_platform_info\`, \`list_features\`, \`get_pricing\`, \`how_to_start\`, \`list_faqs\`, \`list_resources\`.
-- **Storefront MCP** (each store domain): \`https://<store-domain>/mcp\` for product discovery — \`search_products\`, \`get_product\`, \`list_categories\`, \`get_store_info\`.
+- **Platform MCP** (this domain): \`${base}/mcp\` — JSON-RPC 2.0 over HTTP (Streamable HTTP). Tools: \`find_stores\`, \`get_platform_info\`, \`list_features\`, \`get_pricing\`, \`how_to_start\`, \`list_faqs\`, \`list_resources\`.
+- **Shopping for someone?** Call \`find_stores\` to get merchant storefronts and each one's own MCP endpoint. Zolto is not a marketplace: you buy from the merchant, and the money goes to the merchant.
+- **Storefront MCP** (each store domain): \`https://<store-domain>/mcp\` — \`search_products\`, \`get_product\`, \`list_categories\`, \`get_store_info\`, and \`create_checkout\` to buy.
 - Full details for LLMs: ${base}/llms-full.txt
 - Sitemap: ${base}/sitemap.xml
 `;
@@ -330,11 +331,11 @@ ${features}
 
 ${plans}
 
-### Add-on: ${AI_PHOTO_CREDITS.name} — CHF ${AI_PHOTO_CREDITS.priceChf} ${AI_PHOTO_CREDITS.unit}
+### The fee model — ${PRICING_PROMISE.headline}
 
-${AI_PHOTO_CREDITS.blurb}
+${PRICING_PROMISE.pledge}
 
-${AI_PHOTO_CREDITS.points.map((p) => `- ${p}`).join("\n")}
+${PRICING_PROMISE.points.map((p) => `- ${p}`).join("\n")}
 
 ---
 

@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { resolveConnectPrompt } from "@/lib/connectPrompt";
 import {
   Eye,
   EyeOff,
@@ -605,12 +606,16 @@ export default function Admin() {
   }, [utils]);
 
   const handleConnectStripe = () => {
-    if (stripeConnectQuery.data?.url) {
-      window.location.href = stripeConnectQuery.data.url;
+    // Decision logic lives in resolveConnectPrompt so it can be tested: the
+    // four outcomes here are easy to conflate, and telling a merchant the
+    // platform is broken when the query merely hadn't loaded is a real cost.
+    const prompt = resolveConnectPrompt(stripeConnectQuery);
+    if (prompt.kind === "redirect") {
+      window.location.href = prompt.url;
+    } else if (prompt.kind === "pending") {
+      toast.info(prompt.message);
     } else {
-      toast.error(
-        "Stripe Connect isn't set up on the platform yet. Contact support.",
-      );
+      toast.error(prompt.message);
     }
   };
 
@@ -1111,7 +1116,7 @@ export default function Admin() {
         {/* Live setup checklist (server-derived; dismissible) */}
         <OnboardingChecklist />
 
-        {/* Sales & inventory insights (stats for all plans, AI narrative Studio+) */}
+        {/* Sales & inventory insights (stats for all plans, AI narrative on Pro) */}
         <InsightsCard />
 
         {/* Add Product Form */}

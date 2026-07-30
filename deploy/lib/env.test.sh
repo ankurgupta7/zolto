@@ -54,6 +54,7 @@ SPACED_KEY = trimmed
 CMDSUBST=\$(touch ${CANARY})
 BACKTICK=\`touch ${CANARY}\`
 DOLLAR_REF=\$HOME/literal
+RESEND_FROM_EMAIL=Zolto <orders@zolto.ch>
 1INVALID=skipme
 BAD-KEY=skipmetoo
 EOF
@@ -80,6 +81,11 @@ assert_eq "${EMPTY-unset}" "" "empty value stays set-but-empty"
 assert_eq "${EXPORTED:-}" "fromexport" "leading 'export ' tolerated"
 assert_eq "${SPACED_KEY:-}" "trimmed" "whitespace around key tolerated"
 assert_eq "${DOLLAR_REF:-}" '$HOME/literal' "\$VAR reference kept literal, not expanded"
+# The real value that broke the deploy scripts in production. `source` read the
+# `<` as an input redirect ("/dev/fd/63: line N: orders@zolto.ch: No such file
+# or directory"); `export $(... | xargs)` word-split it into an invalid
+# identifier and aborted under `set -e`.
+assert_eq "${RESEND_FROM_EMAIL:-}" 'Zolto <orders@zolto.ch>' "angle brackets survive (redirect chars not interpreted)"
 
 # ── The safety guarantee: no value was ever executed ──────────────────────────
 assert_eq "${CMDSUBST:-}" '$(touch '"${CANARY}"')' "command substitution stored, not run"

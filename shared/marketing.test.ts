@@ -139,12 +139,13 @@ describe("renderMarketingLlmsTxt", () => {
     const txt = renderMarketingLlmsTxt("https://zolto.com");
     expect(txt).toContain("## What Zolto does");
     expect(txt).toContain("## Pricing");
-    expect(txt).toContain("CHF 19/month");
+    expect(txt).toContain("CHF 25/month");
     expect(txt).toContain("## How a maker gets started");
     expect(txt).toContain("get_platform_info"); // platform MCP tools listed
     expect(txt).toContain("https://zolto.com/llms-full.txt");
-    // The metered AI-photo add-on is disclosed, not hidden as "unlimited".
-    expect(txt).toContain("AI Photo Credits");
+    // The fee model is disclosed to agents, in-person free-ness included.
+    expect(txt).toContain("1% platform fee");
+    expect(txt).toContain("Selling in person is free");
   });
 });
 
@@ -156,8 +157,10 @@ describe("renderMarketingLlmsFullTxt", () => {
     expect(txt).toContain("## Plans & pricing");
     expect(txt).toContain("## FAQ");
     expect(txt).toContain("What is Zolto?");
-    expect(txt).toContain("CHF 19/month");
-    expect(txt).toContain("AI Photo Credits");
+    expect(txt).toContain("CHF 25/month");
+    // The fee model section replaces the retired photo-credit add-on.
+    expect(txt).toContain("1% platform fee");
+    expect(txt).not.toContain("AI Photo Credits");
   });
 });
 

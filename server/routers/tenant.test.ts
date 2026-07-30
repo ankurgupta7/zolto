@@ -248,6 +248,28 @@ describe("tenant.getStripeConnectUrl", () => {
     expect(res).toEqual({ url: null, connected: false });
   });
 
+  it("logs the tenant mismatch, because the merchant-facing symptom is identical to 'not configured'", async () => {
+    // Both cases leave the client without a URL, so without this log there is
+    // no way to tell a cross-tenant session from a missing env var.
+    const spy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    await expect(
+      tenantRouter
+        .createCaller(
+          ctx(
+            { openId: "google:sub-1", role: "admin", tenantId: 7 },
+            { id: 42, plan: "free", slug: "blah1" },
+          ),
+        )
+        .getStripeConnectUrl(),
+    ).rejects.toThrow();
+
+    const text = String(spy.mock.calls[0]?.[0] ?? "");
+    expect(text).toContain("tenant 7");
+    expect(text).toContain("tenant 42");
+    expect(text).toContain("blah1");
+    spy.mockRestore();
+  });
+
   it("requires admin role", async () => {
     await expect(
       tenantRouter
@@ -264,7 +286,9 @@ describe("tenant.getStripeConnectUrl", () => {
 
   it("requires authentication", async () => {
     await expect(
-      tenantRouter.createCaller(ctx(null, { id: 42, plan: "free" })).getStripeConnectUrl(),
+      tenantRouter
+        .createCaller(ctx(null, { id: 42, plan: "free" }))
+        .getStripeConnectUrl(),
     ).rejects.toThrow();
     expect(buildConnectAuthorizeUrl).not.toHaveBeenCalled();
   });
@@ -310,28 +334,28 @@ describe("tenant.updateSettings plan gates", () => {
     const { caller, set } = tenantCtx("free");
     await expect(
       caller.updateSettings({ publicDomain: "shop.example.com" }),
-    ).rejects.toThrow(/Maker plan/);
+    ).rejects.toThrow(/Pro plan/);
     expect(set).not.toHaveBeenCalled();
   });
 
-  it("allows a custom domain from the Maker plan up", async () => {
-    const { caller, set } = tenantCtx("maker");
+  it("allows a custom domain on the Pro plan", async () => {
+    const { caller, set } = tenantCtx("pro");
     await expect(
       caller.updateSettings({ publicDomain: "shop.example.com" }),
     ).resolves.toEqual({ success: true });
     expect(set).toHaveBeenCalled();
   });
 
-  it("rejects multi-currency on the Maker plan", async () => {
-    const { caller, set } = tenantCtx("maker");
+  it("rejects multi-currency on the free plan", async () => {
+    const { caller, set } = tenantCtx("free");
     await expect(caller.updateSettings({ currency: "eur" })).rejects.toThrow(
-      /Studio plan/,
+      /Pro plan/,
     );
     expect(set).not.toHaveBeenCalled();
   });
 
-  it("allows multi-currency from the Studio plan up", async () => {
-    const { caller, set } = tenantCtx("studio");
+  it("allows multi-currency on the Pro plan", async () => {
+    const { caller, set } = tenantCtx("pro");
     await expect(caller.updateSettings({ currency: "eur" })).resolves.toEqual({
       success: true,
     });
@@ -355,7 +379,7 @@ describe("tenant.updateSettings plan gates", () => {
   });
 
   it("rejects malformed domains", async () => {
-    const { caller, set } = tenantCtx("atelier");
+    const { caller, set } = tenantCtx("pro");
     await expect(
       caller.updateSettings({ publicDomain: "https://shop.example.com/" }),
     ).rejects.toThrow();

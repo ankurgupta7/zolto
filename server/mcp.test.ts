@@ -6,16 +6,33 @@ import {
   handleMcpMessage,
   MCP_TOOLS,
   MCP_PROTOCOL_VERSION,
+  resetMcpRateLimits,
   type McpContext,
   type McpDeps,
 } from "./mcp";
+import { CheckoutError } from "./checkoutSession";
 
 const tenant = {
   id: 7,
   name: "Kalakosh",
   slug: "kalakosh",
   domain: "kalakosh.ch",
+  plan: "free",
+  stripeConnectedAccountId: "acct_kalakosh",
 } as unknown as Tenant;
+
+/** A successful checkout, as the shared service would return it. */
+const checkoutOk = {
+  url: "https://checkout.stripe.com/cs_agent_1",
+  sessionId: "cs_agent_1",
+  amountTotal: 6500,
+  currency: "chf",
+  platformFeeRappen: 65,
+  items: [{ id: 1, name: "Perlenkette", price: "65.00" }],
+};
+
+const createCheckout = vi.fn();
+const getPublicStores = vi.fn(async () => []);
 
 let nextId = 1;
 function makeProduct(p: Partial<Product>): Product {
@@ -43,14 +60,19 @@ function makeProduct(p: Partial<Product>): Product {
   } as Product;
 }
 
-function buildCtx(products: Product[]): McpContext {
+function buildCtx(
+  products: Product[],
+  overrides: Partial<McpContext> = {},
+): McpContext {
   const deps: McpDeps = {
     getVisibleProducts: vi.fn(async () => products),
     getVisibleProductById: vi.fn(async (_t, id) =>
       products.find((p) => p.id === id),
     ),
+    createCheckout,
+    getPublicStores,
   };
-  return { tenant, baseUrl: "https://kalakosh.ch/", deps };
+  return { tenant, baseUrl: "https://kalakosh.ch/", deps, ...overrides };
 }
 
 const req = (method: string, params?: unknown, id: number | null = 1) => ({
@@ -75,6 +97,7 @@ describe("MCP JSON-RPC lifecycle", () => {
     const res = await handleMcpMessage(req("tools/list"), ctx);
     const tools = (res?.result as { tools: { name: string }[] }).tools;
     expect(tools.map((t) => t.name).sort()).toEqual([
+      "create_checkout",
       "get_product",
       "get_store_info",
       "list_categories",
@@ -292,29 +315,34 @@ describe("Platform MCP (no tenant / marketing surface)", () => {
     });
   });
 
-  it("get_pricing returns CHF plans with a free trial and the photo-credit add-on", async () => {
+  it("get_pricing returns the two CHF plans and the online platform fee", async () => {
     const r = await call("get_pricing");
     const sc = r.structuredContent as {
       currency: string;
       freeTrialDays: number;
       plans: {
-        name: string;
+        id: string;
         pricePerMonth: number;
-        includedPhotoCredits: number;
+        onlineFeePercent: number;
+        aiPhotoAllowancePerMonth: number | null;
       }[];
-      addOns: { id: string; name: string; price: number; unit: string }[];
+      platformFee: { percent: number; proBreakEvenOnlineChfPerMonth: number };
     };
     expect(sc.currency).toBe("CHF");
     expect(sc.freeTrialDays).toBe(14);
-    expect(sc.plans.some((p) => p.pricePerMonth === 0)).toBe(true);
-    // Every plan exposes its monthly photo-credit bucket…
-    expect(
-      sc.plans.every((p) => typeof p.includedPhotoCredits === "number"),
-    ).toBe(true);
-    // …and the metered AI-photo add-on is advertised, not hidden as "unlimited".
-    const credits = sc.addOns.find((a) => a.id === "ai-photo-credits");
-    expect(credits).toBeTruthy();
-    expect(credits!.price).toBeGreaterThan(0);
+    expect(sc.plans.map((p) => p.id)).toEqual(["free", "pro"]);
+    // Free carries the 1% online/agent fee and a monthly AI taste; Pro is
+    // fee-free with unmetered AI.
+    const free = sc.plans.find((p) => p.id === "free")!;
+    const pro = sc.plans.find((p) => p.id === "pro")!;
+    expect(free.pricePerMonth).toBe(0);
+    expect(free.onlineFeePercent).toBe(1);
+    expect(free.aiPhotoAllowancePerMonth).toBeGreaterThan(0);
+    expect(pro.onlineFeePercent).toBe(0);
+    expect(pro.aiPhotoAllowancePerMonth).toBeNull();
+    // The fee block explains the model to agents, break-even included.
+    expect(sc.platformFee.percent).toBe(1);
+    expect(sc.platformFee.proBreakEvenOnlineChfPerMonth).toBe(2500);
   });
 
   it("list_features and how_to_start return content", async () => {
@@ -351,18 +379,275 @@ describe("Platform MCP (no tenant / marketing surface)", () => {
   });
 });
 
+// ── Agent discovery (find_stores) ─────────────────────────────────────────────
+
+describe("find_stores — the platform hands agents each merchant's own endpoint", () => {
+  /** Platform surface = no tenant resolved (e.g. zolto.com itself). */
+  function platformCtx(): McpContext {
+    return {
+      tenant: null,
+      baseUrl: "https://zolto.com",
+      deps: {
+        getVisibleProducts: vi.fn(async () => []),
+        getVisibleProductById: vi.fn(async () => undefined),
+        createCheckout,
+        getPublicStores,
+      },
+    };
+  }
+
+  async function call(args: unknown = {}) {
+    const res = await handleMcpMessage(
+      req("tools/call", { name: "find_stores", arguments: args }),
+      platformCtx(),
+    );
+    return (res?.result as { structuredContent: Record<string, unknown> })
+      .structuredContent;
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getPublicStores.mockResolvedValue([
+      {
+        slug: "kalakosh",
+        name: "Kalakosh",
+        customDomain: null,
+        productCount: 12,
+      },
+      {
+        slug: "aurora",
+        name: "Aurora",
+        customDomain: "aurora-jewels.ch",
+        productCount: 4,
+      },
+    ] as never);
+  });
+
+  it("is offered on the platform surface, not on a storefront", async () => {
+    const platform = await handleMcpMessage(req("tools/list"), platformCtx());
+    const platformTools = (
+      platform?.result as { tools: { name: string }[] }
+    ).tools.map((t) => t.name);
+    expect(platformTools).toContain("find_stores");
+
+    const store = await handleMcpMessage(req("tools/list"), buildCtx([]));
+    const storeTools = (
+      store?.result as { tools: { name: string }[] }
+    ).tools.map((t) => t.name);
+    expect(storeTools).not.toContain("find_stores");
+  });
+
+  it("returns each merchant's OWN endpoints — never a Zolto proxy", async () => {
+    const out = await call();
+    const stores = out.stores as Record<string, unknown>[];
+    expect(stores[0]).toMatchObject({
+      name: "Kalakosh",
+      storefront: "https://kalakosh.zolto.ch",
+      mcpEndpoint: "https://kalakosh.zolto.ch/mcp",
+      llmsTxt: "https://kalakosh.zolto.ch/llms.txt",
+    });
+    // Nothing points back at the platform host — that's the disintermediation.
+    expect(JSON.stringify(stores)).not.toContain("zolto.com");
+  });
+
+  it("prefers a merchant's own custom domain when they have one", async () => {
+    const out = await call();
+    const stores = out.stores as Record<string, unknown>[];
+    expect(stores[1]).toMatchObject({
+      storefront: "https://aurora-jewels.ch",
+      mcpEndpoint: "https://aurora-jewels.ch/mcp",
+    });
+  });
+
+  it("tells the agent how to buy, and that Zolto is not in the middle", async () => {
+    const out = await call();
+    expect(String(out.howToBuy)).toMatch(/create_checkout/);
+    expect(String(out.howToBuy)).toMatch(/directly to that merchant/i);
+    expect(String(out.note)).toMatch(/not a marketplace/i);
+  });
+
+  it("clamps limit into a sane range", async () => {
+    await call({ limit: 5000 });
+    expect(getPublicStores).toHaveBeenCalledWith(100);
+    await call({ limit: 0 });
+    expect(getPublicStores).toHaveBeenCalledWith(1);
+    await call({});
+    expect(getPublicStores).toHaveBeenCalledWith(25);
+  });
+
+  it("returns an empty directory rather than failing when nothing is listed", async () => {
+    getPublicStores.mockResolvedValue([] as never);
+    const out = await call();
+    expect(out.stores).toEqual([]);
+  });
+});
+
+// ── Agent commerce (create_checkout) ──────────────────────────────────────────
+
+describe("create_checkout — agents buying from the merchant directly", () => {
+  const product = makeProduct({ id: 1, name: "Perlenkette" });
+
+  async function call(args: unknown, ctx = buildCtx([product])) {
+    const res = await handleMcpMessage(
+      req("tools/call", { name: "create_checkout", arguments: args }),
+      ctx,
+    );
+    return res?.result as {
+      isError?: boolean;
+      structuredContent?: Record<string, unknown>;
+      content: { text: string }[];
+    };
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    resetMcpRateLimits();
+    createCheckout.mockResolvedValue(checkoutOk);
+  });
+
+  it("returns a payment link for the buyer, not a completed purchase", async () => {
+    const result = await call({ product_ids: [1] });
+    expect(result.isError).toBeUndefined();
+    expect(result.structuredContent).toMatchObject({
+      checkoutUrl: "https://checkout.stripe.com/cs_agent_1",
+      currency: "CHF",
+      itemsSubtotal: "65.00",
+      expiresInMinutes: 30,
+    });
+    // The agent is told shipping is still to come — the subtotal is not a total.
+    expect(result.structuredContent!.note).toMatch(/Shipping is chosen/i);
+  });
+
+  it("always attributes the sale to the agent channel", async () => {
+    await call({ product_ids: [1] });
+    expect(createCheckout).toHaveBeenCalledWith(
+      expect.objectContaining({ channel: "agent", productIds: [1] }),
+    );
+  });
+
+  it("creates the checkout on the merchant's own account, via the same service as the web cart", async () => {
+    await call({ product_ids: [1] });
+    const arg = createCheckout.mock.calls[0][0];
+    expect(arg.tenant).toBe(tenant);
+    expect(arg.baseUrl).toBe("https://kalakosh.ch");
+  });
+
+  it("surfaces a sold-out race as a readable tool error", async () => {
+    createCheckout.mockRejectedValue(
+      new CheckoutError("CONFLICT", "Already sold: Perlenkette."),
+    );
+    const result = await call({ product_ids: [1] });
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toMatch(/Already sold/);
+  });
+
+  it("surfaces a store that hasn't connected payments yet", async () => {
+    createCheckout.mockRejectedValue(
+      new CheckoutError(
+        "NOT_CONNECTED",
+        "This store hasn't connected online payments yet. Please enquire via WhatsApp.",
+      ),
+    );
+    const result = await call({ product_ids: [1] });
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toMatch(/hasn't connected online payments/);
+  });
+
+  it("does not leak internal failures to the agent", async () => {
+    createCheckout.mockRejectedValue(
+      new Error("connect ECONNREFUSED 10.0.0.5:3306"),
+    );
+    const result = await call({ product_ids: [1] });
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).not.toMatch(/ECONNREFUSED|3306/);
+  });
+
+  it("validates product_ids before touching checkout", async () => {
+    for (const bad of [
+      {},
+      { product_ids: [] },
+      { product_ids: "1" },
+      { product_ids: [0] },
+      { product_ids: [-3] },
+      { product_ids: [1.5] },
+      { product_ids: ["abc"] },
+    ]) {
+      const result = await call(bad);
+      expect(result.isError).toBe(true);
+    }
+    expect(createCheckout).not.toHaveBeenCalled();
+  });
+
+  it("refuses a cart larger than the shared maximum", async () => {
+    const result = await call({
+      product_ids: Array.from({ length: 51 }, (_, i) => i + 1),
+    });
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toMatch(/at most 50/);
+    expect(createCheckout).not.toHaveBeenCalled();
+  });
+
+  it("rate limits a looping agent so it cannot hold the whole catalogue", async () => {
+    const ctx = buildCtx([product], { clientKey: "203.0.113.9" });
+    for (let i = 0; i < 10; i++) {
+      expect((await call({ product_ids: [1] }, ctx)).isError).toBeUndefined();
+    }
+    const blocked = await call({ product_ids: [1] }, ctx);
+    expect(blocked.isError).toBe(true);
+    expect(blocked.content[0].text).toMatch(/Too many checkouts/);
+    expect(createCheckout).toHaveBeenCalledTimes(10);
+  });
+
+  it("does not let one caller's limit block a different buyer", async () => {
+    const noisy = buildCtx([product], { clientKey: "203.0.113.9" });
+    for (let i = 0; i < 11; i++) await call({ product_ids: [1] }, noisy);
+
+    const other = buildCtx([product], { clientKey: "198.51.100.4" });
+    expect((await call({ product_ids: [1] }, other)).isError).toBeUndefined();
+  });
+});
+
+describe("get_store_info — buyability", () => {
+  async function storeInfo(ctx: McpContext) {
+    const res = await handleMcpMessage(
+      req("tools/call", { name: "get_store_info", arguments: {} }),
+      ctx,
+    );
+    return (res?.result as { structuredContent: Record<string, unknown> })
+      .structuredContent;
+  }
+
+  it("tells an agent it can buy when the merchant has connected Stripe", async () => {
+    const info = await storeInfo(buildCtx([]));
+    expect(info.canBuyHere).toBe(true);
+    expect(info.checkout).toMatch(/create_checkout/);
+  });
+
+  it("tells an agent to buy elsewhere when the merchant has not", async () => {
+    const info = await storeInfo(
+      buildCtx([], {
+        tenant: { ...tenant, stripeConnectedAccountId: null } as Tenant,
+      }),
+    );
+    expect(info.canBuyHere).toBe(false);
+    expect(info.checkout).toMatch(/in person|contacting the merchant/i);
+  });
+});
+
 // ── HTTP transport (route) ────────────────────────────────────────────────────
 
 const mocks = vi.hoisted(() => ({
   getTenantBySlug: vi.fn(),
   getVisibleProducts: vi.fn(),
   getVisibleProductById: vi.fn(),
+  getPublicStores: vi.fn(async () => []),
 }));
 
 vi.mock("./db", () => ({
   getTenantBySlug: (...a: unknown[]) => mocks.getTenantBySlug(...a),
   getVisibleProducts: (...a: unknown[]) => mocks.getVisibleProducts(...a),
   getVisibleProductById: (...a: unknown[]) => mocks.getVisibleProductById(...a),
+  getPublicStores: (...a: unknown[]) => mocks.getPublicStores(...a),
 }));
 
 describe("POST /mcp (Streamable HTTP)", () => {

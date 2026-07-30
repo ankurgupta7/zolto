@@ -1,10 +1,12 @@
 /**
- * Admin Billing — the merchant's own plan + AI photo credits page.
+ * Admin Billing — the merchant's plan, online-fee, and AI-usage page.
  *
- * Shows the current plan and billing status, lets the owner upgrade to a paid
- * plan via Stripe Checkout, buy pay-as-you-go AI photo credit packs, and audit
- * their credit ledger (grants, purchases, consumption). Stripe redirects back
- * here with ?upgraded=1 / ?credits=1 / ?cancelled=1 (see server/billing.ts).
+ * Two-tier model (docs/planning/pricing-pivot-agent-commerce.md): Free pays a
+ * 1% platform fee on online/agent orders; Pro (flat monthly) removes it and
+ * unmeters AI. Shows this month's online sales + fee, the skim-vs-Pro
+ * break-even upsell ("you'd save CHF X on Pro"), AI allowance usage, and the
+ * generation log. Stripe redirects back here with ?upgraded=1 / ?cancelled=1
+ * (see server/billing.ts).
  */
 import { useEffect, useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -25,15 +27,13 @@ import {
   Users,
 } from "lucide-react";
 
-const PLAN_ORDER = ["free", "maker", "studio", "atelier"] as const;
-
-const CREDIT_PACKS = [10, 25, 50, 100] as const;
+const PLAN_ORDER = ["free", "pro"] as const;
 
 const CURRENCIES = ["chf", "eur", "usd", "gbp"] as const;
 
 /** Plans that include a custom domain / multi-currency (mirrors PLAN_FEATURES). */
-const CUSTOM_DOMAIN_PLANS = new Set(["maker", "studio", "atelier"]);
-const MULTI_CURRENCY_PLANS = new Set(["studio", "atelier"]);
+const CUSTOM_DOMAIN_PLANS = new Set(["pro"]);
+const MULTI_CURRENCY_PLANS = new Set(["pro"]);
 
 function planLabel(id: string): string {
   return id.charAt(0).toUpperCase() + id.slice(1);
@@ -52,13 +52,6 @@ export default function Billing() {
   });
 
   const planCheckout = trpc.billing.createPlanCheckout.useMutation({
-    onSuccess: ({ url }) => {
-      window.location.href = url;
-    },
-    onError: (err) => toast.error(err.message),
-  });
-
-  const creditCheckout = trpc.billing.purchasePhotoCredits.useMutation({
     onSuccess: ({ url }) => {
       window.location.href = url;
     },
@@ -113,10 +106,6 @@ export default function Billing() {
       toast.success("Plan updated — welcome aboard!");
       utils.billing.getStatus.invalidate();
       utils.billing.photoCreditHistory.invalidate();
-    } else if (params.get("credits")) {
-      toast.success("Credits added to your balance");
-      utils.billing.getStatus.invalidate();
-      utils.billing.photoCreditHistory.invalidate();
     } else if (params.get("cancelled")) {
       toast.info("Checkout cancelled — nothing was charged");
     }
@@ -157,14 +146,26 @@ export default function Billing() {
         </Link>
         <h1 className="text-3xl font-semibold mt-2">Plan &amp; Billing</h1>
         <p className="text-muted-foreground mt-1">
-          Your subscription and AI photo credits. Month-to-month, cancel
-          anytime.
+          Free in person, forever. {data?.onlineFees.feePercentLabel ?? "1%"} on
+          online &amp; AI-agent orders — or Pro, which removes it.
+          Month-to-month, cancel anytime.
         </p>
       </div>
 
       {status.isLoading && (
         <div className="flex justify-center py-12">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+      )}
+
+      {data?.legacyPriceChf != null && (
+        <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+          You're on an older plan price:{" "}
+          <strong>CHF {data.legacyPriceChf}/mo</strong>, from before Zolto moved
+          to two plans. You have everything in Pro (listed below at CHF{" "}
+          {data.plans.find((p) => p.id === "pro")?.priceChf ?? 25}/mo) and pay
+          0% on online sales. If the new price is lower, contact support and
+          we'll move you over — we won't quietly keep you on the old one.
         </div>
       )}
 
@@ -216,9 +217,15 @@ export default function Billing() {
                     )}
                   </div>
                   <div className="mt-1 text-xs text-muted-foreground">
-                    {plan.includedPhotoCredits > 0
-                      ? `${plan.includedPhotoCredits} AI photo credits / month`
-                      : "Pay-as-you-go photo credits"}
+                    {plan.onlineFeeBps > 0
+                      ? `${plan.onlineFeeBps / 100}% fee on online & agent orders`
+                      : "0% platform fee — keep every sale"}
+                  </div>
+                  <div className="mt-0.5 text-xs text-muted-foreground">
+                    {plan.aiPhotoAllowancePerMonth === null
+                      ? "Unmetered AI"
+                      : `${plan.aiPhotoAllowancePerMonth} AI photo shots / month`}
+                    {` · ${plan.maxProducts.toLocaleString()} products · ${plan.storageGb} GB`}
                   </div>
                   <div className="mt-auto pt-4">
                     {canUpgrade ? (
@@ -226,11 +233,7 @@ export default function Billing() {
                         type="button"
                         className="w-full rounded-md bg-primary px-3 py-2 text-sm text-primary-foreground hover:opacity-90 disabled:opacity-50"
                         disabled={planCheckout.isPending}
-                        onClick={() =>
-                          planCheckout.mutate({
-                            plan: planId as "maker" | "studio" | "atelier",
-                          })
-                        }
+                        onClick={() => planCheckout.mutate({ plan: "pro" })}
                       >
                         {planCheckout.isPending ? (
                           <Loader2 className="h-4 w-4 animate-spin inline" />
@@ -261,46 +264,91 @@ export default function Billing() {
         </section>
       )}
 
-      {/* Photo credits */}
+      {/* Online fees + the skim-vs-Pro upsell */}
       {data && (
         <section>
           <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            <Sparkles className="h-5 w-5" /> AI Photo Credits
+            <CreditCard className="h-5 w-5" /> Online sales this month
           </h2>
-          <div className="rounded-lg border p-5">
-            <div className="flex flex-wrap items-end justify-between gap-4">
+          <div className="rounded-lg border p-5 space-y-3">
+            <div className="flex flex-wrap gap-8">
               <div>
                 <div className="text-3xl font-semibold">
-                  {data.photoCredits.balance}
+                  CHF {data.onlineFees.monthGmvChf.toLocaleString()}
+                </div>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {data.onlineFees.monthOrderCount} online &amp; agent orders
+                  {data.onlineFees.monthAgentGmvChf > 0 &&
+                    ` — CHF ${data.onlineFees.monthAgentGmvChf.toLocaleString()} via AI agents`}
+                </p>
+              </div>
+              <div>
+                <div className="text-3xl font-semibold">
+                  CHF {data.onlineFees.monthFeeChf.toLocaleString()}
+                </div>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {data.plan === "pro"
+                    ? "Platform fees (0% on Pro)"
+                    : `Platform fees (${data.onlineFees.feePercentLabel} on ${data.onlineFees.appliesTo})`}
+                </p>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              In-person POS sales never carry a Zolto fee, on any plan.
+            </p>
+            {data.upsell && data.upsell.savingsChf > 0 && (
+              <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+                You'd save CHF {data.upsell.savingsChf.toLocaleString()} on Pro
+                this month — past CHF{" "}
+                {data.upsell.breakEvenOnlineChf.toLocaleString()}/month online,
+                Pro's flat CHF {data.upsell.proPriceChf} beats the{" "}
+                {data.onlineFees.feePercentLabel} fee.
+                {data.billingConfigured && (
+                  <button
+                    type="button"
+                    className="ml-2 underline font-medium"
+                    disabled={planCheckout.isPending}
+                    onClick={() => planCheckout.mutate({ plan: "pro" })}
+                  >
+                    Upgrade now
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* AI usage */}
+      {data && (
+        <section>
+          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+            <Sparkles className="h-5 w-5" /> AI photo shots
+          </h2>
+          <div className="rounded-lg border p-5">
+            {data.ai.allowancePerMonth === null ? (
+              <p className="text-sm">
+                <span className="text-2xl font-semibold">Unmetered</span>
+                <span className="text-muted-foreground">
+                  {" "}
+                  — AI photos, descriptions and chat are never counted on Pro.
+                </span>
+              </p>
+            ) : (
+              <div>
+                <div className="text-3xl font-semibold">
+                  {data.ai.usedThisMonth}
                   <span className="text-base font-normal text-muted-foreground">
                     {" "}
-                    credits
+                    of {data.ai.allowancePerMonth} used this month
                   </span>
                 </div>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {data.photoCredits.monthlyBucket > 0
-                    ? `Your plan adds ${data.photoCredits.monthlyBucket}/month. `
-                    : "Your plan has no monthly bucket. "}
-                  Top up pay-as-you-go — CHF {data.photoCredits.priceChf}{" "}
-                  {data.photoCredits.unit}, credits never expire.
+                  Your allowance resets monthly. Upgrade to Pro for unmetered AI
+                  — queries are never the meter, on any plan.
                 </p>
               </div>
-              {data.billingConfigured && (
-                <div className="flex gap-2">
-                  {CREDIT_PACKS.map((qty) => (
-                    <button
-                      key={qty}
-                      type="button"
-                      className="rounded-md border px-3 py-2 text-sm hover:bg-accent disabled:opacity-50"
-                      disabled={creditCheckout.isPending}
-                      onClick={() => creditCheckout.mutate({ quantity: qty })}
-                    >
-                      +{qty}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+            )}
           </div>
         </section>
       )}
@@ -309,7 +357,7 @@ export default function Billing() {
       {history.data && history.data.length > 0 && (
         <section>
           <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            <ImageIcon className="h-5 w-5" /> Credit history
+            <ImageIcon className="h-5 w-5" /> AI generation log
           </h2>
           <div className="rounded-lg border divide-y">
             {history.data.map((entry) => (
@@ -326,8 +374,10 @@ export default function Billing() {
                     {entry.delta > 0 ? `+${entry.delta}` : entry.delta}
                   </span>
                   <span className="text-muted-foreground">
-                    {entry.kind === "monthly_grant" && "Monthly plan bucket"}
-                    {entry.kind === "purchase" && "Credit pack purchase"}
+                    {entry.kind === "monthly_grant" &&
+                      "Plan bucket (pre-pivot)"}
+                    {entry.kind === "purchase" &&
+                      "Credit pack purchase (pre-pivot)"}
                     {entry.kind === "consumption" && "AI photo generated"}
                     {entry.kind === "manual_adjustment" &&
                       (entry.note ?? "Adjustment")}
@@ -443,7 +493,7 @@ export default function Billing() {
                 <span className="text-sm font-medium">Custom domain</span>
                 {!CUSTOM_DOMAIN_PLANS.has(currentPlan) && (
                   <span className="text-xs text-muted-foreground">
-                    Maker plan and above
+                    Pro plan
                   </span>
                 )}
               </div>
@@ -500,7 +550,7 @@ export default function Billing() {
                 <span className="text-sm font-medium">Store currency</span>
                 {!MULTI_CURRENCY_PLANS.has(currentPlan) && (
                   <span className="text-xs text-muted-foreground">
-                    Studio plan and above
+                    Pro plan
                   </span>
                 )}
               </div>

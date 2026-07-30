@@ -2,17 +2,19 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const { dbMock, billingMock, photoCreditsMock } = vi.hoisted(() => ({
   dbMock: {
-    getPhotoCreditBalance: vi.fn(),
     getPhotoCreditHistory: vi.fn(),
+    getMonthlyOnlineSales: vi.fn(),
   },
   billingMock: {
     createPlanCheckoutSession: vi.fn(),
-    createPhotoCreditCheckoutSession: vi.fn(),
     isBillingConfigured: vi.fn(() => true),
-    monthlyPhotoCredits: vi.fn(() => 10),
   },
   photoCreditsMock: {
     generateStyledProductPhoto: vi.fn(),
+    countPhotoGenerationsThisMonth: vi.fn(),
+    photoAllowanceForPlan: vi.fn((plan: string) =>
+      plan === "pro" ? null : 5,
+    ),
   },
 }));
 
@@ -31,32 +33,41 @@ const tenant = {
   trialEndsAt: new Date("2026-08-01"),
 } as never;
 
-function ctx(role: string | null = "admin"): TrpcContext {
+function ctx(
+  role: string | null = "admin",
+  tenantOverrides: Record<string, unknown> = {},
+): TrpcContext {
   return {
     req: { headers: {} } as never,
     res: {} as never,
     user: role
       ? ({ id: 1, openId: "google:1", role, tenantId: 7 } as never)
       : null,
-    tenant: role ? tenant : null,
+    tenant: role ? ({ ...(tenant as object), ...tenantOverrides } as never) : null,
   };
 }
 
 beforeEach(() => {
   vi.clearAllMocks();
-  dbMock.getPhotoCreditBalance.mockResolvedValue(12);
+  photoCreditsMock.photoAllowanceForPlan.mockImplementation((plan: string) =>
+    plan === "pro" ? null : 5,
+  );
+  photoCreditsMock.countPhotoGenerationsThisMonth.mockResolvedValue(2);
+  dbMock.getMonthlyOnlineSales.mockResolvedValue({
+    gmvRappen: 320_000, // CHF 3,200
+    feeRappen: 3_200, // CHF 32 — 1% of GMV
+    agentGmvRappen: 50_000,
+    orderCount: 12,
+  });
   dbMock.getPhotoCreditHistory.mockResolvedValue([
-    { id: 1, tenantId: 7, delta: 10, kind: "monthly_grant" },
+    { id: 1, tenantId: 7, delta: -1, kind: "consumption" },
   ]);
   billingMock.createPlanCheckoutSession.mockResolvedValue({
     url: "https://checkout.stripe.com/plan",
   });
-  billingMock.createPhotoCreditCheckoutSession.mockResolvedValue({
-    url: "https://checkout.stripe.com/credits",
-  });
   photoCreditsMock.generateStyledProductPhoto.mockResolvedValue({
     imageUrl: "https://cdn.example.com/styled.png",
-    balance: 11,
+    remainingThisMonth: 2,
   });
 });
 
@@ -73,30 +84,46 @@ describe("billingRouter auth", () => {
 });
 
 describe("billingRouter.getStatus", () => {
-  it("returns plan, credit balance, and purchasable plans", async () => {
+  it("returns plan, AI usage, online fees, and the two plans", async () => {
     const caller = billingRouter.createCaller(ctx());
     const status = await caller.getStatus();
 
     expect(status.plan).toBe("free");
-    expect(status.photoCredits.balance).toBe(12);
-    expect(status.photoCredits.priceChf).toBe(1);
-    expect(status.plans.map((p) => p.id)).toEqual([
-      "free",
-      "maker",
-      "studio",
-      "atelier",
-    ]);
+    expect(status.ai).toEqual({ allowancePerMonth: 5, usedThisMonth: 2 });
+    expect(status.onlineFees.monthGmvChf).toBe(3200);
+    expect(status.onlineFees.monthFeeChf).toBe(32);
+    expect(status.onlineFees.monthAgentGmvChf).toBe(500);
+    expect(status.plans.map((p) => p.id)).toEqual(["free", "pro"]);
     expect(status.billingConfigured).toBe(true);
+  });
+
+  it("computes the skim-vs-Pro upsell for Free tenants", async () => {
+    // CHF 32 in fees this month vs Pro at CHF 25 → CHF 7 to save.
+    const caller = billingRouter.createCaller(ctx());
+    const status = await caller.getStatus();
+    expect(status.upsell).toEqual({
+      breakEvenOnlineChf: 2500,
+      proPriceChf: 25,
+      savingsChf: 7,
+    });
+  });
+
+  it("reports unmetered AI and no upsell on Pro", async () => {
+    const caller = billingRouter.createCaller(ctx("admin", { plan: "pro" }));
+    const status = await caller.getStatus();
+    expect(status.ai).toEqual({ allowancePerMonth: null, usedThisMonth: null });
+    expect(status.upsell).toBeNull();
+    expect(photoCreditsMock.countPhotoGenerationsThisMonth).not.toHaveBeenCalled();
   });
 });
 
 describe("billingRouter.checkout mutations", () => {
-  it("creates a plan checkout for a paid plan", async () => {
+  it("creates a Pro plan checkout", async () => {
     const caller = billingRouter.createCaller(ctx());
-    const { url } = await caller.createPlanCheckout({ plan: "maker" });
+    const { url } = await caller.createPlanCheckout({ plan: "pro" });
     expect(url).toContain("checkout.stripe.com");
     expect(billingMock.createPlanCheckoutSession).toHaveBeenCalledWith(
-      expect.objectContaining({ plan: "maker" }),
+      expect.objectContaining({ plan: "pro" }),
     );
   });
 
@@ -108,38 +135,29 @@ describe("billingRouter.checkout mutations", () => {
     expect(billingMock.createPlanCheckoutSession).not.toHaveBeenCalled();
   });
 
+  it("rejects the retired paid tiers as checkout targets", async () => {
+    const caller = billingRouter.createCaller(ctx());
+    for (const plan of ["maker", "studio", "atelier"]) {
+      await expect(
+        caller.createPlanCheckout({ plan: plan as never }),
+      ).rejects.toThrow();
+    }
+    expect(billingMock.createPlanCheckoutSession).not.toHaveBeenCalled();
+  });
+
   it("surfaces billing misconfiguration as a readable error", async () => {
     billingMock.createPlanCheckoutSession.mockRejectedValue(
-      new Error("STRIPE_PRICE_MAKER unset"),
+      new Error("STRIPE_PRICE_PRO unset"),
     );
     const caller = billingRouter.createCaller(ctx());
-    await expect(caller.createPlanCheckout({ plan: "maker" })).rejects.toThrow(
-      /STRIPE_PRICE_MAKER/,
+    await expect(caller.createPlanCheckout({ plan: "pro" })).rejects.toThrow(
+      /STRIPE_PRICE_PRO/,
     );
-  });
-
-  it("creates a credit-pack checkout", async () => {
-    const caller = billingRouter.createCaller(ctx());
-    const { url } = await caller.purchasePhotoCredits({ quantity: 25 });
-    expect(url).toContain("checkout.stripe.com");
-    expect(billingMock.createPhotoCreditCheckoutSession).toHaveBeenCalledWith(
-      expect.objectContaining({ quantity: 25 }),
-    );
-  });
-
-  it("validates credit quantity bounds", async () => {
-    const caller = billingRouter.createCaller(ctx());
-    await expect(
-      caller.purchasePhotoCredits({ quantity: 0 }),
-    ).rejects.toThrow();
-    await expect(
-      caller.purchasePhotoCredits({ quantity: 5000 }),
-    ).rejects.toThrow();
   });
 });
 
 describe("billingRouter.generateProductPhoto", () => {
-  it("delegates to the photo credit service for the tenant", async () => {
+  it("delegates to the photo service with the tenant's plan", async () => {
     const caller = billingRouter.createCaller(ctx());
     const result = await caller.generateProductPhoto({
       productId: 42,
@@ -148,6 +166,7 @@ describe("billingRouter.generateProductPhoto", () => {
     expect(result.imageUrl).toContain("styled.png");
     expect(photoCreditsMock.generateStyledProductPhoto).toHaveBeenCalledWith({
       tenantId: 7,
+      plan: "free",
       productId: 42,
       stylePrompt: "Clean catalogue shot",
     });
@@ -162,7 +181,7 @@ describe("billingRouter.generateProductPhoto", () => {
 });
 
 describe("billingRouter.photoCreditHistory", () => {
-  it("returns the tenant's ledger history", async () => {
+  it("returns the tenant's generation log", async () => {
     const caller = billingRouter.createCaller(ctx());
     const history = await caller.photoCreditHistory();
     expect(history).toHaveLength(1);

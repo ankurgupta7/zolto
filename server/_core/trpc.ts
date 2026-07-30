@@ -73,14 +73,16 @@ export const superadminProcedure = t.procedure.use(
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // Plan ids mirror the marketing source of truth (shared/platform.ts PLANS);
-// the DB enum (drizzle/schema.ts tenants.plan) uses the same four ids, so a
+// the DB enum (drizzle/schema.ts tenants.plan) uses the same two ids, so a
 // tenant's row, the pricing page, and the gates below can never drift apart.
-// includedPhotoCredits is intentionally NOT duplicated here — read it from
-// PLANS in shared/platform.ts, which is the single owner of the buckets.
+// The AI photo allowance and scale limits (maxProducts/storageGb) are NOT
+// duplicated here — read them from PLANS, the single owner of those numbers.
+// The 1% online/agent fee is likewise owned by PLANS[].onlineFeeBps and
+// applied in server/routers/checkout.ts, not gated here.
 export const PLAN_FEATURES = {
-  // Free: the whole commerce engine (unlimited products, full POS, online
-  // store, real-time sync, AI text) — per honest-pricing-strategy.md we never
-  // gate what costs us ~nothing to run. No custom domain, Zolto badge shown.
+  // Free: the whole commerce engine — store, full POS, inventory sync, the
+  // agent layer (llms.txt/MCP/chat, the discovery wedge) and a taste of AI.
+  // Monetized via the 1% fee on online/agent orders, not by gating.
   free: {
     maxStaff: 1,
     customDomain: false,
@@ -88,51 +90,18 @@ export const PLAN_FEATURES = {
     analytics: "basic",
     multiCurrency: false,
     prioritySupport: false,
-    sso: false,
-    apiAccess: false,
-    auditLogs: false,
     pos: true,
     onlineStore: true,
   },
-  // Maker (CHF 19/mo): custom domain + managed SSL, white-label, human support.
-  maker: {
+  // Pro (CHF 25/mo): removes the 1% fee, unmetered AI, and everything a
+  // maker selling online every week needs — domain, team, analytics, support.
+  pro: {
     maxStaff: 3,
     customDomain: true,
     whiteLabel: true,
-    analytics: "basic",
-    multiCurrency: false,
-    prioritySupport: false,
-    sso: false,
-    apiAccess: false,
-    auditLogs: false,
-    pos: true,
-    onlineStore: true,
-  },
-  // Studio (CHF 49/mo): teams, advanced analytics, multi-currency, priority support.
-  studio: {
-    maxStaff: 10,
-    customDomain: true,
-    whiteLabel: true,
     analytics: "advanced",
     multiCurrency: true,
     prioritySupport: true,
-    sso: false,
-    apiAccess: false,
-    auditLogs: false,
-    pos: true,
-    onlineStore: true,
-  },
-  // Atelier (CHF 99/mo): API access, SSO, audit logs, dedicated support + SLA.
-  atelier: {
-    maxStaff: 20,
-    customDomain: true,
-    whiteLabel: true,
-    analytics: "advanced",
-    multiCurrency: true,
-    prioritySupport: true,
-    sso: true,
-    apiAccess: true,
-    auditLogs: true,
     pos: true,
     onlineStore: true,
   },
@@ -143,10 +112,8 @@ export type PlanFeature = keyof typeof PLAN_FEATURES.free;
 
 /** The next plan up, for upgrade prompts. */
 const UPGRADE_PATH: Record<PlanId, string | null> = {
-  free: "Maker",
-  maker: "Studio",
-  studio: "Atelier",
-  atelier: null,
+  free: "Pro",
+  pro: null,
 };
 
 export function checkFeature(feature: PlanFeature) {

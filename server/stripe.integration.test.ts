@@ -283,3 +283,244 @@ describeIf("Stripe Integration — Webhook Verification", () => {
     });
   });
 });
+
+// ─── Stripe Connect: direct charge + platform fee ────────────────────────────
+//
+// This is the revenue mechanism of the whole pricing model
+// (docs/planning/pricing-pivot-agent-commerce.md): a Free-plan tenant's
+// customer pays into the TENANT's own connected account (a direct charge),
+// and Zolto's 1% rides along as application_fee_amount.
+//
+// It matters that this is tested against the real API rather than a mock,
+// because the failure mode is not "the fee is skipped" — Stripe rejects the
+// whole `checkout.sessions.create` call, so EVERY online sale for that vendor
+// fails. server/checkoutSession.ts carries a fallback for exactly that case;
+// these tests are how we find out whether the fallback is ever needed.
+
+/**
+ * Find a connected account to run the direct-charge tests against.
+ *
+ * Deliberately does NOT create one. Zolto never creates connected accounts in
+ * production — tenants link their OWN existing Stripe account over Connect
+ * OAuth (server/stripeConnect.ts `stripe.oauth.token`), and we only ever
+ * receive an account id. Creating one here also broke: Stripe now rejects
+ * Accounts v1 for new integrations, which killed this whole suite and skipped
+ * the fee tests silently. Borrowing an existing account is both closer to
+ * production and immune to that.
+ */
+async function resolveConnectedAccount(stripe: Stripe): Promise<string> {
+  const fromEnv = process.env.STRIPE_TEST_CONNECTED_ACCOUNT_ID;
+  if (fromEnv) return fromEnv;
+
+  let candidates: Stripe.Account[] = [];
+  try {
+    candidates = (await stripe.accounts.list({ limit: 100 })).data;
+  } catch {
+    // Listing may be restricted; fall through to the guidance below.
+  }
+
+  // Checkout needs an account that can actually take a charge AND has a
+  // display name — Stripe refuses to render a checkout page for a nameless
+  // account ("you must set an account or business name"). Picking the first
+  // account off the list is how we previously landed on an unusable one.
+  const named = (a: Stripe.Account) =>
+    Boolean(a.business_profile?.name || a.settings?.dashboard?.display_name);
+  const usable =
+    candidates.find((a) => a.charges_enabled && named(a)) ??
+    candidates.find((a) => a.charges_enabled) ??
+    candidates[0];
+
+  if (usable && !named(usable)) {
+    // Best effort: give it a name so the suite can proceed. Platforms can't
+    // always write a Standard account's profile, so this is allowed to fail —
+    // the error below then tells the operator exactly which account to fix.
+    await stripe.accounts
+      .update(usable.id, {
+        business_profile: { name: "Zolto Integration Test Store" },
+      })
+      .catch(() => {});
+  }
+
+  if (usable) return usable.id;
+
+  // Fail loudly rather than skipping. A silent skip is exactly how the fee
+  // path stayed unverified in the first place.
+  throw new Error(
+    "No connected account available, so the platform fee was NOT verified. " +
+      "This is a test-environment gap, not a Stripe rejection of the fee. Fix by either: " +
+      "(a) set STRIPE_TEST_CONNECTED_ACCOUNT_ID to an existing test-mode connected account (acct_...); " +
+      "(b) link one through Zolto's own Connect OAuth flow, which is what production does; or " +
+      "(c) create one via Accounts v2 (POST /v2/core/accounts) or by enabling Accounts v1 " +
+      "support at https://dashboard.stripe.com/settings/features/feat_accounts_v1_support.",
+  );
+}
+
+describeIf(
+  "Stripe Integration — Connect direct charge with platform fee",
+  () => {
+    let stripe: Stripe;
+    let connectedAccountId: string;
+
+    beforeAll(async () => {
+      stripe = getStripe();
+
+      // Reachability first, so a blocked network can't masquerade as "Stripe
+      // rejected our platform fee". Those two need telling apart instantly:
+      // one is an infrastructure problem, the other means every online sale
+      // on the Free plan is broken. The Stripe SDK surfaces a proxy's HTML
+      // error page as "Invalid JSON received from the Stripe API", which
+      // reads like the latter and is actually the former.
+      try {
+        await stripe.balance.retrieve();
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        throw new Error(
+          "Cannot reach the Stripe API, so the platform-fee path was NOT " +
+            "verified. This is a connectivity/egress problem, not a Stripe " +
+            "rejection — do not read it as the fee being broken. " +
+            `Underlying error: ${msg}`,
+        );
+      }
+
+      connectedAccountId = await resolveConnectedAccount(stripe);
+      // Printed because a Checkout config failure ("you must set an account or
+      // business name") is a property of a SPECIFIC account — without knowing
+      // which one was used, the operator can't tell whether to fix the
+      // platform account or this connected one.
+      console.info(
+        `[integration] platform-fee tests running on connected account ${connectedAccountId}`,
+      );
+    }, 30_000);
+
+    // Nothing to tear down: we borrow an existing connected account rather
+    // than creating one, so there is no account of ours to delete.
+
+    it("accepts application_fee_amount on a direct charge (the Free-plan skim)", async () => {
+      const session = await stripe.checkout.sessions.create(
+        {
+          mode: "payment",
+          payment_method_types: ["card"],
+          line_items: [
+            {
+              quantity: 1,
+              price_data: {
+                currency: "chf",
+                unit_amount: 6500, // CHF 65.00
+                product_data: { name: "Perlenkette" },
+              },
+            },
+          ],
+          payment_intent_data: {
+            statement_descriptor: "ZOLTO TEST",
+            // 1% of the CHF 65 subtotal — what a Free-plan tenant is charged.
+            application_fee_amount: 65,
+          },
+          success_url: "https://example.com/checkout/success",
+          cancel_url: "https://example.com/checkout/cancel",
+          metadata: { productIds: "1", channel: "web" },
+        },
+        { stripeAccount: connectedAccountId },
+      );
+
+      expect(session.id).toMatch(/^cs_test_/);
+      expect(session.status).toBe("open");
+      expect(session.amount_total).toBe(6500);
+
+      await stripe.checkout.sessions
+        .expire(session.id, { stripeAccount: connectedAccountId } as never)
+        .catch(() => {});
+    }, 30_000);
+
+    it("accepts an agent-originated session identically to a web one", async () => {
+      // The agent path must not be a special case at the Stripe layer — same
+      // call, same fee, only the metadata channel differs.
+      const session = await stripe.checkout.sessions.create(
+        {
+          mode: "payment",
+          payment_method_types: ["card"],
+          line_items: [
+            {
+              quantity: 1,
+              price_data: {
+                currency: "chf",
+                unit_amount: 6500,
+                product_data: { name: "Perlenkette" },
+              },
+            },
+          ],
+          payment_intent_data: { application_fee_amount: 65 },
+          success_url: "https://example.com/checkout/success",
+          cancel_url: "https://example.com/checkout/cancel",
+          metadata: { productIds: "1", channel: "agent" },
+        },
+        { stripeAccount: connectedAccountId },
+      );
+
+      expect(session.id).toMatch(/^cs_test_/);
+      expect(session.metadata?.channel).toBe("agent");
+
+      await stripe.checkout.sessions
+        .expire(session.id, { stripeAccount: connectedAccountId } as never)
+        .catch(() => {});
+    }, 30_000);
+
+    it("omits the fee entirely for Pro tenants without breaking the charge", async () => {
+      const session = await stripe.checkout.sessions.create(
+        {
+          mode: "payment",
+          payment_method_types: ["card"],
+          line_items: [
+            {
+              quantity: 1,
+              price_data: {
+                currency: "chf",
+                unit_amount: 6500,
+                product_data: { name: "Perlenkette" },
+              },
+            },
+          ],
+          // Pro: no application_fee_amount key at all.
+          payment_intent_data: { statement_descriptor: "ZOLTO TEST" },
+          success_url: "https://example.com/checkout/success",
+          cancel_url: "https://example.com/checkout/cancel",
+          metadata: { productIds: "1", channel: "web" },
+        },
+        { stripeAccount: connectedAccountId },
+      );
+
+      expect(session.id).toMatch(/^cs_test_/);
+
+      await stripe.checkout.sessions
+        .expire(session.id, { stripeAccount: connectedAccountId } as never)
+        .catch(() => {});
+    }, 30_000);
+
+    it("rejects a fee larger than the charge — the bound our maths must respect", async () => {
+      // Documents WHY platformFeeRappen is computed on the subtotal and capped
+      // by construction: an over-large fee is a hard API error, i.e. a failed
+      // sale. If Stripe ever stops rejecting this, revisit the fallback.
+      await expect(
+        stripe.checkout.sessions.create(
+          {
+            mode: "payment",
+            payment_method_types: ["card"],
+            line_items: [
+              {
+                quantity: 1,
+                price_data: {
+                  currency: "chf",
+                  unit_amount: 1000,
+                  product_data: { name: "Cheap thing" },
+                },
+              },
+            ],
+            payment_intent_data: { application_fee_amount: 5000 },
+            success_url: "https://example.com/success",
+            cancel_url: "https://example.com/cancel",
+          },
+          { stripeAccount: connectedAccountId },
+        ),
+      ).rejects.toThrow(/application[_ ]fee|fee.*(greater|exceed)|amount/i);
+    }, 30_000);
+  },
+);

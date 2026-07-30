@@ -20,6 +20,7 @@ const db = vi.hoisted(() => ({
   getBulkUploadLogs: vi.fn(),
   getProductsMissingTranslation: vi.fn(),
   getPaidOrders: vi.fn(),
+  getCategoryPriceStats: vi.fn(),
 }));
 
 const storagePut = vi.hoisted(() => vi.fn());
@@ -219,6 +220,10 @@ describe("products.addImage", () => {
 });
 
 describe("products.bulkAnalyze", () => {
+  beforeEach(() => {
+    db.getCategoryPriceStats.mockResolvedValue([]);
+  });
+
   it("returns AI suggestions for each image group", async () => {
     llmJson({
       name: "Mondstein-Ring",
@@ -239,6 +244,101 @@ describe("products.bulkAnalyze", () => {
     });
   });
 
+  it("drafts all four Swiss-relevant languages, not just German and English", async () => {
+    llmJson({
+      name: "Mondstein-Ring",
+      name_en: "Moonstone Ring",
+      description: "Schoen",
+      description_en: "Pretty",
+      name_fr: "Bague pierre de lune",
+      description_fr: "Joli",
+      name_it: "Anello pietra di luna",
+      description_it: "Bello",
+      category: "Rings",
+    });
+    const res = await admin().products.bulkAnalyze({
+      groups: [
+        { groupId: "g1", images: [{ data: "d", mimeType: "image/png" }] },
+      ],
+    });
+    expect(res[0]).toMatchObject({
+      nameFr: "Bague pierre de lune",
+      nameIt: "Anello pietra di luna",
+      descriptionIt: "Bello",
+    });
+  });
+
+  it("suggests a price grounded in the merchant's own catalogue", async () => {
+    db.getCategoryPriceStats.mockResolvedValue([
+      { category: "Rings", count: 4, minChf: 50, maxChf: 120, medianChf: 80 },
+    ]);
+    llmJson({
+      name: "Mondstein-Ring",
+      name_en: "Moonstone Ring",
+      description: "Schoen",
+      description_en: "Pretty",
+      category: "Rings",
+      suggested_price: 85,
+      price_basis: "in line with your other Rings (CHF 50-120)",
+    });
+    const res = await admin().products.bulkAnalyze({
+      groups: [
+        { groupId: "g1", images: [{ data: "d", mimeType: "image/png" }] },
+      ],
+    });
+    expect(res[0]).toMatchObject({
+      suggestedPrice: 85,
+      priceBasis: "in line with your other Rings (CHF 50-120)",
+    });
+    // The merchant's real prices must reach the model, or the number is a guess.
+    const prompt = JSON.stringify(invokeLLM.mock.calls[0][0]);
+    expect(prompt).toContain("Rings");
+    expect(prompt).toContain("120");
+  });
+
+  it("suggests NO price when the store has no pricing history", async () => {
+    // A new maker would likely accept whatever we propose, so proposing a
+    // number we have no basis for could mis-price their work.
+    db.getCategoryPriceStats.mockResolvedValue([]);
+    llmJson({
+      name: "Mondstein-Ring",
+      name_en: "Moonstone Ring",
+      description: "Schoen",
+      description_en: "Pretty",
+      category: "Rings",
+      suggested_price: 0,
+      price_basis: "No pricing history yet — set your own price.",
+    });
+    const res = await admin().products.bulkAnalyze({
+      groups: [
+        { groupId: "g1", images: [{ data: "d", mimeType: "image/png" }] },
+      ],
+    });
+    expect(res[0].suggestedPrice).toBeNull();
+    expect(res[0].priceBasis).toBeNull();
+  });
+
+  it("never invents a price from a nonsensical model answer", async () => {
+    db.getCategoryPriceStats.mockResolvedValue([
+      { category: "Rings", count: 2, minChf: 50, maxChf: 90, medianChf: 70 },
+    ]);
+    llmJson({
+      name: "R",
+      name_en: "R",
+      description: "d",
+      description_en: "d",
+      category: "Rings",
+      suggested_price: -5,
+      price_basis: "nonsense",
+    });
+    const res = await admin().products.bulkAnalyze({
+      groups: [
+        { groupId: "g1", images: [{ data: "d", mimeType: "image/png" }] },
+      ],
+    });
+    expect(res[0].suggestedPrice).toBeNull();
+  });
+
   it("falls back and logs when the LLM fails for a group", async () => {
     invokeLLM.mockRejectedValueOnce(new Error("llm down"));
     const res = await admin().products.bulkAnalyze({
@@ -250,6 +350,9 @@ describe("products.bulkAnalyze", () => {
       groupId: "g1",
       success: false,
       category: "Other",
+      // The fallback must never carry a guessed price.
+      suggestedPrice: null,
+      priceBasis: null,
     });
     expect(db.insertBulkUploadLog).toHaveBeenCalledWith(
       expect.objectContaining({ operation: "analyze", ref: "g1" }),

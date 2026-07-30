@@ -23,7 +23,7 @@ beforeEach(() => {
   delete process.env.SITE_DOMAIN;
   delete process.env.PUBLIC_BASE_URL;
   dbMock.getTenantSettingsByDomain.mockResolvedValue({ tenantId: 42 });
-  dbMock.getTenantById.mockResolvedValue({ id: 42, plan: "maker" });
+  dbMock.getTenantById.mockResolvedValue({ id: 42, plan: "pro" });
   dbMock.getTenantBySlug.mockResolvedValue(undefined);
 });
 

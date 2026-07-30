@@ -11,6 +11,7 @@ import { billingRouter } from "./routers/billing";
 import { staffRouter } from "./routers/staff";
 import { chatRouter } from "./routers/chat";
 import { insightsRouter } from "./routers/insights";
+import { platformRouter } from "./routers/platform";
 
 // ─── App router ───────────────────────────────────────────────────────────────
 
@@ -25,10 +26,11 @@ export const appRouter = router({
     }),
   }),
   tenant: tenantRouter, // NEW: Multi-tenant routes
-  billing: billingRouter, // Plan subscriptions + AI photo credits
+  billing: billingRouter, // Plan subscriptions + AI usage
+  platform: platformRouter, // Zolto-wide operating metrics (superadmin only)
   staff: staffRouter, // Team seats + invites
   chat: chatRouter, // AI support assistant (storefront)
-  insights: insightsRouter, // Sales/inventory stats + AI narrative (Studio+)
+  insights: insightsRouter, // Sales/inventory stats + AI narrative (Pro)
   products: productsRouter,
   instagram: instagramRouter,
   checkout: checkoutRouter,

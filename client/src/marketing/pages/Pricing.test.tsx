@@ -3,6 +3,7 @@ import { render, screen, cleanup } from "@testing-library/react";
 import { Router } from "wouter";
 import { memoryLocation } from "wouter/memory-location";
 import Pricing from "./Pricing";
+import { PRO_PLAN, REVENUE_SHARE } from "@shared/platform";
 
 afterEach(cleanup);
 
@@ -16,36 +17,58 @@ function renderPricing() {
 }
 
 describe("Pricing", () => {
-  it("shows the four plans with a free tier", () => {
+  it("shows exactly the two plans, Free and Pro", () => {
     renderPricing();
     expect(screen.getByRole("heading", { name: "Free" })).toBeTruthy();
-    expect(screen.getByRole("heading", { name: "Maker" })).toBeTruthy();
-    expect(screen.getByRole("heading", { name: "Studio" })).toBeTruthy();
-    expect(screen.getByRole("heading", { name: "Atelier" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Pro" })).toBeTruthy();
+    // The retired four-tier lineup must not resurface.
+    expect(screen.queryByRole("heading", { name: "Maker" })).toBeNull();
+    expect(screen.queryByRole("heading", { name: "Studio" })).toBeNull();
+    expect(screen.queryByRole("heading", { name: "Atelier" })).toBeNull();
   });
 
-  it("keeps the Free plan a complete store, not a capped demo", () => {
+  it("keeps the Free plan a complete store with the fee disclosed on the card", () => {
     renderPricing();
-    // Zero-cost features live on Free…
-    expect(screen.getByText(/Unlimited products/i)).toBeTruthy();
+    expect(screen.getAllByText(/Full POS/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/One-click full data export/i)).toBeTruthy();
-    // …and the retired manufactured caps are gone.
+    // The fee is on the Free card itself, not buried.
+    expect(
+      screen.getAllByText(/1% platform fee on online & agent orders only/i)
+        .length,
+    ).toBeGreaterThan(0);
+    // Retired manufactured caps stay gone.
     expect(screen.queryByText(/Up to 50 products/i)).toBeNull();
     expect(screen.queryByText(/10 AI descriptions/i)).toBeNull();
   });
 
-  it("surfaces AI photo generation as a metered add-on, not 'unlimited'", () => {
+  it("explains the fee: free in person, 1% online, Pro removes it", () => {
     renderPricing();
     expect(
-      screen.getByRole("heading", { name: /AI Photo Credits/i }),
-    ).toBeTruthy();
-    expect(screen.getAllByText(/per image/i).length).toBeGreaterThan(0);
-    // The dishonest "unlimited AI" line must not appear anywhere on the page.
-    expect(screen.queryByText(/unlimited ai/i)).toBeNull();
+      screen.getAllByText(/Zolto adds nothing/i).length,
+    ).toBeGreaterThan(0);
+    expect(screen.getAllByText(/CHF 0/).length).toBeGreaterThan(0);
+    // Break-even upsell number is on the page.
+    expect(screen.getAllByText(/2,500/).length).toBeGreaterThan(0);
+    // Page copy derives from the same constants checkout charges with.
+    expect(REVENUE_SHARE.percentLabel).toBe("1%");
+    expect(
+      screen.getAllByText(new RegExp(`CHF ${PRO_PLAN.priceChf}`)).length,
+    ).toBeGreaterThan(0);
+  });
+
+  it("never sells AI by the query", () => {
+    renderPricing();
+    // AI photo credits (CHF/image) are retired…
+    expect(screen.queryByText(/photo credits/i)).toBeNull();
+    expect(screen.queryByText(/per image/i)).toBeNull();
+    // …and no per-query AI caps appear anywhere.
+    expect(screen.queryByText(/\d+ AI descriptions/i)).toBeNull();
   });
 
   it("carries the pricing pledge", () => {
     renderPricing();
-    expect(screen.getAllByText(/never charge/i).length).toBeGreaterThan(0);
+    expect(
+      screen.getAllByText(/Selling in person is free/i).length,
+    ).toBeGreaterThan(0);
   });
 });

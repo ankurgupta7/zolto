@@ -1,25 +1,29 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
 const getProductById = vi.fn();
-const consumePhotoCredit = vi.fn();
+const recordPhotoGeneration = vi.fn();
 const addPhotoCreditEntry = vi.fn();
 const addProductImage = vi.fn();
-const getPhotoCreditBalance = vi.fn();
+const countPhotoGenerationsThisMonth = vi.fn();
 const generateImage = vi.fn();
 
 vi.mock("./db", () => ({
   getProductById: (...args: unknown[]) => getProductById(...args),
-  consumePhotoCredit: (...args: unknown[]) => consumePhotoCredit(...args),
+  recordPhotoGeneration: (...args: unknown[]) => recordPhotoGeneration(...args),
   addPhotoCreditEntry: (...args: unknown[]) => addPhotoCreditEntry(...args),
   addProductImage: (...args: unknown[]) => addProductImage(...args),
-  getPhotoCreditBalance: (...args: unknown[]) => getPhotoCreditBalance(...args),
+  countPhotoGenerationsThisMonth: (...args: unknown[]) =>
+    countPhotoGenerationsThisMonth(...args),
 }));
 
 vi.mock("./_core/imageGeneration", () => ({
   generateImage: (...args: unknown[]) => generateImage(...args),
 }));
 
-import { generateStyledProductPhoto } from "./photoCredits";
+import {
+  generateStyledProductPhoto,
+  photoAllowanceForPlan,
+} from "./photoCredits";
 
 const product = {
   id: 42,
@@ -31,24 +35,33 @@ const product = {
 beforeEach(() => {
   vi.clearAllMocks();
   getProductById.mockResolvedValue(product);
-  consumePhotoCredit.mockResolvedValue(true);
+  recordPhotoGeneration.mockResolvedValue(true);
   generateImage.mockResolvedValue({
     url: "https://cdn.example.com/styled.png",
   });
-  getPhotoCreditBalance.mockResolvedValue(9);
+  countPhotoGenerationsThisMonth.mockResolvedValue(3);
   addPhotoCreditEntry.mockResolvedValue(undefined);
   addProductImage.mockResolvedValue(undefined);
 });
 
+describe("photoAllowanceForPlan", () => {
+  it("meters Free, unmeters Pro, and treats unknown plans like Free", () => {
+    expect(photoAllowanceForPlan("free")).toBe(5);
+    expect(photoAllowanceForPlan("pro")).toBeNull();
+    expect(photoAllowanceForPlan("legacy-tier")).toBe(5);
+  });
+});
+
 describe("generateStyledProductPhoto", () => {
-  it("consumes one credit, generates, attaches the image, returns new balance", async () => {
+  it("records usage against the Free allowance, generates, attaches, and returns what's left", async () => {
     const result = await generateStyledProductPhoto({
       tenantId: 7,
+      plan: "free",
       productId: 42,
       stylePrompt: "Clean catalogue shot on white background",
     });
 
-    expect(consumePhotoCredit).toHaveBeenCalledWith(7, "product:42");
+    expect(recordPhotoGeneration).toHaveBeenCalledWith(7, 5, "product:42");
     expect(generateImage).toHaveBeenCalledWith({
       prompt: "Clean catalogue shot on white background",
       originalImages: [
@@ -62,20 +75,34 @@ describe("generateStyledProductPhoto", () => {
         imageUrl: "https://cdn.example.com/styled.png",
       }),
     );
+    // 5 allowed − 3 used this month (post-generation count) = 2 left.
     expect(result).toEqual({
       imageUrl: "https://cdn.example.com/styled.png",
-      balance: 9,
+      remainingThisMonth: 2,
     });
     // No refund on the happy path.
     expect(addPhotoCreditEntry).not.toHaveBeenCalled();
   });
 
-  it("refunds the credit when generation fails", async () => {
+  it("is unmetered on Pro — no allowance check, null remaining", async () => {
+    const result = await generateStyledProductPhoto({
+      tenantId: 7,
+      plan: "pro",
+      productId: 42,
+      stylePrompt: "Clean catalogue shot",
+    });
+    expect(recordPhotoGeneration).toHaveBeenCalledWith(7, null, "product:42");
+    expect(result.remainingThisMonth).toBeNull();
+    expect(countPhotoGenerationsThisMonth).not.toHaveBeenCalled();
+  });
+
+  it("refunds the allowance slot when generation fails", async () => {
     generateImage.mockRejectedValue(new Error("image service down"));
 
     await expect(
       generateStyledProductPhoto({
         tenantId: 7,
+        plan: "free",
         productId: 42,
         stylePrompt: "On-model lifestyle shot",
       }),
@@ -97,6 +124,7 @@ describe("generateStyledProductPhoto", () => {
     await expect(
       generateStyledProductPhoto({
         tenantId: 7,
+        plan: "free",
         productId: 42,
         stylePrompt: "Studio light",
       }),
@@ -104,15 +132,16 @@ describe("generateStyledProductPhoto", () => {
     expect(addPhotoCreditEntry).toHaveBeenCalled();
   });
 
-  it("refuses without touching the image service when no credits remain", async () => {
-    consumePhotoCredit.mockResolvedValue(false);
+  it("refuses with an upgrade hint when the monthly allowance is used up", async () => {
+    recordPhotoGeneration.mockResolvedValue(false);
     await expect(
       generateStyledProductPhoto({
         tenantId: 7,
+        plan: "free",
         productId: 42,
         stylePrompt: "Studio light",
       }),
-    ).rejects.toThrow(/No AI photo credits left/);
+    ).rejects.toThrow(/Upgrade to Pro/);
     expect(generateImage).not.toHaveBeenCalled();
   });
 
@@ -121,11 +150,12 @@ describe("generateStyledProductPhoto", () => {
     await expect(
       generateStyledProductPhoto({
         tenantId: 7,
+        plan: "free",
         productId: 999,
         stylePrompt: "Studio light",
       }),
     ).rejects.toThrow(/Product not found/);
-    expect(consumePhotoCredit).not.toHaveBeenCalled();
+    expect(recordPhotoGeneration).not.toHaveBeenCalled();
   });
 
   it("requires a source photo on the product", async () => {
@@ -133,21 +163,23 @@ describe("generateStyledProductPhoto", () => {
     await expect(
       generateStyledProductPhoto({
         tenantId: 7,
+        plan: "free",
         productId: 42,
         stylePrompt: "Studio light",
       }),
     ).rejects.toThrow(/source photo/);
-    expect(consumePhotoCredit).not.toHaveBeenCalled();
+    expect(recordPhotoGeneration).not.toHaveBeenCalled();
   });
 
   it("requires a non-empty style prompt", async () => {
     await expect(
       generateStyledProductPhoto({
         tenantId: 7,
+        plan: "free",
         productId: 42,
         stylePrompt: "   ",
       }),
     ).rejects.toThrow(/style prompt/i);
-    expect(consumePhotoCredit).not.toHaveBeenCalled();
+    expect(recordPhotoGeneration).not.toHaveBeenCalled();
   });
 });

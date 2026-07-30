@@ -27,7 +27,7 @@ describe("ADMIN_NAV manifest", () => {
 
 describe("resolveNavAccess — role gating", () => {
   it("hides admin-only items from staff", () => {
-    const items = resolveNavAccess(ADMIN_NAV, { role: "staff", plan: "atelier" });
+    const items = resolveNavAccess(ADMIN_NAV, { role: "staff", plan: "pro" });
     const team = items.find((i) => i.id === "team");
     expect(team?.access).toBe("hidden");
   });
@@ -39,7 +39,7 @@ describe("resolveNavAccess — role gating", () => {
   });
 
   it("treats superadmin as admin for the tenant admin area", () => {
-    const items = resolveNavAccess(ADMIN_NAV, { role: "superadmin", plan: "atelier" });
+    const items = resolveNavAccess(ADMIN_NAV, { role: "superadmin", plan: "pro" });
     const team = items.find((i) => i.id === "team");
     expect(team?.access).toBe("open");
   });
@@ -56,21 +56,21 @@ describe("resolveNavAccess — plan gating", () => {
     const items = resolveNavAccess(ADMIN_NAV, { role: "admin", plan: "free" });
     const insights = items.find((i) => i.id === "insights");
     expect(insights?.access).toBe("locked");
-    expect(insights?.requiredPlan).toBe("studio");
+    expect(insights?.requiredPlan).toBe("pro");
   });
 
-  it("locks custom domain below Maker", () => {
+  it("locks custom domain below Pro", () => {
     const items = resolveNavAccess(ADMIN_NAV, { role: "admin", plan: "free" });
     expect(items.find((i) => i.id === "domain")?.access).toBe("locked");
   });
 
   it("unlocks when the plan is sufficient", () => {
-    const items = resolveNavAccess(ADMIN_NAV, { role: "admin", plan: "studio" });
+    const items = resolveNavAccess(ADMIN_NAV, { role: "admin", plan: "pro" });
     expect(items.find((i) => i.id === "insights")?.access).toBe("open");
   });
 
   it("never locks plan-free items", () => {
-    for (const plan of ["free", "maker", "studio", "atelier"] as const) {
+    for (const plan of ["free", "pro"] as const) {
       const items = resolveNavAccess(ADMIN_NAV, { role: "admin", plan });
       expect(items.find((i) => i.id === "products")?.access).toBe("open");
       expect(items.find((i) => i.id === "credits")?.access).toBe("open");

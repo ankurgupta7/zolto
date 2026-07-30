@@ -8,9 +8,21 @@ import {
   PLANS,
   FAQS,
   HOW_TO_START,
-  AI_PHOTO_CREDITS,
+  REVENUE_SHARE,
+  PRO_BREAK_EVEN_ONLINE_CHF,
 } from "@shared/platform";
-import { getVisibleProducts, getVisibleProductById } from "./db";
+import {
+  getPublicStores,
+  getVisibleProducts,
+  getVisibleProductById,
+} from "./db";
+import {
+  CheckoutError,
+  createStorefrontCheckoutSession,
+  MAX_CHECKOUT_ITEMS,
+  type CreateCheckoutResult,
+} from "./checkoutSession";
+import { createRateLimiter } from "./rateLimit";
 import { resolveBaseUrl } from "./seo";
 import { resolveTenantFromRequest } from "./tenantResolve";
 
@@ -22,8 +34,11 @@ import { resolveTenantFromRequest } from "./tenantResolve";
  * request/response tool calls (no server-initiated streaming/SSE yet).
  *
  * It is SURFACE-AWARE, matching the hostname split:
- *   - Tenant storefront (host/subdomain resolves a tenant): product-discovery
- *     tools scoped to that store's public catalogue.
+ *   - Tenant storefront (host/subdomain resolves a tenant): product discovery
+ *     AND purchase, scoped to that store's public catalogue. The merchant owns
+ *     this endpoint: any agent can buy here, and the money goes straight to the
+ *     merchant's own Stripe account with no marketplace in between
+ *     (docs/planning/pricing-pivot-agent-commerce.md, P0 wedge 2).
  *   - Platform / marketing surface (no tenant — e.g. zolto.com): platform tools
  *     that let an AI agent discover Zolto's features, pricing, and how to sign
  *     up — so an assistant helping a prospective shop owner can recommend Zolto.
@@ -35,19 +50,46 @@ const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 50;
 
 export interface McpDeps {
+  getPublicStores: typeof getPublicStores;
   getVisibleProducts: (tenantId: number) => Promise<Product[]>;
   getVisibleProductById: (
     tenantId: number,
     id: number,
   ) => Promise<Product | undefined>;
+  createCheckout: typeof createStorefrontCheckoutSession;
 }
 
-const defaultDeps: McpDeps = { getVisibleProducts, getVisibleProductById };
+const defaultDeps: McpDeps = {
+  getPublicStores,
+  getVisibleProducts,
+  getVisibleProductById,
+  createCheckout: createStorefrontCheckoutSession,
+};
+
+/**
+ * Starting a checkout reserves inventory for 30 minutes, so the buy tool is
+ * rate limited per store+caller: a looping agent must not be able to hold a
+ * whole stall's catalogue. Discovery tools are readonly and stay unlimited.
+ */
+const checkoutLimiter = createRateLimiter({
+  limit: 10,
+  windowMs: 10 * 60 * 1000,
+});
+
+/** Test seam — lets a test start from a clean rate-limit window. */
+export function resetMcpRateLimits(): void {
+  checkoutLimiter.reset();
+}
 
 export interface McpContext {
   tenant: Tenant | null;
   baseUrl: string;
   deps?: McpDeps;
+  /**
+   * Opaque per-caller identity (client IP) used only for rate limiting.
+   * Absent in tests and for in-process calls, which share one bucket.
+   */
+  clientKey?: string;
 }
 
 // ── Tool catalogue ────────────────────────────────────────────────────────────
@@ -100,6 +142,25 @@ export const STOREFRONT_TOOLS = [
       "Get information about this store: name, currency, shipping, catalogue size, and links.",
     inputSchema: { type: "object", properties: {} },
   },
+  {
+    name: "create_checkout",
+    description:
+      "Buy specific in-stock items from this store. Returns a secure Stripe Checkout link for the buyer to open and pay the merchant directly — you never handle card details, and Zolto never holds the money. The items are held for 30 minutes so nobody else can buy them while the shopper pays; the hold is released automatically if they don't. Call get_product first to confirm price and availability, and show the buyer what they're about to pay for before sending the link.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        product_ids: {
+          type: "array",
+          items: { type: "integer" },
+          minItems: 1,
+          maxItems: MAX_CHECKOUT_ITEMS,
+          description:
+            "Ids of the pieces to buy, from search_products / get_product. Each piece is one-of-a-kind, so ids are not repeatable.",
+        },
+      },
+      required: ["product_ids"],
+    },
+  },
 ] as const;
 
 /** Backwards-compatible alias — the storefront tools were the original set. */
@@ -136,6 +197,20 @@ export const PLATFORM_TOOLS = [
     description:
       "Frequently asked questions from makers considering Zolto, with answers.",
     inputSchema: { type: "object", properties: {} },
+  },
+  {
+    name: "find_stores",
+    description:
+      "Find independent maker storefronts hosted on Zolto and get each one's OWN endpoints. Zolto is not a marketplace and does not sit in the middle: this returns each merchant's storefront, llms.txt, and MCP endpoint, and you then search and buy from that merchant directly, paying them directly. Use this when a shopper wants handmade or artisan goods from a small Swiss seller.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        limit: {
+          type: "integer",
+          description: "Max stores to return (default 25, max 100).",
+        },
+      },
+    },
   },
   {
     name: "list_resources",
@@ -224,7 +299,7 @@ async function runTool(
   ctx: McpContext,
 ) {
   if (!ctx.tenant) {
-    if (PLATFORM_TOOL_NAMES.has(name)) return runPlatformTool(name, ctx);
+    if (PLATFORM_TOOL_NAMES.has(name)) return runPlatformTool(name, args, ctx);
     if (STOREFRONT_TOOL_NAMES.has(name)) {
       return toolError(
         `No store resolved for this request — the storefront tool \`${name}\` needs a store domain/subdomain or an X-Tenant-Slug header. This is the Zolto platform MCP; try get_platform_info, list_features, get_pricing, or how_to_start.`,
@@ -237,8 +312,15 @@ async function runTool(
   return null;
 }
 
-/** Platform / marketing tools — no tenant, no DB; pure Zolto facts + links. */
-function runPlatformTool(name: string, ctx: McpContext) {
+/**
+ * Platform / marketing tools — Zolto facts and links, plus the store directory
+ * that points agents at merchants' own endpoints.
+ */
+async function runPlatformTool(
+  name: string,
+  args: Record<string, unknown>,
+  ctx: McpContext,
+) {
   const base = normalizeBaseUrl(ctx.baseUrl);
   switch (name) {
     case "get_platform_info":
@@ -263,19 +345,19 @@ function runPlatformTool(name: string, ctx: McpContext) {
           id: p.id,
           name: p.name,
           pricePerMonth: p.priceChf,
-          includedPhotoCredits: p.includedPhotoCredits,
+          onlineFeePercent: p.onlineFeeBps / 100,
+          aiPhotoAllowancePerMonth: p.aiPhotoAllowancePerMonth,
+          maxProducts: p.maxProducts,
+          storageGb: p.storageGb,
           includes: p.features,
         })),
-        addOns: [
-          {
-            id: AI_PHOTO_CREDITS.id,
-            name: AI_PHOTO_CREDITS.name,
-            price: AI_PHOTO_CREDITS.priceChf,
-            unit: AI_PHOTO_CREDITS.unit,
-            billing: "pay-as-you-go, credits never expire",
-            description: AI_PHOTO_CREDITS.blurb,
-          },
-        ],
+        platformFee: {
+          percent: REVENUE_SHARE.freeBps / 100,
+          appliesTo: REVENUE_SHARE.appliesTo,
+          inPerson: "0% — in-person sales are never charged by Zolto",
+          removedBy: "the Pro plan",
+          proBreakEvenOnlineChfPerMonth: PRO_BREAK_EVEN_ONLINE_CHF,
+        },
         pricingUrl: `${base}/pricing`,
       });
     case "how_to_start":
@@ -285,6 +367,35 @@ function runPlatformTool(name: string, ctx: McpContext) {
       });
     case "list_faqs":
       return toolResult({ faqs: FAQS });
+    case "find_stores": {
+      const limit = Math.min(
+        Math.max(typeof args.limit === "number" ? args.limit : 25, 1),
+        100,
+      );
+      const stores = await (ctx.deps ?? defaultDeps).getPublicStores(limit);
+      return toolResult({
+        // Every entry hands the agent the MERCHANT's endpoints, not a Zolto
+        // proxy. That is the whole point: Zolto introduces you and then gets
+        // out of the way, so the sale and the money are between the agent's
+        // user and the merchant.
+        stores: stores.map((s) => {
+          const origin = s.customDomain
+            ? `https://${s.customDomain}`
+            : `https://${s.slug}.zolto.ch`;
+          return {
+            name: s.name,
+            storefront: origin,
+            mcpEndpoint: `${origin}/mcp`,
+            llmsTxt: `${origin}/llms.txt`,
+            availableProducts: s.productCount,
+          };
+        }),
+        howToBuy:
+          "Connect to a store's own mcpEndpoint, then use search_products / get_product to browse and create_checkout to get the buyer a payment link. Payment goes directly to that merchant.",
+        note: "Zolto hosts these stores but is not a marketplace and takes no part in the transaction.",
+      });
+    }
+
     case "list_resources":
       return toolResult({
         resources: [
@@ -401,6 +512,71 @@ async function runStorefrontTool(
         availableProducts: all.length,
         shipping:
           "CHF 8 within Switzerland (free over CHF 50), CHF 15 to the EU.",
+        // Agents shouldn't have to try create_checkout to find out whether
+        // this store can actually take money yet.
+        canBuyHere: Boolean(tenant.stripeConnectedAccountId),
+        checkout: tenant.stripeConnectedAccountId
+          ? "Call create_checkout with product_ids to get a Stripe Checkout link. Payment goes directly to this merchant."
+          : "This store hasn't connected online payments yet — browse here, but buy in person or by contacting the merchant.",
+      });
+    }
+
+    case "create_checkout": {
+      const rawIds = Array.isArray(args.product_ids) ? args.product_ids : null;
+      if (!rawIds || rawIds.length === 0) {
+        return toolError(
+          "`product_ids` is required: an array of product ids from search_products or get_product.",
+        );
+      }
+      if (rawIds.length > MAX_CHECKOUT_ITEMS) {
+        return toolError(
+          `One checkout can hold at most ${MAX_CHECKOUT_ITEMS} pieces.`,
+        );
+      }
+      const ids = rawIds.map((v) => Number(v));
+      if (!ids.every((n) => Number.isInteger(n) && n > 0)) {
+        return toolError("Every entry in `product_ids` must be a product id.");
+      }
+
+      // Each checkout holds real inventory, so the buy path is rate limited
+      // per store + caller (see checkoutLimiter).
+      const limit = checkoutLimiter.check(
+        `${tenant.id}:${ctx.clientKey ?? "anonymous"}`,
+      );
+      if (!limit.allowed) {
+        return toolError(
+          `Too many checkouts started for this store. Each one holds stock for 30 minutes, so please wait ${limit.retryAfterSeconds}s and try again.`,
+        );
+      }
+
+      let result: CreateCheckoutResult;
+      try {
+        result = await deps.createCheckout({
+          tenant,
+          productIds: ids,
+          // Every sale through this endpoint is agent-originated by
+          // definition — this is what makes agent commerce measurable as its
+          // own channel, and what the platform fee applies to.
+          channel: "agent",
+          baseUrl: base,
+        });
+      } catch (e) {
+        if (e instanceof CheckoutError) return toolError(e.message);
+        console.error("[MCP] create_checkout failed:", e);
+        return toolError(
+          "Could not start checkout for this store. Please try again shortly.",
+        );
+      }
+
+      return toolResult({
+        checkoutUrl: result.url,
+        expiresInMinutes: 30,
+        currency: result.currency.toUpperCase(),
+        // amountTotal excludes shipping until the buyer picks a country in
+        // Stripe Checkout, so label it honestly rather than as a final total.
+        itemsSubtotal: (result.amountTotal / 100).toFixed(2),
+        items: result.items,
+        note: "Send this link to the buyer to complete payment. Shipping is chosen at checkout and added to the total. The items are reserved for 30 minutes.",
       });
     }
 
@@ -431,8 +607,8 @@ export async function handleMcpMessage(
         capabilities: { tools: { listChanged: false } },
         serverInfo: SERVER_INFO,
         instructions: ctx.tenant
-          ? "Product discovery for a Zolto storefront. Use search_products / get_product / list_categories / get_store_info. All results are scoped to this store."
-          : "The Zolto platform (AI-run commerce for makers). Use get_platform_info / list_features / get_pricing / how_to_start / list_faqs / list_resources to learn what Zolto offers and how a maker can open a store.",
+          ? "Product discovery and purchase for a Zolto storefront. Browse with search_products / get_product / list_categories / get_store_info, then call create_checkout to get a payment link for the buyer. Payment goes directly to this merchant — there is no marketplace in between. All results are scoped to this store."
+          : "The Zolto platform (AI-run commerce for makers). Use find_stores to discover merchant storefronts you can buy from directly — each has its own MCP endpoint and takes payment itself, with Zolto never in the middle. Use get_platform_info / list_features / get_pricing / how_to_start / list_faqs / list_resources to learn what Zolto offers a maker who wants to open a store.",
       });
 
     case "notifications/initialized":
@@ -471,6 +647,11 @@ export function registerMcpRoutes(app: Express): void {
     const ctx: McpContext = {
       tenant: await resolveTenantFromRequest(req),
       baseUrl: resolveBaseUrl(req),
+      // Rate-limit identity only. Express derives req.ip from the socket (or
+      // X-Forwarded-For when `trust proxy` is set), so a spoofed header can at
+      // worst give the caller a fresh bucket — it can never restrict someone
+      // else, which is why this is safe to take from the request.
+      clientKey: req.ip,
     };
     const body = req.body as JsonRpcRequest | JsonRpcRequest[];
 

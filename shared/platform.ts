@@ -14,9 +14,9 @@ export const PLATFORM = {
   /** Who it's for — used in schema audience + llms briefs. */
   audience:
     "Independent makers, artisans, and small shop owners — people who sell at craft fairs, markets, and pop-ups and want an online store without hiring a developer.",
-  /** Free to start; paid plans from CHF 19/mo with a 14-day trial. */
+  /** Free in person forever; 1% on online/agent orders; Pro removes the fee. */
   pricingSummary:
-    "Free to start (no card required). Paid plans from CHF 19/month with a 14-day free trial. Month-to-month, cancel anytime.",
+    "Free to sell in person, forever (no card required). Online and AI-agent orders carry a 1% platform fee on the Free plan — a month with no online sales costs CHF 0. Pro is CHF 25/month with a 14-day free trial: 0% platform fee and unmetered AI. Month-to-month, cancel anytime.",
 } as const;
 
 export interface PlatformFeature {
@@ -94,7 +94,7 @@ export const FEATURES: PlatformFeature[] = [
     id: "payments",
     name: "Direct payments with Stripe",
     description:
-      "Connect your own Stripe account; your customers pay straight into it. Zolto never touches your money.",
+      "Connect your own Stripe account; your customers pay straight into it. Zolto never holds your money — on the Free plan a 1% platform fee applies to online and agent orders only, and in-person sales are always fee-free.",
   },
   {
     id: "storefront",
@@ -117,7 +117,7 @@ export const FEATURES: PlatformFeature[] = [
 ];
 
 export interface PlatformPlan {
-  id: "free" | "maker" | "studio" | "atelier";
+  id: "free" | "pro";
   name: string;
   priceChf: number;
   blurb: string;
@@ -125,138 +125,109 @@ export interface PlatformPlan {
   highlight?: boolean;
   features: string[];
   /**
-   * AI photo credits granted with the plan each month (see AI_PHOTO_CREDITS).
-   * Photo generation has a real per-image GPU cost, so it is metered rather
-   * than bundled as "unlimited" — plans include a monthly bucket, and extra
-   * images are pay-as-you-go.
+   * Platform fee, in basis points, applied to ONLINE and AGENT-originated
+   * orders via the Stripe Connect application fee on the tenant's direct
+   * charge. In-person (POS) sales always carry 0 from Zolto, on every plan —
+   * in-person is not our channel to tax.
    */
-  includedPhotoCredits: number;
+  onlineFeeBps: number;
+  /**
+   * AI photo generations included per month. `null` means unmetered (Pro).
+   * We never meter AI *queries* — plans scale on products/photos/storage,
+   * and the Free plan simply includes a monthly taste of photo generation.
+   */
+  aiPhotoAllowancePerMonth: number | null;
+  /** Scale limits — the only dimensions plans meter on. */
+  maxProducts: number;
+  storageGb: number;
 }
 
+/** The platform revenue share ("the skim") — one source of truth for the fee. */
+export const REVENUE_SHARE = {
+  /** Fee on online + agent-originated orders for Free-plan tenants. */
+  freeBps: 100, // 1%
+  /** Pro removes the fee entirely. */
+  proBps: 0,
+  percentLabel: "1%",
+  appliesTo: "online and AI-agent orders",
+  /** In-person sales are never Zolto's to tax, on any plan. */
+  inPersonBps: 0,
+} as const;
+
 /**
- * Pricing tiers — the source of truth for both the marketing pricing page and
- * the machine-readable Offers (JSON-LD / MCP / llms). Prices are placeholders
- * pending the VAT-inclusive-vs-exclusive decision (business-plan §7.1).
+ * Pricing tiers — the source of truth for the marketing pricing page and the
+ * machine-readable Offers (JSON-LD / MCP / llms). Two boxes only.
  *
- * Packaging rule (honest-pricing-strategy.md): we never gate a feature that
- * costs us ~nothing to run. The whole commerce engine — unlimited products,
- * full POS, an online store, real-time inventory sync, AI *text* (descriptions
- * + translation), and one-click data export — is therefore on the Free plan.
- * Paid plans sell the things that carry a real *recurring* cost: a custom
- * domain + managed SSL, human support, more staff seats, an SLA. The one AI
- * feature with a real *per-use* cost, photo generation, is metered as an
- * add-on (AI_PHOTO_CREDITS) with a monthly bucket per plan — not sold as a
- * fictional "unlimited".
+ * Packaging rule (docs/planning/pricing-pivot-agent-commerce.md): in-person
+ * commerce is free — the whole store, POS and inventory sync cost CHF 0/month
+ * and Zolto adds nothing on in-person payments. We earn only on the
+ * incremental online + agent sales we create: a 1% platform fee on the Free
+ * plan, or a flat Pro subscription that removes it and unlocks unmetered AI.
+ * Plans are metered on scale (products, photos, storage) — never on AI usage.
  */
 export const PLANS: PlatformPlan[] = [
   {
     id: "free",
     name: "Free",
     priceChf: 0,
-    blurb: "A complete store, not a demo.",
+    blurb: "A complete store. Free in person, 1% online.",
     cta: "Get started free",
-    includedPhotoCredits: 0,
+    onlineFeeBps: REVENUE_SHARE.freeBps,
+    aiPhotoAllowancePerMonth: 5,
+    maxProducts: 200,
+    storageGb: 5,
     features: [
-      "Unlimited products",
-      "Full POS — Tap to Pay, TWINT QR, cash",
+      "Full POS — Tap to Pay, TWINT QR, cash — CHF 0 on in-person sales",
       "Online store on a zolto.shop address",
       "Real-time POS ↔ online inventory sync",
       "AI descriptions & translation (fair use)",
-      "CSV & photo bulk upload",
+      "5 AI photo shots / month",
+      "Found by AI agents — llms.txt, MCP & store chat",
+      "1% platform fee on online & agent orders only",
+      "Up to 200 products · 5 GB photo storage",
       "One-click full data export",
       "Community support",
     ],
   },
   {
-    id: "maker",
-    name: "Maker",
-    priceChf: 19,
-    blurb: "For solo makers going pro.",
+    id: "pro",
+    name: "Pro",
+    priceChf: 25,
+    blurb: "For makers selling online every week.",
     cta: "Start 14-day free trial",
     highlight: true,
-    includedPhotoCredits: 10,
+    onlineFeeBps: REVENUE_SHARE.proBps,
+    aiPhotoAllowancePerMonth: null,
+    maxProducts: 5000,
+    storageGb: 50,
     features: [
       "Everything in Free",
+      "0% platform fee — keep every online sale",
+      "Unmetered AI — photos, descriptions, chat",
       "Your own custom domain + managed SSL",
       'Your brand only — no "runs on Zolto"',
-      "Human email support (next business day)",
+      "Advanced analytics & AI insights",
       "3 staff seats",
-      "10 AI photo credits / month included",
-    ],
-  },
-  {
-    id: "studio",
-    name: "Studio",
-    priceChf: 49,
-    blurb: "For small teams.",
-    cta: "Start 14-day free trial",
-    includedPhotoCredits: 40,
-    features: [
-      "Everything in Maker",
-      "10 staff seats",
-      "Advanced analytics",
-      "Priority support (same day)",
-      "Multi-currency checkout",
-      "40 AI photo credits / month included",
-    ],
-  },
-  {
-    id: "atelier",
-    name: "Atelier",
-    priceChf: 99,
-    blurb: "For growing brands.",
-    cta: "Contact sales",
-    includedPhotoCredits: 150,
-    features: [
-      "Everything in Studio",
-      "20 staff seats",
-      "API access + SSO",
-      "Audit logs",
-      "Dedicated support + SLA",
-      "150 AI photo credits / month included",
+      "Priority human support",
+      "Up to 5,000 products · 50 GB photo storage",
     ],
   },
 ];
 
+/** The Pro plan (highlighted tier) — single lookup used by fee math + upsell. */
+export const PRO_PLAN = PLANS.find((p) => p.id === "pro")!;
+
+/**
+ * Monthly online sales volume (CHF) above which Pro's flat fee beats the
+ * Free plan's 1% skim — the in-app upsell trigger. 25 / 1% = CHF 2,500.
+ */
+export const PRO_BREAK_EVEN_ONLINE_CHF = Math.round(
+  PRO_PLAN.priceChf / (REVENUE_SHARE.freeBps / 10_000),
+);
+
 export function formatPrice(chf: number): string {
   return chf === 0 ? "CHF 0" : `CHF ${chf}`;
 }
-
-export interface PlatformAddOn {
-  id: string;
-  name: string;
-  priceChf: number;
-  /** Human-readable billing unit, e.g. "per image". */
-  unit: string;
-  blurb: string;
-  points: string[];
-}
-
-/**
- * AI Photo Credits — the one AI feature metered per use, because image
- * generation costs Zolto real GPU money per image (unlike near-free text AI,
- * which is free within fair use on every plan). Pay-as-you-go and non-expiring,
- * so a maker only pays for images she actually generates — never a recurring
- * add-on fee that bills whether or not it's used. Decision + competitive
- * anchor: docs/planning/phase1/marketing/ai-photography-pitch.md.
- *
- * NOTE: CHF 1/image is the marketing anchor from that pitch; it must be
- * confirmed against Zolto's real per-image generation cost before launch.
- */
-export const AI_PHOTO_CREDITS: PlatformAddOn = {
-  id: "ai-photo-credits",
-  name: "AI Photo Credits",
-  priceChf: 1,
-  unit: "per image",
-  blurb:
-    "Turn one rough phone photo into a clean catalogue shot or a full lifestyle image — no photographer, model, or studio.",
-  points: [
-    "CHF 1 per image, pay-as-you-go — buy credits and use them whenever.",
-    "Credits never expire and there's no monthly commitment.",
-    "Metered because image generation costs us real money per image — so you pay for images you actually make, not a fee that bills whether you use it or not.",
-    "Every AI-styled image is disclosed as AI-generated.",
-  ],
-};
 
 /**
  * The positioning thesis, as structured facts the marketing surface renders and
@@ -277,14 +248,14 @@ export const POSITIONING = {
 
 /** The written pricing pledge — the emotional core of the positioning. */
 export const PRICING_PROMISE = {
-  headline: "We only make money when it's fair to.",
+  headline: "You don't pay us until the internet pays you.",
   pledge:
-    "We will never charge you for anything that isn't charged to us. No card reader to buy. No lock-in. No surprises on the bill.",
+    "Selling in person is free, forever — your store, POS and inventory cost CHF 0/month, and Zolto adds nothing on in-person payments. We only earn on the online and AI-agent sales we help create.",
   points: [
-    "Your store, POS, catalogue and data export are free — we never charge for what costs us nothing to run.",
-    "Extras with a real cost, like AI photo generation, are pay-as-you-go — never padded into a monthly fee you pay whether you use them or not.",
-    "Your customers pay into your own Stripe account — we take 0% of your sales and never touch your money.",
-    "If we ever stop being the honest, cheapest option for a maker your size, we've failed at our one job.",
+    "In person is free forever: full POS, inventory sync and your online storefront at CHF 0/month, with no Zolto fee on market-stall sales.",
+    "Online and AI-agent orders carry a 1% platform fee on the Free plan — a month with no online sales costs you CHF 0.",
+    "Pro (CHF 25/month) removes the 1% entirely and unlocks unmetered AI. Past roughly CHF 2,500/month online, Pro is the cheaper choice — we'll tell you in-app when you get there.",
+    "We never meter AI queries. Plans scale on products, photos and storage — not on how often you talk to the AI.",
   ],
 } as const;
 
@@ -329,7 +300,7 @@ export const INCUMBENT_COMPARISON: ComparisonRow[] = [
   {
     feature: "Pricing",
     them: "Opaque tiers, surprise fees",
-    us: "We never charge for what isn't charged to us",
+    us: "Free in person. 1% online, or flat CHF 25",
   },
   {
     feature: "Your money",
@@ -390,7 +361,7 @@ export const FAQS: Faq[] = [
   },
   {
     q: "How much does it cost?",
-    a: "There's a free plan (no card required). Paid plans start at CHF 19/month for the Maker plan, with a 14-day free trial. Plans are month-to-month — cancel anytime.",
+    a: "Selling in person is free, forever — the store, POS and inventory sync cost CHF 0/month and Zolto adds nothing on in-person payments. Online and AI-agent orders carry a 1% platform fee on the Free plan (a month with no online sales costs CHF 0). Pro is CHF 25/month with a 14-day free trial: it removes the 1% and unlocks unmetered AI. Month-to-month — cancel anytime.",
   },
   {
     q: "Can I sell both in person and online?",
@@ -398,7 +369,7 @@ export const FAQS: Faq[] = [
   },
   {
     q: "How do I get paid?",
-    a: "You connect your own Stripe account and your customers pay directly into it. Zolto never holds your money.",
+    a: "You connect your own Stripe account and your customers pay directly into it — Zolto never holds your money. On the Free plan a 1% platform fee is taken automatically on online and AI-agent orders only; in-person sales are always fee-free, and Pro removes the fee entirely.",
   },
   {
     q: "Do I need to buy a card reader?",
@@ -406,7 +377,7 @@ export const FAQS: Faq[] = [
   },
   {
     q: "How is Zolto cheaper than Stripe, SumUp, or Worldline?",
-    a: "Those tools were built for an era when websites were hard and a card reader was king, so they charge for hardware, setup, and lock-in — easily around CHF 2,000 a year. AI builds your store in an afternoon and your phone is the terminal, so the real cost is tiny. Zolto passes that saving on: paid plans start at CHF 19/month, roughly one-hundredth of the old way, and we never charge for anything that isn't charged to us.",
+    a: "Those tools were built for an era when websites were hard and a card reader was king, so they charge for hardware, setup, and lock-in — easily around CHF 2,000 a year. AI builds your store in an afternoon and your phone is the terminal, so the real cost is tiny. Zolto passes that saving on: selling in person is free, online orders carry just a 1% platform fee on the Free plan, and Pro is a flat CHF 25/month — roughly one-hundredth of the old way.",
   },
   {
     q: "What if I keep my inventory in a notebook?",

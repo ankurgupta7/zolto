@@ -3,6 +3,9 @@ import {
   PLATFORM,
   FEATURES,
   PLANS,
+  PRO_PLAN,
+  PRO_BREAK_EVEN_ONLINE_CHF,
+  REVENUE_SHARE,
   FAQS,
   HOW_TO_START,
   formatPrice,
@@ -11,7 +14,6 @@ import {
   COST_COMPARISON,
   INCUMBENT_COMPARISON,
   SELLING_FLOW,
-  AI_PHOTO_CREDITS,
 } from "./platform";
 
 describe("platform facts", () => {
@@ -31,52 +33,47 @@ describe("platform facts", () => {
     }
   });
 
-  it("has a free plan and ascending paid prices", () => {
+  it("ships exactly two tiers: Free first, Pro highlighted", () => {
+    expect(PLANS.map((p) => p.id)).toEqual(["free", "pro"]);
     expect(PLANS[0].priceChf).toBe(0);
-    const paid = PLANS.map((p) => p.priceChf);
-    for (let i = 1; i < paid.length; i++) {
-      expect(paid[i]).toBeGreaterThanOrEqual(paid[i - 1]);
-    }
-    // exactly one highlighted plan
-    expect(PLANS.filter((p) => p.highlight).length).toBe(1);
+    expect(PRO_PLAN.priceChf).toBeGreaterThan(0);
+    expect(PLANS.filter((p) => p.highlight)).toEqual([PRO_PLAN]);
   });
 
-  it("keeps the free plan a complete store, not a capped demo", () => {
-    const free = PLANS.find((p) => p.id === "free");
-    expect(free).toBeTruthy();
-    const text = free!.features.join(" | ");
-    // Zero-marginal-cost features are free, not gated behind a paywall.
-    expect(text).toMatch(/unlimited products/i);
-    expect(text).toMatch(/data export/i);
-    // The old manufactured-scarcity caps must not come back.
-    expect(text).not.toMatch(/up to 50 products/i);
-    expect(text).not.toMatch(/\d+\s*AI descriptions?\s*\/?\s*month/i);
+  it("monetizes online/agent sales only — never in person", () => {
+    const free = PLANS.find((p) => p.id === "free")!;
+    // Free carries the skim on online + agent orders; Pro removes it.
+    expect(free.onlineFeeBps).toBe(REVENUE_SHARE.freeBps);
+    expect(free.onlineFeeBps).toBeGreaterThan(0);
+    expect(PRO_PLAN.onlineFeeBps).toBe(0);
+    // In-person is not our channel to tax, on any plan.
+    expect(REVENUE_SHARE.inPersonBps).toBe(0);
+    // The skim is disclosed on the Free plan card itself.
+    expect(free.features.join(" | ")).toMatch(/1% platform fee/i);
   });
 
-  it("meters AI photo generation instead of bundling it as 'unlimited'", () => {
-    // "Unlimited AI" hides a real per-image GPU cost — it must not appear on any plan.
-    for (const plan of PLANS) {
-      for (const f of plan.features) {
-        expect(f.toLowerCase()).not.toContain("unlimited ai");
-      }
-    }
-    // Photo credits are a real, priced, metered add-on.
-    expect(AI_PHOTO_CREDITS.priceChf).toBeGreaterThan(0);
-    expect(AI_PHOTO_CREDITS.unit.length).toBeGreaterThan(0);
-    expect(AI_PHOTO_CREDITS.points.length).toBeGreaterThanOrEqual(3);
-    expect(AI_PHOTO_CREDITS.points.join(" ").toLowerCase()).toContain(
-      "never expire",
+  it("keeps the Pro break-even at the locked upsell trigger (~CHF 2,500/mo)", () => {
+    expect(PRO_BREAK_EVEN_ONLINE_CHF).toBe(
+      Math.round(PRO_PLAN.priceChf / (REVENUE_SHARE.freeBps / 10_000)),
     );
+    expect(PRO_BREAK_EVEN_ONLINE_CHF).toBe(2500);
   });
 
-  it("includes a non-decreasing monthly photo-credit bucket per plan", () => {
-    const buckets = PLANS.map((p) => p.includedPhotoCredits);
-    expect(PLANS[0].includedPhotoCredits).toBe(0); // Free: pay-as-you-go only
-    for (let i = 1; i < buckets.length; i++) {
-      expect(buckets[i]).toBeGreaterThanOrEqual(buckets[i - 1]);
+  it("meters on scale (products, storage) — never on AI queries", () => {
+    const free = PLANS.find((p) => p.id === "free")!;
+    // Scale limits exist and grow with the tier.
+    expect(free.maxProducts).toBeGreaterThan(0);
+    expect(PRO_PLAN.maxProducts).toBeGreaterThan(free.maxProducts);
+    expect(PRO_PLAN.storageGb).toBeGreaterThan(free.storageGb);
+    // Free gets a taste of AI photo generation; Pro is unmetered (null).
+    expect(free.aiPhotoAllowancePerMonth).toBeGreaterThan(0);
+    expect(PRO_PLAN.aiPhotoAllowancePerMonth).toBeNull();
+    // No plan may reintroduce per-query AI caps ("N AI descriptions/month").
+    for (const plan of PLANS) {
+      expect(plan.features.join(" ")).not.toMatch(
+        /\d+\s*AI descriptions?\s*\/?\s*month/i,
+      );
     }
-    // Paid plans actually grant credits.
-    expect(buckets[buckets.length - 1]).toBeGreaterThan(0);
   });
 
   it("has FAQs and getting-started steps", () => {
@@ -100,10 +97,17 @@ describe("platform facts", () => {
     expect(POSITIONING.shifts.length).toBe(2);
   });
 
-  it("carries a written pricing pledge", () => {
+  it("carries a written pricing pledge matching the fee model", () => {
     expect(PRICING_PROMISE.headline.length).toBeGreaterThan(0);
-    expect(PRICING_PROMISE.pledge.toLowerCase()).toContain("never charge");
+    expect(PRICING_PROMISE.pledge.toLowerCase()).toContain(
+      "selling in person is free",
+    );
     expect(PRICING_PROMISE.points.length).toBeGreaterThanOrEqual(3);
+    const points = PRICING_PROMISE.points.join(" ");
+    // The pledge and the fee constants must tell the same story.
+    expect(points).toContain(REVENUE_SHARE.percentLabel);
+    expect(points).toContain(String(PRO_PLAN.priceChf));
+    expect(points).toContain("2,500");
   });
 
   it("keeps the cost comparison in sync with the highlighted plan", () => {

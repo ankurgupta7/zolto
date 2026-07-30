@@ -20,11 +20,16 @@ if [ ! -f .env ]; then
   exit 1
 fi
 
-# Load DB creds the same way update.sh does.
-set -a
-# shellcheck source=/dev/null
-source <(grep -v '^\s*#' .env | grep -v '^\s*$')
-set +a
+# Parse .env literally via the shared loader. NEVER `source` it: this script
+# used to, and a value like RESEND_FROM_EMAIL=Zolto <orders@zolto.ch> was then
+# read as a shell redirect — producing "/dev/fd/63: line N: orders@zolto.ch: No
+# such file or directory" before any query ran. See deploy/lib/env.sh.
+# shellcheck source=lib/env.sh
+. "$(dirname "$0")/lib/env.sh"
+load_dotenv .env || {
+  echo "ERROR: could not read .env" >&2
+  exit 1
+}
 
 : "${MYSQL_USER:?MYSQL_USER not set in .env}"
 : "${MYSQL_PASSWORD:?MYSQL_PASSWORD not set in .env}"

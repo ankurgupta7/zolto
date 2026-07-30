@@ -1,6 +1,6 @@
 /**
  * Staff router — team seat management within a plan's seat limit
- * (PLAN_FEATURES.maxStaff: free 1 / maker 3 / studio 10 / atelier 20).
+ * (PLAN_FEATURES.maxStaff: free 1 / pro 3).
  *
  * A seat is occupied by a users row with role admin/staff OR held by a pending
  * invite, so a merchant can't invite more people than their plan allows and

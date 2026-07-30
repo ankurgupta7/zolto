@@ -1,25 +1,15 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import {
-  render,
-  screen,
-  fireEvent,
-  cleanup,
-} from "@testing-library/react";
+import { render, screen, cleanup } from "@testing-library/react";
 import Credits from "./Credits";
 
 const mocks = vi.hoisted(() => ({
   authState: { user: { role: "admin" } as { role: string } | null },
   statusData: {
-    photoCredits: {
-      balance: 7,
-      monthlyBucket: 10,
-      priceChf: 1,
-      unit: "per image",
-    },
+    plan: "free",
+    ai: { allowancePerMonth: 5, usedThisMonth: 2 },
     billingConfigured: true,
   } as Record<string, unknown> | undefined,
   historyData: [] as unknown[],
-  purchase: vi.fn(),
 }));
 
 vi.mock("@/_core/hooks/useAuth", () => ({ useAuth: () => mocks.authState }));
@@ -34,9 +24,6 @@ vi.mock("@/lib/trpc", () => ({
     billing: {
       getStatus: { useQuery: () => ({ data: mocks.statusData }) },
       photoCreditHistory: { useQuery: () => ({ data: mocks.historyData }) },
-      purchasePhotoCredits: {
-        useMutation: () => ({ mutate: mocks.purchase, isPending: false }),
-      },
     },
   },
 }));
@@ -45,33 +32,49 @@ beforeEach(() => {
   vi.clearAllMocks();
   mocks.authState.user = { role: "admin" };
   mocks.statusData = {
-    photoCredits: { balance: 7, monthlyBucket: 10, priceChf: 1, unit: "per image" },
+    plan: "free",
+    ai: { allowancePerMonth: 5, usedThisMonth: 2 },
     billingConfigured: true,
   };
+  mocks.historyData = [];
   window.history.replaceState({}, "", "/admin/account/credits");
 });
 afterEach(() => cleanup());
 
-describe("Credits page", () => {
-  it("shows the balance and monthly grant", () => {
+describe("Credits (AI usage) page", () => {
+  it("shows Free-plan allowance usage and the Pro upgrade pointer", () => {
     render(<Credits />);
-    expect(screen.getByText("7")).toBeTruthy();
-    expect(screen.getByText("10")).toBeTruthy();
+    expect(screen.getByText("2 / 5")).toBeTruthy();
+    expect(screen.getByText(/Want unmetered AI/)).toBeTruthy();
+    // Text AI is explicitly never counted.
+    expect(screen.getByText("Not counted")).toBeTruthy();
   });
 
-  it("starts a top-up checkout when a pack is clicked", () => {
-    render(<Credits />);
-    fireEvent.click(screen.getByText("+50"));
-    expect(mocks.purchase).toHaveBeenCalledWith({ quantity: 50 });
-  });
-
-  it("hides top-up packs when billing isn't configured", () => {
+  it("shows unmetered on Pro, with no upgrade pointer", () => {
     mocks.statusData = {
-      photoCredits: { balance: 0, monthlyBucket: 0, priceChf: 1, unit: "per image" },
-      billingConfigured: false,
+      plan: "pro",
+      ai: { allowancePerMonth: null, usedThisMonth: null },
+      billingConfigured: true,
     };
     render(<Credits />);
-    expect(screen.queryByText("+50")).toBeNull();
-    expect(screen.getByText(/aren't purchasable/)).toBeTruthy();
+    expect(screen.getByText("Unmetered")).toBeTruthy();
+    expect(screen.queryByText(/Want unmetered AI/)).toBeNull();
+  });
+
+  it("never offers credit packs for sale — AI is not sold per query", () => {
+    render(<Credits />);
+    expect(screen.queryByText(/\+50/)).toBeNull();
+    expect(screen.queryByText(/per image/)).toBeNull();
+    expect(screen.queryByText(/Buy more credits/)).toBeNull();
+  });
+
+  it("labels historical (pre-pivot) ledger entries in the log", () => {
+    mocks.historyData = [
+      { id: 1, delta: -1, kind: "consumption", createdAt: new Date() },
+      { id: 2, delta: 10, kind: "purchase", createdAt: new Date() },
+    ];
+    render(<Credits />);
+    expect(screen.getByText("AI photo generated")).toBeTruthy();
+    expect(screen.getByText("Top-up purchase (pre-pivot)")).toBeTruthy();
   });
 });

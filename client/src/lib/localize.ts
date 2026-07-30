@@ -12,6 +12,8 @@ export interface LocalizableProduct {
   descriptionDe?: string | null;
   nameFr?: string | null;
   descriptionFr?: string | null;
+  nameIt?: string | null;
+  descriptionIt?: string | null;
 }
 
 type TranslatableField = "name" | "description";
@@ -24,14 +26,17 @@ function pick(
   const primary = product[field] ?? "";
   const lang = language.toLowerCase();
   const key = (field === "name" ? "name" : "description") as
-    "name" | "description";
+    | "name"
+    | "description";
   const suffix = lang.startsWith("fr")
     ? "Fr"
-    : lang.startsWith("en")
-      ? "En"
-      : lang.startsWith("de")
-        ? "De"
-        : null;
+    : lang.startsWith("it")
+      ? "It"
+      : lang.startsWith("en")
+        ? "En"
+        : lang.startsWith("de")
+          ? "De"
+          : null;
   if (suffix) {
     const translated = product[
       `${key}${suffix}` as keyof LocalizableProduct

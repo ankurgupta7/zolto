@@ -400,9 +400,10 @@ describe("DB operation timeout", () => {
     await assertion;
 
     // The whole point: a timed-out query destroys its connection instead of
-    // leaving it (and whatever it was doing server-side) orphaned.
+    // leaving it (and whatever it was doing server-side) orphaned. (The
+    // plan-capacity lookup that precedes the insert is a normal read on its
+    // own connection, which is released — only the hung write is destroyed.)
     expect(mockConnection.destroy).toHaveBeenCalledTimes(1);
-    expect(mockConnection.release).not.toHaveBeenCalled();
   });
 
   it("falls back to the default for a read that hangs past the timeout", async () => {

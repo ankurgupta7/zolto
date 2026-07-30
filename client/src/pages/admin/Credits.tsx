@@ -1,129 +1,89 @@
 /**
- * AI credits (account plane) — the one metered resource, given a first-class
- * surface (docs/ARCHITECTURE-ADMIN.md §7). Balance is a derived sum over the
- * photo-credit ledger; the page shows the current balance, the monthly plan
- * grant, pay-as-you-go top-up packs, and the ledger for transparency. Stripe
- * returns here with ?credits=1 after a successful purchase.
+ * AI usage (account plane) — docs/ARCHITECTURE-ADMIN.md §7.
+ *
+ * Post-pivot (two-tier pricing) there is nothing to buy here: AI photo
+ * generation is included with the plan — a monthly allowance on Free (the
+ * "taste of AI"), unmetered on Pro. Queries are never the meter. The page
+ * shows this month's usage and the generation log for transparency.
  */
-import { useEffect } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
-import { toast } from "sonner";
-import { useLocation } from "wouter";
 import { Sparkles } from "lucide-react";
-import {
-  PageHeader,
-  SettingsCard,
-  PrimaryButton,
-  AdminOnly,
-} from "@/components/admin/ui";
-
-const CREDIT_PACKS = [10, 25, 50, 100] as const;
+import { Link } from "wouter";
+import { PageHeader, SettingsCard, AdminOnly } from "@/components/admin/ui";
 
 const LEDGER_LABELS: Record<string, string> = {
-  monthly_grant: "Monthly plan bucket",
-  purchase: "Top-up purchase",
+  monthly_grant: "Plan bucket (pre-pivot)",
+  purchase: "Top-up purchase (pre-pivot)",
   consumption: "AI photo generated",
+  manual_adjustment: "Adjustment",
   refund: "Refund (generation failed)",
 };
 
 export default function Credits() {
   const { user } = useAuth();
-  const [location, navigate] = useLocation();
-  const utils = trpc.useUtils();
 
   const status = trpc.billing.getStatus.useQuery(undefined, { retry: false });
   const history = trpc.billing.photoCreditHistory.useQuery(undefined, {
     retry: false,
   });
 
-  const purchase = trpc.billing.purchasePhotoCredits.useMutation({
-    onSuccess: (data) => {
-      if (data?.url) window.location.href = data.url;
-    },
-    onError: (e) => toast.error(e.message || "Could not start checkout."),
-  });
-
-  // Stripe redirects back with ?credits=1 on a successful top-up.
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("credits") === "1") {
-      toast.success("Credits added to your balance.");
-      utils.billing.getStatus.invalidate();
-      utils.billing.photoCreditHistory.invalidate();
-      navigate(location.split("?")[0], { replace: true });
-    }
-  }, [location, navigate, utils]);
-
   if (user && user.role !== "admin" && user.role !== "superadmin") {
     return <AdminOnly />;
   }
 
-  const credits = status.data?.photoCredits;
-  const billingConfigured = status.data?.billingConfigured ?? false;
+  const ai = status.data?.ai;
+  const unmetered = ai != null && ai.allowancePerMonth === null;
 
   return (
     <div>
       <PageHeader
-        title="AI credits"
-        description="Credits power AI product photos. Your plan grants some each month; buy more any time."
+        title="AI usage"
+        description="AI photo generation is included with your plan — a monthly allowance on Free, unmetered on Pro. Queries are never the meter."
       />
 
-      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="rounded-xl border bg-card p-5">
           <div className="flex items-center gap-2 text-muted-foreground">
             <Sparkles className="h-4 w-4" />
             <span className="text-xs font-medium uppercase tracking-wide">
-              Balance
+              AI photo shots this month
             </span>
           </div>
           <p className="mt-2 text-3xl font-semibold tabular-nums text-foreground">
-            {credits?.balance ?? "—"}
+            {ai == null
+              ? "—"
+              : unmetered
+                ? "Unmetered"
+                : `${ai.usedThisMonth} / ${ai.allowancePerMonth}`}
           </p>
         </div>
         <div className="rounded-xl border bg-card p-5">
           <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Monthly plan grant
+            Descriptions, translations &amp; chat
           </span>
-          <p className="mt-2 text-3xl font-semibold tabular-nums text-foreground">
-            {credits?.monthlyBucket ?? 0}
-          </p>
-        </div>
-        <div className="rounded-xl border bg-card p-5">
-          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Price per credit
-          </span>
-          <p className="mt-2 text-3xl font-semibold tabular-nums text-foreground">
-            {credits ? `CHF ${credits.priceChf}` : "—"}
+          <p className="mt-2 text-3xl font-semibold text-foreground">
+            Not counted
           </p>
         </div>
       </div>
 
-      <SettingsCard
-        title="Buy more credits"
-        description={credits?.unit ? `Charged ${credits.unit}. Purchased credits never expire.` : undefined}
-      >
-        {billingConfigured ? (
-          <div className="flex flex-wrap gap-3">
-            {CREDIT_PACKS.map((qty) => (
-              <PrimaryButton
-                key={qty}
-                onClick={() => purchase.mutate({ quantity: qty })}
-                loading={purchase.isPending}
-              >
-                +{qty}
-              </PrimaryButton>
-            ))}
-          </div>
-        ) : (
+      {ai != null && !unmetered && (
+        <SettingsCard
+          title="Want unmetered AI?"
+          description="Pro removes the monthly allowance entirely — and the 1% online fee with it."
+        >
           <p className="text-sm text-muted-foreground">
-            Credits aren't purchasable on this deployment yet — billing isn't
-            configured.
+            Upgrade under{" "}
+            <Link href="/admin/account/plan" className="underline">
+              Plan &amp; billing
+            </Link>
+            . Your allowance also resets automatically each month.
           </p>
-        )}
-      </SettingsCard>
+        </SettingsCard>
+      )}
 
-      <SettingsCard title="History">
+      <SettingsCard title="Generation log">
         {history.data && history.data.length > 0 ? (
           <ul className="divide-y">
             {history.data.map((row) => {
@@ -153,7 +113,7 @@ export default function Credits() {
             })}
           </ul>
         ) : (
-          <p className="text-sm text-muted-foreground">No credit activity yet.</p>
+          <p className="text-sm text-muted-foreground">No AI activity yet.</p>
         )}
       </SettingsCard>
     </div>

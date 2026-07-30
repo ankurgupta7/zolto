@@ -46,6 +46,8 @@ function product(over: Record<string, unknown> = {}) {
     descriptionDe: null,
     nameFr: null,
     descriptionFr: null,
+    nameIt: null,
+    descriptionIt: null,
     ...over,
   };
 }
@@ -159,6 +161,8 @@ describe("products.translateProductLocales", () => {
         descriptionDe: "Ein Ring",
         nameFr: "Bague",
         descriptionFr: "Une bague",
+        nameIt: "Anello",
+        descriptionIt: "Un anello",
       }),
     );
     const res = await caller.translateProductLocales({ productId: 7 });
@@ -174,7 +178,7 @@ describe("products.translateProductLocales", () => {
     await caller.translateProductLocales({ productId: 7 });
     const user = llmMock.invokeLLM.mock.calls[0][0].messages[1]
       .content as string;
-    expect(JSON.parse(user).locales).toEqual(["de", "fr"]);
+    expect(JSON.parse(user).locales).toEqual(["de", "fr", "it"]);
   });
 
   it("re-translates everything when overwrite is set", async () => {
@@ -184,7 +188,7 @@ describe("products.translateProductLocales", () => {
     await caller.translateProductLocales({ productId: 7, overwrite: true });
     const user = llmMock.invokeLLM.mock.calls[0][0].messages[1]
       .content as string;
-    expect(JSON.parse(user).locales).toEqual(["en", "de", "fr"]);
+    expect(JSON.parse(user).locales).toEqual(["en", "de", "fr", "it"]);
   });
 
   it("throws NOT_FOUND for a missing product", async () => {

@@ -289,8 +289,8 @@ export const tenantRouter = router({
 
   // ─── Admin: Update tenant settings ────────────────────────────────────────
   // Paid-tier fields are gated by the tenant's plan (PLAN_FEATURES):
-  //   publicDomain — custom domain, from the Maker plan up
-  //   currency     — anything other than CHF needs multi-currency (Studio up)
+  //   publicDomain — custom domain, Pro plan
+  //   currency     — anything other than CHF needs multi-currency (Pro plan)
   // The checks live inline (not as middleware) because the same procedure also
   // accepts ungated branding fields on every plan.
   updateSettings: publicProcedure
@@ -337,8 +337,7 @@ export const tenantRouter = router({
       if (input.publicDomain !== undefined && !features.customDomain) {
         throw new TRPCError({
           code: "FORBIDDEN",
-          message:
-            "A custom domain requires the Maker plan or above. Please upgrade.",
+          message: "A custom domain requires the Pro plan. Please upgrade.",
         });
       }
       if (
@@ -349,7 +348,7 @@ export const tenantRouter = router({
         throw new TRPCError({
           code: "FORBIDDEN",
           message:
-            "Multi-currency checkout requires the Studio plan or above. Please upgrade.",
+            "Multi-currency checkout requires the Pro plan. Please upgrade.",
         });
       }
 
@@ -381,6 +380,17 @@ export const tenantRouter = router({
     .use(requireTenant)
     .query(async ({ ctx }) => {
       if (ctx.user!.tenantId !== ctx.tenant.id) {
+        // Logged because the merchant-facing symptom is indistinguishable from
+        // "Connect isn't configured" — both leave the client without a URL. The
+        // usual cause is a session bound to a different tenant (e.g. the
+        // platform owner, or a stale cookie) browsing a tenant subdomain, and
+        // without this line there is nothing anywhere that says so.
+        console.warn(
+          `[StripeConnect] Refusing getStripeConnectUrl: user ${ctx.user!.id} ` +
+            `belongs to tenant ${ctx.user!.tenantId} but is browsing tenant ` +
+            `${ctx.tenant.id} (${ctx.tenant.slug}). Sign in as an admin of ` +
+            `that store.`,
+        );
         throw new TRPCError({
           code: "FORBIDDEN",
           message: NOT_ADMIN_ERR_MSG,

@@ -1,27 +1,29 @@
 /**
- * Zolto's own subscription billing — charging MERCHANTS for their plan
- * (free / maker / studio / atelier) and for pay-as-you-go AI photo credits.
+ * Zolto's own subscription billing — charging MERCHANTS for the Pro plan
+ * (free / pro, see shared/platform.ts PLANS).
  *
  * This is entirely separate from storefront payments: a tenant's customers
  * pay into the tenant's own Stripe account via Connect (server/stripeConnect.ts);
  * everything here runs on Zolto's own (platform) Stripe account against the
- * tenant's stripeCustomerId / stripeSubscriptionId.
+ * tenant's stripeCustomerId / stripeSubscriptionId. The Free plan's 1%
+ * online/agent fee is not billed here at all — it's a Stripe Connect
+ * application fee taken per direct charge (server/routers/checkout.ts).
  *
  * Required env vars (in addition to STRIPE_SECRET_KEY / STRIPE_WEBHOOK_SECRET):
- *   STRIPE_PRICE_MAKER    – Stripe Price id (price_...) for Maker, CHF 19/mo
- *   STRIPE_PRICE_STUDIO   – Stripe Price id for Studio, CHF 49/mo
- *   STRIPE_PRICE_ATELIER  – Stripe Price id for Atelier, CHF 99/mo
- *   STRIPE_PRICE_PHOTO_CREDIT – one-time Price id for a single AI photo credit
- *                               (CHF 1); purchased in packs via quantity.
+ *   STRIPE_PRICE_PRO – Stripe Price id (price_...) for Pro, CHF 25/mo
+ *
+ * Optional, for tenants who subscribed before the two-tier pivot:
+ *   STRIPE_PRICE_MAKER / _STUDIO / _ATELIER – the retired tiers' Price ids.
+ *   Nobody can subscribe to these any more; they exist so a legacy
+ *   subscriber's webhooks still resolve to a plan. See LEGACY_PRICE_ENV.
  *
  * Events are delivered to the existing platform webhook (/api/stripe/webhook);
  * server/stripe.ts delegates billing-shaped events to handleBillingEvent below.
  */
 
 import type Stripe from "stripe";
-import { PLANS, AI_PHOTO_CREDITS, type PlatformPlan } from "@shared/platform";
+import { type PlatformPlan } from "@shared/platform";
 import {
-  addPhotoCreditEntry,
   getTenantById,
   getTenantByStripeCustomerId,
   getTenantByStripeSubscriptionId,
@@ -33,22 +35,49 @@ import { getStripe } from "./stripe";
 /** Paid plan ids, as both the DB enum and shared/platform.ts PLANS name them. */
 export type PaidPlanId = Exclude<PlatformPlan["id"], "free">;
 
-/** plan id → Stripe Price env var. */
+/** plan id → Stripe Price env var. Only sellable plans belong here. */
 const PRICE_ENV: Record<PaidPlanId, string> = {
-  maker: "STRIPE_PRICE_MAKER",
-  studio: "STRIPE_PRICE_STUDIO",
-  atelier: "STRIPE_PRICE_ATELIER",
+  pro: "STRIPE_PRICE_PRO",
 };
+
+/**
+ * Retired tiers, kept for INVERSE lookup only.
+ *
+ * Migration 0008 moved every Maker/Studio/Atelier tenant to `plan = 'pro'`,
+ * but their Stripe subscriptions still bill the old Price. Without this map,
+ * `planForPriceId` returns null for those subscriptions, `handleSubscriptionUpdated`
+ * skips the plan write, and a legacy subscriber's plan silently stops syncing
+ * with Stripe — so a cancellation or payment failure wouldn't move them.
+ *
+ * They map to "pro" because that is what migration 0008 granted them: the old
+ * tiers were all supersets of today's Pro, so nobody loses access. What they
+ * do NOT get is the new price — see planPriceOverride below, and the migration
+ * runbook in docs/planning/pricing-pivot-agent-commerce.md.
+ */
+const LEGACY_PRICE_ENV = [
+  "STRIPE_PRICE_MAKER",
+  "STRIPE_PRICE_STUDIO",
+  "STRIPE_PRICE_ATELIER",
+] as const;
 
 function priceIdForPlan(plan: PaidPlanId): string | null {
   return process.env[PRICE_ENV[plan]] || null;
 }
 
-/** Inverse lookup: Stripe Price id → plan id (used by webhook sync). */
+/** Is this Price id one of the retired pre-pivot tiers? */
+export function isLegacyPriceId(priceId: string): boolean {
+  return LEGACY_PRICE_ENV.some((v) => process.env[v] === priceId);
+}
+
+/**
+ * Inverse lookup: Stripe Price id → plan id (used by webhook sync). Legacy
+ * tier prices resolve to "pro" so grandfathered subscribers keep syncing.
+ */
 export function planForPriceId(priceId: string): PaidPlanId | null {
   for (const plan of Object.keys(PRICE_ENV) as PaidPlanId[]) {
     if (process.env[PRICE_ENV[plan]] === priceId) return plan;
   }
+  if (isLegacyPriceId(priceId)) return "pro";
   return null;
 }
 
@@ -56,11 +85,6 @@ export function isBillingConfigured(): boolean {
   return (Object.keys(PRICE_ENV) as PaidPlanId[]).every((p) =>
     Boolean(priceIdForPlan(p)),
   );
-}
-
-/** The monthly photo-credit bucket a plan includes (from shared/platform.ts). */
-export function monthlyPhotoCredits(plan: PlatformPlan["id"]): number {
-  return PLANS.find((p) => p.id === plan)?.includedPhotoCredits ?? 0;
 }
 
 function resolveBaseUrl(req?: { headers?: { origin?: string } }): string {
@@ -73,6 +97,8 @@ function resolveBaseUrl(req?: { headers?: { origin?: string } }): string {
 
 // Metadata keys marking a Checkout Session as billing (ours) rather than a
 // tenant storefront order (which server/stripe.ts fulfillOrder handles).
+// "photo_credits" survives only as a recognized-but-retired kind so a stale
+// pre-pivot checkout completing after deploy is logged instead of crashing.
 const META_KIND = "zoltoBilling";
 const KIND_PLAN = "plan_subscription";
 const KIND_PHOTO_CREDITS = "photo_credits";
@@ -132,49 +158,6 @@ export async function createPlanCheckoutSession(params: {
   return { url: session.url };
 }
 
-/**
- * Create a one-time Checkout Session for a pack of AI photo credits
- * (CHF 1 each, pay-as-you-go, non-expiring — see AI_PHOTO_CREDITS).
- */
-export async function createPhotoCreditCheckoutSession(params: {
-  tenant: Tenant;
-  quantity: number;
-  req?: { headers?: { origin?: string } };
-}): Promise<{ url: string }> {
-  const stripe = getStripe();
-  if (!stripe) throw new Error("Stripe is not configured");
-  const priceId = process.env.STRIPE_PRICE_PHOTO_CREDIT;
-  if (!priceId) {
-    throw new Error("STRIPE_PRICE_PHOTO_CREDIT is not configured");
-  }
-  if (
-    !Number.isInteger(params.quantity) ||
-    params.quantity < 1 ||
-    params.quantity > 1000
-  ) {
-    throw new Error("Quantity must be an integer between 1 and 1000");
-  }
-  if (!params.tenant.stripeCustomerId) {
-    throw new Error("Tenant has no Stripe customer — contact support");
-  }
-
-  const base = resolveBaseUrl(params.req);
-  const session = await stripe.checkout.sessions.create({
-    mode: "payment",
-    customer: params.tenant.stripeCustomerId,
-    line_items: [{ price: priceId, quantity: params.quantity }],
-    metadata: {
-      [META_KIND]: KIND_PHOTO_CREDITS,
-      tenantId: String(params.tenant.id),
-      credits: String(params.quantity),
-    },
-    success_url: `${base}/admin/billing?credits=1&session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${base}/admin/billing?cancelled=1`,
-  });
-  if (!session.url) throw new Error("Stripe did not return a checkout URL");
-  return { url: session.url };
-}
-
 // ─── Webhook event handling ───────────────────────────────────────────────────
 
 async function handlePlanCheckoutCompleted(
@@ -200,45 +183,7 @@ async function handlePlanCheckoutCompleted(
         : (session.subscription?.id ?? tenant.stripeSubscriptionId),
     subscriptionStatus: "trialing", // subscription_data.trial_period_days
   });
-  // Grant the plan's monthly bucket immediately on upgrade — the merchant paid
-  // (or started a trial) for this cycle already.
-  const bucket = monthlyPhotoCredits(plan);
-  if (bucket > 0) {
-    await addPhotoCreditEntry({
-      tenantId,
-      delta: bucket,
-      kind: "monthly_grant",
-      ref:
-        typeof session.subscription === "string" ? session.subscription : null,
-      note: `${plan} plan bucket on upgrade`,
-    });
-  }
   console.info(`[Billing] Tenant ${tenantId} upgraded to ${plan}`);
-}
-
-async function handlePhotoCreditsCheckoutCompleted(
-  session: Stripe.Checkout.Session,
-): Promise<void> {
-  const meta = session.metadata as Record<string, string>;
-  const tenantId = parseInt(meta.tenantId, 10);
-  const credits = parseInt(meta.credits, 10);
-  if (!Number.isFinite(tenantId) || !Number.isFinite(credits) || credits < 1) {
-    console.warn(
-      "[Billing] Credit checkout completed with bad metadata:",
-      meta,
-    );
-    return;
-  }
-  await addPhotoCreditEntry({
-    tenantId,
-    delta: credits,
-    kind: "purchase",
-    ref: session.id,
-    note: `${credits} × ${AI_PHOTO_CREDITS.name} (CHF ${AI_PHOTO_CREDITS.priceChf}/${AI_PHOTO_CREDITS.unit})`,
-  });
-  console.info(
-    `[Billing] Granted ${credits} photo credits to tenant ${tenantId}`,
-  );
 }
 
 async function handleSubscriptionUpdated(
@@ -266,12 +211,34 @@ async function handleSubscriptionUpdated(
     return;
   }
 
-  const priceId = subscription.items?.data?.[0]?.price?.id;
+  const item = subscription.items?.data?.[0];
+  const priceId = item?.price?.id;
   const plan = priceId ? planForPriceId(priceId) : null;
   const status = subscription.status;
+
+  // A grandfathered subscriber sits on Pro while still billed at a retired
+  // tier's price. Record what they ACTUALLY pay so the Billing page can say
+  // so instead of showing them Pro's CHF 25 — an ex-Atelier tenant paying
+  // CHF 99 must not be told their plan costs 25. Cleared once they move onto
+  // the real Pro price. Stripe reports unit_amount in the minor unit.
+  const legacy = Boolean(priceId && isLegacyPriceId(priceId));
+  const legacyMinor = item?.price?.unit_amount ?? null;
+  const planPriceOverride =
+    legacy && legacyMinor !== null ? (legacyMinor / 100).toFixed(2) : null;
+  if (legacy) {
+    console.warn(
+      `[Billing] Tenant ${tenant.id} is on a retired price (${priceId}) at ` +
+        `${planPriceOverride ?? "unknown"}/mo while holding the Pro plan. ` +
+        `Migrate or grandfather deliberately — see the runbook in ` +
+        `docs/planning/pricing-pivot-agent-commerce.md.`,
+    );
+  }
+
   await updateTenantBilling(tenant.id, {
     ...(plan ? { plan } : {}),
     stripeSubscriptionId: subscription.id,
+    // Always written, so moving a tenant onto the real Pro price clears it.
+    planPriceOverride,
     subscriptionStatus:
       status === "trialing"
         ? "trialing"
@@ -300,40 +267,6 @@ async function handleSubscriptionDeleted(
   console.info(`[Billing] Tenant ${tenant.id} cancelled — back on free plan`);
 }
 
-async function handleInvoicePaymentSucceeded(
-  invoice: Stripe.Invoice,
-): Promise<void> {
-  // Monthly bucket renewal: each paid subscription invoice re-grants the
-  // plan's photo-credit bucket. The upgrade itself is granted at checkout;
-  // invoice #1 of a subscription is skipped to avoid double-granting.
-  // Stripe API 2025+ moved the subscription link off `invoice.subscription`
-  // onto `invoice.parent.subscription_details`; read both.
-  const inv = invoice as Stripe.Invoice & {
-    subscription?: string | { id: string } | null;
-    parent?: {
-      subscription_details?: { subscription?: string | { id: string } | null };
-    };
-  };
-  const subRef =
-    inv.subscription ?? inv.parent?.subscription_details?.subscription ?? null;
-  const subscriptionId =
-    typeof subRef === "string" ? subRef : (subRef?.id ?? null);
-  if (!subscriptionId || invoice.billing_reason === "subscription_create") {
-    return;
-  }
-  const tenant = await getTenantByStripeSubscriptionId(subscriptionId);
-  if (!tenant) return;
-  const bucket = monthlyPhotoCredits(tenant.plan);
-  if (bucket <= 0) return;
-  await addPhotoCreditEntry({
-    tenantId: tenant.id,
-    delta: bucket,
-    kind: "monthly_grant",
-    ref: subscriptionId,
-    note: `${tenant.plan} plan monthly bucket`,
-  });
-}
-
 /**
  * Handle a platform-webhook event that belongs to billing. Called from
  * server/stripe.ts's handleStripeEvent. Returns true when the event was
@@ -351,7 +284,12 @@ export async function handleBillingEvent(
       const kind = (session.metadata as Record<string, string>)[META_KIND];
       if (kind === KIND_PLAN) await handlePlanCheckoutCompleted(session);
       else if (kind === KIND_PHOTO_CREDITS)
-        await handlePhotoCreditsCheckoutCompleted(session);
+        // Retired product (pre-pivot pay-as-you-go credit packs). AI is now
+        // plan-based — unmetered on Pro, monthly allowance on Free — so a
+        // stale session completing post-deploy is logged for manual refund.
+        console.warn(
+          `[Billing] Ignoring retired photo-credit checkout ${session.id} — refund manually if paid`,
+        );
       return true;
     }
     case "customer.subscription.created":
@@ -363,10 +301,12 @@ export async function handleBillingEvent(
       await handleSubscriptionDeleted(event.data.object as Stripe.Subscription);
       return true;
     }
-    case "invoice.payment_succeeded": {
-      await handleInvoicePaymentSucceeded(event.data.object as Stripe.Invoice);
+    case "invoice.payment_succeeded":
+      // No per-invoice work anymore: plan state is synced by the
+      // customer.subscription.* events, and AI usage is allowance-based
+      // (no monthly credit grants to write). Claimed so the platform
+      // webhook doesn't treat a billing invoice as a storefront event.
       return true;
-    }
     default:
       return false;
   }

@@ -117,7 +117,7 @@ export default function Keys() {
         description="Programmatic access to your catalogue and orders."
       >
         <p className="text-sm text-muted-foreground">
-          A public API for building your own integrations is part of the Atelier
+          A public API for building your own integrations is part of a future Business
           plan and is coming soon. It'll live here when it's ready.
         </p>
       </SettingsCard>
