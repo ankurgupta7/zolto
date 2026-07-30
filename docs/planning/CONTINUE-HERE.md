@@ -15,47 +15,59 @@ pushed. Nothing is stashed or uncommitted.
 
 ---
 
-## 0a. The "Connect isn't set up" message a merchant saw
+## 0a. ✅ SOLVED — the merchant was signed in but not their store's admin
 
-A live tenant tapped **Connect Stripe** and got *"Stripe Connect isn't set up
-on the platform yet. Contact support."*
+**Symptom chain, for the record, because it misled us three times:** a merchant
+tapped **Connect Stripe** and got *"Stripe Connect isn't set up on the platform
+yet. Contact support."* It looked like a payments/config problem. It wasn't.
 
-**The env is fine.** `STRIPE_CONNECT_CLIENT_ID` is set in the deployed `.env`,
-`JWT_SECRET` must be too (it's required in production and signs the session
-cookie for the login that was clearly working), and `docker-compose.yml` passes
-both through explicitly. My first read of this — that Connect was unconfigured
-platform-wide — was **wrong**; don't repeat it.
+**Root cause.** The signed-in user's `users.role` was not `admin`, so
+`adminProcedure`'s middleware rejected `tenant.getStripeConnectUrl` with
+`NOT_ADMIN_ERR_MSG` — *"You do not have required permission (10002)"*. The
+client had no URL, and the old copy translated "no URL" into "the platform
+isn't set up".
 
-**The message itself was the bug.** `handleConnectStripe` showed it whenever
-`data?.url` was falsy, which is *also* true while the query is in flight and
-true when the request failed. So a slow response or a transient error told the
-merchant Zolto was misconfigured and sent them to support over nothing.
+**Why the logs were empty and that was itself the clue.**
+`docker compose logs app | grep StripeConnect` printed nothing even with the
+per-tenant logging in place, because `adminProcedure` throws in *middleware*,
+before the query body where that log lives. Empty log + a permission error is
+the signature of a role problem, not a config one.
 
-Now split four ways in `client/src/lib/connectPrompt.ts` (pure and unit-tested,
-rather than buried in a click handler): redirect / still-checking / show the
-real error / genuinely unconfigured. Only the server returning `url === null`
-produces the "contact support" copy.
+**Why the role was wrong — the real defect.** Signup creates a *pending* admin
+row plus a one-time claim token; the owner becomes admin only when the browser
+redeems it through `tenant.claimAdmin`. That token is kept in
+**`sessionStorage` on the marketing origin** (`zolto.ch`), so the claim is lost
+whenever the owner doesn't return to `zolto.ch/onboarding` **in the same tab** —
+most obviously by going straight to `<slug>.zolto.ch/admin`, which is a
+*different origin*. Mobile Safari makes that more likely. The owner then has a
+working login, a real store, and no admin rights over it.
 
-**To find the real cause, no devtools needed.** Every branch now identifies
-itself, because the operator is on a phone and a network tab wasn't available:
+**Immediate fix (operator, read-only by default):**
 
 ```bash
-docker compose logs app | grep StripeConnect
+bash deploy/tenant-admin.sh                          # which stores have admins = 0
+bash deploy/tenant-admin.sh <slug>                   # that store's users + Connect state
+bash deploy/tenant-admin.sh <slug> --promote <email> # grant admin
 ```
 
-| Log line | Cause |
-|---|---|
-| `NOT CONFIGURED — missing …` (at boot) | An env var really is unset. |
-| `Tenant N tried to connect Stripe but Connect is not configured` | Same, hit by a specific tenant. |
-| `Refusing getStripeConnectUrl: user U belongs to tenant A but is browsing tenant B` | Cross-tenant session — sign in as an admin of *that* store. The guard came in with `3e467bc`. |
-| *(nothing)* | The query failed for another reason; the toast now shows it verbatim. |
+It only promotes an account that has already signed in, refuses ambiguous
+emails, escapes the email before use, and burns any stale pending-claim row so
+an old token can't later re-point ownership. Then sign out, back in, retry.
 
-Or simply **tap the button again after deploying**: the toast distinguishes
-"still checking", the real error text, and genuinely-unconfigured. The old
-message could not.
+**Still to fix properly (top of the queue):** the claim hand-off is fragile by
+design. A token in `sessionStorage` on one origin cannot survive a journey that
+legitimately ends on another. Options, roughly in order of preference:
 
-Nothing in `deploy/` validates required env vars — worth adding, since that
-class of failure ships silently.
+1. Put the claim token in the post-OAuth **redirect URL** rather than
+   `sessionStorage`, so it survives tab and origin changes.
+2. Accept `claimAdmin` from the tenant subdomain too, and have `/admin` redeem
+   a token found in its own query string.
+3. Auto-promote the signup email on first sign-in for a tenant that has **zero**
+   admins — narrow, idempotent, and closes the window entirely.
+
+Also worth doing: when a signed-in user has no admin rights on the store
+they're viewing, say so plainly instead of surfacing `(10002)`. And nothing in
+`deploy/` validates required env vars.
 
 ---
 
