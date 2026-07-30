@@ -5,6 +5,14 @@ import {
   maker,
 } from "@shared/marketing";
 import { PLATFORM, FEATURES, PLANS, FAQS } from "@shared/platform";
+import {
+  escapeHtml,
+  setMetaContent,
+  setTitle,
+  appendToHead,
+  appendAfterRoot,
+  renderJsonLd,
+} from "./headInject";
 
 /**
  * Server-side SEO for the Zolto marketing surface. This app is a client-rendered
@@ -25,14 +33,6 @@ export interface MarketingSeo {
   jsonLd: Record<string, unknown>[];
   /** Plain-text content for the <noscript> block (non-JS crawlers). */
   noscript: string;
-}
-
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
 }
 
 // ── JSON-LD builders ──────────────────────────────────────────────────────────
@@ -307,20 +307,6 @@ export function getMarketingSeo(
 
 // ── HTML injection ────────────────────────────────────────────────────────────
 
-/** Replace a meta tag's content by name/property, or return the html unchanged. */
-function setMetaContent(
-  html: string,
-  attr: "name" | "property",
-  key: string,
-  value: string,
-): string {
-  const re = new RegExp(
-    `(<meta\\s+${attr}=["']${key}["']\\s+content=["'])[^"']*(["'])`,
-    "i",
-  );
-  return html.replace(re, `$1${escapeHtml(value)}$2`);
-}
-
 /**
  * Inject marketing SEO into the served index.html for a marketing route. Returns
  * the html unchanged for any non-marketing path, so it's a safe no-op elsewhere.
@@ -339,7 +325,7 @@ export function injectMarketingHead(
 
   let out = html;
   // Title + primary meta (replace the static defaults in index.html).
-  out = out.replace(/<title>[\s\S]*?<\/title>/i, `<title>${title}</title>`);
+  out = setTitle(out, seo.title);
   out = setMetaContent(out, "name", "description", seo.description);
   out = setMetaContent(out, "property", "og:title", seo.title);
   out = setMetaContent(out, "property", "og:description", seo.description);
@@ -347,29 +333,20 @@ export function injectMarketingHead(
   out = setMetaContent(out, "property", "twitter:description", seo.description);
 
   // Canonical + og:url + JSON-LD, injected before </head>.
-  const ld = seo.jsonLd
-    .map(
-      (node) =>
-        `<script type="application/ld+json">${JSON.stringify({
-          "@context": "https://schema.org",
-          ...node,
-        })}</script>`,
-    )
-    .join("");
   const ogImage = `${base}/og-image.png`;
-  const headExtra =
+  out = appendToHead(
+    out,
     `<link rel="canonical" href="${escapeHtml(canonical)}" />` +
-    `<meta property="og:url" content="${escapeHtml(canonical)}" />` +
-    `<meta property="og:image" content="${escapeHtml(ogImage)}" />` +
-    `<meta name="twitter:image" content="${escapeHtml(ogImage)}" />` +
-    ld;
-  out = out.replace(/<\/head>/i, `${headExtra}</head>`);
+      `<meta property="og:url" content="${escapeHtml(canonical)}" />` +
+      `<meta property="og:image" content="${escapeHtml(ogImage)}" />` +
+      `<meta name="twitter:image" content="${escapeHtml(ogImage)}" />` +
+      renderJsonLd(seo.jsonLd),
+  );
 
   // Non-JS crawler content.
-  const noscript = `<noscript><h1>${title}</h1><p>${escapeHtml(seo.noscript)}</p><p><a href="${base}/signup">Start your store free</a> · <a href="${base}/pricing">Pricing</a> · <a href="${base}/llms.txt">llms.txt</a></p></noscript>`;
-  out = out.replace(
-    /<div id="root"><\/div>/i,
-    `<div id="root"></div>${noscript}`,
+  out = appendAfterRoot(
+    out,
+    `<noscript><h1>${title}</h1><p>${escapeHtml(seo.noscript)}</p><p><a href="${base}/signup">Start your store free</a> · <a href="${base}/pricing">Pricing</a> · <a href="${base}/llms.txt">llms.txt</a></p></noscript>`,
   );
 
   return out;

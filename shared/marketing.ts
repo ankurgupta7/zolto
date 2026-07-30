@@ -209,9 +209,11 @@ export const AI_CRAWLERS = [
   "ClaudeBot", // Anthropic
   "Claude-Web",
   "anthropic-ai",
-  "PerplexityBot",
+  "PerplexityBot", // Perplexity's index crawler
+  "Perplexity-User", // Perplexity fetching for a specific user request
   "Google-Extended", // Gemini/Vertex training
   "Applebot-Extended",
+  "bingbot", // Copilot's answers ride Bing's index
   "CCBot", // Common Crawl
 ] as const;
 
@@ -227,18 +229,31 @@ export const AI_CRAWLERS = [
  */
 export const NOINDEX_PATHS = ["/signin"];
 
-export function renderRobotsTxt(baseUrl: string): string {
+/**
+ * Render robots.txt. Allows everything except `noindexPaths`, explicitly welcomes
+ * AI crawlers, and advertises both the sitemap and the LLM guide (/llms.txt).
+ *
+ * The per-bot groups repeat the disallow list: a robots.txt agent obeys only the
+ * single most specific group that matches it, so a bare `Allow: /` under
+ * `User-agent: GPTBot` would silently exempt that bot from the `*` disallows.
+ *
+ * `noindexPaths` is a parameter because storefronts and the marketing surface
+ * have different funnels to keep out of the index (see
+ * STOREFRONT_NOINDEX_PATHS in ./storefront).
+ */
+export function renderRobotsTxt(
+  baseUrl: string,
+  noindexPaths: readonly string[] = NOINDEX_PATHS,
+): string {
   const base = normalizeBaseUrl(baseUrl);
-  const lines = ["User-agent: *", "Allow: /"];
-  for (const path of NOINDEX_PATHS) {
-    lines.push(`Disallow: ${path}`);
-  }
-  lines.push("");
+  const disallows = noindexPaths.map((p) => `Disallow: ${p}`);
+
+  const lines = ["User-agent: *", "Allow: /", ...disallows, ""];
   lines.push(
     "# AI assistants and agents are explicitly welcome to read this site.",
   );
   for (const bot of AI_CRAWLERS) {
-    lines.push(`User-agent: ${bot}`, "Allow: /", "");
+    lines.push(`User-agent: ${bot}`, "Allow: /", ...disallows, "");
   }
   lines.push(
     `# Machine-readable guide for LLMs: ${base}/llms.txt`,
