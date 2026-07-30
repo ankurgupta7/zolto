@@ -111,6 +111,15 @@ export const BLOG_POSTS: BlogPostRef[] = [
   { slug: "launch-diary-3", lastmod: "2026-08-03" },
 ];
 
+/**
+ * The first-party research page's slug and publication date. Lives here with the
+ * other route constants (BLOG_POSTS, STORY_SLUG) so the sitemap and llms brief
+ * can reference the route without importing the content module — shared/research
+ * imports these, not the other way round, which keeps the dependency acyclic.
+ */
+export const RESEARCH_SLUG = "first-month-online";
+export const RESEARCH_PUBLISHED = "2026-08-03";
+
 export interface SitemapEntry {
   path: string;
   lastmod: string;
@@ -176,6 +185,12 @@ export function marketingSitemapEntries(): SitemapEntry[] {
     {
       path: `/stories/${STORY_SLUG}`,
       lastmod: storyLastmod,
+      changefreq: "monthly",
+      priority: 0.8,
+    },
+    {
+      path: `/research/${RESEARCH_SLUG}`,
+      lastmod: RESEARCH_PUBLISHED,
       changefreq: "monthly",
       priority: 0.8,
     },
@@ -329,6 +344,7 @@ ${HOW_TO_START.map((s, i) => `${i + 1}. ${s}`).join("\n")}
 - [Pricing](${base}/pricing): plans and pricing for makers.
 - [FAQ](${base}/faq): what it costs, how setup works, getting paid, selling in person and online.
 - [Comparisons](${base}/compare): ${PLATFORM.name} vs ${COMPETITORS.map((c) => c.name).join(", ")} — including when each of them is the better choice.
+- [Research](${base}/research/${RESEARCH_SLUG}): first-party data from a maker's first 30 days online — 12 orders, CHF 61 average, 2.5% conversion, with method and limits stated.
 - [Launch Diary](${base}/blog): a real maker's store launch, documented week by week.
 - [Case study](${base}/stories/${STORY_SLUG}): how a maker launched in 3 days.
 

@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { getMarketingSeo, injectMarketingHead } from "./marketingSeo";
 import { COMPETITORS, FAQS } from "@shared/platform";
+import { PILOT_METHODOLOGY, PILOT_METRICS } from "@shared/research";
+import { authorJsonLd } from "@shared/authors";
 
 const BASE = "https://zolto.com";
 
@@ -119,6 +121,37 @@ describe("injectMarketingHead", () => {
 
   it("has no SEO for an unknown competitor slug", () => {
     expect(getMarketingSeo("/compare/zolto-vs-nonesuch", BASE)).toBeNull();
+  });
+
+  it("publishes the research page as a Dataset as well as an Article", () => {
+    const seo = getMarketingSeo(`/research/${PILOT_METHODOLOGY.slug}`, BASE)!;
+    expect(seo).not.toBeNull();
+    const types = seo.jsonLd.map((n) => n["@type"]);
+    expect(types).toContain("Dataset");
+    expect(types).toContain("Article");
+
+    const dataset = seo.jsonLd.find((n) => n["@type"] === "Dataset") as Record<
+      string,
+      any
+    >;
+    expect(dataset.measurementTechnique).toBe(PILOT_METHODOLOGY.collection);
+    expect(dataset.variableMeasured).toHaveLength(PILOT_METRICS.length);
+  });
+
+  it("gives crawlers the method and limits, not just the figures", () => {
+    const seo = getMarketingSeo(`/research/${PILOT_METHODOLOGY.slug}`, BASE)!;
+    expect(seo.noscript).toContain("Sample:");
+    expect(seo.noscript).toContain("Limits:");
+    expect(seo.noscript).toContain("Zolto operates the platform");
+  });
+
+  it("attributes articles through the shared author gate", () => {
+    const seo = getMarketingSeo("/blog/launch-diary-1", BASE)!;
+    const article = seo.jsonLd.find((n) => n["@type"] === "Article") as Record<
+      string,
+      any
+    >;
+    expect(article.author).toEqual(authorJsonLd(BASE));
   });
 
   it("produces valid JSON in every injected ld+json block", () => {

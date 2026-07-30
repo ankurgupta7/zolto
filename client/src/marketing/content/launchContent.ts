@@ -17,6 +17,7 @@ import {
   CONTENT_RELEASE_SIGNED,
   BLOG_POSTS,
 } from "@shared/marketing";
+import { authorJsonLd } from "@shared/authors";
 
 export interface ImageAsset {
   src: string;
@@ -108,7 +109,7 @@ function articleSchema(a: {
     "@type": "Article",
     headline: a.headline,
     description: a.description,
-    author: { "@type": "Organization", name: "Zolto" },
+    author: authorJsonLd("https://zolto.com"),
     publisher: {
       "@type": "Organization",
       name: "Zolto",
@@ -629,7 +630,7 @@ const caseStudy: Article = {
     "@type": "Article",
     headline: `${maker.brand} Launch Case Study`,
     description: "From Christmas markets to online sales in 30 days.",
-    author: { "@type": "Organization", name: "Zolto" },
+    author: authorJsonLd("https://zolto.com"),
     publisher: {
       "@type": "Organization",
       name: "Zolto",

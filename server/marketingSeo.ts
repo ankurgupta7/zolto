@@ -13,6 +13,12 @@ import {
   findCompetitor,
   INCUMBENT_COMPARISON,
 } from "@shared/platform";
+import { authorJsonLd } from "@shared/authors";
+import {
+  PILOT_METHODOLOGY,
+  PILOT_METRICS,
+  renderPilotResearchText,
+} from "@shared/research";
 import {
   escapeHtml,
   setMetaContent,
@@ -135,7 +141,7 @@ function articleNode(
     "@type": "Article",
     headline: title,
     description,
-    author: { "@type": "Organization", name: PLATFORM.name },
+    author: authorJsonLd(base),
     publisher: { "@id": `${base}/#organization` },
     image: `${base}/og-image.png`,
     mainEntityOfPage: { "@type": "WebPage", "@id": `${base}${path}` },
@@ -300,6 +306,51 @@ export function getMarketingSeo(
         jsonLd: common,
         noscript: "Zolto terms of service.",
       };
+  }
+
+  // First-party research. Published as a Dataset alongside the Article so it can
+  // be discovered and cited as data, not just read as a story.
+  if (clean === `/research/${PILOT_METHODOLOGY.slug}`) {
+    const title = PILOT_METHODOLOGY.title;
+    const description = `First-party data from one maker's first 30 days selling online: ${PILOT_METRICS.slice(
+      0,
+      3,
+    )
+      .map((m) => `${m.value} ${m.label.toLowerCase()}`)
+      .join(", ")}. Method and limits stated.`;
+    return {
+      path: clean,
+      title: `${title} | ${PLATFORM.name} research`,
+      description,
+      jsonLd: [
+        ...common,
+        articleNode(base, clean, title, description, {
+          published: PILOT_METHODOLOGY.published,
+          modified: PILOT_METHODOLOGY.published,
+        }),
+        {
+          "@type": "Dataset",
+          name: title,
+          description,
+          url: `${base}${clean}`,
+          creator: { "@id": `${base}/#organization` },
+          datePublished: PILOT_METHODOLOGY.published,
+          license: "https://creativecommons.org/licenses/by/4.0/",
+          measurementTechnique: PILOT_METHODOLOGY.collection,
+          variableMeasured: PILOT_METRICS.map((m) => ({
+            "@type": "PropertyValue",
+            name: m.label,
+            value: m.value,
+            description: m.note,
+          })),
+        },
+        breadcrumb(base, [
+          ["Home", "/"],
+          ["Research", clean],
+        ]),
+      ],
+      noscript: renderPilotResearchText(),
+    };
   }
 
   // Per-incumbent comparison pages.

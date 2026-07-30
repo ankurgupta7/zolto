@@ -176,13 +176,32 @@ CHF 8 below, CHF 15 to the EU; `server/checkoutSession.ts`). Modelling those
 properly means lifting the rate constants into `shared/`, which is
 payment-adjacent and wants its own change. Until then, no claim beats a wrong one.
 
-### Phase 2 — Ship the high-lift pages  *(closes G5, G6)*
+### Phase 2 — Ship the high-lift pages  *(closes G5, G6)* ✅ **Done**
 
-- [ ] `/faq` marketing route rendering `FAQS`, with FAQPage JSON-LD attached to it
-- [ ] `/compare/zolto-vs-{stripe,sumup,worldline}` built from `INCUMBENT_COMPARISON`
-      and `POSITIONING`
-- [ ] Both wired into `marketingSitemapEntries()`, `getMarketingSeo()` and `llms.txt`
-- [ ] Tests
+- [x] `/faq` marketing route rendering `FAQS`, grouped by a new `category` field,
+      with FAQPage JSON-LD attached to it
+- [x] `/compare` index and `/compare/zolto-vs-{stripe,sumup,worldline}`, built from
+      a new `COMPETITORS` model alongside `INCUMBENT_COMPARISON`
+- [x] Both wired into `marketingSitemapEntries()`, `getMarketingSeo()`, `llms.txt`
+      and the nav/footer, so they aren't orphan pages
+- [x] Tests — `Faq.test.tsx` (5), `Compare.test.tsx` (9), `marketingSeo.test.ts` extended
+
+**Also landed:** three billing FAQs ("is there a contract?", "do prices include
+VAT?", upgrade/downgrade) lived only inside `Pricing.tsx`, so they never reached
+the FAQPage schema, `/llms.txt` or MCP — an AI assistant asked "does Zolto have a
+contract?" had nothing to read. Moved into the shared set; `Pricing.tsx` now
+renders them from there.
+
+**Decision recorded:** the comparison pages carry **no competitor pricing**.
+Their plans and rates vary by country, contract and volume, so any figure
+hard-coded here would be stale and unverifiable. The pages compare *models*
+(hardware, setup effort, where the money lands) and point at each incumbent's own
+pricing page. Claims about Zolto stay sourced from `PLANS` / `REVENUE_SHARE`.
+
+Each page also has a "when {competitor} is the better choice" section. That's
+load-bearing, not a hedge: the study found the top-cited pages explain tradeoffs
+and address objections, and a comparison that never concedes anything gets
+discounted by readers and AI assistants alike.
 
 ### Phase 3 — Trust signals  *(closes G10–G12)*
 

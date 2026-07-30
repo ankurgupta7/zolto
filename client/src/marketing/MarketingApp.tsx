@@ -12,6 +12,7 @@ import BlogPost from "./pages/BlogPost";
 import Story from "./pages/Story";
 import Faq from "./pages/Faq";
 import Compare from "./pages/Compare";
+import Research from "./pages/Research";
 import { Privacy, Terms } from "./pages/Legal";
 
 function ScrollToTop() {
@@ -58,6 +59,7 @@ export default function MarketingApp() {
         <Route path="/signup" component={Signup} />
         <Route path="/signin" component={SignIn} />
         <Route path="/onboarding" component={Onboarding} />
+        <Route path="/research/:slug" component={Research} />
         <Route path="/blog" component={Blog} />
         <Route path="/blog/:slug" component={BlogPost} />
         <Route path="/stories/:slug" component={Story} />
