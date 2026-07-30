@@ -15,32 +15,41 @@ pushed. Nothing is stashed or uncommitted.
 
 ---
 
-## 0a. ⛔ Connect is not configured on the deployed platform — fix this first
+## 0a. The "Connect isn't set up" message a merchant saw
 
-A live tenant (`blah1.zolto.ch`) tapped **Connect Stripe** and got *"Stripe
-Connect isn't set up on the platform yet. Contact support."* That message is
-**correct behaviour**, not a bug: `buildConnectAuthorizeUrl` returns null when
-`STRIPE_CONNECT_CLIENT_ID` or `JWT_SECRET` is unset on the running server.
+A live tenant tapped **Connect Stripe** and got *"Stripe Connect isn't set up
+on the platform yet. Contact support."*
 
-**This is bigger than the platform fee.** Until it's set, no tenant can link a
-Stripe account, so **no tenant can accept online or agent payments at all** —
-the whole channel the pricing model monetizes is dark. In-person POS is
-unaffected (it runs on the tenant's own Terminal/TWINT path and never carried a
-fee anyway). It is also why the fee tests had no properly-configured connected
-account to borrow.
+**The env is fine.** `STRIPE_CONNECT_CLIENT_ID` is set in the deployed `.env`,
+`JWT_SECRET` must be too (it's required in production and signs the session
+cookie for the login that was clearly working), and `docker-compose.yml` passes
+both through explicitly. My first read of this — that Connect was unconfigured
+platform-wide — was **wrong**; don't repeat it.
 
-**Fix:** set both vars in the **deployed** `.env` and restart. The operator has
-a client id (`ca_…`) already; it simply isn't on the server. Then link a real
-account through the flow — that gives the integration suite a genuine account
-and reproduces production exactly.
+**The message itself was the bug.** `handleConnectStripe` showed it whenever
+`data?.url` was falsy, which is *also* true while the query is in flight and
+true when the request failed. So a slow response or a transient error told the
+merchant Zolto was misconfigured and sent them to support over nothing.
 
-The startup log now warns when this is missing, and
-`buildConnectAuthorizeUrl` logs which var is unset and which tenant hit it. The
-merchant-facing message stays deliberately generic — it must not leak
-deployment detail — so those logs are the operator's only signal. Nothing in
-`deploy/` validates required env vars; adding that check is a worthwhile
-follow-up, since this class of failure otherwise ships silently and is
-discovered by a merchant.
+Now split four ways in `client/src/lib/connectPrompt.ts` (pure and unit-tested,
+rather than buried in a click handler): redirect / still-checking / show the
+real error / genuinely unconfigured. Only the server returning `url === null`
+produces the "contact support" copy.
+
+**To find the real cause on the deployed box**, the request state is what
+matters, not the toast:
+
+- `docker compose logs app | grep StripeConnect` — the server now logs which
+  var is missing and which tenant hit it, plus a boot-time warning. Silence
+  here means the env is fine and the query itself failed.
+- Then check the browser network tab for the `tenant.getStripeConnectUrl` tRPC
+  call. A `FORBIDDEN` is the likely candidate: that procedure throws when
+  `ctx.user.tenantId !== ctx.tenant.id`, so a superadmin (or a session bound to
+  a different tenant) browsing a tenant subdomain would fail this way. That
+  guard came in with `3e467bc`.
+
+Nothing in `deploy/` validates required env vars — worth adding, since that
+class of failure ships silently.
 
 ---
 
