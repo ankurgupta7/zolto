@@ -30,8 +30,18 @@
 }
 
 {$SITE_DOMAIN} {
-    # Reverse proxy all traffic to the Node.js app
-    reverse_proxy app:3000
+    # Reverse proxy all traffic to the Node.js app.
+    #
+    # A deploy recreates the app container while Caddy stays up. For those few
+    # seconds "app" does not resolve on Docker's embedded DNS and every request
+    # in flight fails — search and AI crawlers included, which have been served
+    # 502s on /robots.txt mid-deploy. Caddy retries only when it could not get
+    # a connection at all (the upstream never saw the request), so waiting out
+    # the restart is safe even for POSTs.
+    reverse_proxy app:3000 {
+        lb_try_duration 30s
+        lb_try_interval 1s
+    }
 
     # Enable gzip compression
     encode gzip
@@ -77,7 +87,11 @@ www.{$SITE_DOMAIN} {
         on_demand
     }
 
-    reverse_proxy app:3000
+    # Same restart-tolerance as the apex block above.
+    reverse_proxy app:3000 {
+        lb_try_duration 30s
+        lb_try_interval 1s
+    }
 
     encode gzip
 
