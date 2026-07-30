@@ -4,7 +4,15 @@ import {
   BLOG_POSTS,
   maker,
 } from "@shared/marketing";
-import { PLATFORM, FEATURES, PLANS, FAQS } from "@shared/platform";
+import {
+  PLATFORM,
+  FEATURES,
+  PLANS,
+  FAQS,
+  COMPETITORS,
+  findCompetitor,
+  INCUMBENT_COMPARISON,
+} from "@shared/platform";
 import {
   escapeHtml,
   setMetaContent,
@@ -213,6 +221,49 @@ export function getMarketingSeo(
         ],
         noscript: `Sign up for ${PLATFORM.name}. ${PLATFORM.audience}`,
       };
+    case "/faq":
+      return {
+        path: "/faq",
+        title: `FAQ — ${PLATFORM.name} for makers`,
+        description: `Answers to the questions makers ask about ${PLATFORM.name}: what it costs, how setup works, getting paid, and selling in person and online.`,
+        jsonLd: [
+          ...common,
+          faqPageNode(),
+          breadcrumb(base, [
+            ["Home", "/"],
+            ["FAQ", "/faq"],
+          ]),
+        ],
+        // The full Q&A in plain text: this is the page an AI assistant is most
+        // likely to quote, so give it the answers rather than a teaser.
+        noscript: FAQS.map((f) => `${f.q} ${f.a}`).join(" "),
+      };
+    case "/compare":
+      return {
+        path: "/compare",
+        title: `Compare ${PLATFORM.name} — vs ${COMPETITORS.map((c) => c.name).join(", ")}`,
+        description: `How ${PLATFORM.name} compares to ${COMPETITORS.map((c) => c.name).join(", ")} for independent makers — including when each of them is the better choice.`,
+        jsonLd: [
+          ...common,
+          {
+            "@type": "CollectionPage",
+            name: `Compare ${PLATFORM.name}`,
+            url: `${base}/compare`,
+            hasPart: COMPETITORS.map((c) => ({
+              "@type": "WebPage",
+              name: `${PLATFORM.name} vs ${c.name}`,
+              url: `${base}/compare/zolto-vs-${c.id}`,
+            })),
+          },
+          breadcrumb(base, [
+            ["Home", "/"],
+            ["Compare", "/compare"],
+          ]),
+        ],
+        noscript: COMPETITORS.map(
+          (c) => `${PLATFORM.name} vs ${c.name}: ${c.summary}`,
+        ).join(" "),
+      };
     case "/blog":
       return {
         path: "/blog",
@@ -249,6 +300,37 @@ export function getMarketingSeo(
         jsonLd: common,
         noscript: "Zolto terms of service.",
       };
+  }
+
+  // Per-incumbent comparison pages.
+  if (clean.startsWith("/compare/zolto-vs-")) {
+    const competitor = findCompetitor(clean.slice("/compare/zolto-vs-".length));
+    if (competitor) {
+      const title = `${PLATFORM.name} vs ${competitor.name}`;
+      const description = `An honest comparison of ${PLATFORM.name} and ${competitor.name} for independent makers: hardware, setup effort, where the money lands, and when ${competitor.name} is the better choice.`;
+      return {
+        path: clean,
+        title: `${title} — which fits a maker better?`,
+        description,
+        jsonLd: [
+          ...common,
+          articleNode(base, clean, title, description),
+          breadcrumb(base, [
+            ["Home", "/"],
+            ["Compare", "/compare"],
+            [title, clean],
+          ]),
+        ],
+        noscript:
+          `${competitor.summary} ` +
+          `When ${competitor.name} is the better choice: ${competitor.betterWhen.join(" ")} ` +
+          `When ${PLATFORM.name} fits better: ${competitor.zoltoWhen.join(" ")} ` +
+          INCUMBENT_COMPARISON.map(
+            (r) =>
+              `${r.feature} — traditionally: ${r.them}; with ${PLATFORM.name}: ${r.us}.`,
+          ).join(" "),
+      };
+    }
   }
 
   // Blog posts.

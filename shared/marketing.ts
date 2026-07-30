@@ -32,6 +32,7 @@ import {
   FAQS,
   HOW_TO_START,
   PRICING_PROMISE,
+  COMPETITORS,
 } from "./platform";
 
 export interface MakerIdentity {
@@ -132,6 +133,26 @@ export function marketingSitemapEntries(): SitemapEntry[] {
       changefreq: "weekly",
       priority: 0.9,
     },
+    {
+      path: "/faq",
+      lastmod: "2026-07-30",
+      changefreq: "monthly",
+      priority: 0.8,
+    },
+    {
+      path: "/compare",
+      lastmod: "2026-07-30",
+      changefreq: "monthly",
+      priority: 0.7,
+    },
+    ...COMPETITORS.map(
+      (c): SitemapEntry => ({
+        path: `/compare/zolto-vs-${c.id}`,
+        lastmod: "2026-07-30",
+        changefreq: "monthly",
+        priority: 0.8,
+      }),
+    ),
     {
       path: "/signup",
       lastmod: "2026-07-20",
@@ -306,6 +327,8 @@ ${HOW_TO_START.map((s, i) => `${i + 1}. ${s}`).join("\n")}
 
 - [Sign up free](${base}/signup): open a store — no card required.
 - [Pricing](${base}/pricing): plans and pricing for makers.
+- [FAQ](${base}/faq): what it costs, how setup works, getting paid, selling in person and online.
+- [Comparisons](${base}/compare): ${PLATFORM.name} vs ${COMPETITORS.map((c) => c.name).join(", ")} — including when each of them is the better choice.
 - [Launch Diary](${base}/blog): a real maker's store launch, documented week by week.
 - [Case study](${base}/stories/${STORY_SLUG}): how a maker launched in 3 days.
 

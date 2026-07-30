@@ -10,6 +10,8 @@ import Onboarding from "./pages/Onboarding";
 import Blog from "./pages/Blog";
 import BlogPost from "./pages/BlogPost";
 import Story from "./pages/Story";
+import Faq from "./pages/Faq";
+import Compare from "./pages/Compare";
 import { Privacy, Terms } from "./pages/Legal";
 
 function ScrollToTop() {
@@ -50,6 +52,9 @@ export default function MarketingApp() {
       <Switch>
         <Route path="/" component={Landing} />
         <Route path="/pricing" component={Pricing} />
+        <Route path="/faq" component={Faq} />
+        <Route path="/compare" component={Compare} />
+        <Route path="/compare/:slug" component={Compare} />
         <Route path="/signup" component={Signup} />
         <Route path="/signin" component={SignIn} />
         <Route path="/onboarding" component={Onboarding} />

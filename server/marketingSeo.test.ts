@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { getMarketingSeo, injectMarketingHead } from "./marketingSeo";
+import { COMPETITORS, FAQS } from "@shared/platform";
 
 const BASE = "https://zolto.com";
 
@@ -85,6 +86,39 @@ describe("injectMarketingHead", () => {
   it("is a no-op for non-marketing routes", () => {
     const out = injectMarketingHead(SHELL, "/some/storefront/path", BASE);
     expect(out).toBe(SHELL);
+  });
+
+  it("serves the full FAQ text to non-JS crawlers on /faq", () => {
+    const out = injectMarketingHead(SHELL, "/faq", BASE);
+    expect(out).toContain('"@type":"FAQPage"');
+    // The answers themselves, not a teaser — this is the page most likely to
+    // be quoted by an AI assistant.
+    for (const item of FAQS) {
+      expect(out).toContain(item.q);
+    }
+  });
+
+  it("renders a comparison page per named incumbent", () => {
+    for (const c of COMPETITORS) {
+      const seo = getMarketingSeo(`/compare/zolto-vs-${c.id}`, BASE)!;
+      expect(seo).not.toBeNull();
+      expect(seo.title).toContain(c.name);
+      expect(seo.noscript).toContain(c.summary);
+      // The honest concession has to reach crawlers too, not just readers.
+      expect(seo.noscript).toContain(c.betterWhen[0]);
+    }
+  });
+
+  it("lists every comparison from the /compare index", () => {
+    const seo = getMarketingSeo("/compare", BASE)!;
+    const collection = seo.jsonLd.find(
+      (n) => n["@type"] === "CollectionPage",
+    ) as Record<string, any>;
+    expect(collection.hasPart).toHaveLength(COMPETITORS.length);
+  });
+
+  it("has no SEO for an unknown competitor slug", () => {
+    expect(getMarketingSeo("/compare/zolto-vs-nonesuch", BASE)).toBeNull();
   });
 
   it("produces valid JSON in every injected ld+json block", () => {
