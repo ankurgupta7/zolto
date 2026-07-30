@@ -248,6 +248,28 @@ describe("tenant.getStripeConnectUrl", () => {
     expect(res).toEqual({ url: null, connected: false });
   });
 
+  it("logs the tenant mismatch, because the merchant-facing symptom is identical to 'not configured'", async () => {
+    // Both cases leave the client without a URL, so without this log there is
+    // no way to tell a cross-tenant session from a missing env var.
+    const spy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    await expect(
+      tenantRouter
+        .createCaller(
+          ctx(
+            { openId: "google:sub-1", role: "admin", tenantId: 7 },
+            { id: 42, plan: "free", slug: "blah1" },
+          ),
+        )
+        .getStripeConnectUrl(),
+    ).rejects.toThrow();
+
+    const text = String(spy.mock.calls[0]?.[0] ?? "");
+    expect(text).toContain("tenant 7");
+    expect(text).toContain("tenant 42");
+    expect(text).toContain("blah1");
+    spy.mockRestore();
+  });
+
   it("requires admin role", async () => {
     await expect(
       tenantRouter
@@ -264,7 +286,9 @@ describe("tenant.getStripeConnectUrl", () => {
 
   it("requires authentication", async () => {
     await expect(
-      tenantRouter.createCaller(ctx(null, { id: 42, plan: "free" })).getStripeConnectUrl(),
+      tenantRouter
+        .createCaller(ctx(null, { id: 42, plan: "free" }))
+        .getStripeConnectUrl(),
     ).rejects.toThrow();
     expect(buildConnectAuthorizeUrl).not.toHaveBeenCalled();
   });

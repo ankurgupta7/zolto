@@ -36,17 +36,23 @@ rather than buried in a click handler): redirect / still-checking / show the
 real error / genuinely unconfigured. Only the server returning `url === null`
 produces the "contact support" copy.
 
-**To find the real cause on the deployed box**, the request state is what
-matters, not the toast:
+**To find the real cause, no devtools needed.** Every branch now identifies
+itself, because the operator is on a phone and a network tab wasn't available:
 
-- `docker compose logs app | grep StripeConnect` — the server now logs which
-  var is missing and which tenant hit it, plus a boot-time warning. Silence
-  here means the env is fine and the query itself failed.
-- Then check the browser network tab for the `tenant.getStripeConnectUrl` tRPC
-  call. A `FORBIDDEN` is the likely candidate: that procedure throws when
-  `ctx.user.tenantId !== ctx.tenant.id`, so a superadmin (or a session bound to
-  a different tenant) browsing a tenant subdomain would fail this way. That
-  guard came in with `3e467bc`.
+```bash
+docker compose logs app | grep StripeConnect
+```
+
+| Log line | Cause |
+|---|---|
+| `NOT CONFIGURED — missing …` (at boot) | An env var really is unset. |
+| `Tenant N tried to connect Stripe but Connect is not configured` | Same, hit by a specific tenant. |
+| `Refusing getStripeConnectUrl: user U belongs to tenant A but is browsing tenant B` | Cross-tenant session — sign in as an admin of *that* store. The guard came in with `3e467bc`. |
+| *(nothing)* | The query failed for another reason; the toast now shows it verbatim. |
+
+Or simply **tap the button again after deploying**: the toast distinguishes
+"still checking", the real error text, and genuinely-unconfigured. The old
+message could not.
 
 Nothing in `deploy/` validates required env vars — worth adding, since that
 class of failure ships silently.
