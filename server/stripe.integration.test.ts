@@ -312,13 +312,36 @@ async function resolveConnectedAccount(stripe: Stripe): Promise<string> {
   const fromEnv = process.env.STRIPE_TEST_CONNECTED_ACCOUNT_ID;
   if (fromEnv) return fromEnv;
 
+  let candidates: Stripe.Account[] = [];
   try {
-    const list = await stripe.accounts.list({ limit: 1 });
-    const id = list.data[0]?.id;
-    if (id) return id;
+    candidates = (await stripe.accounts.list({ limit: 100 })).data;
   } catch {
-    // Listing may also be restricted; fall through to the guidance below.
+    // Listing may be restricted; fall through to the guidance below.
   }
+
+  // Checkout needs an account that can actually take a charge AND has a
+  // display name — Stripe refuses to render a checkout page for a nameless
+  // account ("you must set an account or business name"). Picking the first
+  // account off the list is how we previously landed on an unusable one.
+  const named = (a: Stripe.Account) =>
+    Boolean(a.business_profile?.name || a.settings?.dashboard?.display_name);
+  const usable =
+    candidates.find((a) => a.charges_enabled && named(a)) ??
+    candidates.find((a) => a.charges_enabled) ??
+    candidates[0];
+
+  if (usable && !named(usable)) {
+    // Best effort: give it a name so the suite can proceed. Platforms can't
+    // always write a Standard account's profile, so this is allowed to fail —
+    // the error below then tells the operator exactly which account to fix.
+    await stripe.accounts
+      .update(usable.id, {
+        business_profile: { name: "Zolto Integration Test Store" },
+      })
+      .catch(() => {});
+  }
+
+  if (usable) return usable.id;
 
   // Fail loudly rather than skipping. A silent skip is exactly how the fee
   // path stayed unverified in the first place.
@@ -360,6 +383,13 @@ describeIf(
       }
 
       connectedAccountId = await resolveConnectedAccount(stripe);
+      // Printed because a Checkout config failure ("you must set an account or
+      // business name") is a property of a SPECIFIC account — without knowing
+      // which one was used, the operator can't tell whether to fix the
+      // platform account or this connected one.
+      console.info(
+        `[integration] platform-fee tests running on connected account ${connectedAccountId}`,
+      );
     }, 30_000);
 
     // Nothing to tear down: we borrow an existing connected account rather
@@ -490,7 +520,7 @@ describeIf(
           },
           { stripeAccount: connectedAccountId },
         ),
-      ).rejects.toThrow();
+      ).rejects.toThrow(/application[_ ]fee|fee.*(greater|exceed)|amount/i);
     }, 30_000);
   },
 );

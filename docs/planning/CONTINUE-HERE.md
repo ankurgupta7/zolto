@@ -75,6 +75,31 @@ Both suites now preflight `stripe.balance.retrieve()` and fail with an explicit
 "Cannot reach the Stripe API" rather than the SDK's misleading "Invalid JSON
 received from the Stripe API".
 
+**2026-07-30, second run.** `billing.integration.test.ts` is **10/10 green** —
+tenant billing and the grandfathering path are now verified against the real
+API. The fee tests **executed** for the first time and failed on:
+
+> In order to use Checkout, you must set an account or business name at
+> https://dashboard.stripe.com/account
+
+**This is not a fee rejection.** The proof is in the results: the
+"omits the fee entirely for Pro tenants" test carries **no**
+`application_fee_amount` at all and failed with the identical error. So the
+blocker is Checkout branding config on an account, not anything to do with
+`application_fee_amount`.
+
+The fixture now picks a connected account that is `charges_enabled` **and**
+named (rather than the first off the list), best-effort sets a business name if
+missing, and logs which account it used — because that error is a property of a
+specific account and you cannot otherwise tell whether to fix the platform
+account or the connected one.
+
+**If it recurs:** set a business name on the account named in the
+`[integration] platform-fee tests running on connected account acct_…` log
+line, and on the platform account at
+https://dashboard.stripe.com/settings/account. Then re-run. The fee itself has
+still never been accepted or rejected by Stripe.
+
 There is already a runtime safety net either way:
 `createStorefrontCheckoutSession` retries once **without** the fee when — and
 only when — the error is fee-specific (`isPlatformFeeRejection`), logs loudly,
