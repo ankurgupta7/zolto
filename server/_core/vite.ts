@@ -28,7 +28,10 @@ export async function setupVite(app: Express, server: Server) {
   });
 
   app.use(vite.middlewares);
-  app.use("*", async (req, res, next) => {
+  // Mounted without a path: `app.use("*", ...)` would make Express strip the
+  // matched mount from req.url, collapsing req.path to "/" for every request
+  // and handing injectHeadForRequest the wrong route.
+  app.use(async (req, res, next) => {
     const url = req.originalUrl;
 
     try {
@@ -72,11 +75,16 @@ export function serveStatic(app: Express) {
     );
   }
 
-  app.use(express.static(distPath));
+  // `index: false` so a request for "/" is NOT short-circuited by the static
+  // handler serving the raw built index.html. The apex has to fall through to
+  // the handler below, or the marketing homepage ships with no server-rendered
+  // <head> at all (no title, canonical, JSON-LD or <noscript> body).
+  app.use(express.static(distPath, { index: false }));
 
-  // fall through to index.html if the file doesn't exist
+  // fall through to index.html if the file doesn't exist. Mounted without a
+  // path — see the note in setupVite: a "*" mount collapses req.path to "/".
   const indexPath = path.resolve(distPath, "index.html");
-  app.use("*", async (req, res) => {
+  app.use(async (req, res) => {
     // Rewrite <head> per request (marketing SEO or per-tenant storefront
     // identity). Any read error falls back to the static shell.
     try {

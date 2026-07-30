@@ -33,7 +33,6 @@ export default defineConfig({
         "**/*.test.ts",
         "**/*.test.tsx",
         "client/src/components/ui/**",
-        "server/_core/vite.ts",
         // Entry-point bootstrap: binds a port and wires the SPA/static handler.
         // The route wiring it delegates to lives in app.ts (smoke-tested).
         "server/_core/index.ts",
