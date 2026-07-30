@@ -203,12 +203,44 @@ load-bearing, not a hedge: the study found the top-cited pages explain tradeoffs
 and address objections, and a comparison that never concedes anything gets
 discounted by readers and AI assistants alike.
 
-### Phase 3 — Trust signals  *(closes G10–G12)*
+### Phase 3 — Trust signals  *(closes G12; G10 mechanism shipped, gated; G11 partial)* ✅ **Done**
 
-- [ ] Named `Person` authors with credentials in Article JSON-LD and visible bylines
-- [ ] Citations for the load-bearing factual claims (e.g. the CHF 2,000/year
-      incumbent-cost figure)
-- [ ] Tests
+- [x] `shared/authors.ts` — a resolved author used by both Article JSON-LD and a
+      new visible byline, so the two can't disagree
+- [x] G12: `/research/first-month-online` publishes the pilot data with a sample,
+      a collection method and explicit limits, as a `Dataset` alongside the `Article`
+- [x] Wired into sitemap, `getMarketingSeo()`, `/llms.txt` and the nav
+- [x] Tests — `authors.test.ts` (4), `research.test.ts` (8), `Research.test.tsx` (7),
+      `marketingSeo.test.ts` extended
+
+**G10 is shipped but gated, deliberately.** No named person is asserted. Naming a
+real author with credentials needs their sign-off — the same gate
+`shared/marketing.ts` already applies to the maker's identity, and the one flagged
+in [`phase1/content/about-founder.md`](./phase1/content/about-founder.md), which
+is still a draft with unresolved `[bracketed]` placeholders. The mechanism
+attributes to the organization until `AUTHOR_IDENTITY_RELEASED` is set; bylines
+and schema then follow automatically. Inventing credentials would defeat the
+signal, so this needs a human decision, not a code change.
+
+**The research page's data is self-checked, not just transcribed:** tests assert
+the weekly rows sum to the month total, the attribution percentages sum to 100,
+and the per-source order counts reconcile with the headline figure. One test
+asserts the *unflattering* finding stays published — search sent zero orders in
+month one — because that disclosure is what makes the rest credible.
+
+#### G11 (citations) — still open
+
+The research page is now itself a citable primary source, and the comparison
+pages point readers at each incumbent's own pricing. What remains is the
+**`COST_COMPARISON.themPerYearChf` figure of CHF 2,000/year**, rendered on both
+the landing and pricing pages with no source. It traces to the founder's own
+experience (`about-founder.md` mentions a terminal at "[CHF 400] at the very
+minimum", itself a bracketed placeholder), not to published pricing.
+
+Deliberately not "fixed" here: inventing a citation is worse than the current
+state. The options are (a) source it to real published rates and cite them,
+(b) reframe it as a first-party estimate with its basis stated, the way the
+research page does, or (c) drop the number. That's an operator decision.
 
 ### Phase 4 — Segment coverage  *(closes G8; G7 and G9 are content work)*
 

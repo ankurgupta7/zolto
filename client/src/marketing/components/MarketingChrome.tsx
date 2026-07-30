@@ -25,6 +25,7 @@ import { Container } from "./Container";
 
 const NAV = [
   { label: "Product", href: "/#product" },
+  { label: "Who it's for", href: "/for" },
   { label: "Pricing", href: "/pricing" },
   { label: "Compare", href: "/compare" },
   { label: "FAQ", href: "/faq" },

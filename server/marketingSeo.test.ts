@@ -1,8 +1,10 @@
 import { describe, it, expect } from "vitest";
 import { getMarketingSeo, injectMarketingHead } from "./marketingSeo";
+import { marketingSitemapEntries } from "@shared/marketing";
 import { COMPETITORS, FAQS } from "@shared/platform";
 import { PILOT_METHODOLOGY, PILOT_METRICS } from "@shared/research";
 import { authorJsonLd } from "@shared/authors";
+import { SEGMENTS, segmentFeatures } from "@shared/segments";
 
 const BASE = "https://zolto.com";
 
@@ -145,6 +147,30 @@ describe("injectMarketingHead", () => {
     expect(seo.noscript).toContain("Zolto operates the platform");
   });
 
+  it("renders a page per audience segment, grounded in real features", () => {
+    for (const s of SEGMENTS) {
+      const seo = getMarketingSeo(`/for/${s.id}`, BASE)!;
+      expect(seo, s.id).not.toBeNull();
+      expect(seo.title).toContain(s.headline);
+      expect(seo.noscript).toContain(s.painPoints[0]);
+      // Feature copy comes from FEATURES, so crawlers see the same claims the
+      // product makes everywhere else.
+      expect(seo.noscript).toContain(segmentFeatures(s)[0].description);
+    }
+  });
+
+  it("lists every segment from the /for index", () => {
+    const seo = getMarketingSeo("/for", BASE)!;
+    const collection = seo.jsonLd.find(
+      (n) => n["@type"] === "CollectionPage",
+    ) as Record<string, any>;
+    expect(collection.hasPart).toHaveLength(SEGMENTS.length);
+  });
+
+  it("has no SEO for an unknown segment slug", () => {
+    expect(getMarketingSeo("/for/nonesuch", BASE)).toBeNull();
+  });
+
   it("attributes articles through the shared author gate", () => {
     const seo = getMarketingSeo("/blog/launch-diary-1", BASE)!;
     const article = seo.jsonLd.find((n) => n["@type"] === "Article") as Record<
@@ -152,6 +178,18 @@ describe("injectMarketingHead", () => {
       any
     >;
     expect(article.author).toEqual(authorJsonLd(BASE));
+  });
+
+  it("has SEO for every URL the sitemap advertises", () => {
+    // shared/marketing.ts promises the sitemap "never advertises a 404". Any
+    // route listed there must resolve to real SEO, or crawlers are being sent
+    // to a page with nothing on it.
+    for (const entry of marketingSitemapEntries()) {
+      expect(
+        getMarketingSeo(entry.path, BASE),
+        `sitemap lists ${entry.path} but getMarketingSeo returns null`,
+      ).not.toBeNull();
+    }
   });
 
   it("produces valid JSON in every injected ld+json block", () => {

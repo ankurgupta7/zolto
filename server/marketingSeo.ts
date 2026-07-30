@@ -15,6 +15,12 @@ import {
 } from "@shared/platform";
 import { authorJsonLd } from "@shared/authors";
 import {
+  SEGMENTS,
+  findSegment,
+  segmentFeatures,
+  renderSegmentText,
+} from "@shared/segments";
+import {
   PILOT_METHODOLOGY,
   PILOT_METRICS,
   renderPilotResearchText,
@@ -270,6 +276,30 @@ export function getMarketingSeo(
           (c) => `${PLATFORM.name} vs ${c.name}: ${c.summary}`,
         ).join(" "),
       };
+    case "/for":
+      return {
+        path: "/for",
+        title: `Who ${PLATFORM.name} is for — makers, studios, market sellers, boutiques`,
+        description: `${PLATFORM.name} for ${SEGMENTS.map((s) => s.name.toLowerCase()).join(", ")} — what changes for each kind of seller.`,
+        jsonLd: [
+          ...common,
+          {
+            "@type": "CollectionPage",
+            name: `Who ${PLATFORM.name} is for`,
+            url: `${base}/for`,
+            hasPart: SEGMENTS.map((s) => ({
+              "@type": "WebPage",
+              name: s.name,
+              url: `${base}/for/${s.id}`,
+            })),
+          },
+          breadcrumb(base, [
+            ["Home", "/"],
+            ["Who it's for", "/for"],
+          ]),
+        ],
+        noscript: SEGMENTS.map((s) => `${s.name}: ${s.summary}`).join(" "),
+      };
     case "/blog":
       return {
         path: "/blog",
@@ -306,6 +336,45 @@ export function getMarketingSeo(
         jsonLd: common,
         noscript: "Zolto terms of service.",
       };
+  }
+
+  // Audience segment pages.
+  if (clean.startsWith("/for/")) {
+    const segment = findSegment(clean.slice("/for/".length));
+    if (segment) {
+      return {
+        path: clean,
+        title: `${segment.headline} | ${PLATFORM.name}`,
+        description: `${segment.summary} ${PLATFORM.pricingSummary}`.slice(
+          0,
+          300,
+        ),
+        jsonLd: [
+          ...common,
+          {
+            "@type": "WebPage",
+            name: segment.headline,
+            url: `${base}${clean}`,
+            isPartOf: { "@id": `${base}/#website` },
+            about: {
+              "@type": "Audience",
+              audienceType: segment.name,
+            },
+            mentions: segmentFeatures(segment).map((f) => ({
+              "@type": "Thing",
+              name: f.name,
+              description: f.description,
+            })),
+          },
+          breadcrumb(base, [
+            ["Home", "/"],
+            ["Who it's for", "/for"],
+            [segment.name, clean],
+          ]),
+        ],
+        noscript: renderSegmentText(segment),
+      };
+    }
   }
 
   // First-party research. Published as a Dataset alongside the Article so it can

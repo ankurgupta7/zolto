@@ -34,6 +34,7 @@ import {
   PRICING_PROMISE,
   COMPETITORS,
 } from "./platform";
+import { SEGMENTS } from "./segments";
 
 export interface MakerIdentity {
   /** Brand name, or a neutral stand-in while unreleased. */
@@ -157,6 +158,20 @@ export function marketingSitemapEntries(): SitemapEntry[] {
     ...COMPETITORS.map(
       (c): SitemapEntry => ({
         path: `/compare/zolto-vs-${c.id}`,
+        lastmod: "2026-07-30",
+        changefreq: "monthly",
+        priority: 0.8,
+      }),
+    ),
+    {
+      path: "/for",
+      lastmod: "2026-07-30",
+      changefreq: "monthly",
+      priority: 0.7,
+    },
+    ...SEGMENTS.map(
+      (s): SitemapEntry => ({
+        path: `/for/${s.id}`,
         lastmod: "2026-07-30",
         changefreq: "monthly",
         priority: 0.8,
@@ -345,6 +360,7 @@ ${HOW_TO_START.map((s, i) => `${i + 1}. ${s}`).join("\n")}
 - [FAQ](${base}/faq): what it costs, how setup works, getting paid, selling in person and online.
 - [Comparisons](${base}/compare): ${PLATFORM.name} vs ${COMPETITORS.map((c) => c.name).join(", ")} — including when each of them is the better choice.
 - [Research](${base}/research/${RESEARCH_SLUG}): first-party data from a maker's first 30 days online — 12 orders, CHF 61 average, 2.5% conversion, with method and limits stated.
+- [Who it's for](${base}/for): ${SEGMENTS.map((s) => `[${s.name}](${base}/for/${s.id})`).join(", ")} — what changes for each kind of seller.
 - [Launch Diary](${base}/blog): a real maker's store launch, documented week by week.
 - [Case study](${base}/stories/${STORY_SLUG}): how a maker launched in 3 days.
 
