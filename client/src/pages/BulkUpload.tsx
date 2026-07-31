@@ -7,6 +7,7 @@ import { PRODUCT_CATEGORIES, type ProductCategory } from "@shared/types";
 import { useTranslation } from "react-i18next";
 import {
   Upload,
+  Camera,
   X,
   CheckCircle2,
   Loader2,
@@ -131,6 +132,7 @@ export default function BulkUpload() {
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [photos, setPhotos] = useState<PhotoItem[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const [groups, setGroups] = useState<Group[]>([]);
   const [selectedPhotoIds, setSelectedPhotoIds] = useState<Set<string>>(
     new Set(),
@@ -675,22 +677,51 @@ export default function BulkUpload() {
               </p>
             </div>
 
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="w-full border-2 border-dashed border-[var(--brand-ink)]/30 hover:border-[var(--brand-accent)] transition-colors p-10 text-center mb-6 group"
-            >
-              <Upload
-                size={32}
-                className="mx-auto mb-3 text-[var(--brand-ink)]/40 group-hover:text-[var(--brand-accent)] transition-colors"
-              />
-              <p className="font-serif text-foreground text-lg mb-1">
-                {t("bulkUpload.tapToSelect")}
-              </p>
-              <p className="text-muted-foreground text-xs font-sans">
-                {t("bulkUpload.fileHint")}
-              </p>
-            </button>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+              <button
+                type="button"
+                onClick={() => cameraInputRef.current?.click()}
+                data-tour="take-photo"
+                className="bg-[var(--brand-ink)] hover:bg-[var(--brand-ink-hover)] transition-colors p-8 text-center group"
+              >
+                <Camera size={32} className="mx-auto mb-3 text-white" />
+                <p className="font-serif text-white text-lg mb-1">
+                  {t("bulkUpload.takePhoto")}
+                </p>
+                <p className="text-white/70 text-xs font-sans">
+                  {t("bulkUpload.takePhotoHint")}
+                </p>
+              </button>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="border-2 border-dashed border-[var(--brand-ink)]/30 hover:border-[var(--brand-accent)] transition-colors p-8 text-center group"
+              >
+                <Upload
+                  size={32}
+                  className="mx-auto mb-3 text-[var(--brand-ink)]/40 group-hover:text-[var(--brand-accent)] transition-colors"
+                />
+                <p className="font-serif text-foreground text-lg mb-1">
+                  {t("bulkUpload.tapToSelect")}
+                </p>
+                <p className="text-muted-foreground text-xs font-sans">
+                  {t("bulkUpload.fileHint")}
+                </p>
+              </button>
+            </div>
+            {/* A single-shot camera capture input (no `multiple`): most mobile
+                browsers only honor `capture` for one photo per invocation, so
+                shooting a whole crate means tapping "Take Photo" once per
+                piece — each tap appends to `photos` via the same handler the
+                file picker uses below. */}
+            <input
+              ref={cameraInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              onChange={handleFileChange}
+            />
             <input
               ref={fileInputRef}
               type="file"

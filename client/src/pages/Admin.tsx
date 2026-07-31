@@ -27,6 +27,7 @@ import {
   CreditCard,
   Receipt,
   CheckCircle2,
+  Camera,
 } from "lucide-react";
 import { getLoginUrl } from "@/const";
 import { PRODUCT_CATEGORIES, type ProductCategory } from "@shared/types";
@@ -945,6 +946,14 @@ export default function Admin() {
           </div>
           <div className="flex items-center gap-3 flex-wrap">
             <Link
+              href="/admin/bulk-upload"
+              data-tour="bulk-upload"
+              className="flex items-center gap-2 bg-[var(--brand-accent)] text-[var(--brand-ink)] px-4 py-2.5 text-xs uppercase tracking-[0.15em] font-sans font-semibold hover:brightness-110 transition-[filter]"
+            >
+              <Camera size={14} />
+              Add by Camera
+            </Link>
+            <Link
               href="/admin/csv-import"
               data-tour="csv-import"
               className="flex items-center gap-2 border border-white/20 text-white/80 px-4 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:border-white hover:text-white transition-colors"
@@ -958,13 +967,6 @@ export default function Admin() {
             >
               <Copy size={14} />
               Duplicate Cleanup
-            </Link>
-            <Link
-              href="/admin/bulk-upload"
-              data-tour="bulk-upload"
-              className="flex items-center gap-2 border border-white/20 text-white/80 px-4 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:border-white hover:text-white transition-colors"
-            >
-              Bulk Photo Upload
             </Link>
             <Link
               href="/admin/billing"
