@@ -21,7 +21,6 @@ const mocks = vi.hoisted(() => ({
     plan: "free",
     subscriptionStatus: "trialing",
     trialEndsAt: null,
-    legacyPriceChf: null,
     ai: { allowancePerMonth: 5, usedThisMonth: 2 },
     onlineFees: {
       feePercentLabel: "1%",
@@ -221,26 +220,6 @@ describe("Billing page", () => {
     mocks.authState.user = { role: "customer" };
     render(<Billing />);
     expect(screen.getByText("Admins only.")).toBeTruthy();
-  });
-
-  it("tells a grandfathered tenant what they actually pay, not the list price", () => {
-    const original = mocks.statusData;
-    // Migration 0008 put ex-Atelier tenants on Pro; Stripe still bills CHF 99.
-    mocks.statusData = {
-      ...original,
-      plan: "pro",
-      legacyPriceChf: 99,
-      ai: { allowancePerMonth: null, usedThisMonth: null },
-      upsell: null,
-    } as never;
-    render(<Billing />);
-    expect(screen.getByText("CHF 99/mo")).toBeTruthy();
-    expect(screen.getByText(/older plan price/i)).toBeTruthy();
-    // And we say plainly that we won't just leave them there.
-    expect(
-      screen.getByText(/won't quietly keep you on the old one/i),
-    ).toBeTruthy();
-    mocks.statusData = original;
   });
 
   it("shows no legacy-price notice for a normally-priced tenant", () => {

@@ -20,7 +20,7 @@ const FAQ = [
   },
   {
     q: "Do prices include VAT?",
-    a: "Taxes are shown at checkout based on your location. See our terms for details.",
+    a: "There's no VAT to add. Zolto is under the CHF 100,000 Swiss VAT registration threshold, so the price you see is the price you pay. If that ever changes, we'll say so before it does.",
   },
 ];
 

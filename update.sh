@@ -595,6 +595,17 @@ else
   ok "0029 rate_limit_windows already exists"
 fi
 
+# ── 0030: drop tenants.plan_price_override ────────────────────────────────────
+# Ships drizzle/0012_drop_plan_price_override.sql. The grandfathering machinery
+# it fed is gone (server/billing.ts) — it recorded what a pre-pivot paid tenant
+# actually billed, for a population that never existed. Idempotent.
+if [ "$(col_exists tenants plan_price_override)" = "1" ]; then
+  run_sql "0030 drop tenants.plan_price_override" \
+    "ALTER TABLE \`tenants\` DROP COLUMN \`plan_price_override\`;"
+else
+  ok "0030 tenants.plan_price_override already dropped"
+fi
+
 # ── Shared helper: run a script inside the builder container ──────────────────
 # Usage: run_in_builder <tag> <script-path> [extra docker args...]
 run_in_builder() {

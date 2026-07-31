@@ -158,17 +158,6 @@ export default function Billing() {
         </div>
       )}
 
-      {data?.legacyPriceChf != null && (
-        <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
-          You're on an older plan price:{" "}
-          <strong>CHF {data.legacyPriceChf}/mo</strong>, from before Zolto moved
-          to two plans. You have everything in Pro (listed below at CHF{" "}
-          {data.plans.find((p) => p.id === "pro")?.priceChf ?? 25}/mo) and pay
-          0% on online sales. If the new price is lower, contact support and
-          we'll move you over — we won't quietly keep you on the old one.
-        </div>
-      )}
-
       {data && !data.billingConfigured && (
         <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
           Paid plans aren't purchasable on this deployment yet (Stripe prices

@@ -1710,13 +1710,7 @@ export async function getTenantByStripeSubscriptionId(
 export async function updateTenantBilling(
   tenantId: number,
   fields: Partial<
-    Pick<
-      Tenant,
-      | "plan"
-      | "subscriptionStatus"
-      | "stripeSubscriptionId"
-      | "planPriceOverride"
-    >
+    Pick<Tenant, "plan" | "subscriptionStatus" | "stripeSubscriptionId">
   >,
 ): Promise<void> {
   if (Object.keys(fields).length === 0) return;

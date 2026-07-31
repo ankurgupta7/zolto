@@ -105,7 +105,7 @@ export function Terms() {
         {
           heading: "2. Prices and taxes",
           body: [
-            "Prices are stated in euros. Applicable taxes — EU VAT (via the OSS scheme for cross-border digital services) or Swiss VAT — are determined by your location and shown at checkout. Whether a displayed price is inclusive or exclusive of tax is indicated at the point of sale.",
+            "Prices are stated in Swiss francs (CHF). Zolto's turnover is below the CHF 100,000 threshold at which Swiss VAT registration becomes mandatory, so no VAT is charged on subscriptions or on the platform fee — the price shown is the price you pay. Should Zolto cross that threshold, or become liable for tax in another jurisdiction, we will update these terms and notify affected customers before any tax is applied.",
           ],
         },
         {

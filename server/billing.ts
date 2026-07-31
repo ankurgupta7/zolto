@@ -12,11 +12,6 @@
  * Required env vars (in addition to STRIPE_SECRET_KEY / STRIPE_WEBHOOK_SECRET):
  *   STRIPE_PRICE_PRO – Stripe Price id (price_...) for Pro, CHF 25/mo
  *
- * Optional, for tenants who subscribed before the two-tier pivot:
- *   STRIPE_PRICE_MAKER / _STUDIO / _ATELIER – the retired tiers' Price ids.
- *   Nobody can subscribe to these any more; they exist so a legacy
- *   subscriber's webhooks still resolve to a plan. See LEGACY_PRICE_ENV.
- *
  * Events are delivered to the existing platform webhook (/api/stripe/webhook);
  * server/stripe.ts delegates billing-shaped events to handleBillingEvent below.
  */
@@ -40,44 +35,23 @@ const PRICE_ENV: Record<PaidPlanId, string> = {
   pro: "STRIPE_PRICE_PRO",
 };
 
-/**
- * Retired tiers, kept for INVERSE lookup only.
- *
- * Migration 0008 moved every Maker/Studio/Atelier tenant to `plan = 'pro'`,
- * but their Stripe subscriptions still bill the old Price. Without this map,
- * `planForPriceId` returns null for those subscriptions, `handleSubscriptionUpdated`
- * skips the plan write, and a legacy subscriber's plan silently stops syncing
- * with Stripe — so a cancellation or payment failure wouldn't move them.
- *
- * They map to "pro" because that is what migration 0008 granted them: the old
- * tiers were all supersets of today's Pro, so nobody loses access. What they
- * do NOT get is the new price — see planPriceOverride below, and the migration
- * runbook in docs/planning/pricing-pivot-agent-commerce.md.
- */
-const LEGACY_PRICE_ENV = [
-  "STRIPE_PRICE_MAKER",
-  "STRIPE_PRICE_STUDIO",
-  "STRIPE_PRICE_ATELIER",
-] as const;
-
 function priceIdForPlan(plan: PaidPlanId): string | null {
   return process.env[PRICE_ENV[plan]] || null;
 }
 
-/** Is this Price id one of the retired pre-pivot tiers? */
-export function isLegacyPriceId(priceId: string): boolean {
-  return LEGACY_PRICE_ENV.some((v) => process.env[v] === priceId);
-}
-
 /**
- * Inverse lookup: Stripe Price id → plan id (used by webhook sync). Legacy
- * tier prices resolve to "pro" so grandfathered subscribers keep syncing.
+ * Inverse lookup: Stripe Price id → plan id (used by webhook sync).
+ *
+ * There is deliberately no mapping for the retired pre-pivot tiers
+ * (maker/studio/atelier). Migration 0008 remapped the plan enum, but Zolto
+ * had no paying tenants at the time and still has none — the grandfathering
+ * machinery that used to live here was built for a population that never
+ * existed. Retired tiers also cannot be sold: PRICE_ENV holds only `pro`.
  */
 export function planForPriceId(priceId: string): PaidPlanId | null {
   for (const plan of Object.keys(PRICE_ENV) as PaidPlanId[]) {
     if (process.env[PRICE_ENV[plan]] === priceId) return plan;
   }
-  if (isLegacyPriceId(priceId)) return "pro";
   return null;
 }
 
@@ -216,29 +190,20 @@ async function handleSubscriptionUpdated(
   const plan = priceId ? planForPriceId(priceId) : null;
   const status = subscription.status;
 
-  // A grandfathered subscriber sits on Pro while still billed at a retired
-  // tier's price. Record what they ACTUALLY pay so the Billing page can say
-  // so instead of showing them Pro's CHF 25 — an ex-Atelier tenant paying
-  // CHF 99 must not be told their plan costs 25. Cleared once they move onto
-  // the real Pro price. Stripe reports unit_amount in the minor unit.
-  const legacy = Boolean(priceId && isLegacyPriceId(priceId));
-  const legacyMinor = item?.price?.unit_amount ?? null;
-  const planPriceOverride =
-    legacy && legacyMinor !== null ? (legacyMinor / 100).toFixed(2) : null;
-  if (legacy) {
+  // An unrecognised Price means the subscription is not one we sell. Say so
+  // loudly rather than silently skipping the plan write — that would leave
+  // the tenant's plan permanently out of sync with Stripe.
+  if (priceId && !plan) {
     console.warn(
-      `[Billing] Tenant ${tenant.id} is on a retired price (${priceId}) at ` +
-        `${planPriceOverride ?? "unknown"}/mo while holding the Pro plan. ` +
-        `Migrate or grandfather deliberately — see the runbook in ` +
-        `docs/planning/pricing-pivot-agent-commerce.md.`,
+      `[Billing] Tenant ${tenant.id} is on an unrecognised price (${priceId}) — ` +
+        `plan left unchanged. Check STRIPE_PRICE_PRO matches the Price this ` +
+        `subscription bills.`,
     );
   }
 
   await updateTenantBilling(tenant.id, {
     ...(plan ? { plan } : {}),
     stripeSubscriptionId: subscription.id,
-    // Always written, so moving a tenant onto the real Pro price clears it.
-    planPriceOverride,
     subscriptionStatus:
       status === "trialing"
         ? "trialing"

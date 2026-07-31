@@ -56,10 +56,6 @@ export const tenants = mysqlTable("tenants", {
   referredBy: int("referred_by"), // tenant_id of referrer
   referralCode: varchar("referral_code", { length: 16 }).unique(),
   referralDiscountApplied: boolean("referral_discount_applied").default(false),
-  planPriceOverride: decimal("plan_price_override", {
-    precision: 10,
-    scale: 2,
-  }),
   priceLockExpiresAt: timestamp("price_lock_expires_at"),
   // Cumulative photo-storage bytes uploaded by this tenant, incremented
   // atomically by storagePut() alongside the plan cap check (PLANS[].storageGb)
