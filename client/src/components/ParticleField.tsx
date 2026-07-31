@@ -14,6 +14,13 @@ import { useEffect, useRef } from "react";
  *
  * Motion is paused when the tab is hidden, and honoured `prefers-reduced-motion`
  * renders a single static frame instead of animating.
+ *
+ * Canvas sizing and particle spawning are deliberately separate: mobile
+ * browsers fire `resize` when their address bar hides/shows during a scroll
+ * gesture, which only changes viewport *height*. Re-spawning particles on
+ * every such event made the whole field visibly jump mid-scroll. Only a
+ * width change (real layout change, e.g. rotation) re-spawns; a height-only
+ * change just resizes the canvas and rescales existing particles in place.
  */
 
 interface Particle {
@@ -39,7 +46,7 @@ interface ParticleFieldProps {
 const PARTICLE_RGB = "224, 190, 110";
 
 export default function ParticleField({
-  density = 6500,
+  density = 9500,
   className = "",
 }: ParticleFieldProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -60,8 +67,18 @@ export default function ParticleField({
     let height = 0;
     let particles: Particle[] = [];
     let raf = 0;
+    let resizeTimer: ReturnType<typeof setTimeout> | null = null;
 
-    const seed = () => {
+    const spawnParticle = (): Particle => ({
+      x: Math.random() * width,
+      y: Math.random() * height,
+      r: Math.random() * 1.6 + 0.5,
+      vy: Math.random() * 0.32 + 0.08,
+      vx: (Math.random() - 0.5) * 0.16,
+      a: Math.random() * 0.3 + 0.12,
+    });
+
+    const resizeCanvas = () => {
       width = window.innerWidth;
       height = window.innerHeight;
       canvas.width = width * dpr;
@@ -69,16 +86,16 @@ export default function ParticleField({
       canvas.style.width = `${width}px`;
       canvas.style.height = `${height}px`;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    };
 
-      const count = Math.max(12, Math.round((width * height) / density));
-      particles = Array.from({ length: count }, () => ({
-        x: Math.random() * width,
-        y: Math.random() * height,
-        r: Math.random() * 2.2 + 0.7,
-        vy: Math.random() * 0.32 + 0.08,
-        vx: (Math.random() - 0.5) * 0.16,
-        a: Math.random() * 0.5 + 0.28,
-      }));
+    const spawnAll = () => {
+      const count = Math.max(10, Math.round((width * height) / density));
+      particles = Array.from({ length: count }, spawnParticle);
+    };
+
+    const seed = () => {
+      resizeCanvas();
+      spawnAll();
     };
 
     const paint = () => {
@@ -95,7 +112,7 @@ export default function ParticleField({
 
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(${PARTICLE_RGB}, ${Math.min(1, p.a + 0.15)})`;
+        ctx.fillStyle = `rgba(${PARTICLE_RGB}, ${Math.min(1, p.a + 0.1)})`;
         ctx.fill();
       }
     };
@@ -125,8 +142,27 @@ export default function ParticleField({
     };
 
     const onResize = () => {
-      seed();
-      if (reduce) paint();
+      // Coalesce bursts of resize events — mobile browsers dispatch several
+      // in a row while their address bar animates in/out during scroll.
+      if (resizeTimer) clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        resizeTimer = null;
+        const prevWidth = width;
+        resizeCanvas();
+        // A real layout change (rotation, window resize) re-spawns the
+        // field. A height-only change — the mobile toolbar hiding/showing
+        // as the page scrolls — just resizes the canvas and keeps the
+        // existing particles where they were, clamped into view.
+        if (width !== prevWidth) {
+          spawnAll();
+        } else {
+          for (const p of particles) {
+            if (p.y > height) p.y = height;
+            if (p.x > width) p.x = width;
+          }
+        }
+        if (reduce) paint();
+      }, 150);
     };
     const onVisibility = () => {
       if (!document.hidden && !reduce) start();
@@ -139,6 +175,7 @@ export default function ParticleField({
 
     return () => {
       cancelAnimationFrame(raf);
+      if (resizeTimer) clearTimeout(resizeTimer);
       window.removeEventListener("resize", onResize);
       document.removeEventListener("visibilitychange", onVisibility);
     };
