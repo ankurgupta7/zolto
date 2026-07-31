@@ -606,6 +606,28 @@ else
   ok "0030 tenants.plan_price_override already dropped"
 fi
 
+# ── 0031: TWINT QR-sticker POS rail ───────────────────────────────────────────
+# Ships drizzle/0013_twint_qr_sticker.sql. Adds the merchant's uploaded TWINT QR
+# sticker and a `twint_qr` payment method kept distinct from Stripe's `twint` —
+# gateway-confirmed vs merchant-attested. See
+# docs/planning/native-twint-integration.md §4b. Idempotent.
+CURRENT_POS_METHOD_ENUM=$($MYSQL -se "${MYSQL_LOCK_TIMEOUT_SQL}SELECT COLUMN_TYPE FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA='${MYSQL_DATABASE}' AND TABLE_NAME='pos_orders' AND COLUMN_NAME='paymentMethod';" 2>/dev/null || echo "")
+
+if echo "$CURRENT_POS_METHOD_ENUM" | grep -q "'twint_qr'"; then
+  ok "0031 pos_orders.paymentMethod already has 'twint_qr'"
+else
+  run_sql "0031 add 'twint_qr' to pos_orders.paymentMethod" \
+    "ALTER TABLE \`pos_orders\` MODIFY COLUMN \`paymentMethod\` enum('card','cash','twint','twint_qr') NOT NULL DEFAULT 'card';"
+fi
+
+if [ "$(col_exists tenant_settings twint_qr_url)" = "0" ]; then
+  run_sql "0031 add tenant_settings.twint_qr_url" \
+    "ALTER TABLE \`tenant_settings\` ADD \`twint_qr_url\` varchar(1024) NULL;"
+else
+  ok "0031 tenant_settings.twint_qr_url already exists"
+fi
+
 # ── Shared helper: run a script inside the builder container ──────────────────
 # Usage: run_in_builder <tag> <script-path> [extra docker args...]
 run_in_builder() {

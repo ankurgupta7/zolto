@@ -99,6 +99,12 @@ export const tenantSettings = mysqlTable("tenant_settings", {
   // platform-wide DISCORD_OWNER_USER_ID env fallback.
   discordOwnerUserId: varchar("discord_owner_user_id", { length: 64 }),
   slackChannelId: varchar("slack_channel_id", { length: 64 }),
+  // The merchant's own TWINT QR code sticker, uploaded as an image and shown
+  // full-screen on the POS for the customer to scan. Not a secret (it's a
+  // sticker they display physically), so it lives here rather than in
+  // tenantSecrets. Null until uploaded, which is what gates the POS's
+  // "TWINT (QR)" payment option.
+  twintQrUrl: varchar("twint_qr_url", { length: 1024 }),
   // Contact
   contactEmail: varchar("contact_email", { length: 320 }),
   contactPhone: varchar("contact_phone", { length: 32 }),
@@ -314,7 +320,18 @@ export const posOrders = mysqlTable("pos_orders", {
   status: mysqlEnum("status", ["pending", "paid", "failed"])
     .default("pending")
     .notNull(),
-  paymentMethod: mysqlEnum("paymentMethod", ["card", "cash", "twint"])
+  // Evidentiary grade differs by method and reconciliation depends on telling
+  // them apart: `card` and `twint` are gateway-confirmed (a Stripe
+  // PaymentIntent succeeded), while `cash` and `twint_qr` are merchant-attested
+  // — the cashier counted the money, or watched the payment land in their own
+  // TWINT app after the customer scanned their QR sticker. Never collapse
+  // `twint_qr` into `twint`; one is proof, the other is a claim.
+  paymentMethod: mysqlEnum("paymentMethod", [
+    "card",
+    "cash",
+    "twint",
+    "twint_qr",
+  ])
     .default("card")
     .notNull(),
   totalRappen: int("totalRappen").notNull(),

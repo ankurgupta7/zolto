@@ -194,6 +194,44 @@ describe("GET /api/pos/config", () => {
     expect(res.status).toBe(200);
     expect(res.body.locationId).toBe("");
   });
+
+  // The QR sticker's presence is what enables the POS's TWINT (QR) option, so
+  // the app must be able to tell "uploaded" from "not uploaded" here.
+  it("returns null twintQrUrl when the merchant hasn't uploaded a sticker", async () => {
+    const res = await request(makeApp())
+      .get("/api/pos/config")
+      .set("x-pos-key", "test-pos-key");
+
+    expect(res.status).toBe(200);
+    expect(res.body.twintQrUrl).toBeNull();
+  });
+
+  it("returns the merchant's TWINT QR sticker URL once uploaded", async () => {
+    const { getTenantSettings } = await import("./db");
+    vi.mocked(getTenantSettings).mockResolvedValueOnce({
+      twintQrUrl: "/uploads/twint-qr/1_ab12.png",
+    } as never);
+
+    const res = await request(makeApp())
+      .get("/api/pos/config")
+      .set("x-pos-key", "test-pos-key");
+
+    expect(res.status).toBe(200);
+    expect(res.body.twintQrUrl).toBe("/uploads/twint-qr/1_ab12.png");
+  });
+
+  it("still serves config when the settings read fails", async () => {
+    // Losing the QR option is survivable; a POS that won't start is not.
+    const { getTenantSettings } = await import("./db");
+    vi.mocked(getTenantSettings).mockRejectedValueOnce(new Error("db down"));
+
+    const res = await request(makeApp())
+      .get("/api/pos/config")
+      .set("x-pos-key", "test-pos-key");
+
+    expect(res.status).toBe(200);
+    expect(res.body.twintQrUrl).toBeNull();
+  });
 });
 
 describe("GET /api/pos/health", () => {
@@ -887,6 +925,76 @@ describe("POST /api/pos/manual-sale (cash)", () => {
       .send({ productIds: [1] });
     expect(res.status).toBe(401);
   });
+
+  // The TWINT QR-sticker rail rides this same endpoint: the customer scans the
+  // merchant's own sticker, the merchant sees it land in their TWINT app, and
+  // attests — exactly like cash. See docs/planning/native-twint-integration.md.
+  it("records a twint_qr sale, distinct from Stripe-confirmed twint", async () => {
+    const db = makeFakeDb([{ id: 1, price: "50.00" }]);
+    vi.mocked(getDb).mockResolvedValueOnce(db as never);
+
+    const res = await request(makeApp())
+      .post("/api/pos/manual-sale")
+      .set("x-pos-key", "test-pos-key")
+      .send({ productIds: [1], paymentMethod: "twint_qr" });
+
+    expect(res.status).toBe(200);
+    expect(db.insertValuesSpy).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        stripePaymentIntentId: null,
+        status: "paid",
+        // NOT "twint" — that value means a Stripe PaymentIntent succeeded.
+        paymentMethod: "twint_qr",
+        totalRappen: 5000,
+      }),
+    );
+    expect(markProductsSold).toHaveBeenCalledWith(1, [1]);
+  });
+
+  it("defaults to cash when no paymentMethod is sent (older POS builds)", async () => {
+    const db = makeFakeDb([{ id: 1, price: "50.00" }]);
+    vi.mocked(getDb).mockResolvedValueOnce(db as never);
+
+    await request(makeApp())
+      .post("/api/pos/manual-sale")
+      .set("x-pos-key", "test-pos-key")
+      .send({ productIds: [1] });
+
+    expect(db.insertValuesSpy).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ paymentMethod: "cash" }),
+    );
+  });
+
+  it("refuses to record a gateway-confirmed method on the attested path", async () => {
+    // Otherwise a POS client could claim a `card` or Stripe `twint` sale that
+    // no gateway ever confirmed, laundering an attestation into proof.
+    const db = makeFakeDb([{ id: 1, price: "50.00" }]);
+    vi.mocked(getDb).mockResolvedValueOnce(db as never);
+
+    const res = await request(makeApp())
+      .post("/api/pos/manual-sale")
+      .set("x-pos-key", "test-pos-key")
+      .send({ productIds: [1], paymentMethod: "card" });
+
+    expect(res.status).toBe(400);
+    expect(db.insertValuesSpy).not.toHaveBeenCalled();
+    expect(markProductsSold).not.toHaveBeenCalled();
+  });
+
+  it("refuses an unknown paymentMethod", async () => {
+    const db = makeFakeDb([{ id: 1, price: "50.00" }]);
+    vi.mocked(getDb).mockResolvedValueOnce(db as never);
+
+    const res = await request(makeApp())
+      .post("/api/pos/manual-sale")
+      .set("x-pos-key", "test-pos-key")
+      .send({ productIds: [1], paymentMethod: "bitcoin" });
+
+    expect(res.status).toBe(400);
+    expect(db.insertValuesSpy).not.toHaveBeenCalled();
+  });
 });
 
 describe("POST /api/pos/twint-intent", () => {
@@ -1136,7 +1244,9 @@ describe("POST /api/pos/payment-intent on a connected account", () => {
     const fakeStripe = makeFakeStripe();
     vi.mocked(getStripe).mockReturnValueOnce(fakeStripe as never);
     const { getTenantSettings } = await import("./db");
-    vi.mocked(getTenantSettings).mockResolvedValueOnce({ currency: "eur" } as never);
+    vi.mocked(getTenantSettings).mockResolvedValueOnce({
+      currency: "eur",
+    } as never);
 
     const res = await request(makeApp())
       .post("/api/pos/payment-intent")
@@ -1204,7 +1314,9 @@ describe("POST /api/pos/twint-intent on a connected account", () => {
 // ─── Sales history + receipts ────────────────────────────────────────────────
 
 function makeSalesDb(orders: unknown[], items: unknown[]) {
-  const updateSetSpy = vi.fn(() => ({ where: vi.fn().mockResolvedValue(undefined) }));
+  const updateSetSpy = vi.fn(() => ({
+    where: vi.fn().mockResolvedValue(undefined),
+  }));
   return {
     select: vi.fn(() => ({
       from: vi.fn((table: unknown) => ({
@@ -1213,7 +1325,9 @@ function makeSalesDb(orders: unknown[], items: unknown[]) {
           const isItems = (table as { _: unknown }) === table; // can't distinguish; use call count
           return {
             limit: vi.fn(() => Promise.resolve(orders)),
-            orderBy: vi.fn(() => ({ limit: vi.fn(() => Promise.resolve(orders)) })),
+            orderBy: vi.fn(() => ({
+              limit: vi.fn(() => Promise.resolve(orders)),
+            })),
             then: (resolve: (v: unknown) => unknown) => resolve(items),
           };
         }),
@@ -1227,20 +1341,27 @@ function makeSalesDb(orders: unknown[], items: unknown[]) {
 describe("GET /api/pos/sales", () => {
   it("returns paid orders with their line items", async () => {
     const db = makeSalesDb(
-      [{
-        id: 9,
-        status: "paid",
-        paymentMethod: "card",
-        totalRappen: 7550,
-        createdAt: new Date("2026-07-01T10:00:00Z"),
-        invoiceNumber: "KPOS-9",
-        receiptUrl: null,
-        customerEmail: null,
-        customerPhone: null,
-      }],
+      [
+        {
+          id: 9,
+          status: "paid",
+          paymentMethod: "card",
+          totalRappen: 7550,
+          createdAt: new Date("2026-07-01T10:00:00Z"),
+          invoiceNumber: "KPOS-9",
+          receiptUrl: null,
+          customerEmail: null,
+          customerPhone: null,
+        },
+      ],
       [
         { posOrderId: 9, productId: 1, name: "Pearl Ring", priceRappen: 5000 },
-        { posOrderId: 9, productId: null, name: "Gift wrap", priceRappen: 2550 },
+        {
+          posOrderId: 9,
+          productId: null,
+          name: "Gift wrap",
+          priceRappen: 2550,
+        },
       ],
     );
     vi.mocked(getDb).mockResolvedValueOnce(db as never);
@@ -1294,17 +1415,19 @@ describe("POST /api/pos/save-receipt", () => {
 
   it("saves customer details even when storage isn't configured", async () => {
     const db = makeSalesDb(
-      [{
-        id: 9,
-        status: "paid",
-        paymentMethod: "card",
-        totalRappen: 5000,
-        createdAt: new Date("2026-07-01T10:00:00Z"),
-        invoiceNumber: "KPOS-9",
-        receiptUrl: null,
-        customerEmail: null,
-        customerPhone: null,
-      }],
+      [
+        {
+          id: 9,
+          status: "paid",
+          paymentMethod: "card",
+          totalRappen: 5000,
+          createdAt: new Date("2026-07-01T10:00:00Z"),
+          invoiceNumber: "KPOS-9",
+          receiptUrl: null,
+          customerEmail: null,
+          customerPhone: null,
+        },
+      ],
       [{ posOrderId: 9, productId: 1, name: "Pearl Ring", priceRappen: 5000 }],
     );
     vi.mocked(getDb).mockResolvedValueOnce(db as never);

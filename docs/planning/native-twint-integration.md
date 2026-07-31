@@ -6,7 +6,9 @@
 > registration, approval and credentials that actually requires before any code
 > is written.
 >
-> Written 2026-07-31. Status: **research complete, blocked on TWINT.**
+> Written 2026-07-31. Status: **research complete.** The full API integration
+> is blocked on TWINT (§0); a QR-sticker path that needs none of that is
+> described in §4b and is the recommended first move.
 > Everything below marked ✅ is verifiable from public sources (cited); ❓ marks
 > what is genuinely not public and can only come from TWINT directly.
 
@@ -170,7 +172,102 @@ compared to the weeks that follow it.
 
 ---
 
-## 5. Recommended sequence
+## 4b. The shortcut: display the merchant's own QR sticker — ✅ SHIPPED
+
+**This path needs no API, no certification and no application to TWINT.**
+Built and merged; §5 below remains the (still-blocked) full integration.
+
+What shipped: `tenant_settings.twint_qr_url` + an admin upload on the POS page
+(`tenant.setTwintQr`, tenant-scoped through `storagePut` so it counts against
+the plan's storage cap); `GET /api/pos/config` returns `twintQrUrl`, which is
+what reveals the POS's **TWINT QR** button; `POST /api/pos/manual-sale` accepts
+`paymentMethod: "twint_qr"` alongside `cash`, validated against an allow-list so
+a client cannot claim a gateway-confirmed method on the attested path; the
+Android app shows the sticker with the amount in 40sp beside it and records the
+sale only when the merchant taps *Received CHF x.xx*. Migration `0013`.
+
+The merchant already has a TWINT QR code sticker (they get one with the
+acquiring contract; it's the *Kassensticker* small vendors use). Zolto's POS
+simply **shows that sticker on screen** for the customer to scan. Money goes
+merchant → merchant at 1.3%, Stripe is out of the in-person loop entirely, and
+Zolto holds nothing but an image.
+
+It also removes a wart in today's flow. `PaymentActivity.kt:364` records that a
+locally-rendered QR of Stripe's redirect URL **was rejected by the TWINT app** —
+only Stripe's hosted page carries a TWINT-native payload — so the POS currently
+punts the customer into a Chrome Custom Tab. A real sticker is a genuine TWINT
+payload, so it renders straight into the existing `imgQr` ImageView and the
+cashier never leaves the app.
+
+### The one thing it cannot do
+
+**Zolto cannot learn that the payment succeeded.** No API means no webhook, no
+callback, nothing to poll. Basic-sticker payments are anonymous (no payer name
+or number reaches the merchant), so even in principle there is no handle to
+match against. The TWINT notification goes to the *merchant's* phone. No design
+gets around this without the API in §0.
+
+### Why that's acceptable: this is cash, and cash already works
+
+`/api/pos/manual-sale` (`server/pos.ts:1093`) already records a sale as `paid`
+the moment the cashier says so, with the comment *"Cash never touches Stripe —
+the cashier takes the money, so this records the sale and decrements stock
+immediately (no async confirmation to wait for)."* Sticker-TWINT is that exact
+shape: the merchant is standing there watching their TWINT app, and attests.
+
+**Design rule that keeps it honest:** do not reuse `payment_method: 'twint'` —
+that value currently means *gateway-confirmed by Stripe*. Add a distinct
+`twint_qr`. Merchant-attested and gateway-confirmed are different evidentiary
+grades, and reconciliation has to be able to tell them apart. Trust ladder:
+
+| Method | Evidence | Grade |
+|---|---|---|
+| `card`, `twint` (Stripe) | PaymentIntent succeeded | Gateway-confirmed |
+| `twint_qr` *(new)* | Merchant saw it in their TWINT app | Attested |
+| `cash` | Merchant counted it | Attested |
+
+### The real risk is the amount, not the confirmation
+
+✅ Confirmed: on a variable-amount sticker **the customer types the amount
+themselves**. Cash doesn't have this failure mode — the merchant counts what
+they're handed. A customer typing `5.00` instead of `50.00` produces a POS row
+saying CHF 50 was collected when it wasn't.
+
+Mitigations, in order of value:
+
+1. Show the expected amount in **large type beside the QR** — the customer is
+   copying a number off a screen, so make it unmissable.
+2. Make the confirm button state the amount (*"Received CHF 47.00"*), so the
+   merchant is attesting to a figure they just checked against their app, not
+   tapping a bare "Done".
+3. Let the merchant record a **different received amount**, producing a
+   discrepancy row instead of a silent lie. Underpayment at a stall is a real
+   event; the DB should be able to represent it.
+
+Note: *QR stickers with payment information* (which can collect payer name /
+purpose) cost **1.3% + CHF 0.30** and are variable-amount only — so they don't
+solve the amount problem and they aren't free. Fixed-amount stickers exist but
+a basket total varies, so they don't apply. TWINT's **Paylink / payment button**
+can carry an amount and is worth a look, but generating one per sale plausibly
+needs the portal or the API — unverified, do not design against it yet.
+
+### Where "did it actually go through" gets proven
+
+After the fact, not at the till. The TWINT Business Portal exports transactions;
+matching those against attested `twint_qr` rows by amount and timestamp is what
+turns an attestation into a verified payment, and surfaces the typo'd amounts.
+That is the same shape as the existing `stripe_reconciliations` table and the
+`pos_attributions` "which piece was that CHF 50 sale?" review queue — so it is a
+pattern this codebase already has twice, not new machinery.
+
+**Still to do on this rail:** the reconciliation import described above is *not*
+built. Until it is, `twint_qr` rows are attestations that nothing ever checks —
+which is the same standing cash has always had, but worth stating plainly rather
+than assuming the row means the money arrived.
+
+---
+
+## 5. Recommended sequence (full API integration)
 
 1. **Measure the delta** (§4). Minutes of work, decides everything after it.
 2. **Submit the TWINT direct-integration application** (§0). Long lead time and

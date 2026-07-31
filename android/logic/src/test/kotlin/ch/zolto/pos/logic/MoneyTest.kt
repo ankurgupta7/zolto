@@ -60,4 +60,12 @@ class MoneyTest {
         assertEquals("35.50", Money.chfString(3550))
         assertEquals("0.00", Money.chfString(0))
     }
+
+    @Test
+    fun `chfDisplay prefixes the currency for customer-facing amounts`() {
+        // Shown next to the TWINT QR sticker for the customer to type in.
+        assertEquals("CHF 47.00", Money.chfDisplay(4700))
+        assertEquals("CHF 0.05", Money.chfDisplay(5))
+        assertEquals("CHF 1234.50", Money.chfDisplay(123450))
+    }
 }

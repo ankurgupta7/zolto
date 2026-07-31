@@ -28,6 +28,13 @@ sealed class PaymentState {
     object RecordingCashSale : PaymentState()
     // TWINT path — QR (the Stripe redirect URL) is on screen; we poll for success.
     data class ShowingTwintQr(val redirectUrl: String) : PaymentState()
+    // TWINT QR-sticker path — the merchant's OWN sticker is on screen with the
+    // amount beside it. There is nothing to poll: TWINT exposes no API to us,
+    // so the merchant confirms from their own TWINT app (see confirmTwintQr).
+    data class ShowingTwintSticker(
+        val qrUrl: String,
+        val totalRappen: Int,
+    ) : PaymentState()
     data class Succeeded(val posOrderId: Int, val totalRappen: Int, val offline: Boolean = false) : PaymentState()
     data class Failed(val message: String) : PaymentState()
     object Cancelled : PaymentState()
@@ -167,6 +174,44 @@ class PaymentViewModel(
                 pollTwintUntilPaid(response.paymentIntentId, response.posOrderId, response.totalRappen)
             } catch (e: Exception) {
                 _state.value = PaymentState.Failed(e.message ?: "Failed to start TWINT payment")
+            }
+        }
+    }
+
+    // TWINT QR sticker: the customer scans the merchant's own sticker and types
+    // the amount into their TWINT app. Nothing reaches Zolto until the merchant
+    // says so, so this step is purely presentational — we put the code and the
+    // expected amount on screen and wait for confirmTwintQr().
+    fun showTwintSticker(qrUrl: String, totalRappen: Int) {
+        _state.value = PaymentState.ShowingTwintSticker(qrUrl, totalRappen)
+    }
+
+    // The merchant has seen the payment land in their TWINT app. Record it the
+    // same way cash is recorded — an attested sale, distinguished from
+    // Stripe-confirmed TWINT by paymentMethod = "twint_qr".
+    fun confirmTwintQr(productIds: List<Int>) {
+        _state.value = PaymentState.RecordingCashSale
+        viewModelScope.launch {
+            try {
+                val response = api.manualSale(
+                    ManualSaleRequest(
+                        productIds,
+                        paymentMethod = "twint_qr",
+                        priceOverrides = PosSession.priceOverrides.mapKeys { it.key.toString() },
+                        customItems = PosSession.customItems.map {
+                            CustomLineItemRequest(name = it.name, priceRappen = it.priceRappen)
+                        },
+                    )
+                )
+                _state.value = PaymentState.Succeeded(response.posOrderId, response.totalRappen)
+            } catch (e: Exception) {
+                // Deliberately NOT falling back to offline recording like cash
+                // does. Cash is in the merchant's hand either way; a TWINT
+                // payment we failed to record is one we also can't verify
+                // later, so surface the failure and let them retry.
+                _state.value = PaymentState.Failed(
+                    e.message ?: "Couldn't record the TWINT payment"
+                )
             }
         }
     }

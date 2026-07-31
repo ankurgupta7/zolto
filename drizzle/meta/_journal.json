@@ -85,6 +85,13 @@
       "when": 1785638000000,
       "tag": "0012_drop_plan_price_override",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "5",
+      "when": 1785639000000,
+      "tag": "0013_twint_qr_sticker",
+      "breakpoints": true
     }
   ]
 }

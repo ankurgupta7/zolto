@@ -7,6 +7,7 @@ import {
   protectedProcedure,
   adminProcedure,
   requireTenant,
+  tenantAdminProcedure,
   PLAN_FEATURES,
 } from "../_core/trpc";
 import {
@@ -24,6 +25,7 @@ import {
   deleteUserById,
 } from "../db";
 import { createStripeCustomer } from "../stripe";
+import { storagePut } from "../storage";
 import { buildConnectAuthorizeUrl } from "../stripeConnect";
 import { deriveOnboardingStatus } from "../onboarding";
 import { generatePosApiKey, hashPosApiKey } from "../posApiKey";
@@ -293,8 +295,12 @@ export const tenantRouter = router({
   //   currency     — anything other than CHF needs multi-currency (Pro plan)
   // The checks live inline (not as middleware) because the same procedure also
   // accepts ungated branding fields on every plan.
-  updateSettings: publicProcedure
-    .use(requireTenant)
+  //
+  // SECURITY: this was `publicProcedure.use(requireTenant)` — despite the
+  // "Admin" heading it required no authentication at all, so anyone who could
+  // reach a store's host could rewrite that store's settings (contact email,
+  // Discord intake channel, public domain, branding). Now properly guarded.
+  updateSettings: tenantAdminProcedure
     .input(
       z.object({
         logoUrl: z.string().url().optional(),
@@ -369,6 +375,63 @@ export const tenantRouter = router({
       }
 
       return { success: true };
+    }),
+
+  // ─── Admin: Upload / clear the TWINT QR code sticker ──────────────────────
+  // The merchant's own sticker, shown full-screen on the POS for customers to
+  // scan (docs/planning/native-twint-integration.md §4b). An upload rather than
+  // a pasted URL because TWINT hands merchants an image file, and asking them
+  // to self-host it would be absurd. Passing null clears it, which immediately
+  // removes the TWINT (QR) option from the POS.
+  setTwintQr: tenantAdminProcedure
+    .input(
+      z.object({
+        // Base64 image data (with or without a data: prefix), or null to clear.
+        imageData: z.string().max(8_000_000).nullable(),
+        mimeType: z
+          .enum(["image/png", "image/jpeg", "image/webp"])
+          .default("image/png"),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      let twintQrUrl: string | null = null;
+
+      if (input.imageData !== null) {
+        const base64 = input.imageData.replace(/^data:[^;]+;base64,/, "");
+        const buffer = Buffer.from(base64, "base64");
+        if (buffer.byteLength === 0) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "That file didn't contain any image data.",
+          });
+        }
+        const ext = input.mimeType.split("/")[1] ?? "png";
+        // Tenant-scoped so the upload counts against the plan's storage cap
+        // like every other image (server/storage.ts).
+        const { url } = await storagePut(
+          `twint-qr/${ctx.tenant.id}/${Date.now()}.${ext}`,
+          buffer,
+          input.mimeType,
+          ctx.tenant.id,
+        );
+        twintQrUrl = url;
+      }
+
+      const existing = await db.query.tenantSettings.findFirst({
+        where: eq(tenantSettings.tenantId, ctx.tenant.id),
+      });
+      if (existing) {
+        await db
+          .update(tenantSettings)
+          .set({ twintQrUrl, updatedAt: new Date() })
+          .where(eq(tenantSettings.id, existing.id));
+      } else {
+        await db
+          .insert(tenantSettings)
+          .values({ tenantId: ctx.tenant.id, twintQrUrl });
+      }
+
+      return { twintQrUrl };
     }),
 
   // ─── Admin: Get this tenant's Stripe Connect authorize URL + status ───────

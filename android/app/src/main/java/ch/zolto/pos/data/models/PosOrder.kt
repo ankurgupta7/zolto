@@ -47,10 +47,13 @@ data class SaleResponse(
     @SerializedName("alreadyFulfilled") val alreadyFulfilled: Boolean?,
 )
 
-// Cash is the only method that never creates a Stripe PaymentIntent — the
-// cashier takes the money in hand and this just records the sale + decrements
-// stock, same bookkeeping as the card flow. (Card uses Tap to Pay; TWINT uses
-// a real Stripe PaymentIntent — see TwintIntentResponse.)
+// Attested sales: no Stripe PaymentIntent is ever created. Either the cashier
+// took the money in hand (`cash`) or the customer scanned the merchant's own
+// TWINT QR sticker and the merchant watched it arrive in their TWINT app
+// (`twint_qr`) — TWINT gives us no API to verify that, so the merchant's word
+// is the record. Bookkeeping is otherwise identical to the card flow.
+// (Card uses Tap to Pay; Stripe-brokered TWINT uses a real PaymentIntent —
+// see TwintIntentResponse — and is a DIFFERENT payment method from twint_qr.)
 data class ManualSaleRequest(
     @SerializedName("productIds") val productIds: List<Int>,
     @SerializedName("paymentMethod") val paymentMethod: String = "cash",
@@ -106,6 +109,10 @@ data class PosConfigResponse(
     @SerializedName("locationId") val locationId: String,
     // Present on zolto; ignored by older backends.
     @SerializedName("tenantSlug") val tenantSlug: String? = null,
+    // The merchant's own TWINT QR sticker, uploaded in the admin. Null means
+    // they haven't got one, and the TWINT (QR) option must stay hidden — we
+    // must never offer a rail we can't actually put on screen.
+    @SerializedName("twintQrUrl") val twintQrUrl: String? = null,
 )
 
 // First-time Terminal provisioning (zolto POST /api/pos/terminal/location).

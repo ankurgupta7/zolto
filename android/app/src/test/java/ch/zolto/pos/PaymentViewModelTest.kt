@@ -26,6 +26,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -385,5 +386,79 @@ class PaymentViewModelTest {
         viewModel.onPaymentFailed("error")
         viewModel.reset()
         assertTrue(viewModel.state.value is PaymentState.Idle)
+    }
+
+    // ─── TWINT QR sticker ────────────────────────────────────────────────────
+    // The merchant's own sticker rail. TWINT gives us no API, so nothing is
+    // polled and nothing is created server-side until the merchant confirms
+    // they watched the payment arrive in their own TWINT app.
+
+    @Test
+    fun `showTwintSticker puts the code and amount on screen without calling the API`() = runTest {
+        viewModel.showTwintSticker("https://cdn.test/qr.png", 4700)
+
+        val state = viewModel.state.value
+        assertTrue(state is PaymentState.ShowingTwintSticker)
+        assertEquals("https://cdn.test/qr.png", (state as PaymentState.ShowingTwintSticker).qrUrl)
+        assertEquals(4700, state.totalRappen)
+
+        // Crucially: no sale exists yet. Showing a QR is not a payment.
+        advanceUntilIdle()
+        verifyNoInteractions(api)
+    }
+
+    @Test
+    fun `confirmTwintQr records an attested sale as twint_qr, not twint`() = runTest {
+        val response = ManualSaleResponse(success = true, posOrderId = 77, totalRappen = 4700)
+        whenever(api.manualSale(any())).thenReturn(response)
+
+        viewModel.confirmTwintQr(listOf(9))
+        advanceUntilIdle()
+
+        val state = viewModel.state.value
+        assertTrue(state is PaymentState.Succeeded)
+        assertEquals(77, (state as PaymentState.Succeeded).posOrderId)
+
+        // "twint" would claim a Stripe PaymentIntent succeeded. It didn't —
+        // this is the merchant's word, same evidentiary grade as cash.
+        verify(api).manualSale(eq(ManualSaleRequest(listOf(9), "twint_qr")))
+    }
+
+    @Test
+    fun `confirmTwintQr carries bargained overrides and custom items`() = runTest {
+        PosSession.setPriceOverride(9, 2500)
+        PosSession.customItems.add(CustomLineItem(name = "Gift wrap", priceRappen = 500))
+        whenever(api.manualSale(any())).thenReturn(
+            ManualSaleResponse(success = true, posOrderId = 78, totalRappen = 3000)
+        )
+
+        viewModel.confirmTwintQr(listOf(9))
+        advanceUntilIdle()
+
+        verify(api).manualSale(
+            eq(
+                ManualSaleRequest(
+                    listOf(9),
+                    "twint_qr",
+                    priceOverrides = mapOf("9" to 2500),
+                    customItems = listOf(CustomLineItemRequest(name = "Gift wrap", priceRappen = 500)),
+                )
+            )
+        )
+    }
+
+    @Test
+    fun `confirmTwintQr surfaces a failure instead of recording offline like cash`() = runTest {
+        // Cash falls back to offline recording because the money is in the
+        // merchant's hand either way. A TWINT payment we failed to record is
+        // one we also cannot verify later, so it must fail loudly.
+        whenever(api.manualSale(any())).thenThrow(RuntimeException("network down"))
+
+        viewModel.confirmTwintQr(listOf(9))
+        advanceUntilIdle()
+
+        val state = viewModel.state.value
+        assertTrue(state is PaymentState.Failed)
+        assertEquals("network down", (state as PaymentState.Failed).message)
     }
 }
