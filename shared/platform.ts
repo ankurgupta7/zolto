@@ -224,6 +224,9 @@ export const PLANS: PlatformPlan[] = [
 /** The Pro plan (highlighted tier) — single lookup used by fee math + upsell. */
 export const PRO_PLAN = PLANS.find((p) => p.id === "pro")!;
 
+/** The Free plan — the tier the zero-cost POS claim is sourced from. */
+export const FREE_PLAN = PLANS.find((p) => p.id === "free")!;
+
 /**
  * Monthly online sales volume (CHF) above which Pro's flat fee beats the
  * Free plan's 1% skim — the in-app upsell trigger. 25 / 1% = CHF 2,500.
@@ -339,7 +342,8 @@ export const PLAN_FEATURES = {
  * card and the number the quota compares against are the same quantity.
  */
 export function storageBytesForPlan(plan: string): number {
-  const p = PLANS.find((x) => x.id === plan) ?? PLANS.find((x) => x.id === "free")!;
+  const p =
+    PLANS.find((x) => x.id === plan) ?? PLANS.find((x) => x.id === "free")!;
   return p.storageGb * 1024 * 1024 * 1024;
 }
 
@@ -401,6 +405,35 @@ export const COST_COMPARISON = {
   multiplier: "one-hundredth the cost",
 } as const;
 
+/**
+ * The zero-cost phone POS — the headline differentiator.
+ *
+ * The claim is deliberately scoped to what Zolto ships rather than to what
+ * anyone else doesn't: every line here is checkable against FREE_PLAN, and the
+ * tests pin it there. A blanket "nobody else does this" would be a claim about
+ * every competitor's current tier in every country, which is unverifiable the
+ * day it's written and stale the week after — the same reasoning that keeps
+ * COMPETITORS free of pricing (see below).
+ *
+ * What makes it land is that it's specific and falsifiable: a full till, with
+ * photos, names and prices, at CHF 0/month, with no clock on it.
+ */
+export const ZERO_COST_POS = {
+  eyebrow: "the bit people re-read",
+  headline: "A whole shop in your pocket. For nothing.",
+  body: "Photos, names, prices, stock counts — your actual catalogue, in the till on your phone. Tap to take the payment. Watch it sync to your website. Then pay us CHF 0.00 at the end of the month, and again the month after that.",
+  /** Each item must be true of the Free plan — asserted in platform.test.ts. */
+  includes: [
+    "Full POS — Tap to Pay, TWINT QR and cash",
+    "Every piece with its photo, name and price",
+    "Real-time POS ↔ online inventory sync",
+    "Your online storefront, on your own zolto.ch address",
+  ],
+  /** The catch, stated before anyone has to ask what it is. */
+  catch:
+    "No trial clock. No starter tier that quietly expires. The only thing we ever charge for is the online sales we bring you — and if there aren't any, there's nothing to charge.",
+} as const;
+
 export interface ComparisonRow {
   feature: string;
   them: string;
@@ -409,6 +442,14 @@ export interface ComparisonRow {
 
 /** "What you're actually paying them for" — old guard vs. Zolto, row by row. */
 export const INCUMBENT_COMPARISON: ComparisonRow[] = [
+  {
+    // The headline row, first on purpose — see ZERO_COST_POS. Phrased as a
+    // difference in *model* (what's bundled into a paid tier vs. what's free),
+    // which is checkable, rather than as a price claim about any one company.
+    feature: "Your catalogue on your phone",
+    them: "Part of a paid tier, or a separate product entirely",
+    us: "Photos, names & prices — CHF 0/month, no clock on it",
+  },
   {
     feature: "Card reader",
     them: "Sold to you, CHF 50–300+",

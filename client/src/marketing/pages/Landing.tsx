@@ -17,6 +17,7 @@ import { DayInTheLife } from "../components/DayInTheLife";
 import { ScrollReveal } from "../components/ScrollReveal";
 import { CardReaderGag } from "../components/CardReaderGag";
 import { DiaryTeaser } from "../components/DiaryTeaser";
+import { ZeroCostPos } from "../components/ZeroCostPos";
 
 export default function Landing() {
   return (
@@ -108,6 +109,9 @@ export default function Landing() {
           </div>
         </Container>
       </section>
+
+      {/* ── The differentiator: a real POS + catalogue, at CHF 0/month ── */}
+      <ZeroCostPos />
 
       {/* ── The pledge (Direction B) — the heart of the positioning ── */}
       <section className="border-b border-[var(--brand-border)] bg-[var(--brand-surface-2)]">
