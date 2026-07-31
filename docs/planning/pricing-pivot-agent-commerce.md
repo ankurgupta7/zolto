@@ -277,13 +277,16 @@ being precise about what has and hasn't been proven:
 
 - ✅ **Unit-tested** end to end with a mocked Stripe: fee maths, plan
   conditionality, channel attribution, subtotal-not-shipping basis.
-- ⚠️ **Integration tests written, not yet run.** `server/stripe.integration.test.ts`
-  now creates a real test-mode connected account and asserts that a direct
-  charge with `application_fee_amount` is accepted (plus the agent-channel
-  and Pro/no-fee variants). They `describe.skip` without
-  `STRIPE_TEST_SECRET_KEY`, and no such key was available where this was
-  written. **Run `pnpm test:integration` with a Stripe test key before
-  launch** — this is the last unproven link in the revenue path.
+- ✅ **Verified against the real Stripe API (2026-07-31).** With
+  `STRIPE_TEST_SECRET_KEY`/`STRIPE_TEST_WEBHOOK_SECRET` set and a business
+  name configured on both the platform and the connected test account,
+  `pnpm test:integration` is fully green: `stripe.integration.test.ts` (7/7)
+  and `billing.integration.test.ts` (9/9), 16/16 total. A direct charge with
+  `application_fee_amount` is accepted by Stripe; the agent-channel and
+  Pro/no-fee variants pass too. The prior blocker
+  (`"you must set an account or business name"`) was Checkout branding
+  config, not a fee rejection, and is now resolved. This was the last
+  unproven link in the revenue path — it's closed.
 - ✅ **Failure contained regardless.** A rejected application fee fails the
   *entire* `checkout.sessions.create` call, which would take a vendor's
   storefront offline rather than cost Zolto 1%. `createStorefrontCheckoutSession`

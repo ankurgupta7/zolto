@@ -1,11 +1,5 @@
 # CLAUDE.md
 
-> **⏳ Work in progress on branch `claude/zolto-pricing-plan-fni0pb`:** read
-> [`docs/planning/CONTINUE-HERE.md`](docs/planning/CONTINUE-HERE.md) first —
-> it names the one item blocking launch (verifying the Stripe Connect platform
-> fee against the real API) and the decisions already settled. Delete both this
-> banner and that file once it's closed.
-
 Guidance for Claude Code when working in this repository.
 
 ## Testing requirements
