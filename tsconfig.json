@@ -1,5 +1,18 @@
 {
-  "include": ["client/src/**/*", "shared/**/*", "server/**/*"],
+  // scripts/, e2e/ and drizzle/ are in here deliberately. They used to be
+  // outside the net, so `npm run check` never looked at them — which is how
+  // scripts/seed-e2e.ts kept seeding `plan: "studio"` months after the pricing
+  // pivot narrowed that column to enum('free','pro'). Nothing failed until CI
+  // hit MySQL and got "Data truncated for column 'plan'". Code that talks to
+  // the schema gets typechecked, even when it isn't shipped to users.
+  "include": [
+    "client/src/**/*",
+    "shared/**/*",
+    "server/**/*",
+    "scripts/**/*",
+    "e2e/**/*",
+    "drizzle/**/*"
+  ],
   "exclude": ["node_modules", "build", "dist", "**/*.test.ts"],
   "compilerOptions": {
     "incremental": true,
