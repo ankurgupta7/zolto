@@ -178,11 +178,13 @@ export const PLANS: PlatformPlan[] = [
     storageGb: 5,
     features: [
       "Full POS — Tap to Pay, TWINT QR, cash — CHF 0 on in-person sales",
-      // Storefronts live on subdomains of the platform root (zolto.ch —
-      // server/_core/platformDomain.ts). This said "zolto.shop", a domain the
-      // platform doesn't serve (or even own), and this string feeds the
-      // pricing card, /llms.txt AND the MCP tools — so humans and AI agents
-      // alike were being pointed at an address that resolves to nothing.
+      // Storefronts live on subdomains of the platform root, which is derived
+      // from PUBLIC_BASE_URL (server/_core/platformDomain.ts) and is zolto.ch
+      // in every deploy. This once named a different domain the platform does
+      // not serve; because FEATURES feeds the pricing card, /llms.txt AND the
+      // MCP tools, that pointed humans and AI agents alike at an address which
+      // resolved to nothing. Only ever name a domain Zolto actually answers on
+      // — platformDomains.test.ts enforces it.
       "Online store on your own zolto.ch address",
       "Real-time POS ↔ online inventory sync",
       "AI descriptions & translation (fair use)",

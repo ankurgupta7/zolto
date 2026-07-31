@@ -53,7 +53,7 @@ page; and the platform mix (97.5% ChatGPT) will shift.
 Zolto has **two** distinct surfaces that earn AI traffic, and they are at very
 different levels of readiness:
 
-| | zolto.ch (marketing) | Tenant storefronts (`*.zolto.shop`) |
+| | zolto.ch (marketing) | Tenant storefronts (`*.zolto.ch`) |
 |---|---|---|
 | Server-rendered title / meta / canonical | ✅ `server/marketingSeo.ts` | ⚠️ title + description + favicon only |
 | JSON-LD injected server-side | ✅ Organization, WebSite, SoftwareApplication, FAQPage, Article, Breadcrumb | ❌ none |
