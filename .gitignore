@@ -120,5 +120,7 @@ client/public/__manus__/version.json
 # Playwright e2e artifacts
 test-results/
 playwright-report/
+# JUnit XML written by the CI test jobs (.circleci/config.yml)
+reports/
 e2e/test-results/
 e2e/.cache/

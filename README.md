@@ -1,5 +1,7 @@
 # Zolto — Multi-Tenant POS + E-commerce Platform for Artisan Sellers
 
+[![CI](https://dl.circleci.com/status-badge/img/gh/ankurgupta7/zolto/tree/main.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/ankurgupta7/zolto/tree/main)
+
 Zolto is a multi-tenant platform that powers online stores + in-person POS for artisan sellers (jewelry, crafts, boutiques). Built from the ground up based on real-world feedback from running a jewelry store in Zurich.
 
 Each tenant gets:
@@ -21,6 +23,44 @@ Each tenant gets:
 - **Superjson out of the box:** return Drizzle rows directly—`Date` stays a `Date`.
 - **Auth baked in:** `/api/oauth/callback` handles OAuth, `protectedProcedure` injects `ctx.user`; `adminProcedure` gates admin-only operations.
 - **Gateway-ready:** all RPC traffic is under `/api/trpc`, making it easy to route at the edge.
+
+---
+
+## Continuous Integration
+
+`.circleci/config.yml` runs four suites on **every push**, so a PR is verified
+before merge and the merge commit on `main` is verified again. The badge at the
+top of this file reads `main`.
+
+| Job           | What it runs                                                                 |
+| ------------- | ---------------------------------------------------------------------------- |
+| `unit`        | `tsc --noEmit`, the full vitest suite (server + client), deploy-script tests |
+| `integration` | `server/*.integration.test.ts` against **real Stripe test mode**             |
+| `e2e`         | Playwright storefront journey against a freshly-migrated MySQL               |
+| `android`     | ZoltoPOS contract tests, `./gradlew test`, and a debug APK                   |
+
+### One-time setup
+
+1. **Add the project** in CircleCI (Projects → Set Up Project → it picks up
+   `.circleci/config.yml` on the default branch).
+2. **Set two environment variables** in Project Settings → Environment
+   Variables — `STRIPE_TEST_SECRET_KEY` and `STRIPE_TEST_WEBHOOK_SECRET`.
+   The `integration` job **fails deliberately if the first is missing** rather
+   than passing: both Stripe suites `describe.skip` themselves without it, and
+   a job that skips everything reports success while proving nothing. That is
+   not hypothetical — it is how `billing.integration.test.ts` accumulated seven
+   real failures unnoticed straight through the pricing pivot.
+3. **If the repo is private**, the badge needs a status token appended
+   (Project Settings → Status Badges → create one), i.e.
+   `.../tree/main.svg?style=svg&circle-token=<token>`. Public repos work as-is.
+
+### Overlap with GitHub Actions
+
+`.github/workflows/android-build.yml` and `e2e.yml` cover the same ground as
+the `android` and `e2e` jobs here. Retire them if CircleCI becomes the source
+of truth, or both systems run the same work on every push. Note that neither
+GitHub workflow ever ran the unit suite or the typecheck — that gap is what
+the `unit` job closes.
 
 ---
 
