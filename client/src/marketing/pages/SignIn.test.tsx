@@ -17,6 +17,13 @@ vi.mock("@/lib/trpc", () => ({
       me: {
         useQuery: () => ({ data: mocks.meData, isLoading: mocks.meLoading }),
       },
+      requestMagicLink: {
+        useMutation: () => ({
+          mutate: vi.fn(),
+          isPending: false,
+          isError: false,
+        }),
+      },
     },
     tenant: {
       myStore: {
@@ -53,22 +60,30 @@ function renderSignIn(path = "/signin") {
   );
 }
 
-describe("SignIn — leg 1: handing off to the identity provider", () => {
-  it("waits for the auth check rather than bouncing on first paint", () => {
+describe("SignIn — leg 1: offering every sign-in method", () => {
+  it("waits for the auth check rather than showing options on first paint", () => {
     mocks.meLoading = true;
     renderSignIn();
     expect(hardRedirect).not.toHaveBeenCalled();
     expect(screen.getByText(/signing you in/i)).toBeTruthy();
   });
 
-  it("sends a logged-out visitor to OAuth, asking to come back here", async () => {
+  it("offers Google, Apple, and email to a logged-out visitor, each returning here", () => {
     renderSignIn();
-    await waitFor(() => expect(hardRedirect).toHaveBeenCalledTimes(1));
-    const [url, opts] = vi.mocked(hardRedirect).mock.calls[0];
-    expect(url).toContain("/api/oauth/login");
-    expect(url).toContain(`next=${encodeURIComponent(SIGNIN_RETURN_PATH)}`);
-    // A bounce page must not linger in the back stack.
-    expect(opts).toEqual({ replace: true });
+    expect(hardRedirect).not.toHaveBeenCalled();
+    const google = screen.getByRole("link", { name: /continue with google/i });
+    expect(google.getAttribute("href")).toContain("/api/oauth/login");
+    expect(google.getAttribute("href")).toContain(
+      `next=${encodeURIComponent(SIGNIN_RETURN_PATH)}`,
+    );
+    const apple = screen.getByRole("link", { name: /continue with apple/i });
+    expect(apple.getAttribute("href")).toContain("/api/oauth/apple/login");
+    expect(apple.getAttribute("href")).toContain(
+      `next=${encodeURIComponent(SIGNIN_RETURN_PATH)}`,
+    );
+    expect(
+      screen.getByRole("button", { name: /continue with email/i }),
+    ).toBeTruthy();
   });
 });
 
@@ -136,11 +151,11 @@ describe("SignIn — the OAuth round-trip guard", () => {
     expect(hardRedirect).not.toHaveBeenCalled();
   });
 
-  it("explains the usual cause and offers a manual retry", () => {
+  it("explains the usual cause and offers every method again", () => {
     renderSignIn(SIGNIN_RETURN_PATH);
     expect(screen.getByText(/blocking cookies/i)).toBeTruthy();
-    const retry = screen.getByRole("link", { name: /try again/i });
-    expect(retry.getAttribute("href")).toContain("/api/oauth/login");
+    const google = screen.getByRole("link", { name: /continue with google/i });
+    expect(google.getAttribute("href")).toContain("/api/oauth/login");
   });
 
   it("still completes the trip when the handshake did work", async () => {

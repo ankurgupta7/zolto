@@ -13,3 +13,9 @@ export const getLoginUrl = (returnPath?: string) => {
   const base = "/api/oauth/login";
   return returnPath ? `${base}?next=${encodeURIComponent(returnPath)}` : base;
 };
+
+/** Same contract as getLoginUrl, for the Apple Sign In round-trip. */
+export const getAppleLoginUrl = (returnPath?: string) => {
+  const base = "/api/oauth/apple/login";
+  return returnPath ? `${base}?next=${encodeURIComponent(returnPath)}` : base;
+};

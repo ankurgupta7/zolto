@@ -1,24 +1,25 @@
 import { useEffect, useMemo, type ReactNode } from "react";
 import { Link, useSearch } from "wouter";
 import { trpc } from "@/lib/trpc";
-import { getLoginUrl } from "@/const";
 import { storeAdminUrl } from "@/lib/surface";
 import { hardRedirect } from "@/lib/navigate";
 import { Container } from "../components/Container";
+import { SignInOptions } from "../components/SignInOptions";
 
 /**
  * /signin — the returning merchant's front door.
  *
- * This is a bounce page, not a form: it exists so "Sign in" has one predictable
- * destination that ends at the merchant's own admin. The chain is
+ * Not signed in yet, it offers every sign-in method (Google, Apple, email
+ * magic link — see SignInOptions) and, once one completes, ends at the
+ * merchant's own admin. The chain is
  *
- *   /signin → (OAuth if needed) → /signin → {slug}.zolto.ch/admin
+ *   /signin → (identity provider) → /signin → {slug}.zolto.ch/admin
  *
- * Both hops are full-page navigations (see lib/navigate): the OAuth handshake is
- * a server route, and the admin lives on the storefront surface, which the app
- * only resolves at mount. Both use history *replace*, so this page never sits in
- * the back stack — pressing Back from the admin returns the merchant to the page
- * they started from rather than bouncing them through the redirect again.
+ * The final hop is a full-page navigation (see lib/navigate): the admin lives
+ * on the storefront surface, which the app only resolves at mount, and it uses
+ * history *replace*, so this page never sits in the back stack — pressing Back
+ * from the admin returns the merchant to the page they started from rather
+ * than bouncing them through sign-in again.
  *
  * Why not redirect from the nav directly: the slug isn't known until `myStore`
  * resolves, which needs an authenticated session. Only a post-login page can
@@ -49,12 +50,6 @@ export default function SignIn() {
     enabled: signedIn,
   });
 
-  // Leg 1 — not signed in yet: hand off to the identity provider.
-  useEffect(() => {
-    if (me.isLoading || signedIn || returnedFromOauth) return;
-    hardRedirect(getLoginUrl(SIGNIN_RETURN_PATH), { replace: true });
-  }, [me.isLoading, signedIn, returnedFromOauth]);
-
   // Leg 2 — signed in and the store is known: straight into its admin.
   useEffect(() => {
     if (!signedIn || !store.data) return;
@@ -80,7 +75,7 @@ export default function SignIn() {
     );
   }
 
-  // Came back from the provider without a session — the handshake failed.
+  // Came back from a provider without a session — the handshake failed.
   if (returnedFromOauth && !me.isLoading && !signedIn) {
     return (
       <SignInFrame title={<>We couldn&rsquo;t sign you in.</>}>
@@ -89,12 +84,23 @@ export default function SignIn() {
           blocking cookies — private windows and strict tracking protection stop
           the session from being saved.
         </p>
-        <a
-          href={getLoginUrl(SIGNIN_RETURN_PATH)}
-          className="mt-8 inline-block rounded-md bg-[var(--brand-ink)] px-7 py-3 text-xs font-medium uppercase tracking-[0.14em] text-white transition-colors hover:bg-[var(--brand-ink-hover)]"
-        >
-          Try again
-        </a>
+        <SignInOptions className="mt-8" next={SIGNIN_RETURN_PATH} />
+        <p className="mt-6 text-sm text-[var(--brand-muted)]">
+          Don&rsquo;t have a store yet?{" "}
+          <Link href="/signup" className="text-[var(--brand-accent)] underline">
+            Create one
+          </Link>
+          .
+        </p>
+      </SignInFrame>
+    );
+  }
+
+  // Not signed in yet and not mid-handshake: offer every sign-in method.
+  if (!me.isLoading && !signedIn) {
+    return (
+      <SignInFrame title="Sign in to your store.">
+        <SignInOptions className="mt-8" next={SIGNIN_RETURN_PATH} />
         <p className="mt-6 text-sm text-[var(--brand-muted)]">
           Don&rsquo;t have a store yet?{" "}
           <Link href="/signup" className="text-[var(--brand-accent)] underline">

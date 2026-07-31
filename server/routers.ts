@@ -1,5 +1,7 @@
+import { z } from "zod";
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
+import { requestMagicLink } from "./_core/magicLink";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
 import { productsRouter } from "./routers/products";
@@ -24,6 +26,19 @@ export const appRouter = router({
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
       return { success: true } as const;
     }),
+    // Passwordless fallback for anyone without a Google/Apple account — see
+    // server/_core/magicLink.ts for the token + email mechanics and the
+    // GET /api/auth/magic-link/callback route that redeems the link.
+    requestMagicLink: publicProcedure
+      .input(
+        z.object({
+          email: z.string().email().max(320),
+          next: z.string().max(512).optional(),
+        }),
+      )
+      .mutation(({ ctx, input }) =>
+        requestMagicLink({ email: input.email, next: input.next, req: ctx.req }),
+      ),
   }),
   tenant: tenantRouter, // NEW: Multi-tenant routes
   billing: billingRouter, // Plan subscriptions + AI usage

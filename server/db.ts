@@ -30,6 +30,8 @@ import {
   type InsertUser,
   type User,
   instagramPosts,
+  type MagicLinkToken,
+  magicLinkTokens,
   type Order,
   orders,
   type PhotoCreditLedgerEntry,
@@ -207,6 +209,46 @@ export async function getUserByOpenId(openId: string) {
       .limit(1);
     return result.length > 0 ? result[0] : undefined;
   }, undefined);
+}
+
+// ─── Magic link tokens (passwordless email sign-in) ────────────────────────────
+
+export async function createMagicLinkToken(entry: {
+  email: string;
+  token: string;
+  next: string | null;
+  expiresAt: Date;
+}): Promise<void> {
+  await withDbOrThrow((db) =>
+    db.insert(magicLinkTokens).values({
+      email: entry.email,
+      token: entry.token,
+      next: entry.next,
+      expiresAt: entry.expiresAt,
+    }),
+  );
+}
+
+export async function getMagicLinkTokenByToken(
+  token: string,
+): Promise<MagicLinkToken | undefined> {
+  return withDb(async (db) => {
+    const rows = await db
+      .select()
+      .from(magicLinkTokens)
+      .where(eq(magicLinkTokens.token, token))
+      .limit(1);
+    return rows[0];
+  }, undefined);
+}
+
+export async function consumeMagicLinkToken(id: number): Promise<void> {
+  await withDbOrThrow((db) =>
+    db
+      .update(magicLinkTokens)
+      .set({ consumedAt: new Date() })
+      .where(eq(magicLinkTokens.id, id)),
+  );
 }
 
 // ─── Products ─────────────────────────────────────────────────────────────────
