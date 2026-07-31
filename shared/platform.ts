@@ -178,7 +178,12 @@ export const PLANS: PlatformPlan[] = [
     storageGb: 5,
     features: [
       "Full POS — Tap to Pay, TWINT QR, cash — CHF 0 on in-person sales",
-      "Online store on a zolto.shop address",
+      // Storefronts live on subdomains of the platform root (zolto.ch —
+      // server/_core/platformDomain.ts). This said "zolto.shop", a domain the
+      // platform doesn't serve (or even own), and this string feeds the
+      // pricing card, /llms.txt AND the MCP tools — so humans and AI agents
+      // alike were being pointed at an address that resolves to nothing.
+      "Online store on your own zolto.ch address",
       "Real-time POS ↔ online inventory sync",
       "AI descriptions & translation (fair use)",
       "5 AI photo shots / month",
