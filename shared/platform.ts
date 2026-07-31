@@ -230,6 +230,64 @@ export function formatPrice(chf: number): string {
 }
 
 /**
+ * What each plan unlocks, as booleans the code can gate on — the machine-readable
+ * counterpart to each plan's `features` copy above.
+ *
+ * This lives in shared/ rather than on the server because BOTH planes need it.
+ * It used to live only in server/_core/trpc.ts, so every admin screen re-derived
+ * the same rule by hand — `Billing.tsx` called its copy "mirrors PLAN_FEATURES"
+ * in a comment. Mirrors rot silently: when the four-tier model collapsed to
+ * Free/Pro, `Domain.tsx` was still gating on a Set of the retired tier names, so
+ * it matched no plan at all and showed paying Pro merchants an upsell for the
+ * custom domain they had already bought. One object, read by the gate and the
+ * enforcement alike, is what stops that recurring.
+ *
+ * Scale limits (maxProducts, storageGb, aiPhotoAllowancePerMonth) are NOT
+ * duplicated here — PLANS owns those. The 1% online/agent fee is owned by
+ * PLANS[].onlineFeeBps and applied in checkoutSession.ts, not gated here.
+ */
+export const PLAN_FEATURES = {
+  // Free: the whole commerce engine — store, full POS, inventory sync, the
+  // agent layer (llms.txt/MCP/chat, the discovery wedge) and a taste of AI.
+  // Monetized via the 1% fee on online/agent orders, not by gating.
+  free: {
+    maxStaff: 1,
+    customDomain: false,
+    whiteLabel: false,
+    analytics: "basic",
+    multiCurrency: false,
+    prioritySupport: false,
+    pos: true,
+    onlineStore: true,
+  },
+  // Pro (CHF 25/mo): removes the 1% fee, unmetered AI, and everything a
+  // maker selling online every week needs — domain, team, analytics, support.
+  pro: {
+    maxStaff: 3,
+    customDomain: true,
+    whiteLabel: true,
+    analytics: "advanced",
+    multiCurrency: true,
+    prioritySupport: true,
+    pos: true,
+    onlineStore: true,
+  },
+} as const;
+
+export type PlanId = keyof typeof PLAN_FEATURES;
+export type PlanFeature = keyof typeof PLAN_FEATURES.free;
+
+/**
+ * Features for a plan id that may have come from the database or a URL, where
+ * a retired id (maker/studio/atelier) or nonsense can still show up. Falls back
+ * to Free rather than throwing: under-granting a feature is recoverable, and
+ * silently treating an unknown plan as Pro would give away paid features.
+ */
+export function featuresForPlan(plan: string): (typeof PLAN_FEATURES)[PlanId] {
+  return PLAN_FEATURES[plan as PlanId] ?? PLAN_FEATURES.free;
+}
+
+/**
  * The positioning thesis, as structured facts the marketing surface renders and
  * the llms/MCP briefs can quote. Zolto's stance: the legacy website + POS market
  * (Stripe, SumUp, Worldline) is previous-era software that overcharges small
