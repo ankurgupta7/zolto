@@ -557,6 +557,79 @@ migrate_0025_tenant_secrets
 # deploy/lib/db.sh.
 migrate_0026_storage_objects
 
+# ── 0027: two-tier pricing pivot (free/pro) + order channel/fee columns ──────
+# Ships drizzle/0008_two_tier_pricing.sql, which update.sh never picked up —
+# checkout.ts and billing.ts have referenced these columns since the pivot
+# shipped. Idempotent; see migrate_0027_two_tier_pricing in deploy/lib/db.sh.
+migrate_0027_two_tier_pricing
+
+# ── 0028: Italian product locale (nameIt / descriptionIt) ────────────────────
+# Ships drizzle/0009_product_locale_it.sql, also missing from this path.
+if [ "$(col_exists products nameIt)" = "0" ]; then
+  run_sql "0028 add products.nameIt" \
+    "ALTER TABLE \`products\` ADD \`nameIt\` varchar(255) NULL;"
+else
+  ok "0028 products.nameIt already exists"
+fi
+
+if [ "$(col_exists products descriptionIt)" = "0" ]; then
+  run_sql "0028 add products.descriptionIt" \
+    "ALTER TABLE \`products\` ADD \`descriptionIt\` text NULL;"
+else
+  ok "0028 products.descriptionIt already exists"
+fi
+
+# ── 0029: shared rate-limit store ─────────────────────────────────────────────
+# Ships drizzle/0011_rate_limit_windows.sql. Moves server/rateLimit.ts off an
+# in-process Map (reset on every deploy, siloed per instance) onto a shared
+# table, so the checkout rate limit actually holds across instances.
+if [ "$(tbl_exists rate_limit_windows)" = "0" ]; then
+  run_sql "0029 rate_limit_windows table" "
+    CREATE TABLE IF NOT EXISTS \`rate_limit_windows\` (
+      \`id\`         int AUTO_INCREMENT NOT NULL,
+      \`limit_key\`  varchar(255) NOT NULL,
+      \`count\`      int NOT NULL,
+      \`reset_at\`   bigint NOT NULL,
+      CONSTRAINT \`rate_limit_windows_id\` PRIMARY KEY(\`id\`),
+      CONSTRAINT \`rate_limit_windows_limit_key_unique\` UNIQUE(\`limit_key\`)
+    );"
+else
+  ok "0029 rate_limit_windows already exists"
+fi
+
+# ── 0030: drop tenants.plan_price_override ────────────────────────────────────
+# Ships drizzle/0012_drop_plan_price_override.sql. The grandfathering machinery
+# it fed is gone (server/billing.ts) — it recorded what a pre-pivot paid tenant
+# actually billed, for a population that never existed. Idempotent.
+if [ "$(col_exists tenants plan_price_override)" = "1" ]; then
+  run_sql "0030 drop tenants.plan_price_override" \
+    "ALTER TABLE \`tenants\` DROP COLUMN \`plan_price_override\`;"
+else
+  ok "0030 tenants.plan_price_override already dropped"
+fi
+
+# ── 0031: TWINT QR-sticker POS rail ───────────────────────────────────────────
+# Ships drizzle/0013_twint_qr_sticker.sql. Adds the merchant's uploaded TWINT QR
+# sticker and a `twint_qr` payment method kept distinct from Stripe's `twint` —
+# gateway-confirmed vs merchant-attested. See
+# docs/planning/native-twint-integration.md §4b. Idempotent.
+CURRENT_POS_METHOD_ENUM=$($MYSQL -se "${MYSQL_LOCK_TIMEOUT_SQL}SELECT COLUMN_TYPE FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA='${MYSQL_DATABASE}' AND TABLE_NAME='pos_orders' AND COLUMN_NAME='paymentMethod';" 2>/dev/null || echo "")
+
+if echo "$CURRENT_POS_METHOD_ENUM" | grep -q "'twint_qr'"; then
+  ok "0031 pos_orders.paymentMethod already has 'twint_qr'"
+else
+  run_sql "0031 add 'twint_qr' to pos_orders.paymentMethod" \
+    "ALTER TABLE \`pos_orders\` MODIFY COLUMN \`paymentMethod\` enum('card','cash','twint','twint_qr') NOT NULL DEFAULT 'card';"
+fi
+
+if [ "$(col_exists tenant_settings twint_qr_url)" = "0" ]; then
+  run_sql "0031 add tenant_settings.twint_qr_url" \
+    "ALTER TABLE \`tenant_settings\` ADD \`twint_qr_url\` varchar(1024) NULL;"
+else
+  ok "0031 tenant_settings.twint_qr_url already exists"
+fi
+
 # ── Shared helper: run a script inside the builder container ──────────────────
 # Usage: run_in_builder <tag> <script-path> [extra docker args...]
 run_in_builder() {

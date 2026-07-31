@@ -111,6 +111,20 @@
             android:textSize="16sp"
             style="@style/Widget.Zolto.Button.Outlined" />
 
+        <!-- Only shown once the merchant has uploaded their TWINT QR sticker
+             (GET /api/pos/config → twintQrUrl); hidden otherwise so we never
+             offer a rail we can't put on screen. -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_twint_qr"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="56dp"
+            android:layout_marginStart="4dp"
+            android:text="@string/pay_twint_qr"
+            android:textSize="14sp"
+            android:visibility="gone"
+            style="@style/Widget.Zolto.Button.Outlined" />
+
     </LinearLayout>
 
 </LinearLayout>

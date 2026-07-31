@@ -21,7 +21,7 @@ export const TOURS: Record<string, TourStep[]> = {
     {
       target: '[data-tour="bulk-upload"]',
       title: "…or import a whole box",
-      body: "Have a tray of pieces or a CSV? Bulk Photo Upload creates a draft product per photo.",
+      body: "Have a tray of pieces? Point your camera at each one — a draft product is created per photo.",
       placement: "bottom",
     },
   ],

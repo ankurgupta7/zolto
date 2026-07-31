@@ -1,4 +1,5 @@
 import {
+  bigint,
   boolean,
   decimal,
   int,
@@ -55,10 +56,6 @@ export const tenants = mysqlTable("tenants", {
   referredBy: int("referred_by"), // tenant_id of referrer
   referralCode: varchar("referral_code", { length: 16 }).unique(),
   referralDiscountApplied: boolean("referral_discount_applied").default(false),
-  planPriceOverride: decimal("plan_price_override", {
-    precision: 10,
-    scale: 2,
-  }),
   priceLockExpiresAt: timestamp("price_lock_expires_at"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
@@ -96,6 +93,12 @@ export const tenantSettings = mysqlTable("tenant_settings", {
   // platform-wide DISCORD_OWNER_USER_ID env fallback.
   discordOwnerUserId: varchar("discord_owner_user_id", { length: 64 }),
   slackChannelId: varchar("slack_channel_id", { length: 64 }),
+  // The merchant's own TWINT QR code sticker, uploaded as an image and shown
+  // full-screen on the POS for the customer to scan. Not a secret (it's a
+  // sticker they display physically), so it lives here rather than in
+  // tenantSecrets. Null until uploaded, which is what gates the POS's
+  // "TWINT (QR)" payment option.
+  twintQrUrl: varchar("twint_qr_url", { length: 1024 }),
   // Contact
   contactEmail: varchar("contact_email", { length: 320 }),
   contactPhone: varchar("contact_phone", { length: 32 }),
@@ -311,7 +314,18 @@ export const posOrders = mysqlTable("pos_orders", {
   status: mysqlEnum("status", ["pending", "paid", "failed"])
     .default("pending")
     .notNull(),
-  paymentMethod: mysqlEnum("paymentMethod", ["card", "cash", "twint"])
+  // Evidentiary grade differs by method and reconciliation depends on telling
+  // them apart: `card` and `twint` are gateway-confirmed (a Stripe
+  // PaymentIntent succeeded), while `cash` and `twint_qr` are merchant-attested
+  // — the cashier counted the money, or watched the payment land in their own
+  // TWINT app after the customer scanned their QR sticker. Never collapse
+  // `twint_qr` into `twint`; one is proof, the other is a claim.
+  paymentMethod: mysqlEnum("paymentMethod", [
+    "card",
+    "cash",
+    "twint",
+    "twint_qr",
+  ])
     .default("card")
     .notNull(),
   totalRappen: int("totalRappen").notNull(),
@@ -564,6 +578,25 @@ export const staffInvites = mysqlTable("staff_invites", {
 
 export type StaffInvite = typeof staffInvites.$inferSelect;
 export type InsertStaffInvite = typeof staffInvites.$inferInsert;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// RATE LIMIT WINDOWS — shared fixed-window counters (server/rateLimit.ts)
+// ═══════════════════════════════════════════════════════════════════════════════
+// One row per (limiter, key), e.g. "mcp_checkout:7:203.0.113.9". Replaces an
+// in-process Map so the limit holds across every app instance instead of
+// resetting per-instance and on every deploy.
+export const rateLimitWindows = mysqlTable("rate_limit_windows", {
+  id: int("id").autoincrement().primaryKey(),
+  limitKey: varchar("limit_key", { length: 255 }).notNull().unique(),
+  count: int("count").notNull(),
+  // Epoch ms the current window ends — a plain number column (not
+  // `timestamp`) because the app does all window-boundary math and compares
+  // it directly against `Date.now()`.
+  resetAt: bigint("reset_at", { mode: "number" }).notNull(),
+});
+
+export type RateLimitWindow = typeof rateLimitWindows.$inferSelect;
+export type InsertRateLimitWindow = typeof rateLimitWindows.$inferInsert;
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // STORAGE OBJECTS — per-tenant ledger of what each tenant has stored

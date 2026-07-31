@@ -499,9 +499,9 @@ describe("create_checkout — agents buying from the merchant directly", () => {
     };
   }
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
-    resetMcpRateLimits();
+    await resetMcpRateLimits();
     createCheckout.mockResolvedValue(checkoutOk);
   });
 
@@ -636,18 +636,41 @@ describe("get_store_info — buyability", () => {
 
 // ── HTTP transport (route) ────────────────────────────────────────────────────
 
-const mocks = vi.hoisted(() => ({
-  getTenantBySlug: vi.fn(),
-  getVisibleProducts: vi.fn(),
-  getVisibleProductById: vi.fn(),
-  getPublicStores: vi.fn(async () => []),
-}));
+const mocks = vi.hoisted(() => {
+  // A tiny stand-in for the rate_limit_windows table, so tests exercise the
+  // real fixed-window decision logic in server/rateLimit.ts without a DB.
+  const rateLimitRows = new Map<string, { count: number; resetAt: number }>();
+  return {
+    getTenantBySlug: vi.fn(),
+    getVisibleProducts: vi.fn(),
+    getVisibleProductById: vi.fn(),
+    getPublicStores: vi.fn(async () => []),
+    getOrCreateRateLimitWindow: vi.fn(
+      async (key: string, now: number, windowMs: number) => {
+        const existing = rateLimitRows.get(key);
+        if (!existing || now >= existing.resetAt) {
+          const fresh = { count: 1, resetAt: now + windowMs };
+          rateLimitRows.set(key, fresh);
+          return fresh;
+        }
+        existing.count += 1;
+        return existing;
+      },
+    ),
+    clearRateLimitWindows: vi.fn(async () => {
+      rateLimitRows.clear();
+    }),
+  };
+});
 
 vi.mock("./db", () => ({
   getTenantBySlug: (...a: unknown[]) => mocks.getTenantBySlug(...a),
   getVisibleProducts: (...a: unknown[]) => mocks.getVisibleProducts(...a),
   getVisibleProductById: (...a: unknown[]) => mocks.getVisibleProductById(...a),
   getPublicStores: (...a: unknown[]) => mocks.getPublicStores(...a),
+  getOrCreateRateLimitWindow: (...a: unknown[]) =>
+    mocks.getOrCreateRateLimitWindow(...(a as [string, number, number])),
+  clearRateLimitWindows: () => mocks.clearRateLimitWindows(),
 }));
 
 describe("POST /mcp (Streamable HTTP)", () => {

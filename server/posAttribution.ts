@@ -39,11 +39,15 @@ export interface PosAttributionSummary {
   emailSent: boolean;
 }
 
+// `tenantId` scopes the run to one store. The merchant-facing Reconciliation
+// page passes the caller's own tenant; omitting it sweeps every store and is
+// reserved for platform-level use.
 export async function runPosAttribution(
   lookbackDays: number = POS_ATTRIBUTION_LOOKBACK_DAYS_DEFAULT,
+  tenantId?: number,
 ): Promise<PosAttributionSummary> {
   const since = new Date(Date.now() - lookbackDays * 86400 * 1000);
-  const lines = await getUnattributedPosLineItems(since);
+  const lines = await getUnattributedPosLineItems(since, tenantId);
 
   let newPendingReview = 0;
   let newNoCandidates = 0;

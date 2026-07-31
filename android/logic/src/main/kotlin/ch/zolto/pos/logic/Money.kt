@@ -20,4 +20,12 @@ object Money {
     }
 
     fun chfString(rappen: Int): String = "%.2f".format(rappen / 100.0)
+
+    /**
+     * The same amount with its currency, for anything a CUSTOMER reads rather
+     * than types — most importantly the TWINT QR-sticker screen, where the
+     * customer copies this figure into their own TWINT app and a bare "47.00"
+     * beside a QR code is ambiguous.
+     */
+    fun chfDisplay(rappen: Int): String = "CHF ${chfString(rappen)}"
 }

@@ -137,3 +137,41 @@ export const requireTenant = t.middleware(async ({ ctx, next }) => {
   }
   return next({ ctx: { ...ctx, tenant: ctx.tenant } });
 });
+
+/**
+ * The guard almost every store-admin mutation actually wants: signed in, an
+ * admin, **and** an admin of the store being addressed.
+ *
+ * `adminProcedure` alone only proves the caller is an admin *somewhere* —
+ * `ctx.tenant` is resolved from the request host, so an admin of store A
+ * hitting store B's subdomain passes it. That cross-tenant check previously
+ * existed in exactly one procedure (tenant.getStripeConnectUrl), copied by
+ * hand; anything that forgot it was writeable across tenants.
+ *
+ * Superadmins are deliberately exempt — platform support needs to act on a
+ * tenant it doesn't belong to, and `platform.metrics` already treats that role
+ * as cross-tenant by design.
+ */
+export const tenantAdminProcedure = adminProcedure
+  .use(requireTenant)
+  .use(async ({ ctx, next }) => {
+    // adminProcedure has already rejected a null user; re-checking rather than
+    // asserting keeps this a real guard instead of a `!` the compiler can't
+    // verify — a security check should not be the place we trust inference.
+    if (!ctx.user) {
+      throw new TRPCError({ code: "FORBIDDEN", message: NOT_ADMIN_ERR_MSG });
+    }
+    if (ctx.user.role !== "superadmin" && ctx.user.tenantId !== ctx.tenant.id) {
+      // Logged because the merchant-facing symptom is indistinguishable from
+      // "not an admin": the usual cause is a session bound to a different
+      // tenant (a stale cookie, or the platform owner) browsing a tenant
+      // subdomain, and without this line nothing anywhere says so.
+      console.warn(
+        `[Auth] Refusing cross-tenant admin action: user ${ctx.user.id} ` +
+          `belongs to tenant ${ctx.user.tenantId} but is addressing tenant ` +
+          `${ctx.tenant.id} (${ctx.tenant.slug}).`,
+      );
+      throw new TRPCError({ code: "FORBIDDEN", message: NOT_ADMIN_ERR_MSG });
+    }
+    return next({ ctx });
+  });

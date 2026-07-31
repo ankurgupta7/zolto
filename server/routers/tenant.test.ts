@@ -2,8 +2,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // Mock the data + stripe layers so the router is exercised in isolation.
 // vi.hoisted lets the mock objects exist before the hoisted vi.mock factories run.
-const { dbMock, createStripeCustomer, buildConnectAuthorizeUrl } = vi.hoisted(
-  () => ({
+const { dbMock, createStripeCustomer, buildConnectAuthorizeUrl, storagePut } =
+  vi.hoisted(() => ({
     dbMock: {
       db: { query: {} },
       getTenantBySlug: vi.fn(),
@@ -20,12 +20,13 @@ const { dbMock, createStripeCustomer, buildConnectAuthorizeUrl } = vi.hoisted(
     },
     createStripeCustomer: vi.fn(),
     buildConnectAuthorizeUrl: vi.fn(),
-  }),
-);
+    storagePut: vi.fn(),
+  }));
 
 vi.mock("../db", () => dbMock);
 vi.mock("../stripe", () => ({ createStripeCustomer }));
 vi.mock("../stripeConnect", () => ({ buildConnectAuthorizeUrl }));
+vi.mock("../storage", () => ({ storagePut }));
 
 import { tenantRouter } from "./tenant";
 import type { TrpcContext } from "../_core/context";
@@ -387,6 +388,89 @@ describe("tenant.updateSettings plan gates", () => {
   });
 });
 
+// Regression: updateSettings was `publicProcedure.use(requireTenant)` despite
+// its "Admin" heading, so ANY unauthenticated caller who could reach a store's
+// host could rewrite that store's settings — contact email, Discord intake
+// channel, public domain, branding. These pin the guard shut.
+describe("tenant.updateSettings authorization", () => {
+  function settingsCtx(
+    user: { openId: string; role?: string; tenantId?: number } | null,
+    tenantId = 42,
+  ) {
+    dbMock.db.query = {
+      tenantSettings: { findFirst: vi.fn().mockResolvedValue({ id: 9 }) },
+    };
+    const where = vi.fn().mockResolvedValue(undefined);
+    const set = vi.fn(() => ({ where }));
+    dbMock.db.update = vi.fn(() => ({ set }));
+    return {
+      caller: tenantRouter.createCaller(
+        ctx(user, { id: tenantId, plan: "free" }),
+      ),
+      set,
+    };
+  }
+
+  it("refuses an anonymous caller", async () => {
+    const { caller, set } = settingsCtx(null);
+    await expect(
+      caller.updateSettings({ contactEmail: "attacker@evil.test" }),
+    ).rejects.toThrow();
+    expect(set).not.toHaveBeenCalled();
+  });
+
+  it("refuses a signed-in non-admin", async () => {
+    const { caller, set } = settingsCtx({
+      openId: "google:shopper",
+      role: "user",
+      tenantId: 42,
+    });
+    await expect(
+      caller.updateSettings({ contactEmail: "attacker@evil.test" }),
+    ).rejects.toThrow();
+    expect(set).not.toHaveBeenCalled();
+  });
+
+  it("refuses an admin of a DIFFERENT store", async () => {
+    // The cross-tenant case: a real admin, but of tenant 7, addressing 42.
+    // Redirecting another store's Discord intake channel would be enough to
+    // steal their product feed.
+    const { caller, set } = settingsCtx(
+      { openId: "google:other", role: "admin", tenantId: 7 },
+      42,
+    );
+    await expect(
+      caller.updateSettings({ discordChannelId: "12345678901234567" }),
+    ).rejects.toThrow();
+    expect(set).not.toHaveBeenCalled();
+  });
+
+  it("allows this store's own admin", async () => {
+    const { caller, set } = settingsCtx({
+      openId: "google:admin",
+      role: "admin",
+      tenantId: 42,
+    });
+    await expect(
+      caller.updateSettings({ metaTitle: "Aurora" }),
+    ).resolves.toEqual({ success: true });
+    expect(set).toHaveBeenCalled();
+  });
+
+  it("allows a superadmin acting across tenants", async () => {
+    // Platform support must still be able to act on a store it doesn't belong
+    // to; that exemption is deliberate, so pin it rather than leave it to luck.
+    const { caller, set } = settingsCtx(
+      { openId: "google:root", role: "superadmin", tenantId: 1 },
+      42,
+    );
+    await expect(
+      caller.updateSettings({ metaTitle: "Fixed by support" }),
+    ).resolves.toEqual({ success: true });
+    expect(set).toHaveBeenCalled();
+  });
+});
+
 describe("tenant onboarding mutations", () => {
   const admin = { openId: "google:admin", role: "admin", tenantId: 42 };
 
@@ -425,6 +509,35 @@ describe("tenant onboarding mutations", () => {
     await caller.setOnboardingCursor({ step: 2 });
     expect(set).not.toHaveBeenCalled();
   });
+
+  // Both were `publicProcedure` — unauthenticated writes to the tenants row,
+  // the same class of bug as updateSettings, just far lower impact.
+  it("refuses an anonymous caller on both mutations", async () => {
+    const where = vi.fn().mockResolvedValue(undefined);
+    const set = vi.fn(() => ({ where }));
+    dbMock.db.update = vi.fn(() => ({ set }));
+    const caller = tenantRouter.createCaller(
+      ctx(null, { id: 42, plan: "free", onboardingStep: 0 } as never),
+    );
+    await expect(caller.dismissOnboarding()).rejects.toThrow();
+    await expect(caller.setOnboardingCursor({ step: 2 })).rejects.toThrow();
+    expect(set).not.toHaveBeenCalled();
+  });
+
+  it("refuses an admin of a different store", async () => {
+    const where = vi.fn().mockResolvedValue(undefined);
+    const set = vi.fn(() => ({ where }));
+    dbMock.db.update = vi.fn(() => ({ set }));
+    const caller = tenantRouter.createCaller(
+      ctx({ openId: "google:other", role: "admin", tenantId: 7 }, {
+        id: 42,
+        plan: "free",
+        onboardingStep: 0,
+      } as never),
+    );
+    await expect(caller.dismissOnboarding()).rejects.toThrow();
+    expect(set).not.toHaveBeenCalled();
+  });
 });
 
 describe("tenant.myStore", () => {
@@ -454,5 +567,96 @@ describe("tenant.myStore", () => {
       .myStore();
     expect(res).toBeNull();
     expect(dbMock.getTenantById).not.toHaveBeenCalled();
+  });
+});
+
+describe("tenant.setTwintQr", () => {
+  const admin = { openId: "google:admin", role: "admin", tenantId: 42 };
+
+  function qrCtx(user: typeof admin | null = admin, tenantId = 42) {
+    dbMock.db.query = {
+      tenantSettings: { findFirst: vi.fn().mockResolvedValue({ id: 9 }) },
+    };
+    const where = vi.fn().mockResolvedValue(undefined);
+    const set = vi.fn(() => ({ where }));
+    dbMock.db.update = vi.fn(() => ({ set }));
+    return {
+      caller: tenantRouter.createCaller(
+        ctx(user, { id: tenantId, plan: "free" }),
+      ),
+      set,
+    };
+  }
+
+  beforeEach(() => {
+    storagePut.mockResolvedValue({
+      key: "twint-qr/42/1_ab12.png",
+      url: "/uploads/twint-qr/42/1_ab12.png",
+    });
+  });
+
+  it("stores the image against the tenant so it counts toward the storage cap", async () => {
+    const { caller, set } = qrCtx();
+    const png = Buffer.from("fake-png").toString("base64");
+    await expect(
+      caller.setTwintQr({ imageData: `data:image/png;base64,${png}` }),
+    ).resolves.toEqual({ twintQrUrl: "/uploads/twint-qr/42/1_ab12.png" });
+
+    const [tenantId, key, buffer, mime] = storagePut.mock.calls[0];
+    // The leading tenantId is what makes storagePut enforce PLANS[].storageGb.
+    expect(tenantId).toBe(42);
+    expect(String(key)).toMatch(/^twint-qr\/42\//);
+    expect((buffer as Buffer).toString()).toBe("fake-png");
+    expect(mime).toBe("image/png");
+    expect(set).toHaveBeenCalledWith(
+      expect.objectContaining({
+        twintQrUrl: "/uploads/twint-qr/42/1_ab12.png",
+      }),
+    );
+  });
+
+  it("clears the sticker without touching storage when passed null", async () => {
+    const { caller, set } = qrCtx();
+    await expect(caller.setTwintQr({ imageData: null })).resolves.toEqual({
+      twintQrUrl: null,
+    });
+    expect(storagePut).not.toHaveBeenCalled();
+    expect(set).toHaveBeenCalledWith(
+      expect.objectContaining({ twintQrUrl: null }),
+    );
+  });
+
+  it("rejects empty image data rather than storing a zero-byte file", async () => {
+    const { caller } = qrCtx();
+    await expect(caller.setTwintQr({ imageData: "" })).rejects.toThrow(
+      /didn't contain any image data/,
+    );
+    expect(storagePut).not.toHaveBeenCalled();
+  });
+
+  it("rejects a non-image mime type", async () => {
+    const { caller } = qrCtx();
+    await expect(
+      caller.setTwintQr({
+        imageData: "eA==",
+        mimeType: "application/pdf" as never,
+      }),
+    ).rejects.toThrow();
+    expect(storagePut).not.toHaveBeenCalled();
+  });
+
+  it("refuses an anonymous caller", async () => {
+    const { caller } = qrCtx(null);
+    await expect(caller.setTwintQr({ imageData: "eA==" })).rejects.toThrow();
+    expect(storagePut).not.toHaveBeenCalled();
+  });
+
+  it("refuses an admin of a different store", async () => {
+    const { caller } = qrCtx(
+      { openId: "google:other", role: "admin", tenantId: 7 },
+      42,
+    );
+    await expect(caller.setTwintQr({ imageData: "eA==" })).rejects.toThrow();
+    expect(storagePut).not.toHaveBeenCalled();
   });
 });

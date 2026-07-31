@@ -1,0 +1,245 @@
+version: 2.1
+
+# Zolto CI — runs the whole test estate on every push, so a merge to main is
+# always fully verified and the README badge means something.
+#
+# Four suites, because they need genuinely different environments:
+#   unit         — vitest (server + client) + typecheck + deploy-script tests
+#   integration  — the Stripe suites, against real test-mode Stripe
+#   e2e          — Playwright storefront journey against a real MySQL
+#   android      — the ZoltoPOS Gradle build, needs the Android SDK
+#
+# COST FALLBACK: .github/workflows/ still contains android-build.yml and
+# e2e.yml, which cover the same ground as the `android` and `e2e` jobs here.
+# Rather than duplicating that spend, both jobs first ask GitHub whether it
+# already ran the equivalent workflow for this commit and halt if so — but run
+# the work here when GitHub produced nothing, which is what happens the moment
+# an Actions minutes allowance is exhausted (GitHub does not fail the workflow;
+# it never schedules it). See .circleci/defer-to-github.sh for the full
+# reasoning, and set FORCE_CIRCLECI_FULL=1 to bypass the check entirely.
+#
+# `unit` and `integration` have no GitHub equivalent, so they always run.
+
+orbs:
+  android: circleci/android@2.5.0
+
+executors:
+  node:
+    docker:
+      - image: cimg/node:22.14
+
+commands:
+  setup_pnpm:
+    description: Enable corepack and install with the lockfile, cached by lockfile hash.
+    steps:
+      - run:
+          name: Enable pnpm (version comes from package.json packageManager)
+          command: |
+            corepack enable
+            corepack prepare --activate
+            # Pin the store inside the workspace so save_cache has a fixed,
+            # known path — `pnpm store path` varies by platform and cannot be
+            # interpolated into a cache path.
+            pnpm config set store-dir .pnpm-store
+            pnpm --version
+      - restore_cache:
+          keys:
+            - pnpm-v1-{{ checksum "pnpm-lock.yaml" }}
+            - pnpm-v1-
+      - run:
+          name: Install dependencies
+          command: pnpm install --frozen-lockfile
+      - save_cache:
+          key: pnpm-v1-{{ checksum "pnpm-lock.yaml" }}
+          paths:
+            - .pnpm-store
+
+jobs:
+  # ── Unit + typecheck + deploy scripts ──────────────────────────────────────
+  unit:
+    executor: node
+    steps:
+      - checkout
+      - setup_pnpm
+      - run:
+          name: Typecheck
+          # server/discord.ts errors because the `ws` module ships no types;
+          # those predate any given change. Filter them so a real error is not
+          # lost in known noise — but fail on anything else.
+          command: |
+            pnpm exec tsc --noEmit 2>&1 | grep -v "discord.ts\|@types/ws" > tsc-errors.txt || true
+            if [ -s tsc-errors.txt ]; then
+              echo "Typecheck failed:"; cat tsc-errors.txt; exit 1
+            fi
+            echo "Typecheck clean (modulo the known ws/discord.ts noise)."
+      - run:
+          name: Unit tests (server + client)
+          # Integration suites are excluded on purpose: they need Stripe
+          # credentials and run in their own job, where a missing key is a
+          # hard failure rather than a silent skip.
+          command: |
+            pnpm exec vitest run \
+              --exclude "**/*.integration.test.ts" \
+              --reporter=default --reporter=junit \
+              --outputFile.junit=./reports/junit/unit.xml
+      - run:
+          name: Deploy-script tests (bash, no DB)
+          command: pnpm run test:deploy-scripts
+      - run:
+          name: CI fallback-logic tests
+          # Guards .circleci/defer-to-github.sh. A regression there skips a
+          # whole suite silently, which is worse than any test it protects.
+          command: bash .circleci/defer-to-github.test.sh
+      - store_test_results:
+          path: ./reports/junit
+      - store_artifacts:
+          path: ./reports/junit
+
+  # ── Stripe integration ─────────────────────────────────────────────────────
+  integration:
+    executor: node
+    steps:
+      - checkout
+      - setup_pnpm
+      - run:
+          name: Require Stripe test credentials
+          # This guard is the point of the job. Both integration suites
+          # `describe.skip` themselves when STRIPE_TEST_SECRET_KEY is unset, so
+          # without it they report success having run nothing — which is
+          # exactly how billing.integration.test.ts accumulated seven real
+          # failures unnoticed straight through the pricing pivot. A green
+          # badge must not be able to mean "we tested nothing".
+          command: |
+            if [ -z "$STRIPE_TEST_SECRET_KEY" ]; then
+              echo "STRIPE_TEST_SECRET_KEY is not set."
+              echo "Set it (and STRIPE_TEST_WEBHOOK_SECRET) in the CircleCI"
+              echo "project's environment variables, or this suite silently"
+              echo "skips and proves nothing about the revenue path."
+              exit 1
+            fi
+      - run:
+          name: Integration tests (real Stripe test mode)
+          command: |
+            pnpm exec vitest run \
+              server/stripe.integration.test.ts \
+              server/billing.integration.test.ts \
+              --reporter=default --reporter=junit \
+              --outputFile.junit=./reports/junit/integration.xml
+      - store_test_results:
+          path: ./reports/junit
+      - store_artifacts:
+          path: ./reports/junit
+
+  # ── Storefront e2e ─────────────────────────────────────────────────────────
+  e2e:
+    docker:
+      - image: cimg/node:22.14
+      - image: cimg/mysql:8.0
+        environment:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: zolto
+    environment:
+      DATABASE_URL: mysql://root:root@127.0.0.1:3306/zolto
+      E2E_STOREFRONT: "1"
+      E2E_TENANT_SLUG: demo
+      NODE_ENV: development
+      JWT_SECRET: e2e-ci-jwt-secret-that-is-long-enough
+      # Playwright's config reuses an existing server unless CI is set.
+      CI: "true"
+    steps:
+      - checkout
+      - run:
+          name: Defer to GitHub Actions if it already ran the e2e workflow
+          command: .circleci/defer-to-github.sh e2e.yml
+      - setup_pnpm
+      - run:
+          name: Wait for MySQL
+          # Pure bash /dev/tcp — no netcat or dockerize dependency.
+          command: |
+            for _ in $(seq 1 60); do
+              if (echo > /dev/tcp/127.0.0.1/3306) >/dev/null 2>&1; then
+                echo "MySQL is up"; exit 0
+              fi
+              sleep 2
+            done
+            echo "MySQL never became reachable"; exit 1
+      - run:
+          name: Create schema
+          # db:sync (drizzle-kit push) straight from drizzle/schema.ts, not the
+          # migration files — those omit the multi-tenancy tables, which the
+          # deploy migrator creates and which is coupled to docker-compose.
+          command: pnpm run db:sync
+      - run:
+          name: Seed the storefront tenant + product
+          command: pnpm run seed:e2e
+      - run:
+          name: Install Playwright Chromium
+          command: pnpm exec playwright install --with-deps chromium
+      - run:
+          name: Storefront journey
+          command: pnpm run test:e2e
+      - store_artifacts:
+          path: playwright-report
+          destination: playwright-report
+
+  # ── Android (ZoltoPOS) ─────────────────────────────────────────────────────
+  android:
+    # No tag pin: the orb's default image is guaranteed to exist for the orb
+    # version above, whereas a hand-picked cimg/android tag rots silently.
+    executor: android/android-docker
+    steps:
+      - checkout
+      - run:
+          name: Defer to GitHub Actions if it already ran the Android workflow
+          # Same path filter as android-build.yml, so an unrelated commit is
+          # skipped here too instead of rebuilding Android on every push.
+          command: .circleci/defer-to-github.sh android-build.yml android/
+      - restore_cache:
+          keys:
+            - gradle-v1-{{ checksum "android/gradle/libs.versions.toml" }}
+            - gradle-v1-
+      - run:
+          # The repo carries no wrapper jar (android/README.md explains why), so
+          # something has to pin the version. Generating the wrapper with the
+          # executor's Gradle costs one step and keeps this job on the same 8.9
+          # the GitHub Actions job provisions — otherwise CircleCI would build
+          # with whatever Gradle the image happens to ship and the two CI
+          # systems would drift apart silently.
+          name: Pin Gradle 8.9 (generate a wrapper from the image's Gradle)
+          working_directory: android
+          command: gradle wrapper --gradle-version 8.9
+      - run:
+          name: Wire-format contract tests
+          # Run first: these guard the app and server/pos.ts drifting apart on
+          # the TWINT / payment-intent / Terminal provisioning shapes, which is
+          # the failure the rest of the suite cannot see.
+          working_directory: android
+          command: ./gradlew :app:testDebugUnitTest --tests '*Twint*' --tests '*StripeModels*' --stacktrace
+      - run:
+          name: Unit tests (app + logic)
+          working_directory: android
+          command: ./gradlew test --stacktrace
+      - run:
+          name: Build debug APK
+          working_directory: android
+          command: ./gradlew assembleDebug --stacktrace
+      - save_cache:
+          key: gradle-v1-{{ checksum "android/gradle/libs.versions.toml" }}
+          paths:
+            - ~/.gradle/caches
+            - ~/.gradle/wrapper
+      - store_test_results:
+          path: android/app/build/test-results
+      - store_artifacts:
+          path: android/app/build/outputs/apk/debug
+          destination: apk
+
+workflows:
+  test:
+    # No branch filter: every push runs, so a PR is verified before merge and
+    # the merge commit on main is verified again. The README badge reads main.
+    jobs:
+      - unit
+      - integration
+      - e2e
+      - android

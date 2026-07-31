@@ -35,6 +35,10 @@ jobs:
           distribution: temurin
           java-version: "17"
 
+      # `gradle-version` makes this action download and verify Gradle 8.9 and
+      # put it on PATH, so the steps below invoke `gradle` directly. There is
+      # deliberately no wrapper in the repo to invoke instead — see
+      # android/README.md for why it was removed and how to restore one.
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
@@ -44,13 +48,13 @@ jobs:
       # server/pos.ts drifting apart (TWINT, payment-intent, Terminal
       # provisioning models).
       - name: Run API contract tests
-        run: ./gradlew :app:testDebugUnitTest --tests '*Twint*' --tests '*StripeModels*' --stacktrace
+        run: gradle :app:testDebugUnitTest --tests '*Twint*' --tests '*StripeModels*' --stacktrace
 
       - name: Run unit tests
-        run: ./gradlew test --stacktrace
+        run: gradle test --stacktrace
 
       - name: Build debug APK
-        run: ./gradlew assembleDebug --stacktrace
+        run: gradle assembleDebug --stacktrace
 
       - name: Upload debug APK
         if: success()

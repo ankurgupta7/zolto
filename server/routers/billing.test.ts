@@ -13,9 +13,7 @@ const { dbMock, billingMock, photoCreditsMock } = vi.hoisted(() => ({
   photoCreditsMock: {
     generateStyledProductPhoto: vi.fn(),
     countPhotoGenerationsThisMonth: vi.fn(),
-    photoAllowanceForPlan: vi.fn((plan: string) =>
-      plan === "pro" ? null : 5,
-    ),
+    photoAllowanceForPlan: vi.fn((plan: string) => (plan === "pro" ? null : 5)),
   },
 }));
 
@@ -37,14 +35,19 @@ const tenant = {
 function ctx(
   role: string | null = "admin",
   tenantOverrides: Record<string, unknown> = {},
+  // The store the request addresses (host-derived). Defaults to the admin's
+  // own store; override to exercise the cross-tenant guard.
+  userTenantId = 7,
 ): TrpcContext {
   return {
     req: { headers: {} } as never,
     res: {} as never,
     user: role
-      ? ({ id: 1, openId: "google:1", role, tenantId: 7 } as never)
+      ? ({ id: 1, openId: "google:1", role, tenantId: userTenantId } as never)
       : null,
-    tenant: role ? ({ ...(tenant as object), ...tenantOverrides } as never) : null,
+    tenant: role
+      ? ({ ...(tenant as object), ...tenantOverrides } as never)
+      : null,
   };
 }
 
@@ -132,7 +135,9 @@ describe("billingRouter.getStatus", () => {
     const status = await caller.getStatus();
     expect(status.ai).toEqual({ allowancePerMonth: null, usedThisMonth: null });
     expect(status.upsell).toBeNull();
-    expect(photoCreditsMock.countPhotoGenerationsThisMonth).not.toHaveBeenCalled();
+    expect(
+      photoCreditsMock.countPhotoGenerationsThisMonth,
+    ).not.toHaveBeenCalled();
   });
 });
 
@@ -205,5 +210,42 @@ describe("billingRouter.photoCreditHistory", () => {
     const history = await caller.photoCreditHistory();
     expect(history).toHaveLength(1);
     expect(dbMock.getPhotoCreditHistory).toHaveBeenCalledWith(7);
+  });
+});
+
+// Regression: every procedure here read/wrote ctx.tenant (host-derived) behind
+// a local `adminProcedure.use(requireTenant)` alias with no belongs-to-this-
+// tenant check, so an admin of store A hitting store B's subdomain could read
+// B's revenue, start a subscription for B, and burn B's AI allowance.
+describe("billing cross-tenant guard", () => {
+  const OTHER = 999; // an admin of some other store
+
+  it("refuses to reveal another store's billing status", async () => {
+    const caller = billingRouter.createCaller(ctx("admin", {}, OTHER));
+    await expect(caller.getStatus()).rejects.toThrow();
+  });
+
+  it("refuses to start a subscription for another store", async () => {
+    const caller = billingRouter.createCaller(ctx("admin", {}, OTHER));
+    await expect(caller.createPlanCheckout({ plan: "pro" })).rejects.toThrow();
+    expect(billingMock.createPlanCheckoutSession).not.toHaveBeenCalled();
+  });
+
+  it("refuses to burn another store's AI photo allowance", async () => {
+    const caller = billingRouter.createCaller(ctx("admin", {}, OTHER));
+    await expect(
+      caller.generateProductPhoto({ productId: 1, stylePrompt: "on white" }),
+    ).rejects.toThrow();
+    expect(photoCreditsMock.generateStyledProductPhoto).not.toHaveBeenCalled();
+  });
+
+  it("refuses to read another store's AI usage log", async () => {
+    const caller = billingRouter.createCaller(ctx("admin", {}, OTHER));
+    await expect(caller.photoCreditHistory()).rejects.toThrow();
+  });
+
+  it("still serves the store's own admin", async () => {
+    const caller = billingRouter.createCaller(ctx("admin"));
+    await expect(caller.getStatus()).resolves.toMatchObject({ plan: "free" });
   });
 });

@@ -1,7 +1,6 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { router, adminProcedure } from "../_core/trpc";
-import { requireTenant } from "../_core/trpc";
+import { router, tenantAdminProcedure } from "../_core/trpc";
 import {
   createPlanCheckoutSession,
   isBillingConfigured,
@@ -31,7 +30,11 @@ import {
 // subscription); platform-level operations stay superadmin-only elsewhere.
 // ═══════════════════════════════════════════════════════════════════════════════
 
-const tenantAdmin = adminProcedure.use(requireTenant);
+// Store-admin guard. `adminProcedure.use(requireTenant)` alone is NOT enough:
+// ctx.tenant comes from the request host, so an admin of store A hitting store
+// B's subdomain would pass it and act on B's data. tenantAdminProcedure adds
+// the belongs-to-this-tenant check (server/_core/trpc.ts).
+const tenantAdmin = tenantAdminProcedure;
 
 export const billingRouter = router({
   /**
@@ -51,18 +54,11 @@ export const billingRouter = router({
     ]);
     const onFree = ctx.tenant.plan !== "pro";
     const skimChf = online.feeRappen / 100;
-    // Grandfathered subscribers still bill at a retired tier's price; show
-    // them what they actually pay rather than Pro's list price.
-    const legacyPriceChf = ctx.tenant.planPriceOverride
-      ? Number(ctx.tenant.planPriceOverride)
-      : null;
 
     return {
       plan: ctx.tenant.plan,
       subscriptionStatus: ctx.tenant.subscriptionStatus,
       trialEndsAt: ctx.tenant.trialEndsAt,
-      /** Non-null only while a tenant is billed at a pre-pivot price. */
-      legacyPriceChf,
       ai: {
         /** null = unmetered (Pro). */
         allowancePerMonth: allowance,

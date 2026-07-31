@@ -453,12 +453,16 @@ export function buildReconciliationReviewHtml(
 
 export async function sendReconciliationReviewEmail(
   items: ReconciliationReviewItem[],
-  branding?: Partial<TenantBranding>,
+  // `to` overrides the recipient: reconciliation is per-tenant now, and only
+  // the merchant whose account the payment landed on can say which piece was
+  // sold. ADMIN_EMAIL remains the fallback for the platform-wide sweep and
+  // for single-tenant self-hosted deployments.
+  branding?: Partial<TenantBranding> & { to?: string },
 ): Promise<void> {
   if (items.length === 0) return;
 
   const apiKey = process.env.RESEND_API_KEY;
-  const to = process.env.ADMIN_EMAIL;
+  const to = branding?.to ?? process.env.ADMIN_EMAIL;
   if (!apiKey || !to) return;
 
   const b = resolveBranding(branding);

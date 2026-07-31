@@ -1,5 +1,7 @@
 # Zolto — Multi-Tenant POS + E-commerce Platform for Artisan Sellers
 
+[![CI](https://dl.circleci.com/status-badge/img/gh/ankurgupta7/zolto/tree/main.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/ankurgupta7/zolto/tree/main)
+
 Zolto is a multi-tenant platform that powers online stores + in-person POS for artisan sellers (jewelry, crafts, boutiques). Built from the ground up based on real-world feedback from running a jewelry store in Zurich.
 
 Each tenant gets:
@@ -21,6 +23,75 @@ Each tenant gets:
 - **Superjson out of the box:** return Drizzle rows directly—`Date` stays a `Date`.
 - **Auth baked in:** `/api/oauth/callback` handles OAuth, `protectedProcedure` injects `ctx.user`; `adminProcedure` gates admin-only operations.
 - **Gateway-ready:** all RPC traffic is under `/api/trpc`, making it easy to route at the edge.
+
+---
+
+## Continuous Integration
+
+`.circleci/config.yml` runs four suites on **every push**, so a PR is verified
+before merge and the merge commit on `main` is verified again. The badge at the
+top of this file reads `main`.
+
+| Job           | What it runs                                                                 |
+| ------------- | ---------------------------------------------------------------------------- |
+| `unit`        | `tsc --noEmit`, the full vitest suite (server + client), deploy-script tests |
+| `integration` | `server/*.integration.test.ts` against **real Stripe test mode**             |
+| `e2e`         | Playwright storefront journey against a freshly-migrated MySQL               |
+| `android`     | ZoltoPOS contract tests, `gradle test`, and a debug APK                      |
+
+### One-time setup
+
+1. **Add the project** in CircleCI (Projects → Set Up Project → it picks up
+   `.circleci/config.yml` on the default branch).
+2. **Set two environment variables** in Project Settings → Environment
+   Variables — `STRIPE_TEST_SECRET_KEY` and `STRIPE_TEST_WEBHOOK_SECRET`.
+   The `integration` job **fails deliberately if the first is missing** rather
+   than passing: both Stripe suites `describe.skip` themselves without it, and
+   a job that skips everything reports success while proving nothing. That is
+   not hypothetical — it is how `billing.integration.test.ts` accumulated seven
+   real failures unnoticed straight through the pricing pivot.
+3. **Set `GITHUB_TOKEN`** (a PAT with `repo` / Actions-read scope). Only the
+   cost-fallback below needs it; without it CircleCI simply runs everything.
+4. **If the repo is private**, the badge needs a status token appended
+   (Project Settings → Status Badges → create one), i.e.
+   `.../tree/main.svg?style=svg&circle-token=<token>`. Public repos work as-is.
+
+### Cost fallback: GitHub Actions first, CircleCI when it runs dry
+
+`.github/workflows/android-build.yml` and `e2e.yml` cover the same ground as
+this config's `android` and `e2e` jobs, so running both would pay twice for the
+same work. Instead each of those two CircleCI jobs starts by asking GitHub
+whether it already ran the equivalent workflow **for this exact commit**:
+
+| GitHub's state for the commit           | CircleCI does           |
+| --------------------------------------- | ----------------------- |
+| Workflow ran and passed                 | halts (green, no spend) |
+| Workflow ran and failed                 | fails, pointing at it   |
+| Workflow never appeared                 | **runs the suite**      |
+| Paths the workflow filters on unchanged | halts                   |
+| Can't tell (no token, API error)        | **runs the suite**      |
+
+The last row is the design rule: every ambiguous case resolves to _running_.
+Duplicated work costs minutes; a silently skipped suite costs a broken merge.
+
+**The important caveat.** GitHub gives no signal when an Actions allowance runs
+out — it does not fail the workflow, it never schedules it. So "out of minutes"
+is only observable as _absence_, and the check waits `GH_WAIT_SECONDS`
+(default 180) before concluding nothing is coming. That is a heuristic: a
+GitHub queue slower than the wait window looks the same as no budget, and the
+result is a duplicated run, not a missed one. Set `FORCE_CIRCLECI_FULL=1` to
+skip the whole dance and always run everything here.
+
+Note also that GitHub Actions minutes are **free on public repositories** —
+this fallback only ever engages on a private repo, or if Actions is disabled.
+
+The logic lives in `.circleci/defer-to-github.sh` and is covered by
+`.circleci/defer-to-github.test.sh` (run it directly; the `unit` job does too),
+because a regression there would silently skip an entire suite.
+
+`unit` and `integration` have no GitHub equivalent and always run — neither
+GitHub workflow ever ran the vitest suite or the typecheck, which is the gap
+this config closes.
 
 ---
 

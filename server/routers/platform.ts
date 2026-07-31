@@ -11,8 +11,10 @@
  * (docs/planning/pricing-pivot-agent-commerce.md §5).
  */
 
+import { z } from "zod";
 import { router, superadminProcedure } from "../_core/trpc";
 import { getPlatformMetrics } from "../db";
+import { runStripeReconciliationForAllTenants } from "../reconciliation";
 import { PRO_PLAN, REVENUE_SHARE } from "@shared/platform";
 
 export const platformRouter = router({
@@ -28,4 +30,24 @@ export const platformRouter = router({
       },
     };
   }),
+
+  /**
+   * Platform-wide Stripe reconciliation: every tenant that has connected
+   * Stripe, each scanned against their OWN account.
+   *
+   * The merchant-facing button (reconciliation.run) covers one store. This is
+   * the operator's sweep — useful for catching stores that never press their
+   * own button, and the only place the cross-tenant picture is legitimate.
+   *
+   * A single tenant's failure (revoked Connect grant, Stripe outage) is
+   * recorded per tenant rather than aborting the sweep, so one bad store
+   * cannot hide every other store's unmatched payments.
+   */
+  reconcileAllTenants: superadminProcedure
+    .input(
+      z.object({ lookbackDays: z.number().int().min(1).max(90).optional() }),
+    )
+    .mutation(async ({ input }) => {
+      return runStripeReconciliationForAllTenants(input.lookbackDays);
+    }),
 });

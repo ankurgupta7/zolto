@@ -16,9 +16,11 @@ import androidx.lifecycle.lifecycleScope
 import ch.zolto.pos.data.RetrofitClient
 import ch.zolto.pos.data.StripeTokenProvider
 import ch.zolto.pos.databinding.ActivityPaymentBinding
+import ch.zolto.pos.logic.Money
 import ch.zolto.pos.viewmodel.PaymentState
 import ch.zolto.pos.viewmodel.PaymentViewModel
 import ch.zolto.pos.viewmodel.PaymentViewModelFactory
+import coil.load
 import com.stripe.stripeterminal.Terminal
 import com.stripe.stripeterminal.external.callable.*
 import com.stripe.stripeterminal.external.models.*
@@ -88,17 +90,38 @@ class PaymentActivity : AppCompatActivity() {
         binding.btnCancel.setOnClickListener { cancelPayment() }
     }
 
-    // Card → Tap to Pay; TWINT → Stripe PaymentIntent + on-screen QR; cash →
-    // direct record. Only card runs the Stripe Terminal flow.
+    // Card → Tap to Pay; TWINT → Stripe PaymentIntent + hosted QR; TWINT QR →
+    // the merchant's own sticker, confirmed by hand; cash → direct record.
+    // Only card runs the Stripe Terminal flow.
     private fun startForMethod() {
         when (paymentMethod) {
             "twint" -> viewModel.startTwint(productIds)
+            "twint_qr" -> startTwintSticker()
             "cash" -> {
                 // Nothing to cancel — the cash record resolves near-instantly.
                 binding.btnCancel.visibility = View.GONE
                 viewModel.createCashSale(productIds, this)
             }
             else -> startPaymentFlow()
+        }
+    }
+
+    // Fetch the merchant's sticker and put it on screen. Nothing is created
+    // server-side yet: the sale is only recorded when the merchant confirms
+    // they saw the money arrive (see PaymentState.ShowingTwintSticker).
+    private fun startTwintSticker() {
+        showStatus(getString(R.string.twint_sticker_prompt))
+        lifecycleScope.launch {
+            val qrUrl = try {
+                RetrofitClient.apiService.getConfig().twintQrUrl
+            } catch (_: Exception) {
+                null
+            }
+            if (qrUrl.isNullOrBlank()) {
+                showError(getString(R.string.twint_sticker_missing))
+            } else {
+                viewModel.showTwintSticker(qrUrl, currentTotalRappen)
+            }
         }
     }
 
@@ -132,6 +155,8 @@ class PaymentActivity : AppCompatActivity() {
                 }
                 is PaymentState.RecordingCashSale -> showStatus(getString(R.string.recording_cash_sale))
                 is PaymentState.ShowingTwintQr -> showTwintQr(state.redirectUrl)
+                is PaymentState.ShowingTwintSticker ->
+                    showTwintSticker(state.qrUrl, state.totalRappen)
                 is PaymentState.Succeeded -> {
                     navigateToSuccess(state.posOrderId, state.totalRappen, state.offline)
                 }
@@ -358,6 +383,8 @@ class PaymentActivity : AppCompatActivity() {
         binding.txtStatus.text = message
         binding.progressBar.visibility = View.VISIBLE
         binding.imgQr.visibility = View.GONE
+        binding.txtAmount.visibility = View.GONE
+        binding.btnConfirmTwint.visibility = View.GONE
     }
 
     // Opens Stripe's TWINT hosted page in a Chrome Custom Tab so the customer
@@ -369,6 +396,31 @@ class PaymentActivity : AppCompatActivity() {
         binding.txtStatus.text = getString(R.string.twint_scan_prompt)
         binding.btnCancel.isEnabled = true
         openTwintCustomTab(redirectUrl)
+    }
+
+    // The merchant's own TWINT sticker plus the amount the customer has to type
+    // in. There is nothing to poll — TWINT never tells us anything — so the
+    // only way this becomes a sale is the merchant confirming they saw it.
+    private fun showTwintSticker(qrUrl: String, totalRappen: Int) {
+        binding.progressBar.visibility = View.GONE
+        binding.imgQr.visibility = View.VISIBLE
+        binding.imgQr.load(qrUrl)
+        binding.txtAmount.visibility = View.VISIBLE
+        binding.txtAmount.text = Money.chfDisplay(totalRappen)
+        binding.txtStatus.text = getString(R.string.twint_sticker_prompt)
+        binding.btnCancel.isEnabled = true
+        binding.btnConfirmTwint.visibility = View.VISIBLE
+        // Re-enable explicitly: a failed confirm leaves this view disabled, and
+        // "try again" re-runs startForMethod() on the SAME view instance.
+        binding.btnConfirmTwint.isEnabled = true
+        // Labelled with the amount so the merchant attests to a figure they
+        // just checked against their TWINT app, not a bare "Done".
+        binding.btnConfirmTwint.text =
+            getString(R.string.twint_sticker_confirm, Money.chfDisplay(totalRappen))
+        binding.btnConfirmTwint.setOnClickListener {
+            binding.btnConfirmTwint.isEnabled = false
+            viewModel.confirmTwintQr(productIds)
+        }
     }
 
     private fun openTwintCustomTab(url: String) {
@@ -465,6 +517,8 @@ class PaymentActivity : AppCompatActivity() {
     private fun showError(message: String) {
         binding.progressBar.visibility = View.GONE
         binding.imgQr.visibility = View.GONE
+        binding.txtAmount.visibility = View.GONE
+        binding.btnConfirmTwint.visibility = View.GONE
         AlertDialog.Builder(this)
             .setTitle(getString(R.string.payment_failed_title))
             .setMessage(message)

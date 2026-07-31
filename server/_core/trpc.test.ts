@@ -4,6 +4,7 @@ import {
   router,
   publicProcedure,
   superadminProcedure,
+  tenantAdminProcedure,
   checkFeature,
   requireTenant,
 } from "./trpc";
@@ -17,6 +18,7 @@ const testRouter = router({
   multiCurrencyGated: publicProcedure
     .use(checkFeature("multiCurrency"))
     .query(() => "ok"),
+  tenantAdminOnly: tenantAdminProcedure.query(() => "ok"),
 });
 
 function ctx(overrides: Partial<TrpcContext> = {}): TrpcContext {
@@ -29,8 +31,10 @@ function ctx(overrides: Partial<TrpcContext> = {}): TrpcContext {
   };
 }
 
-function user(role: string) {
-  return { id: 1, role } as unknown as NonNullable<TrpcContext["user"]>;
+function user(role: string, tenantId = 7) {
+  return { id: 1, role, tenantId } as unknown as NonNullable<
+    TrpcContext["user"]
+  >;
 }
 
 function tenant(plan: string) {
@@ -87,5 +91,52 @@ describe("checkFeature", () => {
   it("fails without a tenant context", async () => {
     const caller = testRouter.createCaller(ctx());
     await expect(caller.domainGated()).rejects.toThrow(/No tenant context/);
+  });
+});
+
+// The guard that every store-admin route now shares. Before it existed, the
+// belongs-to-this-tenant check lived in exactly one hand-rolled copy, so any
+// route that forgot it was writable across tenants.
+describe("tenantAdminProcedure", () => {
+  it("allows an admin of the store being addressed", async () => {
+    const caller = testRouter.createCaller(
+      ctx({ user: user("admin", 7), tenant: tenant("free") }),
+    );
+    expect(await caller.tenantAdminOnly()).toBe("ok");
+  });
+
+  it("refuses an anonymous caller", async () => {
+    const caller = testRouter.createCaller(ctx({ tenant: tenant("free") }));
+    await expect(caller.tenantAdminOnly()).rejects.toThrow();
+  });
+
+  it("refuses a signed-in non-admin", async () => {
+    const caller = testRouter.createCaller(
+      ctx({ user: user("user", 7), tenant: tenant("free") }),
+    );
+    await expect(caller.tenantAdminOnly()).rejects.toThrow();
+  });
+
+  it("refuses an admin of a DIFFERENT store", async () => {
+    // ctx.tenant is resolved from the request host, so this is an admin of
+    // store 999 pointing their browser at store 7's subdomain.
+    const caller = testRouter.createCaller(
+      ctx({ user: user("admin", 999), tenant: tenant("free") }),
+    );
+    await expect(caller.tenantAdminOnly()).rejects.toThrow();
+  });
+
+  it("allows a superadmin acting on a store they don't belong to", async () => {
+    // Deliberate exemption: platform support must be able to act on any store,
+    // consistent with platform.metrics being cross-tenant by design.
+    const caller = testRouter.createCaller(
+      ctx({ user: user("superadmin", 1), tenant: tenant("free") }),
+    );
+    expect(await caller.tenantAdminOnly()).toBe("ok");
+  });
+
+  it("refuses when no store is addressed at all", async () => {
+    const caller = testRouter.createCaller(ctx({ user: user("admin", 7) }));
+    await expect(caller.tenantAdminOnly()).rejects.toThrow(/Tenant required/);
   });
 });

@@ -65,7 +65,6 @@ describeIf("Tenant Onboarding — Stripe Integration", () => {
   // Throwaway billing catalogue, provisioned in beforeAll.
   let proPriceId: string;
   /** A retired-tier price, to prove grandfathered subscribers still resolve. */
-  let legacyMakerPriceId: string;
 
   function setEnv(key: string, value: string) {
     if (!(key in savedEnv)) savedEnv[key] = process.env[key];
@@ -110,23 +109,6 @@ describeIf("Tenant Onboarding — Stripe Integration", () => {
     priceIds.push(proPrice.id);
     proPriceId = proPrice.id;
     setEnv("STRIPE_PRICE_PRO", proPriceId);
-
-    // A retired tier's price. Nobody can subscribe to this any more, but
-    // tenants who did before the pivot are still billed on it, so the inverse
-    // lookup has to keep recognising it.
-    const legacyProduct = await stripe.products.create({
-      name: "Zolto Maker — retired tier (integration test)",
-    });
-    productIds.push(legacyProduct.id);
-    const legacyPrice = await stripe.prices.create({
-      product: legacyProduct.id,
-      currency: "chf",
-      unit_amount: 1900, // the old CHF 19/mo
-      recurring: { interval: "month" },
-    });
-    priceIds.push(legacyPrice.id);
-    legacyMakerPriceId = legacyPrice.id;
-    setEnv("STRIPE_PRICE_MAKER", legacyMakerPriceId);
   }, NETWORK);
 
   afterAll(async () => {
@@ -311,9 +293,7 @@ describeIf("Tenant Onboarding — Stripe Integration", () => {
     it(
       "refuses to sell a retired tier as a new subscription",
       async () => {
-        // The legacy price is configured (STRIPE_PRICE_MAKER is set above), so
-        // this proves the inverse lookup did NOT become a way to subscribe to
-        // a dead tier — only PRICE_ENV can be sold from.
+        // Only PRICE_ENV can be sold from, and it holds `pro` alone.
         const { createPlanCheckoutSession } = await import("./billing");
         const tenant = fakeTenant({ id: 4747, stripeCustomerId: "cus_fake" });
         await expect(
@@ -353,25 +333,8 @@ describeIf("Tenant Onboarding — Stripe Integration", () => {
     );
 
     it(
-      "a retired tier's price still resolves to Pro, so grandfathered subscribers keep syncing",
-      async () => {
-        // Migration 0008 granted these tenants Pro while their Stripe
-        // subscription kept the old Price. If this returned null, the webhook
-        // would skip the plan write and their state would silently stop
-        // tracking Stripe — a cancellation wouldn't move them off Pro.
-        const { planForPriceId, isLegacyPriceId } = await import("./billing");
-        expect(isLegacyPriceId(legacyMakerPriceId)).toBe(true);
-        expect(planForPriceId(legacyMakerPriceId)).toBe("pro");
-        expect(isLegacyPriceId(proPriceId)).toBe(false);
-      },
-      NETWORK,
-    );
-
-    it(
       "billing counts as configured from the Pro price alone",
       async () => {
-        // A fresh install has no retired prices to set; requiring them would
-        // wrongly disable paid checkout.
         const { isBillingConfigured } = await import("./billing");
         expect(isBillingConfigured()).toBe(true);
       },

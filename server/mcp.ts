@@ -77,8 +77,8 @@ const checkoutLimiter = createRateLimiter({
 });
 
 /** Test seam — lets a test start from a clean rate-limit window. */
-export function resetMcpRateLimits(): void {
-  checkoutLimiter.reset();
+export async function resetMcpRateLimits(): Promise<void> {
+  await checkoutLimiter.reset();
 }
 
 export interface McpContext {
@@ -540,7 +540,7 @@ async function runStorefrontTool(
 
       // Each checkout holds real inventory, so the buy path is rate limited
       // per store + caller (see checkoutLimiter).
-      const limit = checkoutLimiter.check(
+      const limit = await checkoutLimiter.check(
         `${tenant.id}:${ctx.clientKey ?? "anonymous"}`,
       );
       if (!limit.allowed) {

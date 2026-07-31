@@ -40,7 +40,12 @@ async function main() {
     await db.insert(tenants).values({
       slug: SLUG,
       name: `${SLUG} storefront (e2e)`,
-      plan: "studio",
+      // Pro, not the retired "studio" tier — the plan column is
+      // enum('free','pro') since the pricing pivot, so "studio" made MySQL
+      // reject the insert ("Data truncated for column 'plan'") and killed the
+      // e2e job at seeding. Pro also keeps the journey clear of Free-plan
+      // gating (product caps, the 1% online fee).
+      plan: "pro",
       posApiKey: `pos_${nanoid(24)}`,
       referralCode: nanoid(10),
     });

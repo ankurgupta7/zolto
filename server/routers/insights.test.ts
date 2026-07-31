@@ -22,11 +22,11 @@ const admin = {
   tenantId: 42,
 } as never;
 
-function ctx(plan: string): TrpcContext {
+function ctx(plan: string, userTenantId = 42): TrpcContext {
   return {
     req: { headers: {} } as never,
     res: {} as never,
-    user: admin,
+    user: { ...(admin as object), tenantId: userTenantId },
     tenant: { id: 42, slug: "aurora", name: "Aurora", plan },
   } as never;
 }
@@ -91,5 +91,28 @@ describe("insights.narrative", () => {
       summary,
     );
   });
+});
 
+// Regression: insights read ctx.tenant (host-derived) behind a local
+// `adminProcedure.use(requireTenant)` alias with no belongs-to-this-tenant
+// check — so an admin of any store could read another store's revenue,
+// top sellers, and stale stock by pointing at its subdomain.
+describe("insights cross-tenant guard", () => {
+  it("refuses to compute another store's summary", async () => {
+    await expect(
+      insightsRouter.createCaller(ctx("free", 999)).summary(),
+    ).rejects.toThrow();
+  });
+
+  it("refuses to narrate another store's numbers", async () => {
+    await expect(
+      insightsRouter.createCaller(ctx("pro", 999)).narrative(),
+    ).rejects.toThrow();
+  });
+
+  it("still serves the store's own admin", async () => {
+    await expect(
+      insightsRouter.createCaller(ctx("free")).summary(),
+    ).resolves.toBeDefined();
+  });
 });

@@ -9,6 +9,7 @@ import android.widget.LinearLayout
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import ch.zolto.pos.data.PosSession
 import ch.zolto.pos.data.RetrofitClient
@@ -20,6 +21,7 @@ import ch.zolto.pos.ui.CustomItemAdapter
 import ch.zolto.pos.ui.SaleItemAdapter
 import ch.zolto.pos.viewmodel.ProductViewModel
 import ch.zolto.pos.viewmodel.ProductViewModelFactory
+import kotlinx.coroutines.launch
 import ch.zolto.pos.viewmodel.UiState
 
 class SaleReviewActivity : AppCompatActivity() {
@@ -54,6 +56,7 @@ class SaleReviewActivity : AppCompatActivity() {
         setupRecyclerViews()
         observeProducts(productIds)
         setupListeners()
+        revealTwintQrIfAvailable()
         refreshCustomItems()
     }
 
@@ -100,12 +103,29 @@ class SaleReviewActivity : AppCompatActivity() {
         binding.btnCharge.setOnClickListener { launchPayment("card") }
         binding.btnCash.setOnClickListener { launchPayment("cash") }
         binding.btnTwint.setOnClickListener { launchPayment("twint") }
+        binding.btnTwintQr.setOnClickListener { launchPayment("twint_qr") }
+    }
+
+    // The QR-sticker rail only exists if the merchant uploaded their sticker,
+    // so the button stays hidden until the backend says there is one. Failing
+    // to reach the backend leaves it hidden, which is the safe default: the
+    // other three rails still work.
+    private fun revealTwintQrIfAvailable() {
+        lifecycleScope.launch {
+            val qrUrl = try {
+                RetrofitClient.apiService.getConfig().twintQrUrl
+            } catch (_: Exception) {
+                null
+            }
+            binding.btnTwintQr.visibility =
+                if (!qrUrl.isNullOrBlank()) View.VISIBLE else View.GONE
+        }
     }
 
     // Every payment method's backend endpoint resolves bargained price
     // overrides and custom items identically (PaymentViewModel reads
-    // PosSession for all three), so any of "card", "cash", "twint" can be
-    // picked regardless of what's in the cart.
+    // PosSession for all four), so any of "card", "cash", "twint", "twint_qr"
+    // can be picked regardless of what's in the cart.
     private fun launchPayment(method: String) {
         val ids = saleItems.map { it.id }
         val totalRappen = PosSession.totalRappenFor(saleItems)

@@ -224,7 +224,7 @@ async function createPosOrder(
   params: {
     stripePaymentIntentId: string | null;
     status: "pending" | "paid";
-    paymentMethod: "card" | "cash" | "twint";
+    paymentMethod: "card" | "cash" | "twint" | "twint_qr";
     totalRappen: number;
     lineItems: ResolvedLineItem[];
     customerName?: string;
@@ -547,71 +547,86 @@ export function registerPosRoutes(app: Express): void {
     },
   );
 
-  app.get("/api/pos/config", requirePosKey, (req: Request, res: Response) => {
-    const { tenantSlug, terminalLocationId } = getPosTenant(req);
-    res.json({
-      // Per-tenant Location on the tenant's Connect account; the legacy env
-      // fallback only serves single-tenant self-hosted deployments that never
-      // connected an account.
-      locationId: terminalLocationId ?? process.env.STRIPE_LOCATION_ID ?? "",
-      tenantSlug,
-    });
-  });
+  app.get(
+    "/api/pos/config",
+    requirePosKey,
+    async (req: Request, res: Response) => {
+      const { tenantId, tenantSlug, terminalLocationId } = getPosTenant(req);
+      // The merchant's own TWINT QR sticker, if they've uploaded one. Its
+      // presence is what enables the POS's "TWINT (QR)" option — a null here
+      // means the app must not offer a rail it can't actually display.
+      // Read failures degrade to null rather than failing config: losing the
+      // QR option is survivable, a POS that won't start is not.
+      const settings = await getTenantSettings(tenantId).catch(() => null);
+      res.json({
+        // Per-tenant Location on the tenant's Connect account; the legacy env
+        // fallback only serves single-tenant self-hosted deployments that never
+        // connected an account.
+        locationId: terminalLocationId ?? process.env.STRIPE_LOCATION_ID ?? "",
+        tenantSlug,
+        twintQrUrl: settings?.twintQrUrl ?? null,
+      });
+    },
+  );
 
   // ─── Sales history + receipts ─────────────────────────────────────────────
 
   // Recent paid sales with line items, for the POS app's history screen.
-  app.get("/api/pos/sales", requirePosKey, async (req: Request, res: Response) => {
-    try {
-      const db = await getDb();
-      if (!db) {
-        res.status(503).json({ error: "Database unavailable" });
-        return;
+  app.get(
+    "/api/pos/sales",
+    requirePosKey,
+    async (req: Request, res: Response) => {
+      try {
+        const db = await getDb();
+        if (!db) {
+          res.status(503).json({ error: "Database unavailable" });
+          return;
+        }
+        const { tenantId } = getPosTenant(req);
+        const orders = await db
+          .select()
+          .from(posOrders)
+          .where(
+            and(eq(posOrders.tenantId, tenantId), eq(posOrders.status, "paid")),
+          )
+          .orderBy(desc(posOrders.createdAt))
+          .limit(100);
+        const orderIds = orders.map((o) => o.id);
+        const items =
+          orderIds.length > 0
+            ? await db
+                .select()
+                .from(posOrderItems)
+                .where(
+                  and(
+                    eq(posOrderItems.tenantId, tenantId),
+                    inArray(posOrderItems.posOrderId, orderIds),
+                  ),
+                )
+            : [];
+        res.json(
+          orders.map((o) => ({
+            id: o.id,
+            status: o.status,
+            totalRappen: o.totalRappen,
+            totalChf: (o.totalRappen / 100).toFixed(2),
+            paymentMethod: o.paymentMethod,
+            createdAt: o.createdAt.toISOString(),
+            items: items
+              .filter((i) => i.posOrderId === o.id)
+              .map((i) => ({
+                productId: i.productId,
+                productName: i.name ?? "Item",
+                priceRappen: i.priceRappen,
+              })),
+          })),
+        );
+      } catch (err) {
+        console.error("[POS] GET /api/pos/sales error:", err);
+        res.status(500).json({ error: "Internal server error" });
       }
-      const { tenantId } = getPosTenant(req);
-      const orders = await db
-        .select()
-        .from(posOrders)
-        .where(
-          and(eq(posOrders.tenantId, tenantId), eq(posOrders.status, "paid")),
-        )
-        .orderBy(desc(posOrders.createdAt))
-        .limit(100);
-      const orderIds = orders.map((o) => o.id);
-      const items =
-        orderIds.length > 0
-          ? await db
-              .select()
-              .from(posOrderItems)
-              .where(
-                and(
-                  eq(posOrderItems.tenantId, tenantId),
-                  inArray(posOrderItems.posOrderId, orderIds),
-                ),
-              )
-          : [];
-      res.json(
-        orders.map((o) => ({
-          id: o.id,
-          status: o.status,
-          totalRappen: o.totalRappen,
-          totalChf: (o.totalRappen / 100).toFixed(2),
-          paymentMethod: o.paymentMethod,
-          createdAt: o.createdAt.toISOString(),
-          items: items
-            .filter((i) => i.posOrderId === o.id)
-            .map((i) => ({
-              productId: i.productId,
-              productName: i.name ?? "Item",
-              priceRappen: i.priceRappen,
-            })),
-        })),
-      );
-    } catch (err) {
-      console.error("[POS] GET /api/pos/sales error:", err);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
+    },
+  );
 
   // Load one of the tenant's own orders (+ items) or 404 — shared by receipts.
   async function loadOwnPosOrder(posOrderId: number, tenantId: number) {
@@ -620,7 +635,9 @@ export function registerPosRoutes(app: Express): void {
     const rows = await db
       .select()
       .from(posOrders)
-      .where(and(eq(posOrders.id, posOrderId), eq(posOrders.tenantId, tenantId)))
+      .where(
+        and(eq(posOrders.id, posOrderId), eq(posOrders.tenantId, tenantId)),
+      )
       .limit(1);
     const order = rows[0];
     if (!order) return null;
@@ -670,8 +687,14 @@ export function registerPosRoutes(app: Express): void {
           posOrderId?: number;
           email?: string;
         };
-        if (!posOrderId || !email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
-          res.status(400).json({ error: "posOrderId and a valid email are required" });
+        if (
+          !posOrderId ||
+          !email ||
+          !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)
+        ) {
+          res
+            .status(400)
+            .json({ error: "posOrderId and a valid email are required" });
           return;
         }
         const loaded = await loadOwnPosOrder(posOrderId, tenantId);
@@ -709,7 +732,8 @@ export function registerPosRoutes(app: Express): void {
     async (req: Request, res: Response) => {
       try {
         const { tenantId, tenantSlug } = getPosTenant(req);
-        const { posOrderId, customerEmail, customerPhone } = (req.body ?? {}) as {
+        const { posOrderId, customerEmail, customerPhone } = (req.body ??
+          {}) as {
           posOrderId?: number;
           customerEmail?: string | null;
           customerPhone?: string | null;
@@ -1091,8 +1115,10 @@ export function registerPosRoutes(app: Express): void {
     },
   );
 
-  // Cash never touches Stripe — the cashier takes the money, so this records the
-  // sale and decrements stock immediately (no async confirmation to wait for).
+  // Attested sales: no Stripe, no async confirmation. The merchant has already
+  // seen the money — counted in hand (`cash`) or landing in their own TWINT app
+  // after the customer scanned their QR sticker (`twint_qr`) — so this records
+  // the sale and decrements stock immediately.
   app.post(
     "/api/pos/manual-sale",
     requirePosKey,
@@ -1113,7 +1139,16 @@ export function registerPosRoutes(app: Express): void {
           customerName,
           customerEmail,
           customerPhone,
+          paymentMethod,
         } = req.body as SaleRequestBody;
+
+        const method = parseAttestedMethod(paymentMethod);
+        if (!method) {
+          res.status(400).json({
+            error: `paymentMethod must be one of: ${ATTESTED_METHODS.join(", ")}`,
+          });
+          return;
+        }
 
         const resolved = await resolveSaleLineItems(db, tenantId, {
           productIds,
@@ -1130,7 +1165,7 @@ export function registerPosRoutes(app: Express): void {
         const posOrderId = await createPosOrder(db, tenantId, {
           stripePaymentIntentId: null,
           status: "paid",
-          paymentMethod: "cash",
+          paymentMethod: method,
           totalRappen,
           lineItems,
           customerName,
@@ -1177,11 +1212,9 @@ export function registerPosRoutes(app: Express): void {
 
         const intent = await stripe.paymentIntents.retrieve(paymentIntentId);
         if (intent.status !== "succeeded") {
-          res
-            .status(400)
-            .json({
-              error: `Payment not succeeded (status: ${intent.status})`,
-            });
+          res.status(400).json({
+            error: `Payment not succeeded (status: ${intent.status})`,
+          });
           return;
         }
 
@@ -1215,6 +1248,25 @@ interface SaleRequestBody {
   customerName?: string;
   customerEmail?: string;
   customerPhone?: string;
+  /** Only meaningful on /api/pos/manual-sale — see ATTESTED_METHODS. */
+  paymentMethod?: string;
+}
+
+// Methods recorded on the merchant's word rather than a gateway's confirmation.
+// `cash` — the cashier counted it. `twint_qr` — the customer scanned the
+// merchant's own TWINT sticker and the merchant watched it land in their TWINT
+// app; TWINT exposes no API for us to verify it (see
+// docs/planning/native-twint-integration.md §4b). Anything outside this list
+// must go through a Stripe-confirmed path instead, so this doubles as the
+// allow-list that stops a POS client claiming a `card` sale it never took.
+const ATTESTED_METHODS = ["cash", "twint_qr"] as const;
+type AttestedMethod = (typeof ATTESTED_METHODS)[number];
+
+function parseAttestedMethod(value: unknown): AttestedMethod | null {
+  if (value === undefined || value === null) return "cash"; // back-compat default
+  return (ATTESTED_METHODS as readonly string[]).includes(value as string)
+    ? (value as AttestedMethod)
+    : null;
 }
 
 // Stripe statement_descriptor allows letters/numbers/spaces only, 5–22 chars.

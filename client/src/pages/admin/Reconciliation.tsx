@@ -47,7 +47,8 @@ export default function Reconciliation() {
       setPosResult(msg);
       toast.success(msg);
     },
-    onError: (e) => toast.error(e.message || "In-person reconciliation failed."),
+    onError: (e) =>
+      toast.error(e.message || "In-person reconciliation failed."),
   });
 
   if (user && user.role !== "admin" && user.role !== "superadmin") {
@@ -63,7 +64,7 @@ export default function Reconciliation() {
 
       <SettingsCard
         title="Stripe payments"
-        description="Scan recent Stripe payments for any missing from your records and email a match request for each."
+        description="Scan recent payments on your own Stripe account for any missing from your records, and email a match request for each."
         footer={
           <PrimaryButton
             onClick={() => stripeScan.mutate({})}
@@ -78,8 +79,9 @@ export default function Reconciliation() {
           <p className="text-sm text-foreground">{stripeResult}</p>
         ) : (
           <p className="text-sm text-muted-foreground">
-            Best run at the end of a selling day. We'll never double-count a
-            payment already in your orders.
+            Reads your connected Stripe account — the one your customers pay
+            into. Best run at the end of a selling day. We'll never double-count
+            a payment already in your orders.
           </p>
         )}
       </SettingsCard>

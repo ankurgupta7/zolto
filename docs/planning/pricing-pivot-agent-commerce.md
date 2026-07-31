@@ -181,17 +181,27 @@ page.
 - **Pro price: shipped at CHF 25**, the midpoint of the 19–29 range. Same
   property: `PLANS` is the only place it lives, and the break-even number
   recomputes itself.
-- **Verify TWINT-via-Stripe effective rate against native 1.3%** and decide
-  the in-person rail. Still open, and the last thing blocking the "in-person
-  is the cheapest rail" claim from being literally true.
-- **VAT: inclusive vs exclusive** (business-plan §7.1) — inherited from the
-  previous pricing doc, still unresolved, and now applies to Pro and to the
-  platform fee.
+- **Native TWINT: decided, blocked on TWINT itself.** The owner has chosen to
+  move the in-person rail to native TWINT. Native is confirmed at **1.3%**, but
+  Stripe's TWINT rate is not publicly documented, so the delta — the entire
+  business case — is still unmeasured. The larger constraint is that TWINT's
+  API is not public and any integrator must be **certified and approved by
+  TWINT** before receiving the spec, so this starts as an application, not a
+  branch. Credential model (Store UUID + `.p12` + password), codebase impact
+  and recommended sequence:
+  [`native-twint-integration.md`](./native-twint-integration.md).
+- ~~**VAT: inclusive vs exclusive**~~ — **closed, not applicable.** Swiss VAT
+  registration is mandatory only above CHF 100,000 of annual turnover
+  (MWSTG art. 10). Zolto is below that and pre-revenue, so there is no VAT to
+  charge on Pro or on the platform fee, and Stripe Tax stays off. **Revisit
+  when annual turnover approaches CHF 100k** — at that point registration
+  becomes obligatory and prices must state which way they're quoted. Until
+  then, prices in `shared/platform.ts` are simply the price.
 - Off-season: is skim-only enough, or do we also offer Pro pause / annual
   billing?
 - Speed vs Shopify Agentic: how fast to ship agent-layer prominence.
-- **Grandfathering:** handled in code, but still needs one human decision —
-  see the runbook in §8.
+- ~~**Grandfathering**~~ — **closed, there were never any legacy
+  subscribers.** See §8.
 
 ---
 
@@ -214,59 +224,29 @@ page.
 
 ---
 
-## 8. Runbook: legacy subscribers (pre-pivot paid tenants)
+## 8. Legacy subscribers — closed, there were none
 
-Migration `0008` moved every Maker/Studio/Atelier tenant to `plan = 'pro'`.
-Their **Stripe subscriptions were not touched**, so they still bill at the old
-price. An ex-Atelier tenant therefore pays CHF 99/month for a plan we sell at
-CHF 25.
+Migration `0008` remapped the plan enum from Maker/Studio/Atelier to `pro`,
+and this section used to carry a runbook for reconciling the tenants that
+remap would have left billing an old Stripe price.
 
-### What the code now does about it
+**That population never existed.** Zolto is pre-launch: no paying tenants
+when `0008` ran, and none since. The grandfathering machinery built for them
+— `isLegacyPriceId`, the retired-tier inverse lookup, the
+`tenants.plan_price_override` column, the Billing-page banner, and the
+`STRIPE_PRICE_MAKER` / `_STUDIO` / `_ATELIER` env vars — has been **removed**
+(migration `0012`). Retired tiers were never sellable anyway: `PRICE_ENV`
+holds only `pro`, so no new subscription can land on one through the product.
 
-- `planForPriceId` maps the retired Price ids back to `pro`
-  (`LEGACY_PRICE_ENV` in `server/billing.ts`). Without this, those
-  subscriptions resolved to `null`, the plan write was skipped, and a legacy
-  subscriber's plan **silently stopped tracking Stripe** — a cancellation or
-  payment failure would not have moved them off Pro.
-- `handleSubscriptionUpdated` records what they actually pay in
-  `tenants.plan_price_override` (a column that existed unused since the
-  original roadmap), and clears it the moment they move onto the real Pro
-  price. It also logs a warning naming the tenant and the price.
-- The merchant's Billing page shows the real figure and says we won't quietly
-  leave them there. Telling someone paying CHF 99 that their plan costs CHF 25
-  would be a lie by omission.
-- Retired tiers still cannot be **sold**: `PRICE_ENV` (the forward mapping) has
-  only `pro`, so `createPlanCheckout` rejects them, and `isBillingConfigured`
-  ignores them.
+What replaced it: `handleSubscriptionUpdated` now warns loudly when a
+subscription carries a Price it doesn't recognise, and withholds only the
+`plan` write while still syncing status and subscription id. That is the
+honest general case — a mis-set `STRIPE_PRICE_PRO` is far likelier than a
+grandfathered tenant, and it used to fail silently.
 
-### What a human still has to do
-
-Set `STRIPE_PRICE_MAKER` / `_STUDIO` / `_ATELIER` in the environment to the
-retired Price ids — otherwise the mapping above can't recognise them and
-legacy subscribers go back to silently desyncing.
-
-Then decide, per tenant, and act in Stripe:
-
-1. **Move them to Pro** (recommended where the old price is higher). Update
-   the subscription item to the Pro Price with proration. The next webhook
-   clears `plan_price_override` automatically.
-2. **Deliberately grandfather** (only sensible if the old price is *lower*
-   than Pro). Nothing to do — the override keeps the UI honest.
-
-Find them with:
-
-```sql
-SELECT id, slug, plan, plan_price_override, stripe_subscription_id
-FROM tenants
-WHERE plan_price_override IS NOT NULL;
-```
-
-That column populates as each subscription's next webhook arrives, so allow a
-billing cycle for the list to fill, or replay `customer.subscription.updated`
-from the Stripe dashboard to populate it immediately.
-
-**Do not archive the old Stripe Prices** until this list is empty — archiving
-a Price that live subscriptions still reference is how billing breaks quietly.
+If a grandfathered price is ever genuinely needed (a promo, an enterprise
+deal), reintroduce it deliberately then, rather than carrying an unread
+column and three unused env vars until it happens.
 
 ---
 
@@ -277,13 +257,16 @@ being precise about what has and hasn't been proven:
 
 - ✅ **Unit-tested** end to end with a mocked Stripe: fee maths, plan
   conditionality, channel attribution, subtotal-not-shipping basis.
-- ⚠️ **Integration tests written, not yet run.** `server/stripe.integration.test.ts`
-  now creates a real test-mode connected account and asserts that a direct
-  charge with `application_fee_amount` is accepted (plus the agent-channel
-  and Pro/no-fee variants). They `describe.skip` without
-  `STRIPE_TEST_SECRET_KEY`, and no such key was available where this was
-  written. **Run `pnpm test:integration` with a Stripe test key before
-  launch** — this is the last unproven link in the revenue path.
+- ✅ **Verified against the real Stripe API (2026-07-31).** With
+  `STRIPE_TEST_SECRET_KEY`/`STRIPE_TEST_WEBHOOK_SECRET` set and a business
+  name configured on both the platform and the connected test account,
+  `pnpm test:integration` is fully green: `stripe.integration.test.ts` (7/7)
+  and `billing.integration.test.ts` (9/9), 16/16 total. A direct charge with
+  `application_fee_amount` is accepted by Stripe; the agent-channel and
+  Pro/no-fee variants pass too. The prior blocker
+  (`"you must set an account or business name"`) was Checkout branding
+  config, not a fee rejection, and is now resolved. This was the last
+  unproven link in the revenue path — it's closed.
 - ✅ **Failure contained regardless.** A rejected application fee fails the
   *entire* `checkout.sessions.create` call, which would take a vendor's
   storefront offline rather than cost Zolto 1%. `createStorefrontCheckoutSession`

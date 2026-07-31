@@ -35,6 +35,7 @@ import {
   type PhotoCreditLedgerEntry,
   photoCreditLedger,
   type PosAttribution,
+  rateLimitWindows,
   type StaffInvite,
   staffInvites,
   storageObjects,
@@ -820,9 +821,7 @@ export interface PlatformMetrics {
  * an invented price is worse than an empty field, because the merchant may
  * accept it and mis-price their own work.
  */
-export async function getCategoryPriceStats(
-  tenantId: number,
-): Promise<
+export async function getCategoryPriceStats(tenantId: number): Promise<
   {
     category: string;
     count: number;
@@ -1109,35 +1108,84 @@ export async function getAvailableProductsForMatching(
   );
 }
 
-export async function getKnownOrderPaymentIntentIds(): Promise<Set<string>> {
+// The three "already known to us" sets below back Stripe reconciliation.
+// `tenantId` scopes them to one store; omitting it keeps the platform-wide
+// behaviour for the superadmin sweep. Scoping matters less for correctness
+// than it looks (PaymentIntent ids are globally unique, and an intent on one
+// tenant's connected account can never appear in another's list) and more for
+// size: without it every tenant loads every other tenant's id set.
+export async function getKnownOrderPaymentIntentIds(
+  tenantId?: number,
+): Promise<Set<string>> {
   return withDb(async (db) => {
     const rows = await db
       .select({ id: orders.stripePaymentIntentId })
       .from(orders)
-      .where(isNotNull(orders.stripePaymentIntentId));
+      .where(
+        and(
+          isNotNull(orders.stripePaymentIntentId),
+          ...(tenantId === undefined ? [] : [eq(orders.tenantId, tenantId)]),
+        ),
+      );
     return new Set(rows.map((r) => r.id).filter((id): id is string => !!id));
   }, new Set<string>());
 }
 
-export async function getKnownPosPaymentIntentIds(): Promise<Set<string>> {
+export async function getKnownPosPaymentIntentIds(
+  tenantId?: number,
+): Promise<Set<string>> {
   return withDb(async (db) => {
     const rows = await db
       .select({ id: posOrders.stripePaymentIntentId })
       .from(posOrders)
-      .where(isNotNull(posOrders.stripePaymentIntentId));
+      .where(
+        and(
+          isNotNull(posOrders.stripePaymentIntentId),
+          ...(tenantId === undefined ? [] : [eq(posOrders.tenantId, tenantId)]),
+        ),
+      );
     return new Set(rows.map((r) => r.id).filter((id): id is string => !!id));
   }, new Set<string>());
 }
 
-export async function getKnownReconciliationPaymentIntentIds(): Promise<
-  Set<string>
-> {
+export async function getKnownReconciliationPaymentIntentIds(
+  tenantId?: number,
+): Promise<Set<string>> {
   return withDb(async (db) => {
     const rows = await db
       .select({ id: stripeReconciliations.stripePaymentIntentId })
-      .from(stripeReconciliations);
+      .from(stripeReconciliations)
+      .where(
+        tenantId === undefined
+          ? undefined
+          : eq(stripeReconciliations.tenantId, tenantId),
+      );
     return new Set(rows.map((r) => r.id));
   }, new Set<string>());
+}
+
+// Every tenant that has linked their own Stripe account — the population the
+// platform-wide reconciliation sweep iterates. A tenant without a connected
+// account has no payments of its own to reconcile.
+export async function getTenantsWithConnectedStripe(): Promise<
+  { id: number; slug: string; name: string; stripeConnectedAccountId: string }[]
+> {
+  return withDb(async (db) => {
+    const rows = await db
+      .select({
+        id: tenants.id,
+        slug: tenants.slug,
+        name: tenants.name,
+        stripeConnectedAccountId: tenants.stripeConnectedAccountId,
+      })
+      .from(tenants)
+      .where(isNotNull(tenants.stripeConnectedAccountId))
+      .orderBy(asc(tenants.id));
+    return rows.filter(
+      (r): r is (typeof rows)[number] & { stripeConnectedAccountId: string } =>
+        Boolean(r.stripeConnectedAccountId),
+    );
+  }, []);
 }
 
 export async function createStripeReconciliation(
@@ -1236,8 +1284,13 @@ export interface UnattributedPosLine {
  * each line out once it already has a review row, so repeated day-end runs don't
  * re-queue the same sale.
  */
+// `tenantId` scopes the scan to one store. It is optional only so the
+// platform-wide sweep (a superadmin/cron use) stays expressible; every
+// merchant-triggered run MUST pass it, or one store's admin kicks off a job
+// that writes pos_attributions rows for every other store on the platform.
 export async function getUnattributedPosLineItems(
   since: Date,
+  tenantId?: number,
 ): Promise<UnattributedPosLine[]> {
   return withDb(async (db) => {
     const rows = await db
@@ -1261,6 +1314,9 @@ export async function getUnattributedPosLineItems(
           eq(posOrders.status, "paid"),
           gte(posOrderItems.createdAt, since),
           isNull(posAttributions.id),
+          ...(tenantId === undefined
+            ? []
+            : [eq(posOrderItems.tenantId, tenantId)]),
         ),
       );
     return rows;
@@ -1396,6 +1452,48 @@ export async function getTenantById(id: number): Promise<Tenant | undefined> {
       .where(eq(tenants.id, id))
       .limit(1);
     return result.length > 0 ? result[0] : undefined;
+  }, undefined);
+}
+
+// Raw storage for server/rateLimit.ts's shared fixed-window counter — the
+// window-boundary decision (allowed/remaining/retryAfter) lives there, this
+// just does the atomic upsert-and-read. Reuses the SAME row across windows
+// (upsert on the unique limit_key, not an insert-per-window), so an
+// abandoned key leaves exactly one skinny row behind rather than growing
+// without bound. Returns null on any DB error so the caller can fail open —
+// a rate limiter guarding against catalogue-hoarding abuse must never itself
+// become a reason every checkout on the platform fails.
+export async function getOrCreateRateLimitWindow(
+  key: string,
+  now: number,
+  windowMs: number,
+): Promise<{ count: number; resetAt: number } | null> {
+  return withDb(async (db) => {
+    const resetAt = now + windowMs;
+    await db
+      .insert(rateLimitWindows)
+      .values({ limitKey: key, count: 1, resetAt })
+      .onDuplicateKeyUpdate({
+        set: {
+          count: sql`IF(${rateLimitWindows.resetAt} <= ${now}, 1, ${rateLimitWindows.count} + 1)`,
+          resetAt: sql`IF(${rateLimitWindows.resetAt} <= ${now}, ${resetAt}, ${rateLimitWindows.resetAt})`,
+        },
+      });
+    const rows = await db
+      .select()
+      .from(rateLimitWindows)
+      .where(eq(rateLimitWindows.limitKey, key))
+      .limit(1);
+    const row = rows[0];
+    return row
+      ? { count: row.count, resetAt: Number(row.resetAt) }
+      : { count: 1, resetAt };
+  }, null);
+}
+
+export async function clearRateLimitWindows(): Promise<void> {
+  await withDb(async (db) => {
+    await db.delete(rateLimitWindows);
   }, undefined);
 }
 
@@ -1683,13 +1781,7 @@ export async function getTenantByStripeSubscriptionId(
 export async function updateTenantBilling(
   tenantId: number,
   fields: Partial<
-    Pick<
-      Tenant,
-      | "plan"
-      | "subscriptionStatus"
-      | "stripeSubscriptionId"
-      | "planPriceOverride"
-    >
+    Pick<Tenant, "plan" | "subscriptionStatus" | "stripeSubscriptionId">
   >,
 ): Promise<void> {
   if (Object.keys(fields).length === 0) return;

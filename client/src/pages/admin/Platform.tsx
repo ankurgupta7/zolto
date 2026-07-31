@@ -7,9 +7,19 @@
  * ratio — not signups, not GMV — is the business
  * (docs/planning/pricing-pivot-agent-commerce.md §5).
  */
+import { useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
-import { PageHeader, SettingsCard, LoadingState } from "@/components/admin/ui";
+import type { inferRouterOutputs } from "@trpc/server";
+import type { AppRouter } from "../../../../server/routers";
+import { toast } from "sonner";
+import { CreditCard, AlertTriangle } from "lucide-react";
+import {
+  PageHeader,
+  SettingsCard,
+  PrimaryButton,
+  LoadingState,
+} from "@/components/admin/ui";
 
 function Stat({
   label,
@@ -36,6 +46,9 @@ function Stat({
 const chf = (n: number) =>
   `CHF ${n.toLocaleString("en-CH", { maximumFractionDigits: 2 })}`;
 
+type SweepResult =
+  inferRouterOutputs<AppRouter>["platform"]["reconcileAllTenants"];
+
 export default function Platform() {
   const { user } = useAuth();
   const isSuperadmin = user?.role === "superadmin";
@@ -43,6 +56,17 @@ export default function Platform() {
   const query = trpc.platform.metrics.useQuery(undefined, {
     enabled: isSuperadmin,
     retry: false,
+  });
+
+  const [sweep, setSweep] = useState<SweepResult | null>(null);
+  const reconcileAll = trpc.platform.reconcileAllTenants.useMutation({
+    onSuccess: (data) => {
+      setSweep(data);
+      toast.success(
+        `Scanned ${data.tenantsScanned} store${data.tenantsScanned === 1 ? "" : "s"} — ${data.totals.newPendingReview} payment${data.totals.newPendingReview === 1 ? "" : "s"} queued for review.`,
+      );
+    },
+    onError: (e) => toast.error(e.message || "Platform reconciliation failed."),
   });
 
   if (!isSuperadmin) {
@@ -137,6 +161,89 @@ export default function Platform() {
           hint={`Break-even at CHF 2,500 online/mo`}
         />
       </div>
+
+      <SettingsCard
+        title="Stripe reconciliation — all stores"
+        description="Scan every store that has connected Stripe, each against their own account, for succeeded payments missing from our records. Each merchant is emailed their own shortlist to confirm."
+        footer={
+          <PrimaryButton
+            onClick={() => reconcileAll.mutate({})}
+            loading={reconcileAll.isPending}
+          >
+            <CreditCard className="h-4 w-4" />
+            Reconcile every store
+          </PrimaryButton>
+        }
+      >
+        {sweep ? (
+          <div>
+            <p className="text-sm text-foreground">
+              {sweep.tenantsScanned} store
+              {sweep.tenantsScanned === 1 ? "" : "s"} scanned ·{" "}
+              {sweep.totals.scannedSucceededPayments} payments checked ·{" "}
+              {sweep.totals.newPendingReview} queued for review ·{" "}
+              {sweep.totals.newNoCandidates} with no close match ·{" "}
+              {sweep.totals.emailsSent} email
+              {sweep.totals.emailsSent === 1 ? "" : "s"} sent
+            </p>
+
+            {sweep.tenantsFailed > 0 && (
+              <p className="mt-2 flex items-center gap-1.5 text-sm text-amber-700 dark:text-amber-400">
+                <AlertTriangle className="h-4 w-4 shrink-0" />
+                {sweep.tenantsFailed} store
+                {sweep.tenantsFailed === 1 ? "" : "s"} could not be scanned —
+                listed below. The rest still completed.
+              </p>
+            )}
+
+            {sweep.perTenant.length > 0 && (
+              <div className="mt-4 overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b text-left text-xs uppercase tracking-wide text-muted-foreground">
+                      <th className="py-2 pr-4 font-medium">Store</th>
+                      <th className="py-2 pr-4 font-medium">Checked</th>
+                      <th className="py-2 pr-4 font-medium">To review</th>
+                      <th className="py-2 font-medium">Result</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sweep.perTenant.map((t) => (
+                      <tr key={t.tenantId} className="border-b last:border-0">
+                        <td className="py-2 pr-4 text-foreground">
+                          {t.name}{" "}
+                          <span className="text-muted-foreground">
+                            /{t.slug}
+                          </span>
+                        </td>
+                        <td className="py-2 pr-4 tabular-nums">
+                          {t.ok ? t.scannedSucceededPayments : "—"}
+                        </td>
+                        <td className="py-2 pr-4 tabular-nums">
+                          {t.ok ? t.newPendingReview : "—"}
+                        </td>
+                        <td className="py-2 text-muted-foreground">
+                          {t.ok
+                            ? t.emailSent
+                              ? "emailed"
+                              : "nothing to send"
+                            : t.error}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            Stores with no connected Stripe account are skipped — an
+            in-person-only merchant has no online payments to reconcile. Safe to
+            re-run: a payment already recorded is never queued twice.
+          </p>
+        )}
+      </SettingsCard>
 
       <SettingsCard
         title="Subscriptions"

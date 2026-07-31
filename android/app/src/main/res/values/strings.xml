@@ -54,6 +54,12 @@
     <string name="processing_payment">Processing payment…</string>
     <string name="recording_cash_sale">Recording cash sale…</string>
     <string name="twint_scan_prompt">Scan with your TWINT app</string>
+    <!-- QR-sticker rail: the customer must type the amount themselves, so say so. -->
+    <string name="twint_sticker_prompt">Scan and enter this amount in your TWINT app</string>
+    <string name="twint_sticker_confirm">Received %1$s</string>
+    <string name="method_twint_qr">TWINT (QR code)</string>
+    <string name="pay_twint_qr">TWINT QR</string>
+    <string name="twint_sticker_missing">No TWINT QR code is set up for this store yet. Add one in Zolto under Point of sale.</string>
 
     <!-- Payment result -->
     <string name="payment_success_title">Payment Successful</string>

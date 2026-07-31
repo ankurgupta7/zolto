@@ -7,6 +7,7 @@ import {
   protectedProcedure,
   adminProcedure,
   requireTenant,
+  tenantAdminProcedure,
   PLAN_FEATURES,
 } from "../_core/trpc";
 import {
@@ -24,6 +25,7 @@ import {
   deleteUserById,
 } from "../db";
 import { createStripeCustomer } from "../stripe";
+import { storagePut } from "../storage";
 import { buildConnectAuthorizeUrl } from "../stripeConnect";
 import { deriveOnboardingStatus } from "../onboarding";
 import { generatePosApiKey, hashPosApiKey } from "../posApiKey";
@@ -235,18 +237,20 @@ export const tenantRouter = router({
       return deriveOnboardingStatus(ctx.tenant);
     }),
 
-  dismissOnboarding: publicProcedure
-    .use(requireTenant)
-    .mutation(async ({ ctx }) => {
-      await db
-        .update(tenants)
-        .set({ onboardingStep: -1 })
-        .where(eq(tenants.id, ctx.tenant.id));
-      return { success: true };
-    }),
+  // Both onboarding mutations write to the tenants row, so they need the same
+  // guard as any other store-admin write. They were `publicProcedure` —
+  // unauthenticated, like updateSettings above — which let anyone who could
+  // reach a store's host dismiss or rewind its onboarding checklist. Low
+  // impact next to settings, but the same class of bug and the same fix.
+  dismissOnboarding: tenantAdminProcedure.mutation(async ({ ctx }) => {
+    await db
+      .update(tenants)
+      .set({ onboardingStep: -1 })
+      .where(eq(tenants.id, ctx.tenant.id));
+    return { success: true };
+  }),
 
-  setOnboardingCursor: publicProcedure
-    .use(requireTenant)
+  setOnboardingCursor: tenantAdminProcedure
     .input(z.object({ step: z.number().int().min(0).max(10) }))
     .mutation(async ({ ctx, input }) => {
       // Cursor moves forward only — never rewinds a dismissed (-1) checklist.
@@ -293,8 +297,12 @@ export const tenantRouter = router({
   //   currency     — anything other than CHF needs multi-currency (Pro plan)
   // The checks live inline (not as middleware) because the same procedure also
   // accepts ungated branding fields on every plan.
-  updateSettings: publicProcedure
-    .use(requireTenant)
+  //
+  // SECURITY: this was `publicProcedure.use(requireTenant)` — despite the
+  // "Admin" heading it required no authentication at all, so anyone who could
+  // reach a store's host could rewrite that store's settings (contact email,
+  // Discord intake channel, public domain, branding). Now properly guarded.
+  updateSettings: tenantAdminProcedure
     .input(
       z.object({
         logoUrl: z.string().url().optional(),
@@ -371,40 +379,85 @@ export const tenantRouter = router({
       return { success: true };
     }),
 
+  // ─── Admin: Upload / clear the TWINT QR code sticker ──────────────────────
+  // The merchant's own sticker, shown full-screen on the POS for customers to
+  // scan (docs/planning/native-twint-integration.md §4b). An upload rather than
+  // a pasted URL because TWINT hands merchants an image file, and asking them
+  // to self-host it would be absurd. Passing null clears it, which immediately
+  // removes the TWINT (QR) option from the POS.
+  setTwintQr: tenantAdminProcedure
+    .input(
+      z.object({
+        // Base64 image data (with or without a data: prefix), or null to clear.
+        imageData: z.string().max(8_000_000).nullable(),
+        mimeType: z
+          .enum(["image/png", "image/jpeg", "image/webp"])
+          .default("image/png"),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      let twintQrUrl: string | null = null;
+
+      if (input.imageData !== null) {
+        const base64 = input.imageData.replace(/^data:[^;]+;base64,/, "");
+        const buffer = Buffer.from(base64, "base64");
+        if (buffer.byteLength === 0) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "That file didn't contain any image data.",
+          });
+        }
+        const ext = input.mimeType.split("/")[1] ?? "png";
+        // Tenant-scoped so the upload counts against the plan's storage cap
+        // like every other image (server/storage.ts).
+        const { url } = await storagePut(
+          ctx.tenant.id,
+          `twint-qr/${ctx.tenant.id}/${Date.now()}.${ext}`,
+          buffer,
+          input.mimeType,
+        );
+        twintQrUrl = url;
+      }
+
+      const existing = await db.query.tenantSettings.findFirst({
+        where: eq(tenantSettings.tenantId, ctx.tenant.id),
+      });
+      if (existing) {
+        await db
+          .update(tenantSettings)
+          .set({ twintQrUrl, updatedAt: new Date() })
+          .where(eq(tenantSettings.id, existing.id));
+      } else {
+        await db
+          .insert(tenantSettings)
+          .values({ tenantId: ctx.tenant.id, twintQrUrl });
+      }
+
+      return { twintQrUrl };
+    }),
+
   // ─── Admin: Get this tenant's Stripe Connect authorize URL + status ───────
   // Lets a store admin link their OWN Stripe account for storefront checkout
   // (separate from Zolto's own subscription billing — see
   // server/stripeConnect.ts). `url` is null when Connect isn't configured on
   // the platform yet (STRIPE_CONNECT_CLIENT_ID unset).
-  getStripeConnectUrl: adminProcedure
-    .use(requireTenant)
-    .query(async ({ ctx }) => {
-      if (ctx.user!.tenantId !== ctx.tenant.id) {
-        // Logged because the merchant-facing symptom is indistinguishable from
-        // "Connect isn't configured" — both leave the client without a URL. The
-        // usual cause is a session bound to a different tenant (e.g. the
-        // platform owner, or a stale cookie) browsing a tenant subdomain, and
-        // without this line there is nothing anywhere that says so.
-        console.warn(
-          `[StripeConnect] Refusing getStripeConnectUrl: user ${ctx.user!.id} ` +
-            `belongs to tenant ${ctx.user!.tenantId} but is browsing tenant ` +
-            `${ctx.tenant.id} (${ctx.tenant.slug}). Sign in as an admin of ` +
-            `that store.`,
-        );
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: NOT_ADMIN_ERR_MSG,
-        });
-      }
-      const [tenant, url] = await Promise.all([
-        getTenantById(ctx.tenant.id),
-        buildConnectAuthorizeUrl(ctx.tenant.id, ctx.req),
-      ]);
-      return {
-        url,
-        connected: Boolean(tenant?.stripeConnectedAccountId),
-      };
-    }),
+  // The cross-tenant check that used to be hand-rolled here is now the shared
+  // tenantAdminProcedure guard — this was the only copy of it in the codebase,
+  // which is precisely why every other admin route was missing it. One
+  // behaviour change: a superadmin browsing a tenant subdomain is now allowed
+  // through (platform support acting on a store they don't belong to), where
+  // the local copy refused. That exemption is deliberate and consistent with
+  // platform.metrics being cross-tenant by design.
+  getStripeConnectUrl: tenantAdminProcedure.query(async ({ ctx }) => {
+    const [tenant, url] = await Promise.all([
+      getTenantById(ctx.tenant.id),
+      buildConnectAuthorizeUrl(ctx.tenant.id, ctx.req),
+    ]);
+    return {
+      url,
+      connected: Boolean(tenant?.stripeConnectedAccountId),
+    };
+  }),
 
   // ─── Superadmin: List all tenants (platform admin) ───────────────────────
   list: publicProcedure.query(async () => {
