@@ -250,12 +250,12 @@ export const POSITIONING = {
 export const PRICING_PROMISE = {
   headline: "You don't pay us until the internet pays you.",
   pledge:
-    "Selling in person is free, forever — your store, POS and inventory cost CHF 0/month, and Zolto adds nothing on in-person payments. We only earn on the online and AI-agent sales we help create.",
+    "Selling in person is free, forever — your store, POS and inventory cost CHF 0/month, and Zolto adds nothing on in-person payments. Here's the honest version: we already have enough money. We're not here to skim off small makers — we're here to help you keep what you earn, and that's not changing.",
   points: [
-    "In person is free forever: full POS, inventory sync and your online storefront at CHF 0/month, with no Zolto fee on market-stall sales.",
-    "Online and AI-agent orders carry a 1% platform fee on the Free plan — a month with no online sales costs you CHF 0.",
-    "Pro (CHF 25/month) removes the 1% entirely and unlocks unmetered AI. Past roughly CHF 2,500/month online, Pro is the cheaper choice — we'll tell you in-app when you get there.",
-    "We never meter AI queries. Plans scale on products, photos and storage — not on how often you talk to the AI.",
+    "Sell at the market and pay us nothing, forever: full POS, inventory sync and your online storefront, all included at CHF 0/month.",
+    "Online and AI-agent orders carry a 1% fee on the Free plan. No online sales this month? You pay CHF 0. That's it.",
+    "Pro (CHF 25/month) kills the 1% fee entirely and unlocks unmetered AI. Selling past roughly CHF 2,500/month online? Pro's cheaper — we'll tell you in-app the moment it's worth switching.",
+    "We'll never nickel-and-dime your AI usage. Talk to it as much as you want — plans scale on products, photos and storage, not on how chatty you get.",
   ],
 } as const;
 

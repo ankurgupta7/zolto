@@ -39,12 +39,12 @@ export default function Landing() {
               </span>
             </h1>
             <p className="mt-8 max-w-md text-lg leading-relaxed text-white/70">
-              Zolto gives makers a point-of-sale and an online store that share{" "}
-              <span className="text-white">one inventory</span> — run by an AI
-              that handles the setup, the listings and the support. No card
-              reader to buy, and{" "}
+              Zolto's a point-of-sale and an online store that share{" "}
+              <span className="text-white">one inventory</span> — plus an AI
+              that handles the setup, the listings and the boring stuff so you
+              don't have to. No card reader to buy, and{" "}
               <span className="text-white">{COST_COMPARISON.multiplier}</span>{" "}
-              of what the old way charges. We're on your side, and we mean it.
+              of what the old way charges. We're on your side. For real.
             </p>
             <div className="mt-10 flex flex-wrap items-center gap-4">
               <Link
@@ -148,8 +148,9 @@ export default function Landing() {
             </h2>
             <p className="mx-auto mt-3 max-w-xl text-[var(--brand-muted-2)]">
               Stripe, SumUp and Worldline were built for a time when websites
-              were hard and a card reader was king. Most of the bill is that era
-              — not the service you need.
+              were hard and a card reader was basically a status symbol. You're
+              still paying for that era — not for anything you actually need
+              today.
             </p>
           </div>
 
@@ -244,8 +245,10 @@ export default function Landing() {
               Sell first. Sort it out later.
             </h2>
             <p className="mx-auto mt-3 max-w-xl text-[var(--brand-muted-2)]">
-              A real stall is chaos. Don&rsquo;t stop to tag every piece — your
-              phone is the card machine, and the AI is the back office.
+              A real market stall is glorious chaos. Don&rsquo;t stop mid-sale
+              to tag every piece — your phone&rsquo;s the card machine, the
+              AI&rsquo;s the back office, and you&rsquo;re just there to sell
+              cool stuff.
             </p>
           </div>
 
@@ -326,8 +329,8 @@ export default function Landing() {
             Your store, live this week.
           </h2>
           <p className="mt-4 text-white/70">
-            Free to sell in person, forever. 14-day trial on Pro. No card
-            required to explore — and no card reader, ever.
+            Free to sell in person, forever. 14-day trial on Pro, no credit card
+            needed to poke around — and no card reader, ever. Promise.
           </p>
           <Link
             href="/signup"

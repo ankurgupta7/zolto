@@ -32,9 +32,9 @@ export default function Pricing() {
           Simple pricing for makers.
         </h1>
         <p className="mx-auto mt-4 max-w-xl text-[var(--brand-muted-2)]">
-          Selling in person is free, forever. We only earn on the online and
-          AI-agent sales we bring you — {REVENUE_SHARE.percentLabel} on Free, or
-          a flat Pro plan that removes it.
+          Selling in person is free, forever. We only make money when we
+          actually help you make money online — {REVENUE_SHARE.percentLabel} on
+          Free, or go flat-rate with Pro and keep the whole thing.
         </p>
       </div>
 
@@ -164,10 +164,10 @@ export default function Pricing() {
         </div>
         <ul className="mt-5 grid gap-2.5">
           {[
-            "At the market stall, Zolto adds nothing — take TWINT QR and Tap to Pay all season for CHF 0.",
-            `Online and AI-agent orders on the Free plan carry a ${REVENUE_SHARE.percentLabel} platform fee, taken automatically inside the Stripe payment — no separate bill, and a month with no online sales costs CHF 0.`,
-            `${PRO_PLAN.name} (CHF ${PRO_PLAN.priceChf}/month) removes the fee entirely. Past about CHF ${PRO_BREAK_EVEN_ONLINE_CHF.toLocaleString("en-US")}/month online it's the cheaper option — your dashboard will tell you when.`,
-            "AI is never the meter: descriptions, translations and chat aren't counted, and Pro's AI is unmetered. Plans scale on products, photos and storage.",
+            "At the market stall, we take nothing — TWINT QR and Tap to Pay, all season, CHF 0. Every time.",
+            `Online and AI-agent orders on the Free plan carry a ${REVENUE_SHARE.percentLabel} fee, taken automatically inside the Stripe payment — no separate bill, and a month with no online sales costs CHF 0.`,
+            `${PRO_PLAN.name} (CHF ${PRO_PLAN.priceChf}/month) kills the fee entirely. Past about CHF ${PRO_BREAK_EVEN_ONLINE_CHF.toLocaleString("en-US")}/month online it's the cheaper option — your dashboard will tell you when.`,
+            "AI usage is never the meter: descriptions, translations and chat aren't counted, and Pro's AI is unmetered. Plans scale on products, photos and storage, not on how much you lean on it.",
           ].map((point) => (
             <li
               key={point}
