@@ -254,3 +254,31 @@ describe("INCUMBENT_COMPARISON headline row", () => {
     expect(row.them).not.toMatch(/CHF\s?\d/);
   });
 });
+
+describe("COMPETITORS", () => {
+  it("covers the platforms makers actually weigh Zolto against", () => {
+    const ids = COMPETITORS.map((c) => c.id);
+    expect(ids).toContain("stripe");
+    expect(ids).toContain("sumup");
+    expect(ids).toContain("shopify");
+    expect(ids).toContain("worldline");
+  });
+
+  it("quotes no competitor pricing anywhere", () => {
+    // Standing rule (see the COMPETITORS doc comment): rates vary by country,
+    // contract and volume, so any figure here is stale and unverifiable the
+    // day it ships. The pages compare models and link out for real numbers.
+    for (const c of COMPETITORS) {
+      const text = [c.summary, ...c.betterWhen, ...c.zoltoWhen].join(" ");
+      expect(text).not.toMatch(/CHF\s?\d|\$\s?\d|€\s?\d|\d+\s*%/);
+    }
+  });
+
+  it("concedes something real for every competitor", () => {
+    // A comparison that never concedes reads as marketing and gets discounted.
+    for (const c of COMPETITORS) {
+      expect(c.betterWhen.length).toBeGreaterThanOrEqual(2);
+      expect(c.zoltoWhen.length).toBeGreaterThanOrEqual(2);
+    }
+  });
+});

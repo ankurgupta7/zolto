@@ -710,6 +710,22 @@ export const COMPETITORS: Competitor[] = [
     ],
   },
   {
+    id: "shopify",
+    name: "Shopify",
+    summary:
+      "The best-known hosted e-commerce platform, with its own point-of-sale app alongside the online store. Built for retail businesses that grow into staff, warehouses and multi-channel fulfilment.",
+    betterWhen: [
+      "You're running a large catalogue with staff, stock locations and complex fulfilment.",
+      "You want the biggest third-party app ecosystem and someone to assemble it.",
+      "You need established multi-channel retail tooling and have time to administer it.",
+    ],
+    zoltoWhen: [
+      "You're one person, and a platform you have to administer is the problem, not the solution.",
+      "You want the till and the catalogue on the phone in your apron without a monthly bill for it.",
+      "You'd rather photograph your notebook than fill in a product grid by hand.",
+    ],
+  },
+  {
     id: "worldline",
     name: "Worldline",
     summary:
