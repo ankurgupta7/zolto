@@ -124,3 +124,7 @@ playwright-report/
 reports/
 e2e/test-results/
 e2e/.cache/
+
+# Locally mirrored webfonts for the screenshot harness (tools/screenshot).
+# Regenerate with tools/screenshot/fetch-fonts.sh — not vendored.
+tools/screenshot/fonts/

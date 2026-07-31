@@ -1,0 +1,6 @@
+/* Tailwind v4 auto-detects content from the Vite root, which here is
+   tools/screenshot/ — so the real component sources must be pointed at
+   explicitly, or no utilities are generated and the page renders unstyled. */
+@source "../../client/src";
+@source "../../shared";
+@import "../../client/src/index.css";

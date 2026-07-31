@@ -35,7 +35,7 @@ export function OneInventoryDiagram() {
         <SketchArrow className="absolute left-[-3.5rem] top-1/2 hidden h-8 w-16 -translate-y-1/2 -scale-x-100 text-[var(--brand-accent)] md:block" />
         <SketchArrow className="absolute right-[-3.5rem] top-1/2 hidden h-8 w-16 -translate-y-1/2 text-[var(--brand-accent)] md:block" />
         <div className="flex h-24 w-24 flex-col items-center justify-center rounded-full border-2 border-[var(--brand-ink)] bg-[var(--brand-surface-2)] text-center">
-          <span className="font-serif text-2xl leading-none text-[var(--brand-ink)] tabular-nums">
+          <span className="font-serif text-2xl leading-none text-[var(--brand-ink)] lining-nums tabular-nums">
             12
           </span>
           <span className="mt-1 text-[10px] uppercase tracking-[0.14em] text-[var(--brand-muted)]">
@@ -225,7 +225,7 @@ export function PhotoToListing() {
           Sterling silver chain, 8&nbsp;mm rainbow moonstone drop. Handmade in
           Zürich.
         </p>
-        <p className="mt-2 font-serif text-lg text-[var(--brand-ink)] tabular-nums">
+        <p className="mt-2 font-serif text-lg text-[var(--brand-ink)] lining-nums tabular-nums">
           CHF 180
         </p>
       </div>

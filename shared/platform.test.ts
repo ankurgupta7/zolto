@@ -15,6 +15,9 @@ import {
   INCUMBENT_COMPARISON,
   SELLING_FLOW,
   monthlyCostAt,
+  ZERO_COST_POS,
+  FREE_PLAN,
+  COMPETITORS,
 } from "./platform";
 
 describe("platform facts", () => {
@@ -189,5 +192,95 @@ describe("monthlyCostAt", () => {
     expect(monthlyCostAt(-500).onlineSalesChf).toBe(0);
     expect(monthlyCostAt(-500).freePlanChf).toBe(0);
     expect(monthlyCostAt(Number.NaN).freePlanChf).toBe(0);
+  });
+});
+
+describe("ZERO_COST_POS", () => {
+  it("is anchored to a plan that is genuinely free", () => {
+    // The entire band collapses if this stops being true, so fail loudly here
+    // rather than let the marketing page keep advertising CHF 0.
+    expect(FREE_PLAN.priceChf).toBe(0);
+  });
+
+  it("promises only things the Free plan actually includes", () => {
+    const free = FREE_PLAN.features.join(" ").toLowerCase();
+    // Each claim maps to a Free-plan capability, matched on its load-bearing
+    // term so wording can be edited without silently breaking the link.
+    const mustAppearInFreePlan = ["pos", "inventory sync", "online store"];
+    for (const term of mustAppearInFreePlan) {
+      expect(free).toContain(term);
+    }
+    expect(ZERO_COST_POS.includes.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it("does not claim analytics, which is a Pro feature", () => {
+    // "Advanced analytics & AI insights" sits on Pro. Advertising it as part
+    // of the free tier would be the one kind of error this band can't survive.
+    const claimed = [
+      ZERO_COST_POS.headline,
+      ZERO_COST_POS.headlineEmphasis,
+      ZERO_COST_POS.body,
+      ZERO_COST_POS.catch,
+      ...ZERO_COST_POS.includes,
+    ]
+      .join(" ")
+      .toLowerCase();
+    expect(claimed).not.toContain("analytic");
+    expect(claimed).not.toContain("insight");
+  });
+
+  it("makes no claim about any competitor", () => {
+    const claimed = [
+      ZERO_COST_POS.headline,
+      ZERO_COST_POS.headlineEmphasis,
+      ZERO_COST_POS.body,
+      ZERO_COST_POS.catch,
+      ...ZERO_COST_POS.includes,
+    ].join(" ");
+    for (const c of COMPETITORS) {
+      expect(claimed).not.toContain(c.name);
+    }
+  });
+});
+
+describe("INCUMBENT_COMPARISON headline row", () => {
+  it("leads with the phone-catalogue difference", () => {
+    expect(INCUMBENT_COMPARISON[0].feature).toMatch(/catalogue on your phone/i);
+  });
+
+  it("states Zolto's side as a price and theirs as a model, not a price", () => {
+    const row = INCUMBENT_COMPARISON[0];
+    expect(row.us).toMatch(/CHF 0/);
+    // Their column must stay free of invented figures — the repo's standing
+    // rule for competitor claims (see the COMPETITORS doc comment).
+    expect(row.them).not.toMatch(/CHF\s?\d/);
+  });
+});
+
+describe("COMPETITORS", () => {
+  it("covers the platforms makers actually weigh Zolto against", () => {
+    const ids = COMPETITORS.map((c) => c.id);
+    expect(ids).toContain("stripe");
+    expect(ids).toContain("sumup");
+    expect(ids).toContain("shopify");
+    expect(ids).toContain("worldline");
+  });
+
+  it("quotes no competitor pricing anywhere", () => {
+    // Standing rule (see the COMPETITORS doc comment): rates vary by country,
+    // contract and volume, so any figure here is stale and unverifiable the
+    // day it ships. The pages compare models and link out for real numbers.
+    for (const c of COMPETITORS) {
+      const text = [c.summary, ...c.betterWhen, ...c.zoltoWhen].join(" ");
+      expect(text).not.toMatch(/CHF\s?\d|\$\s?\d|€\s?\d|\d+\s*%/);
+    }
+  });
+
+  it("concedes something real for every competitor", () => {
+    // A comparison that never concedes reads as marketing and gets discounted.
+    for (const c of COMPETITORS) {
+      expect(c.betterWhen.length).toBeGreaterThanOrEqual(2);
+      expect(c.zoltoWhen.length).toBeGreaterThanOrEqual(2);
+    }
   });
 });

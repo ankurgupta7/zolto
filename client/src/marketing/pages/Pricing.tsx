@@ -67,14 +67,14 @@ export default function Pricing() {
             <p className="text-[11px] uppercase tracking-[0.16em] text-[var(--brand-muted)]">
               The old way
             </p>
-            <p className="mt-1 font-serif text-2xl text-[var(--brand-muted-2)] line-through tabular-nums">
+            <p className="mt-1 font-serif text-2xl text-[var(--brand-muted-2)] line-through lining-nums tabular-nums">
               CHF {COST_COMPARISON.themPerYearChf.toLocaleString("en-US")}
               <span className="text-sm">/yr</span>
             </p>
             <p className="mt-4 text-[11px] uppercase tracking-[0.16em] text-[var(--brand-accent)]">
               Zolto {PRO_PLAN.name}
             </p>
-            <p className="mt-1 font-serif text-4xl font-bold text-[var(--brand-ink)] tabular-nums">
+            <p className="mt-1 font-serif text-4xl font-bold text-[var(--brand-ink)] lining-nums tabular-nums">
               {formatPrice(COST_COMPARISON.usPerMonthChf)}
               <span className="text-sm font-normal text-[var(--brand-muted)]">
                 /mo
@@ -155,7 +155,7 @@ export default function Pricing() {
               nothing in person
             </h2>
           </div>
-          <p className="font-serif text-3xl text-[var(--brand-ink)] tabular-nums">
+          <p className="font-serif text-3xl text-[var(--brand-ink)] lining-nums tabular-nums">
             {REVENUE_SHARE.percentLabel}
             <span className="text-sm text-[var(--brand-muted)]">
               {" "}

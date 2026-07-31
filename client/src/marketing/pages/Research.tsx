@@ -135,7 +135,7 @@ export default function Research() {
                   {m.label}
                 </dt>
                 <dd>
-                  <p className="mt-2 font-serif text-3xl tabular-nums text-[var(--brand-ink)]">
+                  <p className="mt-2 font-serif text-3xl lining-nums tabular-nums text-[var(--brand-ink)]">
                     {m.value}
                   </p>
                   <p className="mt-2 text-sm leading-relaxed text-[var(--brand-muted-2)]">

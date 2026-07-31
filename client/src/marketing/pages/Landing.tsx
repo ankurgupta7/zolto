@@ -17,6 +17,7 @@ import { DayInTheLife } from "../components/DayInTheLife";
 import { ScrollReveal } from "../components/ScrollReveal";
 import { CardReaderGag } from "../components/CardReaderGag";
 import { DiaryTeaser } from "../components/DiaryTeaser";
+import { ZeroCostPos } from "../components/ZeroCostPos";
 
 export default function Landing() {
   return (
@@ -82,7 +83,7 @@ export default function Landing() {
             <p className="text-[11px] uppercase tracking-[0.2em] text-white/45">
               {COST_COMPARISON.themLabel}
             </p>
-            <p className="mt-2 font-serif text-5xl font-semibold text-white/55 tabular-nums line-through decoration-[var(--brand-accent)]/60">
+            <p className="mt-2 font-serif text-5xl font-semibold text-white/55 lining-nums tabular-nums line-through decoration-[var(--brand-accent)]/60">
               CHF {COST_COMPARISON.themPerYearChf.toLocaleString("en-US")}
             </p>
             <p className="mt-2 text-xs text-white/40">
@@ -99,7 +100,7 @@ export default function Landing() {
             <p className="text-[11px] uppercase tracking-[0.2em] text-white/45">
               {COST_COMPARISON.usLabel}
             </p>
-            <p className="mt-2 font-serif text-6xl font-bold text-[var(--brand-accent-light)] tabular-nums">
+            <p className="mt-2 font-serif text-6xl font-bold text-[var(--brand-accent-light)] lining-nums tabular-nums">
               {formatPrice(COST_COMPARISON.usPerMonthChf)}
             </p>
             <p className="mt-2 text-xs text-white/40">
@@ -108,6 +109,9 @@ export default function Landing() {
           </div>
         </Container>
       </section>
+
+      {/* ── The differentiator: a real POS + catalogue, at CHF 0/month ── */}
+      <ZeroCostPos />
 
       {/* ── The pledge (Direction B) — the heart of the positioning ── */}
       <section className="border-b border-[var(--brand-border)] bg-[var(--brand-surface-2)]">
