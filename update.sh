@@ -550,6 +550,13 @@ migrate_0024_staff_invites_and_photo_credits
 # see migrate_0025_tenant_secrets in deploy/lib/db.sh.
 migrate_0025_tenant_secrets
 
+# ── 0026: per-tenant storage ledger ──────────────────────────────────────────
+# Creates storage_objects so the "5 GB / 50 GB photo storage" on the plan cards
+# is actually enforced — until now nothing was, and a free tenant could upload
+# without bound. Idempotent; see migrate_0026_storage_objects in
+# deploy/lib/db.sh.
+migrate_0026_storage_objects
+
 # ── Shared helper: run a script inside the builder container ──────────────────
 # Usage: run_in_builder <tag> <script-path> [extra docker args...]
 run_in_builder() {

@@ -1,8 +1,17 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-const { sendMock, getSignedUrlMock } = vi.hoisted(() => ({
+const {
+  sendMock,
+  getSignedUrlMock,
+  getTenantByIdMock,
+  getTenantStorageBytesMock,
+  recordStorageObjectMock,
+} = vi.hoisted(() => ({
   sendMock: vi.fn(),
   getSignedUrlMock: vi.fn(),
+  getTenantByIdMock: vi.fn(),
+  getTenantStorageBytesMock: vi.fn(),
+  recordStorageObjectMock: vi.fn(),
 }));
 
 vi.mock("@aws-sdk/client-s3", () => {
@@ -26,7 +35,19 @@ vi.mock("@aws-sdk/s3-request-presigner", () => ({
   getSignedUrl: getSignedUrlMock,
 }));
 
-import { storagePut, storageGet, storageGetSignedUrl } from "./storage";
+vi.mock("./db", () => ({
+  getTenantById: getTenantByIdMock,
+  getTenantStorageBytes: getTenantStorageBytesMock,
+  recordStorageObject: recordStorageObjectMock,
+}));
+
+import {
+  storagePut,
+  storageGet,
+  storageGetSignedUrl,
+  StorageQuotaError,
+} from "./storage";
+import { storageBytesForPlan } from "@shared/platform";
 
 const ENV_KEYS = [
   "S3_REGION",
@@ -48,6 +69,11 @@ describe("storage", () => {
     }
     sendMock.mockReset().mockResolvedValue({});
     getSignedUrlMock.mockReset().mockResolvedValue("https://signed.example/x");
+    // Default: a Free tenant using nothing, so existing cases exercise the
+    // upload path rather than the quota.
+    getTenantByIdMock.mockReset().mockResolvedValue({ id: 1, plan: "free" });
+    getTenantStorageBytesMock.mockReset().mockResolvedValue(0);
+    recordStorageObjectMock.mockReset().mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -60,7 +86,7 @@ describe("storage", () => {
   describe("storagePut", () => {
     it("uploads a buffer and returns a hashed key + proxy URL", async () => {
       process.env.S3_BUCKET = "my-bucket";
-      const result = await storagePut("images/cat.png", Buffer.from("hi"));
+      const result = await storagePut(1, "images/cat.png", Buffer.from("hi"));
 
       expect(sendMock).toHaveBeenCalledTimes(1);
       const cmd = sendMock.mock.calls[0][0] as {
@@ -75,7 +101,7 @@ describe("storage", () => {
 
     it("converts string bodies to a Buffer", async () => {
       process.env.S3_BUCKET = "b";
-      await storagePut("notes.txt", "plain text", "text/plain");
+      await storagePut(1, "notes.txt", "plain text", "text/plain");
       const cmd = sendMock.mock.calls[0][0] as {
         input: Record<string, unknown>;
       };
@@ -86,25 +112,25 @@ describe("storage", () => {
 
     it("appends the hash without an extension when the key has no dot", async () => {
       process.env.S3_BUCKET = "b";
-      const result = await storagePut("rawkey", Buffer.from(""));
+      const result = await storagePut(1, "rawkey", Buffer.from(""));
       expect(result.key).toMatch(/^rawkey_[0-9a-f]{8}$/);
     });
 
     it("strips leading slashes from the key", async () => {
       process.env.S3_BUCKET = "b";
-      const result = await storagePut("///deep/file.jpg", Buffer.from(""));
+      const result = await storagePut(1, "///deep/file.jpg", Buffer.from(""));
       expect(result.key.startsWith("deep/")).toBe(true);
     });
 
     it("uses the public base URL when configured", async () => {
       process.env.S3_BUCKET = "b";
       process.env.S3_PUBLIC_URL = "https://cdn.example.com/";
-      const result = await storagePut("a.png", Buffer.from(""));
+      const result = await storagePut(1, "a.png", Buffer.from(""));
       expect(result.url).toBe(`https://cdn.example.com/${result.key}`);
     });
 
     it("throws when the bucket is not configured", async () => {
-      await expect(storagePut("a.png", Buffer.from(""))).rejects.toThrow(
+      await expect(storagePut(1, "a.png", Buffer.from(""))).rejects.toThrow(
         /S3_BUCKET/,
       );
     });
@@ -113,9 +139,100 @@ describe("storage", () => {
       process.env.S3_BUCKET = "b";
       process.env.S3_ENDPOINT = "https://minio.local";
       process.env.S3_REGION = "auto";
-      await storagePut("a.png", Buffer.from(""));
+      await storagePut(1, "a.png", Buffer.from(""));
       // Success implies the endpoint branch constructed a client without error.
       expect(sendMock).toHaveBeenCalled();
+    });
+  });
+
+  describe("storagePut — plan storage quota", () => {
+    const GB = 1024 ** 3;
+
+    beforeEach(() => {
+      process.env.S3_BUCKET = "b";
+    });
+
+    it("writes when the upload fits inside the plan allowance", async () => {
+      getTenantStorageBytesMock.mockResolvedValue(1 * GB); // 1 of 5 GB used
+      await storagePut(1, "a.png", Buffer.alloc(1000));
+      expect(sendMock).toHaveBeenCalledTimes(1);
+      expect(recordStorageObjectMock).toHaveBeenCalledTimes(1);
+    });
+
+    it("refuses the upload that would cross the line, and does NOT touch S3", async () => {
+      // The whole point: the object must never reach the bucket, or we pay for
+      // storage the merchant's plan does not cover.
+      getTenantStorageBytesMock.mockResolvedValue(5 * GB);
+      await expect(
+        storagePut(1, "a.png", Buffer.alloc(1000)),
+      ).rejects.toBeInstanceOf(StorageQuotaError);
+      expect(sendMock).not.toHaveBeenCalled();
+      expect(recordStorageObjectMock).not.toHaveBeenCalled();
+    });
+
+    it("counts the incoming bytes, not just what is already stored", async () => {
+      // Exactly at the limit with nothing to spare: a 1-byte upload must fail.
+      // Checking `used > limit` instead of `used + incoming > limit` would let
+      // an unbounded single upload through on a nearly-full account.
+      getTenantStorageBytesMock.mockResolvedValue(5 * GB - 1);
+      await expect(storagePut(1, "a.png", Buffer.alloc(2))).rejects.toBeInstanceOf(
+        StorageQuotaError,
+      );
+      expect(sendMock).not.toHaveBeenCalled();
+    });
+
+    it("gives Pro its larger allowance from the same plan data", async () => {
+      getTenantByIdMock.mockResolvedValue({ id: 1, plan: "pro" });
+      // Well past Free's 5 GB, comfortably inside Pro's 50 GB.
+      getTenantStorageBytesMock.mockResolvedValue(20 * GB);
+      await storagePut(1, "a.png", Buffer.alloc(1000));
+      expect(sendMock).toHaveBeenCalledTimes(1);
+    });
+
+    it("uses the limit the pricing page advertises", async () => {
+      // Guards against the quota drifting from the number on the plan card.
+      expect(storageBytesForPlan("free")).toBe(5 * GB);
+      expect(storageBytesForPlan("pro")).toBe(50 * GB);
+    });
+
+    it("treats an unknown or missing tenant as Free, not unlimited", async () => {
+      getTenantByIdMock.mockResolvedValue(undefined);
+      getTenantStorageBytesMock.mockResolvedValue(5 * GB);
+      await expect(
+        storagePut(999, "a.png", Buffer.alloc(1)),
+      ).rejects.toBeInstanceOf(StorageQuotaError);
+    });
+
+    it("does not consume allowance when the S3 write fails", async () => {
+      // Recording before the upload would let repeated failures eat a
+      // merchant's quota without storing anything.
+      sendMock.mockRejectedValueOnce(new Error("network"));
+      await expect(storagePut(1, "a.png", Buffer.alloc(10))).rejects.toThrow(
+        /network/,
+      );
+      expect(recordStorageObjectMock).not.toHaveBeenCalled();
+    });
+
+    it("records the hashed key actually written, so a delete can free it", async () => {
+      await storagePut(1, "photos/x.png", Buffer.alloc(42));
+      const [tenantId, key, bytes] = recordStorageObjectMock.mock.calls[0];
+      expect(tenantId).toBe(1);
+      expect(bytes).toBe(42);
+      // Must be the suffixed key from the PutObjectCommand, not the input path.
+      const cmd = sendMock.mock.calls[0][0] as { input: Record<string, unknown> };
+      expect(key).toBe(cmd.input.Key);
+      expect(key).not.toBe("photos/x.png");
+    });
+
+    it("explains the limit in the error a merchant will see", async () => {
+      getTenantStorageBytesMock.mockResolvedValue(5 * GB);
+      const err = await storagePut(1, "a.png", Buffer.alloc(1)).catch((e) => e);
+      expect(err).toBeInstanceOf(StorageQuotaError);
+      expect(err.message).toMatch(/5\.0 GB/);
+      expect(err.message).toMatch(/free plan/i);
+      expect(err.message).toMatch(/delete some photos or upgrade/i);
+      expect(err.plan).toBe("free");
+      expect(err.limitBytes).toBe(5 * GB);
     });
   });
 

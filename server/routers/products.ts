@@ -4,7 +4,7 @@ import { PRODUCT_CATEGORIES, type ProductCategory } from "@shared/const";
 import { publicProcedure, router } from "../_core/trpc";
 import { adminProcedure } from "../procedures";
 import { assertPublicHostname } from "../ssrf";
-import { storagePut } from "../storage";
+import { storagePut, StorageQuotaError } from "../storage";
 import {
   createProduct,
   updateProduct,
@@ -38,6 +38,30 @@ function storefrontTenantId(ctx: { tenant: { id: number } | null }): number {
     throw new TRPCError({ code: "NOT_FOUND", message: "Store not found" });
   }
   return ctx.tenant.id;
+}
+
+
+/**
+ * storagePut, with a quota rejection turned into something the merchant can act
+ * on. A bare StorageQuotaError would reach the browser as tRPC's generic
+ * "Internal server error", which tells someone who has simply filled their plan
+ * that Zolto is broken — the same opaque-error trap as the Connect (10002)
+ * message. PAYLOAD_TOO_LARGE carries the real explanation instead.
+ */
+async function putForTenant(
+  tenantId: number,
+  key: string,
+  data: Buffer | string,
+  contentType?: string,
+) {
+  try {
+    return await storagePut(tenantId, key, data, contentType);
+  } catch (err) {
+    if (err instanceof StorageQuotaError) {
+      throw new TRPCError({ code: "PAYLOAD_TOO_LARGE", message: err.message });
+    }
+    throw err;
+  }
 }
 
 export const productsRouter = router({
@@ -186,7 +210,7 @@ export const productsRouter = router({
       const buffer = Buffer.from(base64, "base64");
       const ext = input.mimeType.split("/")[1] ?? "jpg";
       const key = `product-images/${input.productId}/${Date.now()}.${ext}`;
-      const { url } = await storagePut(key, buffer, input.mimeType);
+      const { url } = await putForTenant(tid, key, buffer, input.mimeType);
       await addProductImage({
         tenantId: tid,
         productId: input.productId,
@@ -493,7 +517,8 @@ Return ONLY valid JSON, no markdown, no explanation.`,
           const primaryExt =
             primary.mimeType.split("/")[1]?.replace("jpeg", "jpg") ?? "jpg";
           const primaryKey = `products/${Date.now()}-${Math.random().toString(36).slice(2)}.${primaryExt}`;
-          const { url: primaryUrl } = await storagePut(
+          const { url: primaryUrl } = await putForTenant(
+            tid,
             primaryKey,
             primaryBuffer,
             primary.mimeType,
@@ -539,7 +564,7 @@ Return ONLY valid JSON, no markdown, no explanation.`,
             const ext =
               img.mimeType.split("/")[1]?.replace("jpeg", "jpg") ?? "jpg";
             const key = `product-images/${newId}/${Date.now()}-${i}.${ext}`;
-            const { url } = await storagePut(key, buffer, img.mimeType);
+            const { url } = await putForTenant(tid, key, buffer, img.mimeType);
             await addProductImage({
               tenantId: tid,
               productId: newId,
@@ -692,7 +717,7 @@ Return ONLY valid JSON, no markdown, no explanation.`,
               const ext =
                 img.mimeType.split("/")[1]?.replace("jpeg", "jpg") ?? "jpg";
               const key = `product-images/${item.productId}/${Date.now()}-${i}.${ext}`;
-              const { url } = await storagePut(key, buffer, img.mimeType);
+              const { url } = await putForTenant(tid, key, buffer, img.mimeType);
               await addProductImage({
                 tenantId: tid,
                 productId: item.productId,

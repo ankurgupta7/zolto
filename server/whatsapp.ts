@@ -106,13 +106,13 @@ export async function handleWebhookMessage(req: Request, res: Response) {
       textContent = message.image?.caption ?? "";
       const mediaId = message.image?.id;
       if (mediaId) {
-        imageUrl = await downloadWhatsAppMedia(mediaId);
+        imageUrl = await downloadWhatsAppMedia(tenantId, mediaId);
       }
     } else if (messageType === "document") {
       textContent = message.document?.caption ?? "";
       const mediaId = message.document?.id;
       if (mediaId) {
-        imageUrl = await downloadWhatsAppMedia(mediaId);
+        imageUrl = await downloadWhatsAppMedia(tenantId, mediaId);
       }
     }
 
@@ -255,7 +255,10 @@ Return ONLY valid JSON, no markdown, no explanation.`,
 
 // ─── Media Download ───────────────────────────────────────────────────────────
 
-async function downloadWhatsAppMedia(mediaId: string): Promise<string | null> {
+async function downloadWhatsAppMedia(
+  tenantId: number,
+  mediaId: string,
+): Promise<string | null> {
   if (!WHATSAPP_TOKEN) {
     console.warn("[WhatsApp] No WHATSAPP_TOKEN set, cannot download media");
     return null;
@@ -288,6 +291,7 @@ async function downloadWhatsAppMedia(mediaId: string): Promise<string | null> {
 
     // Step 3: Upload to S3
     const { url } = await storagePut(
+      tenantId,
       key,
       Buffer.from(mediaRes.data),
       contentType,

@@ -25,6 +25,12 @@ import {
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import crypto from "node:crypto";
+import { storageBytesForPlan } from "@shared/platform";
+import {
+  getTenantById,
+  getTenantStorageBytes,
+  recordStorageObject,
+} from "./db";
 
 function getS3Client(): S3Client {
   const region = process.env.S3_REGION ?? "us-east-1";
@@ -66,7 +72,55 @@ function buildPublicUrl(key: string): string {
   return `/uploads/${key}`;
 }
 
+/**
+ * A tenant tried to store more than their plan allows.
+ *
+ * Its own type so callers can turn it into the right message for their surface
+ * (a tRPC PAYLOAD_TOO_LARGE, a WhatsApp reply, a POS receipt warning) instead
+ * of every one of them string-matching an S3 error.
+ */
+export class StorageQuotaError extends Error {
+  readonly usedBytes: number;
+  readonly limitBytes: number;
+  readonly incomingBytes: number;
+  readonly plan: string;
+
+  constructor(args: {
+    usedBytes: number;
+    limitBytes: number;
+    incomingBytes: number;
+    plan: string;
+  }) {
+    const gb = (n: number) => (n / 1024 ** 3).toFixed(1);
+    super(
+      `Storage limit reached: ${gb(args.usedBytes)} GB of ${gb(args.limitBytes)} GB used on the ` +
+        `${args.plan} plan, and this upload needs ${gb(args.incomingBytes)} GB more. ` +
+        `Delete some photos or upgrade for more room.`,
+    );
+    this.name = "StorageQuotaError";
+    this.usedBytes = args.usedBytes;
+    this.limitBytes = args.limitBytes;
+    this.incomingBytes = args.incomingBytes;
+    this.plan = args.plan;
+  }
+}
+
+/**
+ * Write an object for a tenant, enforcing their plan's storage allowance.
+ *
+ * `tenantId` is REQUIRED and deliberately first. Every write in the codebase is
+ * tenant-scoped, so making it part of the signature means a new call site
+ * cannot quietly skip the quota — the same reason createProduct owns the
+ * maxProducts check (server/db.ts). An advisory helper that callers had to
+ * remember to call would have rotted exactly like the plan gates did.
+ *
+ * The check is read-then-write, so two concurrent uploads can both pass and
+ * land a little over the line. That is the right trade here: the alternative is
+ * serialising every upload behind a lock, and overshooting by one image is
+ * harmless where refusing a paying merchant's upload is not.
+ */
 export async function storagePut(
+  tenantId: number,
   relKey: string,
   data: Buffer | Uint8Array | string,
   contentType = "application/octet-stream",
@@ -76,6 +130,16 @@ export async function storagePut(
   const key = appendHashSuffix(normalizeKey(relKey));
 
   const body = typeof data === "string" ? Buffer.from(data) : data;
+  const incomingBytes = body.length;
+
+  const tenant = await getTenantById(tenantId);
+  const plan = tenant?.plan ?? "free";
+  const limitBytes = storageBytesForPlan(plan);
+  const usedBytes = await getTenantStorageBytes(tenantId);
+
+  if (usedBytes + incomingBytes > limitBytes) {
+    throw new StorageQuotaError({ usedBytes, limitBytes, incomingBytes, plan });
+  }
 
   await client.send(
     new PutObjectCommand({
@@ -85,6 +149,10 @@ export async function storagePut(
       ContentType: contentType,
     }),
   );
+
+  // Recorded only after S3 confirms the write, so a failed upload never eats
+  // into the merchant's allowance.
+  await recordStorageObject(tenantId, key, incomingBytes);
 
   return { key, url: buildPublicUrl(key) };
 }

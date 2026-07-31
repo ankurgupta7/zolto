@@ -274,6 +274,17 @@ export const PLAN_FEATURES = {
   },
 } as const;
 
+/**
+ * A plan's storage allowance in bytes, from the GB figure on its pricing card.
+ *
+ * Binary GB (1024³) to match how object sizes are reported, so "5 GB" on the
+ * card and the number the quota compares against are the same quantity.
+ */
+export function storageBytesForPlan(plan: string): number {
+  const p = PLANS.find((x) => x.id === plan) ?? PLANS.find((x) => x.id === "free")!;
+  return p.storageGb * 1024 * 1024 * 1024;
+}
+
 export type PlanId = keyof typeof PLAN_FEATURES;
 export type PlanFeature = keyof typeof PLAN_FEATURES.free;
 

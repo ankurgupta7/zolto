@@ -4,6 +4,7 @@ const { dbMock, billingMock, photoCreditsMock } = vi.hoisted(() => ({
   dbMock: {
     getPhotoCreditHistory: vi.fn(),
     getMonthlyOnlineSales: vi.fn(),
+    getTenantStorageBytes: vi.fn(),
   },
   billingMock: {
     createPlanCheckoutSession: vi.fn(),
@@ -53,6 +54,7 @@ beforeEach(() => {
     plan === "pro" ? null : 5,
   );
   photoCreditsMock.countPhotoGenerationsThisMonth.mockResolvedValue(2);
+  dbMock.getTenantStorageBytes.mockResolvedValue(1024 ** 3); // 1 GB used
   dbMock.getMonthlyOnlineSales.mockResolvedValue({
     gmvRappen: 320_000, // CHF 3,200
     feeRappen: 3_200, // CHF 32 — 1% of GMV
@@ -95,6 +97,23 @@ describe("billingRouter.getStatus", () => {
     expect(status.onlineFees.monthAgentGmvChf).toBe(500);
     expect(status.plans.map((p) => p.id)).toEqual(["free", "pro"]);
     expect(status.billingConfigured).toBe(true);
+  });
+
+  it("reports storage used against the plan's limit", async () => {
+    // Shown in the admin so a merchant sees where they stand before an upload
+    // is refused, rather than discovering the cap by hitting it.
+    const caller = billingRouter.createCaller(ctx());
+    const status = await caller.getStatus();
+    expect(status.storage).toEqual({
+      usedBytes: 1024 ** 3,
+      limitBytes: 5 * 1024 ** 3, // Free = the 5 GB on the pricing card
+    });
+  });
+
+  it("reports Pro's larger storage limit", async () => {
+    const caller = billingRouter.createCaller(ctx("admin", { plan: "pro" }));
+    const status = await caller.getStatus();
+    expect(status.storage.limitBytes).toBe(50 * 1024 ** 3);
   });
 
   it("computes the skim-vs-Pro upsell for Free tenants", async () => {

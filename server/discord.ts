@@ -161,6 +161,7 @@ interface DiscordAttachment {
 }
 
 async function downloadDiscordAttachment(
+  tenantId: number,
   attachment: DiscordAttachment,
 ): Promise<string | null> {
   try {
@@ -180,6 +181,7 @@ async function downloadDiscordAttachment(
     const key = `discord/${Date.now()}.${ext}`;
 
     const { url } = await storagePut(
+      tenantId,
       key,
       Buffer.from(response.data),
       contentType,
@@ -254,7 +256,18 @@ export async function handleDiscordMessage(
     (a.content_type ?? "").startsWith("image/"),
   );
   if (imageAttachment) {
-    imageUrl = await downloadDiscordAttachment(imageAttachment);
+    // Storage is charged against a tenant's plan allowance, so an attachment
+    // we cannot attribute is not stored at all. This only arises in the legacy
+    // single-channel fallback above, where no tenant maps to the channel; the
+    // text of the message is still parsed.
+    if (tenant) {
+      imageUrl = await downloadDiscordAttachment(tenant.id, imageAttachment);
+    } else {
+      console.warn(
+        `[Discord] Attachment on unmapped channel ${message.channel_id} not stored — ` +
+          "no tenant to charge the storage against.",
+      );
+    }
   }
 
   // Parse product details using tenant-branded prompt

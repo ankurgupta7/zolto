@@ -19,6 +19,13 @@ import { storagePut } from "server/storage";
 import { ENV } from "./env";
 
 export type GenerateImageOptions = {
+  /**
+   * Whose plan allowance the generated image is stored against. Required for
+   * the same reason storagePut takes one — a generated image is as real a
+   * write as an uploaded one, and unattributed writes are what made the
+   * storage limits fictional.
+   */
+  tenantId: number;
   prompt: string;
   originalImages?: Array<{
     url?: string;
@@ -82,6 +89,7 @@ export async function generateImage(
 
   // Save to S3
   const { url } = await storagePut(
+    options.tenantId,
     `generated/${Date.now()}.png`,
     buffer,
     result.image.mimeType,

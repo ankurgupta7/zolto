@@ -731,6 +731,7 @@ export function registerPosRoutes(app: Express): void {
             items: loaded.items,
           });
           const put = await storagePut(
+            tenantId,
             `receipts/${tenantSlug}/${posOrderId}.html`,
             html,
             "text/html",

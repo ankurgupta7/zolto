@@ -10,10 +10,15 @@ import {
 import {
   PLANS,
   PRO_PLAN,
+  storageBytesForPlan,
   PRO_BREAK_EVEN_ONLINE_CHF,
   REVENUE_SHARE,
 } from "@shared/platform";
-import { getMonthlyOnlineSales, getPhotoCreditHistory } from "../db";
+import {
+  getMonthlyOnlineSales,
+  getPhotoCreditHistory,
+  getTenantStorageBytes,
+} from "../db";
 import {
   countPhotoGenerationsThisMonth,
   generateStyledProductPhoto,
@@ -37,11 +42,12 @@ export const billingRouter = router({
    */
   getStatus: tenantAdmin.query(async ({ ctx }) => {
     const allowance = photoAllowanceForPlan(ctx.tenant.plan);
-    const [usedThisMonth, online] = await Promise.all([
+    const [usedThisMonth, online, storageBytes] = await Promise.all([
       allowance === null
         ? Promise.resolve(0)
         : countPhotoGenerationsThisMonth(ctx.tenant.id),
       getMonthlyOnlineSales(ctx.tenant.id),
+      getTenantStorageBytes(ctx.tenant.id),
     ]);
     const onFree = ctx.tenant.plan !== "pro";
     const skimChf = online.feeRappen / 100;
@@ -87,6 +93,12 @@ export const billingRouter = router({
         maxProducts: p.maxProducts,
         storageGb: p.storageGb,
       })),
+      // Surfaced so a merchant can see where they stand BEFORE an upload is
+      // refused. A quota you only learn about by hitting it is a support ticket.
+      storage: {
+        usedBytes: storageBytes,
+        limitBytes: storageBytesForPlan(ctx.tenant.plan),
+      },
       billingConfigured: isBillingConfigured(),
     };
   }),

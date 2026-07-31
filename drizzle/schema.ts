@@ -564,3 +564,28 @@ export const staffInvites = mysqlTable("staff_invites", {
 
 export type StaffInvite = typeof staffInvites.$inferSelect;
 export type InsertStaffInvite = typeof staffInvites.$inferInsert;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// STORAGE OBJECTS — per-tenant ledger of what each tenant has stored
+// ═══════════════════════════════════════════════════════════════════════════════
+// The plan cards sell "5 GB" (Free) and "50 GB" (Pro) of photo storage
+// (shared/platform.ts PLANS[].storageGb). Nothing enforced either: the only
+// limit anywhere was express.json's 50 MB per-request cap, so a free tenant
+// could upload without bound and Zolto was effectively free unlimited S3 for
+// anyone who signed up. S3 itself can't answer "how much does THIS tenant
+// use?" cheaply, so we keep the ledger here.
+//
+// One row per object written through server/storage.ts storagePut, which takes
+// a tenantId precisely so this can never be bypassed by a new call site.
+// Deletes remove the row, so quota is released when a merchant clears photos.
+export const storageObjects = mysqlTable("storage_objects", {
+  id: int("id").autoincrement().primaryKey(),
+  tenantId: int("tenant_id").notNull(),
+  // The final S3 key, after storagePut's hash suffix — unique per object.
+  storageKey: varchar("storage_key", { length: 512 }).notNull(),
+  bytes: int("bytes").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type StorageObject = typeof storageObjects.$inferSelect;
+export type InsertStorageObject = typeof storageObjects.$inferInsert;
