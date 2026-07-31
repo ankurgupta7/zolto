@@ -92,6 +92,13 @@
       "when": 1785639000000,
       "tag": "0013_twint_qr_sticker",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "5",
+      "when": 1785686400000,
+      "tag": "0014_magic_link_tokens",
+      "breakpoints": true
     }
   ]
 }
