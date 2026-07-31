@@ -7,22 +7,19 @@ import {
   PRO_BREAK_EVEN_ONLINE_CHF,
   PRO_PLAN,
   REVENUE_SHARE,
+  faqsByCategory,
 } from "@shared/platform";
 
-const FAQ = [
-  {
-    q: "Can I upgrade or downgrade anytime?",
-    a: "Yes. Changes take effect at your next billing cycle.",
-  },
-  {
-    q: "Is there a contract?",
-    a: "No. All paid plans are month-to-month. Cancel anytime.",
-  },
-  {
-    q: "Do prices include VAT?",
-    a: "There's no VAT to add. Zolto is under the CHF 100,000 Swiss VAT registration threshold, so the price you see is the price you pay. If that ever changes, we'll say so before it does.",
-  },
-];
+// Sourced from the shared FAQ set so these answers also reach the FAQPage
+// schema, /llms.txt and MCP — they used to live only in this file, which meant
+// an AI assistant asking "is there a contract?" had nothing to read.
+const FAQ = faqsByCategory("Pricing & billing").filter((f) =>
+  [
+    "Can I upgrade or downgrade anytime?",
+    "Is there a contract?",
+    "Do prices include VAT?",
+  ].includes(f.q),
+);
 
 export default function Pricing() {
   return (

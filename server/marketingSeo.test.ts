@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
 import { getMarketingSeo, injectMarketingHead } from "./marketingSeo";
+import { marketingSitemapEntries } from "@shared/marketing";
+import { COMPETITORS, FAQS } from "@shared/platform";
+import { PILOT_METHODOLOGY, PILOT_METRICS } from "@shared/research";
+import { authorJsonLd } from "@shared/authors";
+import { SEGMENTS, segmentFeatures } from "@shared/segments";
 
 const BASE = "https://zolto.com";
 
@@ -85,6 +90,106 @@ describe("injectMarketingHead", () => {
   it("is a no-op for non-marketing routes", () => {
     const out = injectMarketingHead(SHELL, "/some/storefront/path", BASE);
     expect(out).toBe(SHELL);
+  });
+
+  it("serves the full FAQ text to non-JS crawlers on /faq", () => {
+    const out = injectMarketingHead(SHELL, "/faq", BASE);
+    expect(out).toContain('"@type":"FAQPage"');
+    // The answers themselves, not a teaser — this is the page most likely to
+    // be quoted by an AI assistant.
+    for (const item of FAQS) {
+      expect(out).toContain(item.q);
+    }
+  });
+
+  it("renders a comparison page per named incumbent", () => {
+    for (const c of COMPETITORS) {
+      const seo = getMarketingSeo(`/compare/zolto-vs-${c.id}`, BASE)!;
+      expect(seo).not.toBeNull();
+      expect(seo.title).toContain(c.name);
+      expect(seo.noscript).toContain(c.summary);
+      // The honest concession has to reach crawlers too, not just readers.
+      expect(seo.noscript).toContain(c.betterWhen[0]);
+    }
+  });
+
+  it("lists every comparison from the /compare index", () => {
+    const seo = getMarketingSeo("/compare", BASE)!;
+    const collection = seo.jsonLd.find(
+      (n) => n["@type"] === "CollectionPage",
+    ) as Record<string, any>;
+    expect(collection.hasPart).toHaveLength(COMPETITORS.length);
+  });
+
+  it("has no SEO for an unknown competitor slug", () => {
+    expect(getMarketingSeo("/compare/zolto-vs-nonesuch", BASE)).toBeNull();
+  });
+
+  it("publishes the research page as a Dataset as well as an Article", () => {
+    const seo = getMarketingSeo(`/research/${PILOT_METHODOLOGY.slug}`, BASE)!;
+    expect(seo).not.toBeNull();
+    const types = seo.jsonLd.map((n) => n["@type"]);
+    expect(types).toContain("Dataset");
+    expect(types).toContain("Article");
+
+    const dataset = seo.jsonLd.find((n) => n["@type"] === "Dataset") as Record<
+      string,
+      any
+    >;
+    expect(dataset.measurementTechnique).toBe(PILOT_METHODOLOGY.collection);
+    expect(dataset.variableMeasured).toHaveLength(PILOT_METRICS.length);
+  });
+
+  it("gives crawlers the method and limits, not just the figures", () => {
+    const seo = getMarketingSeo(`/research/${PILOT_METHODOLOGY.slug}`, BASE)!;
+    expect(seo.noscript).toContain("Sample:");
+    expect(seo.noscript).toContain("Limits:");
+    expect(seo.noscript).toContain("Zolto operates the platform");
+  });
+
+  it("renders a page per audience segment, grounded in real features", () => {
+    for (const s of SEGMENTS) {
+      const seo = getMarketingSeo(`/for/${s.id}`, BASE)!;
+      expect(seo, s.id).not.toBeNull();
+      expect(seo.title).toContain(s.headline);
+      expect(seo.noscript).toContain(s.painPoints[0]);
+      // Feature copy comes from FEATURES, so crawlers see the same claims the
+      // product makes everywhere else.
+      expect(seo.noscript).toContain(segmentFeatures(s)[0].description);
+    }
+  });
+
+  it("lists every segment from the /for index", () => {
+    const seo = getMarketingSeo("/for", BASE)!;
+    const collection = seo.jsonLd.find(
+      (n) => n["@type"] === "CollectionPage",
+    ) as Record<string, any>;
+    expect(collection.hasPart).toHaveLength(SEGMENTS.length);
+  });
+
+  it("has no SEO for an unknown segment slug", () => {
+    expect(getMarketingSeo("/for/nonesuch", BASE)).toBeNull();
+  });
+
+  it("attributes articles through the shared author gate", () => {
+    const seo = getMarketingSeo("/blog/launch-diary-1", BASE)!;
+    const article = seo.jsonLd.find((n) => n["@type"] === "Article") as Record<
+      string,
+      any
+    >;
+    expect(article.author).toEqual(authorJsonLd(BASE));
+  });
+
+  it("has SEO for every URL the sitemap advertises", () => {
+    // shared/marketing.ts promises the sitemap "never advertises a 404". Any
+    // route listed there must resolve to real SEO, or crawlers are being sent
+    // to a page with nothing on it.
+    for (const entry of marketingSitemapEntries()) {
+      expect(
+        getMarketingSeo(entry.path, BASE),
+        `sitemap lists ${entry.path} but getMarketingSeo returns null`,
+      ).not.toBeNull();
+    }
   });
 
   it("produces valid JSON in every injected ld+json block", () => {

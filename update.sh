@@ -94,6 +94,12 @@ fi
 # See deploy/lib/db.sh for why the connection and every statement now have a
 # timeout, and why failures print the actual MySQL error.
 source "deploy/lib/db.sh"
+
+# Caddy config reload. `docker compose up -d` cannot notice a changed Caddyfile
+# (it is a bind mount, so the service definition is identical), and Caddy only
+# reads it at startup — see deploy/lib/caddy.sh.
+# shellcheck source=deploy/lib/caddy.sh
+source "deploy/lib/caddy.sh"
 MYSQL="$(build_mysql_cmd)"
 
 # ── Git pull ──────────────────────────────────────────────────────────────────
@@ -783,6 +789,32 @@ for line in sys.stdin:
   sleep 2
   [ "$i" -lt 30 ] || warn "App may still be starting — check 'docker compose logs -f app'"
 done
+
+# ── Reload Caddy so Caddyfile changes take effect ─────────────────────────────
+# Deliberately after the health check: Caddy's on-demand TLS asks the app
+# (/api/domain-ask) whether a hostname may get a certificate, and a "no" is
+# cached. Reloading before the app can answer would poison that decision.
+#
+# Without this step a Caddyfile change is a silent no-op — compose sees an
+# unchanged service definition and leaves the container running the config it
+# booted with. See deploy/lib/caddy.sh.
+log "Reloading Caddy configuration"
+
+set +e
+CADDY_RELOAD_OUTPUT=$(reload_caddy)
+CADDY_RELOAD_STATUS=$?
+set -e
+
+case "$CADDY_RELOAD_STATUS" in
+  0) ok "caddy reloaded (Caddyfile changes are now live)" ;;
+  2) ok "no bundled caddy running — skipped (another proxy fronts this app)" ;;
+  *)
+    warn "Caddy reload FAILED — it is still serving its previous configuration,"
+    warn "so any Caddyfile change in this update has NOT taken effect."
+    [ -n "$CADDY_RELOAD_OUTPUT" ] && printf '%s\n' "$CADDY_RELOAD_OUTPUT" | sed 's/^/      /'
+    warn "Check:  docker compose exec caddy caddy validate --config /etc/caddy/Caddyfile"
+    ;;
+esac
 
 # ── Verify the freshly-built frontend actually shipped ────────────────────────
 # The marketing/storefront frontend is compiled into dist/public at image-build

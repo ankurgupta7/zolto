@@ -336,70 +336,197 @@ export const SELLING_FLOW: SellingStep[] = [
   },
 ];
 
+/** Grouping for the /faq page. Order here is the order sections render in. */
+export const FAQ_CATEGORIES = [
+  "About Zolto",
+  "Getting started",
+  "Selling",
+  "Pricing & billing",
+  "AI & discovery",
+] as const;
+
+export type FaqCategory = (typeof FAQ_CATEGORIES)[number];
+
 export interface Faq {
   q: string;
   a: string;
+  category: FaqCategory;
 }
 
 /** Questions a prospective maker actually asks — feeds FAQPage schema + llms + MCP. */
 export const FAQS: Faq[] = [
   {
+    category: "About Zolto",
     q: "What is Zolto?",
     a: "Zolto is an AI-run commerce platform for independent makers. It gives you a point-of-sale and an online store that share one inventory, plus an AI assistant that handles product photos, descriptions, and customer support.",
   },
   {
+    category: "About Zolto",
     q: "Who is Zolto for?",
     a: "Makers, artisans, and small shop owners who sell at craft fairs, markets, and pop-ups and want to sell online too — without hiring a developer or learning complex software.",
   },
   {
+    category: "Getting started",
     q: "How long does it take to set up a store?",
     a: "About an afternoon. Upload a few products (or import a CSV), let the AI draft descriptions and style your photos, connect payments, and you can be live the same day.",
   },
   {
+    category: "Getting started",
     q: "Do I need to be technical?",
     a: "No. Zolto is built for makers, not store managers. The AI does the setup busywork, and a guided tour walks you through the dashboard.",
   },
   {
+    category: "Pricing & billing",
     q: "How much does it cost?",
     a: "Selling in person is free, forever — the store, POS and inventory sync cost CHF 0/month and Zolto adds nothing on in-person payments. Online and AI-agent orders carry a 1% platform fee on the Free plan (a month with no online sales costs CHF 0). Pro is CHF 25/month with a 14-day free trial: it removes the 1% and unlocks unmetered AI. Month-to-month — cancel anytime.",
   },
   {
+    category: "Selling",
     q: "Can I sell both in person and online?",
     a: "Yes — that's the core of Zolto. One inventory powers both your point-of-sale and your online store, and stock stays in sync in real time so you never oversell.",
   },
   {
+    category: "Pricing & billing",
     q: "How do I get paid?",
     a: "You connect your own Stripe account and your customers pay directly into it — Zolto never holds your money. On the Free plan a 1% platform fee is taken automatically on online and AI-agent orders only; in-person sales are always fee-free, and Pro removes the fee entirely.",
   },
   {
+    category: "Selling",
     q: "Do I need to buy a card reader?",
     a: "No — payments happen on the phone you already own, via the Zolto POS app: contactless card, Apple Pay / Google Pay, and TWINT QR. Nobody inserts a card anymore, they tap, so there's no reader to buy, rent, or plug in.",
   },
   {
+    category: "Pricing & billing",
     q: "How is Zolto cheaper than Stripe, SumUp, or Worldline?",
     a: "Those tools were built for an era when websites were hard and a card reader was king, so they charge for hardware, setup, and lock-in — easily around CHF 2,000 a year. AI builds your store in an afternoon and your phone is the terminal, so the real cost is tiny. Zolto passes that saving on: selling in person is free, online orders carry just a 1% platform fee on the Free plan, and Pro is a flat CHF 25/month — roughly one-hundredth of the old way.",
   },
   {
+    category: "Selling",
     q: "What if I keep my inventory in a notebook?",
     a: "That's fine — keep it however you already do. Snap a photo of your handwritten list and the AI reads it into a real catalogue (names, prices, quantities). AI is good with ambiguity, so you don't have to become an 'inventory person.'",
   },
   {
+    category: "Selling",
     q: "Do I have to tag every sale at a busy market?",
     a: "No. Just enter the amount and take the tap. At the end of the day Zolto emails its best guess at what you sold; you tap to confirm and each piece is marked sold across your store and POS automatically.",
   },
   {
+    category: "Getting started",
     q: "Can I bring products from another platform?",
     a: "Yes. Import your catalogue with CSV or bulk photo upload, so switching from Shopify, Square, or a spreadsheet is quick.",
   },
   {
+    category: "AI & discovery",
     q: "Will AI assistants be able to find my products?",
     a: "Yes. Every store publishes an llms.txt and a Model Context Protocol (MCP) endpoint, so AI assistants and agents can discover and recommend your products, alongside normal search-engine SEO.",
   },
   {
+    category: "AI & discovery",
     q: "What about product photos?",
     a: "Take one rough phone photo and the AI restyles it into a clean product shot or an on-model image — no photographer or studio needed. AI-styled images are always disclosed.",
   },
+  {
+    category: "Pricing & billing",
+    q: "Can I upgrade or downgrade anytime?",
+    a: "Yes. Changes take effect at your next billing cycle.",
+  },
+  {
+    category: "Pricing & billing",
+    q: "Is there a contract?",
+    a: "No. All paid plans are month-to-month. Cancel anytime.",
+  },
+  {
+    category: "Pricing & billing",
+    q: "Do prices include VAT?",
+    a: "There's no VAT to add. Zolto is under the CHF 100,000 Swiss VAT registration threshold, so the price you see is the price you pay. If that ever changes, we'll say so before it does.",
+  },
 ];
+
+/** FAQs for one category, in declaration order. */
+export function faqsByCategory(category: FaqCategory): Faq[] {
+  return FAQS.filter((f) => f.category === category);
+}
+
+export interface Competitor {
+  /** URL slug fragment: /compare/zolto-vs-<id>. */
+  id: string;
+  name: string;
+  /** What the product actually is — neutral, checkable, no pricing claims. */
+  summary: string;
+  /**
+   * When the incumbent is genuinely the better choice. This is not a hedge:
+   * a comparison that never concedes anything reads as marketing and gets
+   * discounted by readers and AI assistants alike. Being straight about where
+   * we don't fit is what makes the rest of the page worth believing.
+   */
+  betterWhen: string[];
+  /** When Zolto is the better fit. */
+  zoltoWhen: string[];
+}
+
+/**
+ * The named incumbents Zolto positions against, for the /compare/* pages.
+ *
+ * Deliberately free of competitor pricing: their plans and rates change often
+ * and vary by country, contract and volume, so any number hard-coded here would
+ * be stale and unverifiable. The pages compare *models* — hardware, setup effort,
+ * where the money lands — and point at the incumbent's own pricing page for
+ * current figures. Claims about Zolto stay sourced from PLANS / REVENUE_SHARE.
+ */
+export const COMPETITORS: Competitor[] = [
+  {
+    id: "stripe",
+    name: "Stripe",
+    summary:
+      "A developer-first payments platform. Stripe powers checkout for a large share of the web, and Zolto itself settles payments through Stripe Connect — your customers pay into your own Stripe account.",
+    betterWhen: [
+      "You have engineering resources and want to build a bespoke checkout.",
+      "Your business model needs Stripe's full API surface — marketplaces, subscriptions, complex payouts.",
+      "You already run a storefront you're happy with and only need payments.",
+    ],
+    zoltoWhen: [
+      "You want a store and a point-of-sale, not an API to build against.",
+      "You'd rather photograph your notebook than write a product catalogue by hand.",
+      "You sell at markets and online and want one inventory across both.",
+    ],
+  },
+  {
+    id: "sumup",
+    name: "SumUp",
+    summary:
+      "A card-reader-first payments company aimed at small merchants and market traders, selling handheld terminals alongside a payments account.",
+    betterWhen: [
+      "You want a dedicated physical terminal rather than using your phone.",
+      "You take payments in places where handing over a separate device matters.",
+      "You don't need an online store at all.",
+    ],
+    zoltoWhen: [
+      "You'd rather not buy hardware — modern phones take contactless and TWINT QR already.",
+      "You want the same catalogue behind your stall and your website.",
+      "You want AI to do the listing, translating and customer answering.",
+    ],
+  },
+  {
+    id: "worldline",
+    name: "Worldline",
+    summary:
+      "A large European payments processor (it acquired SIX Payment Services, long the default for Swiss card terminals), serving merchants from corner shops to enterprises.",
+    betterWhen: [
+      "You need enterprise payment infrastructure and formal procurement.",
+      "You want an established Swiss acquiring relationship with contract terms.",
+      "Your volume justifies negotiated rates and dedicated account management.",
+    ],
+    zoltoWhen: [
+      "You're one person or a small studio, and contracts and terminals are overkill.",
+      "You want to be selling this weekend, not after an onboarding process.",
+      "You want your online store, POS and AI assistant in one place.",
+    ],
+  },
+];
+
+export function findCompetitor(id: string): Competitor | undefined {
+  return COMPETITORS.find((c) => c.id === id);
+}
 
 /** The steps to open a store — used by the platform MCP `how_to_start` tool + llms. */
 export const HOW_TO_START: string[] = [

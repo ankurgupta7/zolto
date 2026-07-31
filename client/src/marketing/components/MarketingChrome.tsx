@@ -25,7 +25,10 @@ import { Container } from "./Container";
 
 const NAV = [
   { label: "Product", href: "/#product" },
+  { label: "Who it's for", href: "/for" },
   { label: "Pricing", href: "/pricing" },
+  { label: "Compare", href: "/compare" },
+  { label: "FAQ", href: "/faq" },
   { label: "Launch Diary", href: "/blog" },
 ];
 
@@ -258,6 +261,9 @@ export function MarketingFooter() {
         <nav className="flex gap-6">
           <Link href="/pricing" className="hover:text-[var(--brand-ink)]">
             Pricing
+          </Link>
+          <Link href="/faq" className="hover:text-[var(--brand-ink)]">
+            FAQ
           </Link>
           <Link href="/legal/privacy" className="hover:text-[var(--brand-ink)]">
             Privacy

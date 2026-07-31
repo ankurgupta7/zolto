@@ -30,8 +30,18 @@
 }
 
 {$SITE_DOMAIN} {
-    # Reverse proxy all traffic to the Node.js app
-    reverse_proxy app:3000
+    # Reverse proxy all traffic to the Node.js app.
+    #
+    # A deploy recreates the app container while Caddy stays up. For those few
+    # seconds "app" does not resolve on Docker's embedded DNS and every request
+    # in flight fails — search and AI crawlers included, which have been served
+    # 502s on /robots.txt mid-deploy. Caddy retries only when it could not get
+    # a connection at all (the upstream never saw the request), so waiting out
+    # the restart is safe even for POSTs.
+    reverse_proxy app:3000 {
+        lb_try_duration 30s
+        lb_try_interval 1s
+    }
 
     # Enable gzip compression
     encode gzip
@@ -52,7 +62,18 @@
 }
 
 # Redirect www → apex (no-op when SITE_DOMAIN is ":80").
+#
+# This needs `on_demand` for the same reason the tenant block below does: the
+# wildcard site covers www.{$SITE_DOMAIN} too, so Caddy does not provision a
+# certificate for it up front and falls through to on-demand at handshake
+# time. Without this the hostname has no certificate at all and Caddy aborts
+# the TLS handshake, which looks like the site being unreachable rather than
+# a redirect. /api/domain-ask answers 200 for the "www" label specifically.
 www.{$SITE_DOMAIN} {
+    tls {
+        on_demand
+    }
+
     redir https://{$SITE_DOMAIN}{uri} permanent
 }
 
@@ -66,7 +87,11 @@ www.{$SITE_DOMAIN} {
         on_demand
     }
 
-    reverse_proxy app:3000
+    # Same restart-tolerance as the apex block above.
+    reverse_proxy app:3000 {
+        lb_try_duration 30s
+        lb_try_interval 1s
+    }
 
     encode gzip
 
