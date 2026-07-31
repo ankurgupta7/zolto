@@ -1,8 +1,8 @@
 import { useEffect } from "react";
 import { Route, Switch, useLocation } from "wouter";
 import { MarketingShell } from "./components/MarketingChrome";
-import { Container } from "./components/Container";
 import Landing from "./pages/Landing";
+import NotFound from "./pages/NotFound";
 import Pricing from "./pages/Pricing";
 import Signup from "./pages/Signup";
 import SignIn from "./pages/SignIn";
@@ -23,22 +23,6 @@ function ScrollToTop() {
     window.scrollTo(0, 0);
   }, [location]);
   return null;
-}
-
-function NotFound() {
-  return (
-    <Container width="xl" className="py-32 text-center">
-      <h1 className="font-serif text-3xl text-[var(--brand-text)]">
-        Page not found
-      </h1>
-      <a
-        href="/"
-        className="mt-6 inline-block text-[var(--brand-accent)] hover:underline"
-      >
-        Back to home
-      </a>
-    </Container>
-  );
 }
 
 /**

@@ -14,6 +14,7 @@ import {
   COST_COMPARISON,
   INCUMBENT_COMPARISON,
   SELLING_FLOW,
+  monthlyCostAt,
 } from "./platform";
 
 describe("platform facts", () => {
@@ -134,6 +135,7 @@ describe("platform facts", () => {
     for (const step of SELLING_FLOW) {
       expect(step.title.length).toBeGreaterThan(0);
       expect(step.detail.length).toBeGreaterThan(0);
+      expect(step.timeOfDay.length).toBeGreaterThan(0);
     }
   });
 
@@ -142,5 +144,50 @@ describe("platform facts", () => {
     expect(ids).toContain("tap-to-pay");
     expect(ids).toContain("notebook-inventory");
     expect(ids).toContain("day-end-reconciliation");
+  });
+});
+
+describe("monthlyCostAt", () => {
+  it("charges nothing on either plan's fee when there are no online sales", () => {
+    const cost = monthlyCostAt(0);
+    expect(cost.freePlanChf).toBe(0);
+    expect(cost.cheaper).toBe("free");
+  });
+
+  it("applies the Free plan's percentage to online sales", () => {
+    // 1% of 1,000 = 10
+    expect(monthlyCostAt(1000).freePlanChf).toBe(10);
+  });
+
+  it("keeps Pro flat — the subscription price, with no fee on top", () => {
+    expect(monthlyCostAt(0).proPlanChf).toBe(PRO_PLAN.priceChf);
+    expect(monthlyCostAt(50_000).proPlanChf).toBe(PRO_PLAN.priceChf);
+  });
+
+  it("puts the crossover exactly at the advertised break-even", () => {
+    const at = monthlyCostAt(PRO_BREAK_EVEN_ONLINE_CHF);
+    expect(at.cheaper).toBe("tie");
+    expect(at.freePlanChf).toBe(at.proPlanChf);
+
+    expect(monthlyCostAt(PRO_BREAK_EVEN_ONLINE_CHF - 100).cheaper).toBe("free");
+    expect(monthlyCostAt(PRO_BREAK_EVEN_ONLINE_CHF + 100).cheaper).toBe("pro");
+  });
+
+  it("reports the saving as the gap between the two plans", () => {
+    const cost = monthlyCostAt(5000);
+    expect(cost.savingChf).toBe(
+      Math.round(Math.abs(cost.freePlanChf - cost.proPlanChf) * 100) / 100,
+    );
+  });
+
+  it("rounds to whole cents rather than leaking float noise", () => {
+    // 1% of 33.33 is 0.3333 — must not surface as 0.33329999999999996.
+    expect(monthlyCostAt(33.33).freePlanChf).toBe(0.33);
+  });
+
+  it("treats negative and non-finite input as a zero month", () => {
+    expect(monthlyCostAt(-500).onlineSalesChf).toBe(0);
+    expect(monthlyCostAt(-500).freePlanChf).toBe(0);
+    expect(monthlyCostAt(Number.NaN).freePlanChf).toBe(0);
   });
 });

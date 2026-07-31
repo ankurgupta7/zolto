@@ -10,6 +10,7 @@
 import type { ReactNode } from "react";
 import { Link } from "wouter";
 import { Loader2, Lock } from "lucide-react";
+import { SketchCircle } from "@/components/SketchAccents";
 
 // ─── PageHeader ───────────────────────────────────────────────────────────────
 
@@ -34,7 +35,9 @@ export function PageHeader({
           </p>
         )}
       </div>
-      {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
+      {actions && (
+        <div className="flex flex-wrap items-center gap-2">{actions}</div>
+      )}
     </div>
   );
 }
@@ -56,9 +59,13 @@ export function SettingsCard({
     <section className="mb-6 overflow-hidden rounded-xl border bg-card">
       {(title || description) && (
         <header className="border-b bg-muted/30 px-6 py-4">
-          {title && <h3 className="text-sm font-semibold text-foreground">{title}</h3>}
+          {title && (
+            <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+          )}
           {description && (
-            <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              {description}
+            </p>
           )}
         </header>
       )}
@@ -121,7 +128,9 @@ export function PrimaryButton({
       disabled={props.disabled || loading}
       className={`inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50 ${props.className ?? ""}`}
     >
-      {loading && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
+      {loading && (
+        <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+      )}
       {children}
     </button>
   );
@@ -138,7 +147,9 @@ export function SecondaryButton({
       disabled={props.disabled || loading}
       className={`inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50 ${props.className ?? ""}`}
     >
-      {loading && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
+      {loading && (
+        <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+      )}
       {children}
     </button>
   );
@@ -150,21 +161,67 @@ export function EmptyState({
   icon,
   title,
   description,
+  note,
   action,
 }: {
   icon?: ReactNode;
   title: string;
   description?: string;
+  /**
+   * An optional hand-lettered aside under the description — the dashboard's
+   * one sanctioned bit of levity. Empty states are explicitly on the list of
+   * places the pen may go (see SketchAccents): they frame the page rather than
+   * label data, so a warmer voice here can't be mistaken for a number.
+   */
+  note?: string;
   action?: ReactNode;
 }) {
   return (
     <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed px-6 py-16 text-center">
-      {icon && <div className="text-muted-foreground">{icon}</div>}
+      {icon && (
+        <div className="relative text-muted-foreground">
+          {/* Pen-loop ringing the glyph, so a blank page still feels drawn. */}
+          <SketchCircle className="absolute -inset-3 h-[calc(100%+1.5rem)] w-[calc(100%+1.5rem)] text-[var(--brand-accent)]/45" />
+          <span className="relative">{icon}</span>
+        </div>
+      )}
       <h3 className="text-base font-semibold text-foreground">{title}</h3>
       {description && (
         <p className="max-w-sm text-sm text-muted-foreground">{description}</p>
       )}
+      {note && (
+        <p className="font-hand text-xl leading-none text-[var(--brand-accent)]">
+          {note}
+        </p>
+      )}
       {action && <div className="mt-2">{action}</div>}
+    </div>
+  );
+}
+
+// ─── LoadingState ─────────────────────────────────────────────────────────────
+
+/**
+ * The standard "we're fetching it" panel.
+ *
+ * Replaces the bare spinners the admin pages each hand-rolled. Beyond the
+ * consistency, this fixes a real gap: an unlabelled spinning icon announces
+ * nothing at all to a screen reader, so the page simply appeared empty until
+ * data arrived. `role="status"` plus a text label means the wait is spoken.
+ */
+export function LoadingState({
+  label = "Fetching your things…",
+}: {
+  label?: string;
+}) {
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      className="flex flex-col items-center justify-center gap-3 py-20 text-muted-foreground"
+    >
+      <Loader2 className="h-6 w-6 animate-spin" aria-hidden="true" />
+      <p className="text-sm">{label}</p>
     </div>
   );
 }

@@ -8,6 +8,7 @@ afterEach(() => {
   document.head.querySelectorAll("meta, link[rel=canonical]").forEach((el) => {
     if (
       el.getAttribute("name") === "description" ||
+      el.getAttribute("name") === "robots" ||
       el.getAttribute("property")?.startsWith("og:") ||
       el.getAttribute("rel") === "canonical"
     ) {
@@ -57,6 +58,31 @@ describe("useDocumentMeta", () => {
       'link[rel="canonical"]',
     );
     expect(canonical?.getAttribute("href")).toContain("/stories/pilot-launch");
+  });
+
+  it("marks a page noindex when asked", () => {
+    renderHook(() => useDocumentMeta({ title: "Gone", noindex: true }));
+    expect(
+      document.head
+        .querySelector('meta[name="robots"]')
+        ?.getAttribute("content"),
+    ).toBe("noindex, follow");
+  });
+
+  it("suppresses the canonical link on a noindex page", () => {
+    // A 404 has no real address; advertising one for a mistyped URL is worse
+    // than emitting none at all.
+    renderHook(() =>
+      useDocumentMeta({ title: "Gone", path: "/404", noindex: true }),
+    );
+    expect(document.head.querySelector('link[rel="canonical"]')).toBeNull();
+    expect(document.head.querySelector('meta[property="og:url"]')).toBeNull();
+  });
+
+  it("leaves indexable pages untouched by default", () => {
+    renderHook(() => useDocumentMeta({ title: "T", path: "/pricing" }));
+    expect(document.head.querySelector('meta[name="robots"]')).toBeNull();
+    expect(document.head.querySelector('link[rel="canonical"]')).not.toBeNull();
   });
 
   it("removes tags it created when unmounted", () => {
