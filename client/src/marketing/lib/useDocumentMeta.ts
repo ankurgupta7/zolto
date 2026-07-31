@@ -5,6 +5,13 @@ export interface DocumentMeta {
   description?: string;
   /** Canonical/OG URL path, e.g. "/blog/launch-diary-1". */
   path?: string;
+  /**
+   * Keep the page out of search results (404s, and anything else that isn't a
+   * real destination). Also suppresses the canonical link and og:url: a page
+   * that shouldn't be indexed has no canonical address to advertise, and
+   * pointing one at a mistyped URL is worse than emitting none.
+   */
+  noindex?: boolean;
 }
 
 /** Read or create a <meta name=".."> / <meta property=".."> and return a restorer. */
@@ -65,6 +72,7 @@ export function useDocumentMeta({
   title,
   description,
   path,
+  noindex,
 }: DocumentMeta): void {
   useEffect(() => {
     const previousTitle = document.title;
@@ -78,7 +86,10 @@ export function useDocumentMeta({
       restorers.push(setMetaTag("name", "description", description));
       restorers.push(setMetaTag("property", "og:description", description));
     }
-    if (path) {
+    if (noindex) {
+      restorers.push(setMetaTag("name", "robots", "noindex, follow"));
+    }
+    if (path && !noindex) {
       const origin =
         typeof window !== "undefined" && window.location
           ? window.location.origin
@@ -93,5 +104,5 @@ export function useDocumentMeta({
       // Restore in reverse so nested creations unwind cleanly.
       for (let i = restorers.length - 1; i >= 0; i--) restorers[i]();
     };
-  }, [title, description, path]);
+  }, [title, description, path, noindex]);
 }

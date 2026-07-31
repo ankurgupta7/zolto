@@ -315,5 +315,12 @@
     "signIn": "Anmelden",
     "accessDenied": "Zugang verweigert",
     "solo": "Solo"
+  },
+  "notFound": {
+    "eyebrow": "hier steht nichts",
+    "title": "Diese Seite ist ausverkauft.",
+    "body": "Oder es gab sie nie — schwer zu sagen. Jedenfalls ist hier nichts. Das Schöne liegt einen Klick weiter.",
+    "shop": "Zum Shop",
+    "home": "Zurück zur Startseite"
   }
 }

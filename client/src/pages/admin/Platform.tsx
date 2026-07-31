@@ -9,8 +9,7 @@
  */
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
-import { Loader2 } from "lucide-react";
-import { PageHeader, SettingsCard } from "@/components/admin/ui";
+import { PageHeader, SettingsCard, LoadingState } from "@/components/admin/ui";
 
 function Stat({
   label,
@@ -57,11 +56,7 @@ export default function Platform() {
   }
 
   if (query.isLoading) {
-    return (
-      <div className="flex justify-center py-24">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
-    );
+    return <LoadingState label="Pulling the platform numbers…" />;
   }
 
   const m = query.data;

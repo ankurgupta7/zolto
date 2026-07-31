@@ -18,6 +18,7 @@ import {
   PageHeader,
   SettingsCard,
   PrimaryButton,
+  LoadingState,
   AdminOnly,
   PlanGate,
 } from "@/components/admin/ui";
@@ -66,9 +67,7 @@ export default function Insights() {
       />
 
       {summary.isLoading ? (
-        <div className="flex items-center justify-center py-20 text-muted-foreground">
-          <Loader2 className="h-6 w-6 animate-spin" />
-        </div>
+        <LoadingState label="Doing the sums…" />
       ) : (
         <>
           <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">

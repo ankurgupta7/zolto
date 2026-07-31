@@ -1,5 +1,6 @@
 import { Link } from "wouter";
 import { Container } from "../components/Container";
+import { FeeCalculator } from "../components/FeeCalculator";
 import { PLANS, formatPrice } from "../plans";
 import {
   PRICING_PROMISE,
@@ -180,6 +181,11 @@ export default function Pricing() {
             </li>
           ))}
         </ul>
+      </div>
+
+      {/* Let the visitor check the fee claim against their own numbers. */}
+      <div className="mt-12">
+        <FeeCalculator />
       </div>
 
       {/*

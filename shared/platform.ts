@@ -225,6 +225,57 @@ export const PRO_BREAK_EVEN_ONLINE_CHF = Math.round(
   PRO_PLAN.priceChf / (REVENUE_SHARE.freeBps / 10_000),
 );
 
+export interface MonthlyCostBreakdown {
+  /** The input, echoed back after clamping to a sane range. */
+  onlineSalesChf: number;
+  /** What the Free plan's percentage fee comes to, in CHF. */
+  freePlanChf: number;
+  /** What Pro costs — a flat subscription, with no fee on top. */
+  proPlanChf: number;
+  /** Which plan is cheaper at this volume. */
+  cheaper: "free" | "pro" | "tie";
+  /** How much the cheaper plan saves per month, in CHF. */
+  savingChf: number;
+}
+
+/**
+ * What a month actually costs on each plan at a given online sales volume.
+ *
+ * In-person sales are deliberately not a parameter: they are free on every
+ * plan, so they can never change the answer. Keeping them out of the signature
+ * means the calculator can't accidentally imply otherwise.
+ *
+ * Rounded to cents so the UI never renders a figure it would then have to
+ * re-round, and so "is Pro cheaper?" is decided on the same numbers the
+ * merchant is shown rather than on hidden precision.
+ */
+export function monthlyCostAt(onlineSalesChf: number): MonthlyCostBreakdown {
+  const sales = Number.isFinite(onlineSalesChf)
+    ? Math.max(0, onlineSalesChf)
+    : 0;
+  const toCents = (n: number) => Math.round(n * 100) / 100;
+
+  const freePlanChf = toCents(sales * (REVENUE_SHARE.freeBps / 10_000));
+  const proPlanChf = toCents(
+    PRO_PLAN.priceChf + sales * (REVENUE_SHARE.proBps / 10_000),
+  );
+
+  const cheaper =
+    freePlanChf === proPlanChf
+      ? "tie"
+      : freePlanChf < proPlanChf
+        ? "free"
+        : "pro";
+
+  return {
+    onlineSalesChf: sales,
+    freePlanChf,
+    proPlanChf,
+    cheaper,
+    savingChf: toCents(Math.abs(freePlanChf - proPlanChf)),
+  };
+}
+
 export function formatPrice(chf: number): string {
   return chf === 0 ? "CHF 0" : `CHF ${chf}`;
 }
@@ -309,9 +360,41 @@ export const INCUMBENT_COMPARISON: ComparisonRow[] = [
   },
 ];
 
+/**
+ * The card-reader joke, with its numbers pinned to real ones.
+ *
+ * `anchorChf` is the top of the hardware range already quoted in
+ * INCUMBENT_COMPARISON — the gag re-spends a figure the page has already
+ * stated rather than inventing a new claim about anyone's pricing. The
+ * punchline (a year of Pro for the same money) is computed, not written down,
+ * so it stays true if the plan price ever moves.
+ *
+ * Deliberately no competitor is named in the items: this riffs on what CHF 300
+ * of hardware is worth, not on what any particular company charges.
+ */
+export const CARD_READER_GAG = {
+  anchorChf: 300,
+  items: [
+    "Roughly sixty flat whites.",
+    "A really good pair of flush cutters, and the case.",
+    "A season of stall fees, depending on the market.",
+  ],
+  /** Months of Pro the same money buys — the punchline. */
+  get proMonths(): number {
+    return Math.floor(this.anchorChf / PRO_PLAN.priceChf);
+  },
+} as const;
+
 export interface SellingStep {
   title: string;
   detail: string;
+  /**
+   * When in a market day this step happens — the anchor the landing page's
+   * scroll-through "day in the life" sequence is pegged to. Lives here rather
+   * than in the component so the narrative order and the copy stay in one
+   * place.
+   */
+  timeOfDay: string;
 }
 
 /**
@@ -323,16 +406,19 @@ export const SELLING_FLOW: SellingStep[] = [
     title: "Scan your notebook",
     detail:
       "Photograph your handwritten stock list. The AI reads it into a real catalogue — names, prices, quantities.",
+    timeOfDay: "07:40 — stall going up",
   },
   {
     title: "Tap to take payment",
     detail:
       "Enter an amount and let the customer tap their phone or card. NFC and TWINT QR — nothing to buy or plug in.",
+    timeOfDay: "11:15 — first rush",
   },
   {
     title: "Confirm at day's end",
     detail:
       "Zolto emails what it thinks you sold. Tap to confirm and stock syncs across your POS and online store.",
+    timeOfDay: "18:30 — packing up",
   },
 ];
 

@@ -5,8 +5,13 @@
  */
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
-import { Receipt, Loader2 } from "lucide-react";
-import { PageHeader, EmptyState, AdminOnly } from "@/components/admin/ui";
+import { Receipt } from "lucide-react";
+import {
+  PageHeader,
+  EmptyState,
+  LoadingState,
+  AdminOnly,
+} from "@/components/admin/ui";
 
 function formatMoney(amountMinor: number, currency: string): string {
   return `${currency.toUpperCase()} ${(amountMinor / 100).toFixed(2)}`;
@@ -28,9 +33,7 @@ export default function Orders() {
       />
 
       {orders.isLoading ? (
-        <div className="flex items-center justify-center py-20 text-muted-foreground">
-          <Loader2 className="h-6 w-6 animate-spin" />
-        </div>
+        <LoadingState label="Counting your orders…" />
       ) : orders.data && orders.data.length > 0 ? (
         <div className="overflow-hidden rounded-xl border bg-card">
           <div className="overflow-x-auto">
@@ -89,7 +92,8 @@ export default function Orders() {
         <EmptyState
           icon={<Receipt className="h-8 w-8" />}
           title="No orders yet"
-          description="When a customer checks out on your storefront, their order shows up here."
+          description="When someone checks out on your storefront, their order lands here — with what they bought and where it's going."
+          note="the first one is a good day"
         />
       )}
     </div>
