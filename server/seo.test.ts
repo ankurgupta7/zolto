@@ -1,8 +1,25 @@
-import { describe, expect, it, beforeEach, afterEach } from "vitest";
+import { describe, expect, it, beforeEach, afterEach, vi } from "vitest";
 import express from "express";
 import request from "supertest";
 import { registerSeoRoutes } from "./seo";
 import { STORY_SLUG } from "@shared/marketing";
+
+/**
+ * Tenant resolution is mocked per-test: `null` exercises the platform apex
+ * (marketing sitemap), a tenant object exercises the storefront path.
+ */
+const resolved: { tenant: { id: number; name: string } | null } = {
+  tenant: null,
+};
+const visibleProducts = vi.fn(async () => [] as unknown[]);
+
+vi.mock("./tenantResolve", () => ({
+  resolveTenantFromRequest: async () => resolved.tenant,
+}));
+
+vi.mock("./db", () => ({
+  getVisibleProducts: (id: number) => visibleProducts(id),
+}));
 
 function buildApp() {
   const app = express();
@@ -11,6 +28,11 @@ function buildApp() {
 }
 
 const ORIGINAL_BASE_URL = process.env.PUBLIC_BASE_URL;
+
+beforeEach(() => {
+  resolved.tenant = null;
+  visibleProducts.mockResolvedValue([]);
+});
 
 afterEach(() => {
   if (ORIGINAL_BASE_URL === undefined) {
@@ -70,5 +92,92 @@ describe("GET /robots.txt", () => {
     expect(res.headers["content-type"]).toContain("text/plain");
     expect(res.text).toContain("User-agent: *");
     expect(res.text).toContain("Sitemap: https://zolto.com/sitemap.xml");
+  });
+
+  it("repeats the disallow list inside each AI-crawler group", () => {
+    // A robots.txt agent obeys only its most specific matching group, so a bare
+    // "Allow: /" under User-agent: GPTBot would exempt it from the * disallows.
+    return request(buildApp())
+      .get("/robots.txt")
+      .then((res) => {
+        const gptbot = res.text
+          .split("User-agent: GPTBot")[1]
+          .split("User-agent:")[0];
+        expect(gptbot).toContain("Disallow: /signin");
+      });
+  });
+});
+
+describe("storefront surface", () => {
+  beforeEach(() => {
+    // PUBLIC_BASE_URL names the *platform* origin; a storefront must ignore it
+    // and use its own host, or every store would advertise zolto.com URLs.
+    process.env.PUBLIC_BASE_URL = "https://zolto.com";
+    resolved.tenant = { id: 42, name: "Aurora Atelier" };
+  });
+
+  it("serves the store's own sitemap, not the marketing one", async () => {
+    visibleProducts.mockResolvedValue([
+      {
+        id: 3,
+        name: "Pearl Drops",
+        nameEn: null,
+        description: "Pearls",
+        descriptionEn: null,
+        price: "89.00",
+        category: "Earrings",
+        imageUrl: "https://cdn.test/3.jpg",
+        sold: false,
+        quantity: 2,
+        updatedAt: new Date("2026-05-06T00:00:00Z"),
+      },
+    ]);
+
+    const res = await request(buildApp())
+      .get("/sitemap.xml")
+      .set("Host", "aurora.zolto.shop");
+
+    expect(res.status).toBe(200);
+    expect(res.text).toContain("<loc>http://aurora.zolto.shop/</loc>");
+    expect(res.text).toContain("<loc>http://aurora.zolto.shop/product/3</loc>");
+    expect(res.text).toContain("<lastmod>2026-05-06</lastmod>");
+    // The regression this guards: marketing URLs 404 on a storefront host.
+    expect(res.text).not.toContain("/pricing");
+    expect(res.text).not.toContain("/blog");
+    expect(res.text).not.toContain("zolto.com");
+  });
+
+  it("omits sold-out products from the sitemap", async () => {
+    visibleProducts.mockResolvedValue([
+      {
+        id: 4,
+        name: "Gone",
+        nameEn: null,
+        description: "d",
+        descriptionEn: null,
+        price: "10.00",
+        category: "Rings",
+        imageUrl: null,
+        sold: true,
+        quantity: 0,
+        updatedAt: null,
+      },
+    ]);
+
+    const res = await request(buildApp())
+      .get("/sitemap.xml")
+      .set("Host", "aurora.zolto.shop");
+    expect(res.text).not.toContain("/product/4");
+  });
+
+  it("points robots.txt at the store's own sitemap and blocks checkout", async () => {
+    const res = await request(buildApp())
+      .get("/robots.txt")
+      .set("Host", "aurora.zolto.shop");
+
+    expect(res.text).toContain("Sitemap: http://aurora.zolto.shop/sitemap.xml");
+    expect(res.text).toContain("Disallow: /checkout");
+    expect(res.text).toContain("Disallow: /admin");
+    expect(res.text).not.toContain("zolto.com");
   });
 });

@@ -3,7 +3,7 @@ import { render, screen, cleanup } from "@testing-library/react";
 import { Router } from "wouter";
 import { memoryLocation } from "wouter/memory-location";
 import Pricing from "./Pricing";
-import { PRO_PLAN, REVENUE_SHARE } from "@shared/platform";
+import { PLANS, PRO_PLAN, REVENUE_SHARE } from "@shared/platform";
 
 afterEach(cleanup);
 
@@ -43,9 +43,9 @@ describe("Pricing", () => {
 
   it("explains the fee: free in person, 1% online, Pro removes it", () => {
     renderPricing();
-    expect(
-      screen.getAllByText(/Zolto adds nothing/i).length,
-    ).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Zolto adds nothing/i).length).toBeGreaterThan(
+      0,
+    );
     expect(screen.getAllByText(/CHF 0/).length).toBeGreaterThan(0);
     // Break-even upsell number is on the page.
     expect(screen.getAllByText(/2,500/).length).toBeGreaterThan(0);
@@ -70,5 +70,31 @@ describe("Pricing", () => {
     expect(
       screen.getAllByText(/Selling in person is free/i).length,
     ).toBeGreaterThan(0);
+  });
+
+  it("ships no unattributed testimonial while the release is unsigned", () => {
+    renderPricing();
+    // The stand-in quote was captioned "(testimonial pending release)" in the
+    // live UI, which reads as an unfinished page. Nothing shows until the real,
+    // released quote replaces it.
+    expect(screen.queryByText(/testimonial pending release/i)).toBeNull();
+    expect(screen.queryByText(/Pilot maker, Zurich/i)).toBeNull();
+    expect(screen.queryByRole("blockquote")).toBeNull();
+  });
+
+  it("sends every plan CTA to signup carrying that plan", () => {
+    renderPricing();
+    const hrefs = screen
+      .getAllByRole("link")
+      .map((a) => a.getAttribute("href"));
+    // Derived from PLANS rather than a hard-coded list: this used to name the
+    // retired four-tier ids (maker/studio/atelier), which contradicted the
+    // assertion above that those tiers must not resurface, and failed once the
+    // pricing pivot landed. Sourcing it from the plans keeps it true after the
+    // next packaging change too.
+    expect(PLANS.length).toBeGreaterThan(0);
+    for (const plan of PLANS) {
+      expect(hrefs).toContain(`/signup?plan=${plan.id}`);
+    }
   });
 });

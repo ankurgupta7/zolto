@@ -108,9 +108,21 @@ describe("GET /api/domain-ask — platform subdomains (blah.zolto.ch)", () => {
     expect(res.status).toBe(404);
   });
 
-  it("404s www without a tenant lookup", async () => {
+  // Regression: this used to 404, which meant Caddy refused to issue a
+  // certificate for www.zolto.ch and aborted every handshake with a TLS
+  // internal error. The hostname was unreachable — crawlers reported the
+  // whole site as down — even though the Caddyfile only wanted to redirect it.
+  it("allows www without a tenant lookup, so its cert can be issued", async () => {
     const res = await request(buildApp()).get(
       "/api/domain-ask?domain=www.zolto.ch",
+    );
+    expect(res.status).toBe(200);
+    expect(dbMock.getTenantBySlug).not.toHaveBeenCalled();
+  });
+
+  it("does not allow a www-prefixed deeper subdomain", async () => {
+    const res = await request(buildApp()).get(
+      "/api/domain-ask?domain=www.blah.zolto.ch",
     );
     expect(res.status).toBe(404);
     expect(dbMock.getTenantBySlug).not.toHaveBeenCalled();

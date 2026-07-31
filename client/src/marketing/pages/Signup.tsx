@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { slugify, isValidSlug } from "../slug";
+import { Container } from "../components/Container";
 
 export default function Signup() {
   const [, navigate] = useLocation();
@@ -54,7 +55,7 @@ export default function Signup() {
   };
 
   return (
-    <div className="mx-auto max-w-md px-6 py-20">
+    <Container width="md" className="py-20">
       <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
         let&rsquo;s begin
       </p>
@@ -135,7 +136,7 @@ export default function Signup() {
           .
         </p>
       </form>
-    </div>
+    </Container>
   );
 }
 

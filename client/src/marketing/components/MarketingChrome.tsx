@@ -1,8 +1,17 @@
-import { Link } from "wouter";
+import { useEffect, useState } from "react";
+import { Link, useLocation } from "wouter";
 import type { ReactNode } from "react";
-import { Store } from "lucide-react";
+import { Menu, Store } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { storeAdminUrl } from "@/lib/surface";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { Container } from "./Container";
 
 /**
  * Zolto marketing chrome — nav + footer.
@@ -16,10 +25,23 @@ import { storeAdminUrl } from "@/lib/surface";
 
 const NAV = [
   { label: "Product", href: "/#product" },
+  { label: "Who it's for", href: "/for" },
   { label: "Pricing", href: "/pricing" },
+  { label: "Compare", href: "/compare" },
+  { label: "FAQ", href: "/faq" },
   { label: "Launch Diary", href: "/blog" },
-  { label: "Sign in", href: "/signup" },
 ];
+
+/**
+ * Sign-in target for a *returning* merchant.
+ *
+ * Deliberately not /signup: that page only creates a brand-new tenant, so
+ * sending an existing merchant there offers them a second store rather than a
+ * way back into the one they have. /signin is a bounce page that runs the OAuth
+ * handshake and then drops them straight into their own store admin — see
+ * pages/SignIn.tsx for why that second hop can't happen from here.
+ */
+export const SIGN_IN_PATH = "/signin";
 
 /**
  * The Zolto brush-Z mark — the signature gold-on-mahogany lockup (matches
@@ -45,6 +67,21 @@ export function BrushMark({ className }: { className?: string }) {
 }
 
 /**
+ * Placeholder that reserves the auth slot's footprint while auth resolves, so
+ * the bar doesn't reflow (and signed-in merchants don't see "Start free" flash
+ * before it swaps to "Go to your store").
+ */
+function AuthSlotSkeleton() {
+  return (
+    <span
+      aria-hidden
+      data-testid="auth-slot-loading"
+      className="h-9 w-28 rounded-md bg-[var(--brand-border)]/60"
+    />
+  );
+}
+
+/**
  * "Go to your store" shortcut — for a signed-in merchant who lands back on the
  * marketing site (zolto.ch) and has forgotten their store's address. Uses the
  * host-independent tenant.myStore, and a real anchor (not a wouter <Link>) so
@@ -59,6 +96,9 @@ export function StoreShortcut() {
     enabled: !!me.data,
   });
 
+  // Signed in but the store lookup is still in flight — hold the slot instead of
+  // rendering nothing and popping the button in a moment later.
+  if (me.data && store.isLoading) return <AuthSlotSkeleton />;
   if (!me.data || !store.data) return null;
 
   return (
@@ -73,41 +113,139 @@ export function StoreShortcut() {
   );
 }
 
-export function MarketingNav() {
+/**
+ * The nav's right-hand slot. Signed in → the store shortcut; signed out → sign
+ * in + the acquisition CTA. While `auth.me` is in flight we render neither:
+ * committing to "Start free" early makes the bar visibly flip for merchants who
+ * are already signed in.
+ *
+ * `compact` is the in-bar mobile rendering: the CTA stays visible but the "Sign
+ * in" text link moves into the sheet, where it has room to breathe.
+ */
+function AuthActions({ compact = false }: { compact?: boolean }) {
   const me = trpc.auth.me.useQuery(undefined, { retry: false });
-  const signedIn = !!me.data;
+
+  if (me.isLoading) return <AuthSlotSkeleton />;
+  if (me.data) return <StoreShortcut />;
+
+  return (
+    <>
+      {!compact && (
+        <Link
+          href={SIGN_IN_PATH}
+          className="text-sm text-[var(--brand-muted-2)] transition-colors hover:text-[var(--brand-ink)]"
+        >
+          Sign in
+        </Link>
+      )}
+      <Link
+        href="/signup"
+        className="rounded-md bg-[var(--brand-ink)] px-4 py-2 text-xs font-medium uppercase tracking-[0.12em] text-white transition-colors hover:bg-[var(--brand-ink-hover)]"
+      >
+        Start free
+      </Link>
+    </>
+  );
+}
+
+/**
+ * Mobile navigation. Without this the nav links are simply unreachable on a
+ * phone (they were `hidden … sm:inline`), which on a maker-facing site is the
+ * majority of traffic. A Radix-backed sheet buys focus trapping, escape-to-close
+ * and the dialog aria semantics rather than re-implementing them.
+ */
+function MobileMenu({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const me = trpc.auth.me.useQuery(undefined, { retry: false });
+  const close = () => onOpenChange(false);
+
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetTrigger
+        aria-label="Open menu"
+        className="-mr-1 inline-flex items-center justify-center rounded-md p-2 text-[var(--brand-text)]/70 transition-colors hover:text-[var(--brand-ink)]"
+      >
+        <Menu className="h-5 w-5" />
+      </SheetTrigger>
+      <SheetContent
+        side="right"
+        className="w-[min(20rem,85vw)] border-l-[var(--brand-border)] bg-[var(--brand-ground)]"
+      >
+        <SheetHeader>
+          <SheetTitle className="font-serif text-lg font-normal text-[var(--brand-text)]">
+            Menu
+          </SheetTitle>
+        </SheetHeader>
+        <nav aria-label="Mobile" className="flex flex-col px-4">
+          {NAV.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={close}
+              className="border-b border-[var(--brand-border)] py-3.5 text-sm text-[var(--brand-muted-2)] transition-colors hover:text-[var(--brand-ink)]"
+            >
+              {item.label}
+            </Link>
+          ))}
+          {!me.isLoading && !me.data && (
+            <Link
+              href={SIGN_IN_PATH}
+              onClick={close}
+              className="border-b border-[var(--brand-border)] py-3.5 text-sm text-[var(--brand-muted-2)] transition-colors hover:text-[var(--brand-ink)]"
+            >
+              Sign in
+            </Link>
+          )}
+        </nav>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+export function MarketingNav() {
+  const [location] = useLocation();
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: close the mobile sheet whenever the route changes
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [location]);
 
   return (
     <header className="sticky top-0 z-50 border-b border-[var(--brand-border)] bg-[var(--brand-ground)]/90 backdrop-blur">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
+      <Container className="flex h-16 items-center justify-between">
         <Link href="/" className="flex items-center gap-2.5">
           <BrushMark className="h-8 w-8" />
           <span className="font-serif text-xl tracking-tight text-[var(--brand-text)]">
             Zolto
           </span>
         </Link>
-        <nav className="flex items-center gap-6">
+
+        {/* Desktop */}
+        <nav aria-label="Main" className="hidden items-center gap-6 sm:flex">
           {NAV.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className="hidden text-sm text-[var(--brand-muted-2)] transition-colors hover:text-[var(--brand-ink)] sm:inline"
+              className="text-sm text-[var(--brand-muted-2)] transition-colors hover:text-[var(--brand-ink)]"
             >
               {item.label}
             </Link>
           ))}
-          {signedIn ? (
-            <StoreShortcut />
-          ) : (
-            <Link
-              href="/signup"
-              className="rounded-md bg-[var(--brand-ink)] px-4 py-2 text-xs font-medium uppercase tracking-[0.12em] text-white transition-colors hover:bg-[var(--brand-ink-hover)]"
-            >
-              Start free
-            </Link>
-          )}
+          <AuthActions />
         </nav>
-      </div>
+
+        {/* Mobile — CTA stays in the bar, links move into the sheet */}
+        <div className="flex items-center gap-2 sm:hidden">
+          <AuthActions compact />
+          <MobileMenu open={menuOpen} onOpenChange={setMenuOpen} />
+        </div>
+      </Container>
     </header>
   );
 }
@@ -115,7 +253,7 @@ export function MarketingNav() {
 export function MarketingFooter() {
   return (
     <footer className="border-t border-[var(--brand-border)] bg-[var(--brand-surface)]">
-      <div className="mx-auto flex max-w-6xl flex-col gap-4 px-6 py-10 text-sm text-[var(--brand-muted-2)] sm:flex-row sm:items-center sm:justify-between">
+      <Container className="flex flex-col gap-4 py-10 text-sm text-[var(--brand-muted-2)] sm:flex-row sm:items-center sm:justify-between">
         <p>
           © {new Date().getFullYear()} Zolto — commerce for makers, handmade in
           Zürich.
@@ -124,6 +262,9 @@ export function MarketingFooter() {
           <Link href="/pricing" className="hover:text-[var(--brand-ink)]">
             Pricing
           </Link>
+          <Link href="/faq" className="hover:text-[var(--brand-ink)]">
+            FAQ
+          </Link>
           <Link href="/legal/privacy" className="hover:text-[var(--brand-ink)]">
             Privacy
           </Link>
@@ -131,7 +272,7 @@ export function MarketingFooter() {
             Terms
           </Link>
         </nav>
-      </div>
+      </Container>
     </footer>
   );
 }

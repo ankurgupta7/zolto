@@ -1,6 +1,8 @@
 import { Link } from "wouter";
 import type { Article, Block } from "../content/launchContent";
 import { useDocumentMeta } from "../lib/useDocumentMeta";
+import { Container } from "./Container";
+import { author, hasNamedAuthor } from "@shared/authors";
 
 function JsonLd({ schema }: { schema: Record<string, unknown> }) {
   return (
@@ -195,7 +197,7 @@ export function ArticleView({ article }: { article: Article }) {
   );
 
   return (
-    <article className="mx-auto max-w-3xl px-6 py-16">
+    <Container as="article" width="3xl" className="py-16">
       <JsonLd schema={article.schema} />
 
       <Link
@@ -214,8 +216,15 @@ export function ArticleView({ article }: { article: Article }) {
         {article.title}
       </h1>
       <p className="mt-4 text-lg text-[var(--brand-muted-2)]">{article.dek}</p>
+      {/*
+        Visible byline. Attribution is resolved from @shared/authors, so it
+        stays in step with the Article JSON-LD rather than being retyped here —
+        and it names a person only once one has agreed to be named.
+      */}
       <p className="mt-3 text-xs uppercase tracking-widest text-[var(--brand-muted)]">
-        {published} · {article.readingTime}
+        {hasNamedAuthor() ? `${author.name}, ${author.role}` : author.name} ·{" "}
+        <time dateTime={article.datePublished}>{published}</time> ·{" "}
+        {article.readingTime}
       </p>
 
       <div className="mt-10 space-y-4">
@@ -242,6 +251,6 @@ export function ArticleView({ article }: { article: Article }) {
         This series documents a real maker's first online-store launch on Zolto.
         No growth hacks, no cherry-picked metrics — just what happened.
       </p>
-    </article>
+    </Container>
   );
 }

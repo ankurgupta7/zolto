@@ -1,6 +1,7 @@
 import { Link, useRoute } from "wouter";
 import { CASE_STUDY } from "../content/launchContent";
 import { ArticleView } from "../components/Article";
+import { Container } from "../components/Container";
 
 /**
  * The case-study page at /stories/:slug. The slug is release-gated (see
@@ -13,7 +14,7 @@ export default function Story() {
 
   if (slug !== CASE_STUDY.slug) {
     return (
-      <div className="mx-auto max-w-xl px-6 py-32 text-center">
+      <Container width="xl" className="py-32 text-center">
         <h1 className="font-serif text-3xl text-[var(--brand-text)]">
           Story not found
         </h1>
@@ -23,7 +24,7 @@ export default function Story() {
         >
           ← Back to the Launch Diary
         </Link>
-      </div>
+      </Container>
     );
   }
 

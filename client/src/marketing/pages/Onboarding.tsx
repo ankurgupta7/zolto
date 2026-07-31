@@ -3,6 +3,7 @@ import { Link, useSearch } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { getLoginUrl } from "@/const";
 import { storeAdminUrl } from "@/lib/surface";
+import { Container } from "../components/Container";
 
 /**
  * Post-signup onboarding wizard (docs/ARCHITECTURE.md). The checklist is
@@ -159,7 +160,7 @@ export default function Onboarding() {
   }, [status.data, cursorAdvanced]);
 
   return (
-    <div className="mx-auto max-w-2xl px-6 py-20">
+    <Container width="2xl" className="py-20">
       <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
         welcome{store ? ` — ${store}` : ""}
       </p>
@@ -230,6 +231,6 @@ export default function Onboarding() {
       >
         {allDone ? "Go to your dashboard →" : "Continue in your dashboard"}
       </a>
-    </div>
+    </Container>
   );
 }
