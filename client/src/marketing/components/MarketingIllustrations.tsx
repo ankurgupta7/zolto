@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Store, Smartphone, Sparkles } from "lucide-react";
 import { SketchArrow } from "@/components/SketchAccents";
 
@@ -229,6 +230,125 @@ export function PhotoToListing() {
         </p>
       </div>
     </div>
+  );
+}
+
+/**
+ * The three beats of a market day, drawn in the same loose pen as the hero
+ * stall: the stall goes up, a sale happens, the day's email lands.
+ *
+ * They share a 120×100 frame so the trio reads as one sequence rather than
+ * three unrelated drawings, and every stroke carries `pathLength={1}` so the
+ * `.sketch-draw` CSS can ink them in at a uniform rate as they scroll into
+ * view (see index.css). All three are decorative: the caption beside each one
+ * carries the meaning, so nothing is lost when the drawing isn't seen.
+ */
+
+/** Shared frame + pen settings, so the three scenes can't drift apart. */
+function SceneFrame({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 120 100"
+      fill="none"
+      role="presentation"
+      aria-hidden="true"
+      focusable="false"
+      style={{ pointerEvents: "none" }}
+    >
+      <g
+        className="sketch-draw"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+      >
+        {children}
+      </g>
+    </svg>
+  );
+}
+
+/** Beat one — the canopy goes up and the wares come out. */
+export function StallOpensScene({ className }: { className?: string }) {
+  return (
+    <SceneFrame className={className}>
+      {/* Canopy */}
+      <path pathLength={1} d="M12 30 Q 60 16 108 30" />
+      <path pathLength={1} d="M12 30 L 18 43 Q 60 31 102 43 L 108 30" />
+      {/* Valance ticks hanging off the hem — what makes it read as a market
+          awning rather than a shelter roof. Points sit on the hem curve. */}
+      <path pathLength={1} d="M39 38.5 L 37 44" />
+      <path pathLength={1} d="M60 37 L 60 43" />
+      <path pathLength={1} d="M81 38.5 L 83 44" />
+      {/* Posts */}
+      <path pathLength={1} d="M19 43 L 19 86" />
+      <path pathLength={1} d="M101 43 L 101 86" />
+      {/* Trestle table */}
+      <path pathLength={1} d="M30 72 L 90 72" />
+      <path pathLength={1} d="M35 72 L 35 87" />
+      <path pathLength={1} d="M85 72 L 85 87" />
+      {/* Wares, resting on the table line rather than hovering over it:
+          a ring, a draped necklace, a little box */}
+      <circle pathLength={1} cx="46" cy="67" r="4.5" />
+      <circle pathLength={1} cx="46" cy="67" r="1.6" />
+      <path pathLength={1} d="M60 64 q 8 11 16 0" />
+      <path pathLength={1} d="M82 63 l 9 0 l 0 9 l -9 0 z" />
+    </SceneFrame>
+  );
+}
+
+/** Beat two — a customer taps their phone against the maker's. */
+export function TapToPayScene({ className }: { className?: string }) {
+  return (
+    <SceneFrame className={className}>
+      {/* The maker's phone, held out */}
+      <rect pathLength={1} x="20" y="22" width="34" height="60" rx="5" />
+      {/* Amount line on its screen — suggestion of a figure, not a real one */}
+      <path pathLength={1} d="M28 40 L 46 40" />
+      <path pathLength={1} d="M28 49 L 40 49" />
+      {/* The customer's phone, angled in from the right */}
+      <rect
+        pathLength={1}
+        x="78"
+        y="30"
+        width="26"
+        height="44"
+        rx="4"
+        transform="rotate(14 91 52)"
+      />
+      {/* Contactless arcs arcing across the gap */}
+      <path pathLength={1} d="M60 44 q 6 8 0 16" />
+      <path pathLength={1} d="M66 39 q 9 13 0 26" />
+      <path pathLength={1} d="M72 34 q 12 18 0 36" />
+    </SceneFrame>
+  );
+}
+
+/** Beat three — the day's reconciliation email arrives. */
+export function ReconciliationEmailScene({
+  className,
+}: {
+  className?: string;
+}) {
+  return (
+    <SceneFrame className={className}>
+      {/* Envelope body + flap */}
+      <rect pathLength={1} x="16" y="26" width="88" height="56" rx="4" />
+      <path pathLength={1} d="M16 30 L 60 58 L 104 30" />
+      {/* The day's lines, sitting on the flap like a little list */}
+      <path pathLength={1} d="M34 68 L 62 68" />
+      <path pathLength={1} d="M34 75 L 54 75" />
+      {/* Confirmed — the one tap that closes the day */}
+      <path pathLength={1} d="M74 70 l 5 6 l 11 -13" />
+    </SceneFrame>
   );
 }
 

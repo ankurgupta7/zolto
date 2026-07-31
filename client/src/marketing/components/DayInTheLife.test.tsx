@@ -44,4 +44,28 @@ describe("DayInTheLife", () => {
     expect(spine).toBeTruthy();
     expect(spine?.getAttribute("aria-hidden")).toBe("true");
   });
+
+  it("draws one line-art scene per beat of the day", () => {
+    const { container } = render(<DayInTheLife />);
+    const scenes = container.querySelectorAll(".sketch-draw");
+    expect(scenes).toHaveLength(SELLING_FLOW.length);
+  });
+
+  it("gives each beat its own draw trigger, so they ink in one at a time", () => {
+    const { container } = render(<DayInTheLife />);
+    const beats = container.querySelectorAll('[data-testid="day-beat"]');
+    expect(beats).toHaveLength(SELLING_FLOW.length);
+    // Each beat owns a data-drawn flag rather than inheriting one from the
+    // list, which is what lets the sequence follow the reader down the page.
+    for (const beat of Array.from(beats)) {
+      expect(beat.getAttribute("data-drawn")).toBeTruthy();
+    }
+  });
+
+  it("keeps the drawings out of the accessibility tree entirely", () => {
+    const { container } = render(<DayInTheLife />);
+    for (const svg of Array.from(container.querySelectorAll("svg"))) {
+      expect(svg.getAttribute("aria-hidden")).toBe("true");
+    }
+  });
 });

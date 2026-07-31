@@ -5,6 +5,9 @@ import {
   PhotoToListing,
   MarketStallScene,
   NecklaceSketch,
+  StallOpensScene,
+  TapToPayScene,
+  ReconciliationEmailScene,
 } from "./MarketingIllustrations";
 
 afterEach(cleanup);
@@ -67,4 +70,52 @@ describe("MarketStallScene", () => {
     expect(svg?.getAttribute("aria-hidden")).toBe("true");
     expect(svg?.classList.contains("text-gold")).toBe(true);
   });
+});
+
+describe("day-in-the-life scenes", () => {
+  const SCENES = [
+    ["StallOpensScene", StallOpensScene],
+    ["TapToPayScene", TapToPayScene],
+    ["ReconciliationEmailScene", ReconciliationEmailScene],
+  ] as const;
+
+  for (const [name, Scene] of SCENES) {
+    describe(name, () => {
+      it("is decorative and tintable by its frame", () => {
+        const { container } = render(<Scene className="text-gold" />);
+        const svg = container.querySelector("svg");
+        expect(svg?.getAttribute("aria-hidden")).toBe("true");
+        expect(svg?.getAttribute("role")).toBe("presentation");
+        expect(svg?.classList.contains("text-gold")).toBe(true);
+      });
+
+      it("marks every stroke as drawable so the ink-on animation can run", () => {
+        // The CSS normalises each stroke with pathLength="1"; a drawable that
+        // misses it would jump in fully drawn while its neighbours animate.
+        const { container } = render(<Scene />);
+        const group = container.querySelector(".sketch-draw");
+        expect(group).not.toBeNull();
+
+        const drawables = group?.querySelectorAll(
+          "path, circle, rect, line, polyline, ellipse",
+        );
+        expect(drawables?.length).toBeGreaterThan(0);
+        for (const el of Array.from(drawables ?? [])) {
+          expect(el.getAttribute("pathLength")).toBe("1");
+        }
+      });
+
+      it("shares the sequence's frame so the trio reads as one drawing", () => {
+        const { container } = render(<Scene />);
+        expect(container.querySelector("svg")?.getAttribute("viewBox")).toBe(
+          "0 0 120 100",
+        );
+      });
+
+      it("carries no text of its own — the caption holds the meaning", () => {
+        const { container } = render(<Scene />);
+        expect(container.querySelector("text")).toBeNull();
+      });
+    });
+  }
 });
