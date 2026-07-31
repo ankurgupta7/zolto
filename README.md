@@ -50,17 +50,48 @@ top of this file reads `main`.
    a job that skips everything reports success while proving nothing. That is
    not hypothetical — it is how `billing.integration.test.ts` accumulated seven
    real failures unnoticed straight through the pricing pivot.
-3. **If the repo is private**, the badge needs a status token appended
+3. **Set `GITHUB_TOKEN`** (a PAT with `repo` / Actions-read scope). Only the
+   cost-fallback below needs it; without it CircleCI simply runs everything.
+4. **If the repo is private**, the badge needs a status token appended
    (Project Settings → Status Badges → create one), i.e.
    `.../tree/main.svg?style=svg&circle-token=<token>`. Public repos work as-is.
 
-### Overlap with GitHub Actions
+### Cost fallback: GitHub Actions first, CircleCI when it runs dry
 
 `.github/workflows/android-build.yml` and `e2e.yml` cover the same ground as
-the `android` and `e2e` jobs here. Retire them if CircleCI becomes the source
-of truth, or both systems run the same work on every push. Note that neither
-GitHub workflow ever ran the unit suite or the typecheck — that gap is what
-the `unit` job closes.
+this config's `android` and `e2e` jobs, so running both would pay twice for the
+same work. Instead each of those two CircleCI jobs starts by asking GitHub
+whether it already ran the equivalent workflow **for this exact commit**:
+
+| GitHub's state for the commit           | CircleCI does           |
+| --------------------------------------- | ----------------------- |
+| Workflow ran and passed                 | halts (green, no spend) |
+| Workflow ran and failed                 | fails, pointing at it   |
+| Workflow never appeared                 | **runs the suite**      |
+| Paths the workflow filters on unchanged | halts                   |
+| Can't tell (no token, API error)        | **runs the suite**      |
+
+The last row is the design rule: every ambiguous case resolves to _running_.
+Duplicated work costs minutes; a silently skipped suite costs a broken merge.
+
+**The important caveat.** GitHub gives no signal when an Actions allowance runs
+out — it does not fail the workflow, it never schedules it. So "out of minutes"
+is only observable as _absence_, and the check waits `GH_WAIT_SECONDS`
+(default 180) before concluding nothing is coming. That is a heuristic: a
+GitHub queue slower than the wait window looks the same as no budget, and the
+result is a duplicated run, not a missed one. Set `FORCE_CIRCLECI_FULL=1` to
+skip the whole dance and always run everything here.
+
+Note also that GitHub Actions minutes are **free on public repositories** —
+this fallback only ever engages on a private repo, or if Actions is disabled.
+
+The logic lives in `.circleci/defer-to-github.sh` and is covered by
+`.circleci/defer-to-github.test.sh` (run it directly; the `unit` job does too),
+because a regression there would silently skip an entire suite.
+
+`unit` and `integration` have no GitHub equivalent and always run — neither
+GitHub workflow ever ran the vitest suite or the typecheck, which is the gap
+this config closes.
 
 ---
 

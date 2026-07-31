@@ -9,9 +9,16 @@ version: 2.1
 #   e2e          — Playwright storefront journey against a real MySQL
 #   android      — the ZoltoPOS Gradle build, needs the Android SDK
 #
-# NOTE: .github/workflows/ still contains android-build.yml and e2e.yml, which
-# overlap with the `android` and `e2e` jobs here. Retire those if this config
-# becomes the source of truth, or the same work runs twice on every push.
+# COST FALLBACK: .github/workflows/ still contains android-build.yml and
+# e2e.yml, which cover the same ground as the `android` and `e2e` jobs here.
+# Rather than duplicating that spend, both jobs first ask GitHub whether it
+# already ran the equivalent workflow for this commit and halt if so — but run
+# the work here when GitHub produced nothing, which is what happens the moment
+# an Actions minutes allowance is exhausted (GitHub does not fail the workflow;
+# it never schedules it). See .circleci/defer-to-github.sh for the full
+# reasoning, and set FORCE_CIRCLECI_FULL=1 to bypass the check entirely.
+#
+# `unit` and `integration` have no GitHub equivalent, so they always run.
 
 orbs:
   android: circleci/android@2.5.0
@@ -78,6 +85,11 @@ jobs:
       - run:
           name: Deploy-script tests (bash, no DB)
           command: pnpm run test:deploy-scripts
+      - run:
+          name: CI fallback-logic tests
+          # Guards .circleci/defer-to-github.sh. A regression there skips a
+          # whole suite silently, which is worse than any test it protects.
+          command: bash .circleci/defer-to-github.test.sh
       - store_test_results:
           path: ./reports/junit
       - store_artifacts:
@@ -136,6 +148,9 @@ jobs:
       CI: "true"
     steps:
       - checkout
+      - run:
+          name: Defer to GitHub Actions if it already ran the e2e workflow
+          command: .circleci/defer-to-github.sh e2e.yml
       - setup_pnpm
       - run:
           name: Wait for MySQL
@@ -174,6 +189,11 @@ jobs:
     executor: android/android-docker
     steps:
       - checkout
+      - run:
+          name: Defer to GitHub Actions if it already ran the Android workflow
+          # Same path filter as android-build.yml, so an unrelated commit is
+          # skipped here too instead of rebuilding Android on every push.
+          command: .circleci/defer-to-github.sh android-build.yml android/
       - restore_cache:
           keys:
             - gradle-v1-{{ checksum "android/gradle/libs.versions.toml" }}
