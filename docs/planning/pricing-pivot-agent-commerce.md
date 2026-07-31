@@ -181,9 +181,15 @@ page.
 - **Pro price: shipped at CHF 25**, the midpoint of the 19–29 range. Same
   property: `PLANS` is the only place it lives, and the break-even number
   recomputes itself.
-- **Verify TWINT-via-Stripe effective rate against native 1.3%** and decide
-  the in-person rail. Still open, and the last thing blocking the "in-person
-  is the cheapest rail" claim from being literally true.
+- **Native TWINT: decided, blocked on TWINT itself.** The owner has chosen to
+  move the in-person rail to native TWINT. Native is confirmed at **1.3%**, but
+  Stripe's TWINT rate is not publicly documented, so the delta — the entire
+  business case — is still unmeasured. The larger constraint is that TWINT's
+  API is not public and any integrator must be **certified and approved by
+  TWINT** before receiving the spec, so this starts as an application, not a
+  branch. Credential model (Store UUID + `.p12` + password), codebase impact
+  and recommended sequence:
+  [`native-twint-integration.md`](./native-twint-integration.md).
 - ~~**VAT: inclusive vs exclusive**~~ — **closed, not applicable.** Swiss VAT
   registration is mandatory only above CHF 100,000 of annual turnover
   (MWSTG art. 10). Zolto is below that and pre-revenue, so there is no VAT to
