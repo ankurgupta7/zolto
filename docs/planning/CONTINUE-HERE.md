@@ -110,18 +110,34 @@ in order of preference:
 
 ## 0. The one thing blocking launch
 
-**Run the Stripe Connect integration suite and read the answer.** Everything
+**Run the verification script on the server and read the answer.** Everything
 else on this page is downstream of it.
 
 ```bash
+pnpm verify:fee              # from the repo root, where .env lives
+```
+
+`scripts/verify-platform-fee.ts` settles a real test-mode direct charge on a
+connected account and reads the application fee back **from the platform
+account**, which is the only way to prove the money actually arrives. It runs
+both plans (Free must be charged, Pro must not), refunds what it creates, and
+exits non-zero on any disagreement. Fee amounts come from `platformFeeRappen()`
+— production's own function — so it cannot pass while checkout would fail.
+
+It refuses to run against an `sk_live_` key: it confirms a genuine payment, and
+on a live key that would charge a real card on a real merchant's account.
+
+The broader suite still exists and is worth running too:
+
+```bash
 pnpm install --frozen-lockfile
-STRIPE_TEST_SECRET_KEY=sk_test_...  \
-STRIPE_TEST_WEBHOOK_SECRET=whsec_... \
 pnpm test:integration
 ```
 
 The operator supplies the keys — **never commit them**; `.env` is gitignored
-(`.gitignore:11`) and that is where they belong.
+(`.gitignore:11`) and that is where they belong. The script reads `.env` itself
+via dotenv; do **not** wrap it in `set -a; . ./.env`, which executes the file
+and breaks on values like `RESEND_FROM_EMAIL=Zolto <orders@zolto.ch>`.
 
 ### Why this matters more than it looks
 
@@ -142,6 +158,8 @@ The previous session could not run it: the sandbox's egress proxy denied
 | **Green** | The fee works on a real direct charge. Revenue path proven end to end. | Update §9 of `pricing-pivot-agent-commerce.md` from ⚠️ to ✅, then move to §1 below. |
 | **"Cannot reach the Stripe API…"** | Still a network/egress problem, *not* a Stripe rejection. | Fix connectivity and re-run. Do not interpret this as the fee being broken — that distinction is why the preflight exists. |
 | **"No connected account available…"** | Test-environment gap, still not a fee rejection. | Set `STRIPE_TEST_CONNECTED_ACCOUNT_ID` to an existing test-mode `acct_...`, or link one via Zolto's own Connect OAuth flow. The suite deliberately does **not** create accounts — see below. |
+| **`FAILED: free`, "silent-loss case"** | The charge settled with **no** application fee. Outwardly a working storefront that earns Zolto nothing — the worst outcome, because nothing looks broken. | Find out why the fee was stripped: either the retry in `checkoutSession.ts` fired, or the Connect relationship does not permit fees. |
+| **`FAILED: pro`, "paying twice"** | A Pro tenant was charged a fee they pay CHF 25/mo to avoid. | Stop charging before anything else — this is a refund-and-apologise bug, not a missed-revenue one. |
 | **Connect block fails some other way** | This is the finding we were looking for. | Read the Stripe error properly. Likely the platform account's Connect capabilities or the platform/connected relationship. Fix before launch — the fallback keeps sales alive but earns nothing. |
 
 ### Run history (read this before re-diagnosing)
