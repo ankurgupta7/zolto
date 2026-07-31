@@ -16,7 +16,14 @@ vi.mock("../posAttribution", () => ({
 import { reconciliationRouter } from "./reconciliation";
 import type { TrpcContext } from "../_core/context";
 
-function makeCtx(role: "admin" | "user" | null = null): TrpcContext {
+function makeCtx(
+  role: "admin" | "user" | null = null,
+  // runPos is tenant-scoped, so a context needs both a user and the store
+  // being addressed. They match by default; pass different ids to exercise
+  // the cross-tenant guard.
+  userTenantId = 42,
+  hostTenantId: number | null = 42,
+): TrpcContext {
   const user =
     role !== null
       ? {
@@ -26,6 +33,7 @@ function makeCtx(role: "admin" | "user" | null = null): TrpcContext {
           name: "Test User",
           loginMethod: "manus",
           role,
+          tenantId: userTenantId,
           createdAt: new Date(),
           updatedAt: new Date(),
           lastSignedIn: new Date(),
@@ -34,9 +42,13 @@ function makeCtx(role: "admin" | "user" | null = null): TrpcContext {
 
   return {
     user,
+    tenant:
+      hostTenantId === null
+        ? null
+        : ({ id: hostTenantId, slug: "aurora", plan: "free" } as never),
     req: { protocol: "https", headers: {} } as TrpcContext["req"],
     res: { clearCookie: vi.fn() } as unknown as TrpcContext["res"],
-  };
+  } as TrpcContext;
 }
 
 const summary = {
@@ -89,6 +101,16 @@ describe("reconciliation.run", () => {
     await expect(caller.run({ lookbackDays: 91 })).rejects.toThrow();
   });
 
+  // Deliberately NOT tenant-scoped, unlike runPos: this scans the platform's
+  // own Stripe account and matches against DEFAULT_TENANT_ID. Pinned so the
+  // asymmetry is a recorded decision rather than a missed route — see the
+  // comment on `run` in reconciliation.ts for what still needs deciding.
+  it("still runs for an admin of another store (platform-scoped by design)", async () => {
+    runStripeReconciliation.mockResolvedValue(summary);
+    const caller = reconciliationRouter.createCaller(makeCtx("admin", 7, 42));
+    await expect(caller.run({})).resolves.toEqual(summary);
+  });
+
   it("maps a not-configured Stripe error to PRECONDITION_FAILED", async () => {
     runStripeReconciliation.mockRejectedValue(
       new Error("Stripe is not configured"),
@@ -134,7 +156,8 @@ describe("reconciliation.runPos", () => {
 
     const result = await caller.runPos({ lookbackDays: 7 });
 
-    expect(runPosAttribution).toHaveBeenCalledWith(7);
+    // Second arg is the caller's OWN tenant — the scan must not sweep others.
+    expect(runPosAttribution).toHaveBeenCalledWith(7, 42);
     expect(result).toEqual(posSummary);
   });
 
@@ -144,7 +167,24 @@ describe("reconciliation.runPos", () => {
 
     await caller.runPos({});
 
-    expect(runPosAttribution).toHaveBeenCalledWith(undefined);
+    expect(runPosAttribution).toHaveBeenCalledWith(undefined, 42);
+  });
+
+  // Regression: runPos previously swept EVERY tenant's unattributed POS lines,
+  // so one merchant pressing "Scan" wrote pos_attributions rows for every other
+  // store and folded their volume into the counts it returned.
+  it("refuses an admin of a different store", async () => {
+    const caller = reconciliationRouter.createCaller(makeCtx("admin", 7, 42));
+    await expect(caller.runPos({})).rejects.toThrow(NOT_ADMIN_ERR_MSG);
+    expect(runPosAttribution).not.toHaveBeenCalled();
+  });
+
+  it("refuses when no store is addressed", async () => {
+    const caller = reconciliationRouter.createCaller(
+      makeCtx("admin", 42, null),
+    );
+    await expect(caller.runPos({})).rejects.toThrow();
+    expect(runPosAttribution).not.toHaveBeenCalled();
   });
 
   it("rejects an out-of-range lookbackDays", async () => {

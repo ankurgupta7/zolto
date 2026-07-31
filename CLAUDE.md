@@ -13,6 +13,32 @@ Guidance for Claude Code when working in this repository.
 - Run `npx vitest run --coverage` periodically and keep coverage trending up, not down — a new feature landing with 0% coverage on its own code is a regression even if the overall suite passes. Pay particular attention to payment, auth, and inventory-affecting code paths, since those carry the highest risk.
 - Test files live next to the code they cover, named `*.test.ts` / `*.test.tsx` (e.g. `server/stripe.ts` → `server/stripe.test.ts`).
 
+## Authorization: picking the right tRPC procedure
+
+Multi-tenancy makes this easy to get wrong, and it has been wrong before —
+`tenant.updateSettings` shipped as `publicProcedure` under an "Admin" heading,
+so anyone who could reach a store's host could rewrite its settings.
+
+| Use                    | When                                                                                                   |
+| ---------------------- | ------------------------------------------------------------------------------------------------------ |
+| `publicProcedure`      | Genuinely unauthenticated: storefront reads, signup. **Never for a mutation that writes tenant data.** |
+| `protectedProcedure`   | Any signed-in user, tenant-independent (e.g. `claimAdmin`).                                            |
+| `tenantAdminProcedure` | **The default for store-admin work.** Signed in + admin + admin _of the store being addressed_.        |
+| `superadminProcedure`  | Platform-wide operations that cross tenants by design.                                                 |
+
+The trap: `adminProcedure` only proves the caller is an admin _somewhere_.
+`ctx.tenant` comes from the request host, so `adminProcedure.use(requireTenant)`
+lets an admin of store A act on store B by pointing at B's subdomain. Use
+`tenantAdminProcedure` instead — it adds the belongs-to-this-tenant check.
+
+Bare `adminProcedure` is only correct when the handler scopes every read and
+write through **`ctx.user.tenantId`** (the caller's own store) and never touches
+`ctx.tenant`. `products.ts` and `instagram.ts` are the reference for that shape.
+
+When adding an admin route, ship a test that an admin of a _different_ tenant is
+refused — not just that an anonymous caller is. The anonymous case rarely
+regresses; the cross-tenant one silently does.
+
 ## Commands
 
 - `npm run test` / `npx vitest run` — run the full test suite once

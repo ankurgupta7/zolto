@@ -1204,8 +1204,13 @@ export interface UnattributedPosLine {
  * each line out once it already has a review row, so repeated day-end runs don't
  * re-queue the same sale.
  */
+// `tenantId` scopes the scan to one store. It is optional only so the
+// platform-wide sweep (a superadmin/cron use) stays expressible; every
+// merchant-triggered run MUST pass it, or one store's admin kicks off a job
+// that writes pos_attributions rows for every other store on the platform.
 export async function getUnattributedPosLineItems(
   since: Date,
+  tenantId?: number,
 ): Promise<UnattributedPosLine[]> {
   return withDb(async (db) => {
     const rows = await db
@@ -1229,6 +1234,9 @@ export async function getUnattributedPosLineItems(
           eq(posOrders.status, "paid"),
           gte(posOrderItems.createdAt, since),
           isNull(posAttributions.id),
+          ...(tenantId === undefined
+            ? []
+            : [eq(posOrderItems.tenantId, tenantId)]),
         ),
       );
     return rows;

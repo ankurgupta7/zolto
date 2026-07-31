@@ -509,6 +509,35 @@ describe("tenant onboarding mutations", () => {
     await caller.setOnboardingCursor({ step: 2 });
     expect(set).not.toHaveBeenCalled();
   });
+
+  // Both were `publicProcedure` — unauthenticated writes to the tenants row,
+  // the same class of bug as updateSettings, just far lower impact.
+  it("refuses an anonymous caller on both mutations", async () => {
+    const where = vi.fn().mockResolvedValue(undefined);
+    const set = vi.fn(() => ({ where }));
+    dbMock.db.update = vi.fn(() => ({ set }));
+    const caller = tenantRouter.createCaller(
+      ctx(null, { id: 42, plan: "free", onboardingStep: 0 } as never),
+    );
+    await expect(caller.dismissOnboarding()).rejects.toThrow();
+    await expect(caller.setOnboardingCursor({ step: 2 })).rejects.toThrow();
+    expect(set).not.toHaveBeenCalled();
+  });
+
+  it("refuses an admin of a different store", async () => {
+    const where = vi.fn().mockResolvedValue(undefined);
+    const set = vi.fn(() => ({ where }));
+    dbMock.db.update = vi.fn(() => ({ set }));
+    const caller = tenantRouter.createCaller(
+      ctx({ openId: "google:other", role: "admin", tenantId: 7 }, {
+        id: 42,
+        plan: "free",
+        onboardingStep: 0,
+      } as never),
+    );
+    await expect(caller.dismissOnboarding()).rejects.toThrow();
+    expect(set).not.toHaveBeenCalled();
+  });
 });
 
 describe("tenant.myStore", () => {

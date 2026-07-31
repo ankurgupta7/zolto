@@ -15,9 +15,8 @@ import crypto from "node:crypto";
 import { TRPCError } from "@trpc/server";
 import {
   router,
-  adminProcedure,
   protectedProcedure,
-  requireTenant,
+  tenantAdminProcedure,
   PLAN_FEATURES,
   type PlanId,
 } from "../_core/trpc";
@@ -37,7 +36,11 @@ import { sendTransactionalEmail, escapeHtml } from "../_core/email";
 
 const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
-const tenantAdmin = adminProcedure.use(requireTenant);
+// Store-admin guard. `adminProcedure.use(requireTenant)` alone is NOT enough:
+// ctx.tenant comes from the request host, so an admin of store A hitting store
+// B's subdomain would pass it and act on B's data. tenantAdminProcedure adds
+// the belongs-to-this-tenant check (server/_core/trpc.ts).
+const tenantAdmin = tenantAdminProcedure;
 
 async function seatsUsed(tenantId: number): Promise<number> {
   const [staff, pending] = await Promise.all([

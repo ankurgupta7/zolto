@@ -1,7 +1,6 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { router, adminProcedure } from "../_core/trpc";
-import { requireTenant } from "../_core/trpc";
+import { router, tenantAdminProcedure } from "../_core/trpc";
 import {
   createPlanCheckoutSession,
   isBillingConfigured,
@@ -26,7 +25,11 @@ import {
 // subscription); platform-level operations stay superadmin-only elsewhere.
 // ═══════════════════════════════════════════════════════════════════════════════
 
-const tenantAdmin = adminProcedure.use(requireTenant);
+// Store-admin guard. `adminProcedure.use(requireTenant)` alone is NOT enough:
+// ctx.tenant comes from the request host, so an admin of store A hitting store
+// B's subdomain would pass it and act on B's data. tenantAdminProcedure adds
+// the belongs-to-this-tenant check (server/_core/trpc.ts).
+const tenantAdmin = tenantAdminProcedure;
 
 export const billingRouter = router({
   /**

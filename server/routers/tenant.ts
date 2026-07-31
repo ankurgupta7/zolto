@@ -237,18 +237,20 @@ export const tenantRouter = router({
       return deriveOnboardingStatus(ctx.tenant);
     }),
 
-  dismissOnboarding: publicProcedure
-    .use(requireTenant)
-    .mutation(async ({ ctx }) => {
-      await db
-        .update(tenants)
-        .set({ onboardingStep: -1 })
-        .where(eq(tenants.id, ctx.tenant.id));
-      return { success: true };
-    }),
+  // Both onboarding mutations write to the tenants row, so they need the same
+  // guard as any other store-admin write. They were `publicProcedure` —
+  // unauthenticated, like updateSettings above — which let anyone who could
+  // reach a store's host dismiss or rewind its onboarding checklist. Low
+  // impact next to settings, but the same class of bug and the same fix.
+  dismissOnboarding: tenantAdminProcedure.mutation(async ({ ctx }) => {
+    await db
+      .update(tenants)
+      .set({ onboardingStep: -1 })
+      .where(eq(tenants.id, ctx.tenant.id));
+    return { success: true };
+  }),
 
-  setOnboardingCursor: publicProcedure
-    .use(requireTenant)
+  setOnboardingCursor: tenantAdminProcedure
     .input(z.object({ step: z.number().int().min(0).max(10) }))
     .mutation(async ({ ctx, input }) => {
       // Cursor moves forward only — never rewinds a dismissed (-1) checklist.
@@ -439,35 +441,23 @@ export const tenantRouter = router({
   // (separate from Zolto's own subscription billing — see
   // server/stripeConnect.ts). `url` is null when Connect isn't configured on
   // the platform yet (STRIPE_CONNECT_CLIENT_ID unset).
-  getStripeConnectUrl: adminProcedure
-    .use(requireTenant)
-    .query(async ({ ctx }) => {
-      if (ctx.user!.tenantId !== ctx.tenant.id) {
-        // Logged because the merchant-facing symptom is indistinguishable from
-        // "Connect isn't configured" — both leave the client without a URL. The
-        // usual cause is a session bound to a different tenant (e.g. the
-        // platform owner, or a stale cookie) browsing a tenant subdomain, and
-        // without this line there is nothing anywhere that says so.
-        console.warn(
-          `[StripeConnect] Refusing getStripeConnectUrl: user ${ctx.user!.id} ` +
-            `belongs to tenant ${ctx.user!.tenantId} but is browsing tenant ` +
-            `${ctx.tenant.id} (${ctx.tenant.slug}). Sign in as an admin of ` +
-            `that store.`,
-        );
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: NOT_ADMIN_ERR_MSG,
-        });
-      }
-      const [tenant, url] = await Promise.all([
-        getTenantById(ctx.tenant.id),
-        buildConnectAuthorizeUrl(ctx.tenant.id, ctx.req),
-      ]);
-      return {
-        url,
-        connected: Boolean(tenant?.stripeConnectedAccountId),
-      };
-    }),
+  // The cross-tenant check that used to be hand-rolled here is now the shared
+  // tenantAdminProcedure guard — this was the only copy of it in the codebase,
+  // which is precisely why every other admin route was missing it. One
+  // behaviour change: a superadmin browsing a tenant subdomain is now allowed
+  // through (platform support acting on a store they don't belong to), where
+  // the local copy refused. That exemption is deliberate and consistent with
+  // platform.metrics being cross-tenant by design.
+  getStripeConnectUrl: tenantAdminProcedure.query(async ({ ctx }) => {
+    const [tenant, url] = await Promise.all([
+      getTenantById(ctx.tenant.id),
+      buildConnectAuthorizeUrl(ctx.tenant.id, ctx.req),
+    ]);
+    return {
+      url,
+      connected: Boolean(tenant?.stripeConnectedAccountId),
+    };
+  }),
 
   // ─── Superadmin: List all tenants (platform admin) ───────────────────────
   list: publicProcedure.query(async () => {

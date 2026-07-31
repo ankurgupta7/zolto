@@ -230,3 +230,50 @@ describe("staff.claimInvite", () => {
     ).rejects.toThrow();
   });
 });
+
+// Regression: staff management read/wrote ctx.tenant (host-derived) behind a
+// local `adminProcedure.use(requireTenant)` alias with no belongs-to-this-
+// tenant check. The sharpest case is `invite`: an admin of store A could mail
+// themselves a valid invite to store B's team — privilege escalation into
+// another merchant's store, not merely a data leak.
+describe("staff cross-tenant guard", () => {
+  const otherAdmin = {
+    id: 2,
+    openId: "google:b",
+    role: "admin",
+    tenantId: 999,
+  } as never;
+
+  it("refuses to list another store's team", async () => {
+    await expect(
+      staffRouter.createCaller(ctx(otherAdmin)).list(),
+    ).rejects.toThrow();
+  });
+
+  it("refuses to invite anyone into another store", async () => {
+    await expect(
+      staffRouter
+        .createCaller(ctx(otherAdmin))
+        .invite({ email: "attacker@evil.test" }),
+    ).rejects.toThrow();
+    expect(dbMock.createStaffInvite).not.toHaveBeenCalled();
+  });
+
+  it("refuses to revoke another store's invite", async () => {
+    await expect(
+      staffRouter.createCaller(ctx(otherAdmin)).revokeInvite({ inviteId: 1 }),
+    ).rejects.toThrow();
+    expect(dbMock.deleteStaffInvite).not.toHaveBeenCalled();
+  });
+
+  it("refuses to remove another store's staff", async () => {
+    await expect(
+      staffRouter.createCaller(ctx(otherAdmin)).removeStaff({ userId: 1 }),
+    ).rejects.toThrow();
+    expect(dbMock.deleteUserById).not.toHaveBeenCalled();
+  });
+
+  it("still serves the store's own admin", async () => {
+    await expect(staffRouter.createCaller(ctx()).list()).resolves.toBeDefined();
+  });
+});
