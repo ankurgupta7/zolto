@@ -789,9 +789,7 @@ export interface PlatformMetrics {
  * an invented price is worse than an empty field, because the merchant may
  * accept it and mis-price their own work.
  */
-export async function getCategoryPriceStats(
-  tenantId: number,
-): Promise<
+export async function getCategoryPriceStats(tenantId: number): Promise<
   {
     category: string;
     count: number;
@@ -1366,6 +1364,23 @@ export async function getTenantById(id: number): Promise<Tenant | undefined> {
       .limit(1);
     return result.length > 0 ? result[0] : undefined;
   }, undefined);
+}
+
+// Scale metering (two-tier pricing): plans cap photo storage, never AI usage
+// (shared/platform.ts PLANS[].storageGb). Mirrors createProduct's maxProducts
+// enforcement — an atomic counter incremented at the single upload choke
+// point (storagePut, server/storage.ts) so every intake channel obeys it.
+export async function incrementTenantStorageUsage(
+  tenantId: number,
+  bytes: number,
+): Promise<void> {
+  if (bytes <= 0) return;
+  await withDbOrThrow((db) =>
+    db
+      .update(tenants)
+      .set({ storageBytesUsed: sql`${tenants.storageBytesUsed} + ${bytes}` })
+      .where(eq(tenants.id, tenantId)),
+  );
 }
 
 // The person to notify about this tenant's activity (e.g. a paid order) —

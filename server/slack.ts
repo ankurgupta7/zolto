@@ -136,7 +136,7 @@ export async function handleSlackEvent(req: Request, res: Response) {
           f.filetype === "png",
       );
       if (imageFile) {
-        imageUrl = await downloadSlackFile(imageFile);
+        imageUrl = await downloadSlackFile(imageFile, tenant.id);
       }
     }
 
@@ -284,7 +284,10 @@ interface SlackFile {
   name?: string;
 }
 
-async function downloadSlackFile(file: SlackFile): Promise<string | null> {
+async function downloadSlackFile(
+  file: SlackFile,
+  tenantId?: number,
+): Promise<string | null> {
   if (!SLACK_BOT_TOKEN) {
     console.warn("[Slack] No SLACK_BOT_TOKEN set, cannot download file");
     return null;
@@ -308,6 +311,7 @@ async function downloadSlackFile(file: SlackFile): Promise<string | null> {
       key,
       Buffer.from(response.data),
       contentType,
+      tenantId,
     );
     return url;
   } catch (err) {

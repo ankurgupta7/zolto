@@ -186,7 +186,7 @@ export const productsRouter = router({
       const buffer = Buffer.from(base64, "base64");
       const ext = input.mimeType.split("/")[1] ?? "jpg";
       const key = `product-images/${input.productId}/${Date.now()}.${ext}`;
-      const { url } = await storagePut(key, buffer, input.mimeType);
+      const { url } = await storagePut(key, buffer, input.mimeType, tid);
       await addProductImage({
         tenantId: tid,
         productId: input.productId,
@@ -497,6 +497,7 @@ Return ONLY valid JSON, no markdown, no explanation.`,
             primaryKey,
             primaryBuffer,
             primary.mimeType,
+            tid,
           );
 
           // Create the product row
@@ -539,7 +540,7 @@ Return ONLY valid JSON, no markdown, no explanation.`,
             const ext =
               img.mimeType.split("/")[1]?.replace("jpeg", "jpg") ?? "jpg";
             const key = `product-images/${newId}/${Date.now()}-${i}.${ext}`;
-            const { url } = await storagePut(key, buffer, img.mimeType);
+            const { url } = await storagePut(key, buffer, img.mimeType, tid);
             await addProductImage({
               tenantId: tid,
               productId: newId,
@@ -692,7 +693,7 @@ Return ONLY valid JSON, no markdown, no explanation.`,
               const ext =
                 img.mimeType.split("/")[1]?.replace("jpeg", "jpg") ?? "jpg";
               const key = `product-images/${item.productId}/${Date.now()}-${i}.${ext}`;
-              const { url } = await storagePut(key, buffer, img.mimeType);
+              const { url } = await storagePut(key, buffer, img.mimeType, tid);
               await addProductImage({
                 tenantId: tid,
                 productId: item.productId,

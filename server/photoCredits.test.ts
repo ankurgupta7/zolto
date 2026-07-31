@@ -67,6 +67,7 @@ describe("generateStyledProductPhoto", () => {
       originalImages: [
         { url: "https://cdn.example.com/ring.jpg", mimeType: "image/jpeg" },
       ],
+      tenantId: 7,
     });
     expect(addProductImage).toHaveBeenCalledWith(
       expect.objectContaining({

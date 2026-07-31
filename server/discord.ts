@@ -162,6 +162,7 @@ interface DiscordAttachment {
 
 async function downloadDiscordAttachment(
   attachment: DiscordAttachment,
+  tenantId?: number,
 ): Promise<string | null> {
   try {
     const response = await axios.get(attachment.url, {
@@ -183,6 +184,7 @@ async function downloadDiscordAttachment(
       key,
       Buffer.from(response.data),
       contentType,
+      tenantId,
     );
     return url;
   } catch (err) {
@@ -254,7 +256,10 @@ export async function handleDiscordMessage(
     (a.content_type ?? "").startsWith("image/"),
   );
   if (imageAttachment) {
-    imageUrl = await downloadDiscordAttachment(imageAttachment);
+    imageUrl = await downloadDiscordAttachment(
+      imageAttachment,
+      discordTenantId,
+    );
   }
 
   // Parse product details using tenant-branded prompt

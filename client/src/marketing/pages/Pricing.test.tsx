@@ -43,9 +43,9 @@ describe("Pricing", () => {
 
   it("explains the fee: free in person, 1% online, Pro removes it", () => {
     renderPricing();
-    expect(
-      screen.getAllByText(/Zolto adds nothing/i).length,
-    ).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Zolto adds nothing/i).length).toBeGreaterThan(
+      0,
+    );
     expect(screen.getAllByText(/CHF 0/).length).toBeGreaterThan(0);
     // Break-even upsell number is on the page.
     expect(screen.getAllByText(/2,500/).length).toBeGreaterThan(0);
@@ -84,7 +84,7 @@ describe("Pricing", () => {
 
   it("sends every plan CTA to signup carrying that plan", () => {
     renderPricing();
-    for (const id of ["free", "maker", "studio", "atelier"]) {
+    for (const id of ["free", "pro"]) {
       const hrefs = screen
         .getAllByRole("link")
         .map((a) => a.getAttribute("href"));

@@ -25,6 +25,9 @@ export type GenerateImageOptions = {
     b64Json?: string;
     mimeType?: string;
   }>;
+  // Attributes the generated image's storage to this tenant's photo-storage
+  // cap (shared/platform.ts PLANS[].storageGb) — see server/storage.ts.
+  tenantId?: number;
 };
 
 export type GenerateImageResponse = {
@@ -85,6 +88,7 @@ export async function generateImage(
     `generated/${Date.now()}.png`,
     buffer,
     result.image.mimeType,
+    options.tenantId,
   );
   return {
     url,

@@ -1,4 +1,5 @@
 import {
+  bigint,
   boolean,
   decimal,
   int,
@@ -60,6 +61,12 @@ export const tenants = mysqlTable("tenants", {
     scale: 2,
   }),
   priceLockExpiresAt: timestamp("price_lock_expires_at"),
+  // Cumulative photo-storage bytes uploaded by this tenant, incremented
+  // atomically by storagePut() alongside the plan cap check (PLANS[].storageGb)
+  // — see server/storage.ts. Mirrors the maxProducts pattern in createProduct.
+  storageBytesUsed: bigint("storage_bytes_used", { mode: "number" })
+    .notNull()
+    .default(0),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

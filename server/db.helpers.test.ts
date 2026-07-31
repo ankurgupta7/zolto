@@ -32,6 +32,7 @@ import {
   getPhotoCreditHistory,
   addPhotoCreditEntry,
   recordPhotoGeneration,
+  incrementTenantStorageUsage,
 } from "./db";
 
 describe("db helpers when the database is unavailable", () => {
@@ -61,6 +62,14 @@ describe("db helpers when the database is unavailable", () => {
     await expect(
       addInstagramPost("https://instagram.com/p/1", 0),
     ).rejects.toThrow(/Database not available/);
+    await expect(incrementTenantStorageUsage(1, 1024)).rejects.toThrow(
+      /Database not available/,
+    );
+  });
+
+  it("incrementTenantStorageUsage no-ops for zero/negative bytes without touching the db", async () => {
+    await expect(incrementTenantStorageUsage(1, 0)).resolves.toBeUndefined();
+    await expect(incrementTenantStorageUsage(1, -5)).resolves.toBeUndefined();
   });
 
   it("soft-failing writes no-op instead of throwing", async () => {

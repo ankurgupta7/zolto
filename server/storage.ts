@@ -25,6 +25,8 @@ import {
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import crypto from "node:crypto";
+import { PLANS } from "@shared/platform";
+import { getTenantById, incrementTenantStorageUsage } from "./db";
 
 function getS3Client(): S3Client {
   const region = process.env.S3_REGION ?? "us-east-1";
@@ -66,16 +68,46 @@ function buildPublicUrl(key: string): string {
   return `/uploads/${key}`;
 }
 
+const BYTES_PER_GB = 1024 ** 3;
+
+// Scale metering (two-tier pricing): plans cap photo storage
+// (shared/platform.ts PLANS[].storageGb), never AI usage. Enforced here, the
+// single choke point every intake channel — admin UI, bulk upload, AI photo
+// styling, Discord/WhatsApp/Slack — shares, so no caller can bypass it. Fails
+// open when the tenant row can't be loaded so a broken lookup never blocks
+// writes, matching createProduct's maxProducts enforcement in server/db.ts.
+async function assertStorageCapNotExceeded(
+  tenantId: number,
+  incomingBytes: number,
+): Promise<void> {
+  const tenant = await getTenantById(tenantId);
+  if (!tenant) return;
+  const capGb = PLANS.find((p) => p.id === tenant.plan)?.storageGb;
+  if (capGb === undefined) return;
+  const capBytes = capGb * BYTES_PER_GB;
+  const used = Number(tenant.storageBytesUsed ?? 0);
+  if (used + incomingBytes > capBytes) {
+    throw new Error(
+      `Your photo storage is at its ${capGb} GB limit on the ${tenant.plan} plan — upgrade for more room.`,
+    );
+  }
+}
+
 export async function storagePut(
   relKey: string,
   data: Buffer | Uint8Array | string,
   contentType = "application/octet-stream",
+  tenantId?: number,
 ): Promise<{ key: string; url: string }> {
+  const body = typeof data === "string" ? Buffer.from(data) : data;
+
+  if (tenantId !== undefined) {
+    await assertStorageCapNotExceeded(tenantId, body.byteLength);
+  }
+
   const client = getS3Client();
   const bucket = getBucket();
   const key = appendHashSuffix(normalizeKey(relKey));
-
-  const body = typeof data === "string" ? Buffer.from(data) : data;
 
   await client.send(
     new PutObjectCommand({
@@ -85,6 +117,12 @@ export async function storagePut(
       ContentType: contentType,
     }),
   );
+
+  if (tenantId !== undefined) {
+    incrementTenantStorageUsage(tenantId, body.byteLength).catch((err) =>
+      console.error("[Storage] Failed to record storage usage:", err),
+    );
+  }
 
   return { key, url: buildPublicUrl(key) };
 }

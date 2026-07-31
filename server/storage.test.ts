@@ -26,6 +26,18 @@ vi.mock("@aws-sdk/s3-request-presigner", () => ({
   getSignedUrl: getSignedUrlMock,
 }));
 
+const { getTenantByIdMock, incrementTenantStorageUsageMock } = vi.hoisted(
+  () => ({
+    getTenantByIdMock: vi.fn(),
+    incrementTenantStorageUsageMock: vi.fn(),
+  }),
+);
+
+vi.mock("./db", () => ({
+  getTenantById: getTenantByIdMock,
+  incrementTenantStorageUsage: incrementTenantStorageUsageMock,
+}));
+
 import { storagePut, storageGet, storageGetSignedUrl } from "./storage";
 
 const ENV_KEYS = [
@@ -48,6 +60,8 @@ describe("storage", () => {
     }
     sendMock.mockReset().mockResolvedValue({});
     getSignedUrlMock.mockReset().mockResolvedValue("https://signed.example/x");
+    getTenantByIdMock.mockReset().mockResolvedValue(undefined);
+    incrementTenantStorageUsageMock.mockReset().mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -116,6 +130,68 @@ describe("storage", () => {
       await storagePut("a.png", Buffer.from(""));
       // Success implies the endpoint branch constructed a client without error.
       expect(sendMock).toHaveBeenCalled();
+    });
+  });
+
+  describe("storagePut — tenant storage cap", () => {
+    const GB = 1024 ** 3;
+
+    it("does not check the cap when no tenantId is passed", async () => {
+      process.env.S3_BUCKET = "b";
+      await storagePut("a.png", Buffer.from("hi"));
+      expect(getTenantByIdMock).not.toHaveBeenCalled();
+      expect(incrementTenantStorageUsageMock).not.toHaveBeenCalled();
+    });
+
+    it("rejects an upload that would exceed the plan's storage cap", async () => {
+      process.env.S3_BUCKET = "b";
+      getTenantByIdMock.mockResolvedValue({
+        plan: "free",
+        storageBytesUsed: 5 * GB - 5, // 5 bytes of headroom left on the 5 GB Free cap
+      });
+      await expect(
+        storagePut("images/cat.png", Buffer.from("0123456789"), "image/png", 1),
+      ).rejects.toThrow(/5 GB limit on the free plan/);
+      expect(sendMock).not.toHaveBeenCalled();
+      expect(incrementTenantStorageUsageMock).not.toHaveBeenCalled();
+    });
+
+    it("allows an upload within the cap and records the bytes used", async () => {
+      process.env.S3_BUCKET = "b";
+      getTenantByIdMock.mockResolvedValue({
+        plan: "free",
+        storageBytesUsed: 0,
+      });
+      const buffer = Buffer.from("hello world");
+      const result = await storagePut("images/cat.png", buffer, "image/png", 1);
+
+      expect(sendMock).toHaveBeenCalledTimes(1);
+      expect(result.url).toBe(`/uploads/${result.key}`);
+      expect(incrementTenantStorageUsageMock).toHaveBeenCalledWith(
+        1,
+        buffer.byteLength,
+      );
+    });
+
+    it("fails open when the tenant row can't be loaded", async () => {
+      process.env.S3_BUCKET = "b";
+      getTenantByIdMock.mockResolvedValue(undefined);
+      await expect(
+        storagePut("images/cat.png", Buffer.from("hi"), "image/png", 999),
+      ).resolves.toMatchObject({ key: expect.any(String) });
+      expect(sendMock).toHaveBeenCalledTimes(1);
+    });
+
+    it("Pro's larger cap allows an upload that would exceed Free's", async () => {
+      process.env.S3_BUCKET = "b";
+      getTenantByIdMock.mockResolvedValue({
+        plan: "pro",
+        storageBytesUsed: 6 * GB, // already past Free's 5 GB cap
+      });
+      await expect(
+        storagePut("images/cat.png", Buffer.from("hi"), "image/png", 1),
+      ).resolves.toMatchObject({ key: expect.any(String) });
+      expect(sendMock).toHaveBeenCalledTimes(1);
     });
   });
 

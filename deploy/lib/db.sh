@@ -453,3 +453,51 @@ migrate_0025_tenant_secrets() {
     ok "0025 tenant_settings.discord_owner_user_id already exists"
   fi
 }
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Migration 0026: two-tier pricing pivot (free/pro) + order channel/fee columns.
+#
+# Ships drizzle/0008_two_tier_pricing.sql, which update.sh never picked up —
+# checkout.ts and billing.ts have referenced orders.channel and
+# orders.platform_fee_rappen since the pivot shipped, so any deploy that only
+# ran through update.sh (not drizzle-kit) was missing them entirely. Same
+# widen/remap/finalize shape as 0023: maker/studio/atelier all collapse to
+# pro (every old paid tier is a superset-priced ancestor of Pro), Stripe
+# subscriptions are untouched by this step — see the legacy-subscriber
+# runbook in docs/planning/pricing-pivot-agent-commerce.md §8. Idempotent.
+# ─────────────────────────────────────────────────────────────────────────────
+migrate_0026_two_tier_pricing() {
+  local plan_enum
+  plan_enum=$($MYSQL -se "${MYSQL_LOCK_TIMEOUT_SQL}SELECT COLUMN_TYPE FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA='${MYSQL_DATABASE}' AND TABLE_NAME='tenants' AND COLUMN_NAME='plan';" 2>/dev/null || echo "")
+
+  if echo "$plan_enum" | grep -q "'pro'"; then
+    ok "0026 tenants.plan already has 'pro'"
+  else
+    # Widen first so old and new values coexist during the remap.
+    run_sql "0026 widen tenants.plan enum" \
+      "ALTER TABLE \`tenants\` MODIFY \`plan\` enum('free','maker','studio','atelier','pro') NOT NULL DEFAULT 'free';"
+    run_sql "0026 remap tenants.plan maker→pro" \
+      "UPDATE \`tenants\` SET \`plan\`='pro' WHERE \`plan\`='maker';"
+    run_sql "0026 remap tenants.plan studio→pro" \
+      "UPDATE \`tenants\` SET \`plan\`='pro' WHERE \`plan\`='studio';"
+    run_sql "0026 remap tenants.plan atelier→pro" \
+      "UPDATE \`tenants\` SET \`plan\`='pro' WHERE \`plan\`='atelier';"
+    run_sql "0026 finalize tenants.plan enum" \
+      "ALTER TABLE \`tenants\` MODIFY \`plan\` enum('free','pro') NOT NULL DEFAULT 'free';"
+  fi
+
+  if [ "$(col_exists orders channel)" = "0" ]; then
+    run_sql "0026 add orders.channel" \
+      "ALTER TABLE \`orders\` ADD \`channel\` enum('web','agent') NOT NULL DEFAULT 'web';"
+  else
+    ok "0026 orders.channel already exists"
+  fi
+
+  if [ "$(col_exists orders platform_fee_rappen)" = "0" ]; then
+    run_sql "0026 add orders.platform_fee_rappen" \
+      "ALTER TABLE \`orders\` ADD \`platform_fee_rappen\` int NOT NULL DEFAULT 0;"
+  else
+    ok "0026 orders.platform_fee_rappen already exists"
+  fi
+}

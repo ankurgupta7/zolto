@@ -87,6 +87,7 @@ export async function generateStyledProductPhoto(params: {
     const result = await generateImage({
       prompt: stylePrompt,
       originalImages: [{ url: product.imageUrl, mimeType: "image/jpeg" }],
+      tenantId,
     });
     if (!result.url) throw new Error("Image service returned no URL");
     imageUrl = result.url;
