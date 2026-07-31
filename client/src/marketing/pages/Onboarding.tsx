@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearch } from "wouter";
 import { trpc } from "@/lib/trpc";
-import { getLoginUrl } from "@/const";
 import { storeAdminUrl } from "@/lib/surface";
 import { Container } from "../components/Container";
+import { SignInOptions } from "@/components/SignInOptions";
 
 /**
  * Post-signup onboarding wizard (docs/ARCHITECTURE.md). The checklist is
@@ -17,10 +17,10 @@ const CLAIM_TOKEN_KEY = "zolto_claim_token";
 
 /**
  * The "become your store's admin" step. Signup stashes a one-time claim token in
- * sessionStorage; the owner then signs in (any Google account) and this redeems
- * the token via tenant.claimAdmin, linking their account to the store as admin.
- * The token — not the email — authorizes the claim, so a signup can't attach
- * itself to someone else's login.
+ * sessionStorage; the owner then signs in (Google, Apple, or an emailed magic
+ * link — see SignInOptions) and this redeems the token via tenant.claimAdmin,
+ * linking their account to the store as admin. The token — not the email —
+ * authorizes the claim, so a signup can't attach itself to someone else's login.
  */
 function ClaimStep({ store }: { store: string | null }) {
   const claimToken = useMemo(() => {
@@ -111,14 +111,10 @@ function ClaimStep({ store }: { store: string | null }) {
         <p className="mt-1 text-sm text-[var(--brand-muted-2)]">
           Sign in to become the admin of your new store.
         </p>
-        <a
-          href={getLoginUrl(
-            `/onboarding${store ? `?store=${encodeURIComponent(store)}` : ""}`,
-          )}
-          className="mt-3 inline-block rounded-md bg-[var(--brand-ink)] px-5 py-2.5 text-xs font-medium uppercase tracking-[0.12em] text-white transition-colors hover:bg-[var(--brand-ink-hover)]"
-        >
-          Sign in with Google
-        </a>
+        <SignInOptions
+          className="mt-3"
+          next={`/onboarding${store ? `?store=${encodeURIComponent(store)}` : ""}`}
+        />
       </div>
     );
   }

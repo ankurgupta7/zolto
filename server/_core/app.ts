@@ -1,6 +1,8 @@
 import express from "express";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
+import { registerAppleOAuthRoutes } from "./appleAuth";
+import { registerMagicLinkRoutes } from "./magicLink";
 import { registerUploadsProxy } from "./uploadsProxy";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
@@ -45,6 +47,8 @@ export async function createApp(): Promise<express.Express> {
 
   registerUploadsProxy(app);
   registerOAuthRoutes(app);
+  registerAppleOAuthRoutes(app);
+  registerMagicLinkRoutes(app);
   registerStripeConnectRoutes(app);
   // Surface a Connect misconfiguration at boot rather than letting a merchant
   // discover it by tapping "Connect Stripe".

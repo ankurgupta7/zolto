@@ -13,7 +13,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Link, useLocation } from "wouter";
-import { getLoginUrl } from "@/const";
+import { SignInOptions } from "@/components/SignInOptions";
 import {
   ArrowLeft,
   Check,
@@ -119,9 +119,20 @@ export default function Billing() {
     );
   }
 
+  // Rendered rather than redirected: a merchant whose session lapsed on the
+  // billing page keeps their place, and gets every sign-in method instead of
+  // being thrown at one provider mid-render.
   if (!isAuthenticated) {
-    window.location.href = getLoginUrl();
-    return null;
+    return (
+      <div className="max-w-sm mx-auto px-4 py-16 text-center">
+        <h2 className="font-serif text-2xl mb-3">Sign in to manage your plan</h2>
+        <p className="text-sm text-muted-foreground mb-8">
+          Your session has ended — sign in and we&rsquo;ll bring you right back
+          here.
+        </p>
+        <SignInOptions className="text-left" next={window.location.href} />
+      </div>
+    );
   }
 
   if (user?.role !== "admin") {

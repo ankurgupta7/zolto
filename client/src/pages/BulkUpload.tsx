@@ -2,7 +2,7 @@ import { useState, useRef, useCallback } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { getLoginUrl } from "@/const";
+import { SignInOptions } from "@/components/SignInOptions";
 import { PRODUCT_CATEGORIES, type ProductCategory } from "@shared/types";
 import { useTranslation } from "react-i18next";
 import {
@@ -612,12 +612,7 @@ export default function BulkUpload() {
           <h2 className="font-serif text-foreground text-2xl mb-4">
             {t("bulkUpload.adminRequired")}
           </h2>
-          <a
-            href={getLoginUrl()}
-            className="inline-flex items-center gap-2 bg-[var(--brand-ink)] text-white px-8 py-3.5 text-sm uppercase tracking-[0.15em] font-sans hover:bg-[var(--brand-ink-hover)] transition-colors"
-          >
-            {t("bulkUpload.signIn")}
-          </a>
+          <SignInOptions className="text-left" next={window.location.href} />
         </div>
       </div>
     );

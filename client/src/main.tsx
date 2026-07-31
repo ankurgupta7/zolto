@@ -8,7 +8,7 @@ import { httpBatchLink, TRPCClientError } from "@trpc/client";
 import { createRoot } from "react-dom/client";
 import superjson from "superjson";
 import App from "./App";
-import { getLoginUrl } from "./const";
+import { getSignInPath, SIGNIN_PATH } from "./const";
 import "./index.css";
 
 const queryClient = new QueryClient();
@@ -21,7 +21,15 @@ const redirectToLoginIfUnauthorized = (error: unknown) => {
 
   if (!isUnauthorized) return;
 
-  window.location.href = getLoginUrl();
+  // Already on the sign-in page — its own queries 401ing must not bounce it
+  // back to itself in a loop.
+  if (window.location.pathname === SIGNIN_PATH) return;
+
+  // The app's sign-in page, not a provider handshake: a lapsed session must
+  // not force whoever hits it through Google specifically. Carrying the
+  // current url means they resume where they were, instead of on the home
+  // page having lost their place.
+  window.location.href = getSignInPath(window.location.href);
 };
 
 queryClient.getQueryCache().subscribe((event) => {

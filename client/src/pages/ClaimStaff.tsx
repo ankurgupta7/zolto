@@ -1,12 +1,13 @@
 /**
  * Claim a staff invite — target of the /claim-staff?token=… link in invite
- * emails. Requires login (OAuth); on success the caller joins the tenant as
- * staff and lands on the admin panel.
+ * emails. Requires signing in first (any method); on success the caller joins
+ * the tenant as staff and lands on the admin panel.
  */
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
-import { getLoginUrl } from "@/const";
+import { getSignInPath } from "@/const";
+import { hardRedirect } from "@/lib/navigate";
 import { CheckCircle2, Loader2, XCircle } from "lucide-react";
 
 export default function ClaimStaff() {
@@ -30,8 +31,10 @@ export default function ClaimStaff() {
   useEffect(() => {
     if (loading || attempted.current) return;
     if (!isAuthenticated) {
-      // Round-trip through OAuth, back to this URL.
-      window.location.href = getLoginUrl();
+      // Sign in first, then come back HERE — the invite token only exists in
+      // this url, so dropping it would strand the invitee on the admin panel
+      // with the invite unclaimed.
+      hardRedirect(getSignInPath(window.location.href), { replace: true });
       return;
     }
     attempted.current = true;

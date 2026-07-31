@@ -32,6 +32,9 @@ import {
   getPhotoCreditHistory,
   addPhotoCreditEntry,
   recordPhotoGeneration,
+  getMagicLinkTokenByToken,
+  createMagicLinkToken,
+  consumeMagicLinkToken,
 } from "./db";
 
 describe("db helpers when the database is unavailable", () => {
@@ -105,6 +108,21 @@ describe("db helpers when the database is unavailable", () => {
       }),
     ).rejects.toThrow(/Database not available/);
     await expect(joinTenantAsStaff(1, 1)).rejects.toThrow(
+      /Database not available/,
+    );
+  });
+
+  it("magic link reads degrade to undefined, writes throw", async () => {
+    await expect(getMagicLinkTokenByToken("t")).resolves.toBeUndefined();
+    await expect(
+      createMagicLinkToken({
+        email: "x@a.example",
+        token: "t",
+        next: null,
+        expiresAt: new Date(),
+      }),
+    ).rejects.toThrow(/Database not available/);
+    await expect(consumeMagicLinkToken(1)).rejects.toThrow(
       /Database not available/,
     );
   });

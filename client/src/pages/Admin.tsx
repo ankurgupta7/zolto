@@ -29,7 +29,7 @@ import {
   CheckCircle2,
   Camera,
 } from "lucide-react";
-import { getLoginUrl } from "@/const";
+import { SignInOptions } from "@/components/SignInOptions";
 import { PRODUCT_CATEGORIES, type ProductCategory } from "@shared/types";
 import ProductImageManager from "@/components/ProductImageManager";
 import OnboardingChecklist from "@/components/OnboardingChecklist";
@@ -885,12 +885,7 @@ export default function Admin() {
           <p className="text-muted-foreground text-sm font-sans mb-8">
             Please sign in to access the admin panel.
           </p>
-          <a
-            href={getLoginUrl(window.location.href)}
-            className="inline-flex items-center gap-2 bg-[var(--brand-ink)] text-white px-8 py-3.5 text-sm uppercase tracking-[0.15em] font-sans hover:bg-[var(--brand-ink-hover)] transition-colors"
-          >
-            Sign In
-          </a>
+          <SignInOptions className="text-left" next={window.location.href} />
         </div>
       </div>
     );

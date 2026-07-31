@@ -232,6 +232,22 @@ export async function sendTransactionalEmail(opts: {
   return true;
 }
 
+// Passwordless sign-in link (server/_core/magicLink.ts). Same degrade-gracefully
+// contract as sendTransactionalEmail — returns false (doesn't throw) when
+// Resend isn't configured, so the caller can fall back to showing the link.
+export async function sendMagicLinkEmail(opts: {
+  to: string;
+  url: string;
+}): Promise<boolean> {
+  return sendTransactionalEmail({
+    to: opts.to,
+    subject: "Sign in to Zolto",
+    html: `<p>Click the link below to sign in to Zolto. It works once and expires in 15 minutes.</p>
+<p><a href="${escapeHtml(opts.url)}">Sign in to Zolto</a></p>
+<p>If you didn't request this, you can ignore this email.</p>`,
+  });
+}
+
 // ── Public API ────────────────────────────────────────────────────────────────
 export async function sendOrderReceipt(
   opts: OrderReceiptOptions,

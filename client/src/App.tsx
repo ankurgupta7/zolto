@@ -12,6 +12,7 @@ import Contact from "./pages/Contact";
 import Admin from "./pages/Admin";
 import Billing from "./pages/Billing";
 import ClaimStaff from "./pages/ClaimStaff";
+import SignIn from "./pages/SignIn";
 import SupportChat from "./components/SupportChat";
 import BulkUpload from "./pages/BulkUpload";
 import CsvImport from "./pages/CsvImport";
@@ -127,6 +128,10 @@ function StorefrontRouter() {
           <Route path="/impressum" component={Impressum} />
           <Route path="/faq" component={FAQ} />
           <Route path="/product/:id" component={ProductDetail} />
+          {/* Where every signed-out path in the store admin lands (see
+              const.ts getSignInPath) — offers all sign-in methods and returns
+              the merchant to ?next=. */}
+          <Route path="/signin" component={SignIn} />
           {ADMIN_NAV.map((item) => {
             const Page = ADMIN_PAGES[item.id];
             return (

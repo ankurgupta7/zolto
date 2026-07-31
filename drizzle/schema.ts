@@ -622,3 +622,29 @@ export const storageObjects = mysqlTable("storage_objects", {
 
 export type StorageObject = typeof storageObjects.$inferSelect;
 export type InsertStorageObject = typeof storageObjects.$inferInsert;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// MAGIC LINK TOKENS — passwordless email sign-in
+// ═══════════════════════════════════════════════════════════════════════════════
+// A one-time, short-lived token emailed to whatever address someone types in —
+// no tenant scope, since signing in isn't attached to a store yet (that happens
+// via tenant.claimAdmin, same as Google/Apple). Kept in its own table (rather
+// than overloading users.openId the way the pending-tenant-admin claim token
+// does — see tenant.ts createPendingTenantAdmin) because a magic-link identity
+// (`email:<address>`) persists across logins, unlike a pending-admin row whose
+// openId IS the token.
+export const magicLinkTokens = mysqlTable("magic_link_tokens", {
+  id: int("id").autoincrement().primaryKey(),
+  email: varchar("email", { length: 320 }).notNull(),
+  token: varchar("token", { length: 64 }).notNull().unique(),
+  // Sanitized post-login redirect target, stashed here (not a cookie) because
+  // the link is typically opened from a mail client, possibly in a different
+  // browser context than the one that requested it.
+  next: varchar("next", { length: 512 }),
+  expiresAt: timestamp("expiresAt").notNull(),
+  consumedAt: timestamp("consumedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type MagicLinkToken = typeof magicLinkTokens.$inferSelect;
+export type InsertMagicLinkToken = typeof magicLinkTokens.$inferInsert;

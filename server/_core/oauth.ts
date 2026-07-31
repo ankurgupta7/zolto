@@ -25,7 +25,10 @@ import { getPlatformRootDomain } from "./platformDomain";
 
 // Cookie that carries the post-login redirect target across the OAuth round-trip
 // (set on /login, consumed on /callback). Kept separate from the session cookie.
-const NEXT_COOKIE = "oauth_next";
+// Shared across every OAuth-style provider (Google, Apple) — only one such
+// round-trip is ever in flight per browser tab, so reusing the same cookie
+// name is safe and keeps the "where do I send you back" mechanism in one place.
+export const NEXT_COOKIE = "oauth_next";
 
 function isSafeNextString(raw: unknown): raw is string {
   if (typeof raw !== "string") return false;
@@ -103,29 +106,41 @@ function getConfig() {
 // a self-serve multi-tenant app. Falls back to the request's own origin only
 // when PUBLIC_BASE_URL isn't configured (e.g. a single-host self-hosted
 // deploy that hasn't set it).
-function getRedirectUri(req: Request): string {
+// Shared by every OAuth-style provider: resolves the one canonical origin the
+// round-trip always uses (see the redirect_uri comment above), independent of
+// which provider-specific callback path gets appended to it.
+export function getCanonicalOrigin(req: Request): string {
   const base = process.env.PUBLIC_BASE_URL?.trim();
   if (base) {
     try {
-      return `${new URL(base).origin}/api/oauth/callback`;
+      return new URL(base).origin;
     } catch {
       // fall through to the request-derived origin
     }
   }
   const proto = req.headers["x-forwarded-proto"] ?? req.protocol ?? "https";
   const host = req.headers["x-forwarded-host"] ?? req.headers.host ?? "";
-  return `${proto}://${host}/api/oauth/callback`;
+  return `${proto}://${host}`;
+}
+
+function getRedirectUri(req: Request): string {
+  return `${getCanonicalOrigin(req)}/api/oauth/callback`;
 }
 
 // ── Session JWT ───────────────────────────────────────────────────────────────
 
-async function signSessionJwt(
+// appId records which identity provider issued the session — informational
+// only (see server/_core/sdk.ts, which authenticates purely on openId), but
+// useful for support/debugging when a user has signed in via more than one
+// provider over time.
+export async function signSessionJwt(
   openId: string,
   name: string,
   secret: string,
+  appId: string = "google",
 ): Promise<string> {
   const key = new TextEncoder().encode(secret);
-  return new SignJWT({ openId, appId: "google", name })
+  return new SignJWT({ openId, appId, name })
     .setProtectedHeader({ alg: "HS256", typ: "JWT" })
     .setExpirationTime(Math.floor((Date.now() + ONE_YEAR_MS) / 1000))
     .sign(key);
