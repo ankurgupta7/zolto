@@ -319,10 +319,30 @@ async function main() {
   line(`  country / type:   ${acct.country} / ${acct.type}`);
 
   if (!acct.charges_enabled) {
+    const due = acct.requirements?.currently_due ?? [];
     fail(
-      `connected account ${account} cannot accept charges yet — finish its ` +
-        `Stripe onboarding first. Nothing below would be meaningful.`,
+      `connected account ${account} cannot accept charges yet, so nothing ` +
+        `below would be meaningful.\n\n` +
+        (due.length ? `Stripe still wants: ${due.join(", ")}\n\n` : "") +
+        "Finish its onboarding, or connect a fresh one through Zolto's own\n" +
+        "flow (see the note on account type below).",
     );
+  }
+
+  // Zolto links STANDARD accounts (server/stripeConnect.ts: OAuth authorize
+  // with scope=read_write). Verifying the fee against any other kind proves
+  // something production never does — application fees and who bears Stripe's
+  // processing cost both differ by account type — so a green run here could be
+  // a false pass. Warn rather than refuse: the run is still informative, it
+  // just isn't the thing we claim to have verified.
+  if (acct.type && acct.type !== "standard") {
+    line("");
+    line(`  ⚠ This is a '${acct.type}' account, not a Standard one.`);
+    line("    Zolto connects merchants as Standard accounts over OAuth, and");
+    line("    fee behaviour differs by type — so a pass here would NOT prove");
+    line("    the production path works. Treat the result as indicative only,");
+    line("    and re-run against an account linked through Zolto's own");
+    line("    'Connect Stripe' button before calling the fee verified.");
   }
 
   const created: string[] = [];
