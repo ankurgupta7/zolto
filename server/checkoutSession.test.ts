@@ -74,7 +74,7 @@ function run(
     tenant,
     productIds: [1],
     channel: "web",
-    baseUrl: "https://aurora.zolto.shop",
+    baseUrl: "https://aurora.zolto.ch",
     ...overrides,
   });
 }

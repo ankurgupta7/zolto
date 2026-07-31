@@ -63,6 +63,8 @@ describe("generateStyledProductPhoto", () => {
 
     expect(recordPhotoGeneration).toHaveBeenCalledWith(7, 5, "product:42");
     expect(generateImage).toHaveBeenCalledWith({
+      // The generated image is stored against this tenant's plan allowance.
+      tenantId: 7,
       prompt: "Clean catalogue shot on white background",
       originalImages: [
         { url: "https://cdn.example.com/ring.jpg", mimeType: "image/jpeg" },

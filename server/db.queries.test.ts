@@ -190,15 +190,34 @@ describe("product images", () => {
     expect(dbMock.insert).toHaveBeenCalledTimes(1);
   });
 
-  it("deleteProductImage deletes a single image", async () => {
+  // Deleting an image now reads its storage key first, so the tenant's plan
+  // allowance can be released too — otherwise a merchant who cleared their
+  // catalogue would stay "full" forever and eventually be unable to upload.
+  it("deleteProductImage deletes the image and releases its quota", async () => {
+    selectReturns([{ imageKey: "product-images/3/a_1234.jpg" }]);
     deleteReturns();
     await db.deleteProductImage(7, 3);
-    expect(dbMock.delete).toHaveBeenCalledTimes(1);
+    // One delete for the image row, one for its storage-ledger row.
+    expect(dbMock.delete).toHaveBeenCalledTimes(2);
   });
 
-  it("deleteAllProductImages deletes every image for a product", async () => {
+  it("deleteAllProductImages releases the quota for every image", async () => {
+    selectReturns([
+      { imageKey: "product-images/5/a_1.jpg" },
+      { imageKey: "product-images/5/b_2.jpg" },
+    ]);
     deleteReturns();
     await db.deleteAllProductImages(7, 5);
+    // The images row plus one ledger row per image freed.
+    expect(dbMock.delete).toHaveBeenCalledTimes(3);
+  });
+
+  it("still deletes the image when it has no storage-ledger row", async () => {
+    // Objects written before migration 0026 were never metered, so there is
+    // nothing to release. The image must still go.
+    selectReturns([]);
+    deleteReturns();
+    await db.deleteProductImage(7, 3);
     expect(dbMock.delete).toHaveBeenCalledTimes(1);
   });
 });

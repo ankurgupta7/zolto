@@ -602,12 +602,12 @@ describe("tenant.setTwintQr", () => {
       caller.setTwintQr({ imageData: `data:image/png;base64,${png}` }),
     ).resolves.toEqual({ twintQrUrl: "/uploads/twint-qr/42/1_ab12.png" });
 
-    const [key, buffer, mime, tenantId] = storagePut.mock.calls[0];
+    const [tenantId, key, buffer, mime] = storagePut.mock.calls[0];
+    // The leading tenantId is what makes storagePut enforce PLANS[].storageGb.
+    expect(tenantId).toBe(42);
     expect(String(key)).toMatch(/^twint-qr\/42\//);
     expect((buffer as Buffer).toString()).toBe("fake-png");
     expect(mime).toBe("image/png");
-    // The 4th arg is what makes storagePut enforce PLANS[].storageGb.
-    expect(tenantId).toBe(42);
     expect(set).toHaveBeenCalledWith(
       expect.objectContaining({
         twintQrUrl: "/uploads/twint-qr/42/1_ab12.png",

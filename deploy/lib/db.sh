@@ -54,6 +54,19 @@ idx_exists() { # idx_exists TABLE INDEX_NAME
     AND CONSTRAINT_NAME='$2';" 2>/dev/null || echo 0
 }
 
+# Helper: does a PLAIN (non-constraint) index exist?
+#
+# idx_exists above queries TABLE_CONSTRAINTS, which only ever contains PRIMARY
+# KEY, UNIQUE and FOREIGN KEY entries — an ordinary CREATE INDEX never appears
+# there. Probing for one with idx_exists therefore always answers 0, so the
+# migration would re-issue CREATE INDEX on every deploy and fail on the second
+# run. STATISTICS is the table that lists every index, constraint-backed or not.
+plain_index_exists() { # plain_index_exists TABLE INDEX_NAME
+  $MYSQL -se "${MYSQL_LOCK_TIMEOUT_SQL}SELECT COUNT(*) FROM information_schema.STATISTICS
+    WHERE TABLE_SCHEMA='${MYSQL_DATABASE}' AND TABLE_NAME='$1'
+    AND INDEX_NAME='$2';" 2>/dev/null || echo 0
+}
+
 # Helper: is a column currently nullable? (prints YES / NO / empty if absent)
 col_nullable() { # col_nullable TABLE COLUMN
   $MYSQL -se "${MYSQL_LOCK_TIMEOUT_SQL}SELECT IS_NULLABLE FROM information_schema.COLUMNS
@@ -454,8 +467,42 @@ migrate_0025_tenant_secrets() {
   fi
 }
 
+# ── 0026: per-tenant storage ledger ──────────────────────────────────────────
+# Creates storage_objects, which backs the "5 GB / 50 GB photo storage" on the
+# plan cards. Before this nothing enforced either figure — the only limit was
+# express.json's 50 MB per request — so a free tenant could upload without
+# bound. server/storage.ts storagePut now takes a tenantId, checks the plan
+# allowance, and records a row here.
+#
+# No backfill: objects written before this migration are unmetered and stay
+# that way. Charging a merchant for photos we never measured would be worse
+# than starting their ledger at zero, and at current volumes the difference is
+# noise. Idempotent.
+migrate_0026_storage_objects() {
+  if [ "$(tbl_exists storage_objects)" = "0" ]; then
+    run_sql "0026 storage_objects table" "
+      CREATE TABLE IF NOT EXISTS \`storage_objects\` (
+        \`id\`          int AUTO_INCREMENT NOT NULL,
+        \`tenant_id\`   int NOT NULL,
+        \`storage_key\` varchar(512) NOT NULL,
+        \`bytes\`       int NOT NULL,
+        \`createdAt\`   timestamp NOT NULL DEFAULT (now()),
+        CONSTRAINT \`storage_objects_id\` PRIMARY KEY(\`id\`)
+      );"
+  else
+    ok "0026 storage_objects already exists"
+  fi
+
+  if [ "$(plain_index_exists storage_objects storage_objects_tenant_idx)" = "0" ]; then
+    run_sql "0026 index storage_objects(tenant_id)" \
+      "CREATE INDEX \`storage_objects_tenant_idx\` ON \`storage_objects\` (\`tenant_id\`);"
+  else
+    ok "0026 storage_objects_tenant_idx already exists"
+  fi
+}
+
 # ─────────────────────────────────────────────────────────────────────────────
-# Migration 0026: two-tier pricing pivot (free/pro) + order channel/fee columns.
+# Migration 0027: two-tier pricing pivot (free/pro) + order channel/fee columns.
 #
 # Ships drizzle/0008_two_tier_pricing.sql, which update.sh never picked up —
 # checkout.ts and billing.ts have referenced orders.channel and
@@ -466,38 +513,38 @@ migrate_0025_tenant_secrets() {
 # subscriptions are untouched by this step — see the legacy-subscriber
 # runbook in docs/planning/pricing-pivot-agent-commerce.md §8. Idempotent.
 # ─────────────────────────────────────────────────────────────────────────────
-migrate_0026_two_tier_pricing() {
+migrate_0027_two_tier_pricing() {
   local plan_enum
   plan_enum=$($MYSQL -se "${MYSQL_LOCK_TIMEOUT_SQL}SELECT COLUMN_TYPE FROM information_schema.COLUMNS
     WHERE TABLE_SCHEMA='${MYSQL_DATABASE}' AND TABLE_NAME='tenants' AND COLUMN_NAME='plan';" 2>/dev/null || echo "")
 
   if echo "$plan_enum" | grep -q "'pro'"; then
-    ok "0026 tenants.plan already has 'pro'"
+    ok "0027 tenants.plan already has 'pro'"
   else
     # Widen first so old and new values coexist during the remap.
-    run_sql "0026 widen tenants.plan enum" \
+    run_sql "0027 widen tenants.plan enum" \
       "ALTER TABLE \`tenants\` MODIFY \`plan\` enum('free','maker','studio','atelier','pro') NOT NULL DEFAULT 'free';"
-    run_sql "0026 remap tenants.plan maker→pro" \
+    run_sql "0027 remap tenants.plan maker→pro" \
       "UPDATE \`tenants\` SET \`plan\`='pro' WHERE \`plan\`='maker';"
-    run_sql "0026 remap tenants.plan studio→pro" \
+    run_sql "0027 remap tenants.plan studio→pro" \
       "UPDATE \`tenants\` SET \`plan\`='pro' WHERE \`plan\`='studio';"
-    run_sql "0026 remap tenants.plan atelier→pro" \
+    run_sql "0027 remap tenants.plan atelier→pro" \
       "UPDATE \`tenants\` SET \`plan\`='pro' WHERE \`plan\`='atelier';"
-    run_sql "0026 finalize tenants.plan enum" \
+    run_sql "0027 finalize tenants.plan enum" \
       "ALTER TABLE \`tenants\` MODIFY \`plan\` enum('free','pro') NOT NULL DEFAULT 'free';"
   fi
 
   if [ "$(col_exists orders channel)" = "0" ]; then
-    run_sql "0026 add orders.channel" \
+    run_sql "0027 add orders.channel" \
       "ALTER TABLE \`orders\` ADD \`channel\` enum('web','agent') NOT NULL DEFAULT 'web';"
   else
-    ok "0026 orders.channel already exists"
+    ok "0027 orders.channel already exists"
   fi
 
   if [ "$(col_exists orders platform_fee_rappen)" = "0" ]; then
-    run_sql "0026 add orders.platform_fee_rappen" \
+    run_sql "0027 add orders.platform_fee_rappen" \
       "ALTER TABLE \`orders\` ADD \`platform_fee_rappen\` int NOT NULL DEFAULT 0;"
   else
-    ok "0026 orders.platform_fee_rappen already exists"
+    ok "0027 orders.platform_fee_rappen already exists"
   fi
 }

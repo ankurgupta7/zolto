@@ -18,7 +18,7 @@ import { normalizeBaseUrl } from "./marketing";
 /** Who the store is, as far as structured data is concerned. */
 export interface StorefrontIdentity {
   storeName: string;
-  /** Absolute origin for this storefront, e.g. "https://aurora.zolto.shop". */
+  /** Absolute origin for this storefront, e.g. "https://aurora.zolto.ch". */
   baseUrl: string;
   /** ISO 4217 code, any case — normalized to upper case on output. */
   currency: string;

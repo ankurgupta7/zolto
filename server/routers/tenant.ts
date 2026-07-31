@@ -411,10 +411,10 @@ export const tenantRouter = router({
         // Tenant-scoped so the upload counts against the plan's storage cap
         // like every other image (server/storage.ts).
         const { url } = await storagePut(
+          ctx.tenant.id,
           `twint-qr/${ctx.tenant.id}/${Date.now()}.${ext}`,
           buffer,
           input.mimeType,
-          ctx.tenant.id,
         );
         twintQrUrl = url;
       }

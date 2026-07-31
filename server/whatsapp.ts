@@ -3,7 +3,7 @@ import type { Request, Response } from "express";
 import { PRODUCT_CATEGORIES, type ProductCategory } from "@shared/const";
 import { invokeLLM } from "./_core/llm";
 import { notifyOwner } from "./_core/notification";
-import { createProduct } from "./db";
+import { createProduct, } from "./db";
 import { storagePut } from "./storage";
 import type { TenantBranding } from "./_core/email";
 import { tenants, tenantSettings } from "../drizzle/schema";
@@ -106,13 +106,13 @@ export async function handleWebhookMessage(req: Request, res: Response) {
       textContent = message.image?.caption ?? "";
       const mediaId = message.image?.id;
       if (mediaId) {
-        imageUrl = await downloadWhatsAppMedia(mediaId, tenantId);
+        imageUrl = await downloadWhatsAppMedia(tenantId, mediaId);
       }
     } else if (messageType === "document") {
       textContent = message.document?.caption ?? "";
       const mediaId = message.document?.id;
       if (mediaId) {
-        imageUrl = await downloadWhatsAppMedia(mediaId, tenantId);
+        imageUrl = await downloadWhatsAppMedia(tenantId, mediaId);
       }
     }
 
@@ -256,8 +256,8 @@ Return ONLY valid JSON, no markdown, no explanation.`,
 // ─── Media Download ───────────────────────────────────────────────────────────
 
 async function downloadWhatsAppMedia(
+  tenantId: number,
   mediaId: string,
-  tenantId?: number,
 ): Promise<string | null> {
   if (!WHATSAPP_TOKEN) {
     console.warn("[WhatsApp] No WHATSAPP_TOKEN set, cannot download media");
@@ -291,10 +291,10 @@ async function downloadWhatsAppMedia(
 
     // Step 3: Upload to S3
     const { url } = await storagePut(
+      tenantId,
       key,
       Buffer.from(mediaRes.data),
       contentType,
-      tenantId,
     );
     return url;
   } catch (err) {

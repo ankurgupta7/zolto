@@ -178,7 +178,14 @@ export const PLANS: PlatformPlan[] = [
     storageGb: 5,
     features: [
       "Full POS — Tap to Pay, TWINT QR, cash — CHF 0 on in-person sales",
-      "Online store on a zolto.shop address",
+      // Storefronts live on subdomains of the platform root, which is derived
+      // from PUBLIC_BASE_URL (server/_core/platformDomain.ts) and is zolto.ch
+      // in every deploy. This once named a different domain the platform does
+      // not serve; because FEATURES feeds the pricing card, /llms.txt AND the
+      // MCP tools, that pointed humans and AI agents alike at an address which
+      // resolved to nothing. Only ever name a domain Zolto actually answers on
+      // — platformDomains.test.ts enforces it.
+      "Online store on your own zolto.ch address",
       "Real-time POS ↔ online inventory sync",
       "AI descriptions & translation (fair use)",
       "5 AI photo shots / month",
@@ -278,6 +285,75 @@ export function monthlyCostAt(onlineSalesChf: number): MonthlyCostBreakdown {
 
 export function formatPrice(chf: number): string {
   return chf === 0 ? "CHF 0" : `CHF ${chf}`;
+}
+
+/**
+ * What each plan unlocks, as booleans the code can gate on — the machine-readable
+ * counterpart to each plan's `features` copy above.
+ *
+ * This lives in shared/ rather than on the server because BOTH planes need it.
+ * It used to live only in server/_core/trpc.ts, so every admin screen re-derived
+ * the same rule by hand — `Billing.tsx` called its copy "mirrors PLAN_FEATURES"
+ * in a comment. Mirrors rot silently: when the four-tier model collapsed to
+ * Free/Pro, `Domain.tsx` was still gating on a Set of the retired tier names, so
+ * it matched no plan at all and showed paying Pro merchants an upsell for the
+ * custom domain they had already bought. One object, read by the gate and the
+ * enforcement alike, is what stops that recurring.
+ *
+ * Scale limits (maxProducts, storageGb, aiPhotoAllowancePerMonth) are NOT
+ * duplicated here — PLANS owns those. The 1% online/agent fee is owned by
+ * PLANS[].onlineFeeBps and applied in checkoutSession.ts, not gated here.
+ */
+export const PLAN_FEATURES = {
+  // Free: the whole commerce engine — store, full POS, inventory sync, the
+  // agent layer (llms.txt/MCP/chat, the discovery wedge) and a taste of AI.
+  // Monetized via the 1% fee on online/agent orders, not by gating.
+  free: {
+    maxStaff: 1,
+    customDomain: false,
+    whiteLabel: false,
+    analytics: "basic",
+    multiCurrency: false,
+    prioritySupport: false,
+    pos: true,
+    onlineStore: true,
+  },
+  // Pro (CHF 25/mo): removes the 1% fee, unmetered AI, and everything a
+  // maker selling online every week needs — domain, team, analytics, support.
+  pro: {
+    maxStaff: 3,
+    customDomain: true,
+    whiteLabel: true,
+    analytics: "advanced",
+    multiCurrency: true,
+    prioritySupport: true,
+    pos: true,
+    onlineStore: true,
+  },
+} as const;
+
+/**
+ * A plan's storage allowance in bytes, from the GB figure on its pricing card.
+ *
+ * Binary GB (1024³) to match how object sizes are reported, so "5 GB" on the
+ * card and the number the quota compares against are the same quantity.
+ */
+export function storageBytesForPlan(plan: string): number {
+  const p = PLANS.find((x) => x.id === plan) ?? PLANS.find((x) => x.id === "free")!;
+  return p.storageGb * 1024 * 1024 * 1024;
+}
+
+export type PlanId = keyof typeof PLAN_FEATURES;
+export type PlanFeature = keyof typeof PLAN_FEATURES.free;
+
+/**
+ * Features for a plan id that may have come from the database or a URL, where
+ * a retired id (maker/studio/atelier) or nonsense can still show up. Falls back
+ * to Free rather than throwing: under-granting a feature is recoverable, and
+ * silently treating an unknown plan as Pro would give away paid features.
+ */
+export function featuresForPlan(plan: string): (typeof PLAN_FEATURES)[PlanId] {
+  return PLAN_FEATURES[plan as PlanId] ?? PLAN_FEATURES.free;
 }
 
 /**

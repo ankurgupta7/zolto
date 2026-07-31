@@ -10,7 +10,7 @@ import type { ProductSeo, StorefrontIdentity } from "@shared/storefront";
 
 const identity: StorefrontIdentity = {
   storeName: "Aurora Atelier",
-  baseUrl: "https://aurora.zolto.shop",
+  baseUrl: "https://aurora.zolto.ch",
   currency: "chf",
   description: "Handmade pieces from Zurich.",
   logoUrl: null,
@@ -220,7 +220,7 @@ describe("injectStorefrontSeo", () => {
       data({ product: product() }),
     );
     expect(out).toContain(
-      '<link rel="canonical" href="https://aurora.zolto.shop/product/7" />',
+      '<link rel="canonical" href="https://aurora.zolto.ch/product/7" />',
     );
     expect(out).toContain('<script type="application/ld+json">');
     expect(out).toContain('"@type":"Product"');

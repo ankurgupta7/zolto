@@ -17,8 +17,12 @@ import {
   PlanGate,
 } from "@/components/admin/ui";
 import { useTenantSettings } from "@/components/admin/useTenantSettings";
-
-const MAKER_OR_ABOVE = new Set(["maker", "studio", "atelier"]);
+// Gate on the same object the server enforces (checkFeature("customDomain")),
+// not a hand-copied list. This screen used to test
+// `new Set(["maker","studio","atelier"])` — the retired four-tier ids — so
+// after the Free/Pro pivot it matched NO plan, and every paying Pro merchant
+// was shown an upsell for the custom domain they had already bought.
+import { featuresForPlan } from "@shared/platform";
 
 export default function Domain() {
   const { tenant, settings, invalidate } = useTenantSettings();
@@ -39,7 +43,7 @@ export default function Domain() {
   });
 
   const plan = tenant?.plan ?? "free";
-  if (tenant && !MAKER_OR_ABOVE.has(plan)) {
+  if (tenant && !featuresForPlan(plan).customDomain) {
     return (
       <div>
         <PageHeader

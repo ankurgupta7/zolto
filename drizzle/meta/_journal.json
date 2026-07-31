@@ -68,8 +68,8 @@
     {
       "idx": 9,
       "version": "5",
-      "when": 1785636000000,
-      "tag": "0010_tenant_storage_cap",
+      "when": 1785600000000,
+      "tag": "0010_storage_quota",
       "breakpoints": true
     },
     {

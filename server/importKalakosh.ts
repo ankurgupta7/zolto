@@ -93,9 +93,9 @@ function extensionFor(url: string, contentType: string | null): string {
 
 /** Downloads a product image and re-hosts it in this deployment's own storage. */
 async function rehostImage(
+  tenantId: number,
   imageUrl: string,
   fetchImpl: typeof fetch,
-  tenantId?: number,
 ): Promise<{ imageKey: string; imageUrl: string } | null> {
   try {
     const hostname = new URL(imageUrl).hostname;
@@ -109,10 +109,10 @@ async function rehostImage(
     const buffer = Buffer.from(await response.arrayBuffer());
     const key = `import/kalakosh/${Date.now()}.${extensionFor(imageUrl, contentType)}`;
     const { key: storedKey, url } = await storagePut(
+      tenantId,
       key,
       buffer,
       contentType ?? "image/jpeg",
-      tenantId,
     );
     return { imageKey: storedKey, imageUrl: url };
   } catch (err) {
@@ -175,7 +175,7 @@ export async function importKalakoshCatalog(
 
     try {
       const image = remote.imageUrl
-        ? await rehostImage(remote.imageUrl, fetchImpl, tenant.id)
+        ? await rehostImage(tenant.id, remote.imageUrl, fetchImpl)
         : null;
 
       await createProduct({

@@ -1,5 +1,5 @@
 #!/bin/bash
-# deploy/lib/two-tier-pricing-migration.test.sh — tests for migrate_0026_two_tier_pricing.
+# deploy/lib/two-tier-pricing-migration.test.sh — tests for migrate_0027_two_tier_pricing.
 #
 # Plain bash, no framework and no real DB. Sources db.sh and drives the
 # migration with a fake $MYSQL that answers the information_schema probes from
@@ -63,7 +63,7 @@ MYSQL="fake_mysql"
 echo "Scenario A — stale database (pre-pivot plan enum, missing order columns):"
 FAKE_PLAN_ENUM="enum('free','maker','studio','atelier')" FAKE_CHANNEL_EXISTS=0 FAKE_FEE_COL_EXISTS=0
 : > "$MUT_LOG_FILE"
-migrate_0026_two_tier_pricing
+migrate_0027_two_tier_pricing
 A_LOG="$(cat "$MUT_LOG_FILE")"
 assert_contains "$A_LOG" "MODIFY \`plan\` enum('free','maker','studio','atelier','pro') NOT NULL DEFAULT 'free'" \
   "widens tenants.plan to the union of old+new values"
@@ -81,7 +81,7 @@ assert_contains "$A_LOG" "ALTER TABLE \`orders\` ADD \`platform_fee_rappen\` int
 echo "Scenario B — up-to-date database (idempotency):"
 FAKE_PLAN_ENUM="enum('free','pro')" FAKE_CHANNEL_EXISTS=1 FAKE_FEE_COL_EXISTS=1
 : > "$MUT_LOG_FILE"
-migrate_0026_two_tier_pricing
+migrate_0027_two_tier_pricing
 B_LOG="$(cat "$MUT_LOG_FILE")"
 assert_not_contains "$B_LOG" "MODIFY \`plan\`" "no plan enum rewrite on re-run"
 assert_not_contains "$B_LOG" "UPDATE \`tenants\`" "no remap on re-run"

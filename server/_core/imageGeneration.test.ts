@@ -51,12 +51,14 @@ describe("generateImage", () => {
     }));
     vi.stubGlobal("fetch", fetchSpy);
 
-    const res = await generateImage({ prompt: "a serene landscape" });
+    const res = await generateImage({ tenantId: 7, prompt: "a serene landscape" });
     expect(res.url).toBe("https://cdn/generated.png");
     expect(fetchSpy.mock.calls[0][0].toString()).toContain(
       "images.v1.ImageService/GenerateImage",
     );
-    const [, buffer, mime] = storagePut.mock.calls[0];
+    // storagePut now leads with the tenant whose allowance this image costs.
+    const [tenantId, , buffer, mime] = storagePut.mock.calls[0];
+    expect(tenantId).toBe(7);
     expect(Buffer.isBuffer(buffer)).toBe(true);
     expect(mime).toBe("image/png");
   });
@@ -68,6 +70,7 @@ describe("generateImage", () => {
     }));
     vi.stubGlobal("fetch", fetchSpy);
     await generateImage({
+      tenantId: 7,
       prompt: "add a rainbow",
       originalImages: [{ url: "https://x/y.jpg", mimeType: "image/jpeg" }],
     });

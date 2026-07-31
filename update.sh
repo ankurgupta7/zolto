@@ -550,37 +550,33 @@ migrate_0024_staff_invites_and_photo_credits
 # see migrate_0025_tenant_secrets in deploy/lib/db.sh.
 migrate_0025_tenant_secrets
 
-# ── 0026: two-tier pricing pivot (free/pro) + order channel/fee columns ──────
+# ── 0026: per-tenant storage ledger ──────────────────────────────────────────
+# Creates storage_objects so the "5 GB / 50 GB photo storage" on the plan cards
+# is actually enforced — until now nothing was, and a free tenant could upload
+# without bound. Idempotent; see migrate_0026_storage_objects in
+# deploy/lib/db.sh.
+migrate_0026_storage_objects
+
+# ── 0027: two-tier pricing pivot (free/pro) + order channel/fee columns ──────
 # Ships drizzle/0008_two_tier_pricing.sql, which update.sh never picked up —
 # checkout.ts and billing.ts have referenced these columns since the pivot
-# shipped. Idempotent; see migrate_0026_two_tier_pricing in deploy/lib/db.sh.
-migrate_0026_two_tier_pricing
+# shipped. Idempotent; see migrate_0027_two_tier_pricing in deploy/lib/db.sh.
+migrate_0027_two_tier_pricing
 
-# ── 0027: Italian product locale (nameIt / descriptionIt) ────────────────────
+# ── 0028: Italian product locale (nameIt / descriptionIt) ────────────────────
 # Ships drizzle/0009_product_locale_it.sql, also missing from this path.
 if [ "$(col_exists products nameIt)" = "0" ]; then
-  run_sql "0027 add products.nameIt" \
+  run_sql "0028 add products.nameIt" \
     "ALTER TABLE \`products\` ADD \`nameIt\` varchar(255) NULL;"
 else
-  ok "0027 products.nameIt already exists"
+  ok "0028 products.nameIt already exists"
 fi
 
 if [ "$(col_exists products descriptionIt)" = "0" ]; then
-  run_sql "0027 add products.descriptionIt" \
+  run_sql "0028 add products.descriptionIt" \
     "ALTER TABLE \`products\` ADD \`descriptionIt\` text NULL;"
 else
-  ok "0027 products.descriptionIt already exists"
-fi
-
-# ── 0028: tenant storage cap counter ──────────────────────────────────────────
-# Ships drizzle/0010_tenant_storage_cap.sql. Cumulative photo-storage bytes,
-# incremented by storagePut() alongside the PLANS[].storageGb cap check —
-# see server/storage.ts.
-if [ "$(col_exists tenants storage_bytes_used)" = "0" ]; then
-  run_sql "0028 add tenants.storage_bytes_used" \
-    "ALTER TABLE \`tenants\` ADD \`storage_bytes_used\` bigint NOT NULL DEFAULT 0;"
-else
-  ok "0028 tenants.storage_bytes_used already exists"
+  ok "0028 products.descriptionIt already exists"
 fi
 
 # ── 0029: shared rate-limit store ─────────────────────────────────────────────
