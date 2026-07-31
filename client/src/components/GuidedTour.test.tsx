@@ -97,6 +97,124 @@ describe("GuidedTour", () => {
   });
 });
 
+/**
+ * Positioning regressions. `.page-enter` animates `transform` with
+ * `animation-fill-mode: forwards`, so the admin page permanently carries a
+ * transform — which makes it the containing block for `position: fixed`
+ * descendants. Mounted in place, the overlay is positioned against the
+ * full-height page element rather than the viewport, so the spotlight sits
+ * offset from its target and scrolls away with the page. The portal is what
+ * keeps viewport coordinates meaning what they say.
+ */
+describe("GuidedTour positioning", () => {
+  function stubRect(el: Element, rect: Partial<DOMRect>) {
+    const full = { top: 0, left: 0, width: 0, height: 0, ...rect };
+    el.getBoundingClientRect = () =>
+      ({
+        ...full,
+        right: full.left + full.width,
+        bottom: full.top + full.height,
+        x: full.left,
+        y: full.top,
+        toJSON: () => full,
+      }) as DOMRect;
+  }
+
+  it("renders on document.body, outside any transformed ancestor", async () => {
+    render(
+      // Same shape as Admin.tsx: the tour lives inside the transformed page.
+      <div className="page-enter">
+        <button type="button" data-tour="a">
+          A
+        </button>
+        <GuidedTour tourId="test" steps={[STEPS[0]]} />
+      </div>,
+    );
+    const dialog = await screen.findByRole("dialog");
+    expect(dialog.parentElement).toBe(document.body);
+    expect(dialog.closest(".page-enter")).toBeNull();
+  });
+
+  it("spotlights the target at its viewport coordinates", async () => {
+    const { container } = renderTour([STEPS[0]]);
+    stubRect(container.querySelector('[data-tour="a"]') as Element, {
+      top: 420,
+      left: 96,
+      width: 160,
+      height: 40,
+    });
+    await waitFor(() => {
+      const spot = screen.getByTestId("tour-spotlight");
+      // 6px of padding around the target on every side.
+      expect(spot.style.top).toBe("414px");
+      expect(spot.style.left).toBe("90px");
+      expect(spot.style.width).toBe("172px");
+      expect(spot.style.height).toBe("52px");
+    });
+  });
+
+  it("follows the target when the page scrolls under it", async () => {
+    const { container } = renderTour([STEPS[0]]);
+    const target = container.querySelector('[data-tour="a"]') as Element;
+    stubRect(target, { top: 500, left: 20, width: 100, height: 30 });
+    await waitFor(() =>
+      expect(screen.getByTestId("tour-spotlight").style.top).toBe("494px"),
+    );
+
+    // Scroll the page 300px down: the target's viewport-relative top drops by
+    // 300, and the spotlight must move with it rather than staying put. No
+    // scroll event is dispatched on purpose — iOS coalesces them away during
+    // momentum scrolling, so tracking has to hold without one.
+    stubRect(target, { top: 200, left: 20, width: 100, height: 30 });
+    await waitFor(() =>
+      expect(screen.getByTestId("tour-spotlight").style.top).toBe("194px"),
+    );
+  });
+
+  it("prefers a rendered target over a hidden duplicate anchor", async () => {
+    const { container } = render(
+      <div>
+        {/* e.g. a mobile-only variant that is display:none on this breakpoint */}
+        <span data-tour="dup">hidden</span>
+        <button type="button" data-tour="dup">
+          shown
+        </button>
+        <GuidedTour
+          tourId="test"
+          steps={[{ target: '[data-tour="dup"]', title: "Dup", body: "b" }]}
+        />
+      </div>,
+    );
+    const [hidden, shown] = Array.from(
+      container.querySelectorAll('[data-tour="dup"]'),
+    );
+    stubRect(hidden, { top: 0, left: 0, width: 0, height: 0 });
+    stubRect(shown, { top: 300, left: 40, width: 120, height: 44 });
+    await waitFor(() =>
+      expect(screen.getByTestId("tour-spotlight").style.top).toBe("294px"),
+    );
+  });
+
+  it("shrinks the tooltip to fit a narrow phone viewport", async () => {
+    const original = window.innerWidth;
+    Object.defineProperty(window, "innerWidth", {
+      value: 320,
+      configurable: true,
+    });
+    try {
+      renderTour([STEPS[0]]);
+      const tip = await screen.findByRole("group");
+      // 320 design width would overflow a 320px screen; 8px margins each side.
+      await waitFor(() => expect(tip.style.width).toBe("304px"));
+    } finally {
+      Object.defineProperty(window, "innerWidth", {
+        value: original,
+        configurable: true,
+      });
+    }
+  });
+});
+
 describe("admin tour config", () => {
   it("targets only data-tour selectors and has content per step", async () => {
     const { ADMIN_TOUR_STEPS, ADMIN_TOUR_ID } = await import("@/lib/adminTour");

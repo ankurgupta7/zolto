@@ -5,11 +5,17 @@ import {
   useRef,
   useState,
 } from "react";
+import { createPortal } from "react-dom";
 import {
   computeTooltipPosition,
   isTourCompleted,
   markTourCompleted,
   nextStepIndex,
+  positionsEqual,
+  rectsEqual,
+  TOOLTIP_FALLBACK_HEIGHT,
+  tooltipWidthFor,
+  type Rect,
   type TourStep,
   type TooltipPosition,
 } from "@/lib/tour";
@@ -25,12 +31,32 @@ interface GuidedTourProps {
   onFinish?: () => void;
 }
 
-const TIP = { width: 320, height: 168 };
+/**
+ * Resolve a step's target, preferring a *rendered* match. Several anchors are
+ * duplicated across responsive variants (e.g. a mobile and a desktop "Connect
+ * Stripe"), and `querySelector` would happily hand back the hidden one — whose
+ * zero-size rect would park the spotlight in the top-left corner.
+ */
+function findTarget(selector: string): Element | null {
+  const matches = Array.from(document.querySelectorAll(selector));
+  for (const el of matches) {
+    const r = el.getBoundingClientRect();
+    if (r.width > 0 && r.height > 0) return el;
+  }
+  return matches[0] ?? null;
+}
 
 /**
  * A lightweight coach-mark / product-tour overlay: dims the page, spotlights one
  * target element at a time, and shows an arrow + tooltip with Back / Next / Skip.
  * Purely presentational logic lives in `@/lib/tour` (tested there).
+ *
+ * Rendered through a portal on `document.body`: any ancestor with a `transform`
+ * (`.page-enter`'s fadeUp animation is one, and it uses `forwards`, so the
+ * transform sticks) becomes the containing block for `position: fixed`
+ * descendants. Mounted in place, the overlay would be positioned against the
+ * full-height page element instead of the viewport, so the spotlight would sit
+ * offset from its target and scroll away with the page.
  */
 export default function GuidedTour({
   tourId,
@@ -41,9 +67,12 @@ export default function GuidedTour({
 }: GuidedTourProps) {
   const [active, setActive] = useState(false);
   const [index, setIndex] = useState(0);
-  const [rect, setRect] = useState<DOMRect | null>(null);
+  const [rect, setRect] = useState<Rect | null>(null);
   const [pos, setPos] = useState<TooltipPosition | null>(null);
-  const rafRef = useRef<number | null>(null);
+  const [tipWidth, setTipWidth] = useState(() =>
+    tooltipWidthFor(typeof window === "undefined" ? 360 : window.innerWidth),
+  );
+  const tipRef = useRef<HTMLDivElement | null>(null);
 
   const step = steps[index];
 
@@ -79,10 +108,12 @@ export default function GuidedTour({
     setActive(true);
   }, [startSignal, steps.length]);
 
-  // Measure the current target and (re)compute the tooltip position.
+  // Measure the current target and (re)compute the tooltip position. All
+  // coordinates are viewport-relative, matching the `position: fixed` boxes we
+  // render them into.
   const measure = useCallback(() => {
     if (!step) return;
-    const el = document.querySelector(step.target);
+    const el = findTarget(step.target);
     if (!el) {
       // Target not on the page — skip this step rather than stranding the user.
       const next = nextStepIndex(index, steps.length);
@@ -91,33 +122,48 @@ export default function GuidedTour({
       return;
     }
     const r = el.getBoundingClientRect();
-    setRect(r);
-    setPos(
-      computeTooltipPosition(
-        { top: r.top, left: r.left, width: r.width, height: r.height },
-        TIP,
-        { width: window.innerWidth, height: window.innerHeight },
-        step.placement ?? "bottom",
-      ),
+    const next: Rect = {
+      top: r.top,
+      left: r.left,
+      width: r.width,
+      height: r.height,
+    };
+    const viewport = { width: window.innerWidth, height: window.innerHeight };
+    const width = tooltipWidthFor(viewport.width);
+    // Measure the card itself once it exists — a fixed guess mis-places the
+    // tooltip (and the flip decision) whenever the copy wraps to a different
+    // number of lines, which it always does on a phone.
+    const height = tipRef.current?.offsetHeight || TOOLTIP_FALLBACK_HEIGHT;
+
+    setRect((prev) => (rectsEqual(prev, next) ? prev : next));
+    setTipWidth((prev) => (prev === width ? prev : width));
+    const nextPos = computeTooltipPosition(
+      next,
+      { width, height },
+      viewport,
+      step.placement ?? "bottom",
     );
+    setPos((prev) => (positionsEqual(prev, nextPos) ? prev : nextPos));
   }, [step, index, steps.length, finish]);
 
   useLayoutEffect(() => {
     if (!active || !step) return;
-    // Bring the target into view, then measure on the next frame.
-    document.querySelector(step.target)?.scrollIntoView({
+    // Bring the target into view, then keep re-measuring for as long as the step
+    // is on screen. A rAF loop (rather than scroll/resize listeners) is what
+    // makes the spotlight stick on mobile: iOS coalesces scroll events during
+    // momentum scrolling and fires none at all mid-smooth-scroll, so listeners
+    // leave the highlight lagging behind its target. `measure` no-ops on
+    // unchanged geometry, so a settled page re-renders zero times.
+    findTarget(step.target)?.scrollIntoView({
       block: "center",
+      inline: "nearest",
       behavior: "smooth",
     });
-    rafRef.current = requestAnimationFrame(measure);
-    const onChange = () => measure();
-    window.addEventListener("resize", onChange);
-    window.addEventListener("scroll", onChange, true);
-    return () => {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-      window.removeEventListener("resize", onChange);
-      window.removeEventListener("scroll", onChange, true);
-    };
+    let raf = requestAnimationFrame(function tick() {
+      measure();
+      raf = requestAnimationFrame(tick);
+    });
+    return () => cancelAnimationFrame(raf);
   }, [active, step, measure]);
 
   const goNext = useCallback(() => {
@@ -142,16 +188,28 @@ export default function GuidedTour({
     return () => window.removeEventListener("keydown", onKey);
   }, [active, goNext, goBack, finish]);
 
+  if (typeof document === "undefined") return null;
   if (!active || !step || !pos || !rect) return null;
 
   const isLast = index === steps.length - 1;
   const pad = 6;
+  const isVertical = pos.placement === "top" || pos.placement === "bottom";
 
-  return (
+  const overlay = (
     <div className="fixed inset-0 z-[100]" role="dialog" aria-modal="true">
+      {/* Click-catcher so the rest of the page isn't interactable mid-tour.
+          Rendered first so the spotlight and tooltip paint above it. */}
+      <button
+        type="button"
+        aria-label="Skip tour"
+        onClick={() => finish(false)}
+        className="fixed inset-0 h-full w-full cursor-default bg-transparent"
+      />
+
       {/* Dim + spotlight: a transparent hole over the target via a huge box-shadow. */}
       <div
-        className="pointer-events-none absolute rounded-lg ring-2 ring-violet-400 transition-all duration-200"
+        data-testid="tour-spotlight"
+        className="pointer-events-none fixed rounded-lg ring-2 ring-violet-400"
         style={{
           top: rect.top - pad,
           left: rect.left - pad,
@@ -161,22 +219,35 @@ export default function GuidedTour({
         }}
       />
 
-      {/* Click-catcher so the rest of the page isn't interactable mid-tour. */}
-      <button
-        type="button"
-        aria-label="Skip tour"
-        onClick={() => finish(false)}
-        className="absolute inset-0 h-full w-full cursor-default bg-transparent"
-      />
-
       {/* Tooltip card */}
       {/* biome-ignore lint/a11y/useSemanticElements: an ephemeral tour tooltip has no matching semantic element; role="group" with an aria-label is the correct affordance */}
       <div
+        ref={tipRef}
         role="group"
         aria-label={`Tour step ${index + 1} of ${steps.length}`}
-        className="absolute w-[320px] rounded-xl border border-slate-700 bg-slate-900 p-5 text-left shadow-2xl"
-        style={{ top: pos.top, left: pos.left, minHeight: TIP.height }}
+        className="fixed rounded-xl border border-slate-700 bg-slate-900 p-5 text-left shadow-2xl"
+        style={{ top: pos.top, left: pos.left, width: tipWidth }}
       >
+        {/* Arrow pointing back at the spotlighted element. */}
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute h-3 w-3 rotate-45 border border-slate-700 bg-slate-900"
+          style={
+            isVertical
+              ? {
+                  left: pos.arrow - 6,
+                  ...(pos.placement === "bottom"
+                    ? { top: -7, borderRightWidth: 0, borderBottomWidth: 0 }
+                    : { bottom: -7, borderLeftWidth: 0, borderTopWidth: 0 }),
+                }
+              : {
+                  top: pos.arrow - 6,
+                  ...(pos.placement === "right"
+                    ? { left: -7, borderRightWidth: 0, borderTopWidth: 0 }
+                    : { right: -7, borderLeftWidth: 0, borderBottomWidth: 0 }),
+                }
+          }
+        />
         <p className="text-xs font-medium uppercase tracking-widest text-violet-400">
           Step {index + 1} of {steps.length}
         </p>
@@ -217,4 +288,6 @@ export default function GuidedTour({
       </div>
     </div>
   );
+
+  return createPortal(overlay, document.body);
 }

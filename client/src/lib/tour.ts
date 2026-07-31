@@ -71,6 +71,46 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
 }
 
+/** Widest the tooltip card is ever allowed to be (px). */
+export const TOOLTIP_MAX_WIDTH = 320;
+/** Used for the very first placement pass, before the card has been measured. */
+export const TOOLTIP_FALLBACK_HEIGHT = 168;
+
+/**
+ * Tooltip width for a given viewport: the design width on anything roomy, but
+ * shrunk to fit narrow phones so the card never overflows the screen edge.
+ */
+export function tooltipWidthFor(viewportWidth: number, margin = 8): number {
+  return Math.max(200, Math.min(TOOLTIP_MAX_WIDTH, viewportWidth - margin * 2));
+}
+
+/** True when two rects describe the same box — used to skip no-op re-renders. */
+export function rectsEqual(a: Rect | null, b: Rect | null): boolean {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  return (
+    a.top === b.top &&
+    a.left === b.left &&
+    a.width === b.width &&
+    a.height === b.height
+  );
+}
+
+/** True when two computed tooltip positions are identical. */
+export function positionsEqual(
+  a: TooltipPosition | null,
+  b: TooltipPosition | null,
+): boolean {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  return (
+    a.top === b.top &&
+    a.left === b.left &&
+    a.placement === b.placement &&
+    a.arrow === b.arrow
+  );
+}
+
 /**
  * Compute where to place a tooltip of size `tip` relative to a `target` rect,
  * preferring `placement` but flipping to the opposite side when there isn't room,
