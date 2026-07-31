@@ -71,6 +71,13 @@
       "when": 1785636000000,
       "tag": "0010_tenant_storage_cap",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "5",
+      "when": 1785637000000,
+      "tag": "0011_rate_limit_windows",
+      "breakpoints": true
     }
   ]
 }

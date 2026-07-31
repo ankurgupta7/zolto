@@ -35,6 +35,7 @@ import {
   type PhotoCreditLedgerEntry,
   photoCreditLedger,
   type PosAttribution,
+  rateLimitWindows,
   type StaffInvite,
   staffInvites,
   posAttributions,
@@ -1381,6 +1382,48 @@ export async function incrementTenantStorageUsage(
       .set({ storageBytesUsed: sql`${tenants.storageBytesUsed} + ${bytes}` })
       .where(eq(tenants.id, tenantId)),
   );
+}
+
+// Raw storage for server/rateLimit.ts's shared fixed-window counter — the
+// window-boundary decision (allowed/remaining/retryAfter) lives there, this
+// just does the atomic upsert-and-read. Reuses the SAME row across windows
+// (upsert on the unique limit_key, not an insert-per-window), so an
+// abandoned key leaves exactly one skinny row behind rather than growing
+// without bound. Returns null on any DB error so the caller can fail open —
+// a rate limiter guarding against catalogue-hoarding abuse must never itself
+// become a reason every checkout on the platform fails.
+export async function getOrCreateRateLimitWindow(
+  key: string,
+  now: number,
+  windowMs: number,
+): Promise<{ count: number; resetAt: number } | null> {
+  return withDb(async (db) => {
+    const resetAt = now + windowMs;
+    await db
+      .insert(rateLimitWindows)
+      .values({ limitKey: key, count: 1, resetAt })
+      .onDuplicateKeyUpdate({
+        set: {
+          count: sql`IF(${rateLimitWindows.resetAt} <= ${now}, 1, ${rateLimitWindows.count} + 1)`,
+          resetAt: sql`IF(${rateLimitWindows.resetAt} <= ${now}, ${resetAt}, ${rateLimitWindows.resetAt})`,
+        },
+      });
+    const rows = await db
+      .select()
+      .from(rateLimitWindows)
+      .where(eq(rateLimitWindows.limitKey, key))
+      .limit(1);
+    const row = rows[0];
+    return row
+      ? { count: row.count, resetAt: Number(row.resetAt) }
+      : { count: 1, resetAt };
+  }, null);
+}
+
+export async function clearRateLimitWindows(): Promise<void> {
+  await withDb(async (db) => {
+    await db.delete(rateLimitWindows);
+  }, undefined);
 }
 
 // The person to notify about this tenant's activity (e.g. a paid order) —

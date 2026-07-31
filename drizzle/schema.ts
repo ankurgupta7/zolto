@@ -571,3 +571,22 @@ export const staffInvites = mysqlTable("staff_invites", {
 
 export type StaffInvite = typeof staffInvites.$inferSelect;
 export type InsertStaffInvite = typeof staffInvites.$inferInsert;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// RATE LIMIT WINDOWS — shared fixed-window counters (server/rateLimit.ts)
+// ═══════════════════════════════════════════════════════════════════════════════
+// One row per (limiter, key), e.g. "mcp_checkout:7:203.0.113.9". Replaces an
+// in-process Map so the limit holds across every app instance instead of
+// resetting per-instance and on every deploy.
+export const rateLimitWindows = mysqlTable("rate_limit_windows", {
+  id: int("id").autoincrement().primaryKey(),
+  limitKey: varchar("limit_key", { length: 255 }).notNull().unique(),
+  count: int("count").notNull(),
+  // Epoch ms the current window ends — a plain number column (not
+  // `timestamp`) because the app does all window-boundary math and compares
+  // it directly against `Date.now()`.
+  resetAt: bigint("reset_at", { mode: "number" }).notNull(),
+});
+
+export type RateLimitWindow = typeof rateLimitWindows.$inferSelect;
+export type InsertRateLimitWindow = typeof rateLimitWindows.$inferInsert;

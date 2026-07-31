@@ -577,6 +577,24 @@ else
   ok "0028 tenants.storage_bytes_used already exists"
 fi
 
+# ── 0029: shared rate-limit store ─────────────────────────────────────────────
+# Ships drizzle/0011_rate_limit_windows.sql. Moves server/rateLimit.ts off an
+# in-process Map (reset on every deploy, siloed per instance) onto a shared
+# table, so the checkout rate limit actually holds across instances.
+if [ "$(tbl_exists rate_limit_windows)" = "0" ]; then
+  run_sql "0029 rate_limit_windows table" "
+    CREATE TABLE IF NOT EXISTS \`rate_limit_windows\` (
+      \`id\`         int AUTO_INCREMENT NOT NULL,
+      \`limit_key\`  varchar(255) NOT NULL,
+      \`count\`      int NOT NULL,
+      \`reset_at\`   bigint NOT NULL,
+      CONSTRAINT \`rate_limit_windows_id\` PRIMARY KEY(\`id\`),
+      CONSTRAINT \`rate_limit_windows_limit_key_unique\` UNIQUE(\`limit_key\`)
+    );"
+else
+  ok "0029 rate_limit_windows already exists"
+fi
+
 # ── Shared helper: run a script inside the builder container ──────────────────
 # Usage: run_in_builder <tag> <script-path> [extra docker args...]
 run_in_builder() {
