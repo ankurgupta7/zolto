@@ -5,7 +5,6 @@ import {
   PRICING_PROMISE,
   COST_COMPARISON,
   INCUMBENT_COMPARISON,
-  SELLING_FLOW,
   formatPrice,
 } from "@shared/platform";
 import {
@@ -14,6 +13,10 @@ import {
   MarketStallScene,
 } from "../components/MarketingIllustrations";
 import { Container } from "../components/Container";
+import { DayInTheLife } from "../components/DayInTheLife";
+import { ScrollReveal } from "../components/ScrollReveal";
+import { CardReaderGag } from "../components/CardReaderGag";
+import { DiaryTeaser } from "../components/DiaryTeaser";
 
 export default function Landing() {
   return (
@@ -39,12 +42,12 @@ export default function Landing() {
               </span>
             </h1>
             <p className="mt-8 max-w-md text-lg leading-relaxed text-white/70">
-              Zolto gives makers a point-of-sale and an online store that share{" "}
-              <span className="text-white">one inventory</span> — run by an AI
-              that handles the setup, the listings and the support. No card
-              reader to buy, and{" "}
+              Zolto's a point-of-sale and an online store that share{" "}
+              <span className="text-white">one inventory</span> — plus an AI
+              that handles the setup, the listings and the boring stuff so you
+              don't have to. No card reader to buy, and{" "}
               <span className="text-white">{COST_COMPARISON.multiplier}</span>{" "}
-              of what the old way charges. We're on your side, and we mean it.
+              of what the old way charges. We're on your side. For real.
             </p>
             <div className="mt-10 flex flex-wrap items-center gap-4">
               <Link
@@ -109,7 +112,7 @@ export default function Landing() {
       {/* ── The pledge (Direction B) — the heart of the positioning ── */}
       <section className="border-b border-[var(--brand-border)] bg-[var(--brand-surface-2)]">
         <Container width="3xl" className="py-20">
-          <div className="relative rounded-2xl border border-[var(--brand-border)] bg-white p-9 shadow-[0_20px_50px_-34px_rgba(45,38,32,0.4)] md:p-11">
+          <ScrollReveal className="relative rounded-2xl border border-[var(--brand-border)] bg-white p-9 shadow-[0_20px_50px_-34px_rgba(45,38,32,0.4)] md:p-11">
             <span className="absolute -top-3 left-9 bg-white px-2.5 font-hand text-xl text-[var(--brand-accent)]">
               our pledge to makers
             </span>
@@ -132,7 +135,7 @@ export default function Landing() {
             <p className="mt-8 font-hand text-2xl text-[var(--brand-text)]">
               — the Zolto team
             </p>
-          </div>
+          </ScrollReveal>
         </Container>
       </section>
 
@@ -148,8 +151,9 @@ export default function Landing() {
             </h2>
             <p className="mx-auto mt-3 max-w-xl text-[var(--brand-muted-2)]">
               Stripe, SumUp and Worldline were built for a time when websites
-              were hard and a card reader was king. Most of the bill is that era
-              — not the service you need.
+              were hard and a card reader was basically a status symbol. You're
+              still paying for that era — not for anything you actually need
+              today.
             </p>
           </div>
 
@@ -185,6 +189,11 @@ export default function Landing() {
                 ))}
               </tbody>
             </table>
+          </div>
+
+          {/* The table's punchline, told as a joke rather than restated. */}
+          <div className="mt-12">
+            <CardReaderGag />
           </div>
         </Container>
       </section>
@@ -244,29 +253,14 @@ export default function Landing() {
               Sell first. Sort it out later.
             </h2>
             <p className="mx-auto mt-3 max-w-xl text-[var(--brand-muted-2)]">
-              A real stall is chaos. Don&rsquo;t stop to tag every piece — your
-              phone is the card machine, and the AI is the back office.
+              A real market stall is glorious chaos. Don&rsquo;t stop mid-sale
+              to tag every piece — your phone&rsquo;s the card machine, the
+              AI&rsquo;s the back office, and you&rsquo;re just there to sell
+              cool stuff.
             </p>
           </div>
 
-          <ol className="grid gap-5 md:grid-cols-3">
-            {SELLING_FLOW.map((step, i) => (
-              <li
-                key={step.title}
-                className="rounded-xl border border-[var(--brand-border)] bg-[var(--brand-surface-2)] p-6"
-              >
-                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--brand-accent)] font-serif text-sm font-bold text-[var(--brand-ink)] tabular-nums">
-                  {i + 1}
-                </span>
-                <h3 className="mt-4 font-serif text-xl text-[var(--brand-text)]">
-                  {step.title}
-                </h3>
-                <p className="mt-2 text-sm leading-relaxed text-[var(--brand-muted-2)]">
-                  {step.detail}
-                </p>
-              </li>
-            ))}
-          </ol>
+          <DayInTheLife />
 
           {/* End-of-day reconciliation email mock */}
           <div className="mx-auto mt-12 max-w-xl overflow-hidden rounded-xl border border-[var(--brand-border)] bg-white shadow-[0_18px_44px_-30px_rgba(45,38,32,0.5)]">
@@ -316,6 +310,9 @@ export default function Landing() {
         </Container>
       </section>
 
+      {/* ── Proof you can go and check, before we ask for the signup ── */}
+      <DiaryTeaser />
+
       {/* ── CTA ── */}
       <section className="bg-[var(--brand-ink)]">
         <Container width="4xl" className="py-20 text-center">
@@ -326,8 +323,8 @@ export default function Landing() {
             Your store, live this week.
           </h2>
           <p className="mt-4 text-white/70">
-            Free to sell in person, forever. 14-day trial on Pro. No card
-            required to explore — and no card reader, ever.
+            Free to sell in person, forever. 14-day trial on Pro, no credit card
+            needed to poke around — and no card reader, ever. Promise.
           </p>
           <Link
             href="/signup"

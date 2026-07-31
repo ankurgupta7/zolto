@@ -13,8 +13,13 @@ import { trpc } from "@/lib/trpc";
 import type { inferRouterOutputs } from "@trpc/server";
 import type { AppRouter } from "../../../../server/routers";
 import { toast } from "sonner";
-import { Loader2, CreditCard, AlertTriangle } from "lucide-react";
-import { PageHeader, SettingsCard, PrimaryButton } from "@/components/admin/ui";
+import { CreditCard, AlertTriangle } from "lucide-react";
+import {
+  PageHeader,
+  SettingsCard,
+  PrimaryButton,
+  LoadingState,
+} from "@/components/admin/ui";
 
 function Stat({
   label,
@@ -75,11 +80,7 @@ export default function Platform() {
   }
 
   if (query.isLoading) {
-    return (
-      <div className="flex justify-center py-24">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
-    );
+    return <LoadingState label="Pulling the platform numbers…" />;
   }
 
   const m = query.data;

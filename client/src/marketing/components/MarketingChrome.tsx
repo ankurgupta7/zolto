@@ -256,7 +256,7 @@ export function MarketingFooter() {
       <Container className="flex flex-col gap-4 py-10 text-sm text-[var(--brand-muted-2)] sm:flex-row sm:items-center sm:justify-between">
         <p>
           © {new Date().getFullYear()} Zolto — commerce for makers, handmade in
-          Zürich.
+          Zürich, built to keep more money in your pocket.
         </p>
         <nav className="flex gap-6">
           <Link href="/pricing" className="hover:text-[var(--brand-ink)]">

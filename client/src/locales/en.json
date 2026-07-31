@@ -317,5 +317,12 @@
     "signIn": "Sign In",
     "accessDenied": "Access Denied",
     "solo": "Solo"
+  },
+  "notFound": {
+    "eyebrow": "nothing on this shelf",
+    "title": "This page has sold out.",
+    "body": "Or it never existed — hard to say. Either way, there's nothing here. The good stuff is a click away.",
+    "shop": "Browse the shop",
+    "home": "Back to the front page"
   }
 }

@@ -1,52 +1,61 @@
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { AlertCircle, Home } from "lucide-react";
-import { useLocation } from "wouter";
+import { Link } from "wouter";
+import { useTranslation } from "react-i18next";
+import { SketchUnderline } from "@/components/SketchAccents";
 
+/**
+ * The storefront's 404 — a shopper's dead end, not a developer's.
+ *
+ * This is a *tenant* page: the visitor thinks they are in a maker's shop, not
+ * on Zolto, so it wears the storefront's own oyster/gold/ink brand rather than
+ * platform chrome, and the voice stays the shop's — warm and a little wry,
+ * never a stack trace. It is translated like every other shopper-facing string
+ * (the storefront ships de/en), because a German-speaking customer hitting a
+ * bad link is exactly the moment not to fall back to English.
+ *
+ * Both exits are offered on purpose: someone who mistyped a product URL wants
+ * the shop, someone who followed a stale link wants the front page.
+ */
 export default function NotFound() {
-  const [, setLocation] = useLocation();
-
-  const handleGoHome = () => {
-    setLocation("/");
-  };
+  const { t } = useTranslation();
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
-      <Card className="w-full max-w-lg mx-4 shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-        <CardContent className="pt-8 pb-8 text-center">
-          <div className="flex justify-center mb-6">
-            <div className="relative">
-              <div className="absolute inset-0 bg-red-100 rounded-full animate-pulse" />
-              <AlertCircle className="relative h-16 w-16 text-red-500" />
-            </div>
-          </div>
+    <div className="flex min-h-[70vh] w-full items-center justify-center bg-[var(--brand-ground)] px-4 py-20">
+      <div className="w-full max-w-lg text-center">
+        <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
+          {t("notFound.eyebrow")}
+        </p>
 
-          <h1 className="text-4xl font-bold text-slate-900 mb-2">404</h1>
-
-          <h2 className="text-xl font-semibold text-slate-700 mb-4">
-            Page Not Found
-          </h2>
-
-          <p className="text-slate-600 mb-8 leading-relaxed">
-            Sorry, the page you are looking for doesn't exist.
-            <br />
-            It may have been moved or deleted.
-          </p>
-
-          <div
-            id="not-found-button-group"
-            className="flex flex-col sm:flex-row gap-3 justify-center"
-          >
-            <Button
-              onClick={handleGoHome}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg"
+        <h1 className="mt-3 font-serif text-3xl text-[var(--brand-text)] sm:text-4xl">
+          <span className="relative inline-block">
+            {t("notFound.title")}
+            <span
+              aria-hidden
+              className="absolute -bottom-2 left-0 w-full text-[var(--brand-accent)]"
             >
-              <Home className="w-4 h-4 mr-2" />
-              Go Home
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+              <SketchUnderline />
+            </span>
+          </span>
+        </h1>
+
+        <p className="mx-auto mt-8 max-w-sm leading-relaxed text-[var(--brand-muted-2)]">
+          {t("notFound.body")}
+        </p>
+
+        <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
+          <Link
+            href="/shop"
+            className="rounded-md bg-[var(--brand-accent)] px-7 py-3 text-xs font-medium uppercase tracking-[0.14em] text-[var(--brand-ink)] transition-colors hover:bg-[var(--brand-accent-light)]"
+          >
+            {t("notFound.shop")}
+          </Link>
+          <Link
+            href="/"
+            className="rounded-md border border-[var(--brand-ink)]/25 px-7 py-3 text-xs font-medium uppercase tracking-[0.14em] text-[var(--brand-ink)] transition-colors hover:bg-[var(--brand-ink)] hover:text-white"
+          >
+            {t("notFound.home")}
+          </Link>
+        </div>
+      </div>
     </div>
   );
 }
