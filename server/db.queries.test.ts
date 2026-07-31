@@ -222,6 +222,27 @@ describe("product images", () => {
   });
 });
 
+describe("tenant connected account", () => {
+  it("finds the tenant holding a connected account id", async () => {
+    selectReturns([{ id: 7, slug: "aurora" }]);
+    const t = await db.getTenantByStripeAccountId("acct_123");
+    expect(t).toMatchObject({ id: 7 });
+  });
+
+  it("returns undefined when no tenant holds it", async () => {
+    selectReturns([]);
+    expect(await db.getTenantByStripeAccountId("acct_gone")).toBeUndefined();
+  });
+
+  it("clears the connected account, putting the store back to 'not connected'", async () => {
+    // Leaving a dead account id in place makes every checkout fail against it;
+    // nulling it restores the honest state the storefront already handles.
+    updateReturns();
+    await db.clearTenantStripeConnectAccount(7);
+    expect(dbMock.update).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe("instagram posts", () => {
   it("getInstagramPosts returns the ordered grid", async () => {
     selectReturns([{ id: 1 }]);

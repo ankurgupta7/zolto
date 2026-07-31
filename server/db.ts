@@ -1506,6 +1506,42 @@ export async function setTenantStripeConnectAccount(
   );
 }
 
+/**
+ * Find the tenant holding a given connected account id, so a removed Stripe
+ * account can be traced back to the store that still references it.
+ */
+export async function getTenantByStripeAccountId(
+  stripeConnectedAccountId: string,
+): Promise<Tenant | undefined> {
+  const rows = await withDbOrThrow((db) =>
+    db
+      .select()
+      .from(tenants)
+      .where(eq(tenants.stripeConnectedAccountId, stripeConnectedAccountId))
+      .limit(1),
+  );
+  return rows[0];
+}
+
+/**
+ * Forget a tenant's connected account.
+ *
+ * Used when the account no longer exists on Stripe's side. Leaving the id in
+ * place makes every checkout attempt fail against a dead account; clearing it
+ * puts the store back into the honest "hasn't connected payments yet" state,
+ * which the storefront already handles by falling back to WhatsApp enquiries.
+ */
+export async function clearTenantStripeConnectAccount(
+  tenantId: number,
+): Promise<void> {
+  await withDbOrThrow((db) =>
+    db
+      .update(tenants)
+      .set({ stripeConnectedAccountId: null })
+      .where(eq(tenants.id, tenantId)),
+  );
+}
+
 export async function setTenantReferrer(
   tenantId: number,
   referrerId: number,

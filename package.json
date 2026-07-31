@@ -19,7 +19,8 @@
     "db:push": "drizzle-kit generate && drizzle-kit migrate",
     "db:sync": "drizzle-kit push --force",
     "seed:e2e": "tsx scripts/seed-e2e.ts",
-    "verify:fee": "tsx scripts/verify-platform-fee.ts"
+    "verify:fee": "tsx scripts/verify-platform-fee.ts",
+    "stripe:cleanup": "tsx scripts/stripe-cleanup.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.693.0",
