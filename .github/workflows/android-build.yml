@@ -35,6 +35,20 @@ jobs:
           distribution: temurin
           java-version: "17"
 
+      # ⚠ KNOWN FAILURE: this step currently fails wrapper validation.
+      # android/gradle/wrapper/gradle-wrapper.jar is a Gradle **4.4.1** jar
+      # (see build-receipt.properties inside it) while gradle-wrapper.properties
+      # asks for **8.9**, so its SHA-256 is not in the known-good list:
+      #   b5173cbc1029dbe2212de0ff1c6331940f1c841bb26a0685b7189615802bf365
+      # It bootstraps fine at runtime (it downloads and delegates to 8.9), which
+      # is why nobody noticed — but the mismatch is exactly the supply-chain
+      # smell wrapper validation exists to catch.
+      #
+      # FIX (needs a machine with unrestricted network): regenerate it with
+      #   cd android && gradle wrapper --gradle-version 8.9
+      # or copy the jar from a checksum-verified gradle-8.9-bin.zip, then commit.
+      # Do NOT set `validate-wrappers: false` — that silences the guard instead
+      # of fixing the jar.
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
