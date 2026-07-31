@@ -31,8 +31,13 @@
  *
  *   Usage, from the repo root on the server:
  *     npx tsx scripts/verify-platform-fee.ts
+ *     npx tsx scripts/verify-platform-fee.ts --list               # what exists
  *     npx tsx scripts/verify-platform-fee.ts --account acct_123   # pick one
  *     npx tsx scripts/verify-platform-fee.ts --keep               # no refunds
+ *
+ * Start with --list when a connection seems not to have worked. A live-mode
+ * connection never shows up under a test-mode key, so an empty list is the
+ * clearest evidence that onboarding ran in the wrong mode.
  */
 
 // Reads the repo-root .env into process.env. dotenv parses KEY=VALUE
@@ -53,6 +58,7 @@ import {
 // ── Arguments ────────────────────────────────────────────────────────────────
 const argv = process.argv.slice(2);
 const KEEP = argv.includes("--keep");
+const LIST = argv.includes("--list");
 const ACCOUNT_ARG = (() => {
   const i = argv.indexOf("--account");
   return i >= 0 ? argv[i + 1] : undefined;
@@ -237,8 +243,46 @@ async function refund(account: string, paymentIntentId: string) {
   }
 }
 
+/**
+ * Show every connected account and whether it can actually take a charge.
+ *
+ * Exists because "the fee is broken" and "I have no usable connected account"
+ * look identical from the outside, and the Connect onboarding form gives no
+ * hint about which mode it is running in. charges_enabled is the only thing
+ * that decides whether the verification below can say anything at all.
+ */
+async function listAccounts(): Promise<void> {
+  const accounts = await stripe.accounts.list({ limit: 25 });
+  line(`\nPlatform key:       ${KEY!.slice(0, 12)}… (TEST mode)`);
+  line(`Connected accounts: ${accounts.data.length}\n`);
+  if (accounts.data.length === 0) {
+    line("  none — nothing has completed the Connect flow against this key.");
+    line("  If you just went through onboarding and expected one here, the");
+    line("  flow probably ran against your LIVE client id: a live-mode");
+    line("  connection never appears under a test-mode key.");
+    return;
+  }
+  for (const a of accounts.data) {
+    const usable = a.charges_enabled ? "USABLE" : "not usable";
+    line(`  ${a.id}  ${usable}`);
+    line(`      charges_enabled=${a.charges_enabled}  details_submitted=${a.details_submitted}`);
+    line(`      country=${a.country}  type=${a.type}`);
+    const due = a.requirements?.currently_due ?? [];
+    if (due.length) line(`      still required: ${due.join(", ")}`);
+  }
+  line("");
+  line("Any account marked USABLE can run the check now:");
+  line("  pnpm verify:fee --account <acct_...>");
+}
+
 async function main() {
   await assertStripeReachable();
+
+  if (LIST) {
+    await listAccounts();
+    process.exit(0);
+  }
+
   const account = await resolveAccount();
 
   const acct = await stripe.accounts.retrieve(account);
