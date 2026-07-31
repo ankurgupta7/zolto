@@ -86,18 +86,15 @@ if [ -z "$SLUG" ]; then
   # would send them to fix the wrong thing.
   if [ "${TOTAL_USERS:-0}" = "0" ]; then
     cat <<'WARN'
-⚠  There are NO users in this database at all.
+There are NO users in this database at all, so there is nothing to promote —
+this is not a claim-token problem. Just sign up again to create one.
 
-That is not a claim-token problem — nothing exists to promote. Either no one
-has ever signed in against this database, or its data is gone (a recreated
-volume, a fresh `docker compose down -v`, a restore that did not happen).
-
-STOP and check before creating anything on top of it:
+While Zolto is in staging that is the expected state after a reset. If you did
+NOT expect it on a database that held real accounts, stop and check before
+writing anything on top:
+  bash deploy/inspect-db.sh           # says whether rows were ever inserted
   ls -la backups/                     # is there a backup to restore from?
-  docker compose exec -T db mysql ... # or: bash deploy/inspect-db.sh
   ./deploy/recover-from-backup.sh     # restore path, if a backup exists
-
-Writing new data first can make a recoverable database unrecoverable.
 WARN
   else
     echo "A store showing admins = 0 but users > 0 means its owner signed in"

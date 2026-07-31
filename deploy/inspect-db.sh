@@ -89,9 +89,15 @@ for t in users products product_images instagram_posts orders bulk_upload_logs \
 done
 
 echo
-echo "── Was this database EVER populated? (data-loss forensics) ─────"
+echo "── Was this database EVER populated? ───────────────────────────"
 # An all-zero row count has two very different causes: a database that was
 # never written to, and one that was wiped. AUTO_INCREMENT separates them.
+#
+# NOTE: "wiped" is only alarming if you did not mean to wipe it. Zolto is in
+# staging and the database is deliberately reset often, so this section reports
+# what it sees and lets you judge — it does not assume a loss. Set
+# ZOLTO_EXPECT_EMPTY_DB=1 to state up front that an empty database is intended,
+# which turns the finding into a plain confirmation instead of a warning.
 # MySQL 8.0 persists the counter across restarts and does NOT reset it on
 # DELETE, so:
 #   0 rows + AUTO_INCREMENT = 1  → nothing was ever inserted (fresh volume)
@@ -115,10 +121,16 @@ for t in users products orders pos_orders tenants; do
   fi
 done
 echo
-if [ "$EVER_POPULATED" = "1" ]; then
-  echo "  ⛔ DATA LOSS: a table above is empty but its AUTO_INCREMENT is past 1,"
-  echo "     so rows were inserted and later removed. Restore from a backup"
-  echo "     before writing anything new: ./deploy/recover-from-backup.sh --list"
+if [ "$EVER_POPULATED" = "1" ] && [ -n "${ZOLTO_EXPECT_EMPTY_DB:-}" ]; then
+  echo "  ✔ Emptied on purpose: a table above is empty but its AUTO_INCREMENT is"
+  echo "     past 1, so rows existed and were removed. ZOLTO_EXPECT_EMPTY_DB is"
+  echo "     set, so that is the intended staging reset — nothing to recover."
+elif [ "$EVER_POPULATED" = "1" ]; then
+  echo "  ! A table above is empty but its AUTO_INCREMENT is past 1, so rows were"
+  echo "     inserted and later removed. In staging that is a deliberate reset and"
+  echo "     is fine — set ZOLTO_EXPECT_EMPTY_DB=1 to silence this. If you did NOT"
+  echo "     wipe it, treat it as data loss and restore before writing anything"
+  echo "     new: ./deploy/recover-from-backup.sh --list"
 else
   echo "  ✅ No evidence of deleted rows: every empty table still has its"
   echo "     AUTO_INCREMENT at 1, i.e. it has never issued an id. Consistent"
