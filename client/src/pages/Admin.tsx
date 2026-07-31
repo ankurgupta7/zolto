@@ -1374,7 +1374,7 @@ export default function Admin() {
                 className="bg-white border border-[var(--brand-border)] p-5 text-center"
               >
                 <p
-                  className={`font-serif text-3xl mb-1 tabular-nums ${
+                  className={`font-serif text-3xl mb-1 lining-nums tabular-nums ${
                     stat.warn ? "text-amber-700" : "text-[var(--brand-ink)]"
                   }`}
                 >
@@ -1387,7 +1387,7 @@ export default function Admin() {
             ))}
             {/* Hero money tile */}
             <div className="bg-[var(--brand-ink)] p-5 text-center flex flex-col justify-center">
-              <p className="font-serif text-white text-3xl mb-1 tabular-nums">
+              <p className="font-serif text-white text-3xl mb-1 lining-nums tabular-nums">
                 <span className="text-[var(--brand-accent)] text-base align-top mr-1">
                   CHF
                 </span>

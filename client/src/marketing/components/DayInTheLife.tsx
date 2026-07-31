@@ -54,7 +54,7 @@ function Beat({
       className="relative pb-12 last:pb-0 sm:pl-12"
     >
       {/* Numbered node, sitting on the spine. */}
-      <span className="absolute left-0 top-0 hidden h-8 w-8 items-center justify-center rounded-full border border-[var(--brand-accent)] bg-[var(--brand-surface-2)] font-serif text-sm font-bold text-[var(--brand-ink)] tabular-nums sm:flex">
+      <span className="absolute left-0 top-0 hidden h-8 w-8 items-center justify-center rounded-full border border-[var(--brand-accent)] bg-[var(--brand-surface-2)] font-serif text-sm font-bold text-[var(--brand-ink)] lining-nums tabular-nums sm:flex">
         {index + 1}
       </span>
 

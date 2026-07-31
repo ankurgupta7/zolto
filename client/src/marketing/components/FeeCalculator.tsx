@@ -66,7 +66,7 @@ export function FeeCalculator() {
           <span className="text-sm font-medium text-[var(--brand-text)]">
             Your online sales this month
           </span>
-          <span className="font-serif text-2xl text-[var(--brand-ink)] tabular-nums">
+          <span className="font-serif text-2xl text-[var(--brand-ink)] lining-nums tabular-nums">
             CHF {sales.toLocaleString("en-US")}
             {sales === MAX_SALES_CHF && "+"}
           </span>
@@ -105,7 +105,7 @@ export function FeeCalculator() {
           <p className="text-[11px] uppercase tracking-[0.16em] text-[var(--brand-muted)]">
             On Free
           </p>
-          <p className="mt-1 font-serif text-3xl text-[var(--brand-ink)] tabular-nums">
+          <p className="mt-1 font-serif text-3xl text-[var(--brand-ink)] lining-nums tabular-nums">
             {chf(cost.freePlanChf)}
           </p>
           <p className="mt-1 text-xs text-[var(--brand-muted-2)]">
@@ -123,7 +123,7 @@ export function FeeCalculator() {
           <p className="text-[11px] uppercase tracking-[0.16em] text-[var(--brand-muted)]">
             On {PRO_PLAN.name}
           </p>
-          <p className="mt-1 font-serif text-3xl text-[var(--brand-ink)] tabular-nums">
+          <p className="mt-1 font-serif text-3xl text-[var(--brand-ink)] lining-nums tabular-nums">
             {chf(cost.proPlanChf)}
           </p>
           <p className="mt-1 text-xs text-[var(--brand-muted-2)]">
