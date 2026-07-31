@@ -48,6 +48,16 @@ vi.mock("@/lib/trpc", () => ({
         useQuery: () => ({ data: [] }),
       },
     },
+    // Used by the signed-out state's SignInOptions.
+    auth: {
+      requestMagicLink: {
+        useMutation: () => ({
+          mutate: vi.fn(),
+          isPending: false,
+          isError: false,
+        }),
+      },
+    },
   },
 }));
 
@@ -299,12 +309,16 @@ describe("CsvImport: auth guards", () => {
     expect(container.querySelector(".animate-spin")).not.toBeNull();
   });
 
-  it("prompts sign-in when unauthenticated", () => {
+  it("prompts sign-in when unauthenticated, offering every method", () => {
     mocks.authState.isAuthenticated = false;
     mocks.authState.user = null;
     render(<CsvImport />);
     screen.getByText("Admin Required");
-    screen.getByText("Sign In");
+    // Not a single-provider link: a merchant without a Google account has to
+    // be able to get back in from here too.
+    screen.getByRole("link", { name: /continue with google/i });
+    screen.getByRole("link", { name: /continue with apple/i });
+    screen.getByRole("button", { name: /continue with email/i });
   });
 
   it("denies access to a signed-in non-admin", () => {

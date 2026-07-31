@@ -4,7 +4,7 @@ import { trpc } from "@/lib/trpc";
 import { storeAdminUrl } from "@/lib/surface";
 import { hardRedirect } from "@/lib/navigate";
 import { Container } from "../components/Container";
-import { SignInOptions } from "../components/SignInOptions";
+import { SignInOptions } from "@/components/SignInOptions";
 
 /**
  * /signin — the returning merchant's front door.

@@ -19,3 +19,22 @@ export const getAppleLoginUrl = (returnPath?: string) => {
   const base = "/api/oauth/apple/login";
   return returnPath ? `${base}?next=${encodeURIComponent(returnPath)}` : base;
 };
+
+/** The app's own sign-in page (both surfaces route it). */
+export const SIGNIN_PATH = "/signin";
+
+/**
+ * Where to send a signed-out visitor. This is the app's sign-in PAGE, which
+ * offers every method — unlike getLoginUrl/getAppleLoginUrl above, which hand
+ * off to one specific provider. Anything reacting to "not signed in" (an
+ * expired session, a 401, an auth guard) should point here, so no path into
+ * the app forces a merchant through an identity provider they don't use.
+ *
+ * `returnUrl` is normally `window.location.href` — an absolute url, so a
+ * merchant on their own store subdomain comes back to it rather than to the
+ * canonical host the OAuth round-trip passes through.
+ */
+export const getSignInPath = (returnUrl?: string) =>
+  returnUrl
+    ? `${SIGNIN_PATH}?next=${encodeURIComponent(returnUrl)}`
+    : SIGNIN_PATH;

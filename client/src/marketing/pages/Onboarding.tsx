@@ -3,7 +3,7 @@ import { Link, useSearch } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { storeAdminUrl } from "@/lib/surface";
 import { Container } from "../components/Container";
-import { SignInOptions } from "../components/SignInOptions";
+import { SignInOptions } from "@/components/SignInOptions";
 
 /**
  * Post-signup onboarding wizard (docs/ARCHITECTURE.md). The checklist is

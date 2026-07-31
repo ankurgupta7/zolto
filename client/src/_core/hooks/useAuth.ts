@@ -1,4 +1,4 @@
-import { getLoginUrl } from "@/const";
+import { getSignInPath } from "@/const";
 import { trpc } from "@/lib/trpc";
 import { TRPCClientError } from "@trpc/client";
 import { useCallback, useEffect, useMemo } from "react";
@@ -9,7 +9,9 @@ type UseAuthOptions = {
 };
 
 export function useAuth(options?: UseAuthOptions) {
-  const { redirectOnUnauthenticated = false, redirectPath = getLoginUrl() } =
+  // Defaults to the app's sign-in page (every method), not a single
+  // provider's handshake — see const.ts getSignInPath.
+  const { redirectOnUnauthenticated = false, redirectPath = getSignInPath() } =
     options ?? {};
   const utils = trpc.useUtils();
 

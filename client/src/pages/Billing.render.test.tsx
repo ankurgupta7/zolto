@@ -136,6 +136,16 @@ vi.mock("@/lib/trpc", () => ({
         useMutation: () => ({ mutate: vi.fn(), isPending: false }),
       },
     },
+    // Used by the signed-out state's SignInOptions.
+    auth: {
+      requestMagicLink: {
+        useMutation: () => ({
+          mutate: vi.fn(),
+          isPending: false,
+          isError: false,
+        }),
+      },
+    },
   },
 }));
 
@@ -220,6 +230,24 @@ describe("Billing page", () => {
     mocks.authState.user = { role: "customer" };
     render(<Billing />);
     expect(screen.getByText("Admins only.")).toBeTruthy();
+  });
+
+  it("offers every sign-in method in place when the session has lapsed", () => {
+    mocks.authState.isAuthenticated = false;
+    mocks.authState.user = null;
+    render(<Billing />);
+    // Rendered in place rather than redirected mid-render, and never to a
+    // single provider — a merchant without a Google account must be able to
+    // get back to their billing page.
+    expect(
+      screen.getByRole("link", { name: /continue with google/i }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("link", { name: /continue with apple/i }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: /continue with email/i }),
+    ).toBeTruthy();
   });
 
   it("shows no legacy-price notice for a normally-priced tenant", () => {

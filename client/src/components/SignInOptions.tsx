@@ -4,9 +4,19 @@ import { trpc } from "@/lib/trpc";
 
 /**
  * Every way to sign in to Zolto: Google, Apple, or a passwordless email link
- * for anyone whose address isn't on either of those. Shared between the
- * onboarding claim step and /signin so a non-Google email is never a dead
- * end — see server/_core/oauth.ts, appleAuth.ts, magicLink.ts.
+ * for anyone whose address isn't on either of those — see server/_core's
+ * oauth.ts, appleAuth.ts and magicLink.ts.
+ *
+ * Lives outside `marketing/` because it is used on BOTH surfaces: the signup
+ * claim step and /signin on marketing, and every admin page's signed-out
+ * state on the storefront. Anywhere the app says "you need to sign in" should
+ * render this rather than linking one provider, so no route into the app is a
+ * dead end for a merchant without that provider's account.
+ *
+ * `next` should be an ABSOLUTE url when the caller is on a tenant subdomain:
+ * the OAuth round-trip always returns through the platform's canonical host,
+ * so a bare path would land the merchant on that host instead of their own
+ * store (see server/_core/oauth.ts getCanonicalOrigin).
  */
 export function SignInOptions({
   next,
