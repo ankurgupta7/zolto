@@ -106,4 +106,42 @@ describe("ParticleField", () => {
 
     expect(cancelSpy).toHaveBeenCalledWith(42);
   });
+
+  it("does not respawn particles on a height-only resize (mobile toolbar during scroll)", () => {
+    vi.useFakeTimers();
+    const ctx = makeCtxStub();
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(
+      ctx as unknown as CanvasRenderingContext2D,
+    );
+    // Never invoke the rAF callback, so particles only move via explicit resize handling.
+    vi.spyOn(window, "requestAnimationFrame").mockImplementation(() => 1);
+    const randomSpy = vi.spyOn(Math, "random");
+
+    render(<ParticleField density={5000} />);
+    const spawnCalls = randomSpy.mock.calls.length;
+    expect(spawnCalls).toBeGreaterThan(0);
+
+    // Mobile browsers change only the viewport height when their address bar
+    // hides/shows mid-scroll — that must not respawn the field.
+    Object.defineProperty(window, "innerHeight", {
+      configurable: true,
+      value: window.innerHeight - 80,
+    });
+    window.dispatchEvent(new Event("resize"));
+    vi.advanceTimersByTime(200);
+
+    expect(randomSpy.mock.calls.length).toBe(spawnCalls);
+
+    // A genuine width change (rotation, real resize) should respawn.
+    Object.defineProperty(window, "innerWidth", {
+      configurable: true,
+      value: window.innerWidth - 100,
+    });
+    window.dispatchEvent(new Event("resize"));
+    vi.advanceTimersByTime(200);
+
+    expect(randomSpy.mock.calls.length).toBeGreaterThan(spawnCalls);
+
+    vi.useRealTimers();
+  });
 });
