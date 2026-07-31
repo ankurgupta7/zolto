@@ -89,12 +89,76 @@ for t in users products product_images instagram_posts orders bulk_upload_logs \
 done
 
 echo
-echo "── Deploy prerequisites ────────────────────────────────────────"
-if [ -n "${POS_API_KEY:-}" ]; then
-  echo "  POS_API_KEY in .env:        set (value hidden) — tenant #1 will seed with it"
+echo "── Was this database EVER populated? ───────────────────────────"
+# An all-zero row count has two very different causes: a database that was
+# never written to, and one that was wiped. AUTO_INCREMENT separates them.
+#
+# NOTE: "wiped" is only alarming if you did not mean to wipe it. Zolto is in
+# staging and the database is deliberately reset often, so this section reports
+# what it sees and lets you judge — it does not assume a loss. Set
+# ZOLTO_EXPECT_EMPTY_DB=1 to state up front that an empty database is intended,
+# which turns the finding into a plain confirmation instead of a warning.
+# MySQL 8.0 persists the counter across restarts and does NOT reset it on
+# DELETE, so:
+#   0 rows + AUTO_INCREMENT = 1  → nothing was ever inserted (fresh volume)
+#   0 rows + AUTO_INCREMENT > 1  → rows existed and are gone (DATA LOSS)
+# Caveat in the other direction: TRUNCATE TABLE and a dropped-and-recreated
+# volume both reset the counter to 1, so 1 is consistent with data loss too —
+# it just isn't proof of it. CREATE_TIME is the corroborating signal: on a
+# restored or long-lived database the tables predate today's deploy.
+printf "  %-24s %8s %14s   %s\n" "table" "rows" "auto_increment" "created"
+EVER_POPULATED=0
+for t in users products orders pos_orders tenants; do
+  exists=$(q "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='${MYSQL_DATABASE}' AND TABLE_NAME='${t}';")
+  [ "$exists" = "1" ] || continue
+  rows=$(q "SELECT COUNT(*) FROM \`${t}\`;")
+  ai=$(q "SELECT IFNULL(AUTO_INCREMENT, 0) FROM information_schema.TABLES WHERE TABLE_SCHEMA='${MYSQL_DATABASE}' AND TABLE_NAME='${t}';")
+  ct=$(q "SELECT IFNULL(CREATE_TIME, '?') FROM information_schema.TABLES WHERE TABLE_SCHEMA='${MYSQL_DATABASE}' AND TABLE_NAME='${t}';")
+  printf "  %-24s %8s %14s   %s\n" "$t" "$rows" "$ai" "$ct"
+  # Only flag a table that is empty NOW but has handed out ids before.
+  if [ "${rows:-0}" = "0" ] && [ "${ai:-0}" -gt 1 ] 2>/dev/null; then
+    EVER_POPULATED=1
+  fi
+done
+echo
+if [ "$EVER_POPULATED" = "1" ] && [ -n "${ZOLTO_EXPECT_EMPTY_DB:-}" ]; then
+  echo "  ✔ Emptied on purpose: a table above is empty but its AUTO_INCREMENT is"
+  echo "     past 1, so rows existed and were removed. ZOLTO_EXPECT_EMPTY_DB is"
+  echo "     set, so that is the intended staging reset — nothing to recover."
+elif [ "$EVER_POPULATED" = "1" ]; then
+  echo "  ! A table above is empty but its AUTO_INCREMENT is past 1, so rows were"
+  echo "     inserted and later removed. In staging that is a deliberate reset and"
+  echo "     is fine — set ZOLTO_EXPECT_EMPTY_DB=1 to silence this. If you did NOT"
+  echo "     wipe it, treat it as data loss and restore before writing anything"
+  echo "     new: ./deploy/recover-from-backup.sh --list"
 else
-  echo "  POS_API_KEY in .env:        NOT SET — seed would use a placeholder and the"
-  echo "                              live POS terminal would reject sales until fixed"
+  echo "  ✅ No evidence of deleted rows: every empty table still has its"
+  echo "     AUTO_INCREMENT at 1, i.e. it has never issued an id. Consistent"
+  echo "     with a database that was simply never populated. Compare the"
+  echo "     'created' column against when this server was provisioned to"
+  echo "     confirm — recent timestamps mean a fresh volume."
+fi
+
+echo
+echo "── Deploy prerequisites ────────────────────────────────────────"
+# POS_API_KEY is a CUTOVER-ONLY variable, not a platform credential. POS keys
+# are per-tenant: generated at signup (server/routers/tenant.ts), stored only as
+# SHA-256 (server/posApiKey.ts), rotated by the merchant. The running app never
+# reads POS_API_KEY — docker-compose.yml deliberately does not pass it. Its one
+# remaining use is seeding tenant #1 during a 0019 cutover, so an existing
+# store's already-paired terminal keeps working. On a fresh deploy, unset is
+# correct: db.sh generates a random key and stores its hash.
+if [ -n "${POS_API_KEY:-}" ]; then
+  echo "  POS_API_KEY in .env:        set (value hidden) — only used if tenant #1 is"
+  echo "                              seeded now, to import an existing store's POS key."
+  echo "                              Harmless otherwise; it is a fossil var that"
+  echo "                              scripts/migrate-tenant-secrets.mjs removes."
+else
+  echo "  POS_API_KEY in .env:        not set — CORRECT for a fresh deploy. POS keys are"
+  echo "                              per-tenant, generated at signup and hashed at rest;"
+  echo "                              merchants rotate their own from the Keys panel."
+  echo "                              Set it ONLY for a 0019 cutover that imports an"
+  echo "                              existing store (see MIGRATION-0019-RUNBOOK.md)."
 fi
 echo "  bulk_upload_logs.operation: $(q "SELECT COLUMN_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='${MYSQL_DATABASE}' AND TABLE_NAME='bulk_upload_logs' AND COLUMN_NAME='operation';")"
 

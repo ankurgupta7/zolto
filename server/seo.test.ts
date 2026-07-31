@@ -135,11 +135,11 @@ describe("storefront surface", () => {
 
     const res = await request(buildApp())
       .get("/sitemap.xml")
-      .set("Host", "aurora.zolto.shop");
+      .set("Host", "aurora.zolto.ch");
 
     expect(res.status).toBe(200);
-    expect(res.text).toContain("<loc>http://aurora.zolto.shop/</loc>");
-    expect(res.text).toContain("<loc>http://aurora.zolto.shop/product/3</loc>");
+    expect(res.text).toContain("<loc>http://aurora.zolto.ch/</loc>");
+    expect(res.text).toContain("<loc>http://aurora.zolto.ch/product/3</loc>");
     expect(res.text).toContain("<lastmod>2026-05-06</lastmod>");
     // The regression this guards: marketing URLs 404 on a storefront host.
     expect(res.text).not.toContain("/pricing");
@@ -166,16 +166,16 @@ describe("storefront surface", () => {
 
     const res = await request(buildApp())
       .get("/sitemap.xml")
-      .set("Host", "aurora.zolto.shop");
+      .set("Host", "aurora.zolto.ch");
     expect(res.text).not.toContain("/product/4");
   });
 
   it("points robots.txt at the store's own sitemap and blocks checkout", async () => {
     const res = await request(buildApp())
       .get("/robots.txt")
-      .set("Host", "aurora.zolto.shop");
+      .set("Host", "aurora.zolto.ch");
 
-    expect(res.text).toContain("Sitemap: http://aurora.zolto.shop/sitemap.xml");
+    expect(res.text).toContain("Sitemap: http://aurora.zolto.ch/sitemap.xml");
     expect(res.text).toContain("Disallow: /checkout");
     expect(res.text).toContain("Disallow: /admin");
     expect(res.text).not.toContain("zolto.com");

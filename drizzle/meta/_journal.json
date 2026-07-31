@@ -64,6 +64,13 @@
       "when": 1785342425251,
       "tag": "0009_product_locale_it",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "5",
+      "when": 1785600000000,
+      "tag": "0010_storage_quota",
+      "breakpoints": true
     }
   ]
 }

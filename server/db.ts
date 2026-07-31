@@ -37,6 +37,7 @@ import {
   type PosAttribution,
   type StaffInvite,
   staffInvites,
+  storageObjects,
   posAttributions,
   posOrderItems,
   posOrders,
@@ -520,7 +521,20 @@ export async function addProductImage(
   );
 }
 
+// Deleting an image releases its storage quota. Without this a merchant who
+// cleared their catalogue would still be billed, in allowance terms, for photos
+// that no longer exist — and would eventually be unable to upload anything at
+// all. The S3 object itself is left in place (nothing else reclaims it today);
+// what is freed here is the merchant's plan allowance.
 export async function deleteProductImage(tenantId: number, id: number) {
+  const keys = await withDbOrThrow((db) =>
+    db
+      .select({ imageKey: productImages.imageKey })
+      .from(productImages)
+      .where(
+        and(eq(productImages.tenantId, tenantId), eq(productImages.id, id)),
+      ),
+  );
   await withDbOrThrow((db) =>
     db
       .delete(productImages)
@@ -528,12 +542,26 @@ export async function deleteProductImage(tenantId: number, id: number) {
         and(eq(productImages.tenantId, tenantId), eq(productImages.id, id)),
       ),
   );
+  for (const { imageKey } of keys) {
+    await forgetStorageObject(tenantId, imageKey);
+  }
 }
 
 export async function deleteAllProductImages(
   tenantId: number,
   productId: number,
 ) {
+  const keys = await withDbOrThrow((db) =>
+    db
+      .select({ imageKey: productImages.imageKey })
+      .from(productImages)
+      .where(
+        and(
+          eq(productImages.tenantId, tenantId),
+          eq(productImages.productId, productId),
+        ),
+      ),
+  );
   await withDbOrThrow((db) =>
     db
       .delete(productImages)
@@ -544,6 +572,9 @@ export async function deleteAllProductImages(
         ),
       ),
   );
+  for (const { imageKey } of keys) {
+    await forgetStorageObject(tenantId, imageKey);
+  }
 }
 
 // ─── Instagram Posts ──────────────────────────────────────────────────────────
@@ -1883,5 +1914,53 @@ export async function joinTenantAsStaff(
       .update(users)
       .set({ tenantId, role: "staff" })
       .where(eq(users.id, userId)),
+  );
+}
+
+// ── Storage quota ────────────────────────────────────────────────────────────
+// Backs the "5 GB / 50 GB photo storage" on the plan cards. See the note on
+// storageObjects in drizzle/schema.ts for why the ledger lives in MySQL rather
+// than being asked of S3.
+
+/** Bytes this tenant currently occupies. 0 when they have stored nothing. */
+export async function getTenantStorageBytes(tenantId: number): Promise<number> {
+  const rows = await withDbOrThrow((db) =>
+    db
+      .select({ total: sql<number>`COALESCE(SUM(${storageObjects.bytes}), 0)` })
+      .from(storageObjects)
+      .where(eq(storageObjects.tenantId, tenantId)),
+  );
+  // SUM comes back as a string from MySQL for BIGINT accumulators.
+  return Number(rows[0]?.total ?? 0);
+}
+
+/** Record an object after it has been written to S3. */
+export async function recordStorageObject(
+  tenantId: number,
+  storageKey: string,
+  bytes: number,
+): Promise<void> {
+  await withDbOrThrow((db) =>
+    db.insert(storageObjects).values({ tenantId, storageKey, bytes }),
+  );
+}
+
+/**
+ * Forget an object, releasing its quota. Scoped by tenant so one tenant can
+ * never free (or observe) another's usage.
+ */
+export async function forgetStorageObject(
+  tenantId: number,
+  storageKey: string,
+): Promise<void> {
+  await withDbOrThrow((db) =>
+    db
+      .delete(storageObjects)
+      .where(
+        and(
+          eq(storageObjects.tenantId, tenantId),
+          eq(storageObjects.storageKey, storageKey),
+        ),
+      ),
   );
 }

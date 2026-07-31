@@ -15,50 +15,43 @@ pushed. Nothing is stashed or uncommitted.
 
 ---
 
-## 0a. ⛔ The deployed database appears to be freshly seeded and empty
+## 0a. ✅ CLOSED — the empty database was a deliberate staging reset
 
-**Check this before anything else, and before writing any new data.**
+**No data was lost. Do not re-investigate this.**
 
-`bash deploy/tenant-admin.sh` on the live server returned exactly one store and
-no users:
+`bash deploy/tenant-admin.sh` on the live server returned one store and no
+users:
 
 ```
 id  slug      name            plan  admins  users
 1   platform  Zolto Platform  free  0       0
 ```
 
-`deploy/lib/db.sh` seeds tenant #1 as `platform` / "Zolto Platform" by default,
-so **that is precisely what an empty, freshly-initialised database looks like.**
-The `blah1` store the merchant was using does not exist in it, and there are no
-user rows at all. The `db` container was ~5 minutes old in the same deploy
-output.
+That is exactly what `deploy/lib/db.sh` seeds by default, so it read as a
+freshly-initialised database. The operator confirmed it: **Zolto is in staging
+and the database is wiped often. There are no real customers yet.** Nothing to
+restore, no incident.
 
-**So the (10002) permission error has a simpler explanation than the one I gave
-before:** with no user row, `ctx.user` is null and `adminProcedure` rejects
-every admin call with `NOT_ADMIN_ERR_MSG`. A surviving session cookie makes the
-browser still look signed in. The claim-token theory below is a *real* latent
-bug, but it is **not** what happened here.
+The `(10002)` error the merchant saw follows directly: with no user row,
+`ctx.user` is null and `adminProcedure` rejects every admin call with
+`NOT_ADMIN_ERR_MSG`, while a surviving session cookie keeps the browser looking
+signed in. Sign up again and the flow proceeds normally.
 
-**Do this first, in order:**
+Two things this left behind, both now fixed — don't let them mislead you again:
 
-```bash
-ls -la backups/                    # is there a backup to restore?
-bash deploy/inspect-db.sh          # read-only: what is actually in there
-./deploy/recover-from-backup.sh    # only if a backup exists
-```
+- `deploy/inspect-db.sh` reports whether a table was *ever* populated
+  (AUTO_INCREMENT past 1 on an empty table = rows existed and were removed).
+  In staging that is the intended reset, so it is phrased as an observation,
+  not an alarm. Export `ZOLTO_EXPECT_EMPTY_DB=1` to turn it into a plain
+  confirmation.
+- `deploy/tenant-admin.sh` no longer tells you to STOP and check backups
+  whenever a database has no users — that is the normal state here.
 
-Backups are scheduled weekly (Sunday 02:00 → `/root/zolto/backups/`), so
-depending on timing a restore may lose little or nothing. **Do not create a new
-tenant or sign up again until this is settled** — writing fresh data on top can
-turn a recoverable database into an unrecoverable one.
+### ⚠ Backups were silently broken, and that part is NOT closed
 
-If it turns out no data was lost (e.g. the signup was never completed against
-*this* database), then just sign up again and the flow proceeds normally.
-
-**⚠ Expect `backups/` to be empty, and don't read that as proof of data loss.**
-`backup.sh` and `recover-from-backup.sh` both loaded `.env` with
-`export $(grep -v '^#' .env | xargs)`. That word-splits every value, so
-`RESEND_FROM_EMAIL=Zolto <orders@zolto.ch>` became two arguments, `export`
+Separately from the above: `backup.sh` and `recover-from-backup.sh` both loaded
+`.env` with `export $(grep -v '^#' .env | xargs)`. That word-splits every value,
+so `RESEND_FROM_EMAIL=Zolto <orders@zolto.ch>` became two arguments, `export`
 rejected `<orders@zolto.ch>` as an invalid identifier, and `set -euo pipefail`
 aborted the script **at line 3, before a single byte was dumped**. Reproduced
 against a copy of that `.env`:
@@ -69,14 +62,15 @@ exit=1
 ```
 
 So the weekly cron has very likely been failing silently since that variable was
-added, and the same bug made the *recovery* script unusable on exactly the
-server that needed it. Both are fixed now (`load_dotenv`). Two consequences:
+added, and the same bug made the *recovery* script unusable. Both are fixed
+(`load_dotenv`). This matters little today — nothing worth backing up exists —
+but it must be settled **before the first real merchant signs up**:
 
-- Check the cron/systemd log for that `not a valid identifier` line to date the
-  breakage — and check S3/GitHub backup destinations too, since a run that
-  aborted at line 3 never reached them either.
-- Once the database question is settled, **run `./deploy/backup.sh` manually and
-  confirm it produces an archive** before trusting the schedule again.
+- Check the cron/systemd log for that `not a valid identifier` line, and check
+  the S3/GitHub destinations too: a run that aborted at line 3 never reached
+  them either.
+- **Run `./deploy/backup.sh` manually and confirm it produces an archive**
+  before trusting the schedule again. Do this while the stakes are zero.
 
 ### The latent claim-token bug — still worth fixing, separately
 
@@ -116,18 +110,34 @@ in order of preference:
 
 ## 0. The one thing blocking launch
 
-**Run the Stripe Connect integration suite and read the answer.** Everything
+**Run the verification script on the server and read the answer.** Everything
 else on this page is downstream of it.
 
 ```bash
+pnpm verify:fee              # from the repo root, where .env lives
+```
+
+`scripts/verify-platform-fee.ts` settles a real test-mode direct charge on a
+connected account and reads the application fee back **from the platform
+account**, which is the only way to prove the money actually arrives. It runs
+both plans (Free must be charged, Pro must not), refunds what it creates, and
+exits non-zero on any disagreement. Fee amounts come from `platformFeeRappen()`
+— production's own function — so it cannot pass while checkout would fail.
+
+It refuses to run against an `sk_live_` key: it confirms a genuine payment, and
+on a live key that would charge a real card on a real merchant's account.
+
+The broader suite still exists and is worth running too:
+
+```bash
 pnpm install --frozen-lockfile
-STRIPE_TEST_SECRET_KEY=sk_test_...  \
-STRIPE_TEST_WEBHOOK_SECRET=whsec_... \
 pnpm test:integration
 ```
 
 The operator supplies the keys — **never commit them**; `.env` is gitignored
-(`.gitignore:11`) and that is where they belong.
+(`.gitignore:11`) and that is where they belong. The script reads `.env` itself
+via dotenv; do **not** wrap it in `set -a; . ./.env`, which executes the file
+and breaks on values like `RESEND_FROM_EMAIL=Zolto <orders@zolto.ch>`.
 
 ### Why this matters more than it looks
 
@@ -148,6 +158,8 @@ The previous session could not run it: the sandbox's egress proxy denied
 | **Green** | The fee works on a real direct charge. Revenue path proven end to end. | Update §9 of `pricing-pivot-agent-commerce.md` from ⚠️ to ✅, then move to §1 below. |
 | **"Cannot reach the Stripe API…"** | Still a network/egress problem, *not* a Stripe rejection. | Fix connectivity and re-run. Do not interpret this as the fee being broken — that distinction is why the preflight exists. |
 | **"No connected account available…"** | Test-environment gap, still not a fee rejection. | Set `STRIPE_TEST_CONNECTED_ACCOUNT_ID` to an existing test-mode `acct_...`, or link one via Zolto's own Connect OAuth flow. The suite deliberately does **not** create accounts — see below. |
+| **`FAILED: free`, "silent-loss case"** | The charge settled with **no** application fee. Outwardly a working storefront that earns Zolto nothing — the worst outcome, because nothing looks broken. | Find out why the fee was stripped: either the retry in `checkoutSession.ts` fired, or the Connect relationship does not permit fees. |
+| **`FAILED: pro`, "paying twice"** | A Pro tenant was charged a fee they pay CHF 25/mo to avoid. | Stop charging before anything else — this is a refund-and-apologise bug, not a missed-revenue one. |
 | **Connect block fails some other way** | This is the finding we were looking for. | Read the Stripe error properly. Likely the platform account's Connect capabilities or the platform/connected relationship. Fix before launch — the fallback keeps sales alive but earns nothing. |
 
 ### Run history (read this before re-diagnosing)

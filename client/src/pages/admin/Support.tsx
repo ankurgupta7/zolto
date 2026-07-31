@@ -7,13 +7,18 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { LifeBuoy, BookOpen, Activity, Mail } from "lucide-react";
 import { PageHeader, SettingsCard } from "@/components/admin/ui";
+import { featuresForPlan } from "@shared/platform";
 
-const CHANNEL_BY_PLAN: Record<string, string> = {
-  free: "Community & email support, answered within a few business days.",
-  maker: "Priority email support, answered within one business day.",
-  studio: "Priority email + chat support, same-business-day responses.",
-  atelier: "Dedicated support with a named contact and a private channel.",
-};
+// Keyed off PLAN_FEATURES.prioritySupport rather than plan ids, so a plan
+// rename can't silently downgrade what a merchant is told. The previous map
+// was keyed free/maker/studio/atelier; after the Free/Pro pivot "pro" hit the
+// `?? free` fallback and a paying merchant was told they had community support
+// with a multi-day response — while the pricing page sold them "Priority human
+// support".
+const SUPPORT_LEVEL = {
+  priority: "Priority human support, answered within one business day.",
+  standard: "Community & email support, answered within a few business days.",
+} as const;
 
 export default function Support() {
   useAuth();
@@ -35,7 +40,9 @@ export default function Support() {
               {plan} plan
             </p>
             <p className="mt-0.5 text-sm text-muted-foreground">
-              {CHANNEL_BY_PLAN[plan] ?? CHANNEL_BY_PLAN.free}
+              {featuresForPlan(plan).prioritySupport
+                ? SUPPORT_LEVEL.priority
+                : SUPPORT_LEVEL.standard}
             </p>
           </div>
         </div>

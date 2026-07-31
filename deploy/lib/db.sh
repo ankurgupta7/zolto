@@ -54,6 +54,19 @@ idx_exists() { # idx_exists TABLE INDEX_NAME
     AND CONSTRAINT_NAME='$2';" 2>/dev/null || echo 0
 }
 
+# Helper: does a PLAIN (non-constraint) index exist?
+#
+# idx_exists above queries TABLE_CONSTRAINTS, which only ever contains PRIMARY
+# KEY, UNIQUE and FOREIGN KEY entries — an ordinary CREATE INDEX never appears
+# there. Probing for one with idx_exists therefore always answers 0, so the
+# migration would re-issue CREATE INDEX on every deploy and fail on the second
+# run. STATISTICS is the table that lists every index, constraint-backed or not.
+plain_index_exists() { # plain_index_exists TABLE INDEX_NAME
+  $MYSQL -se "${MYSQL_LOCK_TIMEOUT_SQL}SELECT COUNT(*) FROM information_schema.STATISTICS
+    WHERE TABLE_SCHEMA='${MYSQL_DATABASE}' AND TABLE_NAME='$1'
+    AND INDEX_NAME='$2';" 2>/dev/null || echo 0
+}
+
 # Helper: is a column currently nullable? (prints YES / NO / empty if absent)
 col_nullable() { # col_nullable TABLE COLUMN
   $MYSQL -se "${MYSQL_LOCK_TIMEOUT_SQL}SELECT IS_NULLABLE FROM information_schema.COLUMNS
@@ -451,5 +464,39 @@ migrate_0025_tenant_secrets() {
       "ALTER TABLE \`tenant_settings\` ADD \`discord_owner_user_id\` varchar(64) NULL;"
   else
     ok "0025 tenant_settings.discord_owner_user_id already exists"
+  fi
+}
+
+# ── 0026: per-tenant storage ledger ──────────────────────────────────────────
+# Creates storage_objects, which backs the "5 GB / 50 GB photo storage" on the
+# plan cards. Before this nothing enforced either figure — the only limit was
+# express.json's 50 MB per request — so a free tenant could upload without
+# bound. server/storage.ts storagePut now takes a tenantId, checks the plan
+# allowance, and records a row here.
+#
+# No backfill: objects written before this migration are unmetered and stay
+# that way. Charging a merchant for photos we never measured would be worse
+# than starting their ledger at zero, and at current volumes the difference is
+# noise. Idempotent.
+migrate_0026_storage_objects() {
+  if [ "$(tbl_exists storage_objects)" = "0" ]; then
+    run_sql "0026 storage_objects table" "
+      CREATE TABLE IF NOT EXISTS \`storage_objects\` (
+        \`id\`          int AUTO_INCREMENT NOT NULL,
+        \`tenant_id\`   int NOT NULL,
+        \`storage_key\` varchar(512) NOT NULL,
+        \`bytes\`       int NOT NULL,
+        \`createdAt\`   timestamp NOT NULL DEFAULT (now()),
+        CONSTRAINT \`storage_objects_id\` PRIMARY KEY(\`id\`)
+      );"
+  else
+    ok "0026 storage_objects already exists"
+  fi
+
+  if [ "$(plain_index_exists storage_objects storage_objects_tenant_idx)" = "0" ]; then
+    run_sql "0026 index storage_objects(tenant_id)" \
+      "CREATE INDEX \`storage_objects_tenant_idx\` ON \`storage_objects\` (\`tenant_id\`);"
+  else
+    ok "0026 storage_objects_tenant_idx already exists"
   fi
 }

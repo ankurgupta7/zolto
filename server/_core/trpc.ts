@@ -1,4 +1,10 @@
 import { NOT_ADMIN_ERR_MSG, UNAUTHED_ERR_MSG } from "@shared/const";
+import {
+  PLAN_FEATURES,
+  featuresForPlan,
+  type PlanId,
+  type PlanFeature,
+} from "@shared/platform";
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import type { TrpcContext } from "./context";
@@ -79,36 +85,12 @@ export const superadminProcedure = t.procedure.use(
 // duplicated here — read them from PLANS, the single owner of those numbers.
 // The 1% online/agent fee is likewise owned by PLANS[].onlineFeeBps and
 // applied in server/routers/checkout.ts, not gated here.
-export const PLAN_FEATURES = {
-  // Free: the whole commerce engine — store, full POS, inventory sync, the
-  // agent layer (llms.txt/MCP/chat, the discovery wedge) and a taste of AI.
-  // Monetized via the 1% fee on online/agent orders, not by gating.
-  free: {
-    maxStaff: 1,
-    customDomain: false,
-    whiteLabel: false,
-    analytics: "basic",
-    multiCurrency: false,
-    prioritySupport: false,
-    pos: true,
-    onlineStore: true,
-  },
-  // Pro (CHF 25/mo): removes the 1% fee, unmetered AI, and everything a
-  // maker selling online every week needs — domain, team, analytics, support.
-  pro: {
-    maxStaff: 3,
-    customDomain: true,
-    whiteLabel: true,
-    analytics: "advanced",
-    multiCurrency: true,
-    prioritySupport: true,
-    pos: true,
-    onlineStore: true,
-  },
-} as const;
-
-export type PlanId = keyof typeof PLAN_FEATURES;
-export type PlanFeature = keyof typeof PLAN_FEATURES.free;
+// Re-exported from @shared/platform so the admin UI can gate on the SAME object
+// this middleware enforces. It used to be defined here, which put it out of the
+// client's reach and left every admin screen mirroring the rule by hand — see
+// the note on PLAN_FEATURES in shared/platform.ts for what that cost.
+export { PLAN_FEATURES, featuresForPlan };
+export type { PlanId, PlanFeature };
 
 /** The next plan up, for upgrade prompts. */
 const UPGRADE_PATH: Record<PlanId, string | null> = {

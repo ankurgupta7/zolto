@@ -116,7 +116,7 @@ Why a manifest and not ad-hoc `<Tabs>`:
 | **Orders** | Online orders, checkout holds, fulfilment status | `checkout.*` |
 | **Reconciliation** | Day-end AI guesses awaiting confirmation | `reconciliation.*` |
 | **Storefront** | Theme, logo, colours, hero copy, SEO meta, llms.txt preview | `tenant.updateSettings` |
-| **Domain** | zolto.shop address, custom domain + DNS status, TLS state | `tenantSettings.publicDomain`, `/api/domain-ask` (Maker+) |
+| **Domain** | zolto.ch subdomain, custom domain + DNS status, TLS state | `tenantSettings.publicDomain`, `/api/domain-ask` (Pro) |
 | **Channels** | WhatsApp / Slack / Discord intake connections, Instagram | `whatsapp.ts`, `slack.ts`, `discord.ts`, `instagram.*` |
 | **POS** | Terminal location, Tap to Pay status, TWINT QR setup, POS API key link | `pos.ts` endpoints |
 | **Insights** | Stats dashboard + AI narrative | `insights.*` (Studio+, plan-gated) |

@@ -85,6 +85,7 @@ export async function generateStyledProductPhoto(params: {
   let imageUrl: string;
   try {
     const result = await generateImage({
+      tenantId,
       prompt: stylePrompt,
       originalImages: [{ url: product.imageUrl, mimeType: "image/jpeg" }],
     });
