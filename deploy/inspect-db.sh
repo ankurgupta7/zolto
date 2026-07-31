@@ -129,11 +129,24 @@ fi
 
 echo
 echo "── Deploy prerequisites ────────────────────────────────────────"
+# POS_API_KEY is a CUTOVER-ONLY variable, not a platform credential. POS keys
+# are per-tenant: generated at signup (server/routers/tenant.ts), stored only as
+# SHA-256 (server/posApiKey.ts), rotated by the merchant. The running app never
+# reads POS_API_KEY — docker-compose.yml deliberately does not pass it. Its one
+# remaining use is seeding tenant #1 during a 0019 cutover, so an existing
+# store's already-paired terminal keeps working. On a fresh deploy, unset is
+# correct: db.sh generates a random key and stores its hash.
 if [ -n "${POS_API_KEY:-}" ]; then
-  echo "  POS_API_KEY in .env:        set (value hidden) — tenant #1 will seed with it"
+  echo "  POS_API_KEY in .env:        set (value hidden) — only used if tenant #1 is"
+  echo "                              seeded now, to import an existing store's POS key."
+  echo "                              Harmless otherwise; it is a fossil var that"
+  echo "                              scripts/migrate-tenant-secrets.mjs removes."
 else
-  echo "  POS_API_KEY in .env:        NOT SET — seed would use a placeholder and the"
-  echo "                              live POS terminal would reject sales until fixed"
+  echo "  POS_API_KEY in .env:        not set — CORRECT for a fresh deploy. POS keys are"
+  echo "                              per-tenant, generated at signup and hashed at rest;"
+  echo "                              merchants rotate their own from the Keys panel."
+  echo "                              Set it ONLY for a 0019 cutover that imports an"
+  echo "                              existing store (see MIGRATION-0019-RUNBOOK.md)."
 fi
 echo "  bulk_upload_logs.operation: $(q "SELECT COLUMN_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='${MYSQL_DATABASE}' AND TABLE_NAME='bulk_upload_logs' AND COLUMN_NAME='operation';")"
 
