@@ -39,9 +39,41 @@ When adding an admin route, ship a test that an admin of a _different_ tenant is
 refused — not just that an anonymous caller is. The anonymous case rarely
 regresses; the cross-tenant one silently does.
 
+## Screenshot every UI change
+
+**Any change to rendered UI must be looked at, not just tested.** Unit tests
+assert the DOM; they cannot see the render. Ship a screenshot with the change.
+
+```bash
+./tools/screenshot/fetch-fonts.sh                      # once per clone
+npx vite --config tools/screenshot/vite.config.ts &    # isolated root, port 5199
+node tools/screenshot/shoot.mjs out/ "some section text"
+```
+
+This renders the real components against the real `index.css` — nothing mocked.
+It exists because the full dev server needs a database, which a review sandbox
+usually doesn't have.
+
+Three things it has already caught that every test suite passed straight
+through, and which are worth checking for by eye:
+
+- **Tailwind emitting no utilities at all.** v4 infers content paths from the
+  Vite root, so `entry.css` must `@source` the real `client/src`. A page that
+  renders unstyled still passes every DOM assertion.
+- **Decorative absolute positioning breaking on wrap.** `SketchUnderline` spans
+  its parent's full width, so underlining a heading that wraps leaves the stroke
+  trailing across the column. Underline a short phrase, not a sentence.
+- **Oldstyle figures in money.** Cormorant Garamond defaults to oldstyle
+  numerals, which renders `CHF 0` as `CHF o` and `2,000` as `2,ooo`. Serif
+  numerals showing money or stock need `lining-nums`, not just `tabular-nums`.
+
+`fonts loaded: NONE ⚠` in the output means the shot is showing fallback faces
+and proves nothing about typography — run `fetch-fonts.sh` first.
+
 ## Commands
 
 - `npm run test` / `npx vitest run` — run the full test suite once
 - `npm run test:coverage` — run tests with v8 coverage reporting
 - `npm run check` / `npx tsc --noEmit` — typecheck
 - `npm run format` — prettier write
+- `node tools/screenshot/shoot.mjs <outDir> [section text…]` — visual check (see above)

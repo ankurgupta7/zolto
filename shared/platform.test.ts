@@ -218,6 +218,7 @@ describe("ZERO_COST_POS", () => {
     // of the free tier would be the one kind of error this band can't survive.
     const claimed = [
       ZERO_COST_POS.headline,
+      ZERO_COST_POS.headlineEmphasis,
       ZERO_COST_POS.body,
       ZERO_COST_POS.catch,
       ...ZERO_COST_POS.includes,
@@ -231,6 +232,7 @@ describe("ZERO_COST_POS", () => {
   it("makes no claim about any competitor", () => {
     const claimed = [
       ZERO_COST_POS.headline,
+      ZERO_COST_POS.headlineEmphasis,
       ZERO_COST_POS.body,
       ZERO_COST_POS.catch,
       ...ZERO_COST_POS.includes,

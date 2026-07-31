@@ -26,8 +26,11 @@ export function ZeroCostPos() {
               {ZERO_COST_POS.eyebrow}
             </p>
             <h2 className="mt-3 font-serif text-3xl leading-[1.15] text-white sm:text-4xl">
+              {ZERO_COST_POS.headline}{" "}
+              {/* Only the punchline is underlined, so the stroke stays tight
+                  to the words however the heading wraps. */}
               <span className="relative inline-block">
-                {ZERO_COST_POS.headline}
+                {ZERO_COST_POS.headlineEmphasis}
                 <span
                   aria-hidden
                   className="absolute -bottom-2 left-0 w-full text-[var(--brand-accent)]"
@@ -49,12 +52,17 @@ export function ZeroCostPos() {
             <p className="text-[11px] uppercase tracking-[0.2em] text-white/45">
               {FREE_PLAN.name} plan, in person
             </p>
+            {/* lining-nums is load-bearing, not decoration: Cormorant defaults
+                to oldstyle figures, which renders this "0" at x-height so the
+                price reads "CHF o". Money has to be unmistakable. */}
             <p
               data-testid="zero-cost-price"
-              className="mt-2 font-serif text-6xl font-bold text-[var(--brand-accent-light)] tabular-nums"
+              className="mt-2 font-serif text-6xl font-bold text-[var(--brand-accent-light)] lining-nums tabular-nums"
             >
               {formatPrice(FREE_PLAN.priceChf)}
-              <span className="text-lg font-normal text-white/50">/mo</span>
+              <span className="ml-1.5 align-baseline text-lg font-normal text-white/50">
+                /mo
+              </span>
             </p>
             <ul className="mt-6 grid gap-3">
               {ZERO_COST_POS.includes.map((item) => (

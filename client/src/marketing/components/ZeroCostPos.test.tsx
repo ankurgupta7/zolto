@@ -19,8 +19,12 @@ function renderBand() {
 describe("ZeroCostPos", () => {
   it("leads with the claim", () => {
     renderBand();
+    // The heading carries the whole sentence even though the underline only
+    // hugs the second half.
     expect(
-      screen.getByRole("heading", { name: ZERO_COST_POS.headline }),
+      screen.getByRole("heading", {
+        name: `${ZERO_COST_POS.headline} ${ZERO_COST_POS.headlineEmphasis}`,
+      }),
     ).toBeTruthy();
   });
 

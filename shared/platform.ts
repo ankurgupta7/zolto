@@ -420,7 +420,13 @@ export const COST_COMPARISON = {
  */
 export const ZERO_COST_POS = {
   eyebrow: "the bit people re-read",
-  headline: "A whole shop in your pocket. For nothing.",
+  /**
+   * Split so the hand-drawn underline can hug the punchline. Underlining the
+   * whole sentence leaves the stroke trailing off across the column once the
+   * headline wraps, which reads as a rendering fault rather than a flourish.
+   */
+  headline: "A whole shop in your pocket.",
+  headlineEmphasis: "For nothing.",
   body: "Photos, names, prices, stock counts — your actual catalogue, in the till on your phone. Tap to take the payment. Watch it sync to your website. Then pay us CHF 0.00 at the end of the month, and again the month after that.",
   /** Each item must be true of the Free plan — asserted in platform.test.ts. */
   includes: [
