@@ -118,6 +118,28 @@ export function platformFeeRappen(
  * a permissions error — the shape a Connect relationship that can't take fees
  * actually produces. Amount/currency/card errors are left to propagate.
  */
+/**
+ * Zolto can no longer act for this connected account at all.
+ *
+ * Stripe answers `account_invalid` (as a StripePermissionError) when the
+ * account is not connected to this platform: the merchant revoked access, the
+ * link was never completed, or — the common one in testing — the account lives
+ * in the other mode from the key being used, since a live account is invisible
+ * to a test key and vice versa.
+ *
+ * Distinct from a fee rejection because the remedies are opposite. A fee
+ * rejection means retry without the fee and take the sale. This means there is
+ * no sale to take until someone reconnects Stripe, and retrying only repeats
+ * the same failure.
+ */
+export function isConnectionRevoked(err: unknown): boolean {
+  if (!err || typeof err !== "object") return false;
+  const e = err as { type?: string; code?: string };
+  return (
+    e.type === "StripePermissionError" && e.code === "account_invalid"
+  );
+}
+
 export function isPlatformFeeRejection(err: unknown): boolean {
   if (!err || typeof err !== "object") return false;
   const e = err as {
@@ -129,6 +151,15 @@ export function isPlatformFeeRejection(err: unknown): boolean {
 
   // Stripe points at the offending parameter when it can.
   if (e.param && /application_fee/i.test(e.param)) return true;
+
+  // A severed Connect relationship is NOT a fee rejection, even though Stripe
+  // reports it as the same error type. Treating it as one makes the checkout
+  // log claim "Stripe rejected the platform fee ... the sale still completes",
+  // when in truth the account is unreachable, the fee-free retry fails
+  // identically, and the merchant's real problem — reconnect Stripe — goes
+  // unnamed. Checked before the type test below, which would otherwise swallow
+  // it. See isConnectionRevoked.
+  if (isConnectionRevoked(err)) return false;
 
   // The platform isn't permitted to collect fees on this account.
   if (e.type === "StripePermissionError") return true;
@@ -369,6 +400,21 @@ export async function createStorefrontCheckoutSession(params: {
           stripeAccount: connectedAccountId,
         });
         chargedFeeRappen = 0;
+      } else if (isConnectionRevoked(err)) {
+        // Name the actual problem. Without this the merchant sees a generic
+        // failure and we go looking at the fee, when what is broken is the
+        // Connect link itself.
+        console.error(
+          `[Checkout] Tenant ${tenantId}'s connected account ${connectedAccountId} ` +
+            `is no longer reachable from this platform key (account_invalid). ` +
+            `Online sales are down for this store until they reconnect Stripe. ` +
+            `Original error:`,
+          err,
+        );
+        throw new CheckoutError(
+          "NOT_CONNECTED",
+          "This store's payment connection needs to be re-linked. Please enquire via WhatsApp.",
+        );
       } else {
         throw err;
       }

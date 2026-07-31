@@ -46,7 +46,11 @@
 // Anything already in the real environment still wins.
 import "dotenv/config";
 import Stripe from "stripe";
-import { platformFeeRappen, isPlatformFeeRejection } from "../server/checkoutSession";
+import {
+  platformFeeRappen,
+  isPlatformFeeRejection,
+  isConnectionRevoked,
+} from "../server/checkoutSession";
 import {
   chf,
   summarise,
@@ -285,7 +289,30 @@ async function main() {
 
   const account = await resolveAccount();
 
-  const acct = await stripe.accounts.retrieve(account);
+  let acct: Stripe.Account;
+  try {
+    acct = await stripe.accounts.retrieve(account);
+  } catch (err) {
+    if (isConnectionRevoked(err)) {
+      // Expected and common, so it gets an explanation rather than a stack
+      // trace: this is what a mode mismatch looks like, and the account id
+      // alone cannot tell you which mode it belongs to.
+      fail(
+        `this platform key cannot reach ${account}.\n\n` +
+          "Stripe says account_invalid, which means one of:\n" +
+          `  - ${account} is a LIVE account and this is a TEST key (or vice\n` +
+          "    versa). An account is only ever visible to its own mode, so a\n" +
+          "    connection made during live onboarding is invisible here.\n" +
+          "  - the account belongs to a different platform.\n" +
+          "  - the merchant revoked this platform's access.\n\n" +
+          "Run with --list to see the accounts this key CAN reach. If that\n" +
+          "list is empty, the Connect flow ran against your live client id —\n" +
+          "switch the Dashboard to Test mode, copy the client id shown there\n" +
+          "into STRIPE_CONNECT_CLIENT_ID, restart, and connect again.",
+      );
+    }
+    throw err;
+  }
   line(`\nPlatform key:       ${KEY!.slice(0, 12)}… (test mode)`);
   line(`Connected account:  ${account}`);
   line(`  charges enabled:  ${acct.charges_enabled}`);
@@ -341,6 +368,8 @@ async function main() {
 }
 
 main().catch((err) => {
+  // A quota of one stack trace: only for failures the script has no reading of.
+  // Anything it can explain has already been reported by fail() above.
   console.error("\nUnexpected failure:", err);
   process.exit(1);
 });

@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { chf, summarise, verdictFor } from "./platformFeeVerify";
-import { platformFeeRappen } from "./checkoutSession";
+import {
+  platformFeeRappen,
+  isPlatformFeeRejection,
+  isConnectionRevoked,
+} from "./checkoutSession";
 
 describe("chf", () => {
   it("renders Rappen as Swiss francs", () => {
@@ -136,5 +140,49 @@ describe("the fee the verifier checks is the fee checkout charges", () => {
       observedFeeRappen: null,
     });
     expect(pro.pass).toBe(true);
+  });
+});
+
+describe("a revoked Connect link is not a fee rejection", () => {
+  it("classifies account_invalid as a broken connection, not a rejected fee", () => {
+    // The real error Stripe returned when a test key was pointed at an account
+    // it does not own. It arrives as StripePermissionError, the same type a
+    // genuine fee-permission failure uses — so the code is what separates them.
+    const err = {
+      type: "StripePermissionError",
+      code: "account_invalid",
+      message:
+        "The provided key 'sk_test_...' does not have access to account " +
+        "'acct_1TzLlJAT5YN2h9C5' (or that account does not exist). " +
+        "Application access may have been revoked.",
+    };
+    expect(isConnectionRevoked(err)).toBe(true);
+    // The important half: it must NOT trigger the fee-stripping retry, which
+    // would fail identically and log that the sale completed when it did not.
+    expect(isPlatformFeeRejection(err)).toBe(false);
+  });
+
+  it("still treats a genuine fee-permission failure as a fee rejection", () => {
+    // Same error type, no account_invalid code — here dropping the fee really
+    // can rescue the sale, so the retry must still fire.
+    const err = {
+      type: "StripePermissionError",
+      message: "This platform cannot collect application fees on this account.",
+    };
+    expect(isConnectionRevoked(err)).toBe(false);
+    expect(isPlatformFeeRejection(err)).toBe(true);
+  });
+
+  it("does not mistake other Stripe errors for a revoked connection", () => {
+    for (const err of [
+      { type: "StripeInvalidRequestError", code: "parameter_invalid_empty" },
+      { type: "StripeCardError", code: "card_declined" },
+      { code: "account_invalid" }, // right code, wrong type
+      null,
+      undefined,
+      "account_invalid",
+    ]) {
+      expect(isConnectionRevoked(err)).toBe(false);
+    }
   });
 });
