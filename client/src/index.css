@@ -278,6 +278,29 @@ button:active,
   will-change: transform;
 }
 
+/* ── Line-art draw-on ──────────────────────────────────────────────────────
+   Powers the landing page's "day in the life" scenes, where each drawing
+   inks itself as it scrolls into view.
+
+   Every drawable inside a .sketch-draw group carries pathLength="1", which
+   normalises its length — so a single dash value draws a long canopy curve
+   and a tiny clasp circle at the same rate, with no per-path measuring.
+
+   The default state is fully drawn. The blank state is opt-in, applied only
+   when a parent explicitly says data-drawn="false", so the art can never be
+   left invisible by an observer that didn't fire, a JS error, or a crawler. */
+@media (prefers-reduced-motion: no-preference) {
+  [data-drawn] .sketch-draw * {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 0;
+    transition: stroke-dashoffset 1100ms cubic-bezier(0.22, 1, 0.36, 1);
+    transition-delay: var(--draw-delay, 0ms);
+  }
+  [data-drawn="false"] .sketch-draw * {
+    stroke-dashoffset: 1;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto !important;

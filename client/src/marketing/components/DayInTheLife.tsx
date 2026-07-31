@@ -1,20 +1,89 @@
+import type { ComponentType } from "react";
 import { SELLING_FLOW } from "@shared/platform";
 import { useInView } from "@/hooks/useInView";
 import { ScrollReveal } from "./ScrollReveal";
+import {
+  StallOpensScene,
+  TapToPayScene,
+  ReconciliationEmailScene,
+} from "./MarketingIllustrations";
 
 /**
  * DayInTheLife — the selling loop retold as one market day, scrolled through.
  *
  * The same three SELLING_FLOW steps the page always showed, but staged as a
- * timeline: a gold spine draws itself down the column as each step arrives, so
- * reading the section feels like moving through the day rather than scanning
- * three equal boxes. The time-of-day anchors come from the shared data, not
- * from here, so the story can't drift from the product copy.
+ * sequence: a gold spine draws itself down the column, and each beat's line-art
+ * inks itself in as you reach it — the stall going up, the tap, the evening
+ * email. Reading the section moves through the day rather than scanning three
+ * equal boxes.
  *
- * The spine is decorative only — every step's heading, time and detail is real
- * text in a real ordered list, so the section still reads correctly with
- * animation disabled, in a screen reader, and to a crawler.
+ * The drawings are decorative (aria-hidden, no text of their own). Every step's
+ * heading, time and detail is real copy in a real ordered list, so the section
+ * reads correctly with animation disabled, in a screen reader, and to a
+ * crawler. The time-of-day anchors come from the shared data, not from here, so
+ * the story can't drift from the product copy.
  */
+
+/**
+ * One drawing per beat, in SELLING_FLOW's order. Kept as a positional list
+ * rather than keyed off step titles: the copy is free to be reworded without
+ * silently dropping the art. A step with no scene simply renders without one.
+ */
+const SCENES: ComponentType<{ className?: string }>[] = [
+  StallOpensScene,
+  TapToPayScene,
+  ReconciliationEmailScene,
+];
+
+function Beat({
+  step,
+  index,
+}: {
+  step: (typeof SELLING_FLOW)[number];
+  index: number;
+}) {
+  // Each beat inks itself in independently, so the sequence follows the reader
+  // down the page instead of firing all at once when the section appears.
+  const { ref, inView } = useInView<HTMLDivElement>({ threshold: 0.35 });
+  const Scene = SCENES[index];
+
+  return (
+    <ScrollReveal
+      as="li"
+      delay={index * 160}
+      className="relative pb-12 last:pb-0 sm:pl-12"
+    >
+      {/* Numbered node, sitting on the spine. */}
+      <span className="absolute left-0 top-0 hidden h-8 w-8 items-center justify-center rounded-full border border-[var(--brand-accent)] bg-[var(--brand-surface-2)] font-serif text-sm font-bold text-[var(--brand-ink)] tabular-nums sm:flex">
+        {index + 1}
+      </span>
+
+      <div
+        ref={ref}
+        data-drawn={inView ? "true" : "false"}
+        data-testid="day-beat"
+        className="grid items-center gap-6 sm:grid-cols-[1fr_auto]"
+      >
+        <div>
+          <p className="font-hand text-xl leading-none text-[var(--brand-accent)]">
+            {step.timeOfDay}
+          </p>
+          <h3 className="mt-2 font-serif text-xl text-[var(--brand-text)]">
+            {step.title}
+          </h3>
+          <p className="mt-2 max-w-md text-sm leading-relaxed text-[var(--brand-muted-2)]">
+            {step.detail}
+          </p>
+        </div>
+
+        {Scene && (
+          <Scene className="h-28 w-36 shrink-0 justify-self-start text-[var(--brand-accent)] sm:justify-self-end" />
+        )}
+      </div>
+    </ScrollReveal>
+  );
+}
+
 export function DayInTheLife() {
   // Pegged to the list itself: the spine fills once the sequence is reached,
   // rather than tracking scroll position frame by frame (which would mean a
@@ -22,7 +91,7 @@ export function DayInTheLife() {
   const { ref, inView } = useInView<HTMLOListElement>({ threshold: 0.2 });
 
   return (
-    <ol ref={ref} className="relative mx-auto max-w-2xl">
+    <ol ref={ref} className="relative mx-auto max-w-3xl">
       {/* The unfilled track + the gold spine that grows over it. */}
       <span
         aria-hidden
@@ -38,26 +107,7 @@ export function DayInTheLife() {
       />
 
       {SELLING_FLOW.map((step, i) => (
-        <ScrollReveal
-          as="li"
-          key={step.title}
-          delay={i * 160}
-          className="relative pb-10 last:pb-0 sm:pl-12"
-        >
-          {/* Numbered node, sitting on the spine. */}
-          <span className="absolute left-0 top-0 hidden h-8 w-8 items-center justify-center rounded-full border border-[var(--brand-accent)] bg-[var(--brand-surface-2)] font-serif text-sm font-bold text-[var(--brand-ink)] tabular-nums sm:flex">
-            {i + 1}
-          </span>
-          <p className="font-hand text-xl leading-none text-[var(--brand-accent)]">
-            {step.timeOfDay}
-          </p>
-          <h3 className="mt-2 font-serif text-xl text-[var(--brand-text)]">
-            {step.title}
-          </h3>
-          <p className="mt-2 max-w-md text-sm leading-relaxed text-[var(--brand-muted-2)]">
-            {step.detail}
-          </p>
-        </ScrollReveal>
+        <Beat key={step.title} step={step} index={i} />
       ))}
     </ol>
   );
