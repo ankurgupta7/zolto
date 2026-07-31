@@ -199,6 +199,16 @@ jobs:
             - gradle-v1-{{ checksum "android/gradle/libs.versions.toml" }}
             - gradle-v1-
       - run:
+          # The repo carries no wrapper jar (android/README.md explains why), so
+          # something has to pin the version. Generating the wrapper with the
+          # executor's Gradle costs one step and keeps this job on the same 8.9
+          # the GitHub Actions job provisions — otherwise CircleCI would build
+          # with whatever Gradle the image happens to ship and the two CI
+          # systems would drift apart silently.
+          name: Pin Gradle 8.9 (generate a wrapper from the image's Gradle)
+          working_directory: android
+          command: gradle wrapper --gradle-version 8.9
+      - run:
           name: Wire-format contract tests
           # Run first: these guard the app and server/pos.ts drifting apart on
           # the TWINT / payment-intent / Terminal provisioning shapes, which is

@@ -37,7 +37,7 @@ top of this file reads `main`.
 | `unit`        | `tsc --noEmit`, the full vitest suite (server + client), deploy-script tests |
 | `integration` | `server/*.integration.test.ts` against **real Stripe test mode**             |
 | `e2e`         | Playwright storefront journey against a freshly-migrated MySQL               |
-| `android`     | ZoltoPOS contract tests, `./gradlew test`, and a debug APK                   |
+| `android`     | ZoltoPOS contract tests, `gradle test`, and a debug APK                      |
 
 ### One-time setup
 

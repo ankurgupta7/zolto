@@ -32,7 +32,40 @@ use the simulated reader.
 
 ## Build & test
 
-    ./gradlew test            # JVM unit tests (incl. API wire-format contract tests)
-    ./gradlew assembleDebug   # debug APK
+There is **no Gradle wrapper in this repo** — use a local Gradle 8.9
+(`brew install gradle`, SDKMAN, or Android Studio's bundled one):
+
+    gradle test            # JVM unit tests (incl. API wire-format contract tests)
+    gradle assembleDebug   # debug APK
 
 CI: `.github/workflows/android-build.yml` runs on any change under `android/`.
+It provisions Gradle 8.9 through `gradle/actions/setup-gradle` and calls
+`gradle` the same way.
+
+### Why there's no wrapper
+
+The committed wrapper was broken three ways and had never once run in CI:
+
+- `gradle-wrapper.jar` was a Gradle **4.4.1** jar (per its embedded
+  `build-receipt.properties`) while `gradle-wrapper.properties` asked for
+  **8.9**. Its SHA-256 wasn't in Gradle's published set, so
+  `setup-gradle`'s wrapper validation failed the job before any test ran —
+  which is exactly the supply-chain mismatch that check exists to catch.
+- `gradlew` was committed non-executable (mode `100644`), so even past
+  validation, `./gradlew` would have died with "Permission denied".
+- There was no `gradlew.bat`, so Windows had nothing to run.
+
+Replacing the jar needs a checksum-verified `gradle-8.9-bin.zip`, so the
+sound options were "commit an unverified binary" or "remove it". It was
+removed. `gradle-wrapper.properties` stays as the version pin.
+
+To restore a real wrapper, on a machine with network access to
+`downloads.gradle.org`:
+
+    cd android
+    gradle wrapper --gradle-version 8.9   # writes gradlew, gradlew.bat, the jar
+    git update-index --chmod=+x gradlew   # keep it executable in git
+
+then switch the `gradle` calls in the workflow back to `./gradlew`. Don't set
+`validate-wrappers: false` to get around a validation failure — that silences
+the guard rather than fixing the jar.
