@@ -1077,35 +1077,84 @@ export async function getAvailableProductsForMatching(
   );
 }
 
-export async function getKnownOrderPaymentIntentIds(): Promise<Set<string>> {
+// The three "already known to us" sets below back Stripe reconciliation.
+// `tenantId` scopes them to one store; omitting it keeps the platform-wide
+// behaviour for the superadmin sweep. Scoping matters less for correctness
+// than it looks (PaymentIntent ids are globally unique, and an intent on one
+// tenant's connected account can never appear in another's list) and more for
+// size: without it every tenant loads every other tenant's id set.
+export async function getKnownOrderPaymentIntentIds(
+  tenantId?: number,
+): Promise<Set<string>> {
   return withDb(async (db) => {
     const rows = await db
       .select({ id: orders.stripePaymentIntentId })
       .from(orders)
-      .where(isNotNull(orders.stripePaymentIntentId));
+      .where(
+        and(
+          isNotNull(orders.stripePaymentIntentId),
+          ...(tenantId === undefined ? [] : [eq(orders.tenantId, tenantId)]),
+        ),
+      );
     return new Set(rows.map((r) => r.id).filter((id): id is string => !!id));
   }, new Set<string>());
 }
 
-export async function getKnownPosPaymentIntentIds(): Promise<Set<string>> {
+export async function getKnownPosPaymentIntentIds(
+  tenantId?: number,
+): Promise<Set<string>> {
   return withDb(async (db) => {
     const rows = await db
       .select({ id: posOrders.stripePaymentIntentId })
       .from(posOrders)
-      .where(isNotNull(posOrders.stripePaymentIntentId));
+      .where(
+        and(
+          isNotNull(posOrders.stripePaymentIntentId),
+          ...(tenantId === undefined ? [] : [eq(posOrders.tenantId, tenantId)]),
+        ),
+      );
     return new Set(rows.map((r) => r.id).filter((id): id is string => !!id));
   }, new Set<string>());
 }
 
-export async function getKnownReconciliationPaymentIntentIds(): Promise<
-  Set<string>
-> {
+export async function getKnownReconciliationPaymentIntentIds(
+  tenantId?: number,
+): Promise<Set<string>> {
   return withDb(async (db) => {
     const rows = await db
       .select({ id: stripeReconciliations.stripePaymentIntentId })
-      .from(stripeReconciliations);
+      .from(stripeReconciliations)
+      .where(
+        tenantId === undefined
+          ? undefined
+          : eq(stripeReconciliations.tenantId, tenantId),
+      );
     return new Set(rows.map((r) => r.id));
   }, new Set<string>());
+}
+
+// Every tenant that has linked their own Stripe account — the population the
+// platform-wide reconciliation sweep iterates. A tenant without a connected
+// account has no payments of its own to reconcile.
+export async function getTenantsWithConnectedStripe(): Promise<
+  { id: number; slug: string; name: string; stripeConnectedAccountId: string }[]
+> {
+  return withDb(async (db) => {
+    const rows = await db
+      .select({
+        id: tenants.id,
+        slug: tenants.slug,
+        name: tenants.name,
+        stripeConnectedAccountId: tenants.stripeConnectedAccountId,
+      })
+      .from(tenants)
+      .where(isNotNull(tenants.stripeConnectedAccountId))
+      .orderBy(asc(tenants.id));
+    return rows.filter(
+      (r): r is (typeof rows)[number] & { stripeConnectedAccountId: string } =>
+        Boolean(r.stripeConnectedAccountId),
+    );
+  }, []);
 }
 
 export async function createStripeReconciliation(

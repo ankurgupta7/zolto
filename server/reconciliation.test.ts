@@ -5,6 +5,9 @@ const getKnownOrderPaymentIntentIds = vi.fn();
 const getKnownPosPaymentIntentIds = vi.fn();
 const getKnownReconciliationPaymentIntentIds = vi.fn();
 const createStripeReconciliation = vi.fn();
+const getTenantsWithConnectedStripe = vi.fn();
+const getTenantAdminContact = vi.fn();
+const getTenantSettings = vi.fn();
 
 vi.mock("./db", () => ({
   getAvailableProductsForMatching: (...args: unknown[]) =>
@@ -17,6 +20,10 @@ vi.mock("./db", () => ({
     getKnownReconciliationPaymentIntentIds(...args),
   createStripeReconciliation: (...args: unknown[]) =>
     createStripeReconciliation(...args),
+  getTenantsWithConnectedStripe: (...args: unknown[]) =>
+    getTenantsWithConnectedStripe(...args),
+  getTenantAdminContact: (...args: unknown[]) => getTenantAdminContact(...args),
+  getTenantSettings: (...args: unknown[]) => getTenantSettings(...args),
 }));
 
 const sendReconciliationReviewEmail = vi.fn();
@@ -33,8 +40,21 @@ vi.mock("./stripe", () => ({
 import {
   findCandidateProducts,
   MAX_CANDIDATES,
-  runStripeReconciliation,
+  NotConnectedError,
+  runStripeReconciliationForAllTenants,
+  runStripeReconciliationForTenant,
 } from "./reconciliation";
+
+const TENANT = {
+  id: 42,
+  name: "Aurora",
+  slug: "aurora",
+  stripeConnectedAccountId: "acct_aurora",
+};
+
+/** Shorthand so the existing bodies read the same as before the rework. */
+const runStripeReconciliation = (lookbackDays?: number) =>
+  runStripeReconciliationForTenant(TENANT, lookbackDays);
 import type { Product } from "../drizzle/schema";
 
 function makeProduct(overrides: Partial<Product> = {}): Product {
@@ -95,6 +115,12 @@ beforeEach(() => {
   getAvailableProductsForMatching.mockResolvedValue([]);
   createStripeReconciliation.mockResolvedValue(undefined);
   sendReconciliationReviewEmail.mockResolvedValue(undefined);
+  getTenantsWithConnectedStripe.mockResolvedValue([]);
+  getTenantAdminContact.mockResolvedValue({
+    name: "Owner",
+    email: "owner@aurora.example",
+  });
+  getTenantSettings.mockResolvedValue(null);
 });
 
 describe("findCandidateProducts", () => {
@@ -204,9 +230,10 @@ describe("runStripeReconciliation", () => {
     expect(summary.newPendingReview).toBe(1);
     expect(summary.newNoCandidates).toBe(0);
     expect(summary.emailSent).toBe(true);
-    expect(sendReconciliationReviewEmail).toHaveBeenCalledWith([
-      expect.objectContaining({ paymentIntentId: "pi_new" }),
-    ]);
+    expect(sendReconciliationReviewEmail).toHaveBeenCalledWith(
+      [expect.objectContaining({ paymentIntentId: "pi_new" })],
+      expect.objectContaining({ to: "owner@aurora.example" }),
+    );
   });
 
   it("records no_candidates and skips the email when nothing is in stock", async () => {
@@ -242,5 +269,162 @@ describe("runStripeReconciliation", () => {
     const summary = await runStripeReconciliation();
     expect(summary.emailSent).toBe(false);
     expect(summary.newPendingReview).toBe(1);
+  });
+});
+
+// The whole point of the rework: read the MERCHANT's account, match against
+// the MERCHANT's catalogue, file the row against the MERCHANT's tenant.
+// Previously this scanned Zolto's own platform account and matched everything
+// against DEFAULT_TENANT_ID, so it could not see a real merchant payment at all.
+describe("runStripeReconciliationForTenant — connected account", () => {
+  it("lists payment intents AS the tenant's connected account", async () => {
+    const list = vi.fn(() => makeIntentList([]));
+    getStripe.mockReturnValue({ paymentIntents: { list } });
+
+    await runStripeReconciliationForTenant(TENANT);
+
+    const [params, options] = list.mock.calls[0] as [
+      Record<string, unknown>,
+      Record<string, unknown>,
+    ];
+    // Without the second argument Stripe answers for the PLATFORM account.
+    expect(options).toEqual({ stripeAccount: "acct_aurora" });
+    expect(params).toMatchObject({ limit: 100 });
+  });
+
+  it("refuses a tenant that has never connected Stripe", async () => {
+    getStripe.mockReturnValue({ paymentIntents: { list: vi.fn() } });
+    await expect(
+      runStripeReconciliationForTenant({
+        ...TENANT,
+        stripeConnectedAccountId: null,
+      }),
+    ).rejects.toBeInstanceOf(NotConnectedError);
+  });
+
+  it("matches candidates against the tenant's own catalogue", async () => {
+    getAvailableProductsForMatching.mockResolvedValue([
+      makeProduct({ id: 7, price: "100.00" }),
+    ]);
+    getStripe.mockReturnValue({
+      paymentIntents: {
+        list: () => makeIntentList([makePaymentIntent({ id: "pi_new" })]),
+      },
+    });
+
+    await runStripeReconciliationForTenant(TENANT);
+    expect(getAvailableProductsForMatching).toHaveBeenCalledWith(TENANT.id);
+  });
+
+  it("files the reconciliation row against the tenant", async () => {
+    getAvailableProductsForMatching.mockResolvedValue([makeProduct({ id: 7 })]);
+    getStripe.mockReturnValue({
+      paymentIntents: {
+        list: () => makeIntentList([makePaymentIntent({ id: "pi_new" })]),
+      },
+    });
+
+    await runStripeReconciliationForTenant(TENANT);
+    // The confirm route trusts this column to decide whose products to offer
+    // (server/reconciliationRoutes.ts), so a wrong value leaks across stores.
+    expect(createStripeReconciliation).toHaveBeenCalledWith(
+      expect.objectContaining({ tenantId: TENANT.id }),
+    );
+  });
+
+  it("scopes the already-known id sets to the tenant", async () => {
+    getStripe.mockReturnValue({
+      paymentIntents: { list: () => makeIntentList([]) },
+    });
+    await runStripeReconciliationForTenant(TENANT);
+    expect(getKnownOrderPaymentIntentIds).toHaveBeenCalledWith(TENANT.id);
+    expect(getKnownPosPaymentIntentIds).toHaveBeenCalledWith(TENANT.id);
+    expect(getKnownReconciliationPaymentIntentIds).toHaveBeenCalledWith(
+      TENANT.id,
+    );
+  });
+
+  it("emails the merchant, not the platform operator", async () => {
+    getAvailableProductsForMatching.mockResolvedValue([makeProduct({ id: 7 })]);
+    getTenantSettings.mockResolvedValue({
+      whiteLabelName: "Aurora Atelier",
+      contactEmail: "hello@aurora.example",
+      publicDomain: "aurora.example",
+    });
+    getStripe.mockReturnValue({
+      paymentIntents: {
+        list: () => makeIntentList([makePaymentIntent({ id: "pi_new" })]),
+      },
+    });
+
+    await runStripeReconciliationForTenant(TENANT);
+
+    const [, branding] = sendReconciliationReviewEmail.mock.calls[0];
+    expect(branding).toMatchObject({
+      to: "owner@aurora.example",
+      tenantName: "Aurora Atelier",
+    });
+  });
+});
+
+describe("runStripeReconciliationForAllTenants", () => {
+  const A = { id: 1, slug: "a", name: "A", stripeConnectedAccountId: "acct_a" };
+  const B = { id: 2, slug: "b", name: "B", stripeConnectedAccountId: "acct_b" };
+
+  it("scans each tenant against their own account and totals the results", async () => {
+    getTenantsWithConnectedStripe.mockResolvedValue([A, B]);
+    getAvailableProductsForMatching.mockResolvedValue([makeProduct({ id: 7 })]);
+    const list = vi.fn(() =>
+      makeIntentList([makePaymentIntent({ id: `pi_${Math.random()}` })]),
+    );
+    getStripe.mockReturnValue({ paymentIntents: { list } });
+
+    const summary = await runStripeReconciliationForAllTenants();
+
+    expect(summary.tenantsScanned).toBe(2);
+    expect(summary.tenantsFailed).toBe(0);
+    expect(summary.totals.newPendingReview).toBe(2);
+    expect(summary.totals.emailsSent).toBe(2);
+    // Each call carried that tenant's own account, never the platform's.
+    expect(list.mock.calls.map((c) => c[1])).toEqual([
+      { stripeAccount: "acct_a" },
+      { stripeAccount: "acct_b" },
+    ]);
+  });
+
+  it("records one tenant's failure without aborting the rest", async () => {
+    getTenantsWithConnectedStripe.mockResolvedValue([A, B]);
+    getAvailableProductsForMatching.mockResolvedValue([]);
+    getStripe.mockReturnValue({
+      paymentIntents: {
+        list: vi.fn((_params, opts) => {
+          if (opts?.stripeAccount === "acct_a") {
+            throw new Error("Connect grant revoked");
+          }
+          return makeIntentList([]);
+        }),
+      },
+    });
+
+    const summary = await runStripeReconciliationForAllTenants();
+
+    // One bad store must not hide every other store's unmatched payments.
+    expect(summary.tenantsScanned).toBe(2);
+    expect(summary.tenantsFailed).toBe(1);
+    const a = summary.perTenant.find((t) => t.tenantId === 1)!;
+    const b = summary.perTenant.find((t) => t.tenantId === 2)!;
+    expect(a.ok).toBe(false);
+    expect(a.ok === false && a.error).toMatch(/revoked/);
+    expect(b.ok).toBe(true);
+  });
+
+  it("returns an empty sweep when no tenant has connected Stripe", async () => {
+    getTenantsWithConnectedStripe.mockResolvedValue([]);
+    getStripe.mockReturnValue({ paymentIntents: { list: vi.fn() } });
+
+    const summary = await runStripeReconciliationForAllTenants();
+    expect(summary.tenantsScanned).toBe(0);
+    expect(summary.perTenant).toEqual([]);
+    expect(summary.totals.scannedSucceededPayments).toBe(0);
   });
 });

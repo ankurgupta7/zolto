@@ -1,12 +1,26 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { NOT_ADMIN_ERR_MSG } from "@shared/const";
 
-const runStripeReconciliation = vi.fn();
+const runStripeReconciliationForTenant = vi.fn();
 const runPosAttribution = vi.fn();
 
+// NotConnectedError has to be a real class the router can `instanceof`
+// against — that branch turns "this store never linked Stripe" into a
+// readable PRECONDITION_FAILED instead of a 500. Declared via vi.hoisted
+// because vi.mock's factory is lifted above ordinary top-level declarations.
+const { NotConnectedError } = vi.hoisted(() => ({
+  NotConnectedError: class NotConnectedError extends Error {
+    constructor(message: string) {
+      super(message);
+      this.name = "NotConnectedError";
+    }
+  },
+}));
+
 vi.mock("../reconciliation", () => ({
-  runStripeReconciliation: (...args: unknown[]) =>
-    runStripeReconciliation(...args),
+  runStripeReconciliationForTenant: (...args: unknown[]) =>
+    runStripeReconciliationForTenant(...args),
+  NotConnectedError,
 }));
 
 vi.mock("../posAttribution", () => ({
@@ -67,32 +81,58 @@ describe("reconciliation.run", () => {
   it("rejects anonymous callers", async () => {
     const caller = reconciliationRouter.createCaller(makeCtx(null));
     await expect(caller.run({})).rejects.toThrow();
-    expect(runStripeReconciliation).not.toHaveBeenCalled();
+    expect(runStripeReconciliationForTenant).not.toHaveBeenCalled();
   });
 
   it("rejects non-admin users", async () => {
     const caller = reconciliationRouter.createCaller(makeCtx("user"));
     await expect(caller.run({})).rejects.toThrow(NOT_ADMIN_ERR_MSG);
-    expect(runStripeReconciliation).not.toHaveBeenCalled();
+    expect(runStripeReconciliationForTenant).not.toHaveBeenCalled();
   });
 
-  it("runs the reconciliation job for an admin and returns its summary", async () => {
-    runStripeReconciliation.mockResolvedValue(summary);
+  it("scans the CALLER'S store, not the platform account", async () => {
+    runStripeReconciliationForTenant.mockResolvedValue(summary);
     const caller = reconciliationRouter.createCaller(makeCtx("admin"));
 
     const result = await caller.run({ lookbackDays: 14 });
 
-    expect(runStripeReconciliation).toHaveBeenCalledWith(14);
+    // First argument is the tenant whose connected account gets read.
+    expect(runStripeReconciliationForTenant).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 42 }),
+      14,
+    );
     expect(result).toEqual(summary);
   });
 
   it("passes undefined lookbackDays through when omitted", async () => {
-    runStripeReconciliation.mockResolvedValue(summary);
+    runStripeReconciliationForTenant.mockResolvedValue(summary);
     const caller = reconciliationRouter.createCaller(makeCtx("admin"));
 
     await caller.run({});
 
-    expect(runStripeReconciliation).toHaveBeenCalledWith(undefined);
+    expect(runStripeReconciliationForTenant).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 42 }),
+      undefined,
+    );
+  });
+
+  it("refuses an admin of a different store", async () => {
+    // Reading another merchant's Stripe payments is the exact leak the
+    // per-tenant rework had to avoid introducing.
+    const caller = reconciliationRouter.createCaller(makeCtx("admin", 7, 42));
+    await expect(caller.run({})).rejects.toThrow(NOT_ADMIN_ERR_MSG);
+    expect(runStripeReconciliationForTenant).not.toHaveBeenCalled();
+  });
+
+  it("turns a never-connected store into a readable precondition failure", async () => {
+    runStripeReconciliationForTenant.mockRejectedValue(
+      new NotConnectedError("This store hasn't connected a Stripe account yet"),
+    );
+    const caller = reconciliationRouter.createCaller(makeCtx("admin"));
+    // An in-person-only merchant is a normal state, not a server fault.
+    await expect(caller.run({})).rejects.toMatchObject({
+      code: "PRECONDITION_FAILED",
+    });
   });
 
   it("rejects an out-of-range lookbackDays", async () => {
@@ -101,18 +141,8 @@ describe("reconciliation.run", () => {
     await expect(caller.run({ lookbackDays: 91 })).rejects.toThrow();
   });
 
-  // Deliberately NOT tenant-scoped, unlike runPos: this scans the platform's
-  // own Stripe account and matches against DEFAULT_TENANT_ID. Pinned so the
-  // asymmetry is a recorded decision rather than a missed route — see the
-  // comment on `run` in reconciliation.ts for what still needs deciding.
-  it("still runs for an admin of another store (platform-scoped by design)", async () => {
-    runStripeReconciliation.mockResolvedValue(summary);
-    const caller = reconciliationRouter.createCaller(makeCtx("admin", 7, 42));
-    await expect(caller.run({})).resolves.toEqual(summary);
-  });
-
   it("maps a not-configured Stripe error to PRECONDITION_FAILED", async () => {
-    runStripeReconciliation.mockRejectedValue(
+    runStripeReconciliationForTenant.mockRejectedValue(
       new Error("Stripe is not configured"),
     );
     const caller = reconciliationRouter.createCaller(makeCtx("admin"));
@@ -123,7 +153,7 @@ describe("reconciliation.run", () => {
   });
 
   it("re-throws unrelated errors unchanged", async () => {
-    runStripeReconciliation.mockRejectedValue(new Error("boom"));
+    runStripeReconciliationForTenant.mockRejectedValue(new Error("boom"));
     const caller = reconciliationRouter.createCaller(makeCtx("admin"));
 
     await expect(caller.run({})).rejects.toThrow("boom");

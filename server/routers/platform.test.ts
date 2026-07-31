@@ -6,6 +6,12 @@ const { dbMock } = vi.hoisted(() => ({
 
 vi.mock("../db", () => dbMock);
 
+const runStripeReconciliationForAllTenants = vi.fn();
+vi.mock("../reconciliation", () => ({
+  runStripeReconciliationForAllTenants: (...args: unknown[]) =>
+    runStripeReconciliationForAllTenants(...args),
+}));
+
 import { platformRouter } from "./platform";
 import type { TrpcContext } from "../_core/context";
 
@@ -74,5 +80,82 @@ describe("platformRouter.metrics — payload", () => {
     const res = await caller.metrics();
     expect(res.model.feePercentLabel).toBe("1%");
     expect(res.model.proPriceChf).toBe(25);
+  });
+});
+
+const sweep = {
+  tenantsScanned: 2,
+  tenantsFailed: 0,
+  perTenant: [
+    {
+      tenantId: 1,
+      slug: "a",
+      name: "A",
+      ok: true as const,
+      scannedSucceededPayments: 3,
+      alreadyRecorded: 1,
+      newPendingReview: 2,
+      newNoCandidates: 0,
+      emailSent: true,
+    },
+  ],
+  totals: {
+    scannedSucceededPayments: 3,
+    alreadyRecorded: 1,
+    newPendingReview: 2,
+    newNoCandidates: 0,
+    emailsSent: 1,
+  },
+};
+
+// The operator's cross-tenant sweep. It reads every merchant's Stripe account,
+// so superadmin is the only role that may reach it — a store admin running
+// this would see every other store's payment volume.
+describe("platform.reconcileAllTenants", () => {
+  beforeEach(() => {
+    runStripeReconciliationForAllTenants.mockResolvedValue(sweep);
+  });
+
+  it("refuses an anonymous caller", async () => {
+    await expect(
+      platformRouter.createCaller(ctx(null)).reconcileAllTenants({}),
+    ).rejects.toThrow();
+    expect(runStripeReconciliationForAllTenants).not.toHaveBeenCalled();
+  });
+
+  it("refuses a store admin", async () => {
+    await expect(
+      platformRouter.createCaller(ctx("admin")).reconcileAllTenants({}),
+    ).rejects.toThrow(/Superadmin/);
+    expect(runStripeReconciliationForAllTenants).not.toHaveBeenCalled();
+  });
+
+  it("runs the sweep for a superadmin and returns per-tenant results", async () => {
+    const result = await platformRouter
+      .createCaller(ctx("superadmin"))
+      .reconcileAllTenants({ lookbackDays: 14 });
+
+    expect(runStripeReconciliationForAllTenants).toHaveBeenCalledWith(14);
+    expect(result).toEqual(sweep);
+  });
+
+  it("passes undefined lookbackDays through when omitted", async () => {
+    await platformRouter
+      .createCaller(ctx("superadmin"))
+      .reconcileAllTenants({});
+    expect(runStripeReconciliationForAllTenants).toHaveBeenCalledWith(
+      undefined,
+    );
+  });
+
+  it("rejects an out-of-range lookbackDays", async () => {
+    const caller = platformRouter.createCaller(ctx("superadmin"));
+    await expect(
+      caller.reconcileAllTenants({ lookbackDays: 0 }),
+    ).rejects.toThrow();
+    await expect(
+      caller.reconcileAllTenants({ lookbackDays: 91 }),
+    ).rejects.toThrow();
+    expect(runStripeReconciliationForAllTenants).not.toHaveBeenCalled();
   });
 });
