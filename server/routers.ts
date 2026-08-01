@@ -3,7 +3,8 @@ import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { requestMagicLink } from "./_core/magicLink";
 import { systemRouter } from "./_core/systemRouter";
-import { publicProcedure, router } from "./_core/trpc";
+import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
+import { updateOwnDisplayName } from "./db";
 import { productsRouter } from "./routers/products";
 import { checkoutRouter } from "./routers/checkout";
 import { instagramRouter } from "./routers/instagram";
@@ -37,8 +38,28 @@ export const appRouter = router({
         }),
       )
       .mutation(({ ctx, input }) =>
-        requestMagicLink({ email: input.email, next: input.next, req: ctx.req }),
+        requestMagicLink({
+          email: input.email,
+          next: input.next,
+          req: ctx.req,
+        }),
       ),
+
+    /**
+     * Edit your own display name. `protectedProcedure` and scoped to
+     * `ctx.user.id` — it takes no user id from the caller, so there is no
+     * shape of this request that edits somebody else.
+     *
+     * Name only: the sign-in email belongs to the identity provider the
+     * session was minted against, and changing it is a verification flow
+     * rather than a form field (see updateOwnDisplayName).
+     */
+    updateProfile: protectedProcedure
+      .input(z.object({ name: z.string().trim().min(1).max(255) }))
+      .mutation(async ({ ctx, input }) => {
+        await updateOwnDisplayName(ctx.user.id, input.name);
+        return { success: true } as const;
+      }),
   }),
   tenant: tenantRouter, // NEW: Multi-tenant routes
   billing: billingRouter, // Plan subscriptions + AI usage

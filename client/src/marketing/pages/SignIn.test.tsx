@@ -9,13 +9,25 @@ const mocks = vi.hoisted(() => ({
   meLoading: false,
   storeData: undefined as unknown,
   storeLoading: false,
+  logout: vi.fn(),
 }));
 
 vi.mock("@/lib/trpc", () => ({
   trpc: {
+    // SignOutButton → useAuth needs these; the page itself uses neither.
+    useUtils: () => ({
+      auth: { me: { setData: vi.fn(), invalidate: vi.fn() } },
+    }),
     auth: {
       me: {
         useQuery: () => ({ data: mocks.meData, isLoading: mocks.meLoading }),
+      },
+      logout: {
+        useMutation: () => ({
+          mutateAsync: mocks.logout,
+          isPending: false,
+          error: null,
+        }),
       },
       requestMagicLink: {
         useMutation: () => ({
@@ -87,24 +99,14 @@ describe("SignIn — leg 1: offering every sign-in method", () => {
   });
 });
 
+// Leg 2 fires only on the return leg of a handshake the visitor just performed
+// — see "the OAuth round-trip" below. Arriving with a session that ALREADY
+// existed is a different intent and must not be redirected silently.
 describe("SignIn — leg 2: landing in the merchant's own admin", () => {
-  it("redirects a signed-in merchant straight to their store admin", async () => {
-    mocks.meData = { id: 1 };
-    mocks.storeData = { slug: "kalakosh", name: "Kalakosh" };
-    renderSignIn();
-    await waitFor(() =>
-      expect(hardRedirect).toHaveBeenCalledWith(
-        // jsdom host is localhost → same-origin, surface-forced form.
-        "/admin?surface=storefront&tenant=kalakosh",
-        { replace: true },
-      ),
-    );
-  });
-
   it("holds steady while the store lookup is in flight", () => {
     mocks.meData = { id: 1 };
     mocks.storeLoading = true;
-    renderSignIn();
+    renderSignIn(SIGNIN_RETURN_PATH);
     expect(hardRedirect).not.toHaveBeenCalled();
     expect(screen.getByTestId("signin-progress")).toBeTruthy();
   });
@@ -112,14 +114,57 @@ describe("SignIn — leg 2: landing in the merchant's own admin", () => {
   it("names the destination once the store is known", () => {
     mocks.meData = { id: 1 };
     mocks.storeData = { slug: "kalakosh", name: "Kalakosh" };
-    renderSignIn();
+    renderSignIn(SIGNIN_RETURN_PATH);
     expect(screen.getByText(/Taking you to Kalakosh/i)).toBeTruthy();
+  });
+});
+
+// The reported bug: a browser carrying somebody's Google session could never
+// be used to sign in as anyone else, because /signin saw the existing session
+// and bounced onward before offering any choice.
+describe("SignIn — arriving with a session that already existed", () => {
+  beforeEach(() => {
+    mocks.meData = { id: 1, email: "anna@bergblume.ch" };
+    mocks.storeData = { slug: "kalakosh", name: "Kalakosh" };
+  });
+
+  it("does not redirect — signing in is the visitor's decision to make", async () => {
+    renderSignIn();
+    await waitFor(() =>
+      expect(screen.getByText(/already signed in/i)).toBeTruthy(),
+    );
+    expect(hardRedirect).not.toHaveBeenCalled();
+  });
+
+  it("names the account, so a wrong one is visible rather than invisible", () => {
+    renderSignIn();
+    expect(screen.getByText("anna@bergblume.ch")).toBeTruthy();
+  });
+
+  it("offers continuing on, naming where that goes", () => {
+    renderSignIn();
+    const go = screen.getByRole("link", { name: /continue to kalakosh/i });
+    expect(go.getAttribute("href")).toBe(
+      "/admin?surface=storefront&tenant=kalakosh",
+    );
+  });
+
+  it("offers signing out to use a different account", async () => {
+    renderSignIn();
+    screen.getByRole("button", { name: /use a different account/i }).click();
+    await waitFor(() => expect(mocks.logout).toHaveBeenCalled());
+  });
+
+  it("returns to sign-in after signing out, not to the marketing home", async () => {
+    renderSignIn();
+    screen.getByRole("button", { name: /use a different account/i }).click();
+    await waitFor(() => expect(hardRedirect).toHaveBeenCalledWith("/signin"));
   });
 });
 
 describe("SignIn — a signed-in account with no store", () => {
   beforeEach(() => {
-    mocks.meData = { id: 1 };
+    mocks.meData = { id: 1, email: "anna@bergblume.ch" };
     mocks.storeData = null;
   });
 
@@ -133,8 +178,9 @@ describe("SignIn — a signed-in account with no store", () => {
     ).toBe("/signup");
   });
 
-  it("does not present this as a failure", () => {
-    renderSignIn();
+  // Reached by completing a handshake with an account that owns nothing yet.
+  it("does not present this as a failure on the OAuth return leg", () => {
+    renderSignIn(SIGNIN_RETURN_PATH);
     expect(screen.getByText(/You're signed in/i)).toBeTruthy();
     expect(screen.queryByText(/couldn.t sign you in/i)).toBeNull();
   });

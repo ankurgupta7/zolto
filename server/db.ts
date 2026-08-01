@@ -1110,6 +1110,240 @@ export async function getPlatformMetrics(): Promise<PlatformMetrics> {
   }, empty);
 }
 
+/**
+ * Every store on the platform, for the operator console (superadmin only).
+ *
+ * Deliberately NOT a `select *`: the POS API key hash is a bearer credential
+ * and must never leave the server, so the columns are named explicitly rather
+ * than stripped after the fact — a new secret column added to `tenants` then
+ * cannot leak by default. `adminCount` is here because the single most common
+ * support ticket is "I can't press any admin button", whose usual cause is a
+ * store with users but zero admins (see deploy/tenant-admin.sh).
+ */
+export interface OperatorTenantRow {
+  id: number;
+  slug: string;
+  name: string;
+  domain: string | null;
+  plan: "free" | "pro";
+  subscriptionStatus: "trialing" | "active" | "past_due" | "canceled" | null;
+  trialEndsAt: Date | null;
+  createdAt: Date;
+  /** Presence only — the account id itself is not the operator's business. */
+  stripeConnected: boolean;
+  /** Users on this tenant with role admin or superadmin. */
+  adminCount: number;
+  /** Users on this tenant of any role. */
+  userCount: number;
+}
+
+export async function listTenantsForOperator(): Promise<OperatorTenantRow[]> {
+  return withDb(async (db) => {
+    const rows = await db
+      .select({
+        id: tenants.id,
+        slug: tenants.slug,
+        name: tenants.name,
+        domain: tenants.domain,
+        plan: tenants.plan,
+        subscriptionStatus: tenants.subscriptionStatus,
+        trialEndsAt: tenants.trialEndsAt,
+        createdAt: tenants.createdAt,
+        stripeConnectedAccountId: tenants.stripeConnectedAccountId,
+      })
+      .from(tenants)
+      .orderBy(desc(tenants.createdAt));
+
+    // One grouped pass rather than a query per tenant — the operator list is
+    // the one page that reads every store at once.
+    const counts = await db
+      .select({
+        tenantId: users.tenantId,
+        userCount: sql<number>`COUNT(*)`,
+        adminCount: sql<number>`SUM(${users.role} IN ('admin','superadmin'))`,
+      })
+      .from(users)
+      .groupBy(users.tenantId);
+
+    const byTenant = new Map(
+      counts.map((c) => [
+        Number(c.tenantId),
+        { userCount: Number(c.userCount), adminCount: Number(c.adminCount) },
+      ]),
+    );
+
+    return rows.map((r) => ({
+      id: r.id,
+      slug: r.slug,
+      name: r.name,
+      domain: r.domain,
+      plan: r.plan,
+      subscriptionStatus: r.subscriptionStatus,
+      trialEndsAt: r.trialEndsAt,
+      createdAt: r.createdAt,
+      stripeConnected: Boolean(r.stripeConnectedAccountId),
+      adminCount: byTenant.get(r.id)?.adminCount ?? 0,
+      userCount: byTenant.get(r.id)?.userCount ?? 0,
+    }));
+  }, []);
+}
+
+/**
+ * One store, as the operator needs to see it when a merchant is stuck.
+ *
+ * The user list is the point: the most common unfixable-looking ticket is a
+ * store whose owner signed in but never redeemed their claim token, leaving a
+ * tenant with users and no admin. `pendingClaim` marks the placeholder rows
+ * that claim flow leaves behind (openId `pending:…`), because an operator
+ * looking at a list of emails otherwise cannot tell which of them is a real
+ * signed-in account.
+ */
+export interface OperatorTenantUser {
+  id: number;
+  email: string | null;
+  name: string | null;
+  role: "superadmin" | "admin" | "staff" | "customer";
+  loginMethod: string | null;
+  pendingClaim: boolean;
+  lastSignedIn: Date | null;
+}
+
+export interface OperatorTenantDetail {
+  tenant: OperatorTenantRow & {
+    onboardingStep: number | null;
+    referralCode: string | null;
+  };
+  users: OperatorTenantUser[];
+}
+
+export async function getTenantDetailForOperator(
+  tenantId: number,
+): Promise<OperatorTenantDetail | null> {
+  return withDb(async (db) => {
+    const [row] = await db
+      .select({
+        id: tenants.id,
+        slug: tenants.slug,
+        name: tenants.name,
+        domain: tenants.domain,
+        plan: tenants.plan,
+        subscriptionStatus: tenants.subscriptionStatus,
+        trialEndsAt: tenants.trialEndsAt,
+        createdAt: tenants.createdAt,
+        stripeConnectedAccountId: tenants.stripeConnectedAccountId,
+        onboardingStep: tenants.onboardingStep,
+        referralCode: tenants.referralCode,
+      })
+      .from(tenants)
+      .where(eq(tenants.id, tenantId))
+      .limit(1);
+
+    if (!row) return null;
+
+    const staff = await db
+      .select({
+        id: users.id,
+        email: users.email,
+        name: users.name,
+        role: users.role,
+        openId: users.openId,
+        loginMethod: users.loginMethod,
+        lastSignedIn: users.lastSignedIn,
+      })
+      .from(users)
+      .where(eq(users.tenantId, tenantId))
+      .orderBy(asc(users.id));
+
+    const mapped: OperatorTenantUser[] = staff.map((u) => ({
+      id: u.id,
+      email: u.email,
+      name: u.name,
+      role: u.role,
+      loginMethod: u.loginMethod,
+      pendingClaim: u.openId.startsWith("pending:"),
+      lastSignedIn: u.lastSignedIn,
+    }));
+
+    return {
+      tenant: {
+        id: row.id,
+        slug: row.slug,
+        name: row.name,
+        domain: row.domain,
+        plan: row.plan,
+        subscriptionStatus: row.subscriptionStatus,
+        trialEndsAt: row.trialEndsAt,
+        createdAt: row.createdAt,
+        stripeConnected: Boolean(row.stripeConnectedAccountId),
+        adminCount: mapped.filter(
+          (u) => u.role === "admin" || u.role === "superadmin",
+        ).length,
+        userCount: mapped.length,
+        onboardingStep: row.onboardingStep,
+        referralCode: row.referralCode,
+      },
+      users: mapped,
+    };
+  }, null);
+}
+
+/**
+ * Operator fix for the "no admin on this store" ticket — the same repair
+ * deploy/tenant-admin.sh --promote performs, moved into the console so it does
+ * not require SSH.
+ *
+ * Scoped by tenant AND user id together: promoting by email alone (as the shell
+ * script must) can hit the wrong row when an address appears on two tenants,
+ * and this is a privilege grant, so it refuses rather than guesses. Never
+ * grants superadmin — platform ownership stays a deliberate server-side act.
+ */
+export async function setTenantUserRoleByOperator(
+  tenantId: number,
+  userId: number,
+  role: "admin" | "staff",
+): Promise<boolean> {
+  return withDb(async (db) => {
+    const [target] = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(and(eq(users.id, userId), eq(users.tenantId, tenantId)))
+      .limit(1);
+
+    if (!target) return false;
+
+    await db
+      .update(users)
+      .set({ role })
+      .where(and(eq(users.id, userId), eq(users.tenantId, tenantId)));
+    return true;
+  }, false);
+}
+
+/**
+ * Move a store between plans by hand.
+ *
+ * Touches `tenants.plan` only — never the Stripe subscription. A comp'd store,
+ * a refund case, or a merchant Stripe has not caught up with all need the
+ * entitlement changed without inventing billing state the payment processor
+ * disagrees with. Whoever uses this owns reconciling Stripe separately.
+ */
+export async function setTenantPlanByOperator(
+  tenantId: number,
+  plan: "free" | "pro",
+): Promise<boolean> {
+  return withDb(async (db) => {
+    const [target] = await db
+      .select({ id: tenants.id })
+      .from(tenants)
+      .where(eq(tenants.id, tenantId))
+      .limit(1);
+    if (!target) return false;
+
+    await db.update(tenants).set({ plan }).where(eq(tenants.id, tenantId));
+    return true;
+  }, false);
+}
+
 export async function getBulkUploadLogs(
   tenantId: number,
   limit = 100,
@@ -1686,6 +1920,25 @@ export async function assignUserToTenantAsAdmin(
       .update(users)
       .set({ tenantId, role: "admin" })
       .where(eq(users.openId, openId)),
+  );
+}
+
+/**
+ * A signed-in user editing their OWN display name.
+ *
+ * Name only, deliberately. `email` and `openId` are the identity the session
+ * was minted against (Google, Apple, or a magic link), so letting a user
+ * rewrite their email here would either desync them from their provider or —
+ * worse — let them type in somebody else's address and inherit whatever a
+ * future email-keyed lookup grants. Changing a sign-in address means proving
+ * the new one, which is a verification flow, not a text field.
+ */
+export async function updateOwnDisplayName(
+  userId: number,
+  name: string,
+): Promise<void> {
+  await withDbOrThrow((db) =>
+    db.update(users).set({ name }).where(eq(users.id, userId)),
   );
 }
 

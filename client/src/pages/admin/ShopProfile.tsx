@@ -1,8 +1,9 @@
 /**
  * Shop profile (account plane) — the store's identity within Zolto: name, slug,
- * plan/trial status, and business contact details. Name and slug are the
- * tenant's stable identity (changing them is a support operation), so they're
- * shown read-only; contact email/phone are editable via tenant.updateSettings.
+ * plan/trial status, business contact details, and the currency it sells in.
+ * Name and slug are the tenant's stable identity (changing them is a support
+ * operation), so they're shown read-only; the rest is editable via
+ * tenant.updateSettings.
  */
 import { useEffect, useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -18,18 +19,34 @@ import {
   AdminOnly,
 } from "@/components/admin/ui";
 import { useTenantSettings } from "@/components/admin/useTenantSettings";
+import { DEFAULT_CURRENCY, formatPrice } from "@/lib/money";
+
+/**
+ * The currencies a Swiss-first marketplace plausibly sells in. The server
+ * accepts any 3-letter code (tenant.updateSettings), so this list is a
+ * convenience, not a constraint — it exists because a free-text box invites
+ * typos into every price on the storefront.
+ */
+const CURRENCIES = [
+  { code: "chf", label: "Swiss franc" },
+  { code: "eur", label: "Euro" },
+  { code: "usd", label: "US dollar" },
+  { code: "gbp", label: "Pound sterling" },
+] as const;
 
 export default function ShopProfile() {
   const { user } = useAuth();
   const { tenant, settings, invalidate } = useTenantSettings();
   const [contactEmail, setContactEmail] = useState("");
   const [contactPhone, setContactPhone] = useState("");
+  const [currency, setCurrency] = useState<string>(DEFAULT_CURRENCY);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (settings) {
       setContactEmail(settings.contactEmail ?? "");
       setContactPhone(settings.contactPhone ?? "");
+      setCurrency((settings.currency || DEFAULT_CURRENCY).toLowerCase());
     }
   }, [settings]);
 
@@ -55,8 +72,11 @@ export default function ShopProfile() {
     save.mutate({
       contactEmail: contactEmail.trim() || undefined,
       contactPhone: contactPhone.trim() || undefined,
+      currency,
     });
   };
+
+  const savedCurrency = (settings?.currency || DEFAULT_CURRENCY).toLowerCase();
 
   return (
     <div>
@@ -158,6 +178,45 @@ export default function ShopProfile() {
               className={inputClass}
             />
           </Field>
+
+          <Field
+            label="Currency"
+            htmlFor="currency"
+            hint="Used on your storefront, in the POS, and at checkout."
+          >
+            <select
+              id="currency"
+              value={currency}
+              onChange={(e) => setCurrency(e.target.value)}
+              className={inputClass}
+            >
+              {CURRENCIES.map((c) => (
+                <option key={c.code} value={c.code}>
+                  {c.code.toUpperCase()} — {c.label}
+                </option>
+              ))}
+              {/* A code set outside this list (by support, or before this
+                  selector existed) must not silently reset to CHF on save. */}
+              {!CURRENCIES.some((c) => c.code === currency) && (
+                <option value={currency}>{currency.toUpperCase()}</option>
+              )}
+            </select>
+          </Field>
+
+          <div className="sm:col-span-2">
+            <p className="text-xs text-muted-foreground">
+              Prices are stored as plain numbers, so changing this relabels them
+              — it does not convert them.
+              {currency !== savedCurrency ? (
+                <>
+                  {" "}
+                  A product at {formatPrice(50, savedCurrency)} would become{" "}
+                  {formatPrice(50, currency)}, not its exchange-rate equivalent.
+                  Re-price your catalogue after saving.
+                </>
+              ) : null}
+            </p>
+          </div>
         </div>
       </SettingsCard>
     </div>

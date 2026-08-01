@@ -16,13 +16,27 @@ const mocks = vi.hoisted(() => ({
   meLoading: false,
   storeData: undefined as unknown,
   storeLoading: false,
+  logout: vi.fn(),
 }));
+
+vi.mock("@/lib/navigate", () => ({ hardRedirect: vi.fn() }));
 
 vi.mock("@/lib/trpc", () => ({
   trpc: {
+    // The signed-in nav renders SignOutButton, which goes through useAuth.
+    useUtils: () => ({
+      auth: { me: { setData: vi.fn(), invalidate: vi.fn() } },
+    }),
     auth: {
       me: {
         useQuery: () => ({ data: mocks.meData, isLoading: mocks.meLoading }),
+      },
+      logout: {
+        useMutation: () => ({
+          mutateAsync: mocks.logout,
+          isPending: false,
+          error: null,
+        }),
       },
     },
     tenant: {
@@ -182,5 +196,62 @@ describe("MarketingNav — mobile navigation", () => {
     fireEvent.click(within(nav).getByRole("link", { name: "Pricing" }));
 
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  });
+});
+
+// Before this, the nav showed "Go to your store" and nothing else once a
+// session existed — so a visitor whose browser carried somebody's Google
+// session could not tell who they were, nor become anyone else.
+describe("MarketingNav — the signed-in account is visible and escapable", () => {
+  beforeEach(() => {
+    mocks.meData = { id: 1, email: "anna@bergblume.ch" };
+    mocks.storeData = { slug: "kalakosh", name: "Kalakosh" };
+  });
+
+  it("names the signed-in account", () => {
+    renderNav();
+    expect(screen.getAllByText("anna@bergblume.ch").length).toBeGreaterThan(0);
+  });
+
+  it("offers sign out alongside the store shortcut", () => {
+    renderNav();
+    expect(screen.getByRole("button", { name: "Sign out" })).toBeTruthy();
+    // The shortcut sits in both the desktop and the mobile slot; each is
+    // hidden at the other's breakpoint, so only one is ever on screen.
+    expect(
+      screen.getAllByRole("link", { name: /go to your store|my store/i })
+        .length,
+    ).toBe(2);
+  });
+
+  it("still offers sign out when the account owns no store", () => {
+    // StoreShortcut renders nothing here; the way out must not vanish with it.
+    mocks.storeData = null;
+    renderNav();
+    expect(screen.getByRole("button", { name: "Sign out" })).toBeTruthy();
+  });
+
+  it("shows neither account nor sign out while auth is still resolving", () => {
+    mocks.meData = undefined;
+    mocks.meLoading = true;
+    renderNav();
+    expect(screen.queryByRole("button", { name: "Sign out" })).toBeNull();
+  });
+
+  it("shows no sign out to a logged-out visitor", () => {
+    mocks.meData = undefined;
+    mocks.storeData = undefined;
+    renderNav();
+    expect(screen.queryByRole("button", { name: "Sign out" })).toBeNull();
+    expect(
+      screen.getAllByRole("link", { name: /sign in/i }).length,
+    ).toBeGreaterThan(0);
+  });
+
+  it("reaches sign out from the mobile drawer, where the bar is compact", () => {
+    renderNav();
+    fireEvent.click(screen.getByRole("button", { name: /open menu|menu/i }));
+    const drawerText = document.body.textContent ?? "";
+    expect(drawerText).toMatch(/Signed in as anna@bergblume\.ch/);
   });
 });

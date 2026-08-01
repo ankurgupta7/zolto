@@ -15,6 +15,8 @@ import Compare from "./pages/Compare";
 import Research from "./pages/Research";
 import Segment from "./pages/Segment";
 import { Privacy, Terms } from "./pages/Legal";
+import PlatformApp from "../platform/PlatformApp";
+import { isPlatformPath } from "../platform/nav";
 
 function ScrollToTop() {
   const [location] = useLocation();
@@ -32,6 +34,17 @@ function ScrollToTop() {
  * for a maker audience), with its own marketing chrome.
  */
 export default function MarketingApp() {
+  const [location] = useLocation();
+
+  // The operator console lives on this surface but is not a marketing page —
+  // it renders outside MarketingShell so it carries no pricing nav or footer.
+  // It is mounted here because /admin/* only exists on tenant hosts, which
+  // left the platform owner with no way to reach their own console from
+  // zolto.ch (see platform/PlatformLayout).
+  if (isPlatformPath(location)) {
+    return <PlatformApp />;
+  }
+
   return (
     <MarketingShell>
       <ScrollToTop />

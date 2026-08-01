@@ -97,6 +97,14 @@
     line-height: 1.2;
     letter-spacing: 0.01em;
     color: var(--brand-text);
+    /* Cormorant defaults to OLDSTYLE figures, where 0 sits at x-height and
+       3/5/7/9 drop below the baseline. In a heading that turns step numbers
+       into "1 · 2 · 3 · 4" with wandering baselines, and any year or amount in
+       a heading into mush. Headings are display type — they want lining
+       figures. Set here rather than per-component because the serif is applied
+       here: a component that never writes font-serif still inherits it, so a
+       class-level fix cannot reach every case. */
+    font-variant-numeric: lining-nums;
   }
 
   h1 {

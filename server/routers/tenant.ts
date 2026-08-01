@@ -459,10 +459,10 @@ export const tenantRouter = router({
     };
   }),
 
-  // ─── Superadmin: List all tenants (platform admin) ───────────────────────
-  list: publicProcedure.query(async () => {
-    // TODO: Add superadmin guard
-    const all = await db.query.tenants.findMany();
-    return all.map(stripPosApiKey);
-  }),
+  // Listing every tenant used to live here as a `publicProcedure` carrying a
+  // "TODO: Add superadmin guard" — i.e. unauthenticated enumeration of every
+  // store on the platform. It now lives on the platform router as
+  // `platform.tenants`, which is superadminProcedure and selects its columns
+  // explicitly. Cross-tenant reads belong there by construction; nothing on a
+  // tenant-scoped router should ever return another tenant's row.
 });
