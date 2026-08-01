@@ -99,6 +99,13 @@
       "when": 1785686400000,
       "tag": "0014_magic_link_tokens",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "5",
+      "when": 1785686401000,
+      "tag": "0015_user_roles",
+      "breakpoints": true
     }
   ]
 }
