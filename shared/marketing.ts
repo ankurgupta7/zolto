@@ -33,6 +33,7 @@ import {
   HOW_TO_START,
   PRICING_PROMISE,
   COMPETITORS,
+  DATA_RESIDENCY,
 } from "./platform";
 import { SEGMENTS } from "./segments";
 
@@ -349,6 +350,12 @@ ${planLines}
 
 **The fee model in one line:** ${PRICING_PROMISE.pledge}
 
+## Where the data lives
+
+${DATA_RESIDENCY.body} ${DATA_RESIDENCY.points[1]}
+
+${DATA_RESIDENCY.caveat}
+
 ## How a maker gets started
 
 ${HOW_TO_START.map((s, i) => `${i + 1}. ${s}`).join("\n")}
@@ -418,6 +425,16 @@ ${plans}
 ${PRICING_PROMISE.pledge}
 
 ${PRICING_PROMISE.points.map((p) => `- ${p}`).join("\n")}
+
+---
+
+## Where the data lives — ${DATA_RESIDENCY.headline} ${DATA_RESIDENCY.headlineEmphasis}
+
+${DATA_RESIDENCY.body}
+
+${DATA_RESIDENCY.points.map((p) => `- ${p}`).join("\n")}
+
+${DATA_RESIDENCY.caveat}
 
 ---
 

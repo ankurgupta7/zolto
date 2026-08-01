@@ -18,6 +18,7 @@ import { ScrollReveal } from "../components/ScrollReveal";
 import { CardReaderGag } from "../components/CardReaderGag";
 import { DiaryTeaser } from "../components/DiaryTeaser";
 import { ZeroCostPos } from "../components/ZeroCostPos";
+import { DataResidency } from "../components/DataResidency";
 
 export default function Landing() {
   return (
@@ -313,6 +314,9 @@ export default function Landing() {
           </div>
         </Container>
       </section>
+
+      {/* ── Where the shop physically runs — European hosting, stated plainly ── */}
+      <DataResidency />
 
       {/* ── Proof you can go and check, before we ask for the signup ── */}
       <DiaryTeaser />

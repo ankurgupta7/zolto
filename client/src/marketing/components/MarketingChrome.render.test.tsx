@@ -9,7 +9,13 @@ import {
 } from "@testing-library/react";
 import { Router } from "wouter";
 import { memoryLocation } from "wouter/memory-location";
-import { MarketingNav, StoreShortcut, SIGN_IN_PATH } from "./MarketingChrome";
+import { DATA_RESIDENCY } from "@shared/platform";
+import {
+  MarketingNav,
+  MarketingFooter,
+  StoreShortcut,
+  SIGN_IN_PATH,
+} from "./MarketingChrome";
 
 const mocks = vi.hoisted(() => ({
   meData: undefined as unknown,
@@ -182,5 +188,35 @@ describe("MarketingNav — mobile navigation", () => {
     fireEvent.click(within(nav).getByRole("link", { name: "Pricing" }));
 
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  });
+});
+
+describe("MarketingFooter", () => {
+  function renderFooter() {
+    const { hook } = memoryLocation({ path: "/", static: true });
+    return render(
+      <Router hook={hook}>
+        <MarketingFooter />
+      </Router>,
+    );
+  }
+
+  it("carries the hosting location on every page", () => {
+    // The footer is the one surface a visitor sees regardless of route, so the
+    // residency answer lives here as well as on the landing band.
+    const { container } = renderFooter();
+    const text = container.textContent ?? "";
+    expect(text).toContain(DATA_RESIDENCY.provider);
+    expect(text).toContain(DATA_RESIDENCY.region);
+    expect(text).toContain(DATA_RESIDENCY.primaryCountry);
+  });
+
+  it("still links the legal pages", () => {
+    renderFooter();
+    const hrefs = screen
+      .getAllByRole("link")
+      .map((a) => a.getAttribute("href"));
+    expect(hrefs).toContain("/legal/privacy");
+    expect(hrefs).toContain("/legal/terms");
   });
 });

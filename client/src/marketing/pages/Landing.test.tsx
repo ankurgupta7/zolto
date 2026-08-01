@@ -2,6 +2,7 @@ import { describe, it, expect, afterEach } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
 import { Router } from "wouter";
 import { memoryLocation } from "wouter/memory-location";
+import { DATA_RESIDENCY } from "@shared/platform";
 import Landing from "./Landing";
 
 afterEach(cleanup);
@@ -52,6 +53,17 @@ describe("Landing", () => {
     expect(
       screen.getByRole("heading", { name: /Confirm at day.s end/i }),
     ).toBeTruthy();
+  });
+
+  it("tells visitors where their data physically lives", () => {
+    renderLanding();
+    expect(
+      screen.getByRole("heading", {
+        name: `${DATA_RESIDENCY.headline} ${DATA_RESIDENCY.headlineEmphasis}`,
+      }),
+    ).toBeTruthy();
+    // …with the caveat, not just the flattering half.
+    expect(screen.getByText(DATA_RESIDENCY.caveat)).toBeTruthy();
   });
 
   it("offers the primary and secondary calls to action", () => {

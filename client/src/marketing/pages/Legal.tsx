@@ -1,4 +1,5 @@
 import { Container } from "../components/Container";
+import { DATA_RESIDENCY } from "@shared/platform";
 
 interface Section {
   heading: string;
@@ -73,15 +74,25 @@ export function Privacy() {
           ],
         },
         {
-          heading: "3. Your rights",
+          // The residency facts come from DATA_RESIDENCY so this page, the
+          // landing band, the FAQ and the llms/MCP briefs can never end up
+          // describing different countries.
+          heading: "3. Where your data lives",
+          body: [
+            `${DATA_RESIDENCY.body} ${DATA_RESIDENCY.points[1]}`,
+            DATA_RESIDENCY.caveat,
+          ],
+        },
+        {
+          heading: "4. Your rights",
           body: [
             "You may request access to, correction of, or deletion of your personal data, and you may object to certain processing. Contact us to exercise these rights. EU users additionally have the rights granted under the GDPR, including data portability and the right to lodge a complaint with a supervisory authority.",
           ],
         },
         {
-          heading: "4. Retention & sub-processors",
+          heading: "5. Retention & sub-processors",
           body: [
-            "We keep data for as long as your account is active and as required by law. We use a small set of sub-processors (hosting, payments, email, AI) under contract; a current list is available on request.",
+            `We keep data for as long as your account is active and as required by law. We use a small set of sub-processors under contract: hosting (${DATA_RESIDENCY.provider}, ${DATA_RESIDENCY.region}), payments (Stripe), transactional email, and the AI model provider behind the assistant features. A current list is available on request.`,
           ],
         },
       ]}

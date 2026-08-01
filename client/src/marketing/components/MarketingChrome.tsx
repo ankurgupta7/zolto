@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { Menu, Store } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { storeAdminUrl } from "@/lib/surface";
+import { DATA_RESIDENCY } from "@shared/platform";
 import {
   Sheet,
   SheetContent,
@@ -254,10 +255,19 @@ export function MarketingFooter() {
   return (
     <footer className="border-t border-[var(--brand-border)] bg-[var(--brand-surface)]">
       <Container className="flex flex-col gap-4 py-10 text-sm text-[var(--brand-muted-2)] sm:flex-row sm:items-center sm:justify-between">
-        <p>
-          © {new Date().getFullYear()} Zolto — commerce for makers, handmade in
-          Zürich, built to keep more money in your pocket.
-        </p>
+        <div>
+          <p>
+            © {new Date().getFullYear()} Zolto — commerce for makers, handmade
+            in Zürich, built to keep more money in your pocket.
+          </p>
+          {/* Residency, in the one place every page carries. Sourced from
+              DATA_RESIDENCY so the footer can't drift from the landing band,
+              the FAQ or the privacy policy. */}
+          <p className="mt-1.5 text-[13px] text-[var(--brand-muted)]">
+            Hosted in {DATA_RESIDENCY.region} — {DATA_RESIDENCY.provider}{" "}
+            servers, mostly in {DATA_RESIDENCY.primaryCountry}.
+          </p>
+        </div>
         <nav className="flex gap-6">
           <Link href="/pricing" className="hover:text-[var(--brand-ink)]">
             Pricing

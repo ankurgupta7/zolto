@@ -103,6 +103,12 @@ export const FEATURES: PlatformFeature[] = [
       "A themed online store on your own subdomain or custom domain, with Swiss and EU shipping built in.",
   },
   {
+    id: "eu-hosting",
+    name: "European hosting — your data stays in Europe",
+    description:
+      "Zolto runs on servers rented from Hetzner in Europe, most of them in Germany. Your catalogue, your orders and your customers' details live in a European data centre, under the GDPR and the revised Swiss FADP — not in whichever cloud region happened to be the default.",
+  },
+  {
     id: "ai-discovery",
     name: "Discoverable by AI assistants",
     description:
@@ -440,6 +446,46 @@ export const ZERO_COST_POS = {
     "No trial clock. No starter tier that quietly expires. The only thing we ever charge for is the online sales we bring you — and if there aren't any, there's nothing to charge.",
 } as const;
 
+/**
+ * Where the platform physically runs — the data-residency claim.
+ *
+ * Scoped, on purpose, to the part we actually operate: the application servers
+ * and the database that holds a merchant's catalogue, orders and customer
+ * records. Those are machines rented from Hetzner in Europe, in most cases in
+ * Germany. That is a fact about our own infrastructure, checkable and stable,
+ * rather than a compliance badge — so the copy says "your data lives here",
+ * never "certified" or "compliant with everything".
+ *
+ * `caveat` is load-bearing and must stay: card payments, the AI model calls and
+ * transactional email are third parties, and some of those are outside the EU.
+ * A residency claim that quietly omits its sub-processors is the kind of thing
+ * a merchant discovers later and stops trusting the rest of the page over —
+ * which is exactly the trade the pricing pledge refuses to make elsewhere.
+ * platform.test.ts pins the caveat's presence for that reason.
+ */
+export const DATA_RESIDENCY = {
+  eyebrow: "where your shop actually lives",
+  /** Split for the hand-drawn underline — see ZERO_COST_POS on why. */
+  headline: "Your shop lives in Europe.",
+  headlineEmphasis: "Mostly Germany.",
+  /** The company whose hardware Zolto rents. */
+  provider: "Hetzner",
+  region: "Europe",
+  primaryCountry: "Germany",
+  body: "Zolto runs on machines we rent from Hetzner, a German hosting company, in European data centres — in most cases in Germany. Your catalogue, your orders and your customers' addresses sit in a database on those machines. Not on the other side of an ocean because that was the default setting.",
+  points: [
+    "Application servers and database in Europe — rented from Hetzner, most of them in Germany.",
+    "Two data-protection regimes cover it: the GDPR and the revised Swiss FADP. Where they differ, we hold ourselves to the stricter one.",
+    "Your customers' names and addresses stay under European law — useful when a customer asks, and when you're selling into the EU.",
+    "One-click export on every plan, and deletion on request. Data you can take with you isn't really held hostage anywhere.",
+  ],
+  /** What genuinely does leave — named here rather than left to be discovered. */
+  caveat:
+    "The honest footnote: we don't run everything ourselves. Card payments go through Stripe, our AI features call a model provider, and account emails go out through an email service — so some data reaches those companies too, and not all of them are European. They're named in the privacy policy instead of buried in it.",
+  /** Where the full detail lives. */
+  href: "/legal/privacy",
+} as const;
+
 export interface ComparisonRow {
   feature: string;
   them: string;
@@ -480,6 +526,15 @@ export const INCUMBENT_COMPARISON: ComparisonRow[] = [
     feature: "Your money",
     them: "Held, then paid out",
     us: "Straight into your own Stripe",
+  },
+  {
+    // A difference in *where*, phrased so it stays checkable: we say exactly
+    // where ours is and point at their sub-processor list for theirs, rather
+    // than asserting a region for companies that run in several and move
+    // between them.
+    feature: "Where your data lives",
+    them: "Whichever cloud regions they use — check their sub-processor list",
+    us: `${DATA_RESIDENCY.region}, mostly ${DATA_RESIDENCY.primaryCountry} — servers we rent from ${DATA_RESIDENCY.provider}`,
   },
 ];
 
@@ -552,6 +607,7 @@ export const FAQ_CATEGORIES = [
   "Selling",
   "Pricing & billing",
   "AI & discovery",
+  "Privacy & data",
 ] as const;
 
 export type FaqCategory = (typeof FAQ_CATEGORIES)[number];
@@ -643,6 +699,26 @@ export const FAQS: Faq[] = [
     category: "Pricing & billing",
     q: "Is there a contract?",
     a: "No. All paid plans are month-to-month. Cancel anytime.",
+  },
+  {
+    category: "Privacy & data",
+    q: "Where is my store's data stored?",
+    a: "In Europe. Zolto runs on servers we rent from Hetzner, a German hosting company, in European data centres — in most cases in Germany. Your products, orders and customers' details live in a database on those machines, not on a cloud region on the other side of an ocean.",
+  },
+  {
+    category: "Privacy & data",
+    q: "Does any of my data leave Europe?",
+    a: "Some of it reaches companies we don't run ourselves: card payments are handled by Stripe (card numbers never touch Zolto's servers), our AI features send text and photos to a model provider, and account emails go through an email service — and not all of those are European. Everything Zolto itself stores stays on our European servers. The sub-processors are named in the privacy policy, and the current list is available on request.",
+  },
+  {
+    category: "Privacy & data",
+    q: "Is Zolto covered by the GDPR and Swiss data protection?",
+    a: "Both apply. Zolto serves merchants in Switzerland and the EU, so the revised Swiss Federal Act on Data Protection (revFADP) and the GDPR both come into play — where they differ we work to the stricter one. Hosting in the EU makes that a much shorter conversation, and where we process your customers' data on your behalf, a Data Processing Agreement governs it.",
+  },
+  {
+    category: "Privacy & data",
+    q: "Can I get my data out again?",
+    a: "Yes, on every plan — including Free. Export your catalogue and store profile as a JSON file from Data & privacy in your admin, any time, without asking us. Deleting your store is a support request purely so we can confirm it's really you.",
   },
   {
     category: "Pricing & billing",

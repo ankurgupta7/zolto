@@ -18,6 +18,9 @@ import {
   ZERO_COST_POS,
   FREE_PLAN,
   COMPETITORS,
+  DATA_RESIDENCY,
+  FAQ_CATEGORIES,
+  faqsByCategory,
 } from "./platform";
 
 describe("platform facts", () => {
@@ -147,6 +150,82 @@ describe("platform facts", () => {
     expect(ids).toContain("tap-to-pay");
     expect(ids).toContain("notebook-inventory");
     expect(ids).toContain("day-end-reconciliation");
+  });
+
+  it("lists European hosting as a feature agents can enumerate", () => {
+    const hosting = FEATURES.find((f) => f.id === "eu-hosting");
+    expect(hosting).toBeTruthy();
+    // FEATURES feeds llms.txt, the MCP list_features tool and the landing
+    // noscript, so the residency answer has to be in the same words there.
+    expect(hosting?.description).toContain(DATA_RESIDENCY.provider);
+    expect(hosting?.description).toContain(DATA_RESIDENCY.primaryCountry);
+  });
+});
+
+describe("DATA_RESIDENCY", () => {
+  it("names the provider, the region and the usual country", () => {
+    expect(DATA_RESIDENCY.provider).toBe("Hetzner");
+    expect(DATA_RESIDENCY.region).toBe("Europe");
+    expect(DATA_RESIDENCY.primaryCountry).toBe("Germany");
+    // The body is the paragraph every surface reuses — it has to carry all
+    // three facts on its own, since the FAQ and llms briefs quote it whole.
+    for (const fact of [
+      DATA_RESIDENCY.provider,
+      DATA_RESIDENCY.region,
+      DATA_RESIDENCY.primaryCountry,
+    ]) {
+      expect(DATA_RESIDENCY.body).toContain(fact);
+    }
+  });
+
+  it("keeps the sub-processor caveat attached to the claim", () => {
+    // The one thing that must never be quietly dropped: hosting in Europe is
+    // not the same as nothing ever leaving Europe. Stripe, the model provider
+    // and the email service are third parties, and saying so is what makes the
+    // rest of the claim worth believing.
+    expect(DATA_RESIDENCY.caveat).toMatch(/stripe/i);
+    expect(DATA_RESIDENCY.caveat).toMatch(/model provider|ai/i);
+    expect(DATA_RESIDENCY.caveat).toMatch(/email/i);
+  });
+
+  it("claims a location, not a certification", () => {
+    const copy = [
+      DATA_RESIDENCY.headline,
+      DATA_RESIDENCY.headlineEmphasis,
+      DATA_RESIDENCY.body,
+      ...DATA_RESIDENCY.points,
+    ].join(" ");
+    // "GDPR compliant" / "ISO certified" are claims we cannot substantiate in
+    // marketing copy; which laws apply is a fact, and that's what we state.
+    expect(copy).not.toMatch(/gdpr[- ]compliant|fully compliant|certified/i);
+    expect(copy).toMatch(/GDPR/);
+  });
+
+  it("points at a page that actually exists", () => {
+    expect(DATA_RESIDENCY.href).toBe("/legal/privacy");
+  });
+
+  it("answers residency in the FAQ, under its own category", () => {
+    expect(FAQ_CATEGORIES).toContain("Privacy & data");
+    const privacy = faqsByCategory("Privacy & data");
+    expect(privacy.length).toBeGreaterThanOrEqual(3);
+    const answers = privacy.map((f) => f.a).join(" ");
+    expect(answers).toContain(DATA_RESIDENCY.provider);
+    expect(answers).toContain(DATA_RESIDENCY.primaryCountry);
+    // Including the awkward question, asked plainly.
+    expect(privacy.some((f) => /leave Europe/i.test(f.q))).toBe(true);
+  });
+
+  it("has a comparison row for where the data sits", () => {
+    const row = INCUMBENT_COMPARISON.find(
+      (r) => r.feature === "Where your data lives",
+    );
+    expect(row).toBeTruthy();
+    expect(row?.us).toContain(DATA_RESIDENCY.provider);
+    // We say where ours is; we don't assert a region for anyone else's.
+    expect(row?.them).not.toMatch(
+      /\b(United States|USA|US servers|Ireland|Germany)\b/,
+    );
   });
 });
 

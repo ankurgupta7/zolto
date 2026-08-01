@@ -10,6 +10,7 @@ import {
   HOW_TO_START,
   REVENUE_SHARE,
   PRO_BREAK_EVEN_ONLINE_CHF,
+  DATA_RESIDENCY,
 } from "@shared/platform";
 import {
   getPublicStores,
@@ -330,6 +331,16 @@ async function runPlatformTool(
         summary: PLATFORM.summary,
         audience: PLATFORM.audience,
         pricing: PLATFORM.pricingSummary,
+        // Agents get asked "where would my data be?" as often as "what does it
+        // cost" — answer it here rather than making them read the FAQ tool.
+        dataResidency: {
+          region: DATA_RESIDENCY.region,
+          primaryCountry: DATA_RESIDENCY.primaryCountry,
+          hostingProvider: DATA_RESIDENCY.provider,
+          summary: DATA_RESIDENCY.body,
+          subProcessorNote: DATA_RESIDENCY.caveat,
+          privacyUrl: `${base}${DATA_RESIDENCY.href}`,
+        },
         signupUrl: `${base}/signup`,
         pricingUrl: `${base}/pricing`,
         llmsTxt: `${base}/llms.txt`,

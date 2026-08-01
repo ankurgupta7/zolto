@@ -13,6 +13,7 @@ import {
   AI_CRAWLERS,
   NOINDEX_PATHS,
 } from "./marketing";
+import { DATA_RESIDENCY } from "./platform";
 
 describe("marketing identity gate", () => {
   it("keeps the maker anonymous until the release is signed", () => {
@@ -164,6 +165,17 @@ describe("renderMarketingLlmsTxt", () => {
     expect(txt).toContain("1% platform fee");
     expect(txt).toContain("Selling in person is free");
   });
+
+  it("tells agents where merchant data is hosted, caveat included", () => {
+    // "Where would my data live?" is a question an assistant gets asked on a
+    // maker's behalf, so the brief has to answer it without a second fetch —
+    // and with the sub-processor note attached, not just the EU headline.
+    const txt = renderMarketingLlmsTxt("https://zolto.com");
+    expect(txt).toContain("## Where the data lives");
+    expect(txt).toContain(DATA_RESIDENCY.provider);
+    expect(txt).toContain(DATA_RESIDENCY.primaryCountry);
+    expect(txt).toContain(DATA_RESIDENCY.caveat);
+  });
 });
 
 describe("renderMarketingLlmsFullTxt", () => {
@@ -178,6 +190,15 @@ describe("renderMarketingLlmsFullTxt", () => {
     // The fee model section replaces the retired photo-credit add-on.
     expect(txt).toContain("1% platform fee");
     expect(txt).not.toContain("AI Photo Credits");
+  });
+
+  it("spells out the hosting location and every residency point", () => {
+    const txt = renderMarketingLlmsFullTxt("https://zolto.com");
+    expect(txt).toContain(DATA_RESIDENCY.headline);
+    for (const point of DATA_RESIDENCY.points) {
+      expect(txt).toContain(point);
+    }
+    expect(txt).toContain(DATA_RESIDENCY.caveat);
   });
 });
 

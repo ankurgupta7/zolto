@@ -315,6 +315,28 @@ describe("Platform MCP (no tenant / marketing surface)", () => {
     });
   });
 
+  it("get_platform_info answers where merchant data is hosted", async () => {
+    // An agent recommending Zolto to an EU maker gets asked this; it should
+    // not have to guess or read the FAQ tool to answer.
+    const r = await call("get_platform_info");
+    const sc = r.structuredContent as {
+      dataResidency: {
+        region: string;
+        primaryCountry: string;
+        hostingProvider: string;
+        subProcessorNote: string;
+        privacyUrl: string;
+      };
+    };
+    expect(sc.dataResidency.hostingProvider).toBe("Hetzner");
+    expect(sc.dataResidency.region).toBe("Europe");
+    expect(sc.dataResidency.primaryCountry).toBe("Germany");
+    // The caveat travels with the claim over MCP too, so an agent can't relay
+    // "everything stays in the EU" as if it were the whole answer.
+    expect(sc.dataResidency.subProcessorNote).toMatch(/stripe/i);
+    expect(sc.dataResidency.privacyUrl).toBe("https://zolto.com/legal/privacy");
+  });
+
   it("get_pricing returns the two CHF plans and the online platform fee", async () => {
     const r = await call("get_pricing");
     const sc = r.structuredContent as {
