@@ -113,6 +113,16 @@ export const ADMIN_NAV: AdminNavItem[] = [
     path: "/admin/account",
     requiredRole: "admin",
   },
+  // The signed-in person, as opposed to the shop. Open to any staff member:
+  // everyone with a login has a name and a session to manage, and gating this
+  // at "admin" is what left staff with nowhere to see their own account.
+  {
+    id: "me",
+    plane: "account",
+    label: "My account",
+    icon: "UserRound",
+    path: "/admin/account/me",
+  },
   {
     id: "team",
     plane: "account",
@@ -226,6 +236,28 @@ export function resolveNavAccess(
     }
     return { ...item, access: "open" };
   });
+}
+
+/**
+ * Which nav item a path belongs to, by longest match.
+ *
+ * A plain `startsWith` lights up every ancestor: on /admin/account/team both
+ * "Shop profile" (/admin/account) and "Team" match, and on /admin every single
+ * store-plane item does. Nested paths are the norm in the account plane, so
+ * the most specific item wins and the rest stay unhighlighted.
+ */
+export function activeNavId(
+  items: AdminNavItem[],
+  path: string,
+): string | null {
+  let best: AdminNavItem | null = null;
+  for (const item of items) {
+    const matches = path === item.path || path.startsWith(`${item.path}/`);
+    if (matches && (!best || item.path.length > best.path.length)) {
+      best = item;
+    }
+  }
+  return best?.id ?? null;
 }
 
 // ─── Sidebar grouping ───────────────────────────────────────────────────────

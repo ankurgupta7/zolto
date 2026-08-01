@@ -53,4 +53,20 @@ describe("serif numerals", () => {
     // Guards the guard: a broken glob would make the check above pass silently.
     expect(sourceFiles().length).toBeGreaterThan(20);
   });
+
+  // The class-level check above cannot see this one: index.css puts the brand
+  // serif on every h1-h6, so a heading inherits Cormorant without ever writing
+  // `font-serif`. That is how "1 · Connect payments … 4 · Your TWINT QR
+  // sticker" ended up with oldstyle step numbers on /admin/pos — every test
+  // passed, and only the screenshot showed it.
+  it("gives every serif heading lining figures at the source of the serif", () => {
+    const css = readFileSync(path.join(SRC, "index.css"), "utf8");
+    const headingRule = css.match(
+      /h1,\s*h2,\s*h3,\s*h4,\s*h5,\s*h6\s*\{[^}]*\}/,
+    );
+
+    expect(headingRule).not.toBeNull();
+    expect(headingRule?.[0]).toContain("var(--font-serif)");
+    expect(headingRule?.[0]).toContain("lining-nums");
+  });
 });

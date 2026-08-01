@@ -1923,6 +1923,25 @@ export async function assignUserToTenantAsAdmin(
   );
 }
 
+/**
+ * A signed-in user editing their OWN display name.
+ *
+ * Name only, deliberately. `email` and `openId` are the identity the session
+ * was minted against (Google, Apple, or a magic link), so letting a user
+ * rewrite their email here would either desync them from their provider or —
+ * worse — let them type in somebody else's address and inherit whatever a
+ * future email-keyed lookup grants. Changing a sign-in address means proving
+ * the new one, which is a verification flow, not a text field.
+ */
+export async function updateOwnDisplayName(
+  userId: number,
+  name: string,
+): Promise<void> {
+  await withDbOrThrow((db) =>
+    db.update(users).set({ name }).where(eq(users.id, userId)),
+  );
+}
+
 export async function deleteUserById(id: number): Promise<void> {
   await withDbOrThrow((db) => db.delete(users).where(eq(users.id, id)));
 }
