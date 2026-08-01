@@ -79,6 +79,25 @@ esc() { printf '%s' "$1" | sed "s/'/''/g"; }
 # exist. Almost always the operator signed in through Google or Apple under a
 # different address than the one they typed — so print the candidates instead
 # of making them guess a second and third time.
+# Printed whenever a role write is rejected. The cause is almost always that
+# this database predates the role being written: the baseline shipped
+# enum('user','admin') and the app has since needed 'staff', 'customer', and
+# 'superadmin'. update.sh migration 0032 widens it.
+role_enum_hint() {
+  local col
+  col="$($MYSQL -N -s -e "SELECT COLUMN_TYPE FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA='${MYSQL_DATABASE}' AND TABLE_NAME='users' AND COLUMN_NAME='role';" 2>/dev/null)"
+  echo "       users.role is currently: ${col:-unknown}" >&2
+  case "$col" in
+    *superadmin*) : ;;
+    *)
+      echo "       That column has no 'superadmin' value, so the write was truncated." >&2
+      echo "       Deploy to widen it (update.sh migration 0032), then re-run:" >&2
+      echo "         ./update.sh" >&2
+      ;;
+  esac
+}
+
 suggest_emails() {
   local total
   total="$($MYSQL -N -s -e "SELECT COUNT(*) FROM users;" 2>/dev/null)"
@@ -134,7 +153,22 @@ if [ "$SLUG" = "--superadmin" ]; then
 
   echo "Granting PLATFORM ownership (superadmin) to ${SA_EMAIL}…"
   echo "They will be able to read every store's numbers and act as any store's admin."
-  $MYSQL -e "UPDATE users SET role='superadmin' WHERE LOWER(email)=LOWER('${SA_EMAIL_E}');"
+  if ! $MYSQL -e "UPDATE users SET role='superadmin' WHERE LOWER(email)=LOWER('${SA_EMAIL_E}');"; then
+    echo "ERROR: the grant failed — see the mysql error above." >&2
+    role_enum_hint
+    exit 1
+  fi
+
+  # Verify rather than assume. This script previously printed "Done." after a
+  # failed UPDATE: MySQL rejected 'superadmin' with "Data truncated for column
+  # 'role'" because the live enum predates the role, and the script reported
+  # success anyway. Read the row back and let the database be the judge.
+  SA_NOW="$($MYSQL -N -s -e "SELECT COUNT(*) FROM users WHERE LOWER(email)=LOWER('${SA_EMAIL_E}') AND role='superadmin';" 2>/dev/null)"
+  if [ "${SA_NOW:-0}" != "1" ]; then
+    echo "ERROR: ${SA_EMAIL} is still NOT a superadmin — the write did not stick." >&2
+    role_enum_hint
+    exit 1
+  fi
 
   echo
   echo "── Everyone who now owns the platform ──────────────────────────"
@@ -229,10 +263,25 @@ if [ "$MODE" = "--promote" ]; then
   fi
 
   echo "Promoting ${EMAIL} to admin of '${SLUG}' (tenant ${TENANT_ID})…"
-  $MYSQL -e "UPDATE users SET role='admin', tenant_id=${TENANT_ID} WHERE LOWER(email)=LOWER('${EMAIL_E}');"
+  if ! $MYSQL -e "UPDATE users SET role='admin', tenant_id=${TENANT_ID} WHERE LOWER(email)=LOWER('${EMAIL_E}');"; then
+    echo "ERROR: the promotion failed — see the mysql error above." >&2
+    role_enum_hint
+    exit 1
+  fi
+
+  # Same verification as the superadmin path: read the row back rather than
+  # trusting that the UPDATE did what it was asked.
+  PROMOTED="$($MYSQL -N -s -e "SELECT COUNT(*) FROM users WHERE LOWER(email)=LOWER('${EMAIL_E}') AND role='admin' AND tenant_id=${TENANT_ID};" 2>/dev/null)"
+  if [ "${PROMOTED:-0}" != "1" ]; then
+    echo "ERROR: ${EMAIL} is still NOT an admin of '${SLUG}' — the write did not stick." >&2
+    role_enum_hint
+    exit 1
+  fi
 
   # Burn any still-pending claim row for this tenant so a stale token can't
-  # later re-point ownership at somebody else.
+  # later re-point ownership at somebody else. Only after the promotion is
+  # confirmed — dropping the claim row when the grant failed would destroy the
+  # owner's remaining path in.
   $MYSQL -e "DELETE FROM users WHERE tenant_id=${TENANT_ID} AND openId LIKE 'pending:%';"
 
   echo "Done. Have them sign out and back in, then retry Connect Stripe."

@@ -630,6 +630,38 @@ else
   ok "0031 tenant_settings.twint_qr_url already exists"
 fi
 
+# ── 0032: users.role enum — the four roles the app actually uses ──────────────
+# The baseline shipped enum('user','admin') and NOTHING ever widened it, while
+# drizzle/schema.ts has declared enum('superadmin','admin','staff','customer')
+# with DEFAULT 'customer' for as long as multi-tenancy has existed. Every write
+# of a value outside the live pair fails with
+#   ERROR 1265 Data truncated for column 'role'
+# which silently broke, in production:
+#   - staff invites      (db.ts claimStaffInvite sets role='staff')
+#   - platform ownership (deploy/tenant-admin.sh --superadmin)
+# Signup survived only because it never names a role and takes the column
+# default.
+#
+# Widen → migrate data → narrow, the same shape as 0004/0008 for tenants.plan.
+# The transitional enum is the UNION of both, so this is safe from either
+# starting point and safe to re-run.
+CURRENT_ROLE_ENUM=$($MYSQL -se "${MYSQL_LOCK_TIMEOUT_SQL}SELECT COLUMN_TYPE FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA='${MYSQL_DATABASE}' AND TABLE_NAME='users' AND COLUMN_NAME='role';" 2>/dev/null || echo "")
+
+if echo "$CURRENT_ROLE_ENUM" | grep -q "'superadmin'" && ! echo "$CURRENT_ROLE_ENUM" | grep -q "'user'"; then
+  ok "0032 users.role already has the four app roles"
+else
+  run_sql "0032 widen users.role to the union of old and new" \
+    "ALTER TABLE \`users\` MODIFY COLUMN \`role\` enum('user','admin','superadmin','staff','customer') NOT NULL DEFAULT 'customer';"
+
+  # 'user' was the baseline's name for an ordinary shopper — 'customer' now.
+  run_sql "0032 map legacy 'user' role to 'customer'" \
+    "UPDATE \`users\` SET \`role\`='customer' WHERE \`role\`='user';"
+
+  run_sql "0032 narrow users.role to the four app roles" \
+    "ALTER TABLE \`users\` MODIFY COLUMN \`role\` enum('superadmin','admin','staff','customer') NOT NULL DEFAULT 'customer';"
+fi
+
 # ── Shared helper: run a script inside the builder container ──────────────────
 # Usage: run_in_builder <tag> <script-path> [extra docker args...]
 run_in_builder() {
