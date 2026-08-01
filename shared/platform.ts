@@ -10,7 +10,7 @@ export const PLATFORM = {
   tagline: "AI-run commerce for makers",
   /** One-liner used as the default meta description / llms.txt summary. */
   summary:
-    "Zolto gives independent makers and artisans a point-of-sale and an online store that share one inventory — with an AI assistant that handles setup, product photos, listings, and support. Take payments on the phone you already own (contactless, Apple Pay / Google Pay, TWINT QR) — no card reader to buy — for a fraction of what legacy providers charge. Sell online and in person without managing technology.",
+    "Zolto gives independent makers and artisans a point-of-sale and an online store that share one inventory — with an AI assistant that handles setup, product photos, listings, and support. Take payments on the phone you already own (contactless, Apple Pay / Google Pay, TWINT QR) — no card reader to buy — for a fraction of what legacy providers charge. Built by AI, for AI: every store ships an llms.txt and a Model Context Protocol (MCP) endpoint out of the box, so AI assistants can find, recommend, and buy from it directly. Sell online and in person without managing technology.",
   /** Who it's for — used in schema audience + llms briefs. */
   audience:
     "Independent makers, artisans, and small shop owners — people who sell at craft fairs, markets, and pop-ups and want an online store without hiring a developer.",
@@ -506,6 +506,62 @@ export const CARD_READER_GAG = {
   get proMonths(): number {
     return Math.floor(this.anchorChf / PRO_PLAN.priceChf);
   },
+} as const;
+
+/**
+ * The AI-native main pitch — the landing hero and its proof sections.
+ *
+ * The thesis: buying is moving from search results into assistant
+ * conversations, and assistants can only recommend stores they can read.
+ * Zolto's answer is structural, not retrofitted — llms.txt, MCP and agent
+ * checkout ship with every store (see FREE_PLAN "Found by AI agents…"), so
+ * the claim set here is pinned to the Free plan by platform.test.ts the same
+ * way ZERO_COST_POS is.
+ *
+ * The chart is deliberately schematic: two labelled curves and a caption, a
+ * claim about direction rather than data. No numbers, no source to go stale.
+ */
+export const AI_NATIVE_PITCH = {
+  eyebrow: "commerce is moving into the chat window",
+  headline: "Your next customer",
+  /** Split so the sketch underline hugs the punchline (see ZERO_COST_POS). */
+  headlineEmphasis: "is an AI.",
+  body: "Search built the last era of shops. Assistants are building this one — and they can only recommend stores they can read. Every Zolto store ships llms.txt, MCP and agent checkout from day one, kept current as the protocols move, so your shop compounds in the answers while retrofitted websites fade out of them.",
+  chart: {
+    title: "where buyers start their search",
+    decliningLabel: "search engines",
+    risingLabel: "AI assistants",
+    startYear: "2023",
+    endYear: "2027",
+    caption:
+      "Assistants only recommend stores they can read. A store that's invisible to them isn't in the answer — no matter how good its SEO was.",
+  },
+  /** The proof band: an agent buying from a store, inside the conversation. */
+  proof: {
+    eyebrow: "not a roadmap — live today",
+    headline: "Watch an AI buy from a Zolto store.",
+    body: "Your customer asks their assistant. The assistant reads the store's brief, checks live stock over MCP, and places the order — payment lands in the maker's own Stripe like any other sale. Point your own AI at zolto.ch/llms.txt and ask it about us.",
+  },
+  /** The mechanics band — each step names something the Free plan ships. */
+  steps: [
+    {
+      k: "Found",
+      title: "The assistant reads your brief",
+      body: "Every store publishes yourstore.zolto.ch/llms.txt — a plain-language summary of who you are and what you sell, written for AI readers.",
+    },
+    {
+      k: "Asked",
+      title: "It checks live stock over MCP",
+      body: "Real products, real prices, real quantities — straight from your inventory, not a stale scrape from last month.",
+    },
+    {
+      k: "Bought",
+      title: "It checks out in the chat",
+      body: "The order lands like any other sale: stock syncs, you get the notification, and the money goes straight into your Stripe.",
+    },
+  ],
+  footnote:
+    "You don't set any of this up. It ships with the store — on the Free plan too, and 1% only when an agent actually sells for you.",
 } as const;
 
 export interface SellingStep {

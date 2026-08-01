@@ -12,6 +12,8 @@ import {
   registerStripeConnectRoutes,
 } from "../stripeConnect";
 import { registerPosWebhook, registerPosRoutes } from "../pos";
+import { registerChannelIntakeRoutes } from "../channels";
+import { registerScheduledRoutes } from "../scheduled";
 import { registerReconciliationRoutes } from "../reconciliationRoutes";
 import { registerPosAttributionRoutes } from "../posAttributionRoutes";
 import { registerSeoRoutes } from "../seo";
@@ -36,10 +38,14 @@ export async function createApp(): Promise<express.Express> {
 
   const app = express();
 
-  // Both webhook handlers need the raw request body for signature verification,
-  // so they must be registered BEFORE the global JSON body parser below.
+  // These webhook handlers need the raw request body for signature
+  // verification, so they must be registered BEFORE the global JSON body
+  // parser below.
   registerStripeWebhook(app);
   registerPosWebhook(app);
+  // WhatsApp + Slack product intake (Discord's gateway is started by the
+  // bootstrap in index.ts — it's a websocket, not a route).
+  registerChannelIntakeRoutes(app);
 
   // Larger body limit for base64 image uploads.
   app.use(express.json({ limit: "50mb" }));
@@ -60,6 +66,9 @@ export async function createApp(): Promise<express.Express> {
   // One-click confirmation links from the Stripe reconciliation review email
   registerReconciliationRoutes(app);
   registerPosAttributionRoutes(app);
+
+  // Heartbeat-cron callbacks (e.g. the nightly POS-attribution sweep).
+  registerScheduledRoutes(app);
 
   // SEO discovery: /sitemap.xml + /robots.txt (before the SPA catch-all).
   registerSeoRoutes(app);

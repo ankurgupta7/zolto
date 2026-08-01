@@ -5,6 +5,7 @@ import {
   renderMarketingLlmsTxt,
   renderMarketingLlmsFullTxt,
 } from "@shared/marketing";
+import { featuresForPlan } from "@shared/platform";
 import { getVisibleProducts } from "./db";
 import { resolveBaseUrl } from "./seo";
 import { resolveTenantFromRequest } from "./tenantResolve";
@@ -40,8 +41,14 @@ export function renderStorefrontLlmsTxt(
   const lines: string[] = [];
   lines.push(`# ${tenant.name}`);
   lines.push("");
+  // Pro sells 'Your brand only — no "runs on Zolto"', and this brief is served
+  // to exactly the AI agents that claim is about — so the platform credit only
+  // appears on plans without white-labelling.
+  const platformCredit = featuresForPlan(tenant.plan).whiteLabel
+    ? ""
+    : " This store runs on Zolto.";
   lines.push(
-    `> Handcrafted jewelry and accessories, sold online and in person. This store runs on Zolto. ${inStock.length} item(s) currently available.`,
+    `> Handcrafted jewelry and accessories, sold online and in person.${platformCredit} ${inStock.length} item(s) currently available.`,
   );
   lines.push("");
 

@@ -2,6 +2,7 @@ import { Link } from "wouter";
 import { SketchUnderline } from "@/components/SketchAccents";
 import ParticleField from "@/components/ParticleField";
 import {
+  AI_NATIVE_PITCH,
   PRICING_PROMISE,
   COST_COMPARISON,
   INCUMBENT_COMPARISON,
@@ -10,8 +11,12 @@ import {
 import {
   OneInventoryDiagram,
   PhotoToListing,
-  MarketStallScene,
 } from "../components/MarketingIllustrations";
+import {
+  DiscoveryShiftChart,
+  AgentProofBand,
+  HowAnAiBuys,
+} from "../components/AgentPitch";
 import { Container } from "../components/Container";
 import { DayInTheLife } from "../components/DayInTheLife";
 import { ScrollReveal } from "../components/ScrollReveal";
@@ -26,29 +31,26 @@ export default function Landing() {
           fades out over the light sections via screen blend. */}
       <ParticleField />
 
-      {/* ── Hero — "on your side" voice on the storefront's mahogany band ── */}
+      {/* ── Hero — the AI-native thesis: assistants are the new front door ── */}
       <section className="bg-[var(--brand-ink)]">
         <Container className="grid items-center gap-10 pb-20 pt-20 md:grid-cols-2">
           <div>
             <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
-              for people who make things
+              {AI_NATIVE_PITCH.eyebrow}
             </p>
             <h1 className="mt-4 max-w-xl font-serif text-4xl leading-[1.1] text-white sm:text-5xl">
-              Your whole shop, on the phone in{" "}
+              {AI_NATIVE_PITCH.headline}{" "}
+              {/* Only the punchline is underlined, so the stroke stays tight
+                  to the words however the heading wraps. */}
               <span className="relative inline-block">
-                your pocket.
+                {AI_NATIVE_PITCH.headlineEmphasis}
                 <span className="absolute -bottom-2 left-0 w-full text-[var(--brand-accent)]">
                   <SketchUnderline />
                 </span>
               </span>
             </h1>
             <p className="mt-8 max-w-md text-lg leading-relaxed text-white/70">
-              Zolto's a point-of-sale and an online store that share{" "}
-              <span className="text-white">one inventory</span> — plus an AI
-              that handles the setup, the listings and the boring stuff so you
-              don't have to. No card reader to buy, and{" "}
-              <span className="text-white">{COST_COMPARISON.multiplier}</span>{" "}
-              of what the old way charges. We're on your side. For real.
+              {AI_NATIVE_PITCH.body}
             </p>
             <div className="mt-10 flex flex-wrap items-center gap-4">
               <Link
@@ -66,12 +68,15 @@ export default function Landing() {
             </div>
           </div>
 
-          {/* Line-drawn market stall — the product's world, not stock art */}
-          <div className="hidden justify-center text-[var(--brand-accent)]/80 md:flex">
-            <MarketStallScene className="w-full max-w-md" />
+          {/* The discovery shift, drawn rather than asserted */}
+          <div className="hidden md:block">
+            <DiscoveryShiftChart />
           </div>
         </Container>
       </section>
+
+      {/* ── Proof: an AI buying from a Zolto store, inside the conversation ── */}
+      <AgentProofBand />
 
       {/* ── Cost strip (Direction A) — a year with the old guard vs a month here ── */}
       <section className="bg-[var(--brand-ink-deep)]">
@@ -109,6 +114,9 @@ export default function Landing() {
           </div>
         </Container>
       </section>
+
+      {/* ── The mechanics: found → asked → bought, nothing to configure ── */}
+      <HowAnAiBuys />
 
       {/* ── The differentiator: a real POS + catalogue, at CHF 0/month ── */}
       <ZeroCostPos />
