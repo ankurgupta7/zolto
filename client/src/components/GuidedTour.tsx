@@ -51,12 +51,11 @@ function findTarget(selector: string): Element | null {
  * target element at a time, and shows an arrow + tooltip with Back / Next / Skip.
  * Purely presentational logic lives in `@/lib/tour` (tested there).
  *
- * Rendered through a portal on `document.body`: any ancestor with a `transform`
- * (`.page-enter`'s fadeUp animation is one, and it uses `forwards`, so the
- * transform sticks) becomes the containing block for `position: fixed`
- * descendants. Mounted in place, the overlay would be positioned against the
- * full-height page element instead of the viewport, so the spotlight would sit
- * offset from its target and scroll away with the page.
+ * Rendered through a portal on `document.body`: a positioned or transformed
+ * ancestor (`.page-enter` animates a transform; page sections position
+ * themselves) would become the containing block for the overlay's boxes, so
+ * mounted in place its document-origin coordinates would be re-anchored to
+ * whatever ancestor happened to qualify. On the body they mean what they say.
  */
 export default function GuidedTour({
   tourId,
@@ -108,9 +107,18 @@ export default function GuidedTour({
     setActive(true);
   }, [startSignal, steps.length]);
 
-  // Measure the current target and (re)compute the tooltip position. All
-  // coordinates are viewport-relative, matching the `position: fixed` boxes we
-  // render them into.
+  // Measure the current target and (re)compute the tooltip position.
+  //
+  // The spotlight and tooltip are stored in DOCUMENT coordinates (viewport rect
+  // + scroll offset) and rendered `position: absolute` at the document origin,
+  // NOT `fixed`. This is what makes the highlight stick to its target during a
+  // scroll: any JS re-measure is inherently one frame behind the compositor, so
+  // a `fixed` box chasing viewport coordinates visibly trails the element by
+  // 10–25px during a flick. In document coordinates the boxes scroll *with* the
+  // page natively — pure scrolling changes nothing here (rect.top falls as
+  // scrollY rises, their sum is constant), so a scroll re-renders zero times
+  // and the spotlight cannot lag. The re-measure loop only fires state updates
+  // on real layout changes (resize, fonts, data arriving).
   const measure = useCallback(() => {
     if (!step) return;
     const el = findTarget(step.target);
@@ -122,9 +130,10 @@ export default function GuidedTour({
       return;
     }
     const r = el.getBoundingClientRect();
+    const { scrollX, scrollY } = window;
     const next: Rect = {
-      top: r.top,
-      left: r.left,
+      top: r.top + scrollY,
+      left: r.left + scrollX,
       width: r.width,
       height: r.height,
     };
@@ -137,23 +146,32 @@ export default function GuidedTour({
 
     setRect((prev) => (rectsEqual(prev, next) ? prev : next));
     setTipWidth((prev) => (prev === width ? prev : width));
-    const nextPos = computeTooltipPosition(
-      next,
+    // Placement/flip/clamp decisions happen in viewport space (that's where
+    // "room below" means something), then the result is anchored to the page.
+    const vpPos = computeTooltipPosition(
+      { top: r.top, left: r.left, width: r.width, height: r.height },
       { width, height },
       viewport,
       step.placement ?? "bottom",
     );
+    const nextPos = {
+      ...vpPos,
+      top: vpPos.top + scrollY,
+      left: vpPos.left + scrollX,
+    };
     setPos((prev) => (positionsEqual(prev, nextPos) ? prev : nextPos));
   }, [step, index, steps.length, finish]);
 
   useLayoutEffect(() => {
     if (!active || !step) return;
-    // Bring the target into view, then keep re-measuring for as long as the step
-    // is on screen. A rAF loop (rather than scroll/resize listeners) is what
-    // makes the spotlight stick on mobile: iOS coalesces scroll events during
-    // momentum scrolling and fires none at all mid-smooth-scroll, so listeners
-    // leave the highlight lagging behind its target. `measure` no-ops on
-    // unchanged geometry, so a settled page re-renders zero times.
+    // Bring the target into view, then keep re-measuring for as long as the
+    // step is on screen — a rAF loop rather than scroll/resize listeners,
+    // because iOS coalesces scroll events during momentum scrolling and fires
+    // none at all mid-smooth-scroll. Scrolling itself needs no update (the
+    // boxes live in document coordinates); the loop exists to catch layout
+    // changes under the tour: fonts loading, query data arriving, rotation,
+    // the address bar collapsing. `measure` no-ops on unchanged geometry, so a
+    // quiet page re-renders zero times.
     findTarget(step.target)?.scrollIntoView({
       block: "center",
       inline: "nearest",
@@ -196,9 +214,13 @@ export default function GuidedTour({
   const isVertical = pos.placement === "top" || pos.placement === "bottom";
 
   const overlay = (
-    <div className="fixed inset-0 z-[100]" role="dialog" aria-modal="true">
+    // An anchor at the document origin: the spotlight and tooltip are
+    // positioned inside it in document coordinates, so they scroll in perfect
+    // sync with the content they annotate (see `measure` for why not `fixed`).
+    <div className="absolute inset-0 z-[100]" role="dialog" aria-modal="true">
       {/* Click-catcher so the rest of the page isn't interactable mid-tour.
-          Rendered first so the spotlight and tooltip paint above it. */}
+          Rendered first so the spotlight and tooltip paint above it. This one
+          IS fixed — it must cover the screen, not track any content. */}
       <button
         type="button"
         aria-label="Skip tour"
@@ -206,10 +228,12 @@ export default function GuidedTour({
         className="fixed inset-0 h-full w-full cursor-default bg-transparent"
       />
 
-      {/* Dim + spotlight: a transparent hole over the target via a huge box-shadow. */}
+      {/* Dim + spotlight: a transparent hole over the target via a huge
+          box-shadow. The 9999px shadow far exceeds any viewport, so it keeps
+          the whole screen dimmed wherever the box scrolls to. */}
       <div
         data-testid="tour-spotlight"
-        className="pointer-events-none fixed rounded-lg ring-2 ring-violet-400"
+        className="pointer-events-none absolute rounded-lg ring-2 ring-violet-400"
         style={{
           top: rect.top - pad,
           left: rect.left - pad,
@@ -225,7 +249,7 @@ export default function GuidedTour({
         ref={tipRef}
         role="group"
         aria-label={`Tour step ${index + 1} of ${steps.length}`}
-        className="fixed rounded-xl border border-slate-700 bg-slate-900 p-5 text-left shadow-2xl"
+        className="absolute rounded-xl border border-slate-700 bg-slate-900 p-5 text-left shadow-2xl"
         style={{ top: pos.top, left: pos.left, width: tipWidth }}
       >
         {/* Arrow pointing back at the spotlighted element. */}

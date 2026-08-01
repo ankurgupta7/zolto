@@ -98,13 +98,17 @@ describe("GuidedTour", () => {
 });
 
 /**
- * Positioning regressions. `.page-enter` animates `transform` with
- * `animation-fill-mode: forwards`, so the admin page permanently carries a
- * transform — which makes it the containing block for `position: fixed`
- * descendants. Mounted in place, the overlay is positioned against the
- * full-height page element rather than the viewport, so the spotlight sits
- * offset from its target and scrolls away with the page. The portal is what
- * keeps viewport coordinates meaning what they say.
+ * Positioning regressions. Two hard-won invariants:
+ *
+ * 1. The overlay portals to `document.body`. Mounted in place, any positioned
+ *    or transformed ancestor (`.page-enter` animates a transform) becomes the
+ *    containing block for its boxes, re-anchoring them away from the document
+ *    origin — the spotlight sat offset from its target and scrolled away.
+ * 2. The spotlight and tooltip live in DOCUMENT coordinates (`absolute`), not
+ *    viewport coordinates (`fixed`). Fixed boxes chasing getBoundingClientRect
+ *    are one frame behind the compositor, so during a phone flick-scroll the
+ *    highlight visibly trailed its target; absolute boxes scroll with the
+ *    content natively, so a pure scroll needs no update at all.
  */
 describe("GuidedTour positioning", () => {
   function stubRect(el: Element, rect: Partial<DOMRect>) {
@@ -135,7 +139,7 @@ describe("GuidedTour positioning", () => {
     expect(dialog.closest(".page-enter")).toBeNull();
   });
 
-  it("spotlights the target at its viewport coordinates", async () => {
+  it("spotlights the target at its document coordinates", async () => {
     const { container } = renderTour([STEPS[0]]);
     stubRect(container.querySelector('[data-tour="a"]') as Element, {
       top: 420,
@@ -145,15 +149,19 @@ describe("GuidedTour positioning", () => {
     });
     await waitFor(() => {
       const spot = screen.getByTestId("tour-spotlight");
-      // 6px of padding around the target on every side.
+      // jsdom scrollY is 0, so document coords equal the stubbed viewport
+      // rect, inflated by 6px of padding on every side.
       expect(spot.style.top).toBe("414px");
       expect(spot.style.left).toBe("90px");
       expect(spot.style.width).toBe("172px");
       expect(spot.style.height).toBe("52px");
+      // `absolute`, not `fixed` — fixed is what made it trail during scrolls.
+      expect(spot.className).toContain("absolute");
+      expect(spot.className).not.toContain("fixed");
     });
   });
 
-  it("follows the target when the page scrolls under it", async () => {
+  it("re-anchors when the target actually moves in the document", async () => {
     const { container } = renderTour([STEPS[0]]);
     const target = container.querySelector('[data-tour="a"]') as Element;
     stubRect(target, { top: 500, left: 20, width: 100, height: 30 });
@@ -161,14 +169,42 @@ describe("GuidedTour positioning", () => {
       expect(screen.getByTestId("tour-spotlight").style.top).toBe("494px"),
     );
 
-    // Scroll the page 300px down: the target's viewport-relative top drops by
-    // 300, and the spotlight must move with it rather than staying put. No
-    // scroll event is dispatched on purpose — iOS coalesces them away during
-    // momentum scrolling, so tracking has to hold without one.
+    // A layout change (content above collapsed by 300px, scroll unchanged):
+    // the target's document position really moved, so the spotlight must too.
+    // No scroll/resize event is dispatched on purpose — iOS coalesces them
+    // away during momentum scrolling, so tracking has to hold without one.
     stubRect(target, { top: 200, left: 20, width: 100, height: 30 });
     await waitFor(() =>
       expect(screen.getByTestId("tour-spotlight").style.top).toBe("194px"),
     );
+  });
+
+  it("holds still through a pure scroll — document position is scroll-invariant", async () => {
+    const { container } = renderTour([STEPS[0]]);
+    const target = container.querySelector('[data-tour="a"]') as Element;
+    stubRect(target, { top: 500, left: 20, width: 100, height: 30 });
+    await waitFor(() =>
+      expect(screen.getByTestId("tour-spotlight").style.top).toBe("494px"),
+    );
+
+    // Scroll 300px: viewport top drops by 300 while scrollY rises by 300.
+    // Document position (their sum) is unchanged, so the absolute box must
+    // not move — the compositor scrolls it in sync with the target.
+    Object.defineProperty(window, "scrollY", {
+      value: 300,
+      configurable: true,
+    });
+    try {
+      stubRect(target, { top: 200, left: 20, width: 100, height: 30 });
+      // Let several rAF measure ticks run, then confirm nothing changed.
+      await new Promise((r) => setTimeout(r, 50));
+      expect(screen.getByTestId("tour-spotlight").style.top).toBe("494px");
+    } finally {
+      Object.defineProperty(window, "scrollY", {
+        value: 0,
+        configurable: true,
+      });
+    }
   });
 
   it("prefers a rendered target over a hidden duplicate anchor", async () => {
