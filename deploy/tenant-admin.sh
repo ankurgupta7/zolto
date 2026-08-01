@@ -75,6 +75,33 @@ fi
 # the statement.
 esc() { printf '%s' "$1" | sed "s/'/''/g"; }
 
+# "No user with that email" is a dead end unless it also says which emails DO
+# exist. Almost always the operator signed in through Google or Apple under a
+# different address than the one they typed — so print the candidates instead
+# of making them guess a second and third time.
+suggest_emails() {
+  local total
+  total="$($MYSQL -N -s -e "SELECT COUNT(*) FROM users;" 2>/dev/null)"
+  if [ "${total:-0}" = "0" ]; then
+    echo "       There are NO users in this database at all, so there is nothing to" >&2
+    echo "       promote. Sign up at https://zolto.ch/signup first. (If you expected" >&2
+    echo "       accounts here, check backups/ before writing anything on top.)" >&2
+    return
+  fi
+  echo "       Accounts that DO exist (${total}):" >&2
+  # Order matters: `>&2` first duplicates stdout onto the CURRENT stderr, then
+  # `2>/dev/null` silences only mysql's own chatter. Written the other way
+  # round, stderr goes to /dev/null and stdout follows it there — printing the
+  # header and then nothing at all.
+  $MYSQL -N -s -e \
+    "SELECT CONCAT('         ', COALESCE(email,'(no email)'), '  [', role, ']')
+     FROM users ORDER BY FIELD(role,'superadmin','admin','staff','customer'), id
+     LIMIT 40;" >&2 2>/dev/null
+  if [ "${total:-0}" -gt 40 ]; then
+    echo "         … and $((total - 40)) more." >&2
+  fi
+}
+
 SLUG="${1:-}"
 MODE="${2:-}"
 EMAIL="${3:-}"
@@ -92,10 +119,12 @@ if [ "$SLUG" = "--superadmin" ]; then
     exit 1
   fi
   SA_EMAIL_E="$(esc "$SA_EMAIL")"
-  SA_FOUND="$($MYSQL -N -s -e "SELECT COUNT(*) FROM users WHERE email='${SA_EMAIL_E}';" 2>/dev/null)"
+  # Case-insensitive: providers hand back addresses in whatever case the user
+  # typed at signup, and nobody remembers which that was.
+  SA_FOUND="$($MYSQL -N -s -e "SELECT COUNT(*) FROM users WHERE LOWER(email)=LOWER('${SA_EMAIL_E}');" 2>/dev/null)"
   if [ "${SA_FOUND:-0}" = "0" ]; then
-    echo "ERROR: no user with email '${SA_EMAIL}'. Sign in to Zolto once first so the" >&2
-    echo "       account exists, then re-run this." >&2
+    echo "ERROR: no user with email '${SA_EMAIL}'." >&2
+    suggest_emails
     exit 1
   fi
   if [ "${SA_FOUND:-0}" != "1" ]; then
@@ -105,7 +134,7 @@ if [ "$SLUG" = "--superadmin" ]; then
 
   echo "Granting PLATFORM ownership (superadmin) to ${SA_EMAIL}…"
   echo "They will be able to read every store's numbers and act as any store's admin."
-  $MYSQL -e "UPDATE users SET role='superadmin' WHERE email='${SA_EMAIL_E}';"
+  $MYSQL -e "UPDATE users SET role='superadmin' WHERE LOWER(email)=LOWER('${SA_EMAIL_E}');"
 
   echo
   echo "── Everyone who now owns the platform ──────────────────────────"
@@ -185,11 +214,12 @@ if [ "$MODE" = "--promote" ]; then
   fi
   EMAIL_E="$(esc "$EMAIL")"
   # The user must already exist: role is granted to a real signed-in identity,
-  # never invented here.
-  FOUND="$($MYSQL -N -s -e "SELECT COUNT(*) FROM users WHERE email='${EMAIL_E}';" 2>/dev/null)"
+  # never invented here. Matched case-insensitively — see the superadmin path.
+  FOUND="$($MYSQL -N -s -e "SELECT COUNT(*) FROM users WHERE LOWER(email)=LOWER('${EMAIL_E}');" 2>/dev/null)"
   if [ "${FOUND:-0}" = "0" ]; then
     echo "ERROR: no user with email '${EMAIL}'. They must sign in to Zolto once first," >&2
     echo "       so the account exists, then re-run this." >&2
+    suggest_emails
     exit 1
   fi
   if [ "${FOUND:-0}" != "1" ]; then
@@ -199,7 +229,7 @@ if [ "$MODE" = "--promote" ]; then
   fi
 
   echo "Promoting ${EMAIL} to admin of '${SLUG}' (tenant ${TENANT_ID})…"
-  $MYSQL -e "UPDATE users SET role='admin', tenant_id=${TENANT_ID} WHERE email='${EMAIL_E}';"
+  $MYSQL -e "UPDATE users SET role='admin', tenant_id=${TENANT_ID} WHERE LOWER(email)=LOWER('${EMAIL_E}');"
 
   # Burn any still-pending claim row for this tenant so a stale token can't
   # later re-point ownership at somebody else.
