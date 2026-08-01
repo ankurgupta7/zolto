@@ -753,6 +753,20 @@ else
     "ALTER TABLE \`users\` MODIFY COLUMN \`role\` enum('superadmin','admin','staff','customer') NOT NULL DEFAULT 'customer';"
 fi
 
+# ── 0033: German + French product locales ────────────────────────────────────
+# Ships drizzle/0007_product_locales.sql. Only its Italian follow-up was ever
+# ported (0028 above), so products had EN and IT columns but no DE/FR — and
+# every storefront product query, which selects all of them from
+# drizzle/schema.ts, died with "Unknown column 'nameDe' in 'field list'".
+# Idempotent; see migrate_0033_product_locales_de_fr in deploy/lib/db.sh.
+migrate_0033_product_locales_de_fr
+
+# ── 0034: magic-link login tokens ────────────────────────────────────────────
+# Ships drizzle/0014_magic_link_tokens.sql, missing from this path too — so
+# server/db.ts's passwordless sign-in wrote to a table that did not exist.
+# Idempotent; see migrate_0034_magic_link_tokens in deploy/lib/db.sh.
+migrate_0034_magic_link_tokens
+
 # ── Record the applied migration set ──────────────────────────────────────────
 # Only reached when every migration above succeeded — `set -e` plus run_sql's
 # die() mean a failure never gets this far, so a half-applied schema is never
