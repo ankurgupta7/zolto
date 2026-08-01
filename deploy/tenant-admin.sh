@@ -23,10 +23,22 @@
 #     bash deploy/tenant-admin.sh                      # list stores + their users
 #     bash deploy/tenant-admin.sh <slug>               # show one store's users
 #     bash deploy/tenant-admin.sh <slug> --promote <email>
+#     bash deploy/tenant-admin.sh --superadmin <email> # grant platform ownership
 #
 # --promote sets role='admin' and attaches the user to that tenant. It only ever
 # touches a user that already exists (they must have signed in at least once),
 # and it never creates or deletes anyone.
+#
+# --superadmin grants PLATFORM ownership (role='superadmin'), which is a
+# different thing from being the admin of a store and takes no slug. It exists
+# because nothing else in the codebase ever sets that role: signup grants
+# 'admin' via tenant.claimAdmin, and --promote above grants 'admin'. So the
+# operator console at zolto.ch/platform, the cross-tenant metrics, and the
+# all-stores Stripe sweep were unreachable by every real account — the code
+# shipped, the role to use it did not. This is the one grant that must be made
+# by hand on the server, deliberately: a superadmin reads every merchant's
+# numbers and may act as any store's admin (server/_core/trpc.ts). Keep the
+# list short and check it with the no-argument listing below.
 #
 set -uo pipefail
 
@@ -67,6 +79,42 @@ SLUG="${1:-}"
 MODE="${2:-}"
 EMAIL="${3:-}"
 
+# ── Platform ownership ────────────────────────────────────────────────────────
+# Handled before the slug lookup: superadmin is platform-wide and deliberately
+# takes no store. The user keeps whatever tenant_id they already had — being
+# the owner of Zolto and the admin of your own shop are not in conflict, and
+# superadmin outranks admin everywhere the app checks (client/src/admin/nav.ts
+# ROLE_RANK, server/_core/trpc.ts).
+if [ "$SLUG" = "--superadmin" ]; then
+  SA_EMAIL="${2:-}"
+  if [ -z "$SA_EMAIL" ]; then
+    echo "ERROR: --superadmin needs an email. Usage: $0 --superadmin <email>" >&2
+    exit 1
+  fi
+  SA_EMAIL_E="$(esc "$SA_EMAIL")"
+  SA_FOUND="$($MYSQL -N -s -e "SELECT COUNT(*) FROM users WHERE email='${SA_EMAIL_E}';" 2>/dev/null)"
+  if [ "${SA_FOUND:-0}" = "0" ]; then
+    echo "ERROR: no user with email '${SA_EMAIL}'. Sign in to Zolto once first so the" >&2
+    echo "       account exists, then re-run this." >&2
+    exit 1
+  fi
+  if [ "${SA_FOUND:-0}" != "1" ]; then
+    echo "ERROR: ${SA_FOUND} users share '${SA_EMAIL}'. Refusing to guess." >&2
+    exit 1
+  fi
+
+  echo "Granting PLATFORM ownership (superadmin) to ${SA_EMAIL}…"
+  echo "They will be able to read every store's numbers and act as any store's admin."
+  $MYSQL -e "UPDATE users SET role='superadmin' WHERE email='${SA_EMAIL_E}';"
+
+  echo
+  echo "── Everyone who now owns the platform ──────────────────────────"
+  $MYSQL -e "SELECT id, email, tenant_id FROM users WHERE role='superadmin' ORDER BY id;"
+  echo
+  echo "Done. Sign out and back in, then open https://zolto.ch/platform"
+  exit 0
+fi
+
 if [ -z "$SLUG" ]; then
   echo "── Stores ──────────────────────────────────────────────────────"
   $MYSQL -e "SELECT t.id, t.slug, t.name, t.plan,
@@ -102,6 +150,19 @@ WARN
     echo "  bash deploy/tenant-admin.sh <slug> --promote <email>"
     echo
     echo "A store showing users = 0 means nobody has ever signed in to it."
+  fi
+
+  # Who owns the platform itself. Shown unprompted because the usual reason
+  # zolto.ch/platform looks empty is that this list is empty.
+  echo
+  echo "── Platform owners (superadmin) ────────────────────────────────"
+  SA_COUNT="$($MYSQL -N -s -e "SELECT COUNT(*) FROM users WHERE role='superadmin';" 2>/dev/null)"
+  if [ "${SA_COUNT:-0}" = "0" ]; then
+    echo "None. The operator console at zolto.ch/platform will refuse everyone"
+    echo "until somebody holds this role. Grant it with:"
+    echo "  bash deploy/tenant-admin.sh --superadmin <email>"
+  else
+    $MYSQL -e "SELECT id, email, tenant_id FROM users WHERE role='superadmin' ORDER BY id;"
   fi
   exit 0
 fi

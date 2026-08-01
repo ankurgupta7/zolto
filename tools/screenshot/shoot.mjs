@@ -19,7 +19,21 @@ import { createRequire } from "node:module";
 import path from "node:path";
 
 const require = createRequire(path.join(process.cwd(), "/"));
-const { chromium } = require("playwright");
+// The repo depends on @playwright/test, not the bare `playwright` package —
+// both re-export the same chromium driver, so accept whichever is installed
+// rather than failing with a misleading "module not found".
+const { chromium } = (() => {
+  for (const pkg of ["playwright", "@playwright/test"]) {
+    try {
+      return require(pkg);
+    } catch {
+      /* try the next one */
+    }
+  }
+  throw new Error(
+    "Neither 'playwright' nor '@playwright/test' is installed — run `pnpm install` first.",
+  );
+})();
 
 const [outDir = "screenshots", ...sections] = process.argv.slice(2);
 const URL = process.env.SHOT_URL ?? "http://localhost:5199/";
