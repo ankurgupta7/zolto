@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 
 /**
  * ParticleField — a page-wide layer of slowly drifting gold "dust", the animated
@@ -181,12 +182,20 @@ export default function ParticleField({
     };
   }, [density]);
 
-  return (
+  if (typeof document === "undefined") return null;
+
+  // Portalled to the body so the canvas covers the viewport no matter where it
+  // is mounted. A `position: fixed` box is only viewport-relative while no
+  // ancestor carries a transform (or filter, or will-change: transform) — and
+  // `.page-enter` animates one, as do the parallax `motion.div`s on the
+  // homepage. Call sites used to have to know that; now they don't.
+  return createPortal(
     <canvas
       ref={canvasRef}
       aria-hidden="true"
       data-testid="particle-field"
       className={`pointer-events-none fixed inset-0 z-30 mix-blend-screen ${className}`}
-    />
+    />,
+    document.body,
   );
 }

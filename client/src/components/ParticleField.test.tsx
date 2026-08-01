@@ -39,14 +39,31 @@ describe("ParticleField", () => {
   });
 
   it("renders a decorative, non-interactive fixed overlay", () => {
-    const { container } = render(<ParticleField />);
-    const canvas = container.querySelector("canvas");
+    render(<ParticleField />);
+    const canvas = document.querySelector("canvas");
     expect(canvas).toBeTruthy();
     expect(canvas!.getAttribute("aria-hidden")).toBe("true");
     // must never eat clicks, and must span the viewport behind the chrome
     expect(canvas!.className).toContain("pointer-events-none");
     expect(canvas!.className).toContain("fixed");
     expect(canvas!.className).toContain("mix-blend-screen");
+  });
+
+  it("portals to the body so a transformed ancestor can't re-anchor it", () => {
+    // `position: fixed` is only viewport-relative while no ancestor has a
+    // transform — and `.page-enter` (plus the homepage parallax wrappers)
+    // animates one. Mounted in place, the canvas would cover the page box
+    // instead of the screen and scroll away with it.
+    const { container } = render(
+      <div className="page-enter">
+        <ParticleField />
+      </div>,
+    );
+    expect(container.querySelector("canvas")).toBeNull();
+    const canvas = document.querySelector("canvas");
+    expect(canvas).toBeTruthy();
+    expect(canvas!.parentElement).toBe(document.body);
+    expect(canvas!.closest(".page-enter")).toBeNull();
   });
 
   it("degrades gracefully when the 2D context is unavailable (jsdom default)", () => {
