@@ -73,7 +73,11 @@ const STORES = [
 ];
 
 const RESPONSES: Record<string, unknown> = {
-  "auth.me": { id: 1, role: "superadmin", email: "you@zolto.ch" },
+  "auth.me": {
+    id: 1,
+    role: new URLSearchParams(location.search).get("role") ?? "superadmin",
+    email: "anna@bergblume.ch",
+  },
   "platform.tenants": STORES,
   "platform.tenantDetail": {
     tenant: {

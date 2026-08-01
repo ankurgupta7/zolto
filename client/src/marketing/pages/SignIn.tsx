@@ -5,6 +5,8 @@ import { storeAdminUrl } from "@/lib/surface";
 import { hardRedirect } from "@/lib/navigate";
 import { Container } from "../components/Container";
 import { SignInOptions } from "@/components/SignInOptions";
+import { SignOutButton } from "@/components/SignOutButton";
+import { SIGNIN_PATH } from "@/const";
 
 /**
  * /signin — the returning merchant's front door.
@@ -51,10 +53,55 @@ export default function SignIn() {
   });
 
   // Leg 2 — signed in and the store is known: straight into its admin.
+  //
+  // ONLY on the return leg of a handshake the visitor just performed. Arriving
+  // here with a session that already existed is a different intent: they
+  // clicked "Sign in" deliberately, and bouncing them onward silently means a
+  // browser carrying somebody's Google session can never be used to sign in as
+  // anyone else. That case falls through to the explicit choice below.
   useEffect(() => {
-    if (!signedIn || !store.data) return;
+    if (!returnedFromOauth || !signedIn || !store.data) return;
     hardRedirect(storeAdminUrl(store.data.slug), { replace: true });
-  }, [signedIn, store.data]);
+  }, [returnedFromOauth, signedIn, store.data]);
+
+  // Already signed in, and they came here on purpose — offer both directions
+  // rather than choosing for them.
+  if (!returnedFromOauth && signedIn && !store.isLoading) {
+    return (
+      <SignInFrame title="You&rsquo;re already signed in.">
+        <p className="mt-3 text-[var(--brand-muted-2)]">
+          As{" "}
+          <span className="font-medium text-[var(--brand-text)]">
+            {me.data?.email ?? "this account"}
+          </span>
+          .
+        </p>
+        <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+          {store.data ? (
+            <a
+              href={storeAdminUrl(store.data.slug)}
+              className="rounded-md bg-[var(--brand-accent)] px-7 py-3 text-center text-xs font-medium uppercase tracking-[0.14em] text-[var(--brand-ink)] transition-colors hover:bg-[var(--brand-accent-light)]"
+            >
+              Continue to {store.data.name} →
+            </a>
+          ) : (
+            <Link
+              href="/signup"
+              className="rounded-md bg-[var(--brand-accent)] px-7 py-3 text-center text-xs font-medium uppercase tracking-[0.14em] text-[var(--brand-ink)] transition-colors hover:bg-[var(--brand-accent-light)]"
+            >
+              Create your store →
+            </Link>
+          )}
+          <SignOutButton
+            to={SIGNIN_PATH}
+            className="rounded-md border border-[var(--brand-ink)] px-7 py-3 text-center text-xs font-medium uppercase tracking-[0.14em] text-[var(--brand-ink)] transition-colors hover:bg-[var(--brand-ink)] hover:text-white"
+          >
+            Use a different account
+          </SignOutButton>
+        </div>
+      </SignInFrame>
+    );
+  }
 
   // Signed in, but this account isn't attached to a store. Not an error — it's
   // how a visitor who signed in before creating anything arrives here.

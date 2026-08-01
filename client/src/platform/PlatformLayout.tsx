@@ -15,6 +15,7 @@ import { useEffect, type ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import * as icons from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { SignOutButton } from "@/components/SignOutButton";
 import { PLATFORM_NAV, activePlatformNavId } from "./nav";
 
 function NavIcon({ name, className }: { name: string; className?: string }) {
@@ -29,7 +30,7 @@ function NavIcon({ name, className }: { name: string; className?: string }) {
  * about what the console contains or whether it exists for anyone else — a
  * signed-in merchant who guesses the URL learns only that it isn't theirs.
  */
-function NotTheOperator({ signedIn }: { signedIn: boolean }) {
+function NotTheOperator({ email }: { email: string | null }) {
   return (
     <div className="mx-auto max-w-md px-4 py-24 text-center">
       <icons.Lock
@@ -42,12 +43,39 @@ function NotTheOperator({ signedIn }: { signedIn: boolean }) {
       <p className="mt-2 text-sm text-muted-foreground">
         This area belongs to the Zolto operator.
       </p>
-      <a
-        href={signedIn ? "/" : "/signin?next=/platform"}
-        className="mt-6 inline-block text-sm font-medium text-primary underline underline-offset-4"
-      >
-        {signedIn ? "Back to zolto.ch" : "Sign in"}
-      </a>
+
+      {email ? (
+        <>
+          {/* Naming the account is the whole point: the operator arriving here
+              is usually signed in as the wrong one, and without this they
+              cannot tell that is what happened. */}
+          <p className="mt-4 text-xs text-muted-foreground">
+            You are signed in as{" "}
+            <span className="font-medium text-foreground">{email}</span>.
+          </p>
+          <div className="mt-6 flex items-center justify-center gap-4">
+            <SignOutButton
+              to="/signin"
+              className="text-sm font-medium text-primary underline underline-offset-4"
+            >
+              Sign in as someone else
+            </SignOutButton>
+            <a
+              href="/"
+              className="text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
+            >
+              Back to zolto.ch
+            </a>
+          </div>
+        </>
+      ) : (
+        <a
+          href="/signin?next=/platform"
+          className="mt-6 inline-block text-sm font-medium text-primary underline underline-offset-4"
+        >
+          Sign in
+        </a>
+      )}
     </div>
   );
 }
@@ -76,7 +104,9 @@ export function PlatformLayout({
   }
 
   if (user?.role !== "superadmin") {
-    return <NotTheOperator signedIn={Boolean(user)} />;
+    return (
+      <NotTheOperator email={user ? (user.email ?? "this account") : null} />
+    );
   }
 
   return (
@@ -93,12 +123,20 @@ export function PlatformLayout({
                 Zolto operator
               </span>
             </div>
-            <a
-              href="/"
-              className="text-xs text-muted-foreground hover:text-foreground"
-            >
-              zolto.ch
-            </a>
+            <div className="flex items-center gap-3">
+              {user.email && (
+                <span className="hidden max-w-[24ch] truncate text-xs text-muted-foreground sm:inline">
+                  {user.email}
+                </span>
+              )}
+              <a
+                href="/"
+                className="text-xs text-muted-foreground hover:text-foreground"
+              >
+                zolto.ch
+              </a>
+              <SignOutButton className="text-xs text-muted-foreground hover:text-foreground" />
+            </div>
           </div>
 
           <nav aria-label="Operator console" className="flex gap-1">
