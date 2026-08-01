@@ -1,0 +1,50 @@
+# .dockerignore — what never reaches the app image build context.
+#
+# Two jobs:
+#   1. Speed. Without this file `COPY . .` shipped the whole working tree to
+#      the daemon on every build — .git, backups/, the Android/iOS shells, and
+#      (fatally) any host node_modules, which then OVERWROTE the node_modules
+#      pnpm had just installed inside the image.
+#   2. Correctness of the rebuild fast path. deploy/lib/build.sh fingerprints
+#      the source and skips `docker compose build` when the running image was
+#      already built from exactly that source. That is only sound because a
+#      path listed here provably cannot change the image — so this list and
+#      image_context_excludes() in deploy/lib/build.sh must stay in sync
+#      (deploy/lib/build.test.sh asserts they do).
+#
+# NOTE: .env is deliberately NOT ignored. vite.config.ts sets envDir to the
+# project root, so VITE_* values (VITE_POS_ANDROID_URL, VITE_DEFAULT_TENANT_SLUG,
+# …) are baked into the frontend bundle at build time and the build needs the
+# file. build.sh folds .env into the fingerprint for the same reason.
+
+# ── VCS / CI ──────────────────────────────────────────────────────────────────
+.git
+.github
+
+# ── Installed + generated artifacts (the image builds its own) ────────────────
+node_modules
+**/node_modules
+dist
+coverage
+out
+
+# ── Mobile shells: built by codemagic, not by this image ──────────────────────
+android
+ios
+
+# ── Ops, docs and tooling that the image never runs ───────────────────────────
+deploy
+docs
+e2e
+backups
+references
+tools
+Caddyfile
+docker-compose.yml
+codemagic.yaml
+update.sh
+**/*.md
+
+# ── Tests: vite/esbuild never bundle them ─────────────────────────────────────
+**/*.test.ts
+**/*.test.tsx

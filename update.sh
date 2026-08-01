@@ -14,6 +14,34 @@
 #   DEPLOY_BRANCH=main ./update.sh   # deploy a specific branch
 #
 # Safe to re-run at any time — every step is idempotent.
+#
+# ── Fast path ─────────────────────────────────────────────────────────────────
+# The two expensive steps skip themselves when the change doesn't need them:
+#
+#   image rebuild — skipped when the running app container was already built
+#                   from exactly this source (a fingerprint of the build context
+#                   is baked into the image as a label; see deploy/lib/build.sh)
+#   migrations    — skipped when this exact migration set already ran to
+#                   completion against this database (deploy_state table; see
+#                   deploy/lib/db.sh)
+#
+# Both fail towards doing the work: anything unproven — no running container, an
+# unlabelled image, a dirty worktree, an edited .env, a restored database —
+# rebuilds and re-migrates. Docker layer caching now does the rest, so even a
+# real rebuild reuses the dependency install unless the lockfile moved.
+#
+# Options:
+#   --full               do everything the old way: cold rebuild (--no-cache),
+#                        re-run all migrations, aggressive prune
+#   --rebuild            force the image rebuild (layer cache still used)
+#   --no-cache           force a cold rebuild, ignoring the layer cache
+#   --force-migrations   re-run every migration even if already recorded
+#   --skip-build         never build; deploy whatever image is present
+#   --prune              force the aggressive prune (images + build cache)
+#   --fix-language       run the English-name repair script (needs LLM_API_KEY)
+#
+# Every option is also settable as an environment variable, e.g.
+# FORCE_REBUILD=1 ./update.sh.
 
 set -euo pipefail
 
@@ -29,6 +57,48 @@ log()  { echo -e "\n${CYAN}==>${RESET} ${BOLD}$*${RESET}"; }
 ok()   { echo -e "  ${GREEN}✓${RESET}  $*"; }
 warn() { echo -e "  ${YELLOW}⚠${RESET}  $*"; }
 die()  { echo -e "\n${RED}✗ FATAL:${RESET} $*\n"; exit 1; }
+
+# Wall-clock for the summary, so "is this deploy actually faster?" is a fact on
+# screen rather than a feeling.
+DEPLOY_STARTED_AT=$SECONDS
+fmt_duration() { # fmt_duration SECONDS
+  local s=$1
+  if [ "$s" -ge 60 ]; then printf '%dm %02ds' $((s / 60)) $((s % 60)); else printf '%ds' "$s"; fi
+}
+
+# ── Options ───────────────────────────────────────────────────────────────────
+# Each one also reads its environment variable, so FORCE_REBUILD=1 ./update.sh
+# and ./update.sh --rebuild are the same request.
+FORCE_REBUILD="${FORCE_REBUILD:-0}"
+FORCE_MIGRATIONS="${FORCE_MIGRATIONS:-0}"
+NO_CACHE="${NO_CACHE:-0}"
+SKIP_BUILD="${SKIP_BUILD:-0}"
+FULL_PRUNE="${FULL_PRUNE:-0}"
+
+for arg in "$@"; do
+  case "$arg" in
+    --full)             FORCE_REBUILD=1; FORCE_MIGRATIONS=1; NO_CACHE=1; FULL_PRUNE=1 ;;
+    --rebuild)          FORCE_REBUILD=1 ;;
+    --no-cache)         FORCE_REBUILD=1; NO_CACHE=1 ;;
+    --force-migrations) FORCE_MIGRATIONS=1 ;;
+    --skip-build)       SKIP_BUILD=1 ;;
+    --prune)            FULL_PRUNE=1 ;;
+    --fix-language)     ;;  # handled further down, after the English-name check
+    # Print the header comment block verbatim — it is the documentation, so
+    # --help cannot drift from it. Stops at the first non-comment line rather
+    # than a hard-coded line number, which would silently truncate as the
+    # header grows.
+    -h|--help)
+      awk 'NR == 1 { next } /^#/ { sub(/^# ?/, ""); print; next } { exit }' "$0"
+      exit 0 ;;
+    *) die "Unknown option: ${arg}
+  Run  ./update.sh --help  for the supported options." ;;
+  esac
+done
+
+if [ "$SKIP_BUILD" = "1" ] && [ "$FORCE_REBUILD" = "1" ]; then
+  die "--skip-build and --rebuild/--no-cache/--full contradict each other."
+fi
 
 # ── Pre-flight ────────────────────────────────────────────────────────────────
 log "Pre-flight checks"
@@ -100,6 +170,11 @@ source "deploy/lib/db.sh"
 # reads it at startup — see deploy/lib/caddy.sh.
 # shellcheck source=deploy/lib/caddy.sh
 source "deploy/lib/caddy.sh"
+
+# Source fingerprinting, so an unchanged tree can skip the image rebuild
+# entirely instead of paying for a cold build on every deploy.
+# shellcheck source=deploy/lib/build.sh
+source "deploy/lib/build.sh"
 MYSQL="$(build_mysql_cmd)"
 
 # ── Git pull ──────────────────────────────────────────────────────────────────
@@ -141,7 +216,23 @@ for i in $(seq 1 30); do
 done
 
 # ── DB migrations (all idempotent) ────────────────────────────────────────────
-log "Applying database migrations"
+# Idempotent is not free: the full set below is ~90 `docker compose exec db
+# mysql` round trips, almost all of them existence checks that answer "already
+# applied". Record the migration set's fingerprint once it has all succeeded,
+# and skip the block wholesale when it is unchanged. See the deploy_state
+# helpers in deploy/lib/db.sh for why the fingerprint is the whole of update.sh
+# + db.sh, and why every uncertain case falls through to running them.
+ensure_deploy_state_table
+MIGRATIONS_FP="$(migrations_fingerprint update.sh deploy/lib/db.sh)"
+MIGRATIONS_APPLIED_FP="$(deploy_state_get schema_fingerprint)"
+MIGRATIONS_RAN=0
+
+if [ "$FORCE_MIGRATIONS" != "1" ] && [ -n "$MIGRATIONS_FP" ] && [ "$MIGRATIONS_APPLIED_FP" = "$MIGRATIONS_FP" ]; then
+  log "Database migrations"
+  ok "schema already at ${MIGRATIONS_FP:0:12} — skipping (--force-migrations to re-run)"
+else
+  MIGRATIONS_RAN=1
+  log "Applying database migrations"
 
 # ── 0000: users table ─────────────────────────────────────────────────────────
 run_sql "0000 users table" "
@@ -662,6 +753,17 @@ else
     "ALTER TABLE \`users\` MODIFY COLUMN \`role\` enum('superadmin','admin','staff','customer') NOT NULL DEFAULT 'customer';"
 fi
 
+# ── Record the applied migration set ──────────────────────────────────────────
+# Only reached when every migration above succeeded — `set -e` plus run_sql's
+# die() mean a failure never gets this far, so a half-applied schema is never
+# recorded as done and the next run re-applies from the top.
+if [ -n "$MIGRATIONS_FP" ]; then
+  deploy_state_set schema_fingerprint "$MIGRATIONS_FP"
+  ok "recorded schema fingerprint ${MIGRATIONS_FP:0:12}"
+fi
+
+fi  # end: migrations needed
+
 # ── Shared helper: run a script inside the builder container ──────────────────
 # Usage: run_in_builder <tag> <script-path> [extra docker args...]
 run_in_builder() {
@@ -781,8 +883,43 @@ else
 fi
 
 # ── Rebuild app container ─────────────────────────────────────────────────────
-log "Rebuilding app container (no cache)"
-docker compose build --no-cache app
+# This step used to be `docker compose build --no-cache app`, unconditionally:
+# a cold base image, two full `pnpm install` runs and a Vite + esbuild compile
+# on every deploy, including deploys that pulled nothing but a doc change. Now
+# we ask first, and only build what the source actually demands. A build that
+# does happen keeps its layer cache (`--no-cache` is opt-in via --no-cache /
+# --full), so an unchanged pnpm-lock.yaml means the dependency install is a
+# cache hit and only the compile re-runs.
+log "Checking whether the app image needs rebuilding"
+
+SOURCE_FP="$(source_fingerprint || echo "")"
+BUILD_ACTION="skipped"
+
+if [ "$SKIP_BUILD" = "1" ]; then
+  BUILD_ACTION="not built (--skip-build)"
+  warn "--skip-build set — deploying whatever image is already present"
+else
+  if [ "$FORCE_REBUILD" = "1" ]; then
+    REBUILD_REASON="forced (--rebuild/--no-cache/--full)"
+  else
+    REBUILD_REASON="$(app_rebuild_reason "$SOURCE_FP")" || REBUILD_REASON=""
+  fi
+
+  if [ -n "$REBUILD_REASON" ]; then
+    log "Rebuilding app image — ${REBUILD_REASON}"
+    BUILD_FLAGS=(--build-arg "SOURCE_FINGERPRINT=${SOURCE_FP:-unknown}")
+    if [ "$NO_CACHE" = "1" ]; then
+      BUILD_FLAGS+=(--no-cache)
+      BUILD_ACTION="rebuilt (cold)"
+    else
+      BUILD_ACTION="rebuilt (layer cache)"
+    fi
+    docker compose build "${BUILD_FLAGS[@]}" app
+  else
+    ok "app image already built from this source (${SOURCE_FP:0:12}) — skipping rebuild"
+    ok "force one with:  ./update.sh --rebuild"
+  fi
+fi
 
 # ── Restart all services ──────────────────────────────────────────────────────
 log "Restarting services"
@@ -870,29 +1007,63 @@ else
 fi
 
 # ── Prune unused Docker resources ─────────────────────────────────────────────
-# All three of these previously only removed dangling/never-used resources,
-# so tagged-but-unused images (old builder-stage images, the one-off
-# backfill/langfix runner images, aws-cli pulled by backups) and build cache
-# accumulated forever across rebuilds — 19GB+ of build cache and 18GB of
-# images on a single-app 4GB droplet, which silently filled the disk and
-# stalled MySQL mid-write (it could no longer write its binlog, so every
-# write — including migrations — hung until space was freed). Run with -a
-# now that we're past the rebuild/restart above, so nothing currently in use
-# gets touched.
-log "Pruning unused Docker resources"
+# History: these once removed only dangling resources, so tagged-but-unused
+# images (old builder stages, the one-off backfill/langfix runners, aws-cli
+# pulled by backups) and build cache accumulated forever — 19GB+ of cache and
+# 18GB of images on a single-app 4GB droplet, which filled the disk and stalled
+# MySQL mid-write (no room for its binlog, so every write, migrations included,
+# hung until space was freed). The fix was `-a` on everything, every run.
+#
+# That traded a disk problem for a time problem: `docker builder prune -a`
+# deletes exactly the layer cache the NEXT build wants, so every deploy was
+# guaranteed a cold build. Both matter, so the aggressive prune is now driven by
+# the thing it exists to prevent — disk pressure — instead of running blind.
+# Below the threshold we still collect the genuinely dead stuff (stopped
+# containers, dangling images, week-old cache) and keep the warm cache.
+#
+# Force the full sweep any time with --prune (or --full), and tune the trigger
+# with PRUNE_DISK_PCT. The pre-flight check still hard-fails at 90%.
+PRUNE_DISK_PCT="${PRUNE_DISK_PCT:-70}"
+DISK_USE_NOW=$(df -P . | awk 'NR==2 { gsub("%", "", $5); print $5 }')
+DISK_USE_NOW="${DISK_USE_NOW:-0}"
 
-# Stopped containers
-PRUNED_CONTAINERS=$(docker container prune -f --format "{{.SpaceReclaimed}}" 2>/dev/null || true)
-ok "containers pruned${PRUNED_CONTAINERS:+ (freed ${PRUNED_CONTAINERS})}"
+if [ "$FULL_PRUNE" = "1" ] || [ "$DISK_USE_NOW" -ge "$PRUNE_DISK_PCT" ] 2>/dev/null; then
+  if [ "$FULL_PRUNE" = "1" ]; then
+    log "Pruning unused Docker resources (full sweep requested)"
+  else
+    log "Pruning unused Docker resources (disk ${DISK_USE_NOW}% ≥ ${PRUNE_DISK_PCT}%)"
+  fi
 
-# All unused images, not just dangling ones
-PRUNED_IMAGES=$(docker image prune -a -f --format "{{.SpaceReclaimed}}" 2>/dev/null || true)
-ok "unused images pruned${PRUNED_IMAGES:+ (freed ${PRUNED_IMAGES})}"
+  PRUNED_CONTAINERS=$(docker container prune -f --format "{{.SpaceReclaimed}}" 2>/dev/null || true)
+  ok "containers pruned${PRUNED_CONTAINERS:+ (freed ${PRUNED_CONTAINERS})}"
 
-# Build cache (grows without bound across rebuilds otherwise)
-BUILDER_PRUNE_OUTPUT=$(docker builder prune -a -f 2>&1 || true)
-PRUNED_CACHE=$(printf '%s\n' "$BUILDER_PRUNE_OUTPUT" | awk -F': *' '/^Total:/{print $2}' | tail -1)
-ok "build cache pruned${PRUNED_CACHE:+ (freed ${PRUNED_CACHE})}"
+  # All unused images, not just dangling ones
+  PRUNED_IMAGES=$(docker image prune -a -f --format "{{.SpaceReclaimed}}" 2>/dev/null || true)
+  ok "unused images pruned${PRUNED_IMAGES:+ (freed ${PRUNED_IMAGES})}"
+
+  # Whole build cache — costs the next deploy a cold build, which is the right
+  # trade only when the disk is the thing actually at risk.
+  BUILDER_PRUNE_OUTPUT=$(docker builder prune -a -f 2>&1 || true)
+  PRUNED_CACHE=$(printf '%s\n' "$BUILDER_PRUNE_OUTPUT" | awk -F': *' '/^Total:/{print $2}' | tail -1)
+  warn "build cache fully pruned${PRUNED_CACHE:+ (freed ${PRUNED_CACHE})} — the next build will be cold"
+else
+  log "Pruning dead Docker resources (disk ${DISK_USE_NOW}%, keeping the build cache warm)"
+
+  PRUNED_CONTAINERS=$(docker container prune -f --format "{{.SpaceReclaimed}}" 2>/dev/null || true)
+  ok "stopped containers pruned${PRUNED_CONTAINERS:+ (freed ${PRUNED_CONTAINERS})}"
+
+  # Dangling images only: untagged leftovers of previous builds. The tagged
+  # images the running stack and the layer cache depend on stay put.
+  PRUNED_IMAGES=$(docker image prune -f --format "{{.SpaceReclaimed}}" 2>/dev/null || true)
+  ok "dangling images pruned${PRUNED_IMAGES:+ (freed ${PRUNED_IMAGES})}"
+
+  # Cache entries untouched for a week — old enough that no upcoming build will
+  # reuse them, so this bounds growth without costing the next build anything.
+  BUILDER_PRUNE_OUTPUT=$(docker builder prune -f --filter until=168h 2>&1 || true)
+  PRUNED_CACHE=$(printf '%s\n' "$BUILDER_PRUNE_OUTPUT" | awk -F': *' '/^Total:/{print $2}' | tail -1)
+  ok "stale build cache pruned${PRUNED_CACHE:+ (freed ${PRUNED_CACHE})}"
+  ok "reclaim everything with:  ./update.sh --prune"
+fi
 
 # Unused networks (never connected to any container)
 docker network prune -f &>/dev/null || true
@@ -925,6 +1096,13 @@ echo ""
 echo -e "  Branch   ${DEPLOY_BRANCH}"
 echo -e "  Commit   $(git rev-parse --short HEAD) — $(git log -1 --pretty=%s)"
 echo -e "  Date     $(date '+%Y-%m-%d %H:%M:%S %Z')"
+echo -e "  Took     $(fmt_duration $((SECONDS - DEPLOY_STARTED_AT)))"
+if [ "$MIGRATIONS_RAN" = "1" ]; then
+  echo -e "  Schema   migrations applied"
+else
+  echo -e "  Schema   unchanged (migrations skipped)"
+fi
+echo -e "  Image    ${BUILD_ACTION}${SOURCE_FP:+ — source ${SOURCE_FP:0:12}}"
 echo -e "  Backup   every Sunday 02:00 → ${PROJECT_DIR}/backups/"
 echo ""
 docker compose ps
