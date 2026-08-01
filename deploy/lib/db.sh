@@ -548,3 +548,64 @@ migrate_0027_two_tier_pricing() {
     ok "0027 orders.platform_fee_rappen already exists"
   fi
 }
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Deploy state: skip the whole migration block when nothing about it changed.
+#
+# Every migration above is idempotent, and that is the point — but "idempotent"
+# is not "free". Re-running the set costs ~90 `docker compose exec -T db mysql`
+# round trips (each one a fresh exec plus a fresh client connection), which is
+# tens of seconds of a deploy that, on a no-schema-change pull, applies exactly
+# nothing.
+#
+# So record what was applied. The key is a hash of the files that DEFINE the
+# migration set — update.sh and this file — and it is written only after the
+# whole block has succeeded. Matching hash means the same migrations already ran
+# to completion against this database, so the block can be skipped wholesale.
+# Anything else (first deploy, edited migration, a restored//swapped database
+# with no deploy_state row) falls through to running them all, and `./update.sh
+# --force-migrations` re-runs them on demand.
+#
+# Hashing the two files whole rather than just the migration region is a
+# deliberate over-approximation: an unrelated edit to update.sh costs one slow
+# deploy, whereas a missed edit would skip a migration that needed to run.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Creates the bookkeeping table. Safe to call on every run.
+ensure_deploy_state_table() {
+  $MYSQL -e "${MYSQL_LOCK_TIMEOUT_SQL}
+    CREATE TABLE IF NOT EXISTS \`deploy_state\` (
+      \`k\`          varchar(64)  NOT NULL,
+      \`v\`          varchar(255) NOT NULL,
+      \`updated_at\` timestamp    NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+      CONSTRAINT \`deploy_state_k\` PRIMARY KEY (\`k\`)
+    );" &>/dev/null
+}
+
+# Reads a deploy_state value, printing empty when absent or unreadable.
+deploy_state_get() { # deploy_state_get KEY
+  $MYSQL -se "${MYSQL_LOCK_TIMEOUT_SQL}SELECT \`v\` FROM \`deploy_state\` WHERE \`k\`='$1';" 2>/dev/null \
+    | tr -d '[:space:]'
+}
+
+# Writes a deploy_state value. Non-fatal: losing the bookkeeping costs a slow
+# deploy next time, which is never a reason to fail an otherwise-good one.
+deploy_state_set() { # deploy_state_set KEY VALUE
+  $MYSQL -e "${MYSQL_LOCK_TIMEOUT_SQL}
+    INSERT INTO \`deploy_state\` (\`k\`, \`v\`) VALUES ('$1', '$2')
+    ON DUPLICATE KEY UPDATE \`v\` = VALUES(\`v\`);" &>/dev/null || true
+}
+
+# Hash of the files that define the migration set. Prints empty on failure,
+# which callers must read as "run the migrations".
+migrations_fingerprint() { # migrations_fingerprint FILE...
+  local file
+  for file in "$@"; do
+    [ -r "$file" ] || return 0
+  done
+  if command -v sha256sum &>/dev/null; then
+    cat "$@" | sha256sum | awk '{print $1}'
+  else
+    cat "$@" | shasum -a 256 | awk '{print $1}'
+  fi
+}

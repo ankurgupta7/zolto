@@ -352,6 +352,46 @@ docker compose logs -f caddy   # access logs
 ### Update the application
 
 ```bash
+./update.sh
+```
+
+Pulls the checked-out branch, applies any new migrations, rebuilds, restarts and
+reloads Caddy. It skips the two expensive steps when the change doesn't need
+them, so a deploy that pulled only a docs change finishes in seconds instead of
+minutes:
+
+- **The image rebuild** is skipped when the running container was already built
+  from exactly this source. Each image is stamped with a hash of its build
+  context (`docker inspect` → `ch.zolto.source-fingerprint`), and that is
+  compared against the working tree — including uncommitted edits and `.env`,
+  since `VITE_*` values are compiled into the frontend bundle.
+- **The migrations** are skipped when this exact migration set already ran to
+  completion against this database, recorded in the `deploy_state` table.
+
+Both fail towards doing the work. No running container, an image from before
+fingerprinting, a dirty tree, a restored database — anything unproven rebuilds
+and re-migrates, because shipping stale code is the failure that matters and a
+redundant build only costs time.
+
+When you need the old unconditional behaviour:
+
+```bash
+./update.sh --full               # cold rebuild + all migrations + full prune
+./update.sh --rebuild            # rebuild, still using the layer cache
+./update.sh --force-migrations   # re-run every migration
+./update.sh --help               # all options
+```
+
+The aggressive `docker image prune -a` / `docker builder prune -a` sweep now
+runs only when the disk is at or above 70% (`PRUNE_DISK_PCT`), or on `--prune`.
+Below that, `update.sh` collects stopped containers, dangling images and
+week-old cache, and leaves the layer cache warm — pruning it is what made every
+build cold. If you are tight on disk, drop `PRUNE_DISK_PCT` or run
+`./update.sh --prune`.
+
+To rebuild by hand without the script:
+
+```bash
 docker compose build app
 docker compose up -d app
 ```
