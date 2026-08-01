@@ -71,6 +71,10 @@ export default function GuidedTour({
   const [tipWidth, setTipWidth] = useState(() =>
     tooltipWidthFor(typeof window === "undefined" ? 360 : window.innerWidth),
   );
+  // Document size, so the backdrop panels can tile the page without growing it.
+  const [doc, setDoc] = useState<{ width: number; height: number } | null>(
+    null,
+  );
   const tipRef = useRef<HTMLDivElement | null>(null);
 
   const step = steps[index];
@@ -146,6 +150,15 @@ export default function GuidedTour({
 
     setRect((prev) => (rectsEqual(prev, next) ? prev : next));
     setTipWidth((prev) => (prev === width ? prev : width));
+    const docSize = {
+      width: document.documentElement.scrollWidth,
+      height: document.documentElement.scrollHeight,
+    };
+    setDoc((prev) =>
+      prev && prev.width === docSize.width && prev.height === docSize.height
+        ? prev
+        : docSize,
+    );
     // Placement/flip/clamp decisions happen in viewport space (that's where
     // "room below" means something), then the result is anchored to the page.
     const vpPos = computeTooltipPosition(
@@ -206,27 +219,95 @@ export default function GuidedTour({
     return () => window.removeEventListener("keydown", onKey);
   }, [active, goNext, goBack, finish]);
 
+  // The spotlighted element is genuinely interactive (the backdrop leaves a
+  // hole over it — several steps say "Click here", so the click must land).
+  // When it does, move the tour along too: delegated on document so it
+  // survives the target re-rendering, bubble-phase so the app's own handler
+  // has already run by the time we advance.
+  useEffect(() => {
+    if (!active || !step) return;
+    const onDocClick = (e: MouseEvent) => {
+      if (!(e.target instanceof Element)) return;
+      if (e.target.closest(step.target)) goNext();
+    };
+    document.addEventListener("click", onDocClick);
+    return () => document.removeEventListener("click", onDocClick);
+  }, [active, step, goNext]);
+
   if (typeof document === "undefined") return null;
-  if (!active || !step || !pos || !rect) return null;
+  if (!active || !step || !pos || !rect || !doc) return null;
 
   const isLast = index === steps.length - 1;
   const pad = 6;
   const isVertical = pos.placement === "top" || pos.placement === "bottom";
 
+  // The spotlight hole, in document coordinates. The backdrop panels tile the
+  // page around it — never over it — so the target itself stays tappable.
+  const hole = {
+    top: rect.top - pad,
+    left: rect.left - pad,
+    right: rect.left + rect.width + pad,
+    bottom: rect.top + rect.height + pad,
+  };
+  const panels: Array<{
+    top: number;
+    left: number;
+    width: number;
+    height: number;
+  }> = [
+    { top: 0, left: 0, width: doc.width, height: Math.max(0, hole.top) },
+    {
+      top: hole.bottom,
+      left: 0,
+      width: doc.width,
+      height: Math.max(0, doc.height - hole.bottom),
+    },
+    {
+      top: hole.top,
+      left: 0,
+      width: Math.max(0, hole.left),
+      height: hole.bottom - hole.top,
+    },
+    {
+      top: hole.top,
+      left: hole.right,
+      width: Math.max(0, doc.width - hole.right),
+      height: hole.bottom - hole.top,
+    },
+  ];
+
   const overlay = (
     // An anchor at the document origin: the spotlight and tooltip are
     // positioned inside it in document coordinates, so they scroll in perfect
     // sync with the content they annotate (see `measure` for why not `fixed`).
-    <div className="absolute inset-0 z-[100]" role="dialog" aria-modal="true">
-      {/* Click-catcher so the rest of the page isn't interactable mid-tour.
-          Rendered first so the spotlight and tooltip paint above it. This one
-          IS fixed — it must cover the screen, not track any content. */}
-      <button
-        type="button"
-        aria-label="Skip tour"
-        onClick={() => finish(false)}
-        className="fixed inset-0 h-full w-full cursor-default bg-transparent"
-      />
+    // pointer-events-none so the wrapper itself never swallows a click bound
+    // for the spotlight hole; interactive children opt back in.
+    <div
+      className="pointer-events-none absolute inset-0 z-[100]"
+      role="dialog"
+      aria-modal="true"
+    >
+      {/* Click-catcher: four panels tiling the document AROUND the spotlight
+          hole, so the rest of the page isn't interactable mid-tour but the
+          spotlighted element itself is — a full-viewport catcher swallowed the
+          very tap the "Click here" steps ask for. Tapping the backdrop still
+          dismisses. Sized to the document (not 9999px arms) so they can't
+          extend the scrollable area; being document-anchored they stay in
+          register with the hole while scrolling, like the spotlight. Kept out
+          of the tab order — keyboard users have the Skip button and Escape. */}
+      {panels.map((p, i) => (
+        <button
+          // biome-ignore lint/suspicious/noArrayIndexKey: panels are a fixed positional set (top/bottom/left/right)
+          key={i}
+          type="button"
+          aria-label="Skip tour"
+          tabIndex={-1}
+          data-testid="tour-backdrop"
+          onClick={() => finish(false)}
+          className="pointer-events-auto absolute cursor-default bg-transparent"
+          style={p}
+        />
+      ))}
 
       {/* Dim + spotlight: a transparent hole over the target via a huge
           box-shadow. The 9999px shadow far exceeds any viewport, so it keeps
@@ -249,7 +330,7 @@ export default function GuidedTour({
         ref={tipRef}
         role="group"
         aria-label={`Tour step ${index + 1} of ${steps.length}`}
-        className="absolute rounded-xl border border-slate-700 bg-slate-900 p-5 text-left shadow-2xl"
+        className="pointer-events-auto absolute rounded-xl border border-slate-700 bg-slate-900 p-5 text-left shadow-2xl"
         style={{ top: pos.top, left: pos.left, width: tipWidth }}
       >
         {/* Arrow pointing back at the spotlighted element. */}

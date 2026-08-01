@@ -98,6 +98,120 @@ describe("GuidedTour", () => {
 });
 
 /**
+ * The spotlighted element must be genuinely clickable mid-tour — several steps
+ * literally say "Click here". A full-viewport click-catcher swallowed that tap
+ * (the button appeared dead), so the backdrop is four panels tiling the page
+ * AROUND the spotlight hole, and a click on the target advances the tour.
+ */
+describe("GuidedTour target interaction", () => {
+  it("lets a click through to the target and advances to the next step", async () => {
+    const onTarget = vi.fn();
+    render(
+      <div>
+        <button type="button" data-tour="a" onClick={onTarget}>
+          A
+        </button>
+        <button type="button" data-tour="b">
+          B
+        </button>
+        <GuidedTour tourId="test" steps={STEPS} />
+      </div>,
+    );
+    await screen.findByText("First");
+    fireEvent.click(screen.getByText("A"));
+    // The app's own handler ran…
+    expect(onTarget).toHaveBeenCalledTimes(1);
+    // …and the tour moved on.
+    expect(await screen.findByText("Second")).toBeTruthy();
+  });
+
+  it("clicking the target on the last step completes the tour", async () => {
+    render(
+      <div>
+        <button type="button" data-tour="a">
+          A
+        </button>
+        <GuidedTour tourId="test" steps={[STEPS[0]]} />
+      </div>,
+    );
+    await screen.findByText("First");
+    fireEvent.click(screen.getByText("A"));
+    await waitFor(() => expect(screen.queryByText("First")).toBeNull());
+    expect(isTourCompleted("test")).toBe(true);
+  });
+
+  it("clicking a child of the target still counts as a target click", async () => {
+    render(
+      <div>
+        <button type="button" data-tour="a">
+          <span>icon</span>
+        </button>
+        <button type="button" data-tour="b">
+          B
+        </button>
+        <GuidedTour tourId="test" steps={STEPS} />
+      </div>,
+    );
+    await screen.findByText("First");
+    fireEvent.click(screen.getByText("icon"));
+    expect(await screen.findByText("Second")).toBeTruthy();
+  });
+
+  it("clicking the backdrop dismisses without completing", async () => {
+    renderTour();
+    await screen.findByText("First");
+    const panels = screen.getAllByTestId("tour-backdrop");
+    expect(panels.length).toBe(4);
+    fireEvent.click(panels[0]);
+    await waitFor(() => expect(screen.queryByText("First")).toBeNull());
+    expect(isTourCompleted("test")).toBe(false);
+  });
+
+  it("the backdrop panels tile around the spotlight hole, never over it", async () => {
+    const { container } = renderTour([STEPS[0]]);
+    const target = container.querySelector('[data-tour="a"]') as Element;
+    target.getBoundingClientRect = () =>
+      ({
+        top: 100,
+        left: 50,
+        width: 200,
+        height: 40,
+        right: 250,
+        bottom: 140,
+        x: 50,
+        y: 100,
+        toJSON: () => ({}),
+      }) as DOMRect;
+    await waitFor(() => {
+      const spot = screen.getByTestId("tour-spotlight");
+      expect(spot.style.top).toBe("94px");
+    });
+    // Hole (target ± 6px pad): top 94, left 44, right 256, bottom 146.
+    const boxes = screen.getAllByTestId("tour-backdrop").map((p) => ({
+      top: parseFloat(p.style.top),
+      left: parseFloat(p.style.left),
+      width: parseFloat(p.style.width),
+      height: parseFloat(p.style.height),
+    }));
+    const holeCenter = { x: 150, y: 120 };
+    for (const b of boxes) {
+      const covers =
+        holeCenter.x >= b.left &&
+        holeCenter.x <= b.left + b.width &&
+        holeCenter.y >= b.top &&
+        holeCenter.y <= b.top + b.height;
+      expect(covers).toBe(false);
+    }
+    // The band panels meet the hole's edges exactly.
+    const above = boxes.find((b) => b.top === 0);
+    expect(above?.height).toBe(94);
+    const sides = boxes.filter((b) => b.top === 94);
+    expect(sides.length).toBe(2);
+    for (const s of sides) expect(s.height).toBe(146 - 94);
+  });
+});
+
+/**
  * Positioning regressions. Two hard-won invariants:
  *
  * 1. The overlay portals to `document.body`. Mounted in place, any positioned
