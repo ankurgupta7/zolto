@@ -113,13 +113,24 @@ export function fallbackProduct(vc: VerticalContext): {
  * The single message→product extraction prompt shared by the Discord, Slack
  * and WhatsApp intake bots (previously three near-identical copies).
  */
-export function buildIntakeExtractionPrompt(vc: VerticalContext): {
+export function buildIntakeExtractionPrompt(
+  vc: VerticalContext,
+  opts?: { germanOutput?: boolean },
+): {
   system: string;
-  jsonSchema: Record<string, unknown>;
+  jsonSchema: {
+    name: string;
+    strict: boolean;
+    schema: Record<string, unknown>;
+  };
 } {
   const keys = categoryKeys(vc, { excludeFolded: true });
   const system = `You are a product data extractor for ${storeIdentityLine(vc)}.
-Extract product information from the owner's message and return a JSON object.
+Extract product information from the owner's message and return a JSON object.${
+    opts?.germanOutput
+      ? "\nWrite the product name and description in German (Swiss German spelling: use ss instead of ß)."
+      : ""
+  }
 
 Available categories: ${keys.map((k) => `"${k}"`).join(", ")}
 

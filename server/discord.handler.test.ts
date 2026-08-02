@@ -6,6 +6,7 @@ const {
   storagePut,
   getTenantByDiscordChannelId,
   getTenantSettings,
+  getTenantCategories,
   getProductByDiscordMessageId,
   createProduct,
   axiosGet,
@@ -22,6 +23,7 @@ const {
     storagePut: vi.fn(),
     getTenantByDiscordChannelId: vi.fn(),
     getTenantSettings: vi.fn(),
+    getTenantCategories: vi.fn(),
     getProductByDiscordMessageId: vi.fn(),
     createProduct: vi.fn(),
     axiosGet: vi.fn(),
@@ -66,6 +68,7 @@ vi.mock("./storage", () => ({ storagePut }));
 vi.mock("./db", () => ({
   getTenantByDiscordChannelId,
   getTenantSettings,
+  getTenantCategories,
   getProductByDiscordMessageId,
   createProduct,
 }));
@@ -115,6 +118,19 @@ describe("handleDiscordMessage", () => {
     createProduct.mockResolvedValue({ id: 1 });
     getProductByDiscordMessageId.mockResolvedValue(null);
     getTenantSettings.mockResolvedValue(null);
+    getTenantCategories.mockResolvedValue(
+      ["Necklaces", "Earrings", "Rings", "Other"].map((key, i) => ({
+        id: i + 1,
+        tenantId: 1,
+        key,
+        labelEn: key,
+        labelDe: null,
+        extraIncludes: null,
+        sortOrder: i,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })),
+    );
     axiosPost.mockResolvedValue({ data: {} });
   });
 

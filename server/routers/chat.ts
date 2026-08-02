@@ -67,7 +67,7 @@ export const chatRouter = router({
       const system = [
         `You are the friendly shop assistant for "${tenant.name}", a small artisan store on zolto.`,
         `Answer customer questions about these products and the store. Ground every answer in the catalog below — never invent products, prices, or policies.`,
-        `If asked about availability, note pieces are one-of-a-kind (quantity 1) unless stated. If you don't know something (shipping details, custom orders, sizing beyond what's written), say so and point to the human contact.`,
+        `If asked about availability, note items are one-off pieces (quantity 1) unless stated. If you don't know something (shipping details, custom orders, details beyond what's written), say so and point to the human contact.`,
         `Keep answers short (2–4 sentences). Reply in the language the customer writes in. You may suggest specific products by name with their price.`,
         contact ? `Human contact: ${contact}.` : "",
         catalogLines

@@ -25,7 +25,9 @@ import {
   getUserByOpenId,
   assignUserToTenantAsAdmin,
   deleteUserById,
+  seedTenantCategories,
 } from "../db";
+import { VERTICALS } from "@shared/verticals";
 import { createStripeCustomer } from "../stripe";
 import { storagePut } from "../storage";
 import {
@@ -152,6 +154,10 @@ export const tenantRouter = router({
             mimeType: z.enum(LOGO_MIME_TYPES),
           })
           .optional(),
+        // What the merchant sells — picks the category preset and the AI
+        // prompt vocabulary. Defaults to jewellery for older signup clients.
+        vertical: z.enum(VERTICALS).default("jewellery"),
+        verticalDescription: z.string().trim().max(500).optional(),
       }),
     )
     .mutation(async ({ input }) => {
@@ -192,11 +198,12 @@ export const tenantRouter = router({
         referralCode: generateReferralCode(),
       });
 
-      // 4. Settings, seeded with the wizard's branding choices. The logo is
-      // uploaded first so its URL lands in the same insert; a failed upload
-      // must not lose the signup, so it degrades to "no logo" (the merchant
-      // re-uploads from the admin, and the onboarding checklist keeps the
-      // branding task open to say so).
+      // 4. Settings, seeded with the wizard's branding choices and the
+      // vertical's starter category list. The logo is uploaded first so its
+      // URL lands in the same insert; a failed upload must not lose the
+      // signup, so it degrades to "no logo" (the merchant re-uploads from
+      // the admin, and the onboarding checklist keeps the branding task open
+      // to say so).
       let logoUrl: string | null = null;
       if (input.logo) {
         try {
@@ -228,10 +235,13 @@ export const tenantRouter = router({
       await createTenantSettings({
         tenantId,
         currency: "chf",
+        vertical: input.vertical,
+        verticalDescription: input.verticalDescription?.trim() || null,
         ...(input.templateId ? { templateId: input.templateId } : {}),
         ...(input.primaryColor ? { primaryColor: input.primaryColor } : {}),
         ...(logoUrl ? { logoUrl } : {}),
       });
+      await seedTenantCategories(tenantId, input.vertical);
 
       // 5. Stripe customer for future billing (no-op if Stripe isn't configured).
       const stripeCustomerId = await createStripeCustomer({
@@ -605,6 +615,11 @@ rationale: one friendly sentence (max 25 words) telling the merchant what you sa
             "A Slack channel ID looks like C0123ABCDEF",
           )
           .optional(),
+        // What the merchant sells — drives AI prompt vocabulary and copy.
+        // Changing it does NOT touch the existing category list; the admin
+        // can pull in the new preset via categories.applyPreset.
+        vertical: z.enum(VERTICALS).optional(),
+        verticalDescription: z.string().trim().max(500).nullable().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {

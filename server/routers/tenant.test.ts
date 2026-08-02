@@ -18,6 +18,7 @@ const { dbMock, createStripeCustomer, buildConnectAuthorizeUrl, storagePut } =
       getUserByOpenId: vi.fn(),
       assignUserToTenantAsAdmin: vi.fn(),
       deleteUserById: vi.fn(),
+      seedTenantCategories: vi.fn(),
     },
     createStripeCustomer: vi.fn(),
     buildConnectAuthorizeUrl: vi.fn(),
@@ -84,6 +85,7 @@ beforeEach(() => {
   dbMock.setTenantStripeCustomer.mockResolvedValue(undefined);
   dbMock.createPendingTenantAdmin.mockResolvedValue(undefined);
   dbMock.getStoreUserByEmail.mockResolvedValue(undefined);
+  dbMock.seedTenantCategories.mockResolvedValue(undefined);
   createStripeCustomer.mockResolvedValue(null);
   brandingAiMock.rateLimitCheck.mockResolvedValue({
     allowed: true,
@@ -107,10 +109,15 @@ describe("tenant.create", () => {
         plan: "free",
       }),
     );
+    // No vertical named → jewellery default, so pre-verticals signup clients
+    // keep their original behaviour.
     expect(dbMock.createTenantSettings).toHaveBeenCalledWith({
       tenantId: 42,
       currency: "chf",
+      vertical: "jewellery",
+      verticalDescription: null,
     });
+    expect(dbMock.seedTenantCategories).toHaveBeenCalledWith(42, "jewellery");
     expect(dbMock.createPendingTenantAdmin).toHaveBeenCalledWith(
       42,
       "owner@aurora.example",
@@ -129,6 +136,36 @@ describe("tenant.create", () => {
       "owner@aurora.example",
       res.claimToken,
     );
+  });
+
+  it("stores the chosen vertical and seeds its category preset", async () => {
+    await tenantRouter.createCaller(ctx()).create({
+      name: "Ton & Teller",
+      slug: "ton-teller",
+      email: "owner@ton.example",
+      vertical: "ceramics",
+      verticalDescription: "Wheel-thrown stoneware from Bern",
+    });
+
+    expect(dbMock.createTenantSettings).toHaveBeenCalledWith({
+      tenantId: 42,
+      currency: "chf",
+      vertical: "ceramics",
+      verticalDescription: "Wheel-thrown stoneware from Bern",
+    });
+    expect(dbMock.seedTenantCategories).toHaveBeenCalledWith(42, "ceramics");
+  });
+
+  it("rejects an unknown vertical", async () => {
+    await expect(
+      tenantRouter.createCaller(ctx()).create({
+        name: "Threads",
+        slug: "threads",
+        email: "owner@threads.example",
+        vertical: "clothing" as never,
+      }),
+    ).rejects.toThrow();
+    expect(dbMock.createTenant).not.toHaveBeenCalled();
   });
 
   it("refuses an email already attached to another store", async () => {

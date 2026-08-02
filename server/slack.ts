@@ -15,7 +15,6 @@
 import axios from "axios";
 import crypto from "node:crypto";
 import type { Request, Response } from "express";
-import { PRODUCT_CATEGORIES, type ProductCategory } from "@shared/const";
 import { invokeLLM } from "./_core/llm";
 import { notifyOwner } from "./_core/notification";
 import {
@@ -26,12 +25,11 @@ import {
 import { storagePut } from "./storage";
 import type { TenantBranding } from "./_core/email";
 import { channelSecret } from "./channelCredentials";
-
-// These AI extractors describe a single photographed/described piece, so "Sets"
-// is folded into "Other" (see the prompt) and deliberately omitted from the
-// choices offered to the model. Derived from the canonical list so the rest of
-// the categories can never drift.
-const AI_CATEGORIES = PRODUCT_CATEGORIES.filter((c) => c !== "Sets");
+import {
+  buildIntakeExtractionPrompt,
+  fallbackProduct,
+  getVerticalContext,
+} from "./verticals";
 
 // ─── Signature Verification ───────────────────────────────────────────────────
 
@@ -154,9 +152,15 @@ export async function handleSlackEvent(req: Request, res: Response) {
       }
     }
 
-    // Parse product details using tenant-branded prompt
+    // Parse product details using tenant-branded prompt. An image-only
+    // message still creates a placeholder listing named after the vertical's
+    // fallback item (previously the hard-coded "New jewelry item").
+    const placeholder = text.trim()
+      ? text
+      : `New ${fallbackProduct(await getVerticalContext(tenant.id)).nameEn}`;
     const parsed = await parseProductFromMessage(
-      text || "New jewelry item",
+      placeholder,
+      tenant.id,
       branding.tenantName,
     );
     if (!parsed) {
@@ -195,42 +199,26 @@ export async function handleSlackEvent(req: Request, res: Response) {
 
 export async function parseProductFromMessage(
   text: string,
+  tenantId: number,
   tenantName?: string,
 ): Promise<{
   name: string;
   description: string;
   price: number;
-  category: Exclude<ProductCategory, "Sets">;
+  category: string;
 } | null> {
   if (!text.trim()) return null;
 
   try {
-    const storeName = tenantName ?? "your store";
+    // The prompt is assembled from the tenant's vertical + their actual
+    // category list (shared with the Discord and WhatsApp intake bots).
+    const vc = await getVerticalContext(tenantId, tenantName ?? "your store");
+    const { system, jsonSchema } = buildIntakeExtractionPrompt(vc);
     const response = await invokeLLM({
       messages: [
         {
           role: "system",
-          content: `You are a product data extractor for ${storeName}.
-Extract product information from the owner's Slack message and return a JSON object.
-
-Available categories: ${AI_CATEGORIES.map((c) => `"${c}"`).join(", ")}
-
-Rules:
-- name: short elegant product name (2–6 words)
-- description: full product description as provided, cleaned up for display
-- price: numeric value only (no currency symbols; assume CHF if unspecified)
-- category: must be exactly one of the body-part-based categories; infer from context if not explicit
-  * Necklaces → necklaces, pendants, chokers, lariats
-  * Earrings → studs, drop earrings, hoops, chandeliers
-  * Rings → finger rings of any style
-  * Bracelets → chain bracelets, cuffs, charm bracelets
-  * Bangles → rigid circular bangles worn on the wrist
-  * Anklets → ankle chains, payal
-  * Brooches → pins, brooches, lapel jewellery
-  * Hair Accessories → hair pins, maang tikka, tiaras
-  * Other → body chains, sets, or anything that does not fit the above
-
-Return ONLY valid JSON, no markdown, no explanation.`,
+          content: system,
         },
         {
           role: "user",
@@ -239,34 +227,7 @@ Return ONLY valid JSON, no markdown, no explanation.`,
       ],
       response_format: {
         type: "json_schema",
-        json_schema: {
-          name: "product_info",
-          strict: true,
-          schema: {
-            type: "object",
-            properties: {
-              name: {
-                type: "string",
-                description: "Short elegant product name",
-              },
-              description: {
-                type: "string",
-                description: "Full product description",
-              },
-              price: {
-                type: "number",
-                description: "Numeric price value in CHF",
-              },
-              category: {
-                type: "string",
-                enum: AI_CATEGORIES,
-                description: "Body-part-based product category",
-              },
-            },
-            required: ["name", "description", "price", "category"],
-            additionalProperties: false,
-          },
-        },
+        json_schema: jsonSchema,
       },
     });
 

@@ -13,6 +13,29 @@ vi.mock("./_core/notification", () => ({
 vi.mock("./db", () => ({
   createProduct: vi.fn(),
   getProductByDiscordMessageId: vi.fn(),
+  getTenantSettings: vi
+    .fn()
+    .mockResolvedValue({ vertical: "jewellery", verticalDescription: null }),
+  getTenantCategories: vi.fn().mockResolvedValue(
+    [
+      { key: "Necklaces", extraIncludes: ["Sets"] },
+      { key: "Earrings", extraIncludes: ["Sets"] },
+      { key: "Sets" },
+      { key: "Rings" },
+      { key: "Bangles" },
+      { key: "Other" },
+    ].map((c, i) => ({
+      id: i + 1,
+      tenantId: 1,
+      key: c.key,
+      labelEn: c.key,
+      labelDe: null,
+      extraIncludes: "extraIncludes" in c ? c.extraIncludes : null,
+      sortOrder: i,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })),
+  ),
 }));
 
 const vault = vi.hoisted(() => ({
@@ -55,26 +78,26 @@ describe("parseProductFromMessage", () => {
   });
 
   it("returns null for whitespace-only text without calling the LLM", async () => {
-    const result = await parseProductFromMessage("   ");
+    const result = await parseProductFromMessage("   ", 1);
     expect(result).toBeNull();
     expect(invokeLLM).not.toHaveBeenCalled();
   });
 
   it("returns null when the LLM response has no message content", async () => {
     invokeLLM.mockResolvedValue({ choices: [{ message: {} }] });
-    const result = await parseProductFromMessage("Pearl ring, CHF 99");
+    const result = await parseProductFromMessage("Pearl ring, CHF 99", 1);
     expect(result).toBeNull();
   });
 
   it("returns null when the LLM response is malformed JSON", async () => {
     invokeLLM.mockResolvedValue(llmResponse("not valid json {"));
-    const result = await parseProductFromMessage("Pearl ring, CHF 99");
+    const result = await parseProductFromMessage("Pearl ring, CHF 99", 1);
     expect(result).toBeNull();
   });
 
   it("returns null when invokeLLM rejects", async () => {
     invokeLLM.mockRejectedValue(new Error("LLM unavailable"));
-    const result = await parseProductFromMessage("Pearl ring, CHF 99");
+    const result = await parseProductFromMessage("Pearl ring, CHF 99", 1);
     expect(result).toBeNull();
   });
 
@@ -89,7 +112,7 @@ describe("parseProductFromMessage", () => {
         }),
       ),
     );
-    const result = await parseProductFromMessage("Pearl ring, CHF 99.50");
+    const result = await parseProductFromMessage("Pearl ring, CHF 99.50", 1);
     expect(result).not.toBeNull();
     expect(result?.price).toBe(99.5);
     expect(typeof result?.price).toBe("number");
@@ -106,7 +129,7 @@ describe("parseProductFromMessage", () => {
         }),
       ),
     );
-    const result = await parseProductFromMessage("Moonstone bangle, CHF 220");
+    const result = await parseProductFromMessage("Moonstone bangle, CHF 220", 1);
     expect(result?.category).toBe("Bangles");
   });
 
@@ -121,13 +144,39 @@ describe("parseProductFromMessage", () => {
         }),
       ),
     );
-    await parseProductFromMessage("Gold drop earrings, CHF 150");
+    await parseProductFromMessage("Gold drop earrings, CHF 150", 1);
 
     const call = invokeLLM.mock.calls[0][0];
     const userMessage = call.messages.find(
       (m: { role: string }) => m.role === "user",
     );
     expect(userMessage.content).toContain("Gold drop earrings, CHF 150");
+  });
+
+  it("builds the prompt from the tenant's own categories, excluding folded ones", async () => {
+    invokeLLM.mockResolvedValue(
+      llmResponse(
+        JSON.stringify({
+          name: "Pearl Ring",
+          description: "d",
+          price: 99,
+          category: "Rings",
+        }),
+      ),
+    );
+    await parseProductFromMessage("Pearl ring, CHF 99", 1);
+
+    const call = invokeLLM.mock.calls[0][0];
+    const system = call.messages.find(
+      (m: { role: string }) => m.role === "system",
+    );
+    // "Sets" is folded into Necklaces/Earrings, so a single-item extractor
+    // must not offer it.
+    expect(system.content).toContain('"Rings"');
+    expect(system.content).not.toContain('"Sets"');
+    expect(call.response_format.json_schema.schema.properties.category.enum).toEqual(
+      ["Necklaces", "Earrings", "Rings", "Bangles", "Other"],
+    );
   });
 });
 

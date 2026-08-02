@@ -1,6 +1,5 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
-import { PRODUCT_CATEGORIES, type ProductCategory } from "@shared/const";
 import { publicProcedure, router } from "../_core/trpc";
 import { adminProcedure } from "../procedures";
 import { assertPublicHostname } from "../ssrf";
@@ -27,6 +26,19 @@ import {
   updateProductTranslations,
   getPaidOrders,
 } from "../db";
+import {
+  assertTenantCategories,
+  categoryKeys,
+  categoryTaxonomyLines,
+  fallbackProduct,
+  getVerticalContext,
+  storeIdentityLine,
+} from "../verticals";
+
+// Categories are per-tenant now (tenant_categories), so the input shape is a
+// plain string; write paths verify it against the tenant's actual list via
+// assertTenantCategories in the handler.
+const categoryInput = z.string().trim().min(1).max(64);
 
 // ─── Products router ──────────────────────────────────────────────────────────
 
@@ -70,7 +82,7 @@ export const productsRouter = router({
     .input(
       z
         .object({
-          category: z.enum(PRODUCT_CATEGORIES).optional(),
+          category: categoryInput.optional(),
         })
         .optional(),
     )
@@ -261,7 +273,11 @@ export const productsRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const { invokeLLM } = await import("../_core/llm");
-      const storeName = ctx.tenant?.name ?? "the store";
+      const vc = await getVerticalContext(
+        ctx.user.tenantId,
+        ctx.tenant?.name,
+      );
+      const keys = categoryKeys(vc, { excludeFolded: true });
 
       // Ground the price suggestion in what THIS merchant already charges.
       // With no catalogue there is nothing to ground on, and we deliberately
@@ -276,7 +292,7 @@ export const productsRouter = router({
             )
             .join("; ")}.
 - suggested_price: a number in CHF, in line with the merchant's OWN prices for that category above. Adjust modestly for apparent size, materials and complexity. If the category has no history, use the closest category as a guide.
-- price_basis: one short sentence in English saying what you based it on, e.g. "in line with your other Necklaces (CHF 45-120)". The merchant sees this and decides.`
+- price_basis: one short sentence in English saying what you based it on, e.g. "in line with your other ${keys[0] ?? "items"} (CHF 45-120)". The merchant sees this and decides.`
         : `- suggested_price: use 0. This merchant has no priced items yet, so there is no honest basis for a suggestion and they must set the price themselves.
 - price_basis: use "No pricing history yet — set your own price."`;
 
@@ -293,29 +309,18 @@ export const productsRouter = router({
               messages: [
                 {
                   role: "system",
-                  content: `You are a product copywriter for "${storeName}", a jewellery boutique.
-Analyse the provided photo(s) of a jewellery piece and return a JSON object with multilingual product details and a grounded price suggestion.
+                  content: `You are a product copywriter for ${storeIdentityLine(vc)}.
+Analyse the provided photo(s) of a ${vc.preset.itemNounEn} and return a JSON object with multilingual product details and a grounded price suggestion.
 
-Available categories (keep these in English exactly as shown): ${PRODUCT_CATEGORIES.map((c) => `"${c}"`).join(", ")}
+Available categories (keep these in English exactly as shown): ${keys.map((c) => `"${c}"`).join(", ")}
 
 Rules:
-- name: short elegant product name in Swiss German (2–5 words). Use "ss" instead of "ß". Name the specific stone or pearl type first, e.g. "Mondstein-Ohrhänger", "Labradorit-Armband", "Barockperlen-Kollier".
-- name_en: same product name in English (2–5 words), e.g. "Moonstone Drop Earrings", "Labradorite Cuff Bracelet", "Baroque Pearl Necklace".
-- description: EXACTLY ONE sentence in Swiss German (use "ss" not "ß"). Name the specific stone/pearl variety and material. Make it poetic and sensory — evoke colour, lustre, texture, and feeling. e.g. "Tief-violette Amethyst-Cabochons schimmern in einem handgefertigten Sterlingsilber-Rahmen – eleganz, die den Blick anzieht."
-- description_en: EXACTLY ONE sentence in English. Same jewel specificity and lyrical tone. e.g. "Deep-violet amethyst cabochons shimmer in a hand-wrought sterling-silver setting — elegance that draws every eye."
+${vc.preset.listingRules}
 - name_fr / description_fr: the same name and one-sentence description in French.
 - name_it / description_it: the same name and one-sentence description in Italian. (Switzerland sells in four languages; a Ticino or Romandy customer should not get German.)
 ${priceGuidance}
-- category: must be exactly one of the body-part-based English values; infer from what you see:
-  * Necklaces → necklaces, pendants, chokers, lariats, collar pieces
-  * Earrings → studs, drop earrings, hoops, chandeliers, ear cuffs
-  * Rings → finger rings of any style
-  * Bracelets → chain bracelets, cuffs, charm bracelets, flexible wrist pieces
-  * Bangles → rigid circular bangles worn on the wrist
-  * Anklets → ankle chains, payal, ankle bracelets
-  * Brooches → pins, brooches, lapel jewellery, decorative clips
-  * Hair Accessories → hair pins, maang tikka, juda pins, hair combs, tiaras
-  * Other → body chains, sets, or any piece that does not fit the above
+- category: must be exactly one of the English values above; infer from what you see:
+${categoryTaxonomyLines(vc)}
 
 Return ONLY valid JSON, no markdown, no explanation.`,
                 },
@@ -325,7 +330,7 @@ Return ONLY valid JSON, no markdown, no explanation.`,
                     ...imageContents,
                     {
                       type: "text" as const,
-                      text: "Please analyse this jewellery piece and extract the bilingual product details.",
+                      text: `Please analyse this ${vc.preset.itemNounEn} and extract the bilingual product details.`,
                     },
                   ],
                 },
@@ -333,7 +338,7 @@ Return ONLY valid JSON, no markdown, no explanation.`,
               response_format: {
                 type: "json_schema",
                 json_schema: {
-                  name: "jewelry_product",
+                  name: "product_listing",
                   strict: true,
                   schema: {
                     type: "object",
@@ -351,12 +356,12 @@ Return ONLY valid JSON, no markdown, no explanation.`,
                       description: {
                         type: "string",
                         description:
-                          "One lyrical sentence in Swiss German naming the specific stone/pearl",
+                          "One evocative sentence in Swiss German naming the specific materials",
                       },
                       description_en: {
                         type: "string",
                         description:
-                          "One lyrical sentence in English naming the specific stone/pearl",
+                          "One evocative sentence in English naming the specific materials",
                       },
                       name_fr: {
                         type: "string",
@@ -386,8 +391,8 @@ Return ONLY valid JSON, no markdown, no explanation.`,
                       },
                       category: {
                         type: "string",
-                        enum: [...PRODUCT_CATEGORIES],
-                        description: "Body-part-based product category",
+                        enum: keys,
+                        description: "Product category",
                       },
                     },
                     required: [
@@ -441,7 +446,7 @@ Return ONLY valid JSON, no markdown, no explanation.`,
               priceBasis: suggestedPrice
                 ? ((parsed.price_basis as string) ?? null)
                 : null,
-              category: parsed.category as ProductCategory,
+              category: parsed.category as string,
             };
           } catch (err) {
             const msg = err instanceof Error ? err.message : String(err);
@@ -451,13 +456,14 @@ Return ONLY valid JSON, no markdown, no explanation.`,
               ref: group.groupId,
               errorMessage: msg,
             });
+            const fb = fallbackProduct(vc);
             return {
               groupId: group.groupId,
               success: false as const,
-              name: "Schmueckstück",
-              nameEn: "Jewelry Piece",
-              description: "Handgefertigtes Schmueckstück.",
-              descriptionEn: "Handcrafted jewelry piece.",
+              name: fb.name,
+              nameEn: fb.nameEn,
+              description: fb.description,
+              descriptionEn: fb.descriptionEn,
               nameFr: null,
               descriptionFr: null,
               nameIt: null,
@@ -465,7 +471,7 @@ Return ONLY valid JSON, no markdown, no explanation.`,
               // Never guess a price on the failure path.
               suggestedPrice: null,
               priceBasis: null,
-              category: "Other" as const,
+              category: fb.category,
             };
           }
         }),
@@ -485,7 +491,7 @@ Return ONLY valid JSON, no markdown, no explanation.`,
               description: z.string().min(1),
               descriptionEn: z.string().optional(),
               price: z.number().positive(),
-              category: z.enum(PRODUCT_CATEGORIES),
+              category: categoryInput,
               images: z
                 .array(
                   z.object({
@@ -503,6 +509,10 @@ Return ONLY valid JSON, no markdown, no explanation.`,
     )
     .mutation(async ({ input, ctx }) => {
       const tid = ctx.user.tenantId;
+      await assertTenantCategories(
+        tid,
+        input.products.map((p) => p.category),
+      );
       const created: number[] = [];
       const failed: string[] = [];
       const extraImageWarnings: string[] = [];
@@ -604,7 +614,7 @@ Return ONLY valid JSON, no markdown, no explanation.`,
               tempId: z.string(),
               name: z.string().min(1),
               description: z.string().min(1),
-              category: z.enum(PRODUCT_CATEGORIES),
+              category: categoryInput,
             }),
           )
           .min(1)
@@ -778,7 +788,7 @@ Return ONLY valid JSON, no markdown, no explanation.`,
   // list and only applyAutoTranslateAll persists the approved subset.
   previewAutoTranslateAll: adminProcedure.mutation(async ({ ctx }) => {
     const { invokeLLM } = await import("../_core/llm");
-    const storeName = ctx.tenant?.name ?? "the store";
+    const vc = await getVerticalContext(ctx.user.tenantId, ctx.tenant?.name);
     const missing = await getProductsMissingTranslation(ctx.user.tenantId);
     if (missing.length === 0) return { proposals: [], total: 0 };
 
@@ -804,15 +814,15 @@ Return ONLY valid JSON, no markdown, no explanation.`,
           messages: [
             {
               role: "system",
-              content: `You are a bilingual copywriter for "${storeName}", an artisan boutique.
-Translate each German jewellery product into elegant English.
+              content: `You are a bilingual copywriter for ${storeIdentityLine(vc)}.
+Translate each German product listing into elegant English.
 - nameEn: 2-5 words, same style and specificity as the German name
-- descriptionEn: exactly one lyrical sentence — same sensory tone and jewel specificity as the German
+- descriptionEn: exactly one evocative sentence — same sensory tone and material specificity as the German
 Return ONLY valid JSON, no markdown.`,
             },
             {
               role: "user",
-              content: `Translate these jewellery products:\n${JSON.stringify(items)}`,
+              content: `Translate these products:\n${JSON.stringify(items)}`,
             },
           ],
           response_format: {
@@ -961,7 +971,7 @@ Return ONLY valid JSON, no markdown.`,
             content:
               `You are a professional translator for "${storeName}", a small artisan store. ` +
               "Translate the product name and description into the requested locales. " +
-              "Keep proper nouns (stone names, places) accurate; keep the tone warm and artisan; " +
+              "Keep proper nouns (material names, places) accurate; keep the tone warm and artisan; " +
               "names stay short (a few words), descriptions keep their structure. " +
               'Return STRICT JSON only: {"locales": {"en": {"name": "...", "description": "..."}, ...}}.',
           },
@@ -1029,7 +1039,7 @@ Return ONLY valid JSON, no markdown.`,
   // Admin: AI-generated insights from sales and inventory data
   insights: adminProcedure.mutation(async ({ ctx }) => {
     const { invokeLLM } = await import("../_core/llm");
-    const storeName = ctx.tenant?.name ?? "the store";
+    const vc = await getVerticalContext(ctx.user.tenantId, ctx.tenant?.name);
     const [allProducts, paidOrders] = await Promise.all([
       getAllProducts(ctx.user.tenantId),
       getPaidOrders(ctx.user.tenantId, 200),
@@ -1064,11 +1074,11 @@ Return ONLY valid JSON, no markdown.`,
       totalOrders: paidOrders.length,
       totalRevenueCHF: paidOrders.reduce((s, o) => s + o.amountTotal, 0) / 100,
       categoryBreakdown: Object.fromEntries(
-        PRODUCT_CATEGORIES.map((category) => [
+        categoryKeys(vc).map((category) => [
           category,
           allProducts.filter((p) => p.category === category).length,
         ]),
-      ) as Record<(typeof PRODUCT_CATEGORIES)[number], number>,
+      ) as Record<string, number>,
       products: productData,
     };
 
@@ -1076,7 +1086,7 @@ Return ONLY valid JSON, no markdown.`,
       messages: [
         {
           role: "system",
-          content: `You are a retail analytics advisor for "${storeName}", a jewellery boutique.
+          content: `You are a retail analytics advisor for ${storeIdentityLine(vc)}.
 Analyse the inventory and sales snapshot and return concise, actionable insights in English.
 Be specific with numbers. Each insight must be exactly one clear sentence.`,
         },
@@ -1149,7 +1159,7 @@ Be specific with numbers. Each insight must be exactly one clear sentence.`,
       z.object({
         name: z.string().min(1),
         description: z.string().min(1),
-        category: z.enum(PRODUCT_CATEGORIES),
+        category: categoryInput,
       }),
     )
     .mutation(async ({ input, ctx }) => {
@@ -1169,8 +1179,8 @@ Be specific with numbers. Each insight must be exactly one clear sentence.`,
         messages: [
           {
             role: "system",
-            content: `You are a duplicate detector for a jewellery catalogue.
-Given a proposed new product and the existing catalogue, identify products that represent the same jewellery piece (same type AND same material/stone).
+            content: `You are a duplicate detector for a product catalogue.
+Given a proposed new product and the existing catalogue, identify products that represent the same physical item (same type AND same materials).
 Different colour, size, finish, or style = NOT a duplicate.
 Return only genuine near-duplicates. Return an empty duplicates array if there are none.`,
           },
@@ -1231,7 +1241,8 @@ Return only genuine near-duplicates. Return an empty duplicates array if there a
   // and only applyRecategorizeAll persists the approved subset.
   previewRecategorizeAll: adminProcedure.mutation(async ({ ctx }) => {
     const { invokeLLM } = await import("../_core/llm");
-    const storeName = ctx.tenant?.name ?? "the store";
+    const vc = await getVerticalContext(ctx.user.tenantId, ctx.tenant?.name);
+    const keys = categoryKeys(vc, { excludeFolded: true });
     const all = await getAllProducts(ctx.user.tenantId);
     const uncategorised = all.filter((p) => p.category === "Other");
     if (uncategorised.length === 0) return { proposals: [], total: 0 };
@@ -1258,23 +1269,15 @@ Return only genuine near-duplicates. Return an empty duplicates array if there a
           messages: [
             {
               role: "system",
-              content: `You are a jewellery category classifier for "${storeName}".
-For each product assign exactly one body-part category from this list:
-  "Necklaces" — necklaces, pendants, chokers, lariats, collar pieces, kollier, halskette, kette, anhänger
-  "Earrings" — studs, drops, hoops, chandeliers, ear cuffs, ohrringe, ohrstecker, ohrhänger, ohrclip
-  "Rings" — finger rings of any style, ring, fingerring
-  "Bracelets" — chain bracelets, cuffs, charm bracelets, flexible wrist pieces, armband
-  "Bangles" — rigid circular bangles, armreif, starre armreifen
-  "Anklets" — ankle chains, payal, fussband, fußband, knöchelkette
-  "Brooches" — pins, brooches, lapel jewellery, brosche, anstecknadel
-  "Hair Accessories" — hair pins, maang tikka, juda pins, hair combs, haarnadel, haarschmuck, haarspange
-  "Other" — body chains, sets, or anything that genuinely doesn't fit above
+              content: `You are a product category classifier for ${storeIdentityLine(vc)}.
+For each product assign exactly one category from this list:
+${categoryTaxonomyLines(vc)}
 Use the German name and description as primary signal; the English name as a hint.
 Return ONLY valid JSON, no markdown.`,
             },
             {
               role: "user",
-              content: `Classify these jewellery products:\n${JSON.stringify(items)}`,
+              content: `Classify these products:\n${JSON.stringify(items)}`,
             },
           ],
           response_format: {
@@ -1291,10 +1294,7 @@ Return ONLY valid JSON, no markdown.`,
                       type: "object",
                       properties: {
                         id: { type: "number" },
-                        category: {
-                          type: "string",
-                          enum: [...PRODUCT_CATEGORIES],
-                        },
+                        category: { type: "string", enum: keys },
                       },
                       required: ["id", "category"],
                       additionalProperties: false,
@@ -1346,13 +1346,17 @@ Return ONLY valid JSON, no markdown.`,
       z.object({
         items: z
           .array(
-            z.object({ id: z.number(), category: z.enum(PRODUCT_CATEGORIES) }),
+            z.object({ id: z.number(), category: categoryInput }),
           )
           .min(1),
       }),
     )
     .mutation(async ({ input, ctx }) => {
       const tid = ctx.user.tenantId;
+      await assertTenantCategories(
+        tid,
+        input.items.map((i) => i.category),
+      );
       let updated = 0;
       for (const item of input.items) {
         await updateProduct(tid, item.id, { category: item.category });
@@ -1375,12 +1379,13 @@ Return ONLY valid JSON, no markdown.`,
         description: z.string().min(1),
         descriptionEn: z.string().optional(),
         price: z.number().positive(),
-        category: z.enum(PRODUCT_CATEGORIES),
+        category: categoryInput,
         quantity: z.number().int().min(0).default(1),
         imageUrl: z.string().optional(),
       }),
     )
     .mutation(async ({ input, ctx }) => {
+      await assertTenantCategories(ctx.user.tenantId, [input.category]);
       await createProduct({
         tenantId: ctx.user.tenantId,
         name: input.name,
@@ -1407,10 +1412,13 @@ Return ONLY valid JSON, no markdown.`,
         description: z.string().min(1).optional(),
         descriptionEn: z.string().nullable().optional(),
         price: z.number().positive().optional(),
-        category: z.enum(PRODUCT_CATEGORIES).optional(),
+        category: categoryInput.optional(),
       }),
     )
     .mutation(async ({ input, ctx }) => {
+      if (input.category !== undefined) {
+        await assertTenantCategories(ctx.user.tenantId, [input.category]);
+      }
       const { id, price, ...rest } = input;
       const data: Record<string, unknown> = { ...rest };
       if (price !== undefined) data.price = String(price);
@@ -1434,7 +1442,7 @@ Return ONLY valid JSON, no markdown.`,
               description: z.string().min(1),
               descriptionEn: z.string().optional(),
               price: z.number().positive(),
-              category: z.enum(PRODUCT_CATEGORIES),
+              category: categoryInput,
               quantity: z.number().int().min(0).default(1),
               imageUrl: z.string().optional(),
             }),
@@ -1445,6 +1453,10 @@ Return ONLY valid JSON, no markdown.`,
     )
     .mutation(async ({ input, ctx }) => {
       const tid = ctx.user.tenantId;
+      await assertTenantCategories(
+        tid,
+        input.rows.map((r) => r.category),
+      );
       // Match rows against existing products by name so re-importing the same
       // sheet (the normal workflow after editing it) updates in place instead
       // of creating a fresh duplicate row for every already-imported item.
@@ -1508,25 +1520,31 @@ Return ONLY valid JSON, no markdown.`,
     )
     .mutation(async ({ input, ctx }) => {
       const { invokeLLM } = await import("../_core/llm");
-      const storeName = ctx.tenant?.name ?? "the store";
+      const vc = await getVerticalContext(
+        ctx.user.tenantId,
+        ctx.tenant?.name,
+      );
+      const allKeys = categoryKeys(vc);
+      const specificKeys = categoryKeys(vc, { excludeFolded: true }).filter(
+        (k) => k !== "Other",
+      );
       const response = await invokeLLM({
         messages: [
           {
             role: "system",
-            content: `You are an inventory data extractor for "${storeName}", a jewellery boutique.
+            content: `You are an inventory data extractor for ${storeIdentityLine(vc)}.
 
-The user will provide a photo of handwritten inventory notes from a diary or notebook. Notes are usually organized as one "box" per page, with a heading at the top (for example "Rings Box", "Necklace Box", "Bangles") followed by a numbered list of items, each with a price and sometimes a quantity note.
+The user will provide a photo of handwritten inventory notes from a diary or notebook. Notes are usually organized as one "box" per page, with a heading at the top followed by a numbered list of items, each with a price and sometimes a quantity note.
 
 Read the whole page first. Then extract every readable numbered/listed item as one product, following these steps for each one:
 
 STEP 1 — Find the page heading.
-Look at the top of the page for a title or box label. This heading tells you what type of jewellery EVERY item on the page is, even when an item's own text is just a gemstone or material name and never says the word "ring", "necklace", etc. For example, on a page headed "Rings Box", an item written only as "Lemon Quartz - 50 CHF" is a ring — use the heading, not the item text, to know that.
+${vc.preset.ocrHeadingHint}
 
 STEP 2 — Assign a category.
-category must be exactly one of: ${PRODUCT_CATEGORIES.map((c) => `"${c}"`).join(", ")}.
-- Prefer the most specific category (Necklaces, Earrings, Rings, Bracelets, Bangles, Anklets, Brooches, Hair Accessories) based on the page heading first, then the item's own description.
-- Treat "Sets" and "Other" as last-resort categories. Only use "Sets" when the item text explicitly describes a combined piece (e.g. a matching necklace-and-earring set). Only use "Other" when neither the page heading nor the item text gives any clue about the jewellery type.
-- Never pick "Sets" or "Other" purely because a gemstone or material name by itself doesn't state the jewellery type — check the page heading first.
+category must be exactly one of: ${allKeys.map((c) => `"${c}"`).join(", ")}.
+- Prefer the most specific category (${specificKeys.join(", ")}) based on the page heading first, then the item's own description.
+${vc.preset.ocrCategoryNote}
 
 STEP 3 — Estimate quantity.
 quantity is an integer count of how many physical pieces of that exact item are in stock.
@@ -1573,10 +1591,7 @@ Return ONLY a valid JSON object — no markdown, no extra text.`,
                       name: { type: "string" },
                       description: { type: "string" },
                       price: { type: "number" },
-                      category: {
-                        type: "string",
-                        enum: [...PRODUCT_CATEGORIES],
-                      },
+                      category: { type: "string", enum: allKeys },
                       quantity: { type: "integer" },
                     },
                     required: [

@@ -5,6 +5,7 @@ import { requestMagicLink } from "./_core/magicLink";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { updateOwnDisplayName } from "./db";
+import { categoriesRouter } from "./routers/categories";
 import { productsRouter } from "./routers/products";
 import { checkoutRouter } from "./routers/checkout";
 import { instagramRouter } from "./routers/instagram";
@@ -68,6 +69,7 @@ export const appRouter = router({
   chat: chatRouter, // AI support assistant (storefront)
   insights: insightsRouter, // Sales/inventory stats + AI narrative (Pro)
   products: productsRouter,
+  categories: categoriesRouter,
   instagram: instagramRouter,
   checkout: checkoutRouter,
   reconciliation: reconciliationRouter,
