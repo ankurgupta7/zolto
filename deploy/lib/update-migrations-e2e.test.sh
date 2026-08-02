@@ -114,6 +114,9 @@ if [ "$1 $2" = "compose exec" ]; then
       *"FROM \`deploy_state\`"*) ;;      # still unrecorded → block runs anyway
       *"SELECT 1"*)              ;;
       *"IS_NULLABLE"*)           echo "NO" ;;
+      # 0036 converted products.category to varchar — an up-to-date database
+      # no longer reports an enum for it.
+      *"COLUMN_NAME='category'"*) echo "varchar(64)" ;;
       *"COLUMN_TYPE"*)
         echo "enum('Necklaces','Sets','free','pro','upsert_images','twint_qr','superadmin','staff','customer')" ;;
       # 0030 DROPS tenants.plan_price_override, so on an up-to-date database
@@ -204,6 +207,12 @@ assert_contains "$LOG" "ALTER TABLE \`orders\` ADD \`platform_fee_rappen\`" \
   "the platform-fee column is created"
 assert_contains "$OUT" "0033 add products.nameDe" "0033 reports each column it adds"
 assert_contains "$OUT" "0034 magic_link_tokens table" "0034 reports the table it creates"
+assert_contains "$LOG" "CREATE TABLE IF NOT EXISTS \`tenant_categories\`" \
+  "tenant_categories is created"
+assert_contains "$LOG" "MODIFY COLUMN \`category\` varchar(64)" \
+  "products.category is converted to varchar"
+assert_contains "$OUT" "0036 seed jewellery categories" \
+  "0036 seeds the jewellery preset for existing tenants"
 
 # Ordering: the fingerprint INSERT must be the last mutating statement — a
 # fingerprint recorded before the final DDL would let the next deploy skip a
@@ -225,6 +234,7 @@ LOG2="$(cat "${FAKE_DOCKER_LOG}")"
 assert_contains "$OUT2" "Update complete" "the deploy completes"
 assert_contains "$OUT2" "0033 products.nameDe already exists" "0033 takes its already-applied branch"
 assert_contains "$OUT2" "0034 magic_link_tokens already exists" "0034 takes its already-applied branch"
+assert_contains "$OUT2" "0036 products.category already varchar" "0036 takes its already-applied branch"
 assert_not_contains "$LOG2" "ALTER TABLE \`products\`" "no products DDL is re-issued"
 assert_not_contains "$LOG2" "ALTER TABLE \`orders\`" "no orders DDL is re-issued"
 assert_not_contains "$LOG2" "ALTER TABLE \`users\`" "no users DDL is re-issued"

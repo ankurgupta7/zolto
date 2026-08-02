@@ -623,6 +623,80 @@ migrate_0034_magic_link_tokens() {
   fi
 }
 
+migrate_0036_merchant_verticals() {
+  # Per-tenant categories + merchant vertical. Ships
+  # drizzle/0017_merchant_verticals.sql and 0018_seed_jewellery_categories.sql:
+  # converts the global jewellery category enum into a per-tenant list
+  # (products.category enum→varchar keeps the stored strings, so no data step),
+  # records what each merchant sells on tenant_settings, and seeds every
+  # existing tenant with the jewellery preset so nothing changes for them.
+  if [ "$(tbl_exists tenant_categories)" = "0" ]; then
+    run_sql "0036 tenant_categories table" "
+      CREATE TABLE IF NOT EXISTS \`tenant_categories\` (
+        \`id\`         int AUTO_INCREMENT NOT NULL,
+        \`tenant_id\`  int NOT NULL,
+        \`key\`        varchar(64) NOT NULL,
+        \`label_en\`   varchar(64) NOT NULL,
+        \`label_de\`   varchar(64),
+        \`extra_includes\` json,
+        \`sort_order\` int NOT NULL DEFAULT 0,
+        \`createdAt\`  timestamp NOT NULL DEFAULT (now()),
+        \`updatedAt\`  timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+        CONSTRAINT \`tenant_categories_id\` PRIMARY KEY(\`id\`),
+        CONSTRAINT \`tenant_categories_tenant_key\` UNIQUE(\`tenant_id\`,\`key\`)
+      );"
+  else
+    ok "0036 tenant_categories already exists"
+  fi
+
+  local category_type
+  category_type=$($MYSQL -se "${MYSQL_LOCK_TIMEOUT_SQL}SELECT COLUMN_TYPE FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA='${MYSQL_DATABASE}' AND TABLE_NAME='products' AND COLUMN_NAME='category';" 2>/dev/null || echo "")
+  if echo "$category_type" | grep -q "^enum"; then
+    # enum→varchar preserves the stored strings — lossless, no data rewrite.
+    run_sql "0036 products.category enum → varchar(64)" \
+      "ALTER TABLE \`products\` MODIFY COLUMN \`category\` varchar(64) NOT NULL;"
+  else
+    ok "0036 products.category already varchar"
+  fi
+
+  if [ "$(col_exists tenant_settings vertical)" = "0" ]; then
+    run_sql "0036 add tenant_settings.vertical" \
+      "ALTER TABLE \`tenant_settings\` ADD \`vertical\` varchar(32) NOT NULL DEFAULT 'jewellery';"
+  else
+    ok "0036 tenant_settings.vertical already exists"
+  fi
+
+  if [ "$(col_exists tenant_settings vertical_description)" = "0" ]; then
+    run_sql "0036 add tenant_settings.vertical_description" \
+      "ALTER TABLE \`tenant_settings\` ADD \`vertical_description\` text NULL;"
+  else
+    ok "0036 tenant_settings.vertical_description already exists"
+  fi
+
+  # Seed the jewellery preset for tenants with no category rows yet — the
+  # exact keys/order/folding the app hard-coded before verticals existed.
+  run_sql "0036 seed jewellery categories for existing tenants" "
+    INSERT INTO \`tenant_categories\` (\`tenant_id\`, \`key\`, \`label_en\`, \`label_de\`, \`extra_includes\`, \`sort_order\`)
+    SELECT t.\`id\`, c.\`k\`, c.\`k\`, c.\`de\`, c.\`extra\`, c.\`ord\`
+    FROM \`tenants\` t
+    CROSS JOIN (
+      SELECT 'Necklaces' AS \`k\`, 'Halsketten' AS \`de\`, JSON_ARRAY('Sets') AS \`extra\`, 0 AS \`ord\`
+      UNION ALL SELECT 'Earrings', 'Ohrringe', JSON_ARRAY('Sets'), 1
+      UNION ALL SELECT 'Sets', 'Sets', NULL, 2
+      UNION ALL SELECT 'Rings', 'Ringe', NULL, 3
+      UNION ALL SELECT 'Bracelets', 'Armbänder', NULL, 4
+      UNION ALL SELECT 'Bangles', 'Armreifen', NULL, 5
+      UNION ALL SELECT 'Anklets', 'Fussschmuck', NULL, 6
+      UNION ALL SELECT 'Brooches', 'Broschen', NULL, 7
+      UNION ALL SELECT 'Hair Accessories', 'Haarschmuck', NULL, 8
+      UNION ALL SELECT 'Other', 'Sonstiges', NULL, 9
+    ) c
+    WHERE NOT EXISTS (
+      SELECT 1 FROM \`tenant_categories\` tc WHERE tc.\`tenant_id\` = t.\`id\`
+    );"
+}
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Deploy state: skip the whole migration block when nothing about it changed.
 #

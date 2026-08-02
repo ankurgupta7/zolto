@@ -18,12 +18,8 @@ const CATEGORY_VALUES: (ProductCategory | "All")[] = [
 // Extra categories folded into a category's listing (e.g. Sets show under
 // Necklaces/Earrings). Sourced from the single shared definition so the web
 // shop and POS apps never drift.
-const extraIncludesFor = (
-  cat: ProductCategory | "All",
-): readonly ProductCategory[] =>
-  (CATEGORY_EXTRA_INCLUDES as Record<string, readonly ProductCategory[]>)[
-    cat
-  ] ?? [];
+const extraIncludesFor = (cat: ProductCategory | "All"): readonly string[] =>
+  (CATEGORY_EXTRA_INCLUDES as Record<string, readonly string[]>)[cat] ?? [];
 
 export default function Shop() {
   const { t } = useTranslation();

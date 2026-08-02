@@ -52,9 +52,12 @@ import {
   users,
   tenants,
   tenantSettings,
+  tenantCategories,
   type Tenant,
+  type TenantCategory,
   type TenantSetting,
 } from "../drizzle/schema";
+import { VERTICAL_PRESETS, isVertical, type Vertical } from "@shared/verticals";
 import { ENV } from "./_core/env";
 import { PLANS } from "@shared/platform";
 import { hashPosApiKey } from "./posApiKey";
@@ -1871,6 +1874,240 @@ export async function createTenantSettings(
   data: InsertTenantSetting,
 ): Promise<void> {
   await withDbOrThrow((db) => db.insert(tenantSettings).values(data));
+}
+
+// ─── Tenant categories ────────────────────────────────────────────────────────
+// Per-store product category list, seeded from the tenant's vertical preset
+// at signup and editable by the store admin. products.category stores the
+// `key`; labels are display-only.
+
+function presetCategoryRows(
+  tenantId: number,
+  vertical: Vertical,
+): Array<typeof tenantCategories.$inferInsert> {
+  return VERTICAL_PRESETS[vertical].categories.map((c, i) => ({
+    tenantId,
+    key: c.key,
+    labelEn: c.labelEn,
+    labelDe: c.labelDe,
+    extraIncludes: c.extraIncludes ? [...c.extraIncludes] : null,
+    sortOrder: i,
+  }));
+}
+
+/**
+ * The tenant's categories in display order. Falls back to the tenant's
+ * vertical preset (read-only, no lazy write) when no rows exist yet — a
+ * safety net for tenants created before seeding existed and for tests.
+ */
+export async function getTenantCategories(
+  tenantId: number,
+): Promise<TenantCategory[]> {
+  const rows = await withDb(
+    async (db) =>
+      db
+        .select()
+        .from(tenantCategories)
+        .where(eq(tenantCategories.tenantId, tenantId))
+        .orderBy(asc(tenantCategories.sortOrder), asc(tenantCategories.id)),
+    [] as TenantCategory[],
+  );
+  if (rows.length > 0) return rows;
+
+  const settings = await getTenantSettings(tenantId);
+  const vertical =
+    settings?.vertical && isVertical(settings.vertical)
+      ? settings.vertical
+      : "jewellery";
+  return presetCategoryRows(tenantId, vertical).map((r, i) => ({
+    id: -(i + 1), // sentinel: not persisted
+    tenantId,
+    key: r.key,
+    labelEn: r.labelEn,
+    labelDe: r.labelDe ?? null,
+    extraIncludes: r.extraIncludes ?? null,
+    sortOrder: r.sortOrder ?? i,
+    createdAt: new Date(0),
+    updatedAt: new Date(0),
+  }));
+}
+
+/** Seed the tenant's category list from a vertical preset. Skips existing keys. */
+export async function seedTenantCategories(
+  tenantId: number,
+  vertical: Vertical,
+): Promise<void> {
+  await withDbOrThrow((db) =>
+    db
+      .insert(tenantCategories)
+      .values(presetCategoryRows(tenantId, vertical))
+      .onDuplicateKeyUpdate({ set: { tenantId: sql`tenant_id` } }),
+  );
+}
+
+export async function createTenantCategoryRow(row: {
+  tenantId: number;
+  key: string;
+  labelEn: string;
+  labelDe?: string | null;
+  extraIncludes?: string[] | null;
+  sortOrder?: number;
+}): Promise<void> {
+  await withDbOrThrow(async (db) => {
+    const sortOrder =
+      row.sortOrder ??
+      (await db
+        .select({ max: sql<number>`COALESCE(MAX(${tenantCategories.sortOrder}), -1)` })
+        .from(tenantCategories)
+        .where(eq(tenantCategories.tenantId, row.tenantId))
+        .then((r) => (r[0]?.max ?? -1) + 1));
+    await db.insert(tenantCategories).values({ ...row, sortOrder });
+  });
+}
+
+export async function updateTenantCategoryLabels(
+  tenantId: number,
+  key: string,
+  labels: { labelEn?: string; labelDe?: string | null },
+): Promise<void> {
+  await withDbOrThrow((db) =>
+    db
+      .update(tenantCategories)
+      .set(labels)
+      .where(
+        and(
+          eq(tenantCategories.tenantId, tenantId),
+          eq(tenantCategories.key, key),
+        ),
+      ),
+  );
+}
+
+/**
+ * Rename a category KEY, cascading in one transaction to every product in
+ * that category and to any sibling extraIncludes arrays referencing it.
+ */
+export async function renameTenantCategoryKey(
+  tenantId: number,
+  oldKey: string,
+  newKey: string,
+): Promise<void> {
+  await withDbOrThrow((db) =>
+    db.transaction(async (tx) => {
+      await tx
+        .update(tenantCategories)
+        .set({ key: newKey })
+        .where(
+          and(
+            eq(tenantCategories.tenantId, tenantId),
+            eq(tenantCategories.key, oldKey),
+          ),
+        );
+      await tx
+        .update(products)
+        .set({ category: newKey })
+        .where(
+          and(eq(products.tenantId, tenantId), eq(products.category, oldKey)),
+        );
+      const siblings = await tx
+        .select()
+        .from(tenantCategories)
+        .where(eq(tenantCategories.tenantId, tenantId));
+      for (const sib of siblings) {
+        if (sib.extraIncludes?.includes(oldKey)) {
+          await tx
+            .update(tenantCategories)
+            .set({
+              extraIncludes: sib.extraIncludes.map((k) =>
+                k === oldKey ? newKey : k,
+              ),
+            })
+            .where(eq(tenantCategories.id, sib.id));
+        }
+      }
+    }),
+  );
+}
+
+/**
+ * Delete a category, reassigning its products to `reassignTo` (also cleans
+ * the deleted key out of sibling extraIncludes arrays) in one transaction.
+ */
+export async function deleteTenantCategoryRow(
+  tenantId: number,
+  key: string,
+  reassignTo: string,
+): Promise<void> {
+  await withDbOrThrow((db) =>
+    db.transaction(async (tx) => {
+      await tx
+        .update(products)
+        .set({ category: reassignTo })
+        .where(
+          and(eq(products.tenantId, tenantId), eq(products.category, key)),
+        );
+      await tx
+        .delete(tenantCategories)
+        .where(
+          and(
+            eq(tenantCategories.tenantId, tenantId),
+            eq(tenantCategories.key, key),
+          ),
+        );
+      const siblings = await tx
+        .select()
+        .from(tenantCategories)
+        .where(eq(tenantCategories.tenantId, tenantId));
+      for (const sib of siblings) {
+        if (sib.extraIncludes?.includes(key)) {
+          const cleaned = sib.extraIncludes.filter((k) => k !== key);
+          await tx
+            .update(tenantCategories)
+            .set({ extraIncludes: cleaned.length ? cleaned : null })
+            .where(eq(tenantCategories.id, sib.id));
+        }
+      }
+    }),
+  );
+}
+
+/** Reorder categories: `keys` in the desired order; unlisted keys keep their place after. */
+export async function reorderTenantCategories(
+  tenantId: number,
+  keys: string[],
+): Promise<void> {
+  await withDbOrThrow((db) =>
+    db.transaction(async (tx) => {
+      for (let i = 0; i < keys.length; i++) {
+        await tx
+          .update(tenantCategories)
+          .set({ sortOrder: i })
+          .where(
+            and(
+              eq(tenantCategories.tenantId, tenantId),
+              eq(tenantCategories.key, keys[i]),
+            ),
+          );
+      }
+    }),
+  );
+}
+
+export async function countProductsInCategory(
+  tenantId: number,
+  key: string,
+): Promise<number> {
+  return withDb(
+    async (db) =>
+      db
+        .select({ count: sql<number>`COUNT(*)` })
+        .from(products)
+        .where(
+          and(eq(products.tenantId, tenantId), eq(products.category, key)),
+        )
+        .then((r) => Number(r[0]?.count ?? 0)),
+    0,
+  );
 }
 
 export async function setTenantStripeCustomer(
