@@ -5,6 +5,7 @@ import {
   fireEvent,
   cleanup,
   waitFor,
+  act,
 } from "@testing-library/react";
 import Platform from "./Platform";
 
@@ -32,6 +33,8 @@ const mocks = vi.hoisted(() => ({
   } as Record<string, unknown> | undefined,
   reconcileMutate: vi.fn(),
   onSuccess: undefined as ((data: unknown) => void) | undefined,
+  rotateMutate: vi.fn(),
+  rotateOnSuccess: undefined as ((data: unknown) => void) | undefined,
 }));
 
 vi.mock("@/_core/hooks/useAuth", () => ({
@@ -54,6 +57,12 @@ vi.mock("@/lib/trpc", () => ({
         useMutation: (opts?: { onSuccess?: (d: unknown) => void }) => {
           mocks.onSuccess = opts?.onSuccess;
           return { mutate: mocks.reconcileMutate, isPending: false };
+        },
+      },
+      rotatePosTestKey: {
+        useMutation: (opts?: { onSuccess?: (d: unknown) => void }) => {
+          mocks.rotateOnSuccess = opts?.onSuccess;
+          return { mutate: mocks.rotateMutate, isPending: false };
         },
       },
     },
@@ -164,5 +173,42 @@ describe("Platform page — Stripe reconciliation sweep", () => {
     expect(screen.getByText("Connect grant revoked")).toBeTruthy();
     // …and the store that did work still reports.
     expect(screen.getByText("Beta")).toBeTruthy();
+  });
+});
+
+// The POS test key card: what makes the CI credential obtainable at all, so
+// its show-once behaviour is pinned — the key must appear only after a
+// rotation round-trips, never on load.
+describe("Platform page — POS test key", () => {
+  it("is hidden from a non-superadmin along with the rest of the page", () => {
+    mocks.role = "admin";
+    render(<Platform />);
+    expect(screen.queryByText("Rotate POS test key")).toBeNull();
+  });
+
+  it("shows no key material before a rotation", () => {
+    render(<Platform />);
+    expect(screen.getByText("Rotate POS test key")).toBeTruthy();
+    expect(screen.getByText(/provisions the store on first use/i)).toBeTruthy();
+    expect(screen.queryByText(/Shown once/i)).toBeNull();
+  });
+
+  it("rotates and reveals the key exactly once on success", async () => {
+    render(<Platform />);
+    fireEvent.click(screen.getByText("Rotate POS test key"));
+    expect(mocks.rotateMutate).toHaveBeenCalled();
+
+    act(() => {
+      mocks.rotateOnSuccess?.({
+        tenantId: 42,
+        slug: "platform-tests",
+        posApiKey: "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4",
+      });
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText("a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4")).toBeTruthy();
+    });
+    expect(screen.getByText(/Shown once/i)).toBeTruthy();
   });
 });

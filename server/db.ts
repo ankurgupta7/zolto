@@ -1885,6 +1885,19 @@ export async function setTenantStripeCustomer(
   );
 }
 
+/** Stores a NEW POS key hash — takes the SHA-256, never the plaintext. */
+export async function setTenantPosApiKeyHash(
+  tenantId: number,
+  posApiKeyHash: string,
+): Promise<void> {
+  await withDbOrThrow((db) =>
+    db
+      .update(tenants)
+      .set({ posApiKey: posApiKeyHash })
+      .where(eq(tenants.id, tenantId)),
+  );
+}
+
 // Links a tenant's OWN Stripe Standard account (Connect) for their storefront
 // checkout — separate from setTenantStripeCustomer above, which is Zolto's own
 // billing relationship with the tenant.

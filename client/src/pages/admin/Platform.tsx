@@ -13,7 +13,7 @@ import { trpc } from "@/lib/trpc";
 import type { inferRouterOutputs } from "@trpc/server";
 import type { AppRouter } from "../../../../server/routers";
 import { toast } from "sonner";
-import { CreditCard, AlertTriangle } from "lucide-react";
+import { CreditCard, AlertTriangle, KeyRound, Copy } from "lucide-react";
 import {
   PageHeader,
   SettingsCard,
@@ -56,6 +56,18 @@ export default function Platform() {
   const query = trpc.platform.metrics.useQuery(undefined, {
     enabled: isSuperadmin,
     retry: false,
+  });
+
+  const [testKey, setTestKey] = useState<string | null>(null);
+  const rotateTestKey = trpc.platform.rotatePosTestKey.useMutation({
+    onSuccess: (data) => {
+      setTestKey(data.posApiKey);
+      toast.success(
+        "POS test key rotated — copy it now, it can't be shown again.",
+      );
+    },
+    onError: (e) =>
+      toast.error(e.message || "Could not rotate the POS test key."),
   });
 
   const [sweep, setSweep] = useState<SweepResult | null>(null);
@@ -241,6 +253,54 @@ export default function Platform() {
             Stores with no connected Stripe account are skipped — an
             in-person-only merchant has no online payments to reconcile. Safe to
             re-run: a payment already recorded is never queued twice.
+          </p>
+        )}
+      </SettingsCard>
+
+      <SettingsCard
+        title="POS test key"
+        description="The platform's own POS API key, backing the ordinary 'platform-tests' store. The POS apps' CI authenticates with it, so no pipeline ever skips a test for lack of a key — and because it is a normal per-tenant key with no special rules, CI reproduces issues faithfully."
+        footer={
+          <PrimaryButton
+            onClick={() => rotateTestKey.mutate()}
+            loading={rotateTestKey.isPending}
+          >
+            <KeyRound className="h-4 w-4" />
+            Rotate POS test key
+          </PrimaryButton>
+        }
+      >
+        {testKey ? (
+          <div>
+            <p className="mb-2 text-sm text-foreground">
+              Shown once — copy it into the POS apps&apos; CI secret
+              (POS_API_KEY) now. It cannot be shown again.
+            </p>
+            <div className="flex items-center gap-2">
+              <code className="min-w-0 flex-1 break-all rounded-md border bg-muted px-3 py-2 text-xs">
+                {testKey}
+              </code>
+              <button
+                type="button"
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-md border px-3 py-2 text-xs font-medium text-foreground hover:bg-muted"
+                onClick={() => {
+                  navigator.clipboard
+                    .writeText(testKey)
+                    .then(() => toast.success("Key copied."))
+                    .catch(() =>
+                      toast.error("Copy failed — select it by hand."),
+                    );
+                }}
+              >
+                <Copy className="h-3.5 w-3.5" />
+                Copy
+              </button>
+            </div>
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            Rotating provisions the store on first use and invalidates the
+            previous key immediately — update the CI secret in the same sitting.
           </p>
         )}
       </SettingsCard>
