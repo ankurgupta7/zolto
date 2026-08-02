@@ -7,6 +7,10 @@ const { dbMock } = vi.hoisted(() => ({
     getTenantDetailForOperator: vi.fn(),
     setTenantUserRoleByOperator: vi.fn(),
     setTenantPlanByOperator: vi.fn(),
+    getTenantBySlug: vi.fn(),
+    createTenant: vi.fn(),
+    createTenantSettings: vi.fn(),
+    setTenantPosApiKeyHash: vi.fn(),
   },
 }));
 
@@ -18,7 +22,8 @@ vi.mock("../reconciliation", () => ({
     runStripeReconciliationForAllTenants(...args),
 }));
 
-import { platformRouter } from "./platform";
+import { platformRouter, POS_TEST_TENANT_SLUG } from "./platform";
+import { hashPosApiKey } from "../posApiKey";
 import type { TrpcContext } from "../_core/context";
 
 const metrics = {
@@ -382,5 +387,76 @@ describe("platform.reconcileAllTenants", () => {
       caller.reconcileAllTenants({ lookbackDays: 91 }),
     ).rejects.toThrow();
     expect(runStripeReconciliationForAllTenants).not.toHaveBeenCalled();
+  });
+});
+
+// The platform's own POS test key: what the POS apps' CI authenticates with,
+// so pipelines never skip a test for lack of a key. It must stay an entirely
+// ordinary tenant key — the tests pin that it is stored hashed through the
+// same helpers as a merchant's, with no special-case auth path to drift.
+describe("platform.rotatePosTestKey", () => {
+  it("refuses every non-superadmin caller, including a store admin", async () => {
+    for (const role of [null, "customer", "staff", "admin"]) {
+      await expect(
+        platformRouter.createCaller(ctx(role)).rotatePosTestKey(),
+      ).rejects.toThrow();
+    }
+    expect(dbMock.createTenant).not.toHaveBeenCalled();
+    expect(dbMock.setTenantPosApiKeyHash).not.toHaveBeenCalled();
+  });
+
+  it("provisions the platform-tests store on first use and returns the key once", async () => {
+    dbMock.getTenantBySlug.mockResolvedValue(undefined);
+    dbMock.createTenant.mockResolvedValue(42);
+
+    const res = await platformRouter
+      .createCaller(ctx("superadmin"))
+      .rotatePosTestKey();
+
+    expect(res.tenantId).toBe(42);
+    expect(res.slug).toBe(POS_TEST_TENANT_SLUG);
+    // A real key, and only its hash was persisted.
+    expect(res.posApiKey.length).toBeGreaterThanOrEqual(32);
+    expect(dbMock.createTenant).toHaveBeenCalledWith(
+      expect.objectContaining({
+        slug: POS_TEST_TENANT_SLUG,
+        posApiKey: hashPosApiKey(res.posApiKey),
+      }),
+    );
+    expect(dbMock.createTenant.mock.calls[0][0].posApiKey).not.toBe(
+      res.posApiKey,
+    );
+    expect(dbMock.createTenantSettings).toHaveBeenCalledWith(
+      expect.objectContaining({ tenantId: 42 }),
+    );
+  });
+
+  it("rotates in place when the platform-tests store already exists", async () => {
+    dbMock.getTenantBySlug.mockResolvedValue({
+      id: 7,
+      slug: POS_TEST_TENANT_SLUG,
+    });
+
+    const res = await platformRouter
+      .createCaller(ctx("superadmin"))
+      .rotatePosTestKey();
+
+    expect(res.tenantId).toBe(7);
+    expect(dbMock.createTenant).not.toHaveBeenCalled();
+    expect(dbMock.setTenantPosApiKeyHash).toHaveBeenCalledWith(
+      7,
+      hashPosApiKey(res.posApiKey),
+    );
+  });
+
+  it("returns a fresh key on every rotation", async () => {
+    dbMock.getTenantBySlug.mockResolvedValue({
+      id: 7,
+      slug: POS_TEST_TENANT_SLUG,
+    });
+    const caller = platformRouter.createCaller(ctx("superadmin"));
+    const first = await caller.rotatePosTestKey();
+    const second = await caller.rotatePosTestKey();
+    expect(first.posApiKey).not.toBe(second.posApiKey);
   });
 });

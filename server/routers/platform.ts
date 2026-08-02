@@ -20,9 +20,23 @@ import {
   getTenantDetailForOperator,
   setTenantUserRoleByOperator,
   setTenantPlanByOperator,
+  getTenantBySlug,
+  createTenant,
+  createTenantSettings,
+  setTenantPosApiKeyHash,
 } from "../db";
 import { runStripeReconciliationForAllTenants } from "../reconciliation";
+import { generatePosApiKey, hashPosApiKey } from "../posApiKey";
 import { PRO_PLAN, REVENUE_SHARE } from "@shared/platform";
+
+/**
+ * The platform's own POS test store. Its POS key is what the POS apps' CI
+ * uses, so no pipeline ever has to skip or soften a test for lack of a key.
+ * It is an entirely ordinary tenant — the key goes through the same
+ * per-tenant auth path as every merchant's (server/pos.ts requirePosKey),
+ * with no special rules, so CI reproduces issues faithfully.
+ */
+export const POS_TEST_TENANT_SLUG = "platform-tests";
 
 /**
  * Operator actions change another party's account, so every one of them leaves
@@ -120,6 +134,42 @@ export const platformRouter = router({
       }
       return { success: true };
     }),
+
+  /**
+   * Rotate (provisioning on first use) the platform's POS test key — the
+   * operator's counterpart to the merchant-facing tenant.rotatePosApiKey.
+   *
+   * Returns the plaintext exactly ONCE, like every POS key: the operator
+   * pastes it into the POS apps' CI secrets (POS_API_KEY) and it is
+   * unrecoverable afterwards — a lost key is rotated, not retrieved. The old
+   * key stops working the moment this returns, so CI secrets must be updated
+   * in the same sitting.
+   */
+  rotatePosTestKey: superadminProcedure.mutation(async ({ ctx }) => {
+    const plaintext = generatePosApiKey();
+    const hash = hashPosApiKey(plaintext);
+
+    const existing = await getTenantBySlug(POS_TEST_TENANT_SLUG);
+    let tenantId: number;
+    if (existing) {
+      tenantId = existing.id;
+      await setTenantPosApiKeyHash(tenantId, hash);
+    } else {
+      tenantId = await createTenant({
+        slug: POS_TEST_TENANT_SLUG,
+        name: "Platform Tests",
+        plan: "free",
+        posApiKey: hash,
+      });
+      await createTenantSettings({ tenantId, currency: "chf" });
+    }
+
+    auditOperatorAction(ctx.user?.id, "rotatePosTestKey", {
+      tenantId,
+      slug: POS_TEST_TENANT_SLUG,
+    });
+    return { tenantId, slug: POS_TEST_TENANT_SLUG, posApiKey: plaintext };
+  }),
 
   metrics: superadminProcedure.query(async () => {
     const metrics = await getPlatformMetrics();
