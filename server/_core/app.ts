@@ -13,6 +13,7 @@ import {
 } from "../stripeConnect";
 import { registerPosWebhook, registerPosRoutes } from "../pos";
 import { registerChannelIntakeRoutes } from "../channels";
+import { registerSlackOAuthRoutes } from "../slackOAuth";
 import { registerScheduledRoutes } from "../scheduled";
 import { registerReconciliationRoutes } from "../reconciliationRoutes";
 import { registerPosAttributionRoutes } from "../posAttributionRoutes";
@@ -69,6 +70,9 @@ export async function createApp(): Promise<express.Express> {
 
   // Heartbeat-cron callbacks (e.g. the nightly POS-attribution sweep).
   registerScheduledRoutes(app);
+
+  // Add-to-Slack OAuth callback (writes the workspace bot token to the vault).
+  registerSlackOAuthRoutes(app);
 
   // SEO discovery: /sitemap.xml + /robots.txt (before the SPA catch-all).
   registerSeoRoutes(app);

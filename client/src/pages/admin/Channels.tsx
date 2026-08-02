@@ -7,7 +7,7 @@
 import { useEffect, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { MessageCircle, Instagram, Hash, KeyRound } from "lucide-react";
+import { MessageCircle, Instagram, Hash, KeyRound, Slack } from "lucide-react";
 import {
   PageHeader,
   SettingsCard,
@@ -182,10 +182,12 @@ function ChannelCredentials() {
 
 export default function Channels() {
   const { settings, invalidate } = useTenantSettings();
+  const connect = trpc.tenant.channelConnect.useQuery();
   const [whatsappNumber, setWhatsappNumber] = useState("");
   const [instagramHandle, setInstagramHandle] = useState("");
   const [discordChannelId, setDiscordChannelId] = useState("");
   const [discordOwnerUserId, setDiscordOwnerUserId] = useState("");
+  const [slackChannelId, setSlackChannelId] = useState("");
 
   useEffect(() => {
     if (settings) {
@@ -193,8 +195,29 @@ export default function Channels() {
       setInstagramHandle(settings.instagramHandle ?? "");
       setDiscordChannelId(settings.discordChannelId ?? "");
       setDiscordOwnerUserId(settings.discordOwnerUserId ?? "");
+      setSlackChannelId(settings.slackChannelId ?? "");
     }
   }, [settings]);
+
+  // Landing back from the Add-to-Slack OAuth redirect: surface the outcome
+  // once, then drop the query param so a refresh doesn't re-toast.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const slack = params.get("slack");
+    if (!slack) return;
+    if (slack === "connected") {
+      toast.success("Slack connected — now tell us which channel to watch.");
+    } else {
+      toast.error("Slack connection failed — try again or paste a bot token.");
+    }
+    params.delete("slack");
+    const rest = params.toString();
+    window.history.replaceState(
+      null,
+      "",
+      `${window.location.pathname}${rest ? `?${rest}` : ""}`,
+    );
+  }, []);
 
   const save = trpc.tenant.updateSettings.useMutation({
     onSuccess: () => {
@@ -223,6 +246,17 @@ export default function Channels() {
       discordChannelId: discordChannelId.trim() || undefined,
       discordOwnerUserId: discordOwnerUserId.trim() || undefined,
     });
+  };
+
+  const saveSlack = () => {
+    if (
+      slackChannelId &&
+      !/^[A-Z][A-Z0-9]{4,20}$/i.test(slackChannelId.trim())
+    ) {
+      toast.error("A Slack channel ID looks like C0123ABCDEF.");
+      return;
+    }
+    save.mutate({ slackChannelId: slackChannelId.trim() || undefined });
   };
 
   return (
@@ -330,7 +364,64 @@ export default function Channels() {
             Sterling silver moonstone ring. Delicate band with an 8mm round
             moonstone, oxidised finish. Price: CHF 220
           </p>
+          {connect.data?.discordInviteUrl && (
+            <p className="mt-3">
+              First step:{" "}
+              <a
+                href={connect.data.discordInviteUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="font-medium text-foreground underline underline-offset-2"
+              >
+                invite the Zolto bot to your server →
+              </a>{" "}
+              then paste your channel ID above.
+            </p>
+          )}
         </div>
+      </SettingsCard>
+
+      <SettingsCard
+        title="Slack intake"
+        description="Post a photo, description, and price in a Slack channel and the bot adds the product to your catalogue automatically."
+        footer={
+          <PrimaryButton onClick={saveSlack} loading={save.isPending}>
+            Save changes
+          </PrimaryButton>
+        }
+      >
+        {connect.data?.slackAuthorizeUrl && (
+          <div className="mb-5">
+            <a
+              href={connect.data.slackAuthorizeUrl}
+              className="inline-flex items-center gap-2 rounded-md border px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+            >
+              <Slack className="h-4 w-4" />
+              Add to Slack
+            </a>
+            <p className="mt-2 text-xs text-muted-foreground">
+              One click: approve Zolto in your workspace and the connection is
+              stored automatically — no tokens to copy.
+            </p>
+          </div>
+        )}
+        <Field
+          label="Channel ID"
+          htmlFor="slack-channel"
+          hint="In Slack: open the channel → its name at the top → About → Channel ID (looks like C0123ABCDEF). Invite the bot to that channel with /invite."
+        >
+          <div className="flex items-center gap-2">
+            <Hash className="h-4 w-4 shrink-0 text-emerald-600" />
+            <input
+              id="slack-channel"
+              type="text"
+              value={slackChannelId}
+              onChange={(e) => setSlackChannelId(e.target.value)}
+              placeholder="C0123ABCDEF"
+              className={inputClass}
+            />
+          </div>
+        </Field>
       </SettingsCard>
 
       <ChannelCredentials />

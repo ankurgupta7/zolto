@@ -37,6 +37,7 @@ import {
   type ChannelSecretProvider,
 } from "../channelCredentials";
 import { startGatewayForToken } from "../discord";
+import { buildSlackAuthorizeUrl, buildDiscordInviteUrl } from "../slackOAuth";
 import { buildConnectAuthorizeUrl } from "../stripeConnect";
 import { deriveOnboardingStatus } from "../onboarding";
 import { generatePosApiKey, hashPosApiKey } from "../posApiKey";
@@ -348,6 +349,15 @@ export const tenantRouter = router({
           .string()
           .regex(/^\d{17,20}$/, "A Discord user ID is a 17–20 digit number")
           .optional(),
+        // Which Slack channel the intake bot watches (an ID like C0123ABC —
+        // an identifier, not a secret; the bot token lives in the vault).
+        slackChannelId: z
+          .string()
+          .regex(
+            /^[A-Z][A-Z0-9]{4,20}$/i,
+            "A Slack channel ID looks like C0123ABCDEF",
+          )
+          .optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -389,6 +399,18 @@ export const tenantRouter = router({
 
       return { success: true };
     }),
+
+  // ─── Admin: "click to connect" URLs for the Channels page ─────────────────
+  // Null values hide the corresponding button: the platform simply hasn't
+  // registered that app yet. The Slack URL embeds a signed, expiring state
+  // naming THIS tenant, so the OAuth callback can't be replayed onto another
+  // store; the Discord URL is a plain bot invite (no token changes hands).
+  channelConnect: tenantAdminProcedure.query(({ ctx }) => {
+    return {
+      slackAuthorizeUrl: buildSlackAuthorizeUrl(ctx.tenant.id),
+      discordInviteUrl: buildDiscordInviteUrl(),
+    };
+  }),
 
   // ─── Admin: Channel credentials (WhatsApp / Slack / Discord) ──────────────
   // Write-only vault contract (server/tenantSecrets.ts): set/rotate/delete and

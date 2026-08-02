@@ -810,6 +810,12 @@ describe("tenant channel-credential vault procedures", () => {
     await expect(
       caller(other, 42).deleteChannelSecret({ provider: "slack_bot_token" }),
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    // channelConnect only returns URLs, but the Slack one embeds a signed
+    // state naming the addressed tenant — refusing cross-tenant here is what
+    // stops an admin of store 7 minting a connect link that binds store 42.
+    await expect(caller(other, 42).channelConnect()).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
     expect(vaultMock.setTenantSecret).not.toHaveBeenCalled();
     expect(vaultMock.deleteTenantSecret).not.toHaveBeenCalled();
     expect(vaultMock.listTenantSecrets).not.toHaveBeenCalled();
