@@ -33,7 +33,9 @@ import {
 } from "lucide-react";
 import { SignInOptions } from "@/components/SignInOptions";
 import type { ProductCategory } from "@shared/types";
+import { VERTICAL_PRESETS, isVertical } from "@shared/verticals";
 import { useCategories } from "@/hooks/useCategories";
+import { useTenantSettings } from "@/components/admin/useTenantSettings";
 import ProductImageManager from "@/components/ProductImageManager";
 import OnboardingChecklist from "@/components/OnboardingChecklist";
 import InsightsCard from "@/components/InsightsCard";
@@ -550,6 +552,14 @@ export default function Admin() {
     () => storeCategories.map((c) => c.key),
     [storeCategories],
   );
+  // Vertical-specific example copy (placeholders, intake example message).
+  const { settings: tenantSettings } = useTenantSettings();
+  const preset =
+    VERTICAL_PRESETS[
+      tenantSettings?.vertical && isVertical(tenantSettings.vertical)
+        ? tenantSettings.vertical
+        : "jewellery"
+    ];
   // Bumping this restarts the guided tour (the "Replay tour" button).
   const [tourSignal, setTourSignal] = useState(0);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -763,7 +773,7 @@ export default function Admin() {
         refetch();
         setShowRecategorizeReview(false);
         toast.success(
-          `${data.updated} product${data.updated !== 1 ? "s" : ""} re-categorised by body part.`,
+          `${data.updated} product${data.updated !== 1 ? "s" : ""} re-categorised.`,
         );
       },
       onError: () => toast.error("Re-categorisation failed. Please try again."),
@@ -981,7 +991,7 @@ export default function Admin() {
               type="button"
               onClick={() => previewRecategoriseMutation.mutate()}
               disabled={previewRecategoriseMutation.isPending}
-              title="AI re-categorise all products in 'Other' into the correct body-part category (review before applying)"
+              title="AI re-categorise all products in 'Other' into the correct category (review before applying)"
               className="flex items-center gap-2 border border-white/20 text-white/80 px-4 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:border-white hover:text-white transition-colors disabled:opacity-50"
             >
               {previewRecategoriseMutation.isPending ? (
@@ -1149,7 +1159,7 @@ export default function Admin() {
                   }
                   required
                   className="w-full border border-[var(--brand-ink)]/20 px-4 py-2.5 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] transition-colors bg-transparent"
-                  placeholder="e.g. Moonstone Drop Earrings"
+                  placeholder={`e.g. ${preset.exampleItemNameEn}`}
                 />
               </div>
 
@@ -1258,7 +1268,7 @@ export default function Admin() {
                   required
                   rows={3}
                   className="w-full border border-[var(--brand-ink)]/20 px-4 py-2.5 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] transition-colors bg-transparent resize-none"
-                  placeholder="Describe the piece..."
+                  placeholder="Describe the item..."
                 />
               </div>
 
@@ -1841,10 +1851,7 @@ export default function Admin() {
                 <p className="text-[var(--brand-accent)] mb-1">
                   Example Discord message:
                 </p>
-                <p>
-                  Sterling silver moonstone ring. Delicate band with a 8mm round
-                  moonstone, oxidised finish. Price: CHF 220
-                </p>
+                <p>{preset.exampleIntakeMessage}</p>
               </div>
               <p className="text-white/40 text-xs font-sans mt-3">
                 The bot listens to your designated Discord channel in real time

@@ -65,6 +65,8 @@ export interface VerticalPreset {
   /** Example product names for admin form placeholders. */
   exampleItemNameEn: string;
   exampleItemNameDe: string;
+  /** Example chat message for the Discord/Slack/WhatsApp intake help. */
+  exampleIntakeMessage: string;
   /** Listing values used when AI extraction fails. */
   fallback: {
     name: string;
@@ -99,6 +101,8 @@ export const VERTICAL_PRESETS: Record<Vertical, VerticalPreset> = {
 - description_en: EXACTLY ONE sentence in English. Same jewel specificity and lyrical tone. e.g. "Deep-violet amethyst cabochons shimmer in a hand-wrought sterling-silver setting — elegance that draws every eye."`,
     exampleItemNameEn: "Moonstone Drop Earrings",
     exampleItemNameDe: "Mondstein-Ohrhänger",
+    exampleIntakeMessage:
+      "Sterling silver moonstone ring. Delicate band with an 8mm round moonstone, oxidised finish. Price: CHF 220",
     fallback: {
       name: "Schmueckstück",
       nameEn: "Jewelry Piece",
@@ -230,6 +234,8 @@ export const VERTICAL_PRESETS: Record<Vertical, VerticalPreset> = {
 - description_en: EXACTLY ONE sentence in English. Same material specificity and warm tone. e.g. "A hand-thrown stoneware mug in a speckled glaze — warm in the hand, made for every day."`,
     exampleItemNameEn: "Speckled Stoneware Mug",
     exampleItemNameDe: "Steinzeug-Becher",
+    exampleIntakeMessage:
+      "Speckled stoneware mug. Hand-thrown, 350 ml, cream glaze with iron flecks. Price: CHF 38",
     fallback: {
       name: "Keramikstück",
       nameEn: "Ceramic Piece",
@@ -333,6 +339,8 @@ export const VERTICAL_PRESETS: Record<Vertical, VerticalPreset> = {
 - description_en: EXACTLY ONE sentence in English. Same specificity about medium and subject. e.g. "A delicate watercolour of an alpine lake on cotton rag paper — quiet colour, full of light."`,
     exampleItemNameEn: "Alpine Lake Watercolour",
     exampleItemNameDe: "Aquarell Bergsee",
+    exampleIntakeMessage:
+      "Alpine lake watercolour. Original on cotton rag paper, 30 × 40 cm, unframed. Price: CHF 240",
     fallback: {
       name: "Kunstwerk",
       nameEn: "Artwork",
@@ -434,6 +442,8 @@ export const VERTICAL_PRESETS: Record<Vertical, VerticalPreset> = {
 - description_en: EXACTLY ONE sentence in English. Same honesty about era, material and condition. e.g. "A 1960s teak side table with a lovely patina — sturdy and ready for use."`,
     exampleItemNameEn: "Mid-Century Teak Side Table",
     exampleItemNameDe: "Teak-Beistelltisch 60er",
+    exampleIntakeMessage:
+      "Mid-century teak side table. 1960s, lovely patina, solid and stable. Price: CHF 180",
     fallback: {
       name: "Vintage-Stück",
       nameEn: "Vintage Item",
@@ -550,6 +560,8 @@ export const VERTICAL_PRESETS: Record<Vertical, VerticalPreset> = {
 - description_en: EXACTLY ONE sentence in English. Same material specificity and warm tone. e.g. "A hand-finished serving board in oiled walnut — warm grain, made to last."`,
     exampleItemNameEn: "Walnut Serving Board",
     exampleItemNameDe: "Servierbrett Nussbaum",
+    exampleIntakeMessage:
+      "Walnut serving board. Hand-finished, oiled, 40 × 20 cm. Price: CHF 65",
     fallback: {
       name: "Handgemachtes Stück",
       nameEn: "Handcrafted Item",

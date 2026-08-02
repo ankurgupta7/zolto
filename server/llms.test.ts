@@ -142,6 +142,8 @@ vi.mock("./db", () => ({
   getTenantBySlug: (...a: unknown[]) => mocks.getTenantBySlug(...a),
   getVisibleProducts: (...a: unknown[]) => mocks.getVisibleProducts(...a),
   getVisibleProductById: vi.fn(),
+  // No settings row → jewellery default, matching the pre-verticals brief.
+  getTenantSettings: vi.fn().mockResolvedValue(undefined),
 }));
 
 describe("GET /llms.txt", () => {

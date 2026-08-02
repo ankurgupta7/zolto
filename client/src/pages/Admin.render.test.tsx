@@ -223,6 +223,8 @@ vi.mock("@/lib/trpc", () => {
         deleteImage: { useMutation: mutation(vi.fn()) },
       },
       tenant: {
+        me: { useQuery: () => ({ data: null, isLoading: false }) },
+        getSettings: { useQuery: () => ({ data: null, isLoading: false }) },
         getStripeConnectUrl: { useQuery: () => mocks.stripeConnectQuery },
         onboardingStatus: {
           useQuery: () => ({ data: undefined, isLoading: false }),

@@ -1,8 +1,7 @@
 // Shared types between client and server
 
-// Category list + type live in ./const so the Drizzle schema, Zod validators,
-// LLM prompts, and client can all derive from one source of truth.
-export { PRODUCT_CATEGORIES, CATEGORY_EXTRA_INCLUDES } from "./const";
+// Categories are per-tenant (tenant_categories, seeded from
+// shared/verticals.ts presets); the type alias lives in ./const.
 export type { ProductCategory } from "./const";
 
 export interface ProductItem {

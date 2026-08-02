@@ -325,7 +325,7 @@ export default function Pos() {
         <ol className="space-y-3">
           {[
             "Open the Zolto POS app on your phone and sign in with your POS API key.",
-            "Add the piece — or enter an amount — and choose Tap to Pay or TWINT.",
+            "Add the item — or enter an amount — and choose Tap to Pay or TWINT.",
             "Have the customer tap their card or phone, or scan the TWINT code.",
             "Inventory syncs back here automatically, so a sold piece leaves your online shop too.",
           ].map((step, i) => (

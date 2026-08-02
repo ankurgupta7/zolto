@@ -15,7 +15,8 @@
  * as links back to the old site, so the new store doesn't depend on
  * kalakosh.ch staying up.
  */
-import { PRODUCT_CATEGORIES, type ProductCategory } from "@shared/const";
+import type { ProductCategory } from "@shared/const";
+import { VERTICAL_PRESETS } from "@shared/verticals";
 import type { InsertProduct } from "../drizzle/schema";
 import type { WithOptionalTenant } from "./_core/tenant";
 import { createProduct, getAllProducts, getTenantBySlug } from "./db";
@@ -51,10 +52,14 @@ export function dedupeKey(name: string): string {
   return name.trim().toLowerCase();
 }
 
+// This importer copies the Kalakosh jewellery catalogue specifically, so it
+// validates against the jewellery preset's keys (the list the source store
+// was built on), not some other tenant's categories.
+const KALAKOSH_CATEGORY_KEYS: readonly string[] =
+  VERTICAL_PRESETS.jewellery.categories.map((c) => c.key);
+
 function normalizeCategory(raw: string): ProductCategory {
-  return (PRODUCT_CATEGORIES as readonly string[]).includes(raw)
-    ? (raw as ProductCategory)
-    : "Other";
+  return KALAKOSH_CATEGORY_KEYS.includes(raw) ? raw : "Other";
 }
 
 /**

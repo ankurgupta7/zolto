@@ -25,6 +25,7 @@ import MyAccount from "@/pages/admin/MyAccount";
 import Pos from "@/pages/admin/Pos";
 import Channels from "@/pages/admin/Channels";
 import Keys from "@/pages/admin/Keys";
+import Categories from "@/pages/admin/Categories";
 
 const route =
   new URLSearchParams(location.search).get("route") ?? "/admin/account";
@@ -51,7 +52,27 @@ const RESPONSES: Record<string, unknown> = {
     contactPhone: "+41 79 000 00 00",
     currency: "chf",
     twintQrUrl: null,
+    vertical: "ceramics",
+    verticalDescription: "Wheel-thrown stoneware in muted glazes",
   },
+  // Bergblume is a ceramics studio — its own category list, not jewellery.
+  "categories.list": [
+    "Mugs & Cups",
+    "Bowls",
+    "Plates & Platters",
+    "Vases",
+    "Sculpture & Objects",
+    "Other",
+  ].map((key, i) => ({
+    key,
+    labelEn: key,
+    labelDe:
+      { "Mugs & Cups": "Tassen & Becher", Bowls: "Schalen", Vases: "Vasen", Other: "Sonstiges" }[
+        key
+      ] ?? null,
+    extraIncludes: [],
+    sortOrder: i,
+  })),
   "tenant.getStripeConnectUrl": {
     url: "https://connect.stripe.com/…",
     connected: true,
@@ -91,6 +112,7 @@ window.fetch = (async (input: RequestInfo | URL) => {
 }) as typeof fetch;
 
 const PAGES: Record<string, React.ComponentType> = {
+  categories: Categories,
   account: ShopProfile,
   me: MyAccount,
   pos: Pos,

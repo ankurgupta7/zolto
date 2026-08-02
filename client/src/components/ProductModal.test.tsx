@@ -206,7 +206,7 @@ describe("ProductModal", () => {
     expect(screen.queryByText("In Your Bag")).toBeNull();
     const wa = screen.getByRole("link", { name: /Enquire via WhatsApp/ });
     expect(decodeURIComponent(wa.getAttribute("href") ?? "")).toContain(
-      "a piece similar to",
+      "an item similar to",
     );
     expect(
       within(screen.getByRole("dialog")).getAllByText("Sold").length,

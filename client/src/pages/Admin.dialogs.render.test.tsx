@@ -155,6 +155,8 @@ vi.mock("@/lib/trpc", () => {
         deleteImage: { useMutation: mutation(vi.fn()) },
       },
       tenant: {
+        me: { useQuery: () => ({ data: null, isLoading: false }) },
+        getSettings: { useQuery: () => ({ data: null, isLoading: false }) },
         getStripeConnectUrl: {
           useQuery: () => ({
             data: { connected: false, url: null },
@@ -348,7 +350,7 @@ describe("Admin page — re-categorise review dialog", () => {
       items: [{ id: 3, category: "Brooches" }],
     });
     expect(toast.success).toHaveBeenCalledWith(
-      "1 product re-categorised by body part.",
+      "1 product re-categorised.",
     );
     expect(screen.queryByRole("dialog")).toBeNull();
   });

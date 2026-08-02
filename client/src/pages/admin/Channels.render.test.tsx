@@ -38,7 +38,30 @@ vi.mock("@/lib/trpc", () => ({
       updateSettings: {
         useMutation: () => ({ mutate: mocks.save, isPending: false }),
       },
+      channelConnect: {
+        useQuery: () => ({
+          data: { slackAuthorizeUrl: null, discordInviteUrl: null },
+          isLoading: false,
+        }),
+      },
+      channelSecrets: {
+        useQuery: () => ({
+          data: { vaultConfigured: false, secrets: [] },
+          isLoading: false,
+        }),
+      },
+      setChannelSecret: {
+        useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+      },
+      deleteChannelSecret: {
+        useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+      },
     },
+    useUtils: () => ({
+      tenant: {
+        channelSecrets: { invalidate: vi.fn() },
+      },
+    }),
   },
 }));
 
@@ -94,7 +117,7 @@ describe("Channels page", () => {
 
   it("rejects a malformed Discord channel ID before saving", () => {
     render(<Channels />);
-    fireEvent.change(screen.getByLabelText("Channel ID"), {
+    fireEvent.change(document.getElementById("discord-channel")!, {
       target: { value: "not-a-snowflake" },
     });
     fireEvent.click(screen.getAllByText("Save changes")[1]);
@@ -118,7 +141,7 @@ describe("Channels page", () => {
 
   it("saves well-formed Discord IDs", () => {
     render(<Channels />);
-    fireEvent.change(screen.getByLabelText("Channel ID"), {
+    fireEvent.change(document.getElementById("discord-channel")!, {
       target: { value: "123456789012345678" },
     });
     fireEvent.change(screen.getByLabelText("Your Discord user ID"), {
