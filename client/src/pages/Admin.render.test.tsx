@@ -345,6 +345,15 @@ describe("Admin page — access gate", () => {
     expect(screen.getByText("Access Denied")).toBeTruthy();
     expect(screen.queryByText("Catalogue Management")).toBeNull();
   });
+
+  // Regression: this gate compared against the literal "admin", so promoting a
+  // store owner to superadmin locked them out of their own store's admin.
+  it("admits the platform owner (superadmin) to the store admin", () => {
+    mocks.authState.user = { id: 1, role: "superadmin" };
+    render(<Admin />);
+    expect(screen.queryByText("Access Denied")).toBeNull();
+    expect(screen.getByText("Catalogue Management")).toBeTruthy();
+  });
 });
 
 describe("Admin page — catalogue list and stats", () => {

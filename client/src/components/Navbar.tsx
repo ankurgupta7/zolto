@@ -1,4 +1,5 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+import { isStoreAdminRole } from "@/admin/nav";
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
@@ -93,7 +94,7 @@ export default function Navbar() {
     setMenuOpen(false);
   }, [location]);
 
-  const isAdmin = user?.role === "admin";
+  const isAdmin = isStoreAdminRole(user?.role);
 
   return (
     <header

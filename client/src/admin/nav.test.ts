@@ -3,6 +3,7 @@ import {
   ADMIN_NAV,
   activeNavId,
   groupNavByPlane,
+  isStoreAdminRole,
   resolveNavAccess,
 } from "./nav";
 
@@ -40,7 +41,10 @@ describe("resolveNavAccess — role gating", () => {
   });
 
   it("treats superadmin as admin for the tenant admin area", () => {
-    const items = resolveNavAccess(ADMIN_NAV, { role: "superadmin", plan: "pro" });
+    const items = resolveNavAccess(ADMIN_NAV, {
+      role: "superadmin",
+      plan: "pro",
+    });
     const team = items.find((i) => i.id === "team");
     expect(team?.access).toBe("open");
   });
@@ -49,6 +53,24 @@ describe("resolveNavAccess — role gating", () => {
     const items = resolveNavAccess(ADMIN_NAV, { role: "staff", plan: "free" });
     const products = items.find((i) => i.id === "products");
     expect(products?.access).toBe("open");
+  });
+});
+
+// Pages used to compare against the literal "admin", which threw the platform
+// owner out of their own store admin the moment they were promoted to
+// superadmin — the exact "Access Denied" regression this helper exists to end.
+describe("isStoreAdminRole", () => {
+  it("accepts admin and superadmin", () => {
+    expect(isStoreAdminRole("admin")).toBe(true);
+    expect(isStoreAdminRole("superadmin")).toBe(true);
+  });
+
+  it("refuses every other role and the signed-out states", () => {
+    expect(isStoreAdminRole("staff")).toBe(false);
+    expect(isStoreAdminRole("customer")).toBe(false);
+    expect(isStoreAdminRole("")).toBe(false);
+    expect(isStoreAdminRole(undefined)).toBe(false);
+    expect(isStoreAdminRole(null)).toBe(false);
   });
 });
 
@@ -90,8 +112,16 @@ describe("groupNavByPlane", () => {
     const groups = groupNavByPlane(items);
     expect(groups.map((g) => g.plane)).toEqual(["store", "account"]);
     expect(groups[0].items.map((i) => i.id)).toEqual([
-      "home", "products", "import", "orders", "reconciliation",
-      "storefront", "domain", "channels", "pos", "insights",
+      "home",
+      "products",
+      "import",
+      "orders",
+      "reconciliation",
+      "storefront",
+      "domain",
+      "channels",
+      "pos",
+      "insights",
     ]);
     expect(groups[1].items[0].id).toBe("account");
   });
@@ -109,7 +139,16 @@ describe("groupNavByPlane", () => {
 
   it("omits a group entirely when every item is hidden", () => {
     const onlyHidden = resolveNavAccess(
-      [{ id: "x", plane: "account", label: "X", icon: "X", path: "/admin/x", requiredRole: "admin" }],
+      [
+        {
+          id: "x",
+          plane: "account",
+          label: "X",
+          icon: "X",
+          path: "/admin/x",
+          requiredRole: "admin",
+        },
+      ],
       { role: "staff", plan: "free" },
     );
     expect(groupNavByPlane(onlyHidden)).toEqual([]);

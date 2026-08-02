@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { isStoreAdminRole } from "@/admin/nav";
 import { resolveConnectPrompt } from "@/lib/connectPrompt";
 import {
   Eye,
@@ -622,7 +623,7 @@ export default function Admin() {
 
   const { data: products, isLoading: productsLoading } =
     trpc.products.adminList.useQuery(undefined, {
-      enabled: isAuthenticated && user?.role === "admin",
+      enabled: isAuthenticated && isStoreAdminRole(user?.role),
     });
 
   // Sorted product list derived from sortBy state
@@ -651,7 +652,7 @@ export default function Admin() {
 
   const { data: bulkLogs, isLoading: bulkLogsLoading } =
     trpc.products.getBulkLogs.useQuery(undefined, {
-      enabled: isAuthenticated && user?.role === "admin",
+      enabled: isAuthenticated && isStoreAdminRole(user?.role),
     });
 
   const createMutation = trpc.products.create.useMutation({
@@ -890,7 +891,7 @@ export default function Admin() {
       </div>
     );
 
-  if (user?.role !== "admin")
+  if (!isStoreAdminRole(user?.role))
     return (
       <div className="min-h-screen flex items-center justify-center pt-20 bg-background">
         <div className="text-center max-w-sm">

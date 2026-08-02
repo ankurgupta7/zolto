@@ -136,6 +136,14 @@ describe("Navbar", () => {
     expect(upload[0].getAttribute("href")).toBe("/admin/bulk-upload");
   });
 
+  it("shows admin links to the platform owner (superadmin) too", () => {
+    mocks.authState.user = { role: "superadmin" };
+    renderNavbar();
+    const admin = screen.getAllByRole("link", { name: en.nav.admin });
+    expect(admin.length).toBeGreaterThan(0);
+    expect(admin[0].getAttribute("href")).toBe("/admin");
+  });
+
   it("shows the bag count only when the bag has items and opens the drawer on click", () => {
     renderNavbar();
     expect(screen.queryByText("2")).toBeNull();

@@ -10,6 +10,7 @@ import {
 import type { ProductItem } from "@shared/types";
 import ProductModal from "./ProductModal";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { isStoreAdminRole } from "@/admin/nav";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
@@ -39,7 +40,7 @@ export default function ProductCard({ product, onMutated }: Props) {
   const [hovered, setHovered] = useState(false);
   const [activeImg, setActiveImg] = useState(0);
   const { user } = useAuth();
-  const isAdmin = user?.role === "admin";
+  const isAdmin = isStoreAdminRole(user?.role);
   const { t, i18n } = useTranslation();
   const currency = useCurrency();
   const utils = trpc.useUtils();

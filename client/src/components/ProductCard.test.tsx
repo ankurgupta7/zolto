@@ -234,6 +234,12 @@ describe("ProductCard", () => {
       mocks.authState.user = { role: "admin" };
     });
 
+    it("shows the controls to the platform owner (superadmin) too", () => {
+      mocks.authState.user = { role: "superadmin" };
+      renderCard(makeProduct());
+      expect(screen.getByTitle("Mark as sold")).toBeTruthy();
+    });
+
     it("toggles sold status without opening the modal", () => {
       const onMutated = vi.fn();
       renderCard(makeProduct(), onMutated);

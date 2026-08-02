@@ -326,6 +326,13 @@ describe("CsvImport: auth guards", () => {
     render(<CsvImport />);
     screen.getByText("Access Denied");
   });
+
+  it("admits the platform owner (superadmin)", () => {
+    mocks.authState.user = { role: "superadmin" };
+    render(<CsvImport />);
+    expect(screen.queryByText("Access Denied")).toBeNull();
+    screen.getByTestId("csv-file-input");
+  });
 });
 
 describe("CsvImport: input-stage validation and template download", () => {

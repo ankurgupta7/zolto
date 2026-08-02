@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { isStoreAdminRole } from "@/admin/nav";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { SignInOptions } from "@/components/SignInOptions";
@@ -16,7 +17,7 @@ export default function DuplicateCleanup() {
     isLoading,
     refetch,
   } = trpc.products.findDuplicates.useQuery(undefined, {
-    enabled: isAuthenticated && user?.role === "admin",
+    enabled: isAuthenticated && isStoreAdminRole(user?.role),
   });
   type DuplicateProduct = NonNullable<
     typeof groups
@@ -100,7 +101,7 @@ export default function DuplicateCleanup() {
       </div>
     );
 
-  if (user?.role !== "admin")
+  if (!isStoreAdminRole(user?.role))
     return (
       <div className="min-h-screen flex items-center justify-center pt-20 bg-background">
         <div className="text-center max-w-sm">

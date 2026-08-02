@@ -126,6 +126,13 @@ describe("DuplicateCleanup: auth guards", () => {
     render(<DuplicateCleanup />);
     screen.getByText("Access Denied");
   });
+
+  it("admits the platform owner (superadmin)", () => {
+    mocks.authState.user = { role: "superadmin" };
+    render(<DuplicateCleanup />);
+    expect(screen.queryByText("Access Denied")).toBeNull();
+    expect(screen.getByText(/duplicate groups found/)).toBeTruthy();
+  });
 });
 
 describe("DuplicateCleanup: listing", () => {
