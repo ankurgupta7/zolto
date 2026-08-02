@@ -46,6 +46,21 @@ vi.mock("../discord", () => ({
   startGatewayForToken: vaultMock.startGatewayForToken,
 }));
 
+// brandingFromLogo dependencies: the per-IP limiter and the vision LLM. Both
+// mocked so tests control the gate and the model's answer without a DB or
+// network.
+const brandingAiMock = vi.hoisted(() => ({
+  rateLimitCheck: vi.fn(),
+  invokeLLM: vi.fn(),
+}));
+vi.mock("../rateLimit", () => ({
+  createRateLimiter: () => ({
+    check: brandingAiMock.rateLimitCheck,
+    reset: vi.fn(),
+  }),
+}));
+vi.mock("../_core/llm", () => ({ invokeLLM: brandingAiMock.invokeLLM }));
+
 import { tenantRouter } from "./tenant";
 import type { TrpcContext } from "../_core/context";
 
@@ -70,6 +85,11 @@ beforeEach(() => {
   dbMock.createPendingTenantAdmin.mockResolvedValue(undefined);
   dbMock.getStoreUserByEmail.mockResolvedValue(undefined);
   createStripeCustomer.mockResolvedValue(null);
+  brandingAiMock.rateLimitCheck.mockResolvedValue({
+    allowed: true,
+    remaining: 9,
+    retryAfterSeconds: 1,
+  });
 });
 
 describe("tenant.create", () => {
@@ -180,6 +200,174 @@ describe("tenant.create", () => {
       referralCode: "NOPE",
     });
     expect(dbMock.setTenantReferrer).not.toHaveBeenCalled();
+  });
+});
+
+describe("tenant.create — signup wizard branding", () => {
+  const base = { name: "Aurora", slug: "aurora", email: "o@a.example" };
+
+  it("seeds settings with the chosen template and color", async () => {
+    await tenantRouter.createCaller(ctx()).create({
+      ...base,
+      templateId: "verdant",
+      primaryColor: "#2F5D3A",
+    });
+    expect(dbMock.createTenantSettings).toHaveBeenCalledWith({
+      tenantId: 42,
+      currency: "chf",
+      templateId: "verdant",
+      primaryColor: "#2F5D3A",
+    });
+  });
+
+  it("uploads the logo tenant-scoped and stores its URL in the same settings row", async () => {
+    storagePut.mockResolvedValue({
+      key: "logos/42/logo_ab12.png",
+      url: "/uploads/logos/42/logo_ab12.png",
+    });
+    const png = Buffer.from("fake-logo").toString("base64");
+    const res = await tenantRouter.createCaller(ctx()).create({
+      ...base,
+      logo: { imageData: `data:image/png;base64,${png}`, mimeType: "image/png" },
+    });
+
+    const [tenantId, key, buffer, mime] = storagePut.mock.calls[0];
+    // The leading tenantId is what makes storagePut enforce the storage cap.
+    expect(tenantId).toBe(42);
+    expect(String(key)).toMatch(/^logos\/42\//);
+    expect((buffer as Buffer).toString()).toBe("fake-logo");
+    expect(mime).toBe("image/png");
+    expect(dbMock.createTenantSettings).toHaveBeenCalledWith(
+      expect.objectContaining({ logoUrl: "/uploads/logos/42/logo_ab12.png" }),
+    );
+    expect(res.logoUrl).toBe("/uploads/logos/42/logo_ab12.png");
+  });
+
+  it("still creates the store when the logo upload fails", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    storagePut.mockRejectedValue(new Error("S3 down"));
+    const res = await tenantRouter.createCaller(ctx()).create({
+      ...base,
+      templateId: "bazaar",
+      logo: { imageData: "eA==", mimeType: "image/jpeg" },
+    });
+    expect(res.tenantId).toBe(42);
+    expect(res.logoUrl).toBeNull();
+    // Settings still land — template included, logoUrl simply absent.
+    expect(dbMock.createTenantSettings).toHaveBeenCalledWith(
+      expect.objectContaining({ templateId: "bazaar" }),
+    );
+    expect(dbMock.createTenantSettings).toHaveBeenCalledWith(
+      expect.not.objectContaining({ logoUrl: expect.anything() }),
+    );
+    warn.mockRestore();
+  });
+
+  it("rejects an unknown template id", async () => {
+    await expect(
+      tenantRouter
+        .createCaller(ctx())
+        .create({ ...base, templateId: "brutalist" as never }),
+    ).rejects.toThrow();
+    expect(dbMock.createTenant).not.toHaveBeenCalled();
+  });
+
+  it("rejects a malformed color", async () => {
+    await expect(
+      tenantRouter
+        .createCaller(ctx())
+        .create({ ...base, primaryColor: "green" }),
+    ).rejects.toThrow();
+    expect(dbMock.createTenant).not.toHaveBeenCalled();
+  });
+
+  it("rejects a non-image logo mime type", async () => {
+    await expect(
+      tenantRouter.createCaller(ctx()).create({
+        ...base,
+        logo: { imageData: "eA==", mimeType: "image/svg+xml" as never },
+      }),
+    ).rejects.toThrow();
+    expect(storagePut).not.toHaveBeenCalled();
+  });
+});
+
+describe("tenant.brandingFromLogo", () => {
+  const dataUrl = `data:image/png;base64,${Buffer.from("logo").toString("base64")}`;
+
+  function aiAnswer(payload: unknown) {
+    brandingAiMock.invokeLLM.mockResolvedValue({
+      choices: [{ message: { content: JSON.stringify(payload) } }],
+    });
+  }
+
+  it("returns the extracted scheme and template suggestion", async () => {
+    aiAnswer({
+      primaryColor: "#2F5D3A",
+      secondaryColor: "#B8963E",
+      suggestedTemplateId: "verdant",
+      rationale: "Forest green with a gold accent.",
+    });
+    const res = await tenantRouter
+      .createCaller(ctx())
+      .brandingFromLogo({ imageData: dataUrl });
+    expect(res).toEqual({
+      primaryColor: "#2F5D3A",
+      secondaryColor: "#B8963E",
+      suggestedTemplateId: "verdant",
+      rationale: "Forest green with a gold accent.",
+    });
+    // The logo pixels must actually reach the model.
+    const call = brandingAiMock.invokeLLM.mock.calls[0][0];
+    expect(JSON.stringify(call.messages)).toContain(dataUrl);
+  });
+
+  it("nulls out a non-hex secondary color and an unknown template suggestion", async () => {
+    aiAnswer({
+      primaryColor: "#1F2933",
+      secondaryColor: "none",
+      suggestedTemplateId: "brutalist",
+      rationale: "Cool charcoal.",
+    });
+    const res = await tenantRouter
+      .createCaller(ctx())
+      .brandingFromLogo({ imageData: dataUrl });
+    expect(res.primaryColor).toBe("#1F2933");
+    expect(res.secondaryColor).toBeNull();
+    expect(res.suggestedTemplateId).toBeNull();
+  });
+
+  it("fails clearly when the AI can't produce a usable primary color", async () => {
+    aiAnswer({
+      primaryColor: "sort of teal",
+      secondaryColor: "#FFFFFF",
+      suggestedTemplateId: "azure",
+      rationale: "…",
+    });
+    await expect(
+      tenantRouter.createCaller(ctx()).brandingFromLogo({ imageData: dataUrl }),
+    ).rejects.toThrow(/pick one manually/i);
+  });
+
+  it("refuses when the per-IP rate limit is exhausted, without spending tokens", async () => {
+    brandingAiMock.rateLimitCheck.mockResolvedValue({
+      allowed: false,
+      remaining: 0,
+      retryAfterSeconds: 120,
+    });
+    await expect(
+      tenantRouter.createCaller(ctx()).brandingFromLogo({ imageData: dataUrl }),
+    ).rejects.toMatchObject({ code: "TOO_MANY_REQUESTS" });
+    expect(brandingAiMock.invokeLLM).not.toHaveBeenCalled();
+  });
+
+  it("rejects anything that isn't an image data URL", async () => {
+    await expect(
+      tenantRouter
+        .createCaller(ctx())
+        .brandingFromLogo({ imageData: "https://evil.example/logo.png" }),
+    ).rejects.toThrow();
+    expect(brandingAiMock.invokeLLM).not.toHaveBeenCalled();
   });
 });
 
@@ -452,6 +640,21 @@ describe("tenant.updateSettings plan gates", () => {
     const { caller, set } = tenantCtx("pro");
     await expect(
       caller.updateSettings({ publicDomain: "https://shop.example.com/" }),
+    ).rejects.toThrow();
+    expect(set).not.toHaveBeenCalled();
+  });
+
+  it("accepts a template change on every plan, and rejects unknown template ids", async () => {
+    const { caller, set } = tenantCtx("free");
+    await expect(
+      caller.updateSettings({ templateId: "porcelain" }),
+    ).resolves.toEqual({ success: true });
+    expect(set).toHaveBeenCalledWith(
+      expect.objectContaining({ templateId: "porcelain" }),
+    );
+    set.mockClear();
+    await expect(
+      caller.updateSettings({ templateId: "brutalist" as never }),
     ).rejects.toThrow();
     expect(set).not.toHaveBeenCalled();
   });

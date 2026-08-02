@@ -73,6 +73,10 @@ export const tenantSettings = mysqlTable("tenant_settings", {
   tenantId: int("tenant_id").notNull().unique(),
   logoUrl: varchar("logo_url", { length: 1024 }),
   primaryColor: varchar("primary_color", { length: 7 }).default("#000000"),
+  // Storefront template chosen at signup (shared/templates.ts). Drives the
+  // surface half of the palette; primary_color drives the ink/accent half.
+  // Null = the CSS defaults (equivalent to "atelier").
+  templateId: varchar("template_id", { length: 32 }),
   faviconUrl: varchar("favicon_url", { length: 1024 }),
   whatsappNumber: varchar("whatsapp_number", { length: 32 }),
   instagramHandle: varchar("instagram_handle", { length: 64 }),
