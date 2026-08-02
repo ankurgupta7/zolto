@@ -10,6 +10,7 @@
  */
 import { useEffect, useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { isStoreAdminRole } from "@/admin/nav";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Link, useLocation } from "wouter";
@@ -45,10 +46,10 @@ export default function Billing() {
   const utils = trpc.useUtils();
 
   const status = trpc.billing.getStatus.useQuery(undefined, {
-    enabled: isAuthenticated && user?.role === "admin",
+    enabled: isAuthenticated && isStoreAdminRole(user?.role),
   });
   const history = trpc.billing.photoCreditHistory.useQuery(undefined, {
-    enabled: isAuthenticated && user?.role === "admin",
+    enabled: isAuthenticated && isStoreAdminRole(user?.role),
   });
 
   const planCheckout = trpc.billing.createPlanCheckout.useMutation({
@@ -60,7 +61,7 @@ export default function Billing() {
 
   // ── Team seats ────────────────────────────────────────────────────────────
   const staffQuery = trpc.staff.list.useQuery(undefined, {
-    enabled: isAuthenticated && user?.role === "admin",
+    enabled: isAuthenticated && isStoreAdminRole(user?.role),
   });
   const [inviteEmail, setInviteEmail] = useState("");
   const inviteMutation = trpc.staff.invite.useMutation({
@@ -86,7 +87,7 @@ export default function Billing() {
 
   // ── Custom domain + currency (plan-gated store settings) ─────────────────
   const domainStatus = trpc.tenant.domainStatus.useQuery(undefined, {
-    enabled: isAuthenticated && user?.role === "admin",
+    enabled: isAuthenticated && isStoreAdminRole(user?.role),
   });
   const [domainInput, setDomainInput] = useState<string | null>(null);
   const [currencyInput, setCurrencyInput] = useState<string | null>(null);
@@ -125,7 +126,9 @@ export default function Billing() {
   if (!isAuthenticated) {
     return (
       <div className="max-w-sm mx-auto px-4 py-16 text-center">
-        <h2 className="font-serif text-2xl mb-3">Sign in to manage your plan</h2>
+        <h2 className="font-serif text-2xl mb-3">
+          Sign in to manage your plan
+        </h2>
         <p className="text-sm text-muted-foreground mb-8">
           Your session has ended — sign in and we&rsquo;ll bring you right back
           here.
@@ -135,7 +138,7 @@ export default function Billing() {
     );
   }
 
-  if (user?.role !== "admin") {
+  if (!isStoreAdminRole(user?.role)) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-16 text-center">
         <p className="text-muted-foreground">Admins only.</p>

@@ -209,6 +209,18 @@ const ROLE_RANK: Record<AdminRole, number> = {
 };
 
 /**
+ * Whether a role may operate a store's admin area: admin, or the platform
+ * owner (who outranks admin everywhere — see ROLE_RANK).
+ *
+ * Use this instead of comparing to the literal "admin": pages that checked
+ * `role === "admin"` locked the platform owner out of their own store the
+ * moment they were promoted to superadmin.
+ */
+export function isStoreAdminRole(role: string | undefined | null): boolean {
+  return role === "admin" || role === "superadmin";
+}
+
+/**
  * Plan rank comes from the PLANS array order (shared/platform.ts is the
  * source of truth), so a re-priced or re-ordered tier can't drift from gates.
  */
