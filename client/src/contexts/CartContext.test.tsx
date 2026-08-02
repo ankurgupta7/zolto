@@ -138,6 +138,23 @@ describe("useCart", () => {
     expect(result.current.items).toEqual([]);
   });
 
+  it("keeps clear() stable and bails out when the bag is already empty", () => {
+    // CheckoutSuccess runs clear() from an effect keyed on [clear]. If clear
+    // got a new identity per render, or clearing an empty bag produced a new
+    // items reference, that effect re-fired forever — an infinite render loop
+    // on the page shoppers land on right after paying.
+    const { result, rerender } = renderCart();
+
+    const clearBefore = result.current.clear;
+    rerender();
+    expect(result.current.clear).toBe(clearBefore);
+
+    act(() => result.current.clear());
+    const emptied = result.current.items;
+    act(() => result.current.clear());
+    expect(result.current.items).toBe(emptied);
+  });
+
   it("controls cart drawer open state", () => {
     const { result } = renderCart();
     expect(result.current.isOpen).toBe(false);

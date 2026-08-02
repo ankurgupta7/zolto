@@ -1,5 +1,6 @@
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useState,
@@ -85,7 +86,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const removeItem = (id: number) =>
     setItems((prev) => prev.filter((i) => i.id !== id));
-  const clear = () => setItems([]);
+  // Stable identity + same-reference bailout when already empty. Pages run
+  // clear() from an effect keyed on [clear] (CheckoutSuccess); an unstable
+  // identity plus an unconditional new [] re-rendered the provider on every
+  // clear, which re-fired the effect — an infinite render loop.
+  const clear = useCallback(
+    () => setItems((prev) => (prev.length === 0 ? prev : [])),
+    [],
+  );
   const has = (id: number) => items.some((i) => i.id === id);
 
   const total = items.reduce((sum, i) => sum + Number(i.price), 0);

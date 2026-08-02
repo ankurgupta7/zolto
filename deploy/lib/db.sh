@@ -550,6 +550,80 @@ migrate_0027_two_tier_pricing() {
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Migration 0033: German + French product locales.
+#
+# Ships drizzle/0007_product_locales.sql, which update.sh never picked up —
+# only its follow-up, 0009_product_locale_it, was ported (as 0028), so a
+# database built by update.sh had nameEn/descriptionEn and nameIt/descriptionIt
+# but no DE/FR columns at all. drizzle/schema.ts declares all of them, so every
+# storefront product query selected `nameDe` and failed outright:
+#
+#   ER_BAD_FIELD_ERROR: Unknown column 'nameDe' in 'field list'
+#
+# Nullable like the other locales — the storefront falls back to the merchant's
+# primary name/description whenever a locale is empty (client/src/lib/
+# localize.ts), so this is purely additive and needs no backfill. Idempotent.
+# ─────────────────────────────────────────────────────────────────────────────
+migrate_0033_product_locales_de_fr() {
+  if [ "$(col_exists products nameDe)" = "0" ]; then
+    run_sql "0033 add products.nameDe" \
+      "ALTER TABLE \`products\` ADD \`nameDe\` varchar(255) NULL;"
+  else
+    ok "0033 products.nameDe already exists"
+  fi
+
+  if [ "$(col_exists products descriptionDe)" = "0" ]; then
+    run_sql "0033 add products.descriptionDe" \
+      "ALTER TABLE \`products\` ADD \`descriptionDe\` text NULL;"
+  else
+    ok "0033 products.descriptionDe already exists"
+  fi
+
+  if [ "$(col_exists products nameFr)" = "0" ]; then
+    run_sql "0033 add products.nameFr" \
+      "ALTER TABLE \`products\` ADD \`nameFr\` varchar(255) NULL;"
+  else
+    ok "0033 products.nameFr already exists"
+  fi
+
+  if [ "$(col_exists products descriptionFr)" = "0" ]; then
+    run_sql "0033 add products.descriptionFr" \
+      "ALTER TABLE \`products\` ADD \`descriptionFr\` text NULL;"
+  else
+    ok "0033 products.descriptionFr already exists"
+  fi
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Migration 0034: magic-link login tokens.
+#
+# Ships drizzle/0014_magic_link_tokens.sql — the same omission as 0033, one
+# table over: server/db.ts (createMagicLinkToken / consumeMagicLinkToken) has
+# written to `magic_link_tokens` since passwordless sign-in shipped, but
+# update.sh never created it, so requesting a login link failed on a live
+# deployment. Mirrors the drizzle DDL exactly, including the UNIQUE on `token`
+# that consumeMagicLinkToken's single-row lookup relies on. Idempotent.
+# ─────────────────────────────────────────────────────────────────────────────
+migrate_0034_magic_link_tokens() {
+  if [ "$(tbl_exists magic_link_tokens)" = "0" ]; then
+    run_sql "0034 magic_link_tokens table" "
+      CREATE TABLE IF NOT EXISTS \`magic_link_tokens\` (
+        \`id\`         int AUTO_INCREMENT NOT NULL,
+        \`email\`      varchar(320) NOT NULL,
+        \`token\`      varchar(64) NOT NULL,
+        \`next\`       varchar(512),
+        \`expiresAt\`  timestamp NOT NULL,
+        \`consumedAt\` timestamp NULL,
+        \`createdAt\`  timestamp NOT NULL DEFAULT (now()),
+        CONSTRAINT \`magic_link_tokens_id\` PRIMARY KEY(\`id\`),
+        CONSTRAINT \`magic_link_tokens_token_unique\` UNIQUE(\`token\`)
+      );"
+  else
+    ok "0034 magic_link_tokens already exists"
+  fi
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Deploy state: skip the whole migration block when nothing about it changed.
 #
 # Every migration above is idempotent, and that is the point — but "idempotent"

@@ -23,6 +23,9 @@ export default defineConfig({
       "client/**/*.test.ts",
       "client/**/*.test.tsx",
       "shared/**/*.test.ts",
+      // Static guards over the deploy scripts (deploy/schemaDrift.test.ts) —
+      // no DB or Docker needed, so they belong in the ordinary suite.
+      "deploy/**/*.test.ts",
     ],
     environmentMatchGlobs: [["client/**", "jsdom"]],
     coverage: {

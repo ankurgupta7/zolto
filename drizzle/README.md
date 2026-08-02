@@ -97,3 +97,24 @@ Only run the stamp SQL if your production schema actually matches
 baseline creates — `stripe_reconciliations` included). If you're not sure,
 compare `SHOW TABLES;` / `DESCRIBE <table>;` output against
 `0000_baseline_2026_07_05.sql` first.
+
+## `update.sh` is the path that actually runs — port every migration into it
+
+A `drizzle/*.sql` file only reaches a database that runs `pnpm db:push`.
+Deployments don't: `./update.sh` applies its own hand-written, idempotent
+migration set (inline, plus the `migrate_*` helpers in `deploy/lib/db.sh`).
+So a schema change is only half-shipped until it exists in **both** places,
+and the half that gets forgotten is always this one:
+
+| Missed migration          | What broke in production                                        |
+| ------------------------- | --------------------------------------------------------------- |
+| `0008_two_tier_pricing`   | `orders.channel` / `orders.platform_fee_rappen` (checkout)      |
+| `0009_product_locale_it`  | `products.nameIt` / `descriptionIt`                              |
+| `0007_product_locales`    | `Unknown column 'nameDe' in 'field list'` — the whole storefront |
+| `0014_magic_link_tokens`  | passwordless sign-in wrote to a table that did not exist         |
+
+`deploy/schemaDrift.test.ts` now enforces the pairing: it parses the DDL out
+of `update.sh` + `deploy/lib/db.sh` and fails if any table or column declared
+in `drizzle/schema.ts` is never created there. When it fails, the fix is to
+add an idempotent migration to `update.sh` (a `col_exists`/`tbl_exists` guard
+around the `ALTER`/`CREATE`), not to loosen the test.
