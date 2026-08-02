@@ -7,7 +7,12 @@ import request from "supertest";
 // POS auth is now tenant-based: requirePosKey resolves the tenant that owns the
 // X-POS-Key via getTenantByPosApiKey. Mock it key-aware so "test-pos-key" maps to
 // a tenant and anything else is rejected — this drives auth for every test below.
-const TEST_TENANT = { id: 1, slug: "test-store", posApiKey: "test-pos-key" };
+const TEST_TENANT = {
+  id: 1,
+  slug: "test-store",
+  name: "Test Store",
+  posApiKey: "test-pos-key",
+};
 // A tenant that linked their own Stripe account (Tap to Pay runs on it).
 const CONNECTED_TENANT = {
   id: 2,
@@ -231,6 +236,52 @@ describe("GET /api/pos/config", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.twintQrUrl).toBeNull();
+  });
+
+  // Store identity for generic POS clients (Zolto POS) — the app renders the
+  // paired store's name/logo at runtime instead of baking a brand into the
+  // build, so config must always carry a usable identity.
+  it("returns the tenant's name, no logo, and CHF by default", async () => {
+    const res = await request(makeApp())
+      .get("/api/pos/config")
+      .set("x-pos-key", "test-pos-key");
+
+    expect(res.status).toBe(200);
+    expect(res.body.storeName).toBe("Test Store");
+    expect(res.body.logoUrl).toBeNull();
+    expect(res.body.currency).toBe("chf");
+  });
+
+  it("prefers the white-label name and serves branding from settings", async () => {
+    const { getTenantSettings } = await import("./db");
+    vi.mocked(getTenantSettings).mockResolvedValueOnce({
+      whiteLabelName: "Aurora Atelier",
+      logoUrl: "https://cdn.example/logo.png",
+      currency: "eur",
+    } as never);
+
+    const res = await request(makeApp())
+      .get("/api/pos/config")
+      .set("x-pos-key", "test-pos-key");
+
+    expect(res.status).toBe(200);
+    expect(res.body.storeName).toBe("Aurora Atelier");
+    expect(res.body.logoUrl).toBe("https://cdn.example/logo.png");
+    expect(res.body.currency).toBe("eur");
+  });
+
+  it("keeps a usable store identity when the settings read fails", async () => {
+    const { getTenantSettings } = await import("./db");
+    vi.mocked(getTenantSettings).mockRejectedValueOnce(new Error("db down"));
+
+    const res = await request(makeApp())
+      .get("/api/pos/config")
+      .set("x-pos-key", "test-pos-key");
+
+    expect(res.status).toBe(200);
+    expect(res.body.storeName).toBe("Test Store");
+    expect(res.body.logoUrl).toBeNull();
+    expect(res.body.currency).toBe("chf");
   });
 });
 

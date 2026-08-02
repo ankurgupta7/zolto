@@ -22,6 +22,8 @@ import { PRODUCT_CATEGORIES, CATEGORY_EXTRA_INCLUDES } from "../shared/const";
 interface PosContext {
   tenantId: number;
   tenantSlug: string;
+  /** The tenant's display name — what the POS app shows as the store name. */
+  tenantName: string;
   /** The tenant's own Stripe Connect account their customers pay into (null until connected). */
   stripeConnectedAccountId: string | null;
   /** Provisioned Terminal Location on the Connect account (null until first use). */
@@ -60,6 +62,7 @@ async function requirePosKey(
   req.posContext = {
     tenantId: tenant.id,
     tenantSlug: tenant.slug,
+    tenantName: tenant.name ?? tenant.slug,
     stripeConnectedAccountId: tenant.stripeConnectedAccountId ?? null,
     terminalLocationId: tenant.terminalLocationId ?? null,
   };
@@ -551,7 +554,8 @@ export function registerPosRoutes(app: Express): void {
     "/api/pos/config",
     requirePosKey,
     async (req: Request, res: Response) => {
-      const { tenantId, tenantSlug, terminalLocationId } = getPosTenant(req);
+      const { tenantId, tenantSlug, tenantName, terminalLocationId } =
+        getPosTenant(req);
       // The merchant's own TWINT QR sticker, if they've uploaded one. Its
       // presence is what enables the POS's "TWINT (QR)" option — a null here
       // means the app must not offer a rail it can't actually display.
@@ -565,6 +569,13 @@ export function registerPosRoutes(app: Express): void {
         locationId: terminalLocationId ?? process.env.STRIPE_LOCATION_ID ?? "",
         tenantSlug,
         twintQrUrl: settings?.twintQrUrl ?? null,
+        // Store identity for generic POS clients (Zolto POS): the app shows
+        // the paired store's own name/logo instead of baking a brand into the
+        // build. whiteLabelName is the merchant-facing override; the tenant's
+        // platform name is the fallback.
+        storeName: settings?.whiteLabelName ?? tenantName,
+        logoUrl: settings?.logoUrl ?? null,
+        currency: settings?.currency ?? "chf",
       });
     },
   );
