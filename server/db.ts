@@ -1693,6 +1693,26 @@ export async function getTenantByDiscordChannelId(
   }, undefined);
 }
 
+/**
+ * The tenant whose WhatsApp business number received a message, with its
+ * settings row — one lookup serving both webhook signature verification
+ * (which needs the tenant BEFORE trusting the payload's content) and the
+ * intake handler's branding.
+ */
+export async function getTenantByWhatsappNumber(
+  businessPhone: string,
+): Promise<{ tenant: Tenant; settings: TenantSetting | null } | undefined> {
+  return withDb(async (db) => {
+    const result = await db
+      .select({ tenant: tenants, settings: tenantSettings })
+      .from(tenants)
+      .leftJoin(tenantSettings, eq(tenants.id, tenantSettings.tenantId))
+      .where(eq(tenantSettings.whatsappNumber, businessPhone))
+      .limit(1);
+    return result.length > 0 ? result[0] : undefined;
+  }, undefined);
+}
+
 export async function getTenantBySlackChannelId(
   channelId: string,
 ): Promise<Tenant | undefined> {

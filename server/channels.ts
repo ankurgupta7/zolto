@@ -14,9 +14,15 @@
 
 import crypto from "node:crypto";
 import express, { type Express, type Request, type Response } from "express";
-import { verifyWebhook, handleWebhookMessage } from "./whatsapp";
+import {
+  verifyWebhook,
+  handleWebhookMessage,
+  businessPhoneOf,
+} from "./whatsapp";
 import { handleSlackEvent } from "./slack";
 import { startDiscordGateway } from "./discord";
+import { channelSecret } from "./channelCredentials";
+import { getTenantByWhatsappNumber } from "./db";
 
 /** Route-level JSON parser that also keeps the raw bytes for signature checks. */
 const jsonWithRawBody = express.json({
@@ -26,19 +32,27 @@ const jsonWithRawBody = express.json({
   },
 });
 
-const WHATSAPP_APP_SECRET = process.env.WHATSAPP_APP_SECRET ?? "";
-
 /**
  * Meta signs webhook deliveries with `X-Hub-Signature-256: sha256=<hmac>` over
- * the raw body, keyed by the app secret. Without the secret configured we log
- * and accept — the same posture slack.ts takes for a missing signing secret —
+ * the raw body, keyed by the app secret. The secret is per-tenant when the
+ * merchant brought their own Meta app (vault), else the platform's
+ * WHATSAPP_APP_SECRET env. The business number is read from the (unverified)
+ * payload only to pick WHICH secret to check against — the HMAC over the raw
+ * bytes is still what decides. With no secret configured anywhere we log and
+ * accept — the same posture slack.ts takes for a missing signing secret —
  * because the handler still refuses to act unless the payload maps to a
  * tenant's registered business number.
  */
-export function verifyWhatsAppSignature(req: Request): boolean {
-  if (!WHATSAPP_APP_SECRET) {
+export async function verifyWhatsAppSignature(req: Request): Promise<boolean> {
+  const businessPhone = businessPhoneOf(req.body);
+  const tenantId = businessPhone
+    ? (await getTenantByWhatsappNumber(businessPhone))?.tenant.id
+    : undefined;
+  const appSecret = await channelSecret(tenantId, "whatsapp_app_secret");
+
+  if (!appSecret) {
     console.warn(
-      "[WhatsApp] No WHATSAPP_APP_SECRET set — skipping signature verification",
+      "[WhatsApp] No app secret (tenant vault or WHATSAPP_APP_SECRET env) — skipping signature verification",
     );
     return true;
   }
@@ -47,7 +61,7 @@ export function verifyWhatsAppSignature(req: Request): boolean {
   if (typeof signature !== "string" || !rawBody) return false;
 
   const expected = `sha256=${crypto
-    .createHmac("sha256", WHATSAPP_APP_SECRET)
+    .createHmac("sha256", appSecret)
     .update(rawBody)
     .digest("hex")}`;
   try {
@@ -67,8 +81,8 @@ export function registerChannelIntakeRoutes(app: Express): void {
   app.post(
     "/api/whatsapp/webhook",
     jsonWithRawBody,
-    (req: Request, res: Response) => {
-      if (!verifyWhatsAppSignature(req)) {
+    async (req: Request, res: Response) => {
+      if (!(await verifyWhatsAppSignature(req))) {
         console.warn("[WhatsApp] Invalid webhook signature");
         res.sendStatus(403);
         return;

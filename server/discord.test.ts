@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 
 const invokeLLM = vi.fn();
 
@@ -15,7 +15,35 @@ vi.mock("./db", () => ({
   getProductByDiscordMessageId: vi.fn(),
 }));
 
-import { parseProductFromMessage } from "./discord";
+const vault = vi.hoisted(() => ({
+  listTenantIdsWithSecret: vi.fn(),
+  getTenantSecret: vi.fn(),
+}));
+vi.mock("./tenantSecrets", () => ({
+  listTenantIdsWithSecret: vault.listTenantIdsWithSecret,
+  getTenantSecret: vault.getTenantSecret,
+}));
+
+const axiosGet = vi.hoisted(() => vi.fn());
+vi.mock("axios", () => ({
+  default: { get: axiosGet, post: vi.fn() },
+}));
+
+// A gateway "socket" that never connects — enough to observe which tokens got
+// a connection attempt without touching the network.
+vi.mock("ws", () => ({
+  default: class FakeWebSocket {
+    on() {}
+    close() {}
+  },
+}));
+
+import {
+  parseProductFromMessage,
+  startDiscordGateway,
+  startGatewayForToken,
+  stopDiscordGateway,
+} from "./discord";
 
 function llmResponse(content: string) {
   return { choices: [{ message: { content } }] };
@@ -100,5 +128,56 @@ describe("parseProductFromMessage", () => {
       (m: { role: string }) => m.role === "user",
     );
     expect(userMessage.content).toContain("Gold drop earrings, CHF 150");
+  });
+});
+
+describe("multi-tenant gateway startup", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    axiosGet.mockResolvedValue({ data: { url: "wss://gateway.discord.gg" } });
+    vault.listTenantIdsWithSecret.mockResolvedValue([]);
+    vault.getTenantSecret.mockResolvedValue(null);
+  });
+
+  afterEach(() => {
+    stopDiscordGateway();
+  });
+
+  it("opens one connection per tenant-supplied bot token", async () => {
+    vault.listTenantIdsWithSecret.mockResolvedValue([5, 9]);
+    vault.getTenantSecret.mockImplementation(
+      async (tenantId: number) => `token-tenant-${tenantId}`,
+    );
+
+    await startDiscordGateway();
+    // startGatewayForToken is fire-and-forget; let the queued ones resolve.
+    await new Promise((r) => setImmediate(r));
+
+    expect(vault.listTenantIdsWithSecret).toHaveBeenCalledWith(
+      "discord_bot_token",
+    );
+    const authHeaders = axiosGet.mock.calls.map(
+      (c) =>
+        (c[1] as { headers: { Authorization: string } }).headers.Authorization,
+    );
+    expect(authHeaders).toContain("Bot token-tenant-5");
+    expect(authHeaders).toContain("Bot token-tenant-9");
+  });
+
+  it("is idempotent per token — a second start attempt is a no-op", async () => {
+    await startGatewayForToken("token-abc");
+    await startGatewayForToken("token-abc");
+    expect(axiosGet).toHaveBeenCalledTimes(1);
+  });
+
+  it("still starts nothing when neither env nor vault has a token", async () => {
+    await startDiscordGateway();
+    await new Promise((r) => setImmediate(r));
+    expect(axiosGet).not.toHaveBeenCalled();
+  });
+
+  it("survives a vault failure and reports it rather than throwing", async () => {
+    vault.listTenantIdsWithSecret.mockRejectedValue(new Error("no DB"));
+    await expect(startDiscordGateway()).resolves.toBeUndefined();
   });
 });

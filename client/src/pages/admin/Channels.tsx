@@ -7,7 +7,7 @@
 import { useEffect, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { MessageCircle, Instagram, Hash } from "lucide-react";
+import { MessageCircle, Instagram, Hash, KeyRound } from "lucide-react";
 import {
   PageHeader,
   SettingsCard,
@@ -17,6 +17,168 @@ import {
 } from "@/components/admin/ui";
 import { useTenantSettings } from "@/components/admin/useTenantSettings";
 import InstagramManager from "@/components/InstagramManager";
+
+/**
+ * The credentials a merchant can bring for each intake channel. Stored in the
+ * encrypted tenant-secrets vault — write-only: the UI only ever sees the
+ * last-4 hint, never the value back.
+ */
+const CREDENTIAL_GROUPS: {
+  channel: string;
+  note: string;
+  providers: { id: string; label: string; placeholder: string }[];
+}[] = [
+  {
+    channel: "WhatsApp",
+    note: "From your own Meta app (WhatsApp > API setup) if you don't use the platform's.",
+    providers: [
+      {
+        id: "whatsapp_token",
+        label: "Access token",
+        placeholder: "EAAG…",
+      },
+      {
+        id: "whatsapp_app_secret",
+        label: "App secret",
+        placeholder: "32-char hex from Meta app settings",
+      },
+    ],
+  },
+  {
+    channel: "Slack",
+    note: "From your own Slack app installed in your workspace.",
+    providers: [
+      { id: "slack_bot_token", label: "Bot token", placeholder: "xoxb-…" },
+      {
+        id: "slack_signing_secret",
+        label: "Signing secret",
+        placeholder: "From your app's Basic Information page",
+      },
+    ],
+  },
+  {
+    channel: "Discord",
+    note: "From your own bot in the Discord Developer Portal. The bot connects within a minute of saving.",
+    providers: [
+      {
+        id: "discord_bot_token",
+        label: "Bot token",
+        placeholder: "From Bot > Token",
+      },
+    ],
+  },
+];
+
+function ChannelCredentials() {
+  const utils = trpc.useUtils();
+  const secretsQuery = trpc.tenant.channelSecrets.useQuery();
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
+
+  const setSecret = trpc.tenant.setChannelSecret.useMutation({
+    onSuccess: (data) => {
+      setDrafts((d) => ({ ...d, [data.provider]: "" }));
+      utils.tenant.channelSecrets.invalidate();
+      toast.success("Credential saved.");
+    },
+    onError: (e) => toast.error(e.message || "Could not save credential."),
+  });
+  const deleteSecret = trpc.tenant.deleteChannelSecret.useMutation({
+    onSuccess: () => {
+      utils.tenant.channelSecrets.invalidate();
+      toast.success("Credential removed — the platform default applies again.");
+    },
+    onError: (e) => toast.error(e.message || "Could not remove credential."),
+  });
+
+  const stored = new Map(
+    (secretsQuery.data?.secrets ?? []).map((s) => [s.provider as string, s]),
+  );
+  const vaultConfigured = secretsQuery.data?.vaultConfigured ?? true;
+
+  return (
+    <SettingsCard
+      title="Your own bot credentials (advanced)"
+      description="By default your store uses Zolto's WhatsApp, Slack and Discord apps — nothing to configure. Paste credentials here only if you run your own. They're stored encrypted and can never be read back, only replaced or removed."
+    >
+      {!vaultConfigured && (
+        <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+          This deployment has no secrets vault configured (TENANT_SECRETS_KEY),
+          so credentials can't be stored yet. The platform-level defaults still
+          work.
+        </div>
+      )}
+      <div className="grid gap-6">
+        {CREDENTIAL_GROUPS.map((group) => (
+          <div key={group.channel}>
+            <p className="text-sm font-medium text-foreground">
+              {group.channel}
+            </p>
+            <p className="mt-0.5 text-xs text-muted-foreground">{group.note}</p>
+            <div className="mt-3 grid gap-4">
+              {group.providers.map((p) => {
+                const existing = stored.get(p.id);
+                return (
+                  <Field
+                    key={p.id}
+                    label={p.label}
+                    htmlFor={`cred-${p.id}`}
+                    hint={
+                      existing
+                        ? `Saved (…${existing.hint}) — enter a new value to rotate.`
+                        : "Not set — the platform default applies."
+                    }
+                  >
+                    <div className="flex items-center gap-2">
+                      <KeyRound className="h-4 w-4 shrink-0 text-muted-foreground" />
+                      <input
+                        id={`cred-${p.id}`}
+                        type="password"
+                        autoComplete="off"
+                        value={drafts[p.id] ?? ""}
+                        onChange={(e) =>
+                          setDrafts((d) => ({ ...d, [p.id]: e.target.value }))
+                        }
+                        placeholder={p.placeholder}
+                        className={inputClass}
+                        disabled={!vaultConfigured}
+                      />
+                      <PrimaryButton
+                        onClick={() =>
+                          setSecret.mutate({
+                            provider: p.id as never,
+                            value: (drafts[p.id] ?? "").trim(),
+                          })
+                        }
+                        loading={setSecret.isPending}
+                        disabled={
+                          !vaultConfigured ||
+                          (drafts[p.id] ?? "").trim().length < 8
+                        }
+                      >
+                        Save
+                      </PrimaryButton>
+                      {existing && (
+                        <button
+                          type="button"
+                          className="text-xs text-muted-foreground underline-offset-2 hover:underline"
+                          onClick={() =>
+                            deleteSecret.mutate({ provider: p.id as never })
+                          }
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                  </Field>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+    </SettingsCard>
+  );
+}
 
 export default function Channels() {
   const { settings, invalidate } = useTenantSettings();
@@ -170,6 +332,8 @@ export default function Channels() {
           </p>
         </div>
       </SettingsCard>
+
+      <ChannelCredentials />
     </div>
   );
 }

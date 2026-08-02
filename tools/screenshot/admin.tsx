@@ -23,6 +23,7 @@ import { ADMIN_NAV } from "@/admin/nav";
 import ShopProfile from "@/pages/admin/ShopProfile";
 import MyAccount from "@/pages/admin/MyAccount";
 import Pos from "@/pages/admin/Pos";
+import Channels from "@/pages/admin/Channels";
 
 const route =
   new URLSearchParams(location.search).get("route") ?? "/admin/account";
@@ -54,6 +55,17 @@ const RESPONSES: Record<string, unknown> = {
     url: "https://connect.stripe.com/…",
     connected: true,
   },
+  "tenant.channelSecrets": {
+    vaultConfigured: true,
+    secrets: [
+      {
+        provider: "discord_bot_token",
+        hint: "3f9a",
+        rotatedAt: new Date("2026-07-20T00:00:00Z"),
+      },
+    ],
+  },
+  "instagram.adminList": [],
 };
 
 window.fetch = (async (input: RequestInfo | URL) => {
@@ -72,6 +84,7 @@ const PAGES: Record<string, React.ComponentType> = {
   account: ShopProfile,
   me: MyAccount,
   pos: Pos,
+  channels: Channels,
 };
 
 const queryClient = new QueryClient({

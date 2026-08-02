@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import crypto from "node:crypto";
 import express from "express";
 import request from "supertest";
@@ -17,38 +17,61 @@ const mocks = vi.hoisted(() => ({
     res.json({ rawBody: (req as Request & { rawBody?: string }).rawBody });
   }),
   startDiscordGateway: vi.fn(async () => {}),
+  channelSecret: vi.fn(),
+  getTenantByWhatsappNumber: vi.fn(),
 }));
 
-vi.mock("./whatsapp", () => ({
-  verifyWebhook: mocks.verifyWebhook,
-  handleWebhookMessage: mocks.handleWebhookMessage,
-}));
+vi.mock("./whatsapp", async (importOriginal) => {
+  const real = await importOriginal<typeof import("./whatsapp")>();
+  return {
+    // businessPhoneOf is the REAL pure helper — the routing test below relies
+    // on it actually extracting the phone from a Meta-shaped payload.
+    businessPhoneOf: real.businessPhoneOf,
+    verifyWebhook: mocks.verifyWebhook,
+    handleWebhookMessage: mocks.handleWebhookMessage,
+  };
+});
 vi.mock("./slack", () => ({ handleSlackEvent: mocks.handleSlackEvent }));
 vi.mock("./discord", () => ({
   startDiscordGateway: mocks.startDiscordGateway,
 }));
+vi.mock("./channelCredentials", () => ({
+  channelSecret: mocks.channelSecret,
+}));
+vi.mock("./db", () => ({
+  getTenantByWhatsappNumber: mocks.getTenantByWhatsappNumber,
+}));
 
-// WHATSAPP_APP_SECRET is read at module load, so each test that changes it
-// must re-import a fresh module instance.
-async function buildApp(appSecret?: string) {
-  vi.resetModules();
-  if (appSecret === undefined) delete process.env.WHATSAPP_APP_SECRET;
-  else process.env.WHATSAPP_APP_SECRET = appSecret;
-  const { registerChannelIntakeRoutes } = await import("./channels");
+import { registerChannelIntakeRoutes, startChannelIntake } from "./channels";
+
+function buildApp() {
   const app = express();
   registerChannelIntakeRoutes(app);
   return app;
 }
 
-afterEach(() => {
-  delete process.env.WHATSAPP_APP_SECRET;
-});
+/** A Meta-shaped webhook body addressed to a given business number. */
+function whatsappBody(phone = "+41790000000") {
+  return {
+    entry: [
+      { changes: [{ value: { metadata: { display_phone_number: phone } } }] },
+    ],
+  };
+}
+
+function metaSignature(body: string, secret: string) {
+  return `sha256=${crypto.createHmac("sha256", secret).update(body).digest("hex")}`;
+}
 
 describe("channel intake routes", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.getTenantByWhatsappNumber.mockResolvedValue(undefined);
+    mocks.channelSecret.mockResolvedValue(null);
+  });
 
   it("routes the WhatsApp GET handshake to verifyWebhook", async () => {
-    const res = await request(await buildApp()).get(
+    const res = await request(buildApp()).get(
       "/api/whatsapp/webhook?hub.mode=subscribe",
     );
     expect(res.status).toBe(200);
@@ -56,41 +79,62 @@ describe("channel intake routes", () => {
     expect(mocks.verifyWebhook).toHaveBeenCalledOnce();
   });
 
-  it("accepts a WhatsApp POST when no app secret is configured", async () => {
-    const res = await request(await buildApp())
+  it("accepts a WhatsApp POST when no app secret is configured anywhere", async () => {
+    const res = await request(buildApp())
       .post("/api/whatsapp/webhook")
-      .send({ entry: [] });
+      .send(whatsappBody());
     expect(res.status).toBe(200);
     expect(mocks.handleWebhookMessage).toHaveBeenCalledOnce();
   });
 
-  it("refuses a WhatsApp POST with a bad signature when the secret is set", async () => {
-    const res = await request(await buildApp("app-secret"))
+  it("verifies against the TENANT'S app secret, resolved by business number", async () => {
+    mocks.getTenantByWhatsappNumber.mockResolvedValue({
+      tenant: { id: 7 },
+      settings: null,
+    });
+    mocks.channelSecret.mockResolvedValue("tenant-secret");
+    const body = JSON.stringify(whatsappBody("+41791112233"));
+
+    const res = await request(buildApp())
       .post("/api/whatsapp/webhook")
-      .set("X-Hub-Signature-256", "sha256=deadbeef")
-      .send({ entry: [] });
+      .set("Content-Type", "application/json")
+      .set("X-Hub-Signature-256", metaSignature(body, "tenant-secret"))
+      .send(body);
+
+    expect(res.status).toBe(200);
+    expect(mocks.getTenantByWhatsappNumber).toHaveBeenCalledWith(
+      "+41791112233",
+    );
+    expect(mocks.channelSecret).toHaveBeenCalledWith(7, "whatsapp_app_secret");
+    expect(mocks.handleWebhookMessage).toHaveBeenCalledOnce();
+  });
+
+  it("refuses a WhatsApp POST whose signature doesn't match the secret", async () => {
+    mocks.channelSecret.mockResolvedValue("real-secret");
+    const body = JSON.stringify(whatsappBody());
+
+    const res = await request(buildApp())
+      .post("/api/whatsapp/webhook")
+      .set("Content-Type", "application/json")
+      .set("X-Hub-Signature-256", metaSignature(body, "attacker-secret"))
+      .send(body);
+
     expect(res.status).toBe(403);
     expect(mocks.handleWebhookMessage).not.toHaveBeenCalled();
   });
 
-  it("accepts a WhatsApp POST with a valid signature", async () => {
-    const body = JSON.stringify({ entry: [] });
-    const sig = `sha256=${crypto
-      .createHmac("sha256", "app-secret")
-      .update(body)
-      .digest("hex")}`;
-    const res = await request(await buildApp("app-secret"))
+  it("refuses a signed-looking POST with no signature header at all", async () => {
+    mocks.channelSecret.mockResolvedValue("real-secret");
+    const res = await request(buildApp())
       .post("/api/whatsapp/webhook")
-      .set("Content-Type", "application/json")
-      .set("X-Hub-Signature-256", sig)
-      .send(body);
-    expect(res.status).toBe(200);
-    expect(mocks.handleWebhookMessage).toHaveBeenCalledOnce();
+      .send(whatsappBody());
+    expect(res.status).toBe(403);
+    expect(mocks.handleWebhookMessage).not.toHaveBeenCalled();
   });
 
   it("hands Slack events the raw body its signature check needs", async () => {
     const body = JSON.stringify({ type: "event_callback", event: {} });
-    const res = await request(await buildApp())
+    const res = await request(buildApp())
       .post("/api/slack/events")
       .set("Content-Type", "application/json")
       .send(body);
@@ -100,9 +144,7 @@ describe("channel intake routes", () => {
     expect(res.body.rawBody).toBe(body);
   });
 
-  it("starts the Discord gateway from startChannelIntake", async () => {
-    vi.resetModules();
-    const { startChannelIntake } = await import("./channels");
+  it("starts the Discord gateway from startChannelIntake", () => {
     startChannelIntake();
     expect(mocks.startDiscordGateway).toHaveBeenCalledOnce();
   });
