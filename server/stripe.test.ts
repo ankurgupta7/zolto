@@ -11,6 +11,7 @@ const createOrder = vi.fn();
 const getProductsByIds = vi.fn();
 const getTenantAdminContact = vi.fn();
 const getTenantById = vi.fn();
+const getTenantSettings = vi.fn();
 const notifyOwner = vi.fn();
 const sendOrderReceipt = vi.fn();
 const sendOwnerOrderEmail = vi.fn();
@@ -26,6 +27,7 @@ vi.mock("./db", () => ({
   getProductsByIds: (...args: unknown[]) => getProductsByIds(...args),
   getTenantAdminContact: (...args: unknown[]) => getTenantAdminContact(...args),
   getTenantById: (...args: unknown[]) => getTenantById(...args),
+  getTenantSettings: (...args: unknown[]) => getTenantSettings(...args),
 }));
 
 vi.mock("./_core/notification", () => ({

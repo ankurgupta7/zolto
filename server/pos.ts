@@ -6,6 +6,7 @@ import {
   getDb,
   markProductsSold,
   getTenantByPosApiKey,
+  getTenantCategories,
   getTenantSettings,
   setTenantTerminalLocation,
 } from "./db";
@@ -13,7 +14,6 @@ import { posOrders, posOrderItems, products } from "../drizzle/schema";
 import { getStripe, isStripeConfigured } from "./stripe";
 import { escapeHtml, sendTransactionalEmail } from "./_core/email";
 import { storagePut } from "./storage";
-import { PRODUCT_CATEGORIES, CATEGORY_EXTRA_INCLUDES } from "../shared/const";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Multi-tenant POS Key Middleware
@@ -380,6 +380,7 @@ function _generateReceiptHtml(
   order: ReceiptOrder,
   tenantName: string = "Zolto Store",
   tenantDomain: string = "",
+  returnsFooter: string = "14-day returns on unused items in original condition",
 ): string {
   const orderRef = String(order.id).padStart(5, "0");
   const date = new Date(order.createdAt).toLocaleDateString("en-GB", {
@@ -469,7 +470,7 @@ function _generateReceiptHtml(
       ${paymentRow}
     </div>
     <div style="border-top: 1px solid #E0D8CC; padding: 14px 32px; text-align: center">
-      <p style="margin: 0; font-size: 11px; color: #A09080; line-height: 1.6">${escapeHtml(footerDomain)} · 14-day returns on unworn, undamaged pieces</p>
+      <p style="margin: 0; font-size: 11px; color: #A09080; line-height: 1.6">${escapeHtml(footerDomain)} · ${escapeHtml(returnsFooter)}</p>
     </div>
   </div>
 </body></html>`;
@@ -542,11 +543,30 @@ export function registerPosRoutes(app: Express): void {
   app.get(
     "/api/pos/categories",
     requirePosKey,
-    (_req: Request, res: Response) => {
-      res.json({
-        categories: PRODUCT_CATEGORIES,
-        extraIncludes: CATEGORY_EXTRA_INCLUDES,
-      });
+    async (req: Request, res: Response) => {
+      try {
+        // Categories are per-tenant now. The payload stays a superset of the
+        // old static shape (categories + extraIncludes, plus labels), so a
+        // jewellery tenant's Android POS sees exactly what it always did.
+        const { tenantId } = getPosTenant(req);
+        const rows = await getTenantCategories(tenantId);
+        const extraIncludes: Record<string, string[]> = {};
+        const labels: Record<string, { en: string; de: string | null }> = {};
+        for (const row of rows) {
+          if (row.extraIncludes?.length) {
+            extraIncludes[row.key] = row.extraIncludes;
+          }
+          labels[row.key] = { en: row.labelEn, de: row.labelDe };
+        }
+        res.json({
+          categories: rows.map((r) => r.key),
+          extraIncludes,
+          labels,
+        });
+      } catch (err) {
+        console.error("[POS] GET /api/pos/categories error:", err);
+        res.status(500).json({ error: "Internal server error" });
+      }
     },
   );
 

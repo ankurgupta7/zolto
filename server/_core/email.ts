@@ -2,6 +2,9 @@ export interface TenantBranding {
   tenantName: string;
   tenantDomain: string;
   contactEmail?: string;
+  // Returns sentence on the receipt footer. Vertical-dependent ("unworn"
+  // only makes sense for wearables) — see shared/verticals.ts returnsFooter.
+  returnsFooter?: string;
 }
 
 const DEFAULT_BRANDING: TenantBranding = {
@@ -9,6 +12,7 @@ const DEFAULT_BRANDING: TenantBranding = {
   tenantDomain:
     process.env.PUBLIC_BASE_URL?.replace(/\/$/, "") ?? "https://zolto.ch",
   contactEmail: process.env.RESEND_FROM_EMAIL ?? "orders@zolto.ch",
+  returnsFooter: "14-day returns on unused items in original condition",
 };
 
 function resolveBranding(override?: Partial<TenantBranding>): TenantBranding {
@@ -16,6 +20,7 @@ function resolveBranding(override?: Partial<TenantBranding>): TenantBranding {
     tenantName: override?.tenantName ?? DEFAULT_BRANDING.tenantName,
     tenantDomain: override?.tenantDomain ?? DEFAULT_BRANDING.tenantDomain,
     contactEmail: override?.contactEmail ?? DEFAULT_BRANDING.contactEmail,
+    returnsFooter: override?.returnsFooter ?? DEFAULT_BRANDING.returnsFooter,
   };
 }
 // Several fields interpolated into the receipt HTML below (customer name,
@@ -188,7 +193,7 @@ export function buildReceiptHtml(opts: OrderReceiptOptions): string {
     <!-- Footer -->
     <div style="border-top:1px solid ${C.divider};padding:14px 32px;text-align:center">
       <p style="margin:0;font-family:Arial,sans-serif;font-size:11px;color:#A09080;line-height:1.6">
-        ${escapeHtml(branding.contactEmail ?? `support@${branding.tenantDomain.replace(/^https?:\/\//, "")}`)} · 14-day returns on unworn, undamaged pieces
+        ${escapeHtml(branding.contactEmail ?? `support@${branding.tenantDomain.replace(/^https?:\/\//, "")}`)} · ${escapeHtml(branding.returnsFooter ?? DEFAULT_BRANDING.returnsFooter ?? "")}
       </p>
     </div>
 

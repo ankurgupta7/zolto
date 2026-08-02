@@ -94,6 +94,21 @@ describe("buildReceiptHtml", () => {
     expect(html).toContain("CHF 120.00");
     expect(html).toContain("#00042");
   });
+
+  it("renders the branding's vertical-specific returns footer", () => {
+    const jewellery = buildReceiptHtml({
+      ...baseOpts,
+      branding: { returnsFooter: "14-day returns on unworn, undamaged pieces" },
+    });
+    expect(jewellery).toContain("14-day returns on unworn, undamaged pieces");
+
+    // No branding → the neutral default; "unworn" is jewellery-only wording.
+    const neutral = buildReceiptHtml(baseOpts);
+    expect(neutral).toContain(
+      "14-day returns on unused items in original condition",
+    );
+    expect(neutral).not.toContain("unworn");
+  });
 });
 
 describe("buildReconciliationReviewHtml", () => {
