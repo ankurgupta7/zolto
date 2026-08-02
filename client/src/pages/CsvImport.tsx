@@ -1,10 +1,13 @@
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { isStoreAdminRole } from "@/admin/nav";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { SignInOptions } from "@/components/SignInOptions";
-import { PRODUCT_CATEGORIES, type ProductCategory } from "@shared/types";
+import type { ProductCategory } from "@shared/types";
+import { VERTICAL_PRESETS, isVertical } from "@shared/verticals";
+import { useCategories } from "@/hooks/useCategories";
+import { useTenantSettings } from "@/components/admin/useTenantSettings";
 import {
   Upload,
   FileSpreadsheet,
@@ -60,20 +63,22 @@ export function parseCsv(text: string): Record<string, string>[] {
   });
 }
 
-// CSV import maps free-text categories onto known values; "Sets" is folded into
-// "Other" (unmatched rows default to "Other"), matching the AI import flows.
-export const VALID_CATEGORIES: ProductCategory[] = PRODUCT_CATEGORIES.filter(
-  (c) => c !== "Sets",
-);
+// CSV import maps free-text categories onto the store's own category list
+// (folded categories like the jewellery "Sets" are excluded — unmatched rows
+// default to "Other"), matching the AI import flows. The list is per-tenant,
+// so the mapping helpers take it as a parameter.
 
 // Importing in small batches (rather than one request for all rows) bounds
 // how long a single request can run and lets the UI show progress instead of
 // a single spinner that can appear to hang on a large import.
 export const IMPORT_CHUNK_SIZE = 5;
 
-function normalizeCategory(raw: string): ProductCategory | null {
+function normalizeCategory(
+  raw: string,
+  validCategories: readonly string[],
+): ProductCategory | null {
   const lower = raw.trim().toLowerCase();
-  return VALID_CATEGORIES.find((c) => c.toLowerCase() === lower) ?? null;
+  return validCategories.find((c) => c.toLowerCase() === lower) ?? null;
 }
 
 function getField(raw: Record<string, string>, ...keys: string[]): string {
@@ -98,7 +103,10 @@ export interface CsvRow {
   _selected: boolean;
 }
 
-export function mapRows(raw: Record<string, string>[]): CsvRow[] {
+export function mapRows(
+  raw: Record<string, string>[],
+  validCategories: readonly string[],
+): CsvRow[] {
   return raw.map((r) => {
     const errors: string[] = [];
     const name = getField(r, "name");
@@ -111,11 +119,9 @@ export function mapRows(raw: Record<string, string>[]): CsvRow[] {
     const price = parseFloat(priceStr.replace(/[^0-9.]/g, ""));
     if (!priceStr || Number.isNaN(price) || price <= 0)
       errors.push("invalid price");
-    const category = normalizeCategory(categoryStr);
+    const category = normalizeCategory(categoryStr, validCategories);
     if (!category)
-      errors.push(
-        `category must be one of: Necklaces, Earrings, Rings, Bracelets, Bangles, Anklets, Brooches, Hair Accessories, Other`,
-      );
+      errors.push(`category must be one of: ${validCategories.join(", ")}`);
 
     const qtyStr = getField(r, "quantity", "qty", "stock");
     const quantity = qtyStr ? parseInt(qtyStr, 10) : 1;
@@ -153,7 +159,7 @@ export function mapRows(raw: Record<string, string>[]): CsvRow[] {
 }
 
 // Re-checks a row after an inline edit. Category isn't re-checked here since
-// the preview table only ever lets the admin pick from VALID_CATEGORIES.
+// the preview table only ever lets the admin pick from the store's list.
 export function revalidateRow(row: CsvRow): CsvRow {
   const errors: string[] = [];
   if (!row.name.trim()) errors.push("name required");
@@ -164,14 +170,20 @@ export function revalidateRow(row: CsvRow): CsvRow {
 
 // ─── Template download ────────────────────────────────────────────────────────
 
-function downloadTemplate() {
+function downloadTemplate(example: {
+  name: string;
+  nameEn: string;
+  description: string;
+  descriptionEn: string;
+  category: string;
+}) {
   const headers =
     "name,nameEn,description,descriptionEn,price,category,quantity,imageUrl";
-  const example =
-    '"Mondstein-Ohrhänger","Moonstone Drop Earrings",' +
-    '"Zarte Ohrhänger mit natürlichem Mondstein in Sterlingsilber.","Delicate earrings with natural moonstone in sterling silver.",' +
-    "185,Earrings,1,https://example.com/image.jpg";
-  const blob = new Blob([`${headers}\n${example}`], { type: "text/csv" });
+  const exampleRow =
+    `"${example.name}","${example.nameEn}",` +
+    `"${example.description}","${example.descriptionEn}",` +
+    `185,${example.category},1,https://example.com/image.jpg`;
+  const blob = new Blob([`${headers}\n${exampleRow}`], { type: "text/csv" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -190,13 +202,14 @@ export function mapHandwrittenItems(
     category: string;
     quantity: number;
   }>,
+  validCategories: readonly string[],
 ): CsvRow[] {
   return items.map((item) => {
     const errors: string[] = [];
     if (!item.name?.trim()) errors.push("name required");
     if (!item.description?.trim()) errors.push("description required");
     if (!item.price || item.price <= 0) errors.push("invalid price");
-    const category = normalizeCategory(item.category ?? "");
+    const category = normalizeCategory(item.category ?? "", validCategories);
     if (!category) errors.push("invalid category");
     return {
       name: item.name?.trim() || "(empty)",
@@ -218,6 +231,32 @@ type Stage = "input" | "preview" | "done";
 export default function CsvImport() {
   const { user, isAuthenticated, loading } = useAuth();
   const utils = trpc.useUtils();
+
+  // The store's own categories (server-driven); folded ones (e.g. jewellery
+  // "Sets") are not importable, matching the AI import flows.
+  const { categories: storeCategories } = useCategories();
+  const validCategories = useMemo(() => {
+    const folded = new Set(storeCategories.flatMap((c) => c.extraIncludes));
+    return storeCategories.map((c) => c.key).filter((k) => !folded.has(k));
+  }, [storeCategories]);
+
+  // Template example row per the store's vertical.
+  const { settings } = useTenantSettings();
+  const templateExample = useMemo(() => {
+    const vertical =
+      settings?.vertical && isVertical(settings.vertical)
+        ? settings.vertical
+        : "jewellery";
+    const preset = VERTICAL_PRESETS[vertical];
+    return {
+      name: preset.exampleItemNameDe,
+      nameEn: preset.exampleItemNameEn,
+      description: preset.fallback.description,
+      descriptionEn: preset.fallback.descriptionEn,
+      category: validCategories[0] ?? "Other",
+    };
+  }, [settings?.vertical, validCategories]);
+
   const fileRef = useRef<HTMLInputElement>(null);
   const handwritingRef = useRef<HTMLInputElement>(null);
 
@@ -261,7 +300,7 @@ export default function CsvImport() {
       );
       return;
     }
-    const mapped = mapRows(raw);
+    const mapped = mapRows(raw, validCategories);
     setRows(mapped);
     setStage("preview");
   };
@@ -360,7 +399,7 @@ export default function CsvImport() {
       );
       return;
     }
-    const mapped = mapHandwrittenItems(allItems);
+    const mapped = mapHandwrittenItems(allItems, validCategories);
     setRows(mapped);
     setStage("preview");
     toast.success(
@@ -526,14 +565,17 @@ export default function CsvImport() {
                 </p>
                 <p className="text-muted-foreground text-xs font-sans mt-0.5">
                   Categories must be exactly:{" "}
-                  <span className="font-mono">Silver</span> ·{" "}
-                  <span className="font-mono">Semi-Precious Gems</span> ·{" "}
-                  <span className="font-mono">Pearls</span>
+                  {validCategories.map((c, i) => (
+                    <span key={c}>
+                      {i > 0 && " · "}
+                      <span className="font-mono">{c}</span>
+                    </span>
+                  ))}
                 </p>
               </div>
               <button
                 type="button"
-                onClick={downloadTemplate}
+                onClick={() => downloadTemplate(templateExample)}
                 className="flex items-center gap-2 border border-[var(--brand-ink)] text-[var(--brand-ink)] px-5 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:bg-[var(--brand-ink)] hover:text-white transition-colors flex-shrink-0"
               >
                 <Download size={14} />
@@ -929,7 +971,7 @@ export default function CsvImport() {
                               }
                               className="text-[10px] uppercase tracking-[0.1em] px-2 py-1 font-sans bg-[#E8E8E8] text-[#555] border-none focus:outline-none focus:ring-1 focus:ring-[var(--brand-accent)]"
                             >
-                              {VALID_CATEGORIES.map((c) => (
+                              {validCategories.map((c) => (
                                 <option key={c} value={c}>
                                   {c}
                                 </option>

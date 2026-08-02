@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { categoryColor } from "@/lib/categoryColors";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -31,7 +32,8 @@ import {
   Camera,
 } from "lucide-react";
 import { SignInOptions } from "@/components/SignInOptions";
-import { PRODUCT_CATEGORIES, type ProductCategory } from "@shared/types";
+import type { ProductCategory } from "@shared/types";
+import { useCategories } from "@/hooks/useCategories";
 import ProductImageManager from "@/components/ProductImageManager";
 import OnboardingChecklist from "@/components/OnboardingChecklist";
 import InsightsCard from "@/components/InsightsCard";
@@ -49,20 +51,6 @@ import { ADMIN_TOUR_ID, ADMIN_TOUR_STEPS } from "@/lib/adminTour";
 import { clearTourCompletion } from "@/lib/tour";
 import CapabilityBand from "@/components/CapabilityBand";
 import { SketchUnderline } from "@/components/SketchAccents";
-
-const CATEGORIES: readonly ProductCategory[] = PRODUCT_CATEGORIES;
-
-const CATEGORY_COLORS: Record<string, string> = {
-  Necklaces: "bg-[#F5EFE8] text-[#8B6914]",
-  Earrings: "bg-[#E8E8E8] text-[#555]",
-  Rings: "bg-[#E8F4EC] text-[#2D6B4A]",
-  Bracelets: "bg-[#EEE8F5] text-[#5A2D82]",
-  Bangles: "bg-[#F5E8E8] text-[#8B2020]",
-  Anklets: "bg-[#E8F0E8] text-[#2D4A20]",
-  Brooches: "bg-[#FFF0DC] text-[#8B5914]",
-  "Hair Accessories": "bg-[#E8EEF5] text-[#1A3D6B]",
-  Other: "bg-[#EEEEEE] text-[#666]",
-};
 
 interface AddForm {
   name: string;
@@ -112,6 +100,8 @@ interface ProductRowProps {
 }
 
 function ProductRow({ product, onRefetch }: ProductRowProps) {
+  // Store's own category keys (server-driven, per-tenant).
+  const CATEGORIES = useCategories().categories.map((c) => c.key);
   const [qtyValue, setQtyValue] = useState(String(product.quantity));
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState<EditForm>({
@@ -245,7 +235,7 @@ function ProductRow({ product, onRefetch }: ProductRowProps) {
         {/* Category */}
         <td className="px-4 py-4 hidden md:table-cell">
           <span
-            className={`text-[10px] uppercase tracking-[0.1em] px-2 py-0.5 font-sans ${CATEGORY_COLORS[product.category] ?? ""}`}
+            className={`text-[10px] uppercase tracking-[0.1em] px-2 py-0.5 font-sans ${categoryColor(product.category)}`}
           >
             {product.category}
           </span>
@@ -554,6 +544,12 @@ type InsightsData = {
 
 export default function Admin() {
   const { user, isAuthenticated, loading } = useAuth();
+  // Store's own category keys (server-driven, per-tenant).
+  const storeCategories = useCategories().categories;
+  const CATEGORIES = useMemo(
+    () => storeCategories.map((c) => c.key),
+    [storeCategories],
+  );
   // Bumping this restarts the guided tour (the "Replay tour" button).
   const [tourSignal, setTourSignal] = useState(0);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -561,8 +557,18 @@ export default function Admin() {
   const [sortBy, setSortBy] = useState<SortOption>("newest");
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
-    new Set(CATEGORIES.map((c) => c)),
+    new Set(),
   );
+  // Groups default to expanded; the list arrives async, so sync newly known
+  // categories into the set as they load.
+  useEffect(() => {
+    setExpandedCategories((prev) => {
+      const next = new Set(prev);
+      for (const c of CATEGORIES) next.add(c);
+      return next;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [CATEGORIES.join("|")]);
 
   // Duplicate detection state
   const [dupState, setDupState] = useState<"idle" | "checking" | "found">(

@@ -25,7 +25,10 @@ export const PRODUCT_CATEGORIES = [
   "Other",
 ] as const;
 
-export type ProductCategory = (typeof PRODUCT_CATEGORIES)[number];
+// Categories are per-tenant strings now (see shared/verticals.ts presets and
+// the tenant_categories table); this alias remains for call sites that still
+// name the concept.
+export type ProductCategory = string;
 
 /**
  * Extra categories folded into a category's listing.

@@ -27,6 +27,33 @@ vi.mock("sonner", () => ({
 // and ProductModal rendered beneath it.
 vi.mock("@/lib/trpc", () => ({
   trpc: {
+    categories: {
+      list: {
+        useQuery: () => ({
+          data: [
+            "Necklaces",
+            "Earrings",
+            "Sets",
+            "Rings",
+            "Bracelets",
+            "Bangles",
+            "Anklets",
+            "Brooches",
+            "Hair Accessories",
+            "Other",
+          ].map((key, i) => ({
+            key,
+            labelEn: key,
+            labelDe: null,
+            extraIncludes:
+              key === "Necklaces" || key === "Earrings" ? ["Sets"] : [],
+            sortOrder: i,
+          })),
+          isLoading: false,
+          error: null,
+        }),
+      },
+    },
     useUtils: () => ({
       products: {
         list: { invalidate: vi.fn() },

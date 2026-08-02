@@ -24,6 +24,33 @@ vi.mock("@/contexts/TenantContext", () => ({
 
 vi.mock("@/lib/trpc", () => ({
   trpc: {
+    categories: {
+      list: {
+        useQuery: () => ({
+          data: [
+            "Necklaces",
+            "Earrings",
+            "Sets",
+            "Rings",
+            "Bracelets",
+            "Bangles",
+            "Anklets",
+            "Brooches",
+            "Hair Accessories",
+            "Other",
+          ].map((key, i) => ({
+            key,
+            labelEn: key,
+            labelDe: null,
+            extraIncludes:
+              key === "Necklaces" || key === "Earrings" ? ["Sets"] : [],
+            sortOrder: i,
+          })),
+          isLoading: false,
+          error: null,
+        }),
+      },
+    },
     products: { list: { useQuery: () => ({ data: mocks.products }) } },
   },
 }));
@@ -66,13 +93,14 @@ describe("Footer", () => {
 
   it("only lists collections the catalogue actually has", () => {
     render(<Footer />);
-    const rings = screen.getByText("categories.rings");
+    // Labels come from the server-driven category list (labelEn = key here).
+    const rings = screen.getByText("Rings");
     expect(rings.closest("a")!.getAttribute("href")).toBe(
       "/shop?category=Rings",
     );
-    expect(screen.getByText("categories.earrings")).toBeTruthy();
-    expect(screen.queryByText("categories.necklaces")).toBeNull();
-    expect(screen.queryByText("categories.brooches")).toBeNull();
+    expect(screen.getByText("Earrings")).toBeTruthy();
+    expect(screen.queryByText("Necklaces")).toBeNull();
+    expect(screen.queryByText("Brooches")).toBeNull();
   });
 
   it("links the main navigation and legal pages", () => {

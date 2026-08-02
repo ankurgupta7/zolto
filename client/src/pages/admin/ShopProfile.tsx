@@ -20,6 +20,7 @@ import {
 } from "@/components/admin/ui";
 import { useTenantSettings } from "@/components/admin/useTenantSettings";
 import { DEFAULT_CURRENCY, formatPrice } from "@/lib/money";
+import { VERTICALS, VERTICAL_PRESETS, isVertical } from "@shared/verticals";
 
 /**
  * The currencies a Swiss-first marketplace plausibly sells in. The server
@@ -40,6 +41,8 @@ export default function ShopProfile() {
   const [contactEmail, setContactEmail] = useState("");
   const [contactPhone, setContactPhone] = useState("");
   const [currency, setCurrency] = useState<string>(DEFAULT_CURRENCY);
+  const [vertical, setVertical] = useState<string>("jewellery");
+  const [verticalDescription, setVerticalDescription] = useState("");
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -47,6 +50,12 @@ export default function ShopProfile() {
       setContactEmail(settings.contactEmail ?? "");
       setContactPhone(settings.contactPhone ?? "");
       setCurrency((settings.currency || DEFAULT_CURRENCY).toLowerCase());
+      setVertical(
+        settings.vertical && isVertical(settings.vertical)
+          ? settings.vertical
+          : "jewellery",
+      );
+      setVerticalDescription(settings.verticalDescription ?? "");
     }
   }, [settings]);
 
@@ -73,6 +82,8 @@ export default function ShopProfile() {
       contactEmail: contactEmail.trim() || undefined,
       contactPhone: contactPhone.trim() || undefined,
       currency,
+      ...(isVertical(vertical) ? { vertical } : {}),
+      verticalDescription: verticalDescription.trim() || null,
     });
   };
 
@@ -201,6 +212,41 @@ export default function ShopProfile() {
                 <option value={currency}>{currency.toUpperCase()}</option>
               )}
             </select>
+          </Field>
+
+          <Field
+            label="What do you sell?"
+            htmlFor="vertical"
+            hint="Tunes the AI tools (photo listings, imports, chat) to your kind of store. Your category list is edited separately under Categories."
+          >
+            <select
+              id="vertical"
+              value={vertical}
+              onChange={(e) => setVertical(e.target.value)}
+              className={inputClass}
+            >
+              {VERTICALS.map((v) => (
+                <option key={v} value={v}>
+                  {VERTICAL_PRESETS[v].labelEn}
+                </option>
+              ))}
+            </select>
+          </Field>
+
+          <Field
+            label="Describe your range (optional)"
+            htmlFor="vertical-description"
+            hint="One or two sentences in your own words — the AI uses this to write better listings."
+          >
+            <textarea
+              id="vertical-description"
+              value={verticalDescription}
+              onChange={(e) => setVerticalDescription(e.target.value)}
+              rows={2}
+              maxLength={500}
+              placeholder="e.g. Wheel-thrown stoneware tableware in muted glazes"
+              className={`${inputClass} resize-none`}
+            />
           </Field>
 
           <div className="sm:col-span-2">

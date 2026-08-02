@@ -59,6 +59,14 @@ export const ADMIN_NAV: AdminNavItem[] = [
     path: "/admin/products/import",
   },
   {
+    id: "categories",
+    plane: "store",
+    label: "Categories",
+    icon: "Tags",
+    path: "/admin/categories",
+    requiredRole: "admin",
+  },
+  {
     id: "orders",
     plane: "store",
     label: "Orders",
