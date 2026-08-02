@@ -83,6 +83,19 @@ describe("user reads", () => {
     selectReturns([]);
     expect(await db.getUserByOpenId("nobody")).toBeUndefined();
   });
+
+  it("getStoreUserByEmail returns the store-attached row when found", async () => {
+    selectReturns([{ id: 5, tenantId: 7 }]);
+    expect(await db.getStoreUserByEmail("owner@a.example")).toEqual({
+      id: 5,
+      tenantId: 7,
+    });
+  });
+
+  it("getStoreUserByEmail returns undefined when the email is unused", async () => {
+    selectReturns([]);
+    expect(await db.getStoreUserByEmail("free@a.example")).toBeUndefined();
+  });
 });
 
 describe("product reads", () => {

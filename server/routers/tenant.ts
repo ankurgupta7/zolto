@@ -20,6 +20,7 @@ import {
   setTenantStripeCustomer,
   setTenantReferrer,
   createPendingTenantAdmin,
+  getStoreUserByEmail,
   getUserByOpenId,
   assignUserToTenantAsAdmin,
   deleteUserById,
@@ -131,7 +132,19 @@ export const tenantRouter = router({
         });
       }
 
-      // 2. Create the tenant with a 14-day trial. The POS key is stored ONLY
+      // 2. One email, one store. An address already attached to a tenant — as
+      // its admin, staff, or a still-unclaimed pending admin — must not spawn
+      // a second store; an address that exists with no store (signed in,
+      // never created one) is exactly who signup is for and passes.
+      if (await getStoreUserByEmail(input.email)) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message:
+            "This email is already attached to a store. Sign in to manage it, or use a different address.",
+        });
+      }
+
+      // 3. Create the tenant with a 14-day trial. The POS key is stored ONLY
       // as a SHA-256 hash; the plaintext is returned here exactly once (the
       // tenant enters it into their POS app) and is unrecoverable afterwards —
       // a lost key is rotated, not retrieved (see rotatePosApiKey below).
@@ -148,10 +161,10 @@ export const tenantRouter = router({
         referralCode: generateReferralCode(),
       });
 
-      // 3. Default settings.
+      // 4. Default settings.
       await createTenantSettings({ tenantId, currency: "chf" });
 
-      // 4. Stripe customer for future billing (no-op if Stripe isn't configured).
+      // 5. Stripe customer for future billing (no-op if Stripe isn't configured).
       const stripeCustomerId = await createStripeCustomer({
         name: input.name,
         email: input.email,
@@ -160,13 +173,13 @@ export const tenantRouter = router({
         await setTenantStripeCustomer(tenantId, stripeCustomerId);
       }
 
-      // 5. Referral: credit the referrer if the code is valid.
+      // 6. Referral: credit the referrer if the code is valid.
       if (input.referralCode) {
         const referrer = await getTenantByReferralCode(input.referralCode);
         if (referrer) await setTenantReferrer(tenantId, referrer.id);
       }
 
-      // 6. Pending admin + one-time claim token (see claimAdmin below).
+      // 7. Pending admin + one-time claim token (see claimAdmin below).
       // The token is stored as `pending:<token>` in users.openId, which is
       // varchar(64). "pending:" is 8 chars, so the token must be ≤ 56 chars —
       // 24 bytes of hex is 48 chars (192 bits of entropy) and leaves margin.
@@ -196,6 +209,20 @@ export const tenantRouter = router({
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "Invalid or already-claimed invitation",
+        });
+      }
+
+      // The claim moves the signed-in account onto the pending tenant, so an
+      // account already attached to a DIFFERENT store must be refused — the
+      // account-level twin of signup's one-email-one-store check (which alone
+      // is bypassable by typing a fresh address at signup and then claiming
+      // with an already-attached login). Without this, the assignment below
+      // would silently rip the account off its first store.
+      if (ctx.user.tenantId && ctx.user.tenantId !== pending.tenantId) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message:
+            "This account already manages a store. Sign in with a different account to claim this one.",
         });
       }
 

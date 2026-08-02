@@ -14,6 +14,7 @@ const { dbMock, createStripeCustomer, buildConnectAuthorizeUrl, storagePut } =
       setTenantStripeCustomer: vi.fn(),
       setTenantReferrer: vi.fn(),
       createPendingTenantAdmin: vi.fn(),
+      getStoreUserByEmail: vi.fn(),
       getUserByOpenId: vi.fn(),
       assignUserToTenantAsAdmin: vi.fn(),
       deleteUserById: vi.fn(),
@@ -67,6 +68,7 @@ beforeEach(() => {
   dbMock.createTenantSettings.mockResolvedValue(undefined);
   dbMock.setTenantStripeCustomer.mockResolvedValue(undefined);
   dbMock.createPendingTenantAdmin.mockResolvedValue(undefined);
+  dbMock.getStoreUserByEmail.mockResolvedValue(undefined);
   createStripeCustomer.mockResolvedValue(null);
 });
 
@@ -107,6 +109,23 @@ describe("tenant.create", () => {
       "owner@aurora.example",
       res.claimToken,
     );
+  });
+
+  it("refuses an email already attached to another store", async () => {
+    dbMock.getStoreUserByEmail.mockResolvedValue({ id: 5, tenantId: 7 });
+    await expect(
+      tenantRouter.createCaller(ctx()).create({
+        name: "Second Store",
+        slug: "second",
+        email: "owner@aurora.example",
+      }),
+    ).rejects.toThrow(/already attached to a store/i);
+    expect(dbMock.getStoreUserByEmail).toHaveBeenCalledWith(
+      "owner@aurora.example",
+    );
+    // Nothing may be provisioned once the email is refused.
+    expect(dbMock.createTenant).not.toHaveBeenCalled();
+    expect(dbMock.createPendingTenantAdmin).not.toHaveBeenCalled();
   });
 
   it("rejects a taken slug", async () => {
@@ -183,6 +202,39 @@ describe("tenant.claimAdmin", () => {
       42,
     );
     expect(dbMock.deleteUserById).toHaveBeenCalledWith(9);
+    expect(res).toEqual({ tenantId: 42, slug: "aurora" });
+  });
+
+  it("refuses an account that already manages a different store", async () => {
+    dbMock.getUserByOpenId.mockResolvedValue({
+      id: 9,
+      tenantId: 42,
+      role: "admin",
+    });
+    await expect(
+      tenantRouter
+        .createCaller(ctx({ openId: "google:sub-1", tenantId: 7 }))
+        .claimAdmin({ token: "tok-abc" }),
+    ).rejects.toThrow(/already manages a store/i);
+    expect(dbMock.assignUserToTenantAsAdmin).not.toHaveBeenCalled();
+    // The pending row survives, so the rightful owner can still claim.
+    expect(dbMock.deleteUserById).not.toHaveBeenCalled();
+  });
+
+  it("still claims when the account is already on the SAME store", async () => {
+    dbMock.getUserByOpenId.mockResolvedValue({
+      id: 9,
+      tenantId: 42,
+      role: "admin",
+    });
+    dbMock.getTenantById.mockResolvedValue({ id: 42, slug: "aurora" });
+    const res = await tenantRouter
+      .createCaller(ctx({ openId: "google:sub-1", tenantId: 42 }))
+      .claimAdmin({ token: "tok-abc" });
+    expect(dbMock.assignUserToTenantAsAdmin).toHaveBeenCalledWith(
+      "google:sub-1",
+      42,
+    );
     expect(res).toEqual({ tenantId: 42, slug: "aurora" });
   });
 

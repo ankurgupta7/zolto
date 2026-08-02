@@ -1925,6 +1925,39 @@ export async function setTenantReferrer(
   );
 }
 
+/**
+ * The user row that already ties this email to a store, if any — signup's
+ * one-email-one-store check. Case-insensitive, because identity providers hand
+ * back the address in whatever case the user typed it (the same reason
+ * deploy/tenant-admin.sh matches with LOWER()).
+ *
+ * Pending claim rows (openId `pending:…`) count as taken: they hold a store's
+ * admin slot for a signup already in flight, and a second store on the same
+ * address while the first is unclaimed is exactly the duplicate this refuses.
+ * A row with tenantId null (signed in, never created a store) is NOT a
+ * conflict — that account is precisely who signup is for.
+ */
+export async function getStoreUserByEmail(
+  email: string,
+): Promise<{ id: number; tenantId: number } | undefined> {
+  return withDb(async (db) => {
+    const result = await db
+      .select({ id: users.id, tenantId: users.tenantId })
+      .from(users)
+      .where(
+        and(
+          sql`LOWER(${users.email}) = LOWER(${email})`,
+          isNotNull(users.tenantId),
+        ),
+      )
+      .limit(1);
+    const row = result[0];
+    return row && row.tenantId != null
+      ? { id: row.id, tenantId: row.tenantId }
+      : undefined;
+  }, undefined);
+}
+
 // A pending admin holds the tenant's admin slot until the owner signs in (via
 // OAuth) and claims it with the token. Keyed by `pending:<token>` so it can't be
 // confused with a real login (`google:<sub>`), and never grants access on its own.
