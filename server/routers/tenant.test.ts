@@ -28,6 +28,23 @@ vi.mock("../stripe", () => ({ createStripeCustomer }));
 vi.mock("../stripeConnect", () => ({ buildConnectAuthorizeUrl }));
 vi.mock("../storage", () => ({ storagePut }));
 
+const vaultMock = vi.hoisted(() => ({
+  isTenantSecretsConfigured: vi.fn(() => true),
+  listTenantSecrets: vi.fn(),
+  setTenantSecret: vi.fn(),
+  deleteTenantSecret: vi.fn(),
+  startGatewayForToken: vi.fn(),
+}));
+vi.mock("../tenantSecrets", () => ({
+  isTenantSecretsConfigured: vaultMock.isTenantSecretsConfigured,
+  listTenantSecrets: vaultMock.listTenantSecrets,
+  setTenantSecret: vaultMock.setTenantSecret,
+  deleteTenantSecret: vaultMock.deleteTenantSecret,
+}));
+vi.mock("../discord", () => ({
+  startGatewayForToken: vaultMock.startGatewayForToken,
+}));
+
 import { tenantRouter } from "./tenant";
 import type { TrpcContext } from "../_core/context";
 
@@ -658,5 +675,149 @@ describe("tenant.setTwintQr", () => {
     );
     await expect(caller.setTwintQr({ imageData: "eA==" })).rejects.toThrow();
     expect(storagePut).not.toHaveBeenCalled();
+  });
+});
+
+describe("tenant channel-credential vault procedures", () => {
+  const admin = { openId: "google:admin", role: "admin", tenantId: 42 };
+
+  function caller(user: typeof admin | null = admin, tenantId = 42) {
+    return tenantRouter.createCaller(ctx(user, { id: tenantId, plan: "free" }));
+  }
+
+  beforeEach(() => {
+    vaultMock.isTenantSecretsConfigured.mockReturnValue(true);
+    vaultMock.listTenantSecrets.mockResolvedValue([]);
+    vaultMock.setTenantSecret.mockResolvedValue(undefined);
+    vaultMock.deleteTenantSecret.mockResolvedValue(undefined);
+  });
+
+  it("stores a credential against the caller's own store", async () => {
+    const res = await caller().setChannelSecret({
+      provider: "slack_bot_token",
+      value: "xoxb-1234567890",
+    });
+    expect(vaultMock.setTenantSecret).toHaveBeenCalledWith(
+      42,
+      "slack_bot_token",
+      "xoxb-1234567890",
+    );
+    // Write-only contract: the response carries the hint, never the value.
+    expect(res).toEqual({ provider: "slack_bot_token", hint: "7890" });
+  });
+
+  it("connects a freshly pasted Discord bot token immediately", async () => {
+    await caller().setChannelSecret({
+      provider: "discord_bot_token",
+      value: "discord-token-abcd",
+    });
+    expect(vaultMock.startGatewayForToken).toHaveBeenCalledWith(
+      "discord-token-abcd",
+    );
+  });
+
+  it("does not touch the Discord gateway for non-Discord credentials", async () => {
+    await caller().setChannelSecret({
+      provider: "whatsapp_token",
+      value: "EAAG-longtoken",
+    });
+    expect(vaultMock.startGatewayForToken).not.toHaveBeenCalled();
+  });
+
+  it("lists masked hints only — never a secret value", async () => {
+    vaultMock.listTenantSecrets.mockResolvedValue([
+      {
+        provider: "slack_bot_token",
+        hint: "7890",
+        keyVersion: 1,
+        createdAt: new Date("2026-07-01"),
+        rotatedAt: null,
+        lastUsedAt: null,
+      },
+      // Unknown providers (e.g. a future "stripe" secret) stay out of this
+      // channel-scoped listing.
+      {
+        provider: "some_other_secret",
+        hint: "zzzz",
+        keyVersion: 1,
+        createdAt: new Date("2026-07-01"),
+        rotatedAt: null,
+        lastUsedAt: null,
+      },
+    ]);
+    const res = await caller().channelSecrets();
+    expect(res.vaultConfigured).toBe(true);
+    expect(res.secrets).toHaveLength(1);
+    expect(res.secrets[0]).toMatchObject({
+      provider: "slack_bot_token",
+      hint: "7890",
+    });
+    expect(JSON.stringify(res)).not.toContain("xoxb");
+  });
+
+  it("refuses to store when the vault has no master key", async () => {
+    vaultMock.isTenantSecretsConfigured.mockReturnValue(false);
+    await expect(
+      caller().setChannelSecret({
+        provider: "slack_bot_token",
+        value: "xoxb-1234567890",
+      }),
+    ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+    expect(vaultMock.setTenantSecret).not.toHaveBeenCalled();
+  });
+
+  it("rejects an unknown provider name", async () => {
+    await expect(
+      caller().setChannelSecret({
+        provider: "stripe_secret_key" as never,
+        value: "sk_live_oops",
+      }),
+    ).rejects.toThrow();
+    expect(vaultMock.setTenantSecret).not.toHaveBeenCalled();
+  });
+
+  it("deletes a credential for the caller's own store", async () => {
+    await caller().deleteChannelSecret({ provider: "whatsapp_app_secret" });
+    expect(vaultMock.deleteTenantSecret).toHaveBeenCalledWith(
+      42,
+      "whatsapp_app_secret",
+    );
+  });
+
+  it("refuses an anonymous caller", async () => {
+    await expect(
+      caller(null).setChannelSecret({
+        provider: "slack_bot_token",
+        value: "xoxb-1234567890",
+      }),
+    ).rejects.toThrow();
+    expect(vaultMock.setTenantSecret).not.toHaveBeenCalled();
+  });
+
+  // The cross-tenant case is the one that silently regresses (CLAUDE.md):
+  // an admin of store 7 addressing store 42's host must be refused.
+  it("refuses an admin of a different store, for every procedure", async () => {
+    const other = { openId: "google:other", role: "admin", tenantId: 7 };
+    await expect(caller(other, 42).channelSecrets()).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
+    await expect(
+      caller(other, 42).setChannelSecret({
+        provider: "slack_bot_token",
+        value: "xoxb-1234567890",
+      }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(
+      caller(other, 42).deleteChannelSecret({ provider: "slack_bot_token" }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    // channelConnect only returns URLs, but the Slack one embeds a signed
+    // state naming the addressed tenant — refusing cross-tenant here is what
+    // stops an admin of store 7 minting a connect link that binds store 42.
+    await expect(caller(other, 42).channelConnect()).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
+    expect(vaultMock.setTenantSecret).not.toHaveBeenCalled();
+    expect(vaultMock.deleteTenantSecret).not.toHaveBeenCalled();
+    expect(vaultMock.listTenantSecrets).not.toHaveBeenCalled();
   });
 });

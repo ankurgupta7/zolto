@@ -26,6 +26,18 @@ import {
 } from "../db";
 import { createStripeCustomer } from "../stripe";
 import { storagePut } from "../storage";
+import {
+  isTenantSecretsConfigured,
+  listTenantSecrets,
+  setTenantSecret,
+  deleteTenantSecret,
+} from "../tenantSecrets";
+import {
+  CHANNEL_SECRET_PROVIDERS,
+  type ChannelSecretProvider,
+} from "../channelCredentials";
+import { startGatewayForToken } from "../discord";
+import { buildSlackAuthorizeUrl, buildDiscordInviteUrl } from "../slackOAuth";
 import { buildConnectAuthorizeUrl } from "../stripeConnect";
 import { deriveOnboardingStatus } from "../onboarding";
 import { generatePosApiKey, hashPosApiKey } from "../posApiKey";
@@ -337,6 +349,15 @@ export const tenantRouter = router({
           .string()
           .regex(/^\d{17,20}$/, "A Discord user ID is a 17–20 digit number")
           .optional(),
+        // Which Slack channel the intake bot watches (an ID like C0123ABC —
+        // an identifier, not a secret; the bot token lives in the vault).
+        slackChannelId: z
+          .string()
+          .regex(
+            /^[A-Z][A-Z0-9]{4,20}$/i,
+            "A Slack channel ID looks like C0123ABCDEF",
+          )
+          .optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -377,6 +398,73 @@ export const tenantRouter = router({
       }
 
       return { success: true };
+    }),
+
+  // ─── Admin: "click to connect" URLs for the Channels page ─────────────────
+  // Null values hide the corresponding button: the platform simply hasn't
+  // registered that app yet. The Slack URL embeds a signed, expiring state
+  // naming THIS tenant, so the OAuth callback can't be replayed onto another
+  // store; the Discord URL is a plain bot invite (no token changes hands).
+  channelConnect: tenantAdminProcedure.query(({ ctx }) => {
+    return {
+      slackAuthorizeUrl: buildSlackAuthorizeUrl(ctx.tenant.id),
+      discordInviteUrl: buildDiscordInviteUrl(),
+    };
+  }),
+
+  // ─── Admin: Channel credentials (WhatsApp / Slack / Discord) ──────────────
+  // Write-only vault contract (server/tenantSecrets.ts): set/rotate/delete and
+  // a masked listing. No procedure here — or anywhere — returns the plaintext;
+  // the channels read it server-side via channelCredentials.channelSecret().
+  channelSecrets: tenantAdminProcedure.query(async ({ ctx }) => {
+    const rows = await listTenantSecrets(ctx.tenant.id);
+    const known = rows.filter((r) =>
+      (CHANNEL_SECRET_PROVIDERS as readonly string[]).includes(r.provider),
+    );
+    return {
+      // Whether the vault can store anything on this deploy (master key set).
+      vaultConfigured: isTenantSecretsConfigured(),
+      secrets: known.map((r) => ({
+        provider: r.provider as ChannelSecretProvider,
+        hint: r.hint,
+        rotatedAt: r.rotatedAt ?? r.createdAt,
+      })),
+    };
+  }),
+
+  setChannelSecret: tenantAdminProcedure
+    .input(
+      z.object({
+        provider: z.enum(CHANNEL_SECRET_PROVIDERS),
+        // Provider tokens vary wildly in shape; length bounds are the only
+        // validation that doesn't reject someone's real credential.
+        value: z.string().trim().min(8).max(512),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (!isTenantSecretsConfigured()) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message:
+            "This deployment has no tenant-secrets master key configured — ask the platform operator to set TENANT_SECRETS_KEY.",
+        });
+      }
+      await setTenantSecret(ctx.tenant.id, input.provider, input.value);
+      // A newly pasted Discord token means a new bot to connect — pick it up
+      // now rather than at the next deploy.
+      if (input.provider === "discord_bot_token") {
+        void startGatewayForToken(input.value.trim());
+      }
+      return { provider: input.provider, hint: input.value.trim().slice(-4) };
+    }),
+
+  deleteChannelSecret: tenantAdminProcedure
+    .input(z.object({ provider: z.enum(CHANNEL_SECRET_PROVIDERS) }))
+    .mutation(async ({ ctx, input }) => {
+      await deleteTenantSecret(ctx.tenant.id, input.provider);
+      // A deleted Discord token's gateway stays up until the next restart —
+      // acceptable: it can only read channels its own bot was invited to.
+      return { provider: input.provider };
     }),
 
   // ─── Admin: Upload / clear the TWINT QR code sticker ──────────────────────

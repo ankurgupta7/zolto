@@ -20,7 +20,13 @@ import {
   findCandidateProducts,
   generateConfirmationToken,
 } from "./reconciliation";
-import { createPosAttribution, getUnattributedPosLineItems } from "./db";
+import {
+  createPosAttribution,
+  getTenantAdminContact,
+  getTenantById,
+  getTenantSettings,
+  getUnattributedPosLineItems,
+} from "./db";
 import {
   type PosAttributionReviewItem,
   sendPosAttributionReviewEmail,
@@ -51,7 +57,9 @@ export async function runPosAttribution(
 
   let newPendingReview = 0;
   let newNoCandidates = 0;
-  const reviewItems: PosAttributionReviewItem[] = [];
+  // Grouped per store: the review email goes to each MERCHANT, so a
+  // platform-wide sweep must never fold two stores' sales into one message.
+  const reviewItemsByTenant = new Map<number, PosAttributionReviewItem[]>();
 
   for (const line of lines) {
     // Candidates are matched against the line's own tenant catalogue, so this is
@@ -75,7 +83,9 @@ export async function runPosAttribution(
 
     if (status === "pending_review") {
       newPendingReview++;
-      reviewItems.push({
+      const tenantItems = reviewItemsByTenant.get(line.tenantId) ?? [];
+      reviewItemsByTenant.set(line.tenantId, tenantItems);
+      tenantItems.push({
         posOrderItemId: line.posOrderItemId,
         amountRappen: line.amountRappen,
         soldAt: line.createdAt,
@@ -93,13 +103,32 @@ export async function runPosAttribution(
     }
   }
 
-  let emailSent = false;
-  if (reviewItems.length > 0) {
+  // One review email per store, addressed to that store's own admin with the
+  // store's own branding — mirroring runStripeReconciliationForTenant. A
+  // failure for one tenant doesn't stop the others' emails going out.
+  let emailsSent = 0;
+  for (const [tenantId, items] of Array.from(reviewItemsByTenant.entries())) {
     try {
-      await sendPosAttributionReviewEmail(reviewItems);
-      emailSent = true;
+      const [tenant, contact, settings] = await Promise.all([
+        getTenantById(tenantId),
+        getTenantAdminContact(tenantId),
+        getTenantSettings(tenantId),
+      ]);
+      await sendPosAttributionReviewEmail(items, {
+        tenantName: settings?.whiteLabelName ?? tenant?.name,
+        tenantDomain:
+          settings?.publicDomain ??
+          process.env.PUBLIC_BASE_URL ??
+          "https://zolto.ch",
+        contactEmail: settings?.contactEmail ?? undefined,
+        to: contact?.email ?? undefined,
+      });
+      emailsSent++;
     } catch (err) {
-      console.error("[PosAttribution] Failed to send review email:", err);
+      console.error(
+        `[PosAttribution] Failed to send review email for tenant ${tenantId}:`,
+        err,
+      );
     }
   }
 
@@ -107,6 +136,8 @@ export async function runPosAttribution(
     scannedLines: lines.length,
     newPendingReview,
     newNoCandidates,
-    emailSent,
+    // True only when every store that needed a review email got one.
+    emailSent:
+      reviewItemsByTenant.size > 0 && emailsSent === reviewItemsByTenant.size,
   };
 }

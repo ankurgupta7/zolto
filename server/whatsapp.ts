@@ -3,12 +3,10 @@ import type { Request, Response } from "express";
 import { PRODUCT_CATEGORIES, type ProductCategory } from "@shared/const";
 import { invokeLLM } from "./_core/llm";
 import { notifyOwner } from "./_core/notification";
-import { createProduct, } from "./db";
+import { createProduct, getTenantByWhatsappNumber } from "./db";
 import { storagePut } from "./storage";
 import type { TenantBranding } from "./_core/email";
-import { tenants, tenantSettings } from "../drizzle/schema";
-import { eq } from "drizzle-orm";
-import { getDb } from "./db";
+import { channelSecret } from "./channelCredentials";
 
 // These AI extractors describe a single photographed/described piece, so "Sets"
 // is folded into "Other" (see the prompt) and deliberately omitted from the
@@ -16,9 +14,26 @@ import { getDb } from "./db";
 // the categories can never drift.
 const AI_CATEGORIES = PRODUCT_CATEGORIES.filter((c) => c !== "Sets");
 
-const WHATSAPP_TOKEN = process.env.WHATSAPP_TOKEN ?? "";
 const WHATSAPP_VERIFY_TOKEN =
   process.env.WHATSAPP_VERIFY_TOKEN ?? "kalakosh_verify_token";
+
+/**
+ * The WhatsApp business number a webhook payload was delivered for — needed
+ * before anything else, because both the signature check (per-tenant app
+ * secret) and the intake handler key off the tenant it maps to.
+ */
+export function businessPhoneOf(body: unknown): string {
+  const value = (
+    body as {
+      entry?: { changes?: { value?: { metadata?: unknown } }[] }[];
+    } | null
+  )?.entry?.[0]?.changes?.[0]?.value;
+  const metadata = (value as { metadata?: { display_phone_number?: unknown } })
+    ?.metadata;
+  return typeof metadata?.display_phone_number === "string"
+    ? metadata.display_phone_number
+    : "";
+}
 
 // ─── Webhook Verification (GET) ───────────────────────────────────────────────
 
@@ -64,27 +79,18 @@ export async function handleWebhookMessage(req: Request, res: Response) {
     };
 
     if (businessPhone) {
-      const db = await getDb();
-      if (db) {
-        const result = await db
-          .select({ tenant: tenants, settings: tenantSettings })
-          .from(tenants)
-          .leftJoin(tenantSettings, eq(tenants.id, tenantSettings.tenantId))
-          .where(eq(tenantSettings.whatsappNumber, businessPhone))
-          .limit(1);
-        if (result.length > 0) {
-          const row = result[0];
-          tenantId = row.tenant.id;
-          branding = {
-            tenantName: row.settings?.whiteLabelName ?? row.tenant.name,
-            tenantDomain:
-              row.tenant.domain ??
-              row.settings?.publicDomain ??
-              process.env.PUBLIC_BASE_URL ??
-              "https://zolto.ch",
-            contactEmail: row.settings?.contactEmail ?? undefined,
-          };
-        }
+      const row = await getTenantByWhatsappNumber(businessPhone);
+      if (row) {
+        tenantId = row.tenant.id;
+        branding = {
+          tenantName: row.settings?.whiteLabelName ?? row.tenant.name,
+          tenantDomain:
+            row.tenant.domain ??
+            row.settings?.publicDomain ??
+            process.env.PUBLIC_BASE_URL ??
+            "https://zolto.ch",
+          contactEmail: row.settings?.contactEmail ?? undefined,
+        };
       }
     }
 
@@ -259,8 +265,13 @@ async function downloadWhatsAppMedia(
   tenantId: number,
   mediaId: string,
 ): Promise<string | null> {
-  if (!WHATSAPP_TOKEN) {
-    console.warn("[WhatsApp] No WHATSAPP_TOKEN set, cannot download media");
+  // The tenant's own access token when they brought their own Meta app,
+  // else the platform's WHATSAPP_TOKEN env fallback.
+  const token = await channelSecret(tenantId, "whatsapp_token");
+  if (!token) {
+    console.warn(
+      "[WhatsApp] No access token (tenant vault or WHATSAPP_TOKEN env), cannot download media",
+    );
     return null;
   }
 
@@ -268,14 +279,14 @@ async function downloadWhatsAppMedia(
     // Step 1: Get the media URL
     const mediaInfoRes = await axios.get(
       `https://graph.facebook.com/v18.0/${mediaId}`,
-      { headers: { Authorization: `Bearer ${WHATSAPP_TOKEN}` } },
+      { headers: { Authorization: `Bearer ${token}` } },
     );
     const mediaUrl = mediaInfoRes.data?.url;
     if (!mediaUrl) return null;
 
     // Step 2: Download the media bytes
     const mediaRes = await axios.get(mediaUrl, {
-      headers: { Authorization: `Bearer ${WHATSAPP_TOKEN}` },
+      headers: { Authorization: `Bearer ${token}` },
       responseType: "arraybuffer",
     });
 

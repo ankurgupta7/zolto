@@ -3,4 +3,7 @@
    explicitly, or no utilities are generated and the page renders unstyled. */
 @source "../../client/src";
 @source "../../shared";
+/* Mock/proposal pages that live in this directory (e.g. pitch.tsx) — without
+   this their utilities are never generated and they render unstyled. */
+@source "./";
 @import "../../client/src/index.css";

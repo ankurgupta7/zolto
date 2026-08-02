@@ -4,12 +4,18 @@ const getUnattributedPosLineItems = vi.fn();
 const createPosAttribution = vi.fn();
 const findCandidateProducts = vi.fn();
 const sendPosAttributionReviewEmail = vi.fn();
+const getTenantById = vi.fn();
+const getTenantAdminContact = vi.fn();
+const getTenantSettings = vi.fn();
 let tokenCounter = 0;
 
 vi.mock("./db", () => ({
   getUnattributedPosLineItems: (...a: unknown[]) =>
     getUnattributedPosLineItems(...a),
   createPosAttribution: (...a: unknown[]) => createPosAttribution(...a),
+  getTenantById: (...a: unknown[]) => getTenantById(...a),
+  getTenantAdminContact: (...a: unknown[]) => getTenantAdminContact(...a),
+  getTenantSettings: (...a: unknown[]) => getTenantSettings(...a),
 }));
 
 vi.mock("./reconciliation", () => ({
@@ -43,6 +49,15 @@ function product(id: number, price: string) {
 beforeEach(() => {
   vi.clearAllMocks();
   tokenCounter = 0;
+  getTenantById.mockImplementation(async (id: number) => ({
+    id,
+    name: `Store ${id}`,
+  }));
+  getTenantAdminContact.mockImplementation(async (id: number) => ({
+    name: "Anna",
+    email: `admin-${id}@example.com`,
+  }));
+  getTenantSettings.mockResolvedValue(undefined);
 });
 
 describe("runPosAttribution", () => {
@@ -107,6 +122,71 @@ describe("runPosAttribution", () => {
     expect(emailArg[0].candidates.map((c: { id: number }) => c.id)).toEqual([
       7, 8,
     ]);
+    // Addressed to the STORE's admin with the store's branding — not the
+    // platform operator (which is what a missing `to` would fall back to).
+    expect(sendPosAttributionReviewEmail.mock.calls[0][1]).toMatchObject({
+      to: "admin-1@example.com",
+      tenantName: "Store 1",
+    });
+  });
+
+  it("sends each store its own email on a platform-wide sweep", async () => {
+    getUnattributedPosLineItems.mockResolvedValue([
+      line({ tenantId: 1, posOrderItemId: 100, amountRappen: 5000 }),
+      line({ tenantId: 2, posOrderItemId: 200, amountRappen: 5000 }),
+    ]);
+    findCandidateProducts.mockResolvedValue([product(7, "50.00")]);
+
+    const summary = await runPosAttribution(3);
+
+    expect(summary.emailSent).toBe(true);
+    expect(sendPosAttributionReviewEmail).toHaveBeenCalledTimes(2);
+    const recipients = sendPosAttributionReviewEmail.mock.calls.map(
+      (c) => (c[1] as { to?: string }).to,
+    );
+    expect(recipients.sort()).toEqual([
+      "admin-1@example.com",
+      "admin-2@example.com",
+    ]);
+    // Neither email contains the other store's sale.
+    for (const [items] of sendPosAttributionReviewEmail.mock.calls) {
+      expect(items).toHaveLength(1);
+    }
+  });
+
+  it("prefers the store's contact email and white-label name when set", async () => {
+    getUnattributedPosLineItems.mockResolvedValue([line()]);
+    findCandidateProducts.mockResolvedValue([product(7, "50.00")]);
+    getTenantSettings.mockResolvedValue({
+      whiteLabelName: "Kalakosh",
+      publicDomain: "https://kalakosh.ch",
+      contactEmail: "hello@kalakosh.ch",
+    });
+
+    await runPosAttribution(3);
+
+    expect(sendPosAttributionReviewEmail.mock.calls[0][1]).toMatchObject({
+      tenantName: "Kalakosh",
+      tenantDomain: "https://kalakosh.ch",
+      contactEmail: "hello@kalakosh.ch",
+    });
+  });
+
+  it("keeps sending to other stores when one store's email fails", async () => {
+    getUnattributedPosLineItems.mockResolvedValue([
+      line({ tenantId: 1, posOrderItemId: 100 }),
+      line({ tenantId: 2, posOrderItemId: 200 }),
+    ]);
+    findCandidateProducts.mockResolvedValue([product(7, "50.00")]);
+    sendPosAttributionReviewEmail
+      .mockRejectedValueOnce(new Error("resend down"))
+      .mockResolvedValueOnce(undefined);
+
+    const summary = await runPosAttribution(3);
+
+    expect(sendPosAttributionReviewEmail).toHaveBeenCalledTimes(2);
+    // Partial delivery is not "sent" — the summary must not claim success.
+    expect(summary.emailSent).toBe(false);
   });
 
   it("records no_candidates (no email) when nothing matches on price", async () => {

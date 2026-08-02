@@ -5,7 +5,9 @@
  * This handler receives the event, parses the product details with an LLM, downloads
  * any attached image, and creates the product in the database.
  *
- * Required env vars:
+ * Credentials are per-tenant first (the encrypted vault, providers
+ * "slack_bot_token" / "slack_signing_secret" — a merchant installing their own
+ * Slack app in their own workspace), falling back to the platform env vars:
  *   SLACK_BOT_TOKEN   – Bot OAuth token (xoxb-...)
  *   SLACK_SIGNING_SECRET – Used to verify request signatures
  */
@@ -23,6 +25,7 @@ import {
 } from "./db";
 import { storagePut } from "./storage";
 import type { TenantBranding } from "./_core/email";
+import { channelSecret } from "./channelCredentials";
 
 // These AI extractors describe a single photographed/described piece, so "Sets"
 // is folded into "Other" (see the prompt) and deliberately omitted from the
@@ -30,15 +33,15 @@ import type { TenantBranding } from "./_core/email";
 // the categories can never drift.
 const AI_CATEGORIES = PRODUCT_CATEGORIES.filter((c) => c !== "Sets");
 
-const SLACK_BOT_TOKEN = process.env.SLACK_BOT_TOKEN ?? "";
-const SLACK_SIGNING_SECRET = process.env.SLACK_SIGNING_SECRET ?? "";
-
 // ─── Signature Verification ───────────────────────────────────────────────────
 
-function verifySlackSignature(req: Request): boolean {
-  if (!SLACK_SIGNING_SECRET) {
+function verifySlackSignature(
+  req: Request,
+  signingSecret: string | null,
+): boolean {
+  if (!signingSecret) {
     console.warn(
-      "[Slack] No SLACK_SIGNING_SECRET set — skipping signature verification",
+      "[Slack] No signing secret (tenant vault or SLACK_SIGNING_SECRET env) — skipping signature verification",
     );
     return true;
   }
@@ -58,7 +61,7 @@ function verifySlackSignature(req: Request): boolean {
 
   const sigBaseString = `v0:${timestamp}:${rawBody}`;
   const hmac = crypto
-    .createHmac("sha256", SLACK_SIGNING_SECRET)
+    .createHmac("sha256", signingSecret)
     .update(sigBaseString)
     .digest("hex");
   const computedSig = `v0=${hmac}`;
@@ -83,8 +86,19 @@ export async function handleSlackEvent(req: Request, res: Response) {
     return res.json({ challenge: body.challenge });
   }
 
-  // 2. Verify signature
-  if (!verifySlackSignature(req)) {
+  // 2. Verify signature. The channel id is read from the (unverified) payload
+  // only to pick WHICH signing secret applies — the tenant's own (vault) when
+  // they installed their own Slack app, else the platform env secret. The
+  // HMAC over the raw bytes is still what decides.
+  const preEvent = body.event as { channel?: string } | undefined;
+  const preTenant = preEvent?.channel
+    ? await getTenantBySlackChannelId(preEvent.channel)
+    : undefined;
+  const signingSecret = await channelSecret(
+    preTenant?.id,
+    "slack_signing_secret",
+  );
+  if (!verifySlackSignature(req, signingSecret)) {
     console.warn("[Slack] Invalid signature");
     return res.sendStatus(403);
   }
@@ -105,8 +119,8 @@ export async function handleSlackEvent(req: Request, res: Response) {
     const text: string = event.text ?? "";
     const files: SlackFile[] = event.files ?? [];
 
-    // ── Look up tenant by Slack channel ID ──────────────────────────────────
-    const tenant = await getTenantBySlackChannelId(channelId);
+    // ── Tenant already resolved for the signature check above ───────────────
+    const tenant = preTenant;
     if (!tenant) {
       console.log(`[Slack] No tenant mapped to channel ${channelId}, skipping`);
       return;
@@ -288,14 +302,19 @@ async function downloadSlackFile(
   tenantId: number,
   file: SlackFile,
 ): Promise<string | null> {
-  if (!SLACK_BOT_TOKEN) {
-    console.warn("[Slack] No SLACK_BOT_TOKEN set, cannot download file");
+  // The tenant's own bot token when they installed their own Slack app,
+  // else the platform SLACK_BOT_TOKEN env fallback.
+  const token = await channelSecret(tenantId, "slack_bot_token");
+  if (!token) {
+    console.warn(
+      "[Slack] No bot token (tenant vault or SLACK_BOT_TOKEN env), cannot download file",
+    );
     return null;
   }
 
   try {
     const response = await axios.get(file.url_private, {
-      headers: { Authorization: `Bearer ${SLACK_BOT_TOKEN}` },
+      headers: { Authorization: `Bearer ${token}` },
       responseType: "arraybuffer",
     });
 

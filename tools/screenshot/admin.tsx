@@ -23,6 +23,8 @@ import { ADMIN_NAV } from "@/admin/nav";
 import ShopProfile from "@/pages/admin/ShopProfile";
 import MyAccount from "@/pages/admin/MyAccount";
 import Pos from "@/pages/admin/Pos";
+import Channels from "@/pages/admin/Channels";
+import Keys from "@/pages/admin/Keys";
 
 const route =
   new URLSearchParams(location.search).get("route") ?? "/admin/account";
@@ -54,6 +56,26 @@ const RESPONSES: Record<string, unknown> = {
     url: "https://connect.stripe.com/…",
     connected: true,
   },
+  // Mutation response so the Keys page's post-rotation state (one-time key +
+  // scan-to-pair QR) can be captured by clicking through in the shot.
+  "tenant.rotatePosApiKey": {
+    posApiKey: "pos_live_c1a9f2e84b7d4d21b6f0e5a83912cdEXAMPLE",
+  },
+  "tenant.channelConnect": {
+    slackAuthorizeUrl: "https://slack.com/oauth/v2/authorize?client_id=stub",
+    discordInviteUrl: "https://discord.com/oauth2/authorize?client_id=stub",
+  },
+  "tenant.channelSecrets": {
+    vaultConfigured: true,
+    secrets: [
+      {
+        provider: "discord_bot_token",
+        hint: "3f9a",
+        rotatedAt: new Date("2026-07-20T00:00:00Z"),
+      },
+    ],
+  },
+  "instagram.adminList": [],
 };
 
 window.fetch = (async (input: RequestInfo | URL) => {
@@ -72,6 +94,8 @@ const PAGES: Record<string, React.ComponentType> = {
   account: ShopProfile,
   me: MyAccount,
   pos: Pos,
+  channels: Channels,
+  keys: Keys,
 };
 
 const queryClient = new QueryClient({

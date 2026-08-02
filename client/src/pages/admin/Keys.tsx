@@ -5,6 +5,7 @@
  * Rotating immediately invalidates the old key on every terminal.
  */
 import { useState } from "react";
+import { QRCodeSVG } from "qrcode.react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -15,6 +16,7 @@ import {
   PrimaryButton,
   AdminOnly,
 } from "@/components/admin/ui";
+import { buildPosPairingPayload } from "@/lib/posPairing";
 
 export default function Keys() {
   const { user } = useAuth();
@@ -26,7 +28,9 @@ export default function Keys() {
     onSuccess: (data) => {
       setPlaintext(data.posApiKey);
       setConfirming(false);
-      toast.success("New POS key generated. Copy it now — it won't be shown again.");
+      toast.success(
+        "New POS key generated. Copy it now — it won't be shown again.",
+      );
     },
     onError: (e) => toast.error(e.message || "Could not rotate the key."),
   });
@@ -81,6 +85,37 @@ export default function Keys() {
                 )}
               </button>
             </div>
+
+            {/* Scan-to-pair QR — only renderable in this same moment, since
+                the payload needs the plaintext the server never stores. */}
+            <div className="mt-5 flex items-start gap-4 rounded-lg border bg-muted/40 p-4">
+              <div
+                data-testid="pos-pairing-qr"
+                className="shrink-0 rounded-md border bg-white p-2"
+              >
+                <QRCodeSVG
+                  value={buildPosPairingPayload(
+                    window.location.origin,
+                    plaintext,
+                  )}
+                  size={148}
+                  marginSize={0}
+                />
+              </div>
+              <div className="text-sm text-muted-foreground">
+                <p className="font-medium text-foreground">
+                  Or pair by scanning
+                </p>
+                <p className="mt-1">
+                  In the Zolto POS app, choose{" "}
+                  <span className="text-foreground">Scan to pair</span> and
+                  point the camera here — the server address and key are set in
+                  one go. The code disappears when you leave this page, and
+                  anyone who scans it can take payments for your store, so treat
+                  it like the key itself.
+                </p>
+              </div>
+            </div>
           </div>
         )}
 
@@ -117,8 +152,8 @@ export default function Keys() {
         description="Programmatic access to your catalogue and orders."
       >
         <p className="text-sm text-muted-foreground">
-          A public API for building your own integrations is part of a future Business
-          plan and is coming soon. It'll live here when it's ready.
+          A public API for building your own integrations is part of a future
+          Business plan and is coming soon. It'll live here when it's ready.
         </p>
       </SettingsCard>
     </div>

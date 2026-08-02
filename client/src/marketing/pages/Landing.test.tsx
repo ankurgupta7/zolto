@@ -16,13 +16,24 @@ function renderLanding() {
 }
 
 describe("Landing", () => {
-  it("leads with the maker value proposition", () => {
+  it("leads with the AI-native thesis", () => {
     renderLanding();
     expect(
       screen.getByRole("heading", {
         level: 1,
-        name: /Your whole shop, on the phone/i,
+        name: /Your next customer is an AI/i,
       }),
+    ).toBeTruthy();
+  });
+
+  it("proves the thesis: an agent purchase and the found→asked→bought loop", () => {
+    renderLanding();
+    // The proof band stages a real MCP purchase…
+    expect(screen.getByText(/Order placed/i)).toBeTruthy();
+    expect(screen.getByText(/bergblume\.zolto\.ch\/mcp/i)).toBeTruthy();
+    // …and the mechanics band explains the loop.
+    expect(
+      screen.getByRole("heading", { name: /How an AI buys from you/i }),
     ).toBeTruthy();
   });
 
