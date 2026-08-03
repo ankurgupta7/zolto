@@ -9,10 +9,12 @@ import {
 } from "@testing-library/react";
 import { Router } from "wouter";
 import { memoryLocation } from "wouter/memory-location";
+import { toast } from "sonner";
 import Signup from "./Signup";
 
 const mocks = vi.hoisted(() => ({
   createVars: undefined as unknown,
+  createOpts: undefined as { onError?: (err: unknown) => void } | undefined,
   aiVars: undefined as unknown,
   aiResult: {
     primaryColor: "#A34A24",
@@ -30,12 +32,15 @@ vi.mock("@/lib/trpc", () => ({
   trpc: {
     tenant: {
       create: {
-        useMutation: () => ({
-          mutate: (vars: unknown) => {
-            mocks.createVars = vars;
-          },
-          isPending: false,
-        }),
+        useMutation: (opts?: { onError?: (err: unknown) => void }) => {
+          mocks.createOpts = opts;
+          return {
+            mutate: (vars: unknown) => {
+              mocks.createVars = vars;
+            },
+            isPending: false,
+          };
+        },
       },
       brandingFromLogo: {
         useMutation: (opts?: {
@@ -53,7 +58,9 @@ vi.mock("@/lib/trpc", () => ({
 }));
 
 beforeEach(() => {
+  vi.clearAllMocks();
   mocks.createVars = undefined;
+  mocks.createOpts = undefined;
   mocks.aiVars = undefined;
 });
 
@@ -203,9 +210,7 @@ describe("Signup wizard", () => {
     // FileReader is async — the preview card appears once the data URL lands.
     await waitFor(() => screen.getByText("logo.png"));
 
-    fireEvent.click(
-      screen.getByRole("button", { name: /colors from logo/i }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: /colors from logo/i }));
     // The logo's data URL is what travels to the AI…
     expect(String((mocks.aiVars as { imageData: string }).imageData)).toMatch(
       /^data:image\/png;base64,/,
@@ -228,5 +233,34 @@ describe("Signup wizard", () => {
         imageData: expect.stringMatching(/^data:image\/png;base64,/),
       },
     });
+  });
+});
+
+// A refused email is recoverable by signing in (the server's CONFLICT message
+// says how — including the half-finished-signup case), so the toast must carry
+// the door, not just the wall.
+describe("Signup — conflict recovery", () => {
+  it("offers a Sign in action when the email is already taken or mid-signup", () => {
+    renderSignup();
+    mocks.createOpts?.onError?.({
+      message:
+        "You already started a signup with this email — your store is created and waiting. Sign in with this same email to finish setting it up.",
+      data: { code: "CONFLICT" },
+    });
+    expect(toast.error).toHaveBeenCalledWith(
+      expect.stringMatching(/finish setting it up/i),
+      expect.objectContaining({
+        action: expect.objectContaining({ label: "Sign in" }),
+      }),
+    );
+  });
+
+  it("keeps the slug-taken conflict plain — no sign-in detour for a URL clash", () => {
+    renderSignup();
+    mocks.createOpts?.onError?.({
+      message: "Store URL already taken",
+      data: { code: "CONFLICT" },
+    });
+    expect(toast.error).toHaveBeenCalledWith("Store URL already taken");
   });
 });

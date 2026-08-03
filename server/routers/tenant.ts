@@ -22,6 +22,7 @@ import {
   setTenantReferrer,
   createPendingTenantAdmin,
   getStoreUserByEmail,
+  getPendingTenantAdminByEmail,
   getUserByOpenId,
   assignUserToTenantAsAdmin,
   deleteUserById,
@@ -85,6 +86,37 @@ function stripPosApiKey<T extends { posApiKey: string }>(
   const rest: Partial<T> = { ...tenant };
   delete rest.posApiKey;
   return rest as Omit<T, "posApiKey">;
+}
+
+/**
+ * Shared tail of both claim paths — `claimAdmin` (token from the signup tab)
+ * and `resumeClaim` (provider-verified email match, for when that token is
+ * gone). Attaches the signed-in account to the pending tenant as admin, burns
+ * the single-use pending row, and reports where to go.
+ *
+ * The different-store guard is the account-level twin of signup's
+ * one-email-one-store check (which alone is bypassable by typing a fresh
+ * address at signup and then claiming with an already-attached login).
+ * Without it, the assignment below would silently rip the account off its
+ * first store.
+ */
+async function finishClaim(
+  user: { openId: string; tenantId: number | null },
+  pending: { id: number; tenantId: number },
+): Promise<{ tenantId: number; slug: string | null }> {
+  if (user.tenantId && user.tenantId !== pending.tenantId) {
+    throw new TRPCError({
+      code: "CONFLICT",
+      message:
+        "This account already manages a store. Sign in with a different account to claim this one.",
+    });
+  }
+
+  await assignUserToTenantAsAdmin(user.openId, pending.tenantId);
+  await deleteUserById(pending.id);
+
+  const tenant = await getTenantById(pending.tenantId);
+  return { tenantId: pending.tenantId, slug: tenant?.slug ?? null };
 }
 
 export const tenantRouter = router({
@@ -173,11 +205,18 @@ export const tenantRouter = router({
       // its admin, staff, or a still-unclaimed pending admin — must not spawn
       // a second store; an address that exists with no store (signed in,
       // never created one) is exactly who signup is for and passes.
-      if (await getStoreUserByEmail(input.email)) {
+      //
+      // The pending case gets its own message: a merchant whose sign-in failed
+      // after signup lands right back here, and "already attached" reads as a
+      // dead end when the actual fix is to sign in with this same email and
+      // let `resumeClaim` (below) attach the waiting store.
+      const existing = await getStoreUserByEmail(input.email);
+      if (existing) {
         throw new TRPCError({
           code: "CONFLICT",
-          message:
-            "This email is already attached to a store. Sign in to manage it, or use a different address.",
+          message: existing.pendingClaim
+            ? "You already started a signup with this email — your store is created and waiting. Sign in with this same email to finish setting it up."
+            : "This email is already attached to a store. Sign in to manage it, or use a different address.",
         });
       }
 
@@ -312,7 +351,8 @@ export const tenantRouter = router({
 
       const { invokeLLM } = await import("../_core/llm");
       const templateGuide = STORE_TEMPLATES.map(
-        (t) => `- "${t.id}": ${t.tagline}. Best for ${t.bestFor.toLowerCase()}.`,
+        (t) =>
+          `- "${t.id}": ${t.tagline}. Best for ${t.bestFor.toLowerCase()}.`,
       ).join("\n");
 
       const response = await invokeLLM({
@@ -440,29 +480,53 @@ rationale: one friendly sentence (max 25 words) telling the merchant what you sa
           message: "Invalid or already-claimed invitation",
         });
       }
-
-      // The claim moves the signed-in account onto the pending tenant, so an
-      // account already attached to a DIFFERENT store must be refused — the
-      // account-level twin of signup's one-email-one-store check (which alone
-      // is bypassable by typing a fresh address at signup and then claiming
-      // with an already-attached login). Without this, the assignment below
-      // would silently rip the account off its first store.
-      if (ctx.user.tenantId && ctx.user.tenantId !== pending.tenantId) {
-        throw new TRPCError({
-          code: "CONFLICT",
-          message:
-            "This account already manages a store. Sign in with a different account to claim this one.",
-        });
-      }
-
-      // Attach the authenticated user to the tenant as admin, then burn the
-      // single-use pending row so the token can't be replayed.
-      await assignUserToTenantAsAdmin(ctx.user.openId, pending.tenantId);
-      await deleteUserById(pending.id);
-
-      const tenant = await getTenantById(pending.tenantId);
-      return { tenantId: pending.tenantId, slug: tenant?.slug ?? null };
+      return finishClaim(ctx.user, {
+        id: pending.id,
+        tenantId: pending.tenantId,
+      });
     }),
+
+  // ─── Protected: Is a store waiting for this account's email? ───────────────
+  // Read-only companion to resumeClaim below: lets /signin and /onboarding
+  // surface "your store is waiting — finish setting it up" instead of a dead
+  // end. Null for an account that already manages a store (nothing to resume)
+  // or whose email matches no unclaimed signup.
+  pendingClaim: protectedProcedure.query(async ({ ctx }) => {
+    if (ctx.user.tenantId || !ctx.user.email) return null;
+    const pending = await getPendingTenantAdminByEmail(ctx.user.email);
+    if (!pending) return null;
+    const tenant = await getTenantById(pending.tenantId);
+    return tenant ? { slug: tenant.slug, name: tenant.name } : null;
+  }),
+
+  // ─── Protected: Resume a claim whose token is gone ──────────────────────────
+  // The claim token lives only in the signup tab's sessionStorage, so a failed
+  // sign-in, a closed tab, or a second device loses it — and without this
+  // procedure that merchant was wedged: signup refuses their email ("already
+  // attached"), yet signing in attaches them to nothing. Catch-22, fixable
+  // only by an operator.
+  //
+  // Recovery authorizes by EMAIL instead of token: the signed-in account's
+  // email is provider-verified (Google/Apple id token, or a magic link that
+  // proved inbox access), and matching it against the address typed at signup
+  // is exactly the contract the signup screen promised ("You'll finish setup
+  // by signing in with this email"). The pending row still never grants access
+  // by itself, and the token path stays for the owner who signs in with a
+  // DIFFERENT address than they typed. A stranger typing someone else's email
+  // at signup gains nothing here: only the verified owner of the inbox can
+  // ever resume it.
+  resumeClaim: protectedProcedure.mutation(async ({ ctx }) => {
+    const pending = ctx.user.email
+      ? await getPendingTenantAdminByEmail(ctx.user.email)
+      : undefined;
+    if (!pending) {
+      throw new TRPCError({
+        code: "NOT_FOUND",
+        message: "No unclaimed store matches this account's email.",
+      });
+    }
+    return finishClaim(ctx.user, pending);
+  }),
 
   // ─── Protected: Get my tenant ──────────────────────────────────────────────
   me: publicProcedure.use(requireTenant).query(async ({ ctx }) => {

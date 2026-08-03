@@ -85,16 +85,41 @@ describe("user reads", () => {
   });
 
   it("getStoreUserByEmail returns the store-attached row when found", async () => {
-    selectReturns([{ id: 5, tenantId: 7 }]);
+    selectReturns([{ id: 5, tenantId: 7, openId: "google:sub-1" }]);
     expect(await db.getStoreUserByEmail("owner@a.example")).toEqual({
       id: 5,
       tenantId: 7,
+      pendingClaim: false,
+    });
+  });
+
+  it("getStoreUserByEmail flags a still-unclaimed pending-admin row", async () => {
+    selectReturns([{ id: 5, tenantId: 7, openId: "pending:tok-abc" }]);
+    expect(await db.getStoreUserByEmail("owner@a.example")).toEqual({
+      id: 5,
+      tenantId: 7,
+      pendingClaim: true,
     });
   });
 
   it("getStoreUserByEmail returns undefined when the email is unused", async () => {
     selectReturns([]);
     expect(await db.getStoreUserByEmail("free@a.example")).toBeUndefined();
+  });
+
+  it("getPendingTenantAdminByEmail returns the unclaimed row when found", async () => {
+    selectReturns([{ id: 9, tenantId: 42 }]);
+    expect(await db.getPendingTenantAdminByEmail("owner@a.example")).toEqual({
+      id: 9,
+      tenantId: 42,
+    });
+  });
+
+  it("getPendingTenantAdminByEmail returns undefined when nothing is waiting", async () => {
+    selectReturns([]);
+    expect(
+      await db.getPendingTenantAdminByEmail("free@a.example"),
+    ).toBeUndefined();
   });
 });
 

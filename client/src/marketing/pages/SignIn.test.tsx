@@ -9,6 +9,8 @@ const mocks = vi.hoisted(() => ({
   meLoading: false,
   storeData: undefined as unknown,
   storeLoading: false,
+  pendingData: undefined as unknown,
+  pendingLoading: false,
   logout: vi.fn(),
 }));
 
@@ -44,6 +46,12 @@ vi.mock("@/lib/trpc", () => ({
           isLoading: mocks.storeLoading,
         }),
       },
+      pendingClaim: {
+        useQuery: () => ({
+          data: mocks.pendingData,
+          isLoading: mocks.pendingLoading,
+        }),
+      },
     },
   },
 }));
@@ -60,6 +68,8 @@ beforeEach(() => {
   mocks.meLoading = false;
   mocks.storeData = undefined;
   mocks.storeLoading = false;
+  mocks.pendingData = undefined;
+  mocks.pendingLoading = false;
 });
 afterEach(() => cleanup());
 
@@ -183,6 +193,50 @@ describe("SignIn — a signed-in account with no store", () => {
     renderSignIn(SIGNIN_RETURN_PATH);
     expect(screen.getByText(/You're signed in/i)).toBeTruthy();
     expect(screen.queryByText(/couldn.t sign you in/i)).toBeNull();
+  });
+});
+
+// The lost-claim-token recovery: signup created the store, but the sign-in
+// that was meant to claim it failed (or happened on another device), so the
+// sessionStorage token is gone. Signing in with the signup email must surface
+// the waiting store — not a "create your store" dead end whose signup would
+// only refuse the email as already taken.
+describe("SignIn — a signed-in account with an unclaimed store waiting", () => {
+  beforeEach(() => {
+    mocks.meData = { id: 1, email: "anna@bergblume.ch" };
+    mocks.storeData = null;
+    mocks.pendingData = { slug: "bergblume", name: "Bergblume" };
+  });
+
+  it("offers finishing setup instead of a second signup, on the OAuth return leg", () => {
+    renderSignIn(SIGNIN_RETURN_PATH);
+    expect(screen.getByText(/your store is waiting/i)).toBeTruthy();
+    const finish = screen.getByRole("link", {
+      name: /finish setting up Bergblume/i,
+    });
+    expect(finish.getAttribute("href")).toBe("/onboarding?store=bergblume");
+    expect(
+      screen.queryByRole("link", { name: /create your store/i }),
+    ).toBeNull();
+  });
+
+  it("offers finishing setup on a deliberate visit too", () => {
+    renderSignIn();
+    expect(screen.getByText(/already signed in/i)).toBeTruthy();
+    const finish = screen.getByRole("link", {
+      name: /finish setting up Bergblume/i,
+    });
+    expect(finish.getAttribute("href")).toBe("/onboarding?store=bergblume");
+  });
+
+  it("holds the spinner while the pending lookup is in flight, rather than flashing the wrong door", () => {
+    mocks.pendingData = undefined;
+    mocks.pendingLoading = true;
+    renderSignIn(SIGNIN_RETURN_PATH);
+    expect(screen.getByTestId("signin-progress")).toBeTruthy();
+    expect(
+      screen.queryByRole("link", { name: /create your store/i }),
+    ).toBeNull();
   });
 });
 

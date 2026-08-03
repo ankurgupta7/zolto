@@ -1957,7 +1957,9 @@ export async function createTenantCategoryRow(row: {
     const sortOrder =
       row.sortOrder ??
       (await db
-        .select({ max: sql<number>`COALESCE(MAX(${tenantCategories.sortOrder}), -1)` })
+        .select({
+          max: sql<number>`COALESCE(MAX(${tenantCategories.sortOrder}), -1)`,
+        })
         .from(tenantCategories)
         .where(eq(tenantCategories.tenantId, row.tenantId))
         .then((r) => (r[0]?.max ?? -1) + 1));
@@ -2102,9 +2104,7 @@ export async function countProductsInCategory(
       db
         .select({ count: sql<number>`COUNT(*)` })
         .from(products)
-        .where(
-          and(eq(products.tenantId, tenantId), eq(products.category, key)),
-        )
+        .where(and(eq(products.tenantId, tenantId), eq(products.category, key)))
         .then((r) => Number(r[0]?.count ?? 0)),
     0,
   );
@@ -2176,6 +2176,45 @@ export async function setTenantReferrer(
  */
 export async function getStoreUserByEmail(
   email: string,
+): Promise<
+  { id: number; tenantId: number; pendingClaim: boolean } | undefined
+> {
+  return withDb(async (db) => {
+    const result = await db
+      .select({ id: users.id, tenantId: users.tenantId, openId: users.openId })
+      .from(users)
+      .where(
+        and(
+          sql`LOWER(${users.email}) = LOWER(${email})`,
+          isNotNull(users.tenantId),
+        ),
+      )
+      .limit(1);
+    const row = result[0];
+    return row && row.tenantId != null
+      ? {
+          id: row.id,
+          tenantId: row.tenantId,
+          // Distinguishes "this email runs a store" from "this email started a
+          // signup and never finished claiming it" — signup uses the flag to
+          // point the merchant at the recovery path instead of a dead end.
+          pendingClaim: row.openId.startsWith("pending:"),
+        }
+      : undefined;
+  }, undefined);
+}
+
+/**
+ * The unclaimed pending-admin row (openId `pending:<token>`) whose signup email
+ * matches, if any — the recovery half of the claim flow. The happy path
+ * authorizes the claim with the token from sessionStorage; when that token is
+ * gone (new device, cleared storage, a sign-in that failed halfway), this
+ * lookup lets `tenant.resumeClaim` find the waiting store by the SIGNED-IN
+ * account's provider-verified email instead. Case-insensitive for the same
+ * reason as getStoreUserByEmail above.
+ */
+export async function getPendingTenantAdminByEmail(
+  email: string,
 ): Promise<{ id: number; tenantId: number } | undefined> {
   return withDb(async (db) => {
     const result = await db
@@ -2184,7 +2223,9 @@ export async function getStoreUserByEmail(
       .where(
         and(
           sql`LOWER(${users.email}) = LOWER(${email})`,
+          sql`${users.openId} LIKE 'pending:%'`,
           isNotNull(users.tenantId),
+          eq(users.role, "admin"),
         ),
       )
       .limit(1);
