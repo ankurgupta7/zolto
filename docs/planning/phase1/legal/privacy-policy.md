@@ -17,7 +17,7 @@ When you register for an account, place an order, or use our Service, we may col
 - **Account Information:** Name, email address, phone number, business name
 - **Payment Information:** Processed by Stripe (we do not store card numbers)
 - **Store Data:** Products, inventory, orders, customer information you upload
-- **Usage Data:** How you interact with the platform, features used, pages visited
+- **Usage Data:** How you interact with the platform, features used, pages visited. Page views are measured with **Umami**, a privacy-focused analytics tool that works without cookies, cross-site identifiers, or fingerprinting, and yields only aggregate statistics — see our [Cookie Policy](./cookie-policy.md)
 - **Communication Data:** Messages to our AI chatbot, support inquiries
 
 ### AI-Generated Content
@@ -63,6 +63,7 @@ We do not sell your personal data. We may share data with:
 | **Stripe** | Payment processing | Payment details (tokenized) |
 | **Cloud hosting provider** | Infrastructure | Encrypted store data |
 | **OpenAI** | AI feature operation | Anonymized prompts and responses |
+| **Umami (analytics)** | Aggregate usage measurement | Cookieless page-view events; no cross-site identifiers |
 | **Legal authorities** | Compliance | As required by law |
 
 All third-party processors are bound by Data Processing Agreements (DPAs) compliant with GDPR Article 28.

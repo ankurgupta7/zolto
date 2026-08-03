@@ -73,15 +73,22 @@ export function Privacy() {
           ],
         },
         {
-          heading: "3. Your rights",
+          heading: "3. Cookies & analytics",
+          body: [
+            "The platform sets a single cookie, app_session_id, which keeps you signed in. It is strictly necessary — the service cannot authenticate you without it — so it requires no consent banner and cannot be disabled while using the service. We set no advertising, preference, or third-party tracking cookies.",
+            "We measure page views with Umami, a privacy-focused analytics tool that works without cookies and without cross-site identifiers; it gives us aggregate statistics, not profiles of individual visitors. Webfonts are served from our own infrastructure, so viewing a page sends no request to third-party font networks. During checkout you are redirected to Stripe, which may set its own cookies on its own domain under Stripe's privacy policy.",
+          ],
+        },
+        {
+          heading: "4. Your rights",
           body: [
             "You may request access to, correction of, or deletion of your personal data, and you may object to certain processing. Contact us to exercise these rights. EU users additionally have the rights granted under the GDPR, including data portability and the right to lodge a complaint with a supervisory authority.",
           ],
         },
         {
-          heading: "4. Retention & sub-processors",
+          heading: "5. Retention & sub-processors",
           body: [
-            "We keep data for as long as your account is active and as required by law. We use a small set of sub-processors (hosting, payments, email, AI) under contract; a current list is available on request.",
+            "We keep data for as long as your account is active and as required by law. We use a small set of sub-processors (hosting, payments, email, AI, analytics) under contract; a current list is available on request.",
           ],
         },
       ]}

@@ -45,7 +45,6 @@ regresses; the cross-tenant one silently does.
 assert the DOM; they cannot see the render. Ship a screenshot with the change.
 
 ```bash
-./tools/screenshot/fetch-fonts.sh                      # once per clone
 npx vite --config tools/screenshot/vite.config.ts &    # isolated root, port 5199
 node tools/screenshot/shoot.mjs out/ "some section text"
 ```
@@ -68,7 +67,9 @@ through, and which are worth checking for by eye:
   numerals showing money or stock need `lining-nums`, not just `tabular-nums`.
 
 `fonts loaded: NONE ⚠` in the output means the shot is showing fallback faces
-and proves nothing about typography — run `fetch-fonts.sh` first.
+and proves nothing about typography — the vendored fonts in
+`client/public/fonts/` (regenerated via `tools/fonts/vendor-fonts.sh`) are
+missing or the harness isn't serving them.
 
 ## Commands
 

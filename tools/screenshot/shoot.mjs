@@ -1,7 +1,6 @@
 /**
  * Screenshot real marketing components for visual review.
  *
- *   ./tools/screenshot/fetch-fonts.sh          # once per clone
  *   npx vite --config tools/screenshot/vite.config.ts &
  *   node tools/screenshot/shoot.mjs out/ "A whole shop in your pocket"
  *
@@ -72,7 +71,7 @@ const loaded = await page.evaluate(() => [
   ),
 ]);
 // An empty list means the shot is showing fallback faces and cannot be trusted
-// for anything typographic — run fetch-fonts.sh.
+// for anything typographic — check that client/public/fonts is intact.
 console.log("fonts loaded:", loaded.length ? loaded.join(", ") : "NONE ⚠");
 
 if (sections.length === 0) {
