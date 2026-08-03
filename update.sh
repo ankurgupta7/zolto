@@ -767,6 +767,17 @@ migrate_0033_product_locales_de_fr
 # Idempotent; see migrate_0034_magic_link_tokens in deploy/lib/db.sh.
 migrate_0034_magic_link_tokens
 
+# ── 0035: storefront templates ────────────────────────────────────────────────
+# Ships drizzle/0016_store_templates.sql. The signup wizard's template choice
+# (shared/templates.ts) — surfaces half of the storefront palette. NULL keeps
+# the pre-template default look, so existing stores are untouched. Idempotent.
+if [ "$(col_exists tenant_settings template_id)" = "0" ]; then
+  run_sql "0035 add tenant_settings.template_id" \
+    "ALTER TABLE \`tenant_settings\` ADD \`template_id\` varchar(32) NULL;"
+else
+  ok "0035 tenant_settings.template_id already exists"
+fi
+
 # ── Record the applied migration set ──────────────────────────────────────────
 # Only reached when every migration above succeeded — `set -e` plus run_sql's
 # die() mean a failure never gets this far, so a half-applied schema is never

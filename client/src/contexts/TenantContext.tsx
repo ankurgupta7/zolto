@@ -13,6 +13,7 @@ import {
   type Branding,
 } from "@/lib/branding";
 import { derivePalette } from "@/lib/palette";
+import { getTemplate, DEFAULT_TEMPLATE_ID } from "@shared/templates";
 
 interface TenantContextValue {
   slug: string | null;
@@ -54,6 +55,31 @@ function useApplyBrandColor(primaryColor: string | null) {
   }, [primaryColor]);
 }
 
+/**
+ * Applies the tenant's chosen storefront template (shared/templates.ts) to the
+ * document. Templates own the *surface* half of the palette — grounds,
+ * surfaces, borders, muted text — which `derivePalette` deliberately leaves
+ * alone, so this composes with `useApplyBrandColor` instead of fighting it.
+ * No template (or "atelier", whose values equal the CSS defaults) writes
+ * nothing, keeping existing stores byte-identical.
+ */
+function useApplyTemplate(templateId: string | null | undefined) {
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const template = getTemplate(templateId);
+    if (!template || template.id === DEFAULT_TEMPLATE_ID) return;
+    const root = document.documentElement;
+    for (const [prop, value] of Object.entries(template.cssVars)) {
+      root.style.setProperty(prop, value);
+    }
+    return () => {
+      for (const prop of Object.keys(template.cssVars)) {
+        root.style.removeProperty(prop);
+      }
+    };
+  }, [templateId]);
+}
+
 export function TenantProvider({
   slug,
   children,
@@ -83,6 +109,7 @@ export function TenantProvider({
   );
 
   useApplyBrandColor(branding.primaryColor);
+  useApplyTemplate(settingsQuery.data?.templateId);
 
   const value = useMemo<TenantContextValue>(
     () => ({

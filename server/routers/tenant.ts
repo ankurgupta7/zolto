@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { NOT_ADMIN_ERR_MSG } from "@shared/const";
+import { TEMPLATE_IDS, STORE_TEMPLATES } from "@shared/templates";
 import {
   router,
   publicProcedure,
@@ -41,6 +42,7 @@ import { startGatewayForToken } from "../discord";
 import { buildSlackAuthorizeUrl, buildDiscordInviteUrl } from "../slackOAuth";
 import { buildConnectAuthorizeUrl } from "../stripeConnect";
 import { deriveOnboardingStatus } from "../onboarding";
+import { createRateLimiter } from "../rateLimit";
 import { generatePosApiKey, hashPosApiKey } from "../posApiKey";
 import { tenants, tenantSettings } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
@@ -53,6 +55,23 @@ import crypto from "node:crypto";
 function generateReferralCode(): string {
   return crypto.randomBytes(8).toString("hex").toUpperCase();
 }
+
+const HEX_COLOR = /^#[0-9A-Fa-f]{6}$/;
+
+// Signup accepts the merchant's logo inline (same reasoning as setTwintQr: the
+// merchant has a file, not a URL). SVG is deliberately excluded — a stored SVG
+// served from /uploads can carry script, and nothing here sanitizes it.
+const LOGO_MIME_TYPES = ["image/png", "image/jpeg", "image/webp"] as const;
+
+// AI palette extraction is a public, pre-signup endpoint that burns LLM
+// tokens, so it gets the same soft abuse guard as the public MCP checkout: a
+// fixed window per caller IP (shared across instances via the DB store).
+// Generous enough for a merchant trying a few logo files; a hostile loop
+// hits the wall fast.
+const logoPaletteLimiter = createRateLimiter({
+  limit: 10,
+  windowMs: 60 * 60 * 1000,
+});
 
 // The POS API key is a bearer credential — a Tenant row must never leak it
 // (or even its hash) through an API response. Strip it everywhere a tenant
@@ -121,6 +140,18 @@ export const tenantRouter = router({
           .max(64),
         email: z.string().email(),
         referralCode: z.string().optional(),
+        // Branding chosen in the signup wizard — all optional so the plain
+        // three-field signup keeps working (and so does the mobile app's).
+        templateId: z.enum(TEMPLATE_IDS).optional(),
+        primaryColor: z.string().regex(HEX_COLOR).optional(),
+        logo: z
+          .object({
+            // Base64 image data, with or without a data: prefix. ~3 MB of
+            // base64 ≈ 2.2 MB of image — plenty for a logo.
+            imageData: z.string().min(1).max(3_000_000),
+            mimeType: z.enum(LOGO_MIME_TYPES),
+          })
+          .optional(),
       }),
     )
     .mutation(async ({ input }) => {
@@ -161,8 +192,46 @@ export const tenantRouter = router({
         referralCode: generateReferralCode(),
       });
 
-      // 4. Default settings.
-      await createTenantSettings({ tenantId, currency: "chf" });
+      // 4. Settings, seeded with the wizard's branding choices. The logo is
+      // uploaded first so its URL lands in the same insert; a failed upload
+      // must not lose the signup, so it degrades to "no logo" (the merchant
+      // re-uploads from the admin, and the onboarding checklist keeps the
+      // branding task open to say so).
+      let logoUrl: string | null = null;
+      if (input.logo) {
+        try {
+          const base64 = input.logo.imageData.replace(
+            /^data:[^;]+;base64,/,
+            "",
+          );
+          const buffer = Buffer.from(base64, "base64");
+          if (buffer.byteLength > 0) {
+            const ext = input.logo.mimeType.split("/")[1] ?? "png";
+            // Tenant-scoped so the upload counts against the plan's storage
+            // cap like every other image (server/storage.ts).
+            const { url } = await storagePut(
+              tenantId,
+              `logos/${tenantId}/logo.${ext}`,
+              buffer,
+              input.logo.mimeType,
+            );
+            logoUrl = url;
+          }
+        } catch (err) {
+          console.warn(
+            "[Signup] Logo upload failed; store created without it:",
+            err,
+          );
+        }
+      }
+
+      await createTenantSettings({
+        tenantId,
+        currency: "chf",
+        ...(input.templateId ? { templateId: input.templateId } : {}),
+        ...(input.primaryColor ? { primaryColor: input.primaryColor } : {}),
+        ...(logoUrl ? { logoUrl } : {}),
+      });
 
       // 5. Stripe customer for future billing (no-op if Stripe isn't configured).
       const stripeCustomerId = await createStripeCustomer({
@@ -191,9 +260,159 @@ export const tenantRouter = router({
         slug: input.slug,
         trialEndsAt: trialEndsAt.toISOString(),
         claimToken,
+        // Null when no logo was sent OR the upload failed — the wizard tells
+        // the merchant to re-upload from the admin in the latter case.
+        logoUrl,
         // Shown ONCE — the UI must present it as such ("copy it now; it can't
         // be shown again"). Not stored anywhere in plaintext.
         posApiKey: posApiKeyPlaintext,
+      };
+    }),
+
+  // ─── Public: AI color scheme from an uploaded logo (signup wizard) ─────────
+  // Pre-signup, so there is no tenant or user to hang this on — the wizard
+  // calls it while the merchant is still choosing branding, before `create`.
+  // Nothing is persisted: it returns a *suggestion* (dominant brand color, an
+  // optional secondary, and which of the five templates fits) that the wizard
+  // shows for the merchant to accept or override. Rate-limited per IP because
+  // it is an unauthenticated endpoint that spends LLM tokens.
+  brandingFromLogo: publicProcedure
+    .input(
+      z.object({
+        // Must be a full data URL so the mime type travels with the pixels.
+        imageData: z
+          .string()
+          .regex(
+            /^data:image\/(png|jpeg|webp);base64,/,
+            "Upload a PNG, JPEG, or WebP logo",
+          )
+          .max(3_000_000),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const gate = await logoPaletteLimiter.check(
+        `logo-palette:${ctx.req.ip ?? "unknown"}`,
+      );
+      if (!gate.allowed) {
+        throw new TRPCError({
+          code: "TOO_MANY_REQUESTS",
+          message: `Too many color extractions — try again in ${gate.retryAfterSeconds} seconds.`,
+        });
+      }
+
+      const { invokeLLM } = await import("../_core/llm");
+      const templateGuide = STORE_TEMPLATES.map(
+        (t) => `- "${t.id}": ${t.tagline}. Best for ${t.bestFor.toLowerCase()}.`,
+      ).join("\n");
+
+      const response = await invokeLLM({
+        messages: [
+          {
+            role: "system",
+            content: `You are a brand designer for an e-commerce platform. The user uploads their shop's logo. Extract a color scheme for their storefront from it.
+
+Rules for primaryColor:
+- Pick the logo's dominant BRAND color — the color a customer would name if asked "what color is this brand?". Ignore white/near-white backgrounds and incidental anti-aliasing colors.
+- It becomes the store's dark "ink" (headers, footer, buttons), so if the logo's brand color is very light, return a darker shade of the same hue that would stay legible as button/text color on a cream background.
+- Format: 6-digit hex like #2D6B4A.
+
+Rules for secondaryColor:
+- A supporting color actually present in the logo, if there is a clear one; otherwise repeat primaryColor.
+
+Rules for suggestedTemplateId — pick the storefront template whose mood best matches the logo:
+${templateGuide}
+
+rationale: one friendly sentence (max 25 words) telling the merchant what you saw, e.g. "Deep forest green with a warm gold accent — a natural fit for the Verdant look."`,
+          },
+          {
+            role: "user",
+            content: [
+              {
+                type: "image_url" as const,
+                image_url: { url: input.imageData, detail: "auto" as const },
+              },
+              {
+                type: "text" as const,
+                text: "Extract my shop's color scheme from this logo.",
+              },
+            ],
+          },
+        ],
+        response_format: {
+          type: "json_schema",
+          json_schema: {
+            name: "logo_color_scheme",
+            strict: true,
+            schema: {
+              type: "object",
+              properties: {
+                primaryColor: { type: "string" },
+                secondaryColor: { type: "string" },
+                suggestedTemplateId: {
+                  type: "string",
+                  enum: [...TEMPLATE_IDS],
+                },
+                rationale: { type: "string" },
+              },
+              required: [
+                "primaryColor",
+                "secondaryColor",
+                "suggestedTemplateId",
+                "rationale",
+              ],
+              additionalProperties: false,
+            },
+          },
+        },
+      });
+
+      const rawContent = response.choices?.[0]?.message?.content;
+      if (!rawContent) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "The AI couldn't read that logo. Pick a color manually.",
+        });
+      }
+      let parsed: {
+        primaryColor: string;
+        secondaryColor: string;
+        suggestedTemplateId: string;
+        rationale: string;
+      };
+      try {
+        parsed = JSON.parse(
+          typeof rawContent === "string"
+            ? rawContent
+            : JSON.stringify(rawContent),
+        );
+      } catch {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "The AI couldn't read that logo. Pick a color manually.",
+        });
+      }
+
+      // The model is schema-constrained but hex strings still deserve a belt:
+      // a malformed color here would flow into updateSettings' validator later
+      // and confuse the merchant with an error far from its cause.
+      if (!HEX_COLOR.test(parsed.primaryColor)) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "The AI couldn't find a usable color. Pick one manually.",
+        });
+      }
+
+      return {
+        primaryColor: parsed.primaryColor,
+        secondaryColor: HEX_COLOR.test(parsed.secondaryColor)
+          ? parsed.secondaryColor
+          : null,
+        suggestedTemplateId: (TEMPLATE_IDS as readonly string[]).includes(
+          parsed.suggestedTemplateId,
+        )
+          ? (parsed.suggestedTemplateId as (typeof TEMPLATE_IDS)[number])
+          : null,
+        rationale: parsed.rationale ?? null,
       };
     }),
 
@@ -349,6 +568,7 @@ export const tenantRouter = router({
           .string()
           .regex(/^#[0-9A-Fa-f]{6}$/)
           .optional(),
+        templateId: z.enum(TEMPLATE_IDS).optional(),
         whatsappNumber: z.string().optional(),
         instagramHandle: z.string().optional(),
         metaTitle: z.string().optional(),
