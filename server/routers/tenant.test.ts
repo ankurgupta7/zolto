@@ -252,6 +252,9 @@ describe("tenant.create — signup wizard branding", () => {
     expect(dbMock.createTenantSettings).toHaveBeenCalledWith({
       tenantId: 42,
       currency: "chf",
+      // No vertical named → the jewellery default rides along.
+      vertical: "jewellery",
+      verticalDescription: null,
       templateId: "verdant",
       primaryColor: "#2F5D3A",
     });
