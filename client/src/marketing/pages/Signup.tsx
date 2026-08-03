@@ -105,12 +105,28 @@ export default function Signup() {
           "Your store is ready, but the logo didn't upload — add it again from your admin.",
         );
       } else {
-        toast.success("Store created — let's set it up.");
+        // Mention the emailed setup link only when it actually went out
+        // (claimEmailSent is false on deployments without mail configured).
+        toast.success(
+          data.claimEmailSent
+            ? "Store created — we've also emailed you a setup link, in case you need it later."
+            : "Store created — let's set it up.",
+        );
       }
       navigate(`/onboarding?store=${encodeURIComponent(data.slug)}`);
     },
     onError: (err) => {
-      toast.error(err.message || "Something went wrong. Please try again.");
+      const message = err.message || "Something went wrong. Please try again.";
+      // An email that's already attached — or mid-signup with an unclaimed
+      // store — is recoverable by signing in; hand over the door, not just
+      // the wall. (The slug-taken CONFLICT names no email and stays plain.)
+      if (err.data?.code === "CONFLICT" && /email/i.test(message)) {
+        toast.error(message, {
+          action: { label: "Sign in", onClick: () => navigate("/signin") },
+        });
+      } else {
+        toast.error(message);
+      }
     },
   });
 
@@ -454,7 +470,9 @@ export default function Signup() {
                       <button
                         type="button"
                         onClick={() => {
-                          setTemplateId(aiNote.suggestedTemplateId as TemplateId);
+                          setTemplateId(
+                            aiNote.suggestedTemplateId as TemplateId,
+                          );
                         }}
                         className="mt-2 text-xs font-medium uppercase tracking-[0.1em] text-[var(--brand-accent)] underline"
                       >
@@ -467,14 +485,18 @@ export default function Signup() {
 
               <Field
                 label="Brand color"
-                error={colorValid ? undefined : "Use a 6-digit hex like #2D6B4A."}
+                error={
+                  colorValid ? undefined : "Use a 6-digit hex like #2D6B4A."
+                }
                 hint="Drives your storefront's headers, buttons, and accents."
               >
                 <div className="flex items-center gap-3">
                   <input
                     type="color"
                     aria-label="Brand color"
-                    value={colorValid ? primaryColor : template.defaultPrimaryColor}
+                    value={
+                      colorValid ? primaryColor : template.defaultPrimaryColor
+                    }
                     onChange={(e) => {
                       setPrimaryColor(e.target.value);
                       setColorTouched(true);

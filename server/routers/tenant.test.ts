@@ -15,6 +15,7 @@ const { dbMock, createStripeCustomer, buildConnectAuthorizeUrl, storagePut } =
       setTenantReferrer: vi.fn(),
       createPendingTenantAdmin: vi.fn(),
       getStoreUserByEmail: vi.fn(),
+      getPendingTenantAdminByEmail: vi.fn(),
       getUserByOpenId: vi.fn(),
       assignUserToTenantAsAdmin: vi.fn(),
       deleteUserById: vi.fn(),
@@ -62,11 +63,20 @@ vi.mock("../rateLimit", () => ({
 }));
 vi.mock("../_core/llm", () => ({ invokeLLM: brandingAiMock.invokeLLM }));
 
+// The durable claim-link email sent at signup (step 8 of tenant.create).
+const sendClaimLinkEmail = vi.hoisted(() => vi.fn());
+vi.mock("../_core/email", () => ({ sendClaimLinkEmail }));
+
 import { tenantRouter } from "./tenant";
 import type { TrpcContext } from "../_core/context";
 
 function ctx(
-  user: { openId: string; role?: string; tenantId?: number } | null = null,
+  user: {
+    openId: string;
+    role?: string;
+    tenantId?: number;
+    email?: string;
+  } | null = null,
   tenant: { id: number; plan: string } | null = null,
 ): TrpcContext {
   return {
@@ -85,7 +95,9 @@ beforeEach(() => {
   dbMock.setTenantStripeCustomer.mockResolvedValue(undefined);
   dbMock.createPendingTenantAdmin.mockResolvedValue(undefined);
   dbMock.getStoreUserByEmail.mockResolvedValue(undefined);
+  dbMock.getPendingTenantAdminByEmail.mockResolvedValue(undefined);
   dbMock.seedTenantCategories.mockResolvedValue(undefined);
+  sendClaimLinkEmail.mockResolvedValue(false);
   createStripeCustomer.mockResolvedValue(null);
   brandingAiMock.rateLimitCheck.mockResolvedValue({
     allowed: true,
@@ -138,6 +150,52 @@ describe("tenant.create", () => {
     );
   });
 
+  it("emails a durable claim link carrying the token and store", async () => {
+    // The sessionStorage token dies with the signup tab; the emailed link is
+    // what survives a failed sign-in or a second device — and it covers the
+    // one case resumeClaim can't: signing in with a different address than
+    // the one typed at signup.
+    sendClaimLinkEmail.mockResolvedValue(true);
+    const res = await tenantRouter.createCaller(ctx()).create({
+      name: "Aurora Atelier",
+      slug: "aurora",
+      email: "owner@aurora.example",
+    });
+    expect(sendClaimLinkEmail).toHaveBeenCalledWith({
+      to: "owner@aurora.example",
+      storeName: "Aurora Atelier",
+      url: expect.stringContaining("/onboarding?store=aurora&claim="),
+    });
+    const { url } = sendClaimLinkEmail.mock.calls[0][0];
+    expect(url).toContain(`claim=${res.claimToken}`);
+    expect(res.claimEmailSent).toBe(true);
+  });
+
+  it("still creates the store when the claim email fails to send", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    sendClaimLinkEmail.mockRejectedValue(new Error("Resend down"));
+    const res = await tenantRouter.createCaller(ctx()).create({
+      name: "Aurora",
+      slug: "aurora",
+      email: "o@a.example",
+    });
+    expect(res.tenantId).toBe(42);
+    expect(res.claimEmailSent).toBe(false);
+    // The in-browser token still works, so the signup must not be lost.
+    expect(res.claimToken).toEqual(expect.any(String));
+    warn.mockRestore();
+  });
+
+  it("reports claimEmailSent:false when mail isn't configured", async () => {
+    sendClaimLinkEmail.mockResolvedValue(false);
+    const res = await tenantRouter.createCaller(ctx()).create({
+      name: "Aurora",
+      slug: "aurora",
+      email: "o@a.example",
+    });
+    expect(res.claimEmailSent).toBe(false);
+  });
+
   it("stores the chosen vertical and seeds its category preset", async () => {
     await tenantRouter.createCaller(ctx()).create({
       name: "Ton & Teller",
@@ -169,7 +227,11 @@ describe("tenant.create", () => {
   });
 
   it("refuses an email already attached to another store", async () => {
-    dbMock.getStoreUserByEmail.mockResolvedValue({ id: 5, tenantId: 7 });
+    dbMock.getStoreUserByEmail.mockResolvedValue({
+      id: 5,
+      tenantId: 7,
+      pendingClaim: false,
+    });
     await expect(
       tenantRouter.createCaller(ctx()).create({
         name: "Second Store",
@@ -183,6 +245,25 @@ describe("tenant.create", () => {
     // Nothing may be provisioned once the email is refused.
     expect(dbMock.createTenant).not.toHaveBeenCalled();
     expect(dbMock.createPendingTenantAdmin).not.toHaveBeenCalled();
+  });
+
+  it("points a half-finished signup at the recovery path, not a dead end", async () => {
+    // The catch-22 this message used to create: sign-in failed after signup,
+    // the merchant retries signup, and "already attached" reads as unfixable.
+    // A pending (unclaimed) row must instead say how to resume.
+    dbMock.getStoreUserByEmail.mockResolvedValue({
+      id: 5,
+      tenantId: 7,
+      pendingClaim: true,
+    });
+    await expect(
+      tenantRouter.createCaller(ctx()).create({
+        name: "Second Try",
+        slug: "second-try",
+        email: "owner@aurora.example",
+      }),
+    ).rejects.toThrow(/finish setting it up/i);
+    expect(dbMock.createTenant).not.toHaveBeenCalled();
   });
 
   it("rejects a taken slug", async () => {
@@ -268,7 +349,10 @@ describe("tenant.create — signup wizard branding", () => {
     const png = Buffer.from("fake-logo").toString("base64");
     const res = await tenantRouter.createCaller(ctx()).create({
       ...base,
-      logo: { imageData: `data:image/png;base64,${png}`, mimeType: "image/png" },
+      logo: {
+        imageData: `data:image/png;base64,${png}`,
+        mimeType: "image/png",
+      },
     });
 
     const [tenantId, key, buffer, mime] = storagePut.mock.calls[0];
@@ -481,6 +565,146 @@ describe("tenant.claimAdmin", () => {
       tenantRouter.createCaller(ctx(null)).claimAdmin({ token: "tok" }),
     ).rejects.toThrow();
     expect(dbMock.getUserByOpenId).not.toHaveBeenCalled();
+  });
+});
+
+// The recovery pair for the lost-token catch-22: the claim token lives only in
+// the signup tab's sessionStorage, so a failed sign-in, closed tab, or second
+// device strands a created-but-unclaimed store. These procedures find it again
+// by the signed-in account's provider-verified email.
+describe("tenant.pendingClaim", () => {
+  it("returns the waiting store for a matching email", async () => {
+    dbMock.getPendingTenantAdminByEmail.mockResolvedValue({
+      id: 9,
+      tenantId: 42,
+    });
+    dbMock.getTenantById.mockResolvedValue({
+      id: 42,
+      slug: "aurora",
+      name: "Aurora Atelier",
+    });
+    const res = await tenantRouter
+      .createCaller(
+        ctx({ openId: "google:sub-1", email: "owner@aurora.example" }),
+      )
+      .pendingClaim();
+    expect(dbMock.getPendingTenantAdminByEmail).toHaveBeenCalledWith(
+      "owner@aurora.example",
+    );
+    expect(res).toEqual({ slug: "aurora", name: "Aurora Atelier" });
+  });
+
+  it("returns null when nothing is waiting for this email", async () => {
+    const res = await tenantRouter
+      .createCaller(ctx({ openId: "google:sub-1", email: "new@a.example" }))
+      .pendingClaim();
+    expect(res).toBeNull();
+  });
+
+  it("returns null for an account that already manages a store, without looking up", async () => {
+    const res = await tenantRouter
+      .createCaller(
+        ctx({ openId: "google:sub-1", tenantId: 7, email: "owner@a.example" }),
+      )
+      .pendingClaim();
+    expect(res).toBeNull();
+    expect(dbMock.getPendingTenantAdminByEmail).not.toHaveBeenCalled();
+  });
+
+  it("returns null for an account with no email on file", async () => {
+    const res = await tenantRouter
+      .createCaller(ctx({ openId: "google:sub-1" }))
+      .pendingClaim();
+    expect(res).toBeNull();
+    expect(dbMock.getPendingTenantAdminByEmail).not.toHaveBeenCalled();
+  });
+
+  it("requires authentication", async () => {
+    await expect(
+      tenantRouter.createCaller(ctx(null)).pendingClaim(),
+    ).rejects.toThrow();
+    expect(dbMock.getPendingTenantAdminByEmail).not.toHaveBeenCalled();
+  });
+});
+
+describe("tenant.resumeClaim", () => {
+  it("claims the waiting store by email match and burns the pending row", async () => {
+    dbMock.getPendingTenantAdminByEmail.mockResolvedValue({
+      id: 9,
+      tenantId: 42,
+    });
+    dbMock.getTenantById.mockResolvedValue({ id: 42, slug: "aurora" });
+
+    const res = await tenantRouter
+      .createCaller(
+        ctx({ openId: "google:sub-1", email: "owner@aurora.example" }),
+      )
+      .resumeClaim();
+
+    expect(dbMock.getPendingTenantAdminByEmail).toHaveBeenCalledWith(
+      "owner@aurora.example",
+    );
+    expect(dbMock.assignUserToTenantAsAdmin).toHaveBeenCalledWith(
+      "google:sub-1",
+      42,
+    );
+    expect(dbMock.deleteUserById).toHaveBeenCalledWith(9);
+    expect(res).toEqual({ tenantId: 42, slug: "aurora" });
+  });
+
+  it("rejects when no unclaimed store matches this email", async () => {
+    await expect(
+      tenantRouter
+        .createCaller(ctx({ openId: "google:sub-1", email: "new@a.example" }))
+        .resumeClaim(),
+    ).rejects.toThrow(/no unclaimed store/i);
+    expect(dbMock.assignUserToTenantAsAdmin).not.toHaveBeenCalled();
+  });
+
+  it("rejects an account with no email on file, without a lookup", async () => {
+    await expect(
+      tenantRouter.createCaller(ctx({ openId: "google:sub-1" })).resumeClaim(),
+    ).rejects.toThrow(/no unclaimed store/i);
+    expect(dbMock.getPendingTenantAdminByEmail).not.toHaveBeenCalled();
+    expect(dbMock.assignUserToTenantAsAdmin).not.toHaveBeenCalled();
+  });
+
+  it("refuses an account that already manages a different store", async () => {
+    dbMock.getPendingTenantAdminByEmail.mockResolvedValue({
+      id: 9,
+      tenantId: 42,
+    });
+    await expect(
+      tenantRouter
+        .createCaller(
+          ctx({ openId: "google:sub-1", tenantId: 7, email: "o@a.example" }),
+        )
+        .resumeClaim(),
+    ).rejects.toThrow(/already manages a store/i);
+    expect(dbMock.assignUserToTenantAsAdmin).not.toHaveBeenCalled();
+    // The pending row survives, so the rightful owner can still claim.
+    expect(dbMock.deleteUserById).not.toHaveBeenCalled();
+  });
+
+  it("still claims when the account is already on the SAME store", async () => {
+    dbMock.getPendingTenantAdminByEmail.mockResolvedValue({
+      id: 9,
+      tenantId: 42,
+    });
+    dbMock.getTenantById.mockResolvedValue({ id: 42, slug: "aurora" });
+    const res = await tenantRouter
+      .createCaller(
+        ctx({ openId: "google:sub-1", tenantId: 42, email: "o@a.example" }),
+      )
+      .resumeClaim();
+    expect(res).toEqual({ tenantId: 42, slug: "aurora" });
+  });
+
+  it("requires authentication", async () => {
+    await expect(
+      tenantRouter.createCaller(ctx(null)).resumeClaim(),
+    ).rejects.toThrow();
+    expect(dbMock.getPendingTenantAdminByEmail).not.toHaveBeenCalled();
   });
 });
 
