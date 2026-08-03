@@ -57,6 +57,10 @@ function ClaimStep({
     "idle" | "claiming" | "done" | "tokenFailed" | "failed"
   >("idle");
   const [claimedSlug, setClaimedSlug] = useState<string | null>(null);
+  // The server's actual refusal, so a CONFLICT ("this account already manages
+  // a store") is never masked by generic invalid-link copy — that masking is
+  // what made the parked-on-the-platform-tenant bug undiagnosable from the UI.
+  const [claimError, setClaimError] = useState<string | null>(null);
 
   const finishClaim = (slug: string | null) => {
     try {
@@ -76,7 +80,10 @@ function ClaimStep({
       { token: claimToken },
       {
         onSuccess: (data) => finishClaim(data.slug),
-        onError: () => setState("tokenFailed"),
+        onError: (err) => {
+          setClaimError(err.message || null);
+          setState("tokenFailed");
+        },
       },
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -95,7 +102,10 @@ function ClaimStep({
     setState("claiming");
     resume.mutate(undefined, {
       onSuccess: (data) => finishClaim(data.slug),
-      onError: () => setState("failed"),
+      onError: (err) => {
+        setClaimError(err.message || null);
+        setState("failed");
+      },
     });
   };
 
@@ -183,8 +193,8 @@ function ClaimStep({
             We couldn't finish setting you up.
           </p>
           <p className="mt-1 text-sm text-[var(--brand-muted-2)]">
-            This claim link is invalid or has already been used. If you already
-            signed in on another device, you're all set.
+            {claimError ??
+              "This claim link is invalid or has already been used. If you already signed in on another device, you're all set."}
           </p>
         </div>
       );

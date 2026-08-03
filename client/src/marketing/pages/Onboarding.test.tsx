@@ -187,24 +187,50 @@ describe("Onboarding — recovery when the token is refused", () => {
     expect(mocks.resumeMutate).toHaveBeenCalled();
   });
 
-  it("shows the dead-end copy only when no store matches the email either", async () => {
+  it("shows the dead-end card only when no store matches the email either", async () => {
     sessionStorage.setItem(CLAIM_TOKEN_KEY, "tok-stale");
     mocks.meData = { id: 1, email: "owner@kalakosh.example" };
     mocks.pendingData = null;
     mocks.claimMutate.mockImplementation(
-      (_vars: unknown, cbs: MutateCbs<never>) => cbs.onError?.(new Error("no")),
+      (_vars: unknown, cbs: MutateCbs<never>) =>
+        cbs.onError?.(new Error("Invalid or already-claimed invitation")),
+    );
+
+    renderOnboarding();
+
+    await waitFor(() =>
+      expect(screen.getByText(/couldn't finish setting you up/i)).toBeTruthy(),
+    );
+    expect(
+      screen.queryByRole("button", { name: /finish setting up/i }),
+    ).toBeNull();
+  });
+
+  // The server's actual refusal must reach the merchant. The production bug
+  // where every fresh sign-in was parked on the platform tenant surfaced as a
+  // CONFLICT ("already manages a store") but rendered as "claim link is
+  // invalid" — undiagnosable from the phone it happened on.
+  it("surfaces the server's refusal instead of generic invalid-link copy", async () => {
+    sessionStorage.setItem(CLAIM_TOKEN_KEY, "tok-abc");
+    mocks.meData = { id: 1, email: "owner@kalakosh.example" };
+    mocks.pendingData = null;
+    mocks.claimMutate.mockImplementation(
+      (_vars: unknown, cbs: MutateCbs<never>) =>
+        cbs.onError?.(
+          new Error(
+            "This account already manages a store. Sign in with a different account to claim this one.",
+          ),
+        ),
     );
 
     renderOnboarding();
 
     await waitFor(() =>
       expect(
-        screen.getByText(/invalid or has already been used/i),
+        screen.getByText(/this account already manages a store/i),
       ).toBeTruthy(),
     );
-    expect(
-      screen.queryByRole("button", { name: /finish setting up/i }),
-    ).toBeNull();
+    expect(screen.queryByText(/claim link is invalid/i)).toBeNull();
   });
 });
 

@@ -2168,11 +2168,17 @@ export async function setTenantReferrer(
  * back the address in whatever case the user typed it (the same reason
  * deploy/tenant-admin.sh matches with LOWER()).
  *
- * Pending claim rows (openId `pending:…`) count as taken: they hold a store's
- * admin slot for a signup already in flight, and a second store on the same
- * address while the first is unclaimed is exactly the duplicate this refuses.
- * A row with tenantId null (signed in, never created a store) is NOT a
- * conflict — that account is precisely who signup is for.
+ * "Ties to a store" means MANAGES one — role admin/superadmin/staff. The role
+ * filter is not an optimization: `users.tenantId` is NOT NULL and every fresh
+ * sign-in is parked by upsertUser on DEFAULT_TENANT_ID with role `customer`,
+ * so without it, anyone who ever signed in (or shopped at any store) was
+ * refused at signup as "already attached to a store" — the opposite of who
+ * signup is for.
+ *
+ * Pending claim rows (openId `pending:…`, role admin) count as taken: they
+ * hold a store's admin slot for a signup already in flight, and a second
+ * store on the same address while the first is unclaimed is exactly the
+ * duplicate this refuses.
  */
 export async function getStoreUserByEmail(
   email: string,
@@ -2187,6 +2193,7 @@ export async function getStoreUserByEmail(
         and(
           sql`LOWER(${users.email}) = LOWER(${email})`,
           isNotNull(users.tenantId),
+          inArray(users.role, ["superadmin", "admin", "staff"]),
         ),
       )
       .limit(1);
