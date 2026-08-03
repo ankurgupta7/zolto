@@ -1,0 +1,37 @@
+name: 'iOS POS Build Setup'
+description: 'Shared setup for KalakoshPOS iOS builds: Xcode, xcodegen, SPM cache & resolve'
+
+runs:
+  using: composite
+  steps:
+    - name: Select Xcode 16
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: '16'
+
+    - name: Install xcodegen
+      run: brew install xcodegen || true
+      shell: bash
+
+    - name: Generate Xcode project
+      working-directory: ios/KalakoshPOS
+      run: xcodegen generate --spec project.yml
+      shell: bash
+
+    - name: Cache SPM packages
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.swiftpm
+          ios/KalakoshPOS/KalakoshPOS.xcodeproj/project.xcworkspace/xcshareddata/swiftpm
+        key: spm-${{ runner.os }}-${{ hashFiles('ios/KalakoshPOS/project.yml') }}
+        restore-keys: spm-${{ runner.os }}-
+
+    - name: Resolve Swift packages
+      working-directory: ios/KalakoshPOS
+      run: |
+        xcodebuild \
+          -resolvePackageDependencies \
+          -project KalakoshPOS.xcodeproj \
+          -scheme KalakoshPOS
+      shell: bash

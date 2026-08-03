@@ -1,0 +1,172 @@
+name: iOS POS Build & Test
+
+# The native iOS POS app (KalakoshPOS) lives in ios/KalakoshPOS/ — migrated
+# from the ankurgupta7/kalakosh-pos-ios repo. Like android-build.yml, this
+# only runs when the app (or this pipeline) actually changed, so web-only
+# commits don't burn macOS runner minutes.
+
+on:
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "ios/KalakoshPOS/**"
+      - ".github/workflows/ios-pos-build.yml"
+      - ".github/actions/ios-setup/**"
+  push:
+    branches: ["main"]
+    paths:
+      - "ios/KalakoshPOS/**"
+      - ".github/workflows/ios-pos-build.yml"
+      - ".github/actions/ios-setup/**"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ────────────────────────────────────────────────────────────────────────────
+  # Job 1: Simulator build — runs on every trigger (PRs, pushes, manual).
+  # Produces KalakoshPOS-simulator.zip for Appetize browser preview.
+  # POS_API_KEY is injected from GitHub repo secrets so no clipboard
+  # paste is needed inside Appetize.
+  # ────────────────────────────────────────────────────────────────────────────
+  build-simulator:
+    name: Build (Simulator + Appetize zip)
+    runs-on: macos-15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: iOS Build Setup
+        uses: ./.github/actions/ios-setup
+
+      - name: Run TWINT contract tests
+        working-directory: ios/KalakoshPOS
+        env:
+          POS_API_KEY: ${{ secrets.POS_API_KEY }}
+        run: |
+          xcodebuild test \
+            -project KalakoshPOS.xcodeproj \
+            -scheme KalakoshPOS \
+            -destination "platform=iOS Simulator,name=iPhone 16 Pro" \
+            -configuration Debug \
+            -derivedDataPath "$RUNNER_TEMP/DerivedData" \
+            -only-testing KalakoshPOSTests/TwintModelsTests \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            POS_API_KEY="$POS_API_KEY" \
+            | xcpretty --color && exit ${PIPESTATUS[0]}
+
+      - name: Run unit tests
+        working-directory: ios/KalakoshPOS
+        env:
+          POS_API_KEY: ${{ secrets.POS_API_KEY }}
+        run: |
+          xcodebuild test \
+            -project KalakoshPOS.xcodeproj \
+            -scheme KalakoshPOS \
+            -destination "platform=iOS Simulator,name=iPhone 16 Pro" \
+            -configuration Debug \
+            -derivedDataPath "$RUNNER_TEMP/DerivedData" \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            POS_API_KEY="$POS_API_KEY" \
+            | xcpretty --color && exit ${PIPESTATUS[0]}
+
+      - name: Build for simulator
+        working-directory: ios/KalakoshPOS
+        env:
+          POS_API_KEY: ${{ secrets.POS_API_KEY }}
+        run: |
+          xcodebuild build \
+            -project KalakoshPOS.xcodeproj \
+            -scheme KalakoshPOS \
+            -destination "platform=iOS Simulator,name=iPhone 16 Pro" \
+            -configuration Debug \
+            -derivedDataPath "$RUNNER_TEMP/DerivedData" \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            POS_API_KEY="$POS_API_KEY" \
+            | xcpretty --color && exit ${PIPESTATUS[0]}
+
+      # Smoke-test the live POS backend: the endpoint requires a valid
+      # POS_API_KEY and returns 200 only when Stripe secrets are configured.
+      - name: Verify POS server health
+        env:
+          POS_API_BASE_URL: ${{ secrets.POS_API_BASE_URL }}
+          POS_API_KEY: ${{ secrets.POS_API_KEY }}
+        run: |
+          POS_API_BASE_URL="${POS_API_BASE_URL:-https://kalakosh.ch}"
+          echo "Checking POS health at ${POS_API_BASE_URL}/api/pos/health ..."
+          curl -fsS -H "x-pos-key: ${POS_API_KEY}" "${POS_API_BASE_URL}/api/pos/health"
+
+      - name: Stage simulator app for Appetize upload
+        run: |
+          APP=$(find "$RUNNER_TEMP/DerivedData" -name "KalakoshPOS.app" \
+            -path "*/Debug-iphonesimulator/*" | head -1)
+          echo "Found app: $APP"
+          mkdir -p "$RUNNER_TEMP/Appetize"
+          cp -r "$APP" "$RUNNER_TEMP/Appetize/"
+
+      - name: Upload simulator zip
+        uses: actions/upload-artifact@v4
+        with:
+          name: KalakoshPOS-simulator
+          path: ${{ runner.temp }}/Appetize/
+          retention-days: 14
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # Job 2: Unsigned IPA — only on main branch pushes (not on PRs).
+  # AltServer re-signs with your free Apple ID before sideloading.
+  # Skipping on PRs saves ~10-12 min of macOS runner time per PR update.
+  # ────────────────────────────────────────────────────────────────────────────
+  build-unsigned-ipa:
+    name: Build Unsigned IPA (Sideload)
+    runs-on: macos-15
+    # Only produce the device IPA when merging to main or running manually.
+    # PRs only need the simulator build for validation.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: iOS Build Setup
+        uses: ./.github/actions/ios-setup
+
+      - name: Archive (unsigned)
+        working-directory: ios/KalakoshPOS
+        env:
+          POS_API_KEY: ${{ secrets.POS_API_KEY }}
+        run: |
+          xcodebuild archive \
+            -project KalakoshPOS.xcodeproj \
+            -scheme KalakoshPOS \
+            -destination "generic/platform=iOS" \
+            -configuration Release \
+            -archivePath "$RUNNER_TEMP/KalakoshPOS.xcarchive" \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            POS_API_KEY="$POS_API_KEY" \
+            | xcpretty --color && exit ${PIPESTATUS[0]}
+
+      - name: Package as IPA
+        run: |
+          APP_PATH=$(find "$RUNNER_TEMP/KalakoshPOS.xcarchive/Products/Applications" \
+            -name "*.app" | head -1)
+          echo "Found app: $APP_PATH"
+          mkdir -p "$RUNNER_TEMP/Payload"
+          cp -r "$APP_PATH" "$RUNNER_TEMP/Payload/"
+          cd "$RUNNER_TEMP"
+          zip -qr "KalakoshPOS-unsigned.ipa" Payload/
+
+      - name: Upload unsigned IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: KalakoshPOS-unsigned
+          path: ${{ runner.temp }}/KalakoshPOS-unsigned.ipa
+          retention-days: 14
