@@ -91,6 +91,33 @@ function stripPosApiKey<T extends { posApiKey: string }>(
 }
 
 /**
+ * Does this account RUN a store — as opposed to merely being attached to one?
+ *
+ * The distinction is load-bearing: `users.tenantId` is NOT NULL, and every
+ * fresh sign-in (Google, Apple, magic link) is parked by `upsertUser` on
+ * DEFAULT_TENANT_ID — the platform tenant — with role `customer`. So a truthy
+ * tenantId does NOT mean "this account has a store"; for exactly the person
+ * signup just told to sign in, it means nothing at all. Guards that treated
+ * any tenantId as ownership made claiming a new store impossible in
+ * production: the freshly signed-in owner was "already attached" to the
+ * platform tenant, the claim CONFLICTed, and `myStore` pointed them at
+ * platform.zolto.ch's admin to be refused.
+ *
+ * Ownership is the ROLE: admins and staff manage the store their tenantId
+ * names; a customer row's tenantId is just where they shopped (or the parking
+ * default) and must never block a claim nor advertise an admin.
+ */
+const MANAGING_ROLES = ["superadmin", "admin", "staff"] as const;
+function managesAStore(user: {
+  tenantId: number | null;
+  role: string;
+}): boolean {
+  return (
+    !!user.tenantId && (MANAGING_ROLES as readonly string[]).includes(user.role)
+  );
+}
+
+/**
  * Shared tail of both claim paths — `claimAdmin` (token from the signup tab)
  * and `resumeClaim` (provider-verified email match, for when that token is
  * gone). Attaches the signed-in account to the pending tenant as admin, burns
@@ -100,13 +127,14 @@ function stripPosApiKey<T extends { posApiKey: string }>(
  * one-email-one-store check (which alone is bypassable by typing a fresh
  * address at signup and then claiming with an already-attached login).
  * Without it, the assignment below would silently rip the account off its
- * first store.
+ * first store. It bites only for accounts that MANAGE another store (see
+ * managesAStore above) — a customer row is promoted, not refused.
  */
 async function finishClaim(
-  user: { openId: string; tenantId: number | null },
+  user: { openId: string; tenantId: number | null; role: string },
   pending: { id: number; tenantId: number },
 ): Promise<{ tenantId: number; slug: string | null }> {
-  if (user.tenantId && user.tenantId !== pending.tenantId) {
+  if (user.tenantId !== pending.tenantId && managesAStore(user)) {
     throw new TRPCError({
       code: "CONFLICT",
       message:
@@ -521,7 +549,10 @@ rationale: one friendly sentence (max 25 words) telling the merchant what you sa
   // end. Null for an account that already manages a store (nothing to resume)
   // or whose email matches no unclaimed signup.
   pendingClaim: protectedProcedure.query(async ({ ctx }) => {
-    if (ctx.user.tenantId || !ctx.user.email) return null;
+    // managesAStore, not a bare tenantId check: a fresh sign-in is parked on
+    // the platform tenant as a customer, and that row is exactly who this
+    // lookup exists for.
+    if (managesAStore(ctx.user) || !ctx.user.email) return null;
     const pending = await getPendingTenantAdminByEmail(ctx.user.email);
     if (!pending) return null;
     const tenant = await getTenantById(pending.tenantId);
@@ -570,7 +601,12 @@ rationale: one friendly sentence (max 25 words) telling the merchant what you sa
   // just what a link needs (slug + name), never the POS key; null if the user
   // isn't attached to a store.
   myStore: protectedProcedure.query(async ({ ctx }) => {
-    if (!ctx.user.tenantId) return null;
+    // Role-gated via managesAStore: a customer row's tenantId is where they
+    // shopped — or the DEFAULT_TENANT_ID parking spot every fresh sign-in
+    // gets — not a store they run. Without the gate, any signed-in visitor
+    // grew a "MY STORE" button pointing at the platform tenant's admin,
+    // which then refused them.
+    if (!managesAStore(ctx.user)) return null;
     const tenant = await getTenantById(ctx.user.tenantId);
     if (!tenant) return null;
     return { slug: tenant.slug, name: tenant.name };

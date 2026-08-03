@@ -525,7 +525,9 @@ describe("tenant.claimAdmin", () => {
     });
     await expect(
       tenantRouter
-        .createCaller(ctx({ openId: "google:sub-1", tenantId: 7 }))
+        .createCaller(
+          ctx({ openId: "google:sub-1", role: "admin", tenantId: 7 }),
+        )
         .claimAdmin({ token: "tok-abc" }),
     ).rejects.toThrow(/already manages a store/i);
     expect(dbMock.assignUserToTenantAsAdmin).not.toHaveBeenCalled();
@@ -548,6 +550,66 @@ describe("tenant.claimAdmin", () => {
       42,
     );
     expect(res).toEqual({ tenantId: 42, slug: "aurora" });
+  });
+
+  // THE production regression: users.tenantId is NOT NULL and upsertUser parks
+  // every fresh sign-in (Google, Apple, magic link) on DEFAULT_TENANT_ID with
+  // role `customer`. Treating that parked tenantId as "already manages a
+  // store" made claiming impossible for exactly the person signup told to
+  // sign in — the first real merchant could create a store and then never
+  // become its admin.
+  it("claims for a fresh sign-in parked on the platform tenant as customer", async () => {
+    dbMock.getUserByOpenId.mockResolvedValue({
+      id: 9,
+      tenantId: 42,
+      role: "admin",
+    });
+    dbMock.getTenantById.mockResolvedValue({ id: 42, slug: "aurora" });
+    const res = await tenantRouter
+      .createCaller(
+        ctx({
+          openId: "email:owner@aurora.example",
+          role: "customer",
+          tenantId: 1,
+        }),
+      )
+      .claimAdmin({ token: "tok-abc" });
+    expect(dbMock.assignUserToTenantAsAdmin).toHaveBeenCalledWith(
+      "email:owner@aurora.example",
+      42,
+    );
+    expect(res).toEqual({ tenantId: 42, slug: "aurora" });
+  });
+
+  it("claims for a customer of some other store — shoppers aren't store owners", async () => {
+    dbMock.getUserByOpenId.mockResolvedValue({
+      id: 9,
+      tenantId: 42,
+      role: "admin",
+    });
+    dbMock.getTenantById.mockResolvedValue({ id: 42, slug: "aurora" });
+    const res = await tenantRouter
+      .createCaller(
+        ctx({ openId: "google:sub-1", role: "customer", tenantId: 7 }),
+      )
+      .claimAdmin({ token: "tok-abc" });
+    expect(res).toEqual({ tenantId: 42, slug: "aurora" });
+  });
+
+  it("still refuses staff of a different store", async () => {
+    dbMock.getUserByOpenId.mockResolvedValue({
+      id: 9,
+      tenantId: 42,
+      role: "admin",
+    });
+    await expect(
+      tenantRouter
+        .createCaller(
+          ctx({ openId: "google:sub-1", role: "staff", tenantId: 7 }),
+        )
+        .claimAdmin({ token: "tok-abc" }),
+    ).rejects.toThrow(/already manages a store/i);
+    expect(dbMock.assignUserToTenantAsAdmin).not.toHaveBeenCalled();
   });
 
   it("rejects an unknown/used token", async () => {
@@ -604,11 +666,42 @@ describe("tenant.pendingClaim", () => {
   it("returns null for an account that already manages a store, without looking up", async () => {
     const res = await tenantRouter
       .createCaller(
-        ctx({ openId: "google:sub-1", tenantId: 7, email: "owner@a.example" }),
+        ctx({
+          openId: "google:sub-1",
+          role: "admin",
+          tenantId: 7,
+          email: "owner@a.example",
+        }),
       )
       .pendingClaim();
     expect(res).toBeNull();
     expect(dbMock.getPendingTenantAdminByEmail).not.toHaveBeenCalled();
+  });
+
+  // The production regression: every fresh sign-in is parked on
+  // DEFAULT_TENANT_ID as a customer, and this lookup bailing on that parked
+  // tenantId is what hid the recovery card from the stranded merchant.
+  it("still finds the waiting store for a sign-in parked on the platform tenant", async () => {
+    dbMock.getPendingTenantAdminByEmail.mockResolvedValue({
+      id: 9,
+      tenantId: 42,
+    });
+    dbMock.getTenantById.mockResolvedValue({
+      id: 42,
+      slug: "aurora",
+      name: "Aurora Atelier",
+    });
+    const res = await tenantRouter
+      .createCaller(
+        ctx({
+          openId: "email:owner@aurora.example",
+          role: "customer",
+          tenantId: 1,
+          email: "owner@aurora.example",
+        }),
+      )
+      .pendingClaim();
+    expect(res).toEqual({ slug: "aurora", name: "Aurora Atelier" });
   });
 
   it("returns null for an account with no email on file", async () => {
@@ -677,13 +770,44 @@ describe("tenant.resumeClaim", () => {
     await expect(
       tenantRouter
         .createCaller(
-          ctx({ openId: "google:sub-1", tenantId: 7, email: "o@a.example" }),
+          ctx({
+            openId: "google:sub-1",
+            role: "admin",
+            tenantId: 7,
+            email: "o@a.example",
+          }),
         )
         .resumeClaim(),
     ).rejects.toThrow(/already manages a store/i);
     expect(dbMock.assignUserToTenantAsAdmin).not.toHaveBeenCalled();
     // The pending row survives, so the rightful owner can still claim.
     expect(dbMock.deleteUserById).not.toHaveBeenCalled();
+  });
+
+  // The production regression, resume flavor: the parked customer row is the
+  // one doing the resuming, and it must be promoted, not refused.
+  it("resumes for a fresh sign-in parked on the platform tenant as customer", async () => {
+    dbMock.getPendingTenantAdminByEmail.mockResolvedValue({
+      id: 9,
+      tenantId: 42,
+    });
+    dbMock.getTenantById.mockResolvedValue({ id: 42, slug: "aurora" });
+    const res = await tenantRouter
+      .createCaller(
+        ctx({
+          openId: "email:owner@aurora.example",
+          role: "customer",
+          tenantId: 1,
+          email: "owner@aurora.example",
+        }),
+      )
+      .resumeClaim();
+    expect(dbMock.assignUserToTenantAsAdmin).toHaveBeenCalledWith(
+      "email:owner@aurora.example",
+      42,
+    );
+    expect(dbMock.deleteUserById).toHaveBeenCalledWith(9);
+    expect(res).toEqual({ tenantId: 42, slug: "aurora" });
   });
 
   it("still claims when the account is already on the SAME store", async () => {
@@ -1100,6 +1224,30 @@ describe("tenant.myStore", () => {
   it("returns null when the user isn't attached to a store", async () => {
     const res = await tenantRouter
       .createCaller(ctx({ openId: "u1", role: "customer" }))
+      .myStore();
+    expect(res).toBeNull();
+    expect(dbMock.getTenantById).not.toHaveBeenCalled();
+  });
+
+  it("returns the store for staff, who work there even if they don't own it", async () => {
+    dbMock.getTenantById.mockResolvedValue({
+      id: 7,
+      slug: "kalakosh",
+      name: "Kalakosh",
+    });
+    const res = await tenantRouter
+      .createCaller(ctx({ openId: "u1", role: "staff", tenantId: 7 }))
+      .myStore();
+    expect(res).toEqual({ slug: "kalakosh", name: "Kalakosh" });
+  });
+
+  // The production regression: every fresh sign-in is parked on
+  // DEFAULT_TENANT_ID as a customer, so without the role gate every signed-in
+  // visitor grew a "MY STORE" button pointing at the platform tenant's admin
+  // — which then refused them with Access Denied.
+  it("returns null for a customer parked on (or shopping at) a tenant", async () => {
+    const res = await tenantRouter
+      .createCaller(ctx({ openId: "u1", role: "customer", tenantId: 1 }))
       .myStore();
     expect(res).toBeNull();
     expect(dbMock.getTenantById).not.toHaveBeenCalled();
