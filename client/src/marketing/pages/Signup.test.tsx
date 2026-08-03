@@ -14,7 +14,12 @@ import Signup from "./Signup";
 
 const mocks = vi.hoisted(() => ({
   createVars: undefined as unknown,
-  createOpts: undefined as { onError?: (err: unknown) => void } | undefined,
+  createOpts: undefined as
+    | {
+        onError?: (err: unknown) => void;
+        onSuccess?: (data: unknown) => void;
+      }
+    | undefined,
   aiVars: undefined as unknown,
   aiResult: {
     primaryColor: "#A34A24",
@@ -32,7 +37,10 @@ vi.mock("@/lib/trpc", () => ({
   trpc: {
     tenant: {
       create: {
-        useMutation: (opts?: { onError?: (err: unknown) => void }) => {
+        useMutation: (opts?: {
+          onError?: (err: unknown) => void;
+          onSuccess?: (data: unknown) => void;
+        }) => {
           mocks.createOpts = opts;
           return {
             mutate: (vars: unknown) => {
@@ -262,5 +270,31 @@ describe("Signup — conflict recovery", () => {
       data: { code: "CONFLICT" },
     });
     expect(toast.error).toHaveBeenCalledWith("Store URL already taken");
+  });
+});
+
+describe("Signup — success toast", () => {
+  const successData = {
+    tenantId: 42,
+    slug: "aurora-atelier",
+    claimToken: "tok-abc",
+    logoUrl: null,
+    claimEmailSent: false,
+  };
+
+  it("mentions the emailed setup link when it actually went out", () => {
+    renderSignup();
+    mocks.createOpts?.onSuccess?.({ ...successData, claimEmailSent: true });
+    expect(toast.success).toHaveBeenCalledWith(
+      expect.stringMatching(/emailed you a setup link/i),
+    );
+  });
+
+  it("stays quiet about email on deployments without mail configured", () => {
+    renderSignup();
+    mocks.createOpts?.onSuccess?.(successData);
+    expect(toast.success).toHaveBeenCalledWith(
+      expect.not.stringMatching(/emailed/i),
+    );
   });
 });

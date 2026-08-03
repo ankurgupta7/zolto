@@ -4,6 +4,7 @@ import {
   buildReconciliationReviewHtml,
   buildOwnerOrderNotificationHtml,
   escapeHtml,
+  sendClaimLinkEmail,
   sendReconciliationReviewEmail,
   sendOwnerOrderEmail,
   type OrderReceiptOptions,
@@ -240,6 +241,53 @@ describe("sendReconciliationReviewEmail", () => {
   }
 });
 
+// Signup's durable claim link (tenant.create step 8) — the copy of the claim
+// token that survives a lost signup tab.
+describe("sendClaimLinkEmail", () => {
+  const originalEnv = { ...process.env };
+
+  afterEach(() => {
+    process.env = { ...originalEnv };
+    vi.unstubAllGlobals();
+  });
+
+  it("returns false without sending when RESEND_API_KEY is unset", async () => {
+    delete process.env.RESEND_API_KEY;
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    const sent = await sendClaimLinkEmail({
+      to: "owner@aurora.example",
+      url: "https://zolto.ch/onboarding?store=aurora&claim=tok",
+      storeName: "Aurora Atelier",
+    });
+    expect(sent).toBe(false);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("sends the link and escapes a hostile store name", async () => {
+    process.env.RESEND_API_KEY = "re_test";
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const sent = await sendClaimLinkEmail({
+      to: "owner@aurora.example",
+      url: "https://zolto.ch/onboarding?store=aurora&claim=tok",
+      storeName: `<img src=x onerror=alert(1)>`,
+    });
+
+    expect(sent).toBe(true);
+    const [, init] = fetchMock.mock.calls[0];
+    const body = JSON.parse(init.body as string);
+    expect(body.to).toBe("owner@aurora.example");
+    expect(body.html).toContain(
+      "https://zolto.ch/onboarding?store=aurora&amp;claim=tok",
+    );
+    expect(body.html).not.toContain("<img");
+    expect(body.html).toContain("&lt;img");
+  });
+});
+
 describe("buildOwnerOrderNotificationHtml", () => {
   const baseOpts: OwnerOrderNotificationOptions = {
     to: "sheena@example.com",
@@ -335,11 +383,17 @@ describe("sendOwnerOrderEmail", () => {
     process.env.RESEND_API_KEY = "re_test";
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue({ ok: false, status: 500, text: async () => "oops" })
+      vi
+        .fn()
+        .mockResolvedValue({
+          ok: false,
+          status: 500,
+          text: async () => "oops",
+        }),
     );
 
     await expect(sendOwnerOrderEmail(baseOpts)).rejects.toThrow(
-      /Resend API 500/
+      /Resend API 500/,
     );
   });
 });

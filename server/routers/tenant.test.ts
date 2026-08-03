@@ -63,6 +63,10 @@ vi.mock("../rateLimit", () => ({
 }));
 vi.mock("../_core/llm", () => ({ invokeLLM: brandingAiMock.invokeLLM }));
 
+// The durable claim-link email sent at signup (step 8 of tenant.create).
+const sendClaimLinkEmail = vi.hoisted(() => vi.fn());
+vi.mock("../_core/email", () => ({ sendClaimLinkEmail }));
+
 import { tenantRouter } from "./tenant";
 import type { TrpcContext } from "../_core/context";
 
@@ -93,6 +97,7 @@ beforeEach(() => {
   dbMock.getStoreUserByEmail.mockResolvedValue(undefined);
   dbMock.getPendingTenantAdminByEmail.mockResolvedValue(undefined);
   dbMock.seedTenantCategories.mockResolvedValue(undefined);
+  sendClaimLinkEmail.mockResolvedValue(false);
   createStripeCustomer.mockResolvedValue(null);
   brandingAiMock.rateLimitCheck.mockResolvedValue({
     allowed: true,
@@ -143,6 +148,52 @@ describe("tenant.create", () => {
       "owner@aurora.example",
       res.claimToken,
     );
+  });
+
+  it("emails a durable claim link carrying the token and store", async () => {
+    // The sessionStorage token dies with the signup tab; the emailed link is
+    // what survives a failed sign-in or a second device — and it covers the
+    // one case resumeClaim can't: signing in with a different address than
+    // the one typed at signup.
+    sendClaimLinkEmail.mockResolvedValue(true);
+    const res = await tenantRouter.createCaller(ctx()).create({
+      name: "Aurora Atelier",
+      slug: "aurora",
+      email: "owner@aurora.example",
+    });
+    expect(sendClaimLinkEmail).toHaveBeenCalledWith({
+      to: "owner@aurora.example",
+      storeName: "Aurora Atelier",
+      url: expect.stringContaining("/onboarding?store=aurora&claim="),
+    });
+    const { url } = sendClaimLinkEmail.mock.calls[0][0];
+    expect(url).toContain(`claim=${res.claimToken}`);
+    expect(res.claimEmailSent).toBe(true);
+  });
+
+  it("still creates the store when the claim email fails to send", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    sendClaimLinkEmail.mockRejectedValue(new Error("Resend down"));
+    const res = await tenantRouter.createCaller(ctx()).create({
+      name: "Aurora",
+      slug: "aurora",
+      email: "o@a.example",
+    });
+    expect(res.tenantId).toBe(42);
+    expect(res.claimEmailSent).toBe(false);
+    // The in-browser token still works, so the signup must not be lost.
+    expect(res.claimToken).toEqual(expect.any(String));
+    warn.mockRestore();
+  });
+
+  it("reports claimEmailSent:false when mail isn't configured", async () => {
+    sendClaimLinkEmail.mockResolvedValue(false);
+    const res = await tenantRouter.createCaller(ctx()).create({
+      name: "Aurora",
+      slug: "aurora",
+      email: "o@a.example",
+    });
+    expect(res.claimEmailSent).toBe(false);
   });
 
   it("stores the chosen vertical and seeds its category preset", async () => {

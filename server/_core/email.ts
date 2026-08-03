@@ -253,6 +253,26 @@ export async function sendMagicLinkEmail(opts: {
   });
 }
 
+// Signup's claim link (server/routers/tenant.ts `create`): a durable copy of
+// the claim token, which otherwise lives only in the signup tab's
+// sessionStorage — a failed sign-in or a second device would lose it. Same
+// degrade-gracefully contract as sendMagicLinkEmail: returns false (doesn't
+// throw) when Resend isn't configured, and the caller treats any failure as
+// non-fatal since the in-browser token and the email-match resume still work.
+export async function sendClaimLinkEmail(opts: {
+  to: string;
+  url: string;
+  storeName: string;
+}): Promise<boolean> {
+  return sendTransactionalEmail({
+    to: opts.to,
+    subject: `Finish setting up ${opts.storeName}`,
+    html: `<p>Your store <strong>${escapeHtml(opts.storeName)}</strong> is created and waiting for you.</p>
+<p><a href="${escapeHtml(opts.url)}">Finish setting it up</a> — sign in with this email address (or your Google/Apple account) and you'll become the store's admin.</p>
+<p>If you didn't create this store, you can ignore this email.</p>`,
+  });
+}
+
 // ── Public API ────────────────────────────────────────────────────────────────
 export async function sendOrderReceipt(
   opts: OrderReceiptOptions,

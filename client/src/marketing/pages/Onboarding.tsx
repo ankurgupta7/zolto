@@ -29,14 +29,24 @@ const CLAIM_TOKEN_KEY = "zolto_claim_token";
  * they typed at signup (provider-verified), the waiting store is found by
  * email match and one click finishes the claim.
  */
-function ClaimStep({ store }: { store: string | null }) {
+function ClaimStep({
+  store,
+  urlToken,
+}: {
+  store: string | null;
+  urlToken: string | null;
+}) {
+  // The same-tab signup flow leaves the token in sessionStorage; the emailed
+  // claim link carries it in the URL (?claim=…) so it survives any browser
+  // state. Either one authorizes the claim.
   const claimToken = useMemo(() => {
+    if (urlToken) return urlToken;
     try {
       return sessionStorage.getItem(CLAIM_TOKEN_KEY);
     } catch {
       return null;
     }
-  }, []);
+  }, [urlToken]);
 
   const me = trpc.auth.me.useQuery(undefined, { retry: false });
   const isAuthed = !!me.data;
@@ -126,7 +136,15 @@ function ClaimStep({ store }: { store: string | null }) {
       </p>
       <SignInOptions
         className="mt-3"
-        next={`/onboarding${store ? `?store=${encodeURIComponent(store)}` : ""}`}
+        // Preserve the URL-borne token across the OAuth round-trip; the
+        // sessionStorage one survives in the tab on its own.
+        next={(() => {
+          const qs = new URLSearchParams();
+          if (store) qs.set("store", store);
+          if (urlToken) qs.set("claim", urlToken);
+          const s = qs.toString();
+          return `/onboarding${s ? `?${s}` : ""}`;
+        })()}
       />
     </div>
   );
@@ -193,10 +211,11 @@ function ClaimStep({ store }: { store: string | null }) {
 
 export default function Onboarding() {
   const search = useSearch();
-  const store = useMemo(
-    () => new URLSearchParams(search).get("store"),
-    [search],
-  );
+  const { store, urlToken } = useMemo(() => {
+    const params = new URLSearchParams(search);
+    // `claim` arrives via the emailed claim link (tenant.create step 8).
+    return { store: params.get("store"), urlToken: params.get("claim") };
+  }, [search]);
 
   const status = trpc.tenant.onboardingStatus.useQuery(undefined, {
     // Live: async platform steps (e.g. Stripe Connect return) tick off here.
@@ -234,7 +253,7 @@ export default function Onboarding() {
       </p>
 
       <div className="mt-8">
-        <ClaimStep store={store} />
+        <ClaimStep store={store} urlToken={urlToken} />
       </div>
 
       <div className="mt-6 h-2 w-full overflow-hidden rounded-full bg-[var(--brand-surface)]">

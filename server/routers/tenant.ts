@@ -43,6 +43,8 @@ import {
 } from "../channelCredentials";
 import { startGatewayForToken } from "../discord";
 import { buildSlackAuthorizeUrl, buildDiscordInviteUrl } from "../slackOAuth";
+import { getCanonicalOrigin } from "../_core/oauth";
+import { sendClaimLinkEmail } from "../_core/email";
 import { buildConnectAuthorizeUrl } from "../stripeConnect";
 import { deriveOnboardingStatus } from "../onboarding";
 import { createRateLimiter } from "../rateLimit";
@@ -192,7 +194,7 @@ export const tenantRouter = router({
         verticalDescription: z.string().trim().max(500).optional(),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       // 1. Slug must be free.
       if (await getTenantBySlug(input.slug)) {
         throw new TRPCError({
@@ -304,11 +306,38 @@ export const tenantRouter = router({
       const claimToken = crypto.randomBytes(24).toString("hex");
       await createPendingTenantAdmin(tenantId, input.email, claimToken);
 
+      // 8. Email a durable copy of the claim link. The wizard holds the token
+      // only in its tab's sessionStorage, so this is what survives a failed
+      // sign-in, a closed tab, or switching devices — and it covers the one
+      // gap resumeClaim can't: an owner who signs in with a DIFFERENT address
+      // than they typed here. Best-effort: a mail failure must not lose the
+      // signup (the in-browser token still works, and so does the email-match
+      // resume).
+      let claimEmailSent = false;
+      try {
+        const claimUrl =
+          `${getCanonicalOrigin(ctx.req)}/onboarding` +
+          `?store=${encodeURIComponent(input.slug)}&claim=${claimToken}`;
+        claimEmailSent = await sendClaimLinkEmail({
+          to: input.email,
+          url: claimUrl,
+          storeName: input.name,
+        });
+      } catch (err) {
+        console.warn(
+          "[Signup] Claim-link email failed; signup continues:",
+          err,
+        );
+      }
+
       return {
         tenantId,
         slug: input.slug,
         trialEndsAt: trialEndsAt.toISOString(),
         claimToken,
+        // Whether the durable claim link actually went out (false when mail
+        // isn't configured) — the wizard mentions the email only when true.
+        claimEmailSent,
         // Null when no logo was sent OR the upload failed — the wizard tells
         // the merchant to re-upload from the admin in the latter case.
         logoUrl,

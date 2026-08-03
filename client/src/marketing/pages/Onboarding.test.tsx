@@ -130,6 +130,34 @@ describe("Onboarding — claiming a fresh store", () => {
         .getAttribute("href"),
     ).toContain("kalakosh");
   });
+
+  // The emailed claim link (tenant.create step 8) carries the token in the
+  // URL, so it works in a tab with no sessionStorage — the durable copy.
+  it("redeems a token carried by the emailed claim link", async () => {
+    mocks.meData = { id: 1, email: "owner@kalakosh.example" };
+    mocks.claimMutate.mockImplementation(
+      (_vars: { token: string }, cbs: MutateCbs<{ slug: string | null }>) =>
+        cbs.onSuccess?.({ slug: "kalakosh" }),
+    );
+
+    renderOnboarding("/onboarding?store=kalakosh&claim=tok-from-email");
+
+    await waitFor(() =>
+      expect(screen.getByText(/you're the store admin/i)).toBeTruthy(),
+    );
+    expect(mocks.claimMutate).toHaveBeenCalledWith(
+      { token: "tok-from-email" },
+      expect.anything(),
+    );
+  });
+
+  it("carries the emailed token through the sign-in round-trip", () => {
+    renderOnboarding("/onboarding?store=kalakosh&claim=tok-from-email");
+    const google = screen.getByRole("link", { name: /continue with google/i });
+    expect(google.getAttribute("href")).toContain(
+      encodeURIComponent("/onboarding?store=kalakosh&claim=tok-from-email"),
+    );
+  });
 });
 
 describe("Onboarding — recovery when the token is refused", () => {

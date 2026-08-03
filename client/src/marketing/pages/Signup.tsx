@@ -105,7 +105,13 @@ export default function Signup() {
           "Your store is ready, but the logo didn't upload — add it again from your admin.",
         );
       } else {
-        toast.success("Store created — let's set it up.");
+        // Mention the emailed setup link only when it actually went out
+        // (claimEmailSent is false on deployments without mail configured).
+        toast.success(
+          data.claimEmailSent
+            ? "Store created — we've also emailed you a setup link, in case you need it later."
+            : "Store created — let's set it up.",
+        );
       }
       navigate(`/onboarding?store=${encodeURIComponent(data.slug)}`);
     },
