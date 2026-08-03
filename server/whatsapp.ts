@@ -1,18 +1,15 @@
 import axios from "axios";
 import type { Request, Response } from "express";
-import { PRODUCT_CATEGORIES, type ProductCategory } from "@shared/const";
 import { invokeLLM } from "./_core/llm";
 import { notifyOwner } from "./_core/notification";
 import { createProduct, getTenantByWhatsappNumber } from "./db";
 import { storagePut } from "./storage";
 import type { TenantBranding } from "./_core/email";
 import { channelSecret } from "./channelCredentials";
-
-// These AI extractors describe a single photographed/described piece, so "Sets"
-// is folded into "Other" (see the prompt) and deliberately omitted from the
-// choices offered to the model. Derived from the canonical list so the rest of
-// the categories can never drift.
-const AI_CATEGORIES = PRODUCT_CATEGORIES.filter((c) => c !== "Sets");
+import {
+  buildIntakeExtractionPrompt,
+  getVerticalContext,
+} from "./verticals";
 
 const WHATSAPP_VERIFY_TOKEN =
   process.env.WHATSAPP_VERIFY_TOKEN ?? "kalakosh_verify_token";
@@ -130,6 +127,7 @@ export async function handleWebhookMessage(req: Request, res: Response) {
     // Parse product details with tenant-branded LLM prompt
     const parsed = await parseProductFromMessage(
       textContent,
+      tenantId,
       branding.tenantName,
     );
     if (!parsed) {
@@ -168,43 +166,29 @@ export async function handleWebhookMessage(req: Request, res: Response) {
 
 export async function parseProductFromMessage(
   text: string,
+  tenantId: number,
   tenantName?: string,
 ): Promise<{
   name: string;
   description: string;
   price: number;
-  category: Exclude<ProductCategory, "Sets">;
+  category: string;
 } | null> {
   if (!text.trim()) return null;
 
   try {
-    const storeName = tenantName ?? "your store";
+    // The prompt is assembled from the tenant's vertical + their actual
+    // category list (shared with the Discord and Slack intake bots). WhatsApp
+    // intake writes German listing copy, hence germanOutput.
+    const vc = await getVerticalContext(tenantId, tenantName ?? "your store");
+    const { system, jsonSchema } = buildIntakeExtractionPrompt(vc, {
+      germanOutput: true,
+    });
     const response = await invokeLLM({
       messages: [
         {
           role: "system",
-          content: `You are a product data extractor for ${storeName}.
-Extract product information from the owner's message and return a JSON object.
-Write the product name and description in German (Swiss German spelling: use ss instead of ß).
-
-Categories available: ${AI_CATEGORIES.map((c) => `"${c}"`).join(", ")}
-
-Rules:
-- name: short product name (2-6 words, elegant)
-- description: full product description as provided, cleaned up
-- price: numeric value only (no currency symbols)
-- category: must be exactly one of the body-part-based categories above; infer from context if not explicit
-  * Necklaces → necklaces, pendants, chokers
-  * Earrings → studs, drops, hoops, chandeliers
-  * Rings → finger rings
-  * Bracelets → chain bracelets, cuffs
-  * Bangles → rigid bangles
-  * Anklets → ankle chains, payal
-  * Brooches → pins, brooches
-  * Hair Accessories → hair pins, tikka
-  * Other → sets or pieces not fitting the above
-
-Return ONLY valid JSON, no markdown, no explanation.`,
+          content: system,
         },
         {
           role: "user",
@@ -213,31 +197,7 @@ Return ONLY valid JSON, no markdown, no explanation.`,
       ],
       response_format: {
         type: "json_schema",
-        json_schema: {
-          name: "product_info",
-          strict: true,
-          schema: {
-            type: "object",
-            properties: {
-              name: {
-                type: "string",
-                description: "Short elegant product name",
-              },
-              description: {
-                type: "string",
-                description: "Full product description",
-              },
-              price: { type: "number", description: "Numeric price value" },
-              category: {
-                type: "string",
-                enum: AI_CATEGORIES,
-                description: "Product category",
-              },
-            },
-            required: ["name", "description", "price", "category"],
-            additionalProperties: false,
-          },
-        },
+        json_schema: jsonSchema,
       },
     });
 

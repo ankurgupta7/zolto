@@ -11,6 +11,7 @@ import {
 } from "@shared/templates";
 import { slugify, isValidSlug } from "../slug";
 import { Container } from "../components/Container";
+import { VERTICALS, VERTICAL_PRESETS, type Vertical } from "@shared/verticals";
 
 /**
  * Signup wizard: details → template → branding.
@@ -44,6 +45,10 @@ export default function Signup() {
   const [slugTouched, setSlugTouched] = useState(false);
   const [slug, setSlug] = useState("");
   const [email, setEmail] = useState("");
+  // What the store sells — seeds its category list (shared/verticals.ts) and
+  // tunes the AI tools. Part of "details": it's identity, not looks.
+  const [vertical, setVertical] = useState<Vertical>("other");
+  const [verticalDescription, setVerticalDescription] = useState("");
 
   // Auto-derive slug from the store name until the user edits the slug directly.
   const effectiveSlug = slugTouched ? slug : slugify(name);
@@ -157,6 +162,8 @@ export default function Signup() {
       name: name.trim(),
       slug: effectiveSlug,
       email: email.trim(),
+      vertical,
+      verticalDescription: verticalDescription.trim() || undefined,
       templateId,
       primaryColor,
       logo: logo
@@ -229,7 +236,7 @@ export default function Signup() {
                   setSlugTouched(true);
                   setSlug(slugify(e.target.value));
                 }}
-                placeholder="kalakosh"
+                placeholder="yourstore"
                 className="w-full rounded-md border border-[var(--brand-border-2)] bg-white px-4 py-2.5 text-[var(--brand-text)] outline-none focus:border-[var(--brand-accent)]"
               />
             </Field>
@@ -244,6 +251,37 @@ export default function Signup() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
+                className="w-full rounded-md border border-[var(--brand-border-2)] bg-white px-4 py-2.5 text-[var(--brand-text)] outline-none focus:border-[var(--brand-accent)]"
+              />
+            </Field>
+
+            <Field
+              label="What do you sell?"
+              hint="Sets up your starting categories and tunes the AI tools to your kind of store. You can change it later."
+            >
+              <select
+                value={vertical}
+                onChange={(e) => setVertical(e.target.value as Vertical)}
+                className="w-full rounded-md border border-[var(--brand-border-2)] bg-white px-4 py-2.5 text-[var(--brand-text)] outline-none focus:border-[var(--brand-accent)]"
+              >
+                {VERTICALS.map((v) => (
+                  <option key={v} value={v}>
+                    {VERTICAL_PRESETS[v].labelEn}
+                  </option>
+                ))}
+              </select>
+            </Field>
+
+            <Field
+              label="Describe your range (optional)"
+              hint="One sentence in your own words — the AI uses it to write better listings."
+            >
+              <input
+                type="text"
+                value={verticalDescription}
+                onChange={(e) => setVerticalDescription(e.target.value)}
+                maxLength={500}
+                placeholder="e.g. Wheel-thrown stoneware tableware in muted glazes"
                 className="w-full rounded-md border border-[var(--brand-border-2)] bg-white px-4 py-2.5 text-[var(--brand-text)] outline-none focus:border-[var(--brand-accent)]"
               />
             </Field>

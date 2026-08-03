@@ -48,6 +48,37 @@ vi.mock("@/lib/trpc", () => ({
         useQuery: () => ({ data: [] }),
       },
     },
+    // Store categories (per-tenant, server-driven) — jewellery-shaped here.
+    categories: {
+      list: {
+        useQuery: () => ({
+          data: [
+            "Necklaces",
+            "Earrings",
+            "Rings",
+            "Bracelets",
+            "Bangles",
+            "Anklets",
+            "Brooches",
+            "Hair Accessories",
+            "Other",
+          ].map((key, i) => ({
+            key,
+            labelEn: key,
+            labelDe: null,
+            extraIncludes: [],
+            sortOrder: i,
+          })),
+          isLoading: false,
+          error: null,
+        }),
+      },
+    },
+    // Vertical lookup for template/fallback copy.
+    tenant: {
+      me: { useQuery: () => ({ data: null }) },
+      getSettings: { useQuery: () => ({ data: null }) },
+    },
     // Used by the signed-out state's SignInOptions.
     auth: {
       requestMagicLink: {

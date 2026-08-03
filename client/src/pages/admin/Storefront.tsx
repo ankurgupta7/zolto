@@ -157,7 +157,7 @@ export default function Storefront() {
               type="text"
               value={metaTitle}
               onChange={(e) => setMetaTitle(e.target.value)}
-              placeholder="Your store — handcrafted pieces"
+              placeholder="Your store — handcrafted items"
               maxLength={255}
               className={inputClass}
             />
@@ -172,7 +172,7 @@ export default function Storefront() {
               value={metaDescription}
               onChange={(e) => setMetaDescription(e.target.value)}
               rows={3}
-              placeholder="Carefully selected pieces, made with care."
+              placeholder="Carefully selected items, made with care."
               className={`${inputClass} resize-none`}
             />
           </Field>

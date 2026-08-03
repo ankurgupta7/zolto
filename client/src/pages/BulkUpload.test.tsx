@@ -20,6 +20,37 @@ vi.mock("@/_core/hooks/useAuth", () => ({
 
 vi.mock("@/lib/trpc", () => ({
   trpc: {
+    tenant: {
+      me: { useQuery: () => ({ data: null, isLoading: false }) },
+      getSettings: { useQuery: () => ({ data: null, isLoading: false }) },
+    },
+    categories: {
+      list: {
+        useQuery: () => ({
+          data: [
+            "Necklaces",
+            "Earrings",
+            "Sets",
+            "Rings",
+            "Bracelets",
+            "Bangles",
+            "Anklets",
+            "Brooches",
+            "Hair Accessories",
+            "Other",
+          ].map((key, i) => ({
+            key,
+            labelEn: key,
+            labelDe: null,
+            extraIncludes:
+              key === "Necklaces" || key === "Earrings" ? ["Sets"] : [],
+            sortOrder: i,
+          })),
+          isLoading: false,
+          error: null,
+        }),
+      },
+    },
     useUtils: () => ({}),
     products: {
       bulkAnalyze: {

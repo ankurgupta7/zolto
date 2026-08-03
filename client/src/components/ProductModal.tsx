@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { categoryColor } from "@/lib/categoryColors";
 import { Link } from "wouter";
 import type { ProductItem } from "@shared/types";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -24,19 +25,6 @@ interface Props {
   open: boolean;
   onClose: () => void;
 }
-
-const CATEGORY_COLORS: Record<string, string> = {
-  Necklaces: "bg-[#F5EFE8] text-[#8B6914]",
-  Earrings: "bg-[#E8E8E8] text-[#555]",
-  Sets: "bg-[#F5E8F0] text-[#8B2D6B]",
-  Rings: "bg-[#E8F4EC] text-[#2D6B4A]",
-  Bracelets: "bg-[#EEE8F5] text-[#5A2D82]",
-  Bangles: "bg-[#F5E8E8] text-[#8B2020]",
-  Anklets: "bg-[#E8F0E8] text-[#2D4A20]",
-  Brooches: "bg-[#FFF0DC] text-[#8B5914]",
-  "Hair Accessories": "bg-[#E8EEF5] text-[#1A3D6B]",
-  Other: "bg-[#EEEEEE] text-[#666]",
-};
 
 const WhatsAppIcon = () => (
   <svg
@@ -207,8 +195,7 @@ export default function ProductModal({ product, open, onClose }: Props) {
         <div className="flex-1 min-h-0 overflow-y-auto p-5">
           <span
             className={`inline-block text-[10px] uppercase tracking-[0.2em] px-2 py-0.5 mb-3 font-sans ${
-              CATEGORY_COLORS[product.category] ??
-              "bg-muted text-muted-foreground"
+              categoryColor(product.category)
             }`}
           >
             {product.category}

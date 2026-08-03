@@ -2,59 +2,34 @@ import { useState, useEffect, useMemo } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import ProductCard from "@/components/ProductCard";
-import {
-  PRODUCT_CATEGORIES,
-  CATEGORY_EXTRA_INCLUDES,
-  type ProductCategory,
-} from "@shared/types";
 import { useTranslation } from "react-i18next";
 import { useTenant } from "@/contexts/TenantContext";
-
-const CATEGORY_VALUES: (ProductCategory | "All")[] = [
-  "All",
-  ...PRODUCT_CATEGORIES,
-];
-
-// Extra categories folded into a category's listing (e.g. Sets show under
-// Necklaces/Earrings). Sourced from the single shared definition so the web
-// shop and POS apps never drift.
-const extraIncludesFor = (
-  cat: ProductCategory | "All",
-): readonly ProductCategory[] =>
-  (CATEGORY_EXTRA_INCLUDES as Record<string, readonly ProductCategory[]>)[
-    cat
-  ] ?? [];
+import { useCategories } from "@/hooks/useCategories";
 
 export default function Shop() {
   const { t } = useTranslation();
   const { branding } = useTenant();
   const [_location] = useLocation();
-  const [activeCategory, setActiveCategory] = useState<ProductCategory | "All">(
-    "All",
+  const [activeCategory, setActiveCategory] = useState<string>("All");
+
+  // The store's own category list (per-tenant, server-driven). Labels come
+  // with it; "All" keeps its translated label from the locale files.
+  const { categories, label, extraIncludesFor } = useCategories();
+  const categoryValues = useMemo(
+    () => ["All", ...categories.map((c) => c.key)],
+    [categories],
   );
+  const categoryLabel = (cat: string) =>
+    cat === "All" ? t("categories.all") : label(cat);
 
-  const CATEGORY_LABELS: Record<string, string> = {
-    All: t("categories.all"),
-    Necklaces: t("categories.necklaces"),
-    Earrings: t("categories.earrings"),
-    Sets: t("categories.sets"),
-    Rings: t("categories.rings"),
-    Bracelets: t("categories.bracelets"),
-    Bangles: t("categories.bangles"),
-    Anklets: t("categories.anklets"),
-    Brooches: t("categories.brooches"),
-    "Hair Accessories": t("categories.hairAccessories"),
-    Other: t("categories.other"),
-  };
-
-  // Read category from URL query param
+  // Read category from URL query param (validated once the list is known)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const cat = params.get("category");
-    if (cat && CATEGORY_VALUES.includes(cat as ProductCategory)) {
-      setActiveCategory(cat as ProductCategory);
+    if (cat && categoryValues.includes(cat)) {
+      setActiveCategory(cat);
     }
-  }, []);
+  }, [categoryValues]);
 
   const { data: allProducts, isLoading } = trpc.products.list.useQuery({});
 
@@ -71,7 +46,7 @@ export default function Shop() {
     () => new Set(allProducts?.map((p) => p.category) ?? []),
     [allProducts],
   );
-  const visibleCategoryValues = CATEGORY_VALUES.filter(
+  const visibleCategoryValues = categoryValues.filter(
     (cat) => cat === "All" || availableCategories.has(cat),
   );
 
@@ -103,7 +78,7 @@ export default function Shop() {
                     : "text-[var(--brand-ink)]/60 hover:text-[var(--brand-ink)] hover:bg-[var(--brand-ink)]/5"
                 }`}
               >
-                {CATEGORY_LABELS[cat] ?? cat}
+                {categoryLabel(cat)}
               </button>
             ))}
           </div>
@@ -128,7 +103,7 @@ export default function Shop() {
               <p className="text-muted-foreground text-sm font-sans mb-8">
                 {t("shop.pieces", { count: products.length })}
                 {activeCategory !== "All"
-                  ? ` ${t("shop.inCategory", { category: CATEGORY_LABELS[activeCategory] ?? activeCategory })}`
+                  ? ` ${t("shop.inCategory", { category: categoryLabel(activeCategory) })}`
                   : ""}
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -148,8 +123,7 @@ export default function Shop() {
               <p className="text-muted-foreground text-sm font-sans">
                 {activeCategory !== "All"
                   ? t("shop.noPiecesCategory", {
-                      category:
-                        CATEGORY_LABELS[activeCategory] ?? activeCategory,
+                      category: categoryLabel(activeCategory),
                     })
                   : t("shop.noPiecesAll")}
               </p>

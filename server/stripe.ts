@@ -39,11 +39,13 @@ import {
   getProductsByIds,
   getTenantAdminContact,
   getTenantById,
+  getTenantSettings,
   markProductsSold,
   releaseProductReservations,
   updateOrderBySessionId,
 } from "./db";
 import { sendOrderReceipt, sendOwnerOrderEmail } from "./_core/email";
+import { VERTICAL_PRESETS, isVertical } from "@shared/verticals";
 import { notifyOwner } from "./_core/notification";
 import { handleBillingEvent } from "./billing";
 
@@ -161,7 +163,19 @@ export async function fulfillOrder(
       order.tenantId,
       productIds,
     );
+    // Receipt wording depends on what the store sells ("unworn" only makes
+    // sense for wearables) — pull the vertical's returns sentence.
+    const settings = await getTenantSettings(order.tenantId);
+    const vertical =
+      settings?.vertical && isVertical(settings.vertical)
+        ? settings.vertical
+        : "jewellery";
+    const receiptTenant = await getTenantById(order.tenantId);
     sendOrderReceipt({
+      branding: {
+        ...(receiptTenant ? { tenantName: receiptTenant.name } : {}),
+        returnsFooter: VERTICAL_PRESETS[vertical].returnsFooter,
+      },
       to: customerEmail,
       customerName:
         session.customer_details?.name ?? order.customerName ?? null,

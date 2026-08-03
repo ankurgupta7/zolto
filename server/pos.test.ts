@@ -28,6 +28,30 @@ vi.mock("./db", () => ({
   markProductsSold: vi.fn(),
   getTenantSettings: vi.fn().mockResolvedValue(null),
   setTenantTerminalLocation: vi.fn().mockResolvedValue(undefined),
+  getTenantCategories: vi.fn(async (tenantId: number) =>
+    [
+      { key: "Necklaces", de: "Halsketten", extra: ["Sets"] },
+      { key: "Earrings", de: "Ohrringe", extra: ["Sets"] },
+      { key: "Sets", de: "Sets" },
+      { key: "Rings", de: "Ringe" },
+      { key: "Bracelets", de: "Armbänder" },
+      { key: "Bangles", de: "Armreifen" },
+      { key: "Anklets", de: "Fussschmuck" },
+      { key: "Brooches", de: "Broschen" },
+      { key: "Hair Accessories", de: "Haarschmuck" },
+      { key: "Other", de: "Sonstiges" },
+    ].map((c, i) => ({
+      id: i + 1,
+      tenantId,
+      key: c.key,
+      labelEn: c.key,
+      labelDe: c.de,
+      extraIncludes: ("extra" in c ? c.extra : null) ?? null,
+      sortOrder: i,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })),
+  ),
   getTenantByPosApiKey: vi.fn(async (key: string) =>
     key === "test-pos-key"
       ? TEST_TENANT
@@ -45,7 +69,6 @@ vi.mock("./stripe", () => ({
 import { registerPosRoutes } from "./pos";
 import { getDb, markProductsSold } from "./db";
 import { getStripe, isStripeConfigured } from "./stripe";
-import { PRODUCT_CATEGORIES, CATEGORY_EXTRA_INCLUDES } from "../shared/const";
 
 function makeApp() {
   const app = express();
@@ -138,24 +161,36 @@ describe("GET /api/pos/categories", () => {
     expect(res.status).toBe(401);
   });
 
-  it("returns the canonical category list from the shared source of truth", async () => {
+  it("serves the tenant's own categories in the pre-verticals payload shape", async () => {
     const res = await request(makeApp())
       .get("/api/pos/categories")
       .set("x-pos-key", "test-pos-key");
 
     expect(res.status).toBe(200);
-    // Must equal PRODUCT_CATEGORIES exactly, in order — this is what guarantees
-    // the POS apps show the same categories, in the same order, as the website.
-    expect(res.body.categories).toEqual([...PRODUCT_CATEGORIES]);
-    expect(res.body.extraIncludes).toEqual(CATEGORY_EXTRA_INCLUDES);
-  });
-
-  it("only folds real categories into real categories", () => {
-    // Guards against a typo in CATEGORY_EXTRA_INCLUDES leaking to the apps.
-    for (const [cat, extras] of Object.entries(CATEGORY_EXTRA_INCLUDES)) {
-      expect(PRODUCT_CATEGORIES).toContain(cat);
-      for (const extra of extras) expect(PRODUCT_CATEGORIES).toContain(extra);
-    }
+    // Android-compatibility tripwire: for a jewellery tenant, `categories`
+    // and `extraIncludes` must be byte-identical to the payload the endpoint
+    // served when the list was a global constant — same keys, same order,
+    // same folding. `labels` is additive; old app versions ignore it.
+    expect(res.body.categories).toEqual([
+      "Necklaces",
+      "Earrings",
+      "Sets",
+      "Rings",
+      "Bracelets",
+      "Bangles",
+      "Anklets",
+      "Brooches",
+      "Hair Accessories",
+      "Other",
+    ]);
+    expect(res.body.extraIncludes).toEqual({
+      Necklaces: ["Sets"],
+      Earrings: ["Sets"],
+    });
+    expect(res.body.labels.Necklaces).toEqual({
+      en: "Necklaces",
+      de: "Halsketten",
+    });
   });
 });
 

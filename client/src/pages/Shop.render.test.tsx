@@ -27,6 +27,33 @@ vi.mock("sonner", () => ({
 // and ProductModal rendered beneath it.
 vi.mock("@/lib/trpc", () => ({
   trpc: {
+    categories: {
+      list: {
+        useQuery: () => ({
+          data: [
+            "Necklaces",
+            "Earrings",
+            "Sets",
+            "Rings",
+            "Bracelets",
+            "Bangles",
+            "Anklets",
+            "Brooches",
+            "Hair Accessories",
+            "Other",
+          ].map((key, i) => ({
+            key,
+            labelEn: key,
+            labelDe: null,
+            extraIncludes:
+              key === "Necklaces" || key === "Earrings" ? ["Sets"] : [],
+            sortOrder: i,
+          })),
+          isLoading: false,
+          error: null,
+        }),
+      },
+    },
     useUtils: () => ({
       products: {
         list: { invalidate: vi.fn() },
@@ -110,7 +137,7 @@ function categoryButton(name: string) {
 }
 
 function countLine() {
-  return screen.getByText(/\d+ pieces?/).textContent;
+  return screen.getByText(/\d+ items?/).textContent;
 }
 
 beforeEach(async () => {
@@ -132,16 +159,16 @@ describe("Shop page", () => {
     mocks.isLoading = true;
     const { container } = renderShop();
     expect(container.querySelectorAll(".animate-pulse")).toHaveLength(8);
-    expect(screen.queryByText(/pieces?/)).toBeNull();
+    expect(screen.queryByText(/\d+ items?/)).toBeNull();
   });
 
-  it("renders every visible product with the piece count", () => {
+  it("renders every visible product with the item count", () => {
     renderShop();
     expect(screen.getByText("The Collection")).toBeTruthy();
     expect(screen.getByText("Moonstone Ring")).toBeTruthy();
     expect(screen.getByText("Pearl Necklace")).toBeTruthy();
     expect(screen.getByText("Bridal Set")).toBeTruthy();
-    expect(countLine()).toBe("3 pieces");
+    expect(countLine()).toBe("3 items");
   });
 
   it("only offers category filters that have products", () => {
@@ -159,11 +186,11 @@ describe("Shop page", () => {
     expect(screen.getByText("Moonstone Ring")).toBeTruthy();
     expect(screen.queryByText("Pearl Necklace")).toBeNull();
     expect(screen.queryByText("Bridal Set")).toBeNull();
-    expect(countLine()).toBe("1 piece in Rings");
+    expect(countLine()).toBe("1 item in Rings");
 
     fireEvent.click(categoryButton("All"));
     expect(screen.getByText("Pearl Necklace")).toBeTruthy();
-    expect(countLine()).toBe("3 pieces");
+    expect(countLine()).toBe("3 items");
   });
 
   it("folds Sets into the Necklaces listing", () => {
@@ -172,26 +199,26 @@ describe("Shop page", () => {
     expect(screen.getByText("Pearl Necklace")).toBeTruthy();
     expect(screen.getByText("Bridal Set")).toBeTruthy();
     expect(screen.queryByText("Moonstone Ring")).toBeNull();
-    expect(countLine()).toBe("2 pieces in Necklaces");
+    expect(countLine()).toBe("2 items in Necklaces");
   });
 
   it("preselects the category from the URL query param", () => {
     window.history.replaceState({}, "", "/shop?category=Rings");
     renderShop();
-    expect(countLine()).toBe("1 piece in Rings");
+    expect(countLine()).toBe("1 item in Rings");
     expect(screen.queryByText("Pearl Necklace")).toBeNull();
   });
 
   it("ignores an unknown category in the URL", () => {
     window.history.replaceState({}, "", "/shop?category=Gemstones");
     renderShop();
-    expect(countLine()).toBe("3 pieces");
+    expect(countLine()).toBe("3 items");
   });
 
   it("shows the curated empty state when there are no products", () => {
     mocks.productsData = [];
     renderShop();
-    expect(screen.getByText("No pieces yet")).toBeTruthy();
+    expect(screen.getByText("Nothing here yet")).toBeTruthy();
     expect(
       screen.getByText("The collection is being curated. Check back soon."),
     ).toBeTruthy();

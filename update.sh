@@ -481,7 +481,10 @@ run_sql "0012 returns table" "
 CURRENT_CAT_ENUM_SETS=$($MYSQL -se "${MYSQL_LOCK_TIMEOUT_SQL}SELECT COLUMN_TYPE FROM information_schema.COLUMNS
   WHERE TABLE_SCHEMA='${MYSQL_DATABASE}' AND TABLE_NAME='products' AND COLUMN_NAME='category';" 2>/dev/null || echo "")
 
-if echo "$CURRENT_CAT_ENUM_SETS" | grep -q "'Sets'"; then
+# Skip when 'Sets' is already present AND when the column is no longer an
+# enum at all — 0035 converts it to varchar for per-tenant categories, and
+# re-applying this enum on a varchar column would truncate custom categories.
+if echo "$CURRENT_CAT_ENUM_SETS" | grep -q "'Sets'" || ! echo "$CURRENT_CAT_ENUM_SETS" | grep -q "^enum"; then
   ok "0013 Sets category already applied"
 else
   run_sql "0013 add Sets category" \
@@ -777,6 +780,13 @@ if [ "$(col_exists tenant_settings template_id)" = "0" ]; then
 else
   ok "0035 tenant_settings.template_id already exists"
 fi
+
+# ── 0036: merchant verticals + per-tenant categories ─────────────────────────
+# Ships drizzle/0017_merchant_verticals.sql + 0018_seed_jewellery_categories.sql.
+# products.category enum→varchar, tenant_categories table, tenant_settings
+# vertical columns, and a jewellery-preset seed for every existing tenant.
+# Idempotent; see migrate_0036_merchant_verticals in deploy/lib/db.sh.
+migrate_0036_merchant_verticals
 
 # ── Record the applied migration set ──────────────────────────────────────────
 # Only reached when every migration above succeeded — `set -e` plus run_sql's

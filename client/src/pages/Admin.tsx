@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { categoryColor } from "@/lib/categoryColors";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -31,7 +32,10 @@ import {
   Camera,
 } from "lucide-react";
 import { SignInOptions } from "@/components/SignInOptions";
-import { PRODUCT_CATEGORIES, type ProductCategory } from "@shared/types";
+import type { ProductCategory } from "@shared/types";
+import { VERTICAL_PRESETS, isVertical } from "@shared/verticals";
+import { useCategories } from "@/hooks/useCategories";
+import { useTenantSettings } from "@/components/admin/useTenantSettings";
 import ProductImageManager from "@/components/ProductImageManager";
 import OnboardingChecklist from "@/components/OnboardingChecklist";
 import InsightsCard from "@/components/InsightsCard";
@@ -49,20 +53,6 @@ import { ADMIN_TOUR_ID, ADMIN_TOUR_STEPS } from "@/lib/adminTour";
 import { clearTourCompletion } from "@/lib/tour";
 import CapabilityBand from "@/components/CapabilityBand";
 import { SketchUnderline } from "@/components/SketchAccents";
-
-const CATEGORIES: readonly ProductCategory[] = PRODUCT_CATEGORIES;
-
-const CATEGORY_COLORS: Record<string, string> = {
-  Necklaces: "bg-[#F5EFE8] text-[#8B6914]",
-  Earrings: "bg-[#E8E8E8] text-[#555]",
-  Rings: "bg-[#E8F4EC] text-[#2D6B4A]",
-  Bracelets: "bg-[#EEE8F5] text-[#5A2D82]",
-  Bangles: "bg-[#F5E8E8] text-[#8B2020]",
-  Anklets: "bg-[#E8F0E8] text-[#2D4A20]",
-  Brooches: "bg-[#FFF0DC] text-[#8B5914]",
-  "Hair Accessories": "bg-[#E8EEF5] text-[#1A3D6B]",
-  Other: "bg-[#EEEEEE] text-[#666]",
-};
 
 interface AddForm {
   name: string;
@@ -112,6 +102,8 @@ interface ProductRowProps {
 }
 
 function ProductRow({ product, onRefetch }: ProductRowProps) {
+  // Store's own category keys (server-driven, per-tenant).
+  const CATEGORIES = useCategories().categories.map((c) => c.key);
   const [qtyValue, setQtyValue] = useState(String(product.quantity));
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState<EditForm>({
@@ -245,7 +237,7 @@ function ProductRow({ product, onRefetch }: ProductRowProps) {
         {/* Category */}
         <td className="px-4 py-4 hidden md:table-cell">
           <span
-            className={`text-[10px] uppercase tracking-[0.1em] px-2 py-0.5 font-sans ${CATEGORY_COLORS[product.category] ?? ""}`}
+            className={`text-[10px] uppercase tracking-[0.1em] px-2 py-0.5 font-sans ${categoryColor(product.category)}`}
           >
             {product.category}
           </span>
@@ -554,6 +546,20 @@ type InsightsData = {
 
 export default function Admin() {
   const { user, isAuthenticated, loading } = useAuth();
+  // Store's own category keys (server-driven, per-tenant).
+  const storeCategories = useCategories().categories;
+  const CATEGORIES = useMemo(
+    () => storeCategories.map((c) => c.key),
+    [storeCategories],
+  );
+  // Vertical-specific example copy (placeholders, intake example message).
+  const { settings: tenantSettings } = useTenantSettings();
+  const preset =
+    VERTICAL_PRESETS[
+      tenantSettings?.vertical && isVertical(tenantSettings.vertical)
+        ? tenantSettings.vertical
+        : "jewellery"
+    ];
   // Bumping this restarts the guided tour (the "Replay tour" button).
   const [tourSignal, setTourSignal] = useState(0);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -561,8 +567,18 @@ export default function Admin() {
   const [sortBy, setSortBy] = useState<SortOption>("newest");
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
-    new Set(CATEGORIES.map((c) => c)),
+    new Set(),
   );
+  // Groups default to expanded; the list arrives async, so sync newly known
+  // categories into the set as they load.
+  useEffect(() => {
+    setExpandedCategories((prev) => {
+      const next = new Set(prev);
+      for (const c of CATEGORIES) next.add(c);
+      return next;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [CATEGORIES.join("|")]);
 
   // Duplicate detection state
   const [dupState, setDupState] = useState<"idle" | "checking" | "found">(
@@ -757,7 +773,7 @@ export default function Admin() {
         refetch();
         setShowRecategorizeReview(false);
         toast.success(
-          `${data.updated} product${data.updated !== 1 ? "s" : ""} re-categorised by body part.`,
+          `${data.updated} product${data.updated !== 1 ? "s" : ""} re-categorised.`,
         );
       },
       onError: () => toast.error("Re-categorisation failed. Please try again."),
@@ -975,7 +991,7 @@ export default function Admin() {
               type="button"
               onClick={() => previewRecategoriseMutation.mutate()}
               disabled={previewRecategoriseMutation.isPending}
-              title="AI re-categorise all products in 'Other' into the correct body-part category (review before applying)"
+              title="AI re-categorise all products in 'Other' into the correct category (review before applying)"
               className="flex items-center gap-2 border border-white/20 text-white/80 px-4 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:border-white hover:text-white transition-colors disabled:opacity-50"
             >
               {previewRecategoriseMutation.isPending ? (
@@ -1143,7 +1159,7 @@ export default function Admin() {
                   }
                   required
                   className="w-full border border-[var(--brand-ink)]/20 px-4 py-2.5 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] transition-colors bg-transparent"
-                  placeholder="e.g. Moonstone Drop Earrings"
+                  placeholder={`e.g. ${preset.exampleItemNameEn}`}
                 />
               </div>
 
@@ -1252,7 +1268,7 @@ export default function Admin() {
                   required
                   rows={3}
                   className="w-full border border-[var(--brand-ink)]/20 px-4 py-2.5 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] transition-colors bg-transparent resize-none"
-                  placeholder="Describe the piece..."
+                  placeholder="Describe the item..."
                 />
               </div>
 
@@ -1835,10 +1851,7 @@ export default function Admin() {
                 <p className="text-[var(--brand-accent)] mb-1">
                   Example Discord message:
                 </p>
-                <p>
-                  Sterling silver moonstone ring. Delicate band with a 8mm round
-                  moonstone, oxidised finish. Price: CHF 220
-                </p>
+                <p>{preset.exampleIntakeMessage}</p>
               </div>
               <p className="text-white/40 text-xs font-sans mt-3">
                 The bot listens to your designated Discord channel in real time

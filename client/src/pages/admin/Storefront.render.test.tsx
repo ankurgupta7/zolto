@@ -54,7 +54,7 @@ describe("Storefront page", () => {
 
   it("saves changed settings", () => {
     render(<Storefront />);
-    fireEvent.change(screen.getByPlaceholderText("Your store — handcrafted pieces"), {
+    fireEvent.change(screen.getByPlaceholderText("Your store — handcrafted items"), {
       target: { value: "New title" },
     });
     fireEvent.click(screen.getAllByText("Save changes")[1]);

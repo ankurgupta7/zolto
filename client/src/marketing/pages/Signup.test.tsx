@@ -99,6 +99,49 @@ describe("Signup wizard", () => {
     expect(screen.getByText("Azure")).toBeTruthy();
   });
 
+  it("sends the chosen vertical and range description with create (default: other)", () => {
+    renderSignup();
+    // Default rides along even when the merchant never touches the field.
+    fillDetailsAndContinue();
+    fireEvent.click(
+      screen.getByRole("button", { name: /choose your colors/i }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: /create store/i }));
+    expect(mocks.createVars).toMatchObject({
+      vertical: "other",
+      verticalDescription: undefined,
+    });
+  });
+
+  it("carries a picked vertical + description through the wizard", () => {
+    renderSignup();
+    fireEvent.change(screen.getByPlaceholderText("Your store name"), {
+      target: { value: "Ton & Teller" },
+    });
+    fireEvent.change(screen.getByPlaceholderText("you@example.com"), {
+      target: { value: "owner@ton.example" },
+    });
+    // The only select on step 1 is the vertical picker.
+    fireEvent.change(screen.getByRole("combobox"), {
+      target: { value: "ceramics" },
+    });
+    fireEvent.change(
+      screen.getByPlaceholderText(
+        "e.g. Wheel-thrown stoneware tableware in muted glazes",
+      ),
+      { target: { value: "Wheel-thrown stoneware from Bern" } },
+    );
+    fireEvent.click(screen.getByRole("button", { name: /choose your look/i }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /choose your colors/i }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: /create store/i }));
+    expect(mocks.createVars).toMatchObject({
+      vertical: "ceramics",
+      verticalDescription: "Wheel-thrown stoneware from Bern",
+    });
+  });
+
   it("selecting a template carries its default color into the branding step", () => {
     renderSignup();
     fillDetailsAndContinue();

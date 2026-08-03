@@ -98,6 +98,8 @@ if [ "$1 $2" = "compose exec" ]; then
     *"FROM \`deploy_state\`"*) printf '%s\n' "${FAKE_SCHEMA_FP:-}" ;;
     *"SELECT 1"*)              ;;
     *"IS_NULLABLE"*)           echo "YES" ;;
+    # 0036 converted products.category to varchar on an up-to-date database.
+    *"COLUMN_NAME='category'"*) echo "varchar(64)" ;;
     *"COLUMN_TYPE"*)
       # Report every enum as already-migrated so the migration block takes its
       # "already applied" branches, the way a real up-to-date database would.

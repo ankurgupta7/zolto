@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import { useTenant } from "@/contexts/TenantContext";
 import { instagramHref, whatsappHref } from "@/lib/branding";
-import type { ProductCategory } from "@shared/types";
+import { useCategories } from "@/hooks/useCategories";
 
 const InstagramIcon = ({ className = "w-5 h-5" }: { className?: string }) => (
   <svg
@@ -35,16 +35,15 @@ export default function Footer() {
     { label: t("nav.contact"), href: "/contact" },
   ];
 
-  const COLLECTION_LINKS = [
-    { label: t("categories.necklaces"), name: "Necklaces" },
-    { label: t("categories.earrings"), name: "Earrings" },
-    { label: t("categories.rings"), name: "Rings" },
-    { label: t("categories.bracelets"), name: "Bracelets" },
-    { label: t("categories.bangles"), name: "Bangles" },
-    { label: t("categories.anklets"), name: "Anklets" },
-    { label: t("categories.brooches"), name: "Brooches" },
-    { label: t("categories.hairAccessories"), name: "Hair Accessories" },
-  ];
+  // The store's own categories (server-driven); folded categories like the
+  // jewellery "Sets" and the catch-all "Other" don't get their own link.
+  const { categories, label } = useCategories();
+  const COLLECTION_LINKS = useMemo(() => {
+    const folded = new Set(categories.flatMap((c) => c.extraIncludes));
+    return categories
+      .filter((c) => c.key !== "Other" && !folded.has(c.key))
+      .map((c) => ({ label: label(c.key), name: c.key }));
+  }, [categories, label]);
 
   return (
     <footer className="bg-[var(--brand-ink)] text-white/70">
@@ -162,7 +161,7 @@ export default function Footer() {
             </h4>
             <ul className="space-y-2 mb-6">
               {COLLECTION_LINKS.filter((cat) =>
-                availableCategories.has(cat.name as ProductCategory),
+                availableCategories.has(cat.name),
               ).map((cat) => (
                 <li key={cat.name}>
                   <Link

@@ -16,6 +16,7 @@ import {
   PrimaryButton,
 } from "@/components/admin/ui";
 import { useTenantSettings } from "@/components/admin/useTenantSettings";
+import { VERTICAL_PRESETS, isVertical } from "@shared/verticals";
 import InstagramManager from "@/components/InstagramManager";
 
 /**
@@ -182,6 +183,13 @@ function ChannelCredentials() {
 
 export default function Channels() {
   const { settings, invalidate } = useTenantSettings();
+  // Vertical-specific example message for the intake bots.
+  const intakeExample =
+    VERTICAL_PRESETS[
+      settings?.vertical && isVertical(settings.vertical)
+        ? settings.vertical
+        : "jewellery"
+    ].exampleIntakeMessage;
   const connect = trpc.tenant.channelConnect.useQuery();
   const [whatsappNumber, setWhatsappNumber] = useState("");
   const [instagramHandle, setInstagramHandle] = useState("");
@@ -360,10 +368,7 @@ export default function Channels() {
         </div>
         <div className="mt-4 rounded-lg border bg-muted/40 p-4 text-xs text-muted-foreground">
           <p className="font-medium text-foreground">Example message</p>
-          <p className="mt-1 font-mono">
-            Sterling silver moonstone ring. Delicate band with an 8mm round
-            moonstone, oxidised finish. Price: CHF 220
-          </p>
+          <p className="mt-1 font-mono">{intakeExample}</p>
           {connect.data?.discordInviteUrl && (
             <p className="mt-3">
               First step:{" "}

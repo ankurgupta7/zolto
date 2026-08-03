@@ -70,6 +70,33 @@ vi.mock("@/lib/trpc", () => {
     });
   return {
     trpc: {
+      categories: {
+        list: {
+          useQuery: () => ({
+            data: [
+              "Necklaces",
+              "Earrings",
+              "Sets",
+              "Rings",
+              "Bracelets",
+              "Bangles",
+              "Anklets",
+              "Brooches",
+              "Hair Accessories",
+              "Other",
+            ].map((key, i) => ({
+              key,
+              labelEn: key,
+              labelDe: null,
+              extraIncludes:
+                key === "Necklaces" || key === "Earrings" ? ["Sets"] : [],
+              sortOrder: i,
+            })),
+            isLoading: false,
+            error: null,
+          }),
+        },
+      },
       useUtils: () => ({
         products: {
           adminList: { invalidate: mocks.adminListInvalidate },
@@ -128,6 +155,8 @@ vi.mock("@/lib/trpc", () => {
         deleteImage: { useMutation: mutation(vi.fn()) },
       },
       tenant: {
+        me: { useQuery: () => ({ data: null, isLoading: false }) },
+        getSettings: { useQuery: () => ({ data: null, isLoading: false }) },
         getStripeConnectUrl: {
           useQuery: () => ({
             data: { connected: false, url: null },
@@ -321,7 +350,7 @@ describe("Admin page — re-categorise review dialog", () => {
       items: [{ id: 3, category: "Brooches" }],
     });
     expect(toast.success).toHaveBeenCalledWith(
-      "1 product re-categorised by body part.",
+      "1 product re-categorised.",
     );
     expect(screen.queryByRole("dialog")).toBeNull();
   });
