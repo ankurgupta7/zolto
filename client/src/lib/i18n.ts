@@ -8,6 +8,33 @@ import marketingDe from "@/marketing/locales/de.json";
 import marketingEn from "@/marketing/locales/en.json";
 import marketingFr from "@/marketing/locales/fr.json";
 import marketingIt from "@/marketing/locales/it.json";
+// Merchant admin console strings, split into fragments so each area can be
+// maintained (and was authored) independently. Fragments keep their keys
+// under a unique top-level group ("core", "catalog", "store", "ops"), so a
+// shallow spread never collides.
+import adminCoreDe from "@/admin/locales/core.de.json";
+import adminCoreEn from "@/admin/locales/core.en.json";
+import adminCoreFr from "@/admin/locales/core.fr.json";
+import adminCoreIt from "@/admin/locales/core.it.json";
+import adminCatalogDe from "@/admin/locales/catalog.de.json";
+import adminCatalogEn from "@/admin/locales/catalog.en.json";
+import adminCatalogFr from "@/admin/locales/catalog.fr.json";
+import adminCatalogIt from "@/admin/locales/catalog.it.json";
+import adminStoreDe from "@/admin/locales/store.de.json";
+import adminStoreEn from "@/admin/locales/store.en.json";
+import adminStoreFr from "@/admin/locales/store.fr.json";
+import adminStoreIt from "@/admin/locales/store.it.json";
+import adminOpsDe from "@/admin/locales/ops.de.json";
+import adminOpsEn from "@/admin/locales/ops.en.json";
+import adminOpsFr from "@/admin/locales/ops.fr.json";
+import adminOpsIt from "@/admin/locales/ops.it.json";
+
+const admin = {
+  de: { ...adminCoreDe, ...adminCatalogDe, ...adminStoreDe, ...adminOpsDe },
+  en: { ...adminCoreEn, ...adminCatalogEn, ...adminStoreEn, ...adminOpsEn },
+  fr: { ...adminCoreFr, ...adminCatalogFr, ...adminStoreFr, ...adminOpsFr },
+  it: { ...adminCoreIt, ...adminCatalogIt, ...adminStoreIt, ...adminOpsIt },
+};
 import {
   DEFAULT_LANGUAGE,
   HTML_LANG,
@@ -29,10 +56,10 @@ function initialLanguage(): string {
 
 i18n.use(initReactI18next).init({
   resources: {
-    de: { translation: de, marketing: marketingDe },
-    en: { translation: en, marketing: marketingEn },
-    fr: { translation: fr, marketing: marketingFr },
-    it: { translation: it, marketing: marketingIt },
+    de: { translation: de, marketing: marketingDe, admin: admin.de },
+    en: { translation: en, marketing: marketingEn, admin: admin.en },
+    fr: { translation: fr, marketing: marketingFr, admin: admin.fr },
+    it: { translation: it, marketing: marketingIt, admin: admin.it },
   },
   lng: initialLanguage(),
   fallbackLng: DEFAULT_LANGUAGE,
