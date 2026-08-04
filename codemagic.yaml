@@ -1,6 +1,27 @@
 ---
-# Codemagic CI/CD for Kalakosh-ch
-# Automatically triggers on Pull Requests to main.
+# Codemagic CI/CD for Zolto
+#
+# Two apps build here:
+#   ios-build            — the Kalakosh WebView companion app (ios/Kalakosh*)
+#   ios-pos-*            — the native ZoltoPOS Tap-to-Pay app
+#                          (ios/ZoltoPOS/, migrated from the
+#                          ankurgupta7/kalakosh-pos-ios repo)
+#
+# NOTE: Codemagic is used primarily for signed IPA builds that install on real
+# physical devices. The Appetize simulator build for ZoltoPOS runs via
+# GitHub Actions (.github/workflows/ios-pos-build.yml); the ios-pos-simulator
+# workflow below is kept as a fallback for when GitHub Actions minutes run out.
+#
+# ZoltoPOS SETUP (all in Codemagic web UI — no Mac needed):
+#  1. codemagic.io → Add application → GitHub → select this repo → "Other" → YAML
+#  2. Team settings → Integrations → App Store Connect → add API key
+#     (developer.apple.com → Users → Keys → generate key, needs "App Manager" role)
+#  3. Go to Team settings → Test devices → add your iPhone's UDID
+#     (find UDID: connect iPhone to any computer, open iTunes/Finder, click on device)
+#  4. App settings → Environment variables → add POS_API_KEY (mark as secret/secure)
+#     Value: output of `openssl rand -hex 32` — same value as POS_API_KEY in your server .env
+#  5. Trigger build → workflow "ios-pos-development"
+#  6. When done, Codemagic emails you a direct install link — open on iPhone in Safari
 workflows:
   ios-build:
     name: iOS Build
@@ -52,3 +73,200 @@ workflows:
         notify:
           success: true
           failure: true
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # ZoltoPOS — native iOS Tap-to-Pay app (ios/ZoltoPOS/)
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  # ── Development build ───────────────────────────────────────────────────────────────────
+  ios-pos-development:
+    name: iOS POS Development Build
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    triggering:
+      events:
+        - pull_request
+        - push
+      branch_patterns:
+        - pattern: 'main'
+          include: true
+          source: true
+
+    integrations:
+      app_store_connect: codemagic_service_account  # name from Codemagic UI
+
+    environment:
+      ios_signing:
+        distribution_type: development
+        bundle_identifier: ch.kalakosh.pos
+      vars:
+        XCODE_PROJECT: "ios/ZoltoPOS/ZoltoPOS.xcodeproj"
+        XCODE_SCHEME: "ZoltoPOS"
+        BUNDLE_ID: "ch.kalakosh.pos"
+      xcode: latest
+
+    scripts:
+      - name: Install xcodegen
+        script: brew install xcodegen || true
+
+      - name: Generate Xcode project
+        script: |
+          cd ios/ZoltoPOS
+          xcodegen generate --spec project.yml
+
+      - name: Build IPA
+        script: |
+          xcode-project build-ipa \
+            --project "$XCODE_PROJECT" \
+            --scheme "$XCODE_SCHEME" \
+            --xcargs "POS_API_KEY=$POS_API_KEY"
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
+
+    publishing:
+      email:
+        recipients:
+          - prevail-chafe-gory@duck.com
+        notify:
+          success: true
+          failure: true
+
+  # ── Ad-hoc build (paid Apple Developer, $99/yr) ──────────────────────────────────────
+  ios-pos-adhoc:
+    name: iOS POS Ad-Hoc Build
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    triggering:
+      events:
+        - pull_request
+        - push
+      branch_patterns:
+        - pattern: 'main'
+          include: true
+          source: true
+
+    integrations:
+      app_store_connect: codemagic_service_account
+
+    environment:
+      ios_signing:
+        distribution_type: ad_hoc
+        bundle_identifier: ch.kalakosh.pos
+      vars:
+        XCODE_PROJECT: "ios/ZoltoPOS/ZoltoPOS.xcodeproj"
+        XCODE_SCHEME: "ZoltoPOS"
+        BUNDLE_ID: "ch.kalakosh.pos"
+      xcode: latest
+
+    scripts:
+      - name: Install xcodegen
+        script: brew install xcodegen || true
+
+      - name: Generate Xcode project
+        script: |
+          cd ios/ZoltoPOS
+          xcodegen generate --spec project.yml
+
+      - name: Build IPA
+        script: |
+          xcode-project build-ipa \
+            --project "$XCODE_PROJECT" \
+            --scheme "$XCODE_SCHEME" \
+            --xcargs "POS_API_KEY=$POS_API_KEY"
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
+
+    publishing:
+      email:
+        recipients:
+          - prevail-chafe-gory@duck.com
+        notify:
+          success: true
+          failure: true
+
+  # ── Simulator build (no signing, free, fast) ──────────────────────────────────────────
+  # NOTE: Prefer the GitHub Actions ios-pos-build.yml simulator workflow instead.
+  # This Codemagic workflow is kept as a fallback only.
+  ios-pos-simulator:
+    name: iOS POS Simulator Build
+    max_build_duration: 30
+    instance_type: mac_mini_m2
+
+    environment:
+      xcode: latest
+      vars:
+        XCODE_PROJECT: "ios/ZoltoPOS/ZoltoPOS.xcodeproj"
+        XCODE_SCHEME: "ZoltoPOS"
+
+    scripts:
+      - name: Install xcodegen
+        script: brew install xcodegen || true
+
+      - name: Generate Xcode project
+        script: |
+          cd ios/ZoltoPOS
+          xcodegen generate --spec project.yml
+
+      - name: Run TWINT contract tests
+        script: |
+          xcodebuild test \
+            -project "$XCODE_PROJECT" \
+            -scheme "$XCODE_SCHEME" \
+            -destination "platform=iOS Simulator,name=iPhone 17" \
+            -configuration Debug \
+            -only-testing ZoltoPOSTests/TwintModelsTests \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            POS_API_KEY="$POS_API_KEY"
+
+      - name: Run unit tests
+        script: |
+          xcodebuild test \
+            -project "$XCODE_PROJECT" \
+            -scheme "$XCODE_SCHEME" \
+            -destination "platform=iOS Simulator,name=iPhone 17" \
+            -configuration Debug \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            POS_API_KEY="$POS_API_KEY"
+
+      - name: Build for simulator
+        script: |
+          xcodebuild build \
+            -project "$XCODE_PROJECT" \
+            -scheme "$XCODE_SCHEME" \
+            -destination "platform=iOS Simulator,name=iPhone 17" \
+            -configuration Debug \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            POS_API_KEY="$POS_API_KEY"
+
+      # Smoke-test the live POS backend: the endpoint requires a valid
+      # POS_API_KEY and returns 200 only when Stripe secrets are configured.
+      # Runs only when POS_API_BASE_URL is set — Zolto is multi-tenant with
+      # no hardcoded backend, so there is no default host to ping.
+      - name: Verify POS server health
+        script: |
+          if [ -z "${POS_API_BASE_URL}" ]; then
+            echo "POS_API_BASE_URL not set — skipping the live health check."
+            exit 0
+          fi
+          echo "Checking POS health at ${POS_API_BASE_URL}/api/pos/health ..."
+          curl -fsS -H "x-pos-key: ${POS_API_KEY}" "${POS_API_BASE_URL}/api/pos/health"
+
+    publishing:
+      email:
+        recipients:
+          - prevail-chafe-gory@duck.com
+        notify:
+          success: true
+          failure: false

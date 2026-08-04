@@ -1,0 +1,37 @@
+name: 'iOS POS Build Setup'
+description: 'Shared setup for ZoltoPOS iOS builds: Xcode, xcodegen, SPM cache & resolve'
+
+runs:
+  using: composite
+  steps:
+    - name: Select Xcode 16
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: '16'
+
+    - name: Install xcodegen
+      run: brew install xcodegen || true
+      shell: bash
+
+    - name: Generate Xcode project
+      working-directory: ios/ZoltoPOS
+      run: xcodegen generate --spec project.yml
+      shell: bash
+
+    - name: Cache SPM packages
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.swiftpm
+          ios/ZoltoPOS/ZoltoPOS.xcodeproj/project.xcworkspace/xcshareddata/swiftpm
+        key: spm-${{ runner.os }}-${{ hashFiles('ios/ZoltoPOS/project.yml') }}
+        restore-keys: spm-${{ runner.os }}-
+
+    - name: Resolve Swift packages
+      working-directory: ios/ZoltoPOS
+      run: |
+        xcodebuild \
+          -resolvePackageDependencies \
+          -project ZoltoPOS.xcodeproj \
+          -scheme ZoltoPOS
+      shell: bash

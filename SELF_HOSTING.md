@@ -270,21 +270,27 @@ it must also be set. Leave `STRIPE_CONNECT_CLIENT_ID` blank to keep this
 feature disabled.
 
 **POS Terminal / Tap to Pay (optional):**
-The Android and iOS market-stall apps authenticate requests with a shared API key and use Stripe Terminal for in-person payments. Add a second webhook endpoint at `https://yourdomain.com/api/pos/webhook` subscribed to `payment_intent.succeeded`.
+The Android and iOS market-stall apps authenticate requests with a POS API key and use Stripe Terminal for in-person payments. Add a second webhook endpoint at `https://yourdomain.com/api/pos/webhook` subscribed to `payment_intent.succeeded`.
 
-```bash
-openssl rand -hex 32   # generate POS_API_KEY
-```
+There is **no `POS_API_KEY` in `.env`**. POS keys are per-tenant: each store's key is generated at signup, returned to that merchant exactly once, and stored only as a SHA-256 hash (`server/posApiKey.ts`), so the platform can never read back a tenant's key — a lost key is rotated, not recovered. Merchants rotate their own from the store admin UI.
 
 ```env
-POS_API_KEY=<generated above>
 STRIPE_POS_WEBHOOK_SECRET=whsec_your_pos_webhook_signing_secret
 # Stripe Terminal Location for Tap to Pay (Dashboard → More → Terminal → Locations).
 # Served to the POS apps at runtime via GET /api/pos/config — not baked into the builds.
 STRIPE_LOCATION_ID=tml_your_location_id
 ```
 
-Leave all three blank if you are not using the POS apps.
+Leave both blank if you are not using the POS apps.
+
+The POS apps' **CI builds** authenticate as a dedicated `platform-tests` tenant. Mint that key from the superadmin UI (it is shown once) and fan it out with:
+
+```bash
+bash deploy/rotate-secrets.sh pos-ci-key
+```
+
+**Rotating credentials:**
+`deploy/rotate-secrets.sh` is the single entry point for every rotation — `pos-ci-key` (above), `stripe-key` (mints a fresh restricted API key), and `stripe-webhooks` (re-creates both endpoints and captures their new signing secrets). The Stripe targets rewrite `.env` and keep a timestamped backup; pass `--dry-run` to see what a run would change first.
 
 **Backups (optional):**
 `deploy/backup.sh` dumps the database, exports inventory CSV, and uploads to a secondary S3 bucket and/or a private GitHub repository. Run it from cron or manually.
@@ -461,7 +467,7 @@ whenever you suspect a payment is missing.
 | `STRIPE_WEBHOOK_SECRET`       | No       | Signing secret for `/api/stripe/webhook`                                                                    |
 | `STRIPE_CONNECT_CLIENT_ID`    | No       | Platform's Connect OAuth client ID (`ca_...`) — lets tenants link their own Stripe account                  |
 | `PUBLIC_BASE_URL`             | No       | Canonical site URL — Stripe redirects, Google OAuth's redirect_uri, and recognizing tenant subdomains all key off this |
-| `POS_API_KEY`                 | No       | Shared secret for the POS apps — Android and iOS (generate with `openssl rand -hex 32`)                     |
+| ~~`POS_API_KEY`~~             | —        | **Retired.** POS keys are per-tenant, generated at signup and stored hashed; CI uses the `platform-tests` tenant's key (`deploy/rotate-secrets.sh pos-ci-key`) |
 | `STRIPE_POS_WEBHOOK_SECRET`   | No       | Signing secret for `/api/pos/webhook`                                                                       |
 | `STRIPE_LOCATION_ID`          | No       | Stripe Terminal Location ID served to POS apps at runtime via `GET /api/pos/config` — not baked into builds |
 | `BACKUP_S3_BUCKET`            | No       | Secondary S3 bucket for database backups                                                                    |

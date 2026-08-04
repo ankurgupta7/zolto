@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Required for Stripe Terminal Tap to Pay on iPhone -->
+    <key>com.apple.developer.proximity-reader.payment.acceptance</key>
+    <true/>
+    <!-- Required by Stripe Terminal SDK for card reader discovery -->
+    <key>com.apple.developer.bluetooth-always-usage</key>
+    <true/>
+</dict>
+</plist>
