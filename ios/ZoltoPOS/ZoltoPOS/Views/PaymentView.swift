@@ -42,7 +42,7 @@ struct PaymentView: View {
 
     var body: some View {
         ZStack {
-            Color.kalakoshWarmWhite.ignoresSafeArea()
+            Color.zoltoWarmWhite.ignoresSafeArea()
 
             VStack(spacing: 32) {
                 Spacer()
@@ -119,18 +119,18 @@ struct PaymentView: View {
                 productViewModel.clearSelection()
                 dismiss()
             }
-            .buttonStyle(KalakoshGoldButtonStyle())
+            .buttonStyle(ZoltoGoldButtonStyle())
             .padding(.horizontal, 32)
         case .notConfigured:
             Button("Done") { dismiss() }
-                .buttonStyle(KalakoshOutlinedButtonStyle())
+                .buttonStyle(ZoltoOutlinedButtonStyle())
                 .padding(.horizontal, 32)
         case .failed:
             HStack(spacing: 16) {
                 Button("Cancel") { dismiss() }
-                    .buttonStyle(KalakoshOutlinedButtonStyle())
+                    .buttonStyle(ZoltoOutlinedButtonStyle())
                 Button("Try Again") { startPayment() }
-                    .buttonStyle(KalakoshPrimaryButtonStyle())
+                    .buttonStyle(ZoltoPrimaryButtonStyle())
             }
             .padding(.horizontal, 32)
         case .recordingCashSale:
@@ -140,7 +140,7 @@ struct PaymentView: View {
                 paymentViewModel.cancelPayment()
                 dismiss()
             }
-            .buttonStyle(KalakoshOutlinedButtonStyle())
+            .buttonStyle(ZoltoOutlinedButtonStyle())
         }
     }
 
@@ -151,10 +151,10 @@ struct PaymentView: View {
             ProgressView()
                 .progressViewStyle(.circular)
                 .scaleEffect(1.4)
-                .tint(.kalakoshNearBlack)
+                .tint(.zoltoNearBlack)
             Text("Tap card or phone")
                 .font(.title2.weight(.medium))
-                .foregroundColor(.kalakoshDeepText)
+                .foregroundColor(.zoltoDeepText)
                 .tracking(0.5)
         }
     }
@@ -163,9 +163,9 @@ struct PaymentView: View {
         VStack(spacing: 32) {
             ProgressView()
                 .progressViewStyle(.circular)
-                .tint(.kalakoshNearBlack)
+                .tint(.zoltoNearBlack)
             Text("Preparing…")
-                .foregroundColor(.kalakoshMutedText)
+                .foregroundColor(.zoltoMutedText)
         }
     }
 
@@ -173,9 +173,9 @@ struct PaymentView: View {
         VStack(spacing: 32) {
             ProgressView()
                 .progressViewStyle(.circular)
-                .tint(.kalakoshNearBlack)
+                .tint(.zoltoNearBlack)
             Text("Preparing card reader…")
-                .foregroundColor(.kalakoshMutedText)
+                .foregroundColor(.zoltoMutedText)
         }
     }
 
@@ -183,15 +183,15 @@ struct PaymentView: View {
         VStack(spacing: 32) {
             Image(systemName: "creditcard.trianglebadge.exclamationmark")
                 .font(.system(size: 64))
-                .foregroundColor(.kalakoshGold)
+                .foregroundColor(.zoltoGold)
             Text("Card payments not set up yet")
                 .font(.title2.weight(.bold))
-                .foregroundColor(.kalakoshDeepText)
+                .foregroundColor(.zoltoDeepText)
                 .multilineTextAlignment(.center)
             Text(Self.setupInstructions)
                 .font(.callout)
                 .multilineTextAlignment(.leading)
-                .foregroundColor(.kalakoshMutedText)
+                .foregroundColor(.zoltoMutedText)
                 .padding(.horizontal, 8)
         }
     }
@@ -200,9 +200,9 @@ struct PaymentView: View {
         VStack(spacing: 32) {
             ProgressView()
                 .progressViewStyle(.circular)
-                .tint(.kalakoshNearBlack)
+                .tint(.zoltoNearBlack)
             Text("Processing payment…")
-                .foregroundColor(.kalakoshMutedText)
+                .foregroundColor(.zoltoMutedText)
         }
     }
 
@@ -210,9 +210,9 @@ struct PaymentView: View {
         VStack(spacing: 32) {
             ProgressView()
                 .progressViewStyle(.circular)
-                .tint(.kalakoshNearBlack)
+                .tint(.zoltoNearBlack)
             Text("Recording cash sale…")
-                .foregroundColor(.kalakoshMutedText)
+                .foregroundColor(.zoltoMutedText)
         }
     }
 
@@ -226,14 +226,14 @@ struct PaymentView: View {
             ProgressView()
                 .progressViewStyle(.circular)
                 .scaleEffect(1.4)
-                .tint(.kalakoshNearBlack)
+                .tint(.zoltoNearBlack)
             Text("TWINT payment")
                 .font(.title2.weight(.medium))
-                .foregroundColor(.kalakoshDeepText)
+                .foregroundColor(.zoltoDeepText)
                 .tracking(0.5)
             Text("Waiting for the customer to confirm…")
                 .font(.callout)
-                .foregroundColor(.kalakoshMutedText)
+                .foregroundColor(.zoltoMutedText)
                 .multilineTextAlignment(.center)
         }
     }
@@ -242,18 +242,18 @@ struct PaymentView: View {
         VStack(spacing: 32) {
             Image(systemName: "checkmark.circle.fill")
                 .font(.system(size: 80))
-                .foregroundColor(.kalakoshGold)
+                .foregroundColor(.zoltoGold)
             Text("Payment Successful")
                 .font(.title.weight(.bold))
-                .foregroundColor(.kalakoshDeepText)
+                .foregroundColor(.zoltoDeepText)
                 .tracking(0.5)
             VStack(spacing: 6) {
                 Text("Order #\(orderId)")
-                    .foregroundColor(.kalakoshMutedText)
+                    .foregroundColor(.zoltoMutedText)
                     .font(.subheadline)
                 Text("CHF \(String(format: "%.2f", Double(total) / 100.0))")
                     .font(.title2.weight(.bold))
-                    .foregroundColor(.kalakoshGold)
+                    .foregroundColor(.zoltoGold)
             }
         }
     }
@@ -265,10 +265,10 @@ struct PaymentView: View {
                 .foregroundColor(.red)
             Text("Payment Failed")
                 .font(.title.weight(.bold))
-                .foregroundColor(.kalakoshDeepText)
+                .foregroundColor(.zoltoDeepText)
             Text(message)
                 .multilineTextAlignment(.center)
-                .foregroundColor(.kalakoshMutedText)
+                .foregroundColor(.zoltoMutedText)
                 .padding()
         }
     }
@@ -276,7 +276,7 @@ struct PaymentView: View {
     private var cancelledView: some View {
         Text("Payment Cancelled")
             .font(.title)
-            .foregroundColor(.kalakoshDeepText)
+            .foregroundColor(.zoltoDeepText)
     }
 
     private func startPayment() {

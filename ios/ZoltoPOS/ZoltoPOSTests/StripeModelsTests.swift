@@ -1,8 +1,8 @@
 import XCTest
-@testable import KalakoshPOS
+@testable import ZoltoPOS
 
 /// Tests for the Stripe-related API models and payment request/response types.
-/// These verify that the JSON wire format matches what `Kalakosh-ch/server/pos.ts`
+/// These verify that the JSON wire format matches what `server/pos.ts` (this repo)
 /// expects and produces, so the iOS app and backend can never silently drift.
 final class StripeModelsTests: XCTestCase {
 

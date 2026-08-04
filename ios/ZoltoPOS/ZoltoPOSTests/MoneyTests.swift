@@ -1,5 +1,5 @@
 import XCTest
-@testable import KalakoshPOS
+@testable import ZoltoPOS
 
 final class MoneyTests: XCTestCase {
 

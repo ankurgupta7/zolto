@@ -18,7 +18,7 @@ struct SettingsView: View {
                         .textInputAutocapitalization(.never)
                 }
                 Section {
-                    Text("Enter the URL of your Kalakosh backend and the value of POS_API_KEY from your server .env file.")
+                    Text("Enter the URL of your Zolto backend and the value of POS_API_KEY from your server .env file.")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }

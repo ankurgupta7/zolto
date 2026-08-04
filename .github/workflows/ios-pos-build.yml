@@ -1,6 +1,6 @@
 name: iOS POS Build & Test
 
-# The native iOS POS app (KalakoshPOS) lives in ios/KalakoshPOS/ — migrated
+# The native iOS POS app (ZoltoPOS) lives in ios/ZoltoPOS/ — migrated
 # from the ankurgupta7/kalakosh-pos-ios repo. Like android-build.yml, this
 # only runs when the app (or this pipeline) actually changed, so web-only
 # commits don't burn macOS runner minutes.
@@ -9,13 +9,13 @@ on:
   pull_request:
     branches: ["main"]
     paths:
-      - "ios/KalakoshPOS/**"
+      - "ios/ZoltoPOS/**"
       - ".github/workflows/ios-pos-build.yml"
       - ".github/actions/ios-setup/**"
   push:
     branches: ["main"]
     paths:
-      - "ios/KalakoshPOS/**"
+      - "ios/ZoltoPOS/**"
       - ".github/workflows/ios-pos-build.yml"
       - ".github/actions/ios-setup/**"
   workflow_dispatch:
@@ -27,7 +27,7 @@ concurrency:
 jobs:
   # ────────────────────────────────────────────────────────────────────────────
   # Job 1: Simulator build — runs on every trigger (PRs, pushes, manual).
-  # Produces KalakoshPOS-simulator.zip for Appetize browser preview.
+  # Produces ZoltoPOS-simulator.zip for Appetize browser preview.
   # POS_API_KEY is injected from GitHub repo secrets so no clipboard
   # paste is needed inside Appetize.
   # ────────────────────────────────────────────────────────────────────────────
@@ -42,17 +42,17 @@ jobs:
         uses: ./.github/actions/ios-setup
 
       - name: Run TWINT contract tests
-        working-directory: ios/KalakoshPOS
+        working-directory: ios/ZoltoPOS
         env:
           POS_API_KEY: ${{ secrets.POS_API_KEY }}
         run: |
           xcodebuild test \
-            -project KalakoshPOS.xcodeproj \
-            -scheme KalakoshPOS \
+            -project ZoltoPOS.xcodeproj \
+            -scheme ZoltoPOS \
             -destination "platform=iOS Simulator,name=iPhone 16 Pro" \
             -configuration Debug \
             -derivedDataPath "$RUNNER_TEMP/DerivedData" \
-            -only-testing KalakoshPOSTests/TwintModelsTests \
+            -only-testing ZoltoPOSTests/TwintModelsTests \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
@@ -60,13 +60,13 @@ jobs:
             | xcpretty --color && exit ${PIPESTATUS[0]}
 
       - name: Run unit tests
-        working-directory: ios/KalakoshPOS
+        working-directory: ios/ZoltoPOS
         env:
           POS_API_KEY: ${{ secrets.POS_API_KEY }}
         run: |
           xcodebuild test \
-            -project KalakoshPOS.xcodeproj \
-            -scheme KalakoshPOS \
+            -project ZoltoPOS.xcodeproj \
+            -scheme ZoltoPOS \
             -destination "platform=iOS Simulator,name=iPhone 16 Pro" \
             -configuration Debug \
             -derivedDataPath "$RUNNER_TEMP/DerivedData" \
@@ -77,13 +77,13 @@ jobs:
             | xcpretty --color && exit ${PIPESTATUS[0]}
 
       - name: Build for simulator
-        working-directory: ios/KalakoshPOS
+        working-directory: ios/ZoltoPOS
         env:
           POS_API_KEY: ${{ secrets.POS_API_KEY }}
         run: |
           xcodebuild build \
-            -project KalakoshPOS.xcodeproj \
-            -scheme KalakoshPOS \
+            -project ZoltoPOS.xcodeproj \
+            -scheme ZoltoPOS \
             -destination "platform=iOS Simulator,name=iPhone 16 Pro" \
             -configuration Debug \
             -derivedDataPath "$RUNNER_TEMP/DerivedData" \
@@ -106,7 +106,7 @@ jobs:
 
       - name: Stage simulator app for Appetize upload
         run: |
-          APP=$(find "$RUNNER_TEMP/DerivedData" -name "KalakoshPOS.app" \
+          APP=$(find "$RUNNER_TEMP/DerivedData" -name "ZoltoPOS.app" \
             -path "*/Debug-iphonesimulator/*" | head -1)
           echo "Found app: $APP"
           mkdir -p "$RUNNER_TEMP/Appetize"
@@ -115,7 +115,7 @@ jobs:
       - name: Upload simulator zip
         uses: actions/upload-artifact@v4
         with:
-          name: KalakoshPOS-simulator
+          name: ZoltoPOS-simulator
           path: ${{ runner.temp }}/Appetize/
           retention-days: 14
 
@@ -138,16 +138,16 @@ jobs:
         uses: ./.github/actions/ios-setup
 
       - name: Archive (unsigned)
-        working-directory: ios/KalakoshPOS
+        working-directory: ios/ZoltoPOS
         env:
           POS_API_KEY: ${{ secrets.POS_API_KEY }}
         run: |
           xcodebuild archive \
-            -project KalakoshPOS.xcodeproj \
-            -scheme KalakoshPOS \
+            -project ZoltoPOS.xcodeproj \
+            -scheme ZoltoPOS \
             -destination "generic/platform=iOS" \
             -configuration Release \
-            -archivePath "$RUNNER_TEMP/KalakoshPOS.xcarchive" \
+            -archivePath "$RUNNER_TEMP/ZoltoPOS.xcarchive" \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
@@ -156,17 +156,17 @@ jobs:
 
       - name: Package as IPA
         run: |
-          APP_PATH=$(find "$RUNNER_TEMP/KalakoshPOS.xcarchive/Products/Applications" \
+          APP_PATH=$(find "$RUNNER_TEMP/ZoltoPOS.xcarchive/Products/Applications" \
             -name "*.app" | head -1)
           echo "Found app: $APP_PATH"
           mkdir -p "$RUNNER_TEMP/Payload"
           cp -r "$APP_PATH" "$RUNNER_TEMP/Payload/"
           cd "$RUNNER_TEMP"
-          zip -qr "KalakoshPOS-unsigned.ipa" Payload/
+          zip -qr "ZoltoPOS-unsigned.ipa" Payload/
 
       - name: Upload unsigned IPA
         uses: actions/upload-artifact@v4
         with:
-          name: KalakoshPOS-unsigned
-          path: ${{ runner.temp }}/KalakoshPOS-unsigned.ipa
+          name: ZoltoPOS-unsigned
+          path: ${{ runner.temp }}/ZoltoPOS-unsigned.ipa
           retention-days: 14

@@ -20,7 +20,7 @@ version: 2.1
 #
 # `unit` and `integration` have no GitHub equivalent, so they always run.
 #
-# The native iOS POS app (ios/KalakoshPOS/) is NOT built here — CircleCI's
+# The native iOS POS app (ios/ZoltoPOS/) is NOT built here — CircleCI's
 # free plan has no macOS executors. Its pipeline is GitHub Actions
 # (.github/workflows/ios-pos-build.yml) with the ios-pos-* Codemagic
 # workflows (codemagic.yaml) as the signed-build / cost fallback.

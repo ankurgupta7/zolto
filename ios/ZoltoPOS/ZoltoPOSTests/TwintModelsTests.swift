@@ -1,8 +1,8 @@
 import XCTest
-@testable import KalakoshPOS
+@testable import ZoltoPOS
 
 /// TWINT-specific contract tests — verifies that the JSON wire format for
-/// POST /api/pos/twint-intent matches what Kalakosh-ch/server/pos.ts expects.
+/// POST /api/pos/twint-intent matches what server/pos.ts (this repo) expects.
 final class TwintModelsTests: XCTestCase {
 
     private let encoder = JSONEncoder()

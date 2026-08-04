@@ -5,7 +5,7 @@ import StripeTerminal
 /// (`POST /api/pos/connection-token`).
 ///
 /// A single shared instance is registered once with `Terminal.setTokenProvider`
-/// at app launch (see `KalakoshPOSApp`). Using a long-lived singleton — rather than
+/// at app launch (see `ZoltoPOSApp`). Using a long-lived singleton — rather than
 /// a per-screen view model — guarantees the provider outlives every payment so the
 /// SDK can always refresh a token. This mirrors the Android app, where the Terminal
 /// is initialised once with a `StripeTokenProvider`.

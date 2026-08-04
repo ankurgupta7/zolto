@@ -1,4 +1,4 @@
-name: KalakoshPOS
+name: ZoltoPOS
 options:
   bundleIdPrefix: ch.kalakosh
   deploymentTarget:
@@ -12,12 +12,12 @@ packages:
     from: "4.0.0"
 
 targets:
-  KalakoshPOS:
+  ZoltoPOS:
     type: application
     platform: iOS
     deploymentTarget: "17.0"
     sources:
-      - path: KalakoshPOS
+      - path: ZoltoPOS
         excludes:
           - "**/.DS_Store"
     settings:
@@ -39,11 +39,11 @@ targets:
     dependencies:
       - package: StripeTerminal
     entitlements:
-      path: KalakoshPOS/KalakoshPOS.entitlements
+      path: ZoltoPOS/ZoltoPOS.entitlements
     info:
-      path: KalakoshPOS/Info.plist
+      path: ZoltoPOS/Info.plist
       properties:
-        CFBundleDisplayName: Kalakosh POS
+        CFBundleDisplayName: Zolto POS
         UILaunchStoryboardName: LaunchScreen
         UIApplicationSceneManifest:
           UIApplicationSupportsMultipleScenes: false
@@ -62,21 +62,21 @@ targets:
         POS_API_KEY: "$(POS_API_KEY)"
     scheme:
       # Wire unit tests into the app scheme so `xcodebuild test -scheme
-      # KalakoshPOS` runs them. The plain `build` action is unaffected — the
+      # ZoltoPOS` runs them. The plain `build` action is unaffected — the
       # test target is not a dependency of the app.
       testTargets:
-        - KalakoshPOSTests
+        - ZoltoPOSTests
 
-  KalakoshPOSTests:
+  ZoltoPOSTests:
     type: bundle.unit-test
     platform: iOS
     deploymentTarget: "17.0"
     sources:
-      - path: KalakoshPOSTests
+      - path: ZoltoPOSTests
         excludes:
           - "**/.DS_Store"
     dependencies:
-      - target: KalakoshPOS
+      - target: ZoltoPOS
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES

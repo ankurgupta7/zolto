@@ -18,7 +18,7 @@ struct MainView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                Color.kalakoshWarmWhite.ignoresSafeArea()
+                Color.zoltoWarmWhite.ignoresSafeArea()
 
                 VStack(spacing: 0) {
                     // Offline status banner — shown when offline or pending syncs exist
@@ -35,10 +35,10 @@ struct MainView: View {
                         Spacer()
                         ProgressView()
                             .progressViewStyle(.circular)
-                            .tint(.kalakoshNearBlack)
+                            .tint(.zoltoNearBlack)
                         Text("Loading products…")
                             .font(.subheadline)
-                            .foregroundColor(.kalakoshMutedText)
+                            .foregroundColor(.zoltoMutedText)
                             .padding(.top, 12)
                         Spacer()
 
@@ -46,7 +46,7 @@ struct MainView: View {
                         if products.isEmpty {
                             Spacer()
                             Text("No products available")
-                                .foregroundColor(.kalakoshMutedText)
+                                .foregroundColor(.zoltoMutedText)
                             Spacer()
                         } else {
                             // Category filter bar — shown only when there is more
@@ -66,7 +66,7 @@ struct MainView: View {
                             if viewModel.filteredProducts.isEmpty {
                                 Spacer()
                                 Text("No pieces match your search")
-                                    .foregroundColor(.kalakoshMutedText)
+                                    .foregroundColor(.zoltoMutedText)
                                 Spacer()
                             } else {
                                 ScrollView {
@@ -93,11 +93,11 @@ struct MainView: View {
                                                         HStack {
                                                             Text(category)
                                                                 .font(.headline)
-                                                                .foregroundColor(.kalakoshNearBlack)
+                                                                .foregroundColor(.zoltoNearBlack)
                                                             Spacer()
                                                             Text("\(categoryProducts.count)")
                                                                 .font(.subheadline)
-                                                                .foregroundColor(.kalakoshMutedText)
+                                                                .foregroundColor(.zoltoMutedText)
                                                         }
                                                         .padding(.vertical, 12)
                                                     }
@@ -125,12 +125,12 @@ struct MainView: View {
                         Button("Retry") {
                             Task { await viewModel.loadProducts() }
                         }
-                        .buttonStyle(KalakoshOutlinedButtonStyle())
+                        .buttonStyle(ZoltoOutlinedButtonStyle())
                         .padding(.horizontal, 40)
                         Button("Configure Backend") {
                             showingSettings = true
                         }
-                        .buttonStyle(KalakoshOutlinedButtonStyle())
+                        .buttonStyle(ZoltoOutlinedButtonStyle())
                         .padding(.horizontal, 40)
                         .padding(.top, 8)
                         Spacer()
@@ -152,7 +152,7 @@ struct MainView: View {
                             }
                             .padding(.horizontal, 20)
                         }
-                        .buttonStyle(KalakoshPrimaryButtonStyle())
+                        .buttonStyle(ZoltoPrimaryButtonStyle())
                         .padding(16)
                         .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: -2)
                         .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -166,33 +166,27 @@ struct MainView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .principal) {
-                    AsyncImage(url: URL(string: "https://kalakosh.ch/kalakosh-logo.png")) { phase in
-                        switch phase {
-                        case .success(let image):
-                            image
-                                .resizable()
-                                .scaledToFit()
-                                .frame(height: 28)
-                                .colorMultiply(.kalakoshNearBlack)
-                        default:
-                            Text("KALAKOSH")
-                                .font(.system(.headline, design: .default).weight(.bold))
-                                .tracking(3)
-                                .foregroundColor(.kalakoshNearBlack)
-                        }
-                    }
+                    // Static wordmark, deliberately not a fetched logo: Zolto
+                    // is multi-tenant, so no single store's branding belongs
+                    // hardcoded here (the old Kalakosh logo URL was exactly
+                    // that). Per-tenant logos should come from /api/pos/config
+                    // if they're ever shown in the chrome.
+                    Text("ZOLTO")
+                        .font(.system(.headline, design: .default).weight(.bold))
+                        .tracking(3)
+                        .foregroundColor(.zoltoNearBlack)
                 }
                 ToolbarItem(placement: .navigationBarLeading) {
                     HStack(spacing: 8) {
                         Button(action: { showingSettings = true }) {
                             Image(systemName: "gear")
-                                .foregroundColor(.kalakoshNearBlack)
+                                .foregroundColor(.zoltoNearBlack)
                         }
                         // Small, visible indicator that a DB/network sync runs.
                         if viewModel.isSyncing {
                             ProgressView()
                                 .controlSize(.small)
-                                .tint(.kalakoshGold)
+                                .tint(.zoltoGold)
                         }
                     }
                 }
@@ -212,11 +206,11 @@ struct MainView: View {
                             ))
                         } label: {
                             Image(systemName: viewModel.showHiddenItems ? "eye.fill" : "eye")
-                                .foregroundColor(.kalakoshNearBlack)
+                                .foregroundColor(.zoltoNearBlack)
                         }
                         Button(action: { showingSalesHistory = true }) {
                             Image(systemName: "clock.arrow.circlepath")
-                                .foregroundColor(.kalakoshNearBlack)
+                                .foregroundColor(.zoltoNearBlack)
                         }
                         // Sells something outside the catalogue entirely — the only
                         // entry point that doesn't require selecting a product first.
@@ -226,7 +220,7 @@ struct MainView: View {
                             showingAddCustomItem = true
                         }) {
                             Image(systemName: "plus.circle")
-                                .foregroundColor(.kalakoshNearBlack)
+                                .foregroundColor(.zoltoNearBlack)
                         }
                     }
                 }
@@ -236,7 +230,7 @@ struct MainView: View {
                 placement: .navigationBarDrawer(displayMode: .always),
                 prompt: "Search name, category, price…"
             )
-            .toolbarBackground(Color.kalakoshWarmWhite, for: .navigationBar)
+            .toolbarBackground(Color.zoltoWarmWhite, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
             .toolbarColorScheme(.light, for: .navigationBar)
             .sheet(isPresented: $showingSalesHistory) {
@@ -279,7 +273,7 @@ struct MainView: View {
                 }
             }
         }
-        .accentColor(Color.kalakoshForestGreen)
+        .accentColor(Color.zoltoForestGreen)
     }
 }
 
@@ -312,7 +306,7 @@ struct OfflineStatusBar: View {
             .padding(.horizontal, 16)
             .padding(.vertical, 8)
             .foregroundColor(isOnline ? .white : .white)
-            .background(isOnline ? Color.kalakoshForestGreen : Color.orange)
+            .background(isOnline ? Color.zoltoForestGreen : Color.orange)
         }
         .buttonStyle(PlainButtonStyle())
     }
@@ -431,7 +425,7 @@ struct StatusBadge: View {
         case "pending": return .orange
         case "syncing": return .blue
         case "failed": return .red
-        case "synced": return Color.kalakoshForestGreen
+        case "synced": return Color.zoltoForestGreen
         default: return .gray
         }
     }
@@ -457,7 +451,7 @@ struct CategoryFilterBar: View {
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
         }
-        .background(Color.kalakoshWarmWhite)
+        .background(Color.zoltoWarmWhite)
     }
 }
 
@@ -472,13 +466,13 @@ struct CategoryChip: View {
                 .font(.system(.caption, design: .default).weight(.semibold))
                 .tracking(0.5)
                 .textCase(.uppercase)
-                .foregroundColor(isSelected ? .kalakoshGold : .kalakoshDeepText)
+                .foregroundColor(isSelected ? .zoltoGold : .zoltoDeepText)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
-                .background(isSelected ? Color.kalakoshNearBlack : Color.kalakoshSoftWhite)
+                .background(isSelected ? Color.zoltoNearBlack : Color.zoltoSoftWhite)
                 .overlay(
                     RoundedRectangle(cornerRadius: 4)
-                        .stroke(isSelected ? Color.kalakoshGold : Color.kalakoshBorder, lineWidth: 1)
+                        .stroke(isSelected ? Color.zoltoGold : Color.zoltoBorder, lineWidth: 1)
                 )
                 .cornerRadius(4)
         }
@@ -499,21 +493,21 @@ struct ProductCard: View {
                         AsyncImage(url: url) { image in
                             image.resizable().scaledToFill()
                         } placeholder: {
-                            Color.kalakoshBorder
-                                .overlay(Image(systemName: "photo").foregroundColor(.kalakoshMutedText))
+                            Color.zoltoBorder
+                                .overlay(Image(systemName: "photo").foregroundColor(.zoltoMutedText))
                         }
                         .frame(height: 140)
                         .clipped()
                     } else {
-                        Color.kalakoshBorder
-                            .overlay(Image(systemName: "photo").foregroundColor(.kalakoshMutedText))
+                        Color.zoltoBorder
+                            .overlay(Image(systemName: "photo").foregroundColor(.zoltoMutedText))
                             .frame(height: 140)
                     }
 
                     if isSelected {
                         Image(systemName: "checkmark.circle.fill")
                             .font(.system(size: 22))
-                            .foregroundColor(.kalakoshGold)
+                            .foregroundColor(.zoltoGold)
                             .shadow(color: .black.opacity(0.25), radius: 2)
                             .padding(8)
                     }
@@ -535,10 +529,10 @@ struct ProductCard: View {
                         Text("\(product.quantity)")
                             .font(.system(size: 10, weight: .bold))
                             .tracking(0.5)
-                            .foregroundColor(.kalakoshNearBlack)
+                            .foregroundColor(.zoltoNearBlack)
                             .padding(.horizontal, 6)
                             .padding(.vertical, 3)
-                            .background(Color.kalakoshGold)
+                            .background(Color.zoltoGold)
                             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
                             .padding(6)
                     }
@@ -547,20 +541,20 @@ struct ProductCard: View {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(product.displayName)
                         .font(.system(.footnote, design: .default).weight(.semibold))
-                        .foregroundColor(.kalakoshDeepText)
+                        .foregroundColor(.zoltoDeepText)
                         .lineLimit(2)
 
                     Text("CHF \(product.priceChf)")
                         .font(.footnote)
-                        .foregroundColor(.kalakoshGold)
+                        .foregroundColor(.zoltoGold)
                 }
                 .padding(10)
             }
-            .background(Color.kalakoshSoftWhite)
+            .background(Color.zoltoSoftWhite)
             .cornerRadius(4)
             .overlay(
                 RoundedRectangle(cornerRadius: 4)
-                    .stroke(isSelected ? Color.kalakoshGold : Color.kalakoshBorder, lineWidth: isSelected ? 2 : 1)
+                    .stroke(isSelected ? Color.zoltoGold : Color.zoltoBorder, lineWidth: isSelected ? 2 : 1)
             )
         }
         .buttonStyle(PlainButtonStyle())

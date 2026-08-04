@@ -1,15 +1,15 @@
-# Installing KalakoshPOS on your iPhone (no Mac required)
+# Installing ZoltoPOS on your iPhone (no Mac required)
 
 > This app was migrated from the standalone `ankurgupta7/kalakosh-pos-ios`
-> repo into the Zolto monorepo. It lives in `ios/KalakoshPOS/` and its CI
+> repo into the Zolto monorepo. It lives in `ios/ZoltoPOS/` and its CI
 > runs from this repo now.
 
 ## What's set up in this repo
 
 | File | Purpose |
 |------|---------|
-| `ios/KalakoshPOS/project.yml` | xcodegen spec — CI uses this to generate the `.xcodeproj` |
-| `.github/workflows/ios-pos-build.yml` | GitHub Actions — free simulator build + tests on every change under `ios/KalakoshPOS/` |
+| `ios/ZoltoPOS/project.yml` | xcodegen spec — CI uses this to generate the `.xcodeproj` |
+| `.github/workflows/ios-pos-build.yml` | GitHub Actions — free simulator build + tests on every change under `ios/ZoltoPOS/` |
 | `codemagic.yaml` (workflows `ios-pos-*`) | Codemagic — builds a signed IPA and sends you an install link |
 
 ---
@@ -90,7 +90,7 @@ This path is 100% free but requires one-time setup of AltStore.
 ## Special note: Tap to Pay on iPhone
 
 Stripe Terminal's Tap to Pay requires:
-1. The `com.apple.developer.proximity-reader.payment.acceptance` entitlement (already in `KalakoshPOS.entitlements`)
+1. The `com.apple.developer.proximity-reader.payment.acceptance` entitlement (already in `ZoltoPOS.entitlements`)
 2. **Apple must approve this entitlement** — apply at [stripe.com/docs/terminal/payments/setup-integration?terminal-sdk-platform=ios](https://stripe.com/docs/terminal/payments/setup-integration?terminal-sdk-platform=ios)
 3. A paid Apple Developer account ($99/year)
 4. iPhone XS or later, iOS 16.0+, in a supported country

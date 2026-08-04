@@ -16,7 +16,7 @@ struct SaleReviewView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                Color.kalakoshWarmWhite.ignoresSafeArea()
+                Color.zoltoWarmWhite.ignoresSafeArea()
 
                 VStack(spacing: 0) {
                     List {
@@ -41,27 +41,27 @@ struct SaleReviewView: View {
                                 showingAddCustomItem = true
                             }) {
                                 Label("Add Custom Item", systemImage: "plus.circle")
-                                    .foregroundColor(.kalakoshForestGreen)
+                                    .foregroundColor(.zoltoForestGreen)
                             }
                         }
-                        .listRowBackground(Color.kalakoshSoftIvory)
+                        .listRowBackground(Color.zoltoSoftIvory)
                     }
                     .listStyle(.plain)
-                    .background(Color.kalakoshWarmWhite)
+                    .background(Color.zoltoWarmWhite)
 
                     Divider()
-                        .background(Color.kalakoshBorder)
+                        .background(Color.zoltoBorder)
 
                     VStack(spacing: 16) {
                         HStack {
                             Text("Total")
                                 .font(.title3.weight(.bold))
-                                .foregroundColor(.kalakoshDeepText)
+                                .foregroundColor(.zoltoDeepText)
                                 .tracking(0.5)
                             Spacer()
                             Text("CHF \(viewModel.totalChf)")
                                 .font(.title2.weight(.bold))
-                                .foregroundColor(.kalakoshNearBlack)
+                                .foregroundColor(.zoltoNearBlack)
                         }
                         .padding(.horizontal)
                         .padding(.top, 16)
@@ -70,31 +70,31 @@ struct SaleReviewView: View {
                             Button(action: { charge(method: "card") }) {
                                 Text("Card")
                             }
-                            .buttonStyle(KalakoshPrimaryButtonStyle())
+                            .buttonStyle(ZoltoPrimaryButtonStyle())
 
                             Button(action: { charge(method: "cash") }) {
                                 Text("Cash")
                             }
-                            .buttonStyle(KalakoshOutlinedButtonStyle())
+                            .buttonStyle(ZoltoOutlinedButtonStyle())
 
                             Button(action: { charge(method: "twint") }) {
                                 Text("TWINT")
                             }
-                            .buttonStyle(KalakoshOutlinedButtonStyle())
+                            .buttonStyle(ZoltoOutlinedButtonStyle())
                         }
                         .padding(.horizontal, 16)
                         .padding(.bottom, 16)
                     }
-                    .background(Color.kalakoshWarmWhite)
+                    .background(Color.zoltoWarmWhite)
                 }
             }
             .navigationTitle("Sale Review")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(Color.kalakoshWarmWhite, for: .navigationBar)
+            .toolbarBackground(Color.zoltoWarmWhite, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
             .toolbarColorScheme(.light, for: .navigationBar)
             .navigationBarItems(leading: Button("Cancel") { dismiss() }
-                .foregroundColor(.kalakoshNearBlack))
+                .foregroundColor(.zoltoNearBlack))
             .alert(
                 "Override Price",
                 isPresented: Binding(
@@ -147,7 +147,7 @@ struct SaleReviewView: View {
                     .environmentObject(viewModel)
             }
         }
-        .accentColor(Color.kalakoshForestGreen)
+        .accentColor(Color.zoltoForestGreen)
     }
 
     // "card" drives the existing Stripe Terminal Tap to Pay flow. "cash" and
@@ -168,21 +168,21 @@ struct SaleReviewView: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text(product.displayName)
                     .font(.system(.subheadline, design: .default).weight(.semibold))
-                    .foregroundColor(.kalakoshDeepText)
+                    .foregroundColor(.zoltoDeepText)
                 if isOverridden {
                     HStack(spacing: 6) {
                         Text("CHF \(product.priceChf)")
                             .font(.footnote)
                             .strikethrough()
-                            .foregroundColor(.kalakoshMutedText)
+                            .foregroundColor(.zoltoMutedText)
                         Text("CHF \(Money.chfString(chargedRappen))")
                             .font(.subheadline.weight(.semibold))
-                            .foregroundColor(.kalakoshGold)
+                            .foregroundColor(.zoltoGold)
                     }
                 } else {
                     Text("CHF \(product.priceChf)")
                         .font(.subheadline)
-                        .foregroundColor(.kalakoshGold)
+                        .foregroundColor(.zoltoGold)
                 }
             }
             Spacer()
@@ -192,12 +192,12 @@ struct SaleReviewView: View {
             }) {
                 Text("Bargain")
                     .font(.footnote.weight(.medium))
-                    .foregroundColor(.kalakoshNearBlack)
+                    .foregroundColor(.zoltoNearBlack)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
                     .overlay(
                         RoundedRectangle(cornerRadius: 4)
-                            .stroke(Color.kalakoshNearBlack, lineWidth: 1)
+                            .stroke(Color.zoltoNearBlack, lineWidth: 1)
                     )
             }
             .buttonStyle(.plain)
@@ -207,18 +207,18 @@ struct SaleReviewView: View {
             }) {
                 Text("Remove")
                     .font(.footnote.weight(.medium))
-                    .foregroundColor(.kalakoshNearBlack)
+                    .foregroundColor(.zoltoNearBlack)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
                     .overlay(
                         RoundedRectangle(cornerRadius: 4)
-                            .stroke(Color.kalakoshNearBlack, lineWidth: 1)
+                            .stroke(Color.zoltoNearBlack, lineWidth: 1)
                     )
             }
             .buttonStyle(.plain)
         }
         .padding(.vertical, 6)
-        .listRowBackground(Color.kalakoshSoftWhite)
+        .listRowBackground(Color.zoltoSoftWhite)
     }
 
     @ViewBuilder
@@ -227,10 +227,10 @@ struct SaleReviewView: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text(item.name)
                     .font(.system(.subheadline, design: .default).weight(.semibold))
-                    .foregroundColor(.kalakoshDeepText)
+                    .foregroundColor(.zoltoDeepText)
                 Text("CHF \(Money.chfString(item.priceRappen))")
                     .font(.subheadline)
-                    .foregroundColor(.kalakoshGold)
+                    .foregroundColor(.zoltoGold)
             }
             Spacer()
             Button(action: {
@@ -239,18 +239,18 @@ struct SaleReviewView: View {
             }) {
                 Text("Remove")
                     .font(.footnote.weight(.medium))
-                    .foregroundColor(.kalakoshNearBlack)
+                    .foregroundColor(.zoltoNearBlack)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
                     .overlay(
                         RoundedRectangle(cornerRadius: 4)
-                            .stroke(Color.kalakoshNearBlack, lineWidth: 1)
+                            .stroke(Color.zoltoNearBlack, lineWidth: 1)
                     )
             }
             .buttonStyle(.plain)
         }
         .padding(.vertical, 6)
-        .listRowBackground(Color.kalakoshSoftWhite)
+        .listRowBackground(Color.zoltoSoftWhite)
     }
 }
 

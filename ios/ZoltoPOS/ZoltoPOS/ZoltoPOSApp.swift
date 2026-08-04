@@ -3,7 +3,7 @@ import SwiftData
 import StripeTerminal
 
 @main
-struct KalakoshPOSApp: App {
+struct ZoltoPOSApp: App {
     @StateObject private var productViewModel = ProductViewModel()
 
     init() {

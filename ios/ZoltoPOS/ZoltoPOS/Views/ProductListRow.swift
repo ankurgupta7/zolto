@@ -30,12 +30,12 @@ struct ProductListRow: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(product.displayName)
                         .font(.subheadline.weight(.medium))
-                        .foregroundColor(.kalakoshNearBlack)
+                        .foregroundColor(.zoltoNearBlack)
                         .lineLimit(1)
                     
                     Text(product.category ?? "Other")
                         .font(.caption2)
-                        .foregroundColor(.kalakoshMutedText)
+                        .foregroundColor(.zoltoMutedText)
                 }
                 
                 Spacer()
@@ -43,31 +43,31 @@ struct ProductListRow: View {
                 VStack(alignment: .trailing, spacing: 2) {
                     Text("CHF \(product.priceChf)")
                         .font(.subheadline.weight(.semibold))
-                        .foregroundColor(.kalakoshForestGreen)
+                        .foregroundColor(.zoltoForestGreen)
                     
                     if product.quantity > 1 {
                         Text("\(product.quantity) left")
                             .font(.system(size: 10, weight: .bold))
                             .padding(.horizontal, 4)
                             .padding(.vertical, 2)
-                            .background(Color.kalakoshNearBlack.opacity(0.05))
+                            .background(Color.zoltoNearBlack.opacity(0.05))
                             .cornerRadius(4)
                     }
                 }
                 
                 if isSelected {
                     Image(systemName: "checkmark.circle.fill")
-                        .foregroundColor(.kalakoshForestGreen)
+                        .foregroundColor(.zoltoForestGreen)
                         .font(.title3)
                 } else {
                     Image(systemName: "circle")
-                        .foregroundColor(.kalakoshNearBlack.opacity(0.1))
+                        .foregroundColor(.zoltoNearBlack.opacity(0.1))
                         .font(.title3)
                 }
             }
             .padding(.vertical, 8)
             .padding(.horizontal, 16)
-            .background(isSelected ? Color.kalakoshForestGreen.opacity(0.05) : Color.clear)
+            .background(isSelected ? Color.zoltoForestGreen.opacity(0.05) : Color.clear)
         }
         .buttonStyle(PlainButtonStyle())
     }

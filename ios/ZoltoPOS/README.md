@@ -1,8 +1,8 @@
-# Kalakosh POS iOS
+# Zolto POS iOS
 
-iOS version of the Kalakosh Point of Sale application, ported from Android.
+iOS version of the Zolto Point of Sale application, ported from Android.
 
-Lives at `ios/KalakoshPOS/` in the Zolto monorepo (migrated from the
+Lives at `ios/ZoltoPOS/` in the Zolto monorepo (migrated from the
 standalone `ankurgupta7/kalakosh-pos-ios` repo). The `.xcodeproj` is not
 committed — generate it with `xcodegen generate --spec project.yml` from this
 directory. CI: `.github/workflows/ios-pos-build.yml` (simulator + tests) and
@@ -25,7 +25,7 @@ See `SETUP.md` here for device-install options.
 
 ## Setup
 
-1. Open `KalakoshPOS.xcodeproj` in Xcode.
+1. Open `ZoltoPOS.xcodeproj` in Xcode.
 2. Ensure you have the Stripe Terminal SDK added via Swift Package Manager.
 3. Configure the `ApiService` with your backend URL and API Key.
 4. Set up the necessary permissions in `Info.plist` for Bluetooth and Location (required by Stripe Terminal).

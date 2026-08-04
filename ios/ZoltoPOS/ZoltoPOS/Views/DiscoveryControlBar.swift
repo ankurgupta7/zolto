@@ -20,7 +20,7 @@ struct DiscoveryControlBar: View {
                         .font(.caption2)
                 }
                 .font(.subheadline.weight(.medium))
-                .foregroundColor(.kalakoshNearBlack)
+                .foregroundColor(.zoltoNearBlack)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
                 .background(Color.white)
@@ -43,6 +43,6 @@ struct DiscoveryControlBar: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
-        .background(Color.kalakoshWarmWhite)
+        .background(Color.zoltoWarmWhite)
     }
 }
