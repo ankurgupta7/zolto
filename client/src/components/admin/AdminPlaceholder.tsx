@@ -6,6 +6,11 @@
  */
 
 import * as icons from "lucide-react";
+import { useTranslation } from "react-i18next";
+// Ensure the shared i18n instance is initialized even when this page is
+// rendered in isolation (e.g. under test) before main.tsx has run.
+import "@/lib/i18n";
+import { navLabelKey } from "./ui";
 
 export function AdminPlaceholder({
   label,
@@ -14,15 +19,19 @@ export function AdminPlaceholder({
   label: string;
   icon: string;
 }) {
+  const { t } = useTranslation("admin");
   const Icon =
     (icons as unknown as Record<string, icons.LucideIcon>)[icon] ?? icons.Circle;
   return (
     <div className="flex flex-col items-center justify-center gap-4 py-24 text-center">
       <Icon className="h-10 w-10 text-muted-foreground" aria-hidden="true" />
-      <h2 className="text-xl font-semibold">{label}</h2>
+      {/* The label comes from the nav manifest, so it reuses the sidebar's
+          translation and degrades to the manifest's English text. */}
+      <h2 className="text-xl font-semibold">
+        {t(navLabelKey(label), { defaultValue: label })}
+      </h2>
       <p className="max-w-sm text-sm text-muted-foreground">
-        This section is being rebuilt as part of the new admin area and will
-        appear here in an upcoming release.
+        {t("core.placeholder.body")}
       </p>
     </div>
   );

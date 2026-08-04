@@ -1,1 +1,63 @@
-{}
+{
+  "core": {
+    "nav": {
+      "groups": {
+        "store": "Shop",
+        "account": "Zolto-Konto"
+      },
+      "home": "Startseite",
+      "products": "Produkte",
+      "import": "Import",
+      "categories": "Kategorien",
+      "orders": "Bestellungen",
+      "reconciliation": "Abgleich",
+      "storefront": "Schaufenster",
+      "domain": "Domain",
+      "channels": "Kanäle",
+      "pos": "POS",
+      "insights": "Statistiken",
+      "shop-profile": "Shop-Profil",
+      "my-account": "Mein Konto",
+      "team": "Team",
+      "plan-billing": "Plan & Abrechnung",
+      "ai-usage": "KI-Nutzung",
+      "keys-access": "Schlüssel & Zugriff",
+      "data-privacy": "Daten & Datenschutz",
+      "support": "Support",
+      "legal-invoices": "Rechtliches & Rechnungen",
+      "platform-metrics": "Plattform-Metriken"
+    },
+    "layout": {
+      "navLabel": "Admin-Navigation",
+      "openNav": "Navigation öffnen",
+      "closeNav": "Navigation schliessen",
+      "requiresPlan": "Erfordert den {{plan}}-Plan",
+      "defaultTitle": "Admin",
+      "switchLanguage": "Sprache wechseln"
+    },
+    "placeholder": {
+      "body": "Dieser Bereich wird als Teil des neuen Admin-Bereichs neu aufgebaut und erscheint hier in einer kommenden Version."
+    },
+    "ui": {
+      "loading": "Ihre Daten werden geladen…",
+      "planGate": {
+        "title": "{{feature}} ist eine Funktion des {{plan}}-Plans",
+        "description": "Führen Sie ein Upgrade auf {{plan}} oder höher durch, um {{feature}} freizuschalten.",
+        "viewPlans": "Pläne ansehen"
+      },
+      "adminOnly": {
+        "title": "Nur für Admins",
+        "description": "Dieser Teil Ihres Zolto-Kontos wird vom Shop-Inhaber oder einem Admin verwaltet."
+      }
+    },
+    "pos": {
+      "notPublished": "{{platform}} — noch nicht veröffentlicht",
+      "getFor": "Für {{platform}} herunterladen",
+      "testingNote": "Die Kassen-App befindet sich noch in der Testphase. Fragen Sie uns nach einem Build und wir senden Ihnen einen — alles andere auf dieser Seite funktioniert bereits.",
+      "firstLaunch": "Was die App beim ersten Start abfragt",
+      "step1": "1. Server",
+      "copyServer": "Serveradresse kopieren",
+      "step2": "2. Ihr POS-API-Schlüssel"
+    }
+  }
+}

@@ -1,1 +1,63 @@
-{}
+{
+  "core": {
+    "nav": {
+      "groups": {
+        "store": "Negozio",
+        "account": "Account Zolto"
+      },
+      "home": "Home",
+      "products": "Prodotti",
+      "import": "Importazione",
+      "categories": "Categorie",
+      "orders": "Ordini",
+      "reconciliation": "Riconciliazione",
+      "storefront": "Vetrina",
+      "domain": "Dominio",
+      "channels": "Canali",
+      "pos": "POS",
+      "insights": "Statistiche",
+      "shop-profile": "Profilo del negozio",
+      "my-account": "Il mio account",
+      "team": "Team",
+      "plan-billing": "Piano e fatturazione",
+      "ai-usage": "Utilizzo dell'IA",
+      "keys-access": "Chiavi e accessi",
+      "data-privacy": "Dati e privacy",
+      "support": "Assistenza",
+      "legal-invoices": "Documenti legali e fatture",
+      "platform-metrics": "Metriche della piattaforma"
+    },
+    "layout": {
+      "navLabel": "Navigazione amministrazione",
+      "openNav": "Apri la navigazione",
+      "closeNav": "Chiudi la navigazione",
+      "requiresPlan": "Richiede il piano {{plan}}",
+      "defaultTitle": "Admin",
+      "switchLanguage": "Cambia lingua"
+    },
+    "placeholder": {
+      "body": "Questa sezione è in fase di ricostruzione nell'ambito della nuova area di amministrazione e apparirà qui in una prossima versione."
+    },
+    "ui": {
+      "loading": "Stiamo recuperando i Suoi dati…",
+      "planGate": {
+        "title": "{{feature}} è una funzionalità del piano {{plan}}",
+        "description": "Passi al piano {{plan}} o superiore per sbloccare {{featureLower}}.",
+        "viewPlans": "Vedi i piani"
+      },
+      "adminOnly": {
+        "title": "Solo per amministratori",
+        "description": "Questa parte del Suo account Zolto è gestita dal proprietario del negozio o da un amministratore."
+      }
+    },
+    "pos": {
+      "notPublished": "{{platform}} — non ancora pubblicata",
+      "getFor": "Scarica per {{platform}}",
+      "testingNote": "L'app di cassa è ancora in fase di test. Ci chieda una versione e gliela invieremo — tutto il resto di questa pagina funziona già.",
+      "firstLaunch": "Che cosa chiede l'app al primo avvio",
+      "step1": "1. Server",
+      "copyServer": "Copia l'indirizzo del server",
+      "step2": "2. La Sua chiave API POS"
+    }
+  }
+}

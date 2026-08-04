@@ -8,6 +8,7 @@
  * apps, and AI prompts all follow this list.
  */
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { ArrowDown, ArrowUp, Pencil, Plus, Trash2 } from "lucide-react";
@@ -24,6 +25,7 @@ import {
 const FALLBACK_KEY = "Other";
 
 export default function Categories() {
+  const { t } = useTranslation("admin");
   const utils = trpc.useUtils();
   const list = trpc.categories.list.useQuery();
   const categories = list.data ?? [];
@@ -41,17 +43,17 @@ export default function Categories() {
       setNewLabelDe("");
       setNewLabelFr("");
       setNewLabelIt("");
-      toast.success("Category added.");
+      toast.success(t("store.categories.addedToast"));
     },
-    onError: (e) => toast.error(e.message || "Could not add category."),
+    onError: (e) => toast.error(e.message || t("store.categories.addError")),
   });
   const update = trpc.categories.update.useMutation({
     onSuccess: () => {
       invalidate();
       setEditing(null);
-      toast.success("Category updated.");
+      toast.success(t("store.categories.updatedToast"));
     },
-    onError: (e) => toast.error(e.message || "Could not update category."),
+    onError: (e) => toast.error(e.message || t("store.categories.updateError")),
   });
   const remove = trpc.categories.remove.useMutation({
     onSuccess: (res) => {
@@ -59,22 +61,25 @@ export default function Categories() {
       setDeleting(null);
       toast.success(
         res.reassigned > 0
-          ? `Category deleted; ${res.reassigned} product(s) moved.`
-          : "Category deleted.",
+          ? t("store.categories.deletedMovedToast", { count: res.reassigned })
+          : t("store.categories.deletedToast"),
       );
     },
-    onError: (e) => toast.error(e.message || "Could not delete category."),
+    onError: (e) => toast.error(e.message || t("store.categories.deleteError")),
   });
   const reorder = trpc.categories.reorder.useMutation({
     onSuccess: invalidate,
-    onError: (e) => toast.error(e.message || "Could not reorder."),
+    onError: (e) =>
+      toast.error(e.message || t("store.categories.reorderError")),
   });
   const applyPreset = trpc.categories.applyPreset.useMutation({
     onSuccess: (res) => {
       invalidate();
-      toast.success(`Added any missing ${res.vertical} preset categories.`);
+      toast.success(
+        t("store.categories.presetAppliedToast", { vertical: res.vertical }),
+      );
     },
-    onError: (e) => toast.error(e.message || "Could not apply the preset."),
+    onError: (e) => toast.error(e.message || t("store.categories.presetError")),
   });
 
   const [newKey, setNewKey] = useState("");
@@ -111,21 +116,23 @@ export default function Categories() {
   return (
     <div>
       <PageHeader
-        title="Categories"
-        description="How your products are grouped — on your website, at the POS, and in the AI tools."
+        title={t("store.categories.title")}
+        description={t("store.categories.description")}
         actions={
           <SecondaryButton
             onClick={() => applyPreset.mutate()}
             loading={applyPreset.isPending}
           >
-            Add missing preset categories
+            {t("store.categories.applyPreset")}
           </SecondaryButton>
         }
       />
 
       <SettingsCard
-        title="Your categories"
-        description={`Renaming a category updates every product in it. "${FALLBACK_KEY}" cannot be removed — AI imports fall back to it.`}
+        title={t("store.categories.listTitle")}
+        description={t("store.categories.listDescription", {
+          fallback: FALLBACK_KEY,
+        })}
       >
         {list.isLoading ? (
           <LoadingState />
@@ -135,7 +142,10 @@ export default function Categories() {
               <li key={cat.key} className="py-3">
                 {editing?.key === cat.key ? (
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                    <Field label="Name (key)" htmlFor={`key-${cat.key}`}>
+                    <Field
+                      label={t("store.categories.nameKey")}
+                      htmlFor={`key-${cat.key}`}
+                    >
                       <input
                         id={`key-${cat.key}`}
                         value={editing.newKey}
@@ -148,7 +158,10 @@ export default function Categories() {
                         className={inputClass}
                       />
                     </Field>
-                    <Field label="Label (EN)" htmlFor={`len-${cat.key}`}>
+                    <Field
+                      label={t("store.categories.labelEn")}
+                      htmlFor={`len-${cat.key}`}
+                    >
                       <input
                         id={`len-${cat.key}`}
                         value={editing.labelEn}
@@ -160,7 +173,10 @@ export default function Categories() {
                         className={inputClass}
                       />
                     </Field>
-                    <Field label="Label (DE)" htmlFor={`lde-${cat.key}`}>
+                    <Field
+                      label={t("store.categories.labelDe")}
+                      htmlFor={`lde-${cat.key}`}
+                    >
                       <input
                         id={`lde-${cat.key}`}
                         value={editing.labelDe}
@@ -172,7 +188,10 @@ export default function Categories() {
                         className={inputClass}
                       />
                     </Field>
-                    <Field label="Label (FR)" htmlFor={`lfr-${cat.key}`}>
+                    <Field
+                      label={t("store.categories.labelFr")}
+                      htmlFor={`lfr-${cat.key}`}
+                    >
                       <input
                         id={`lfr-${cat.key}`}
                         value={editing.labelFr}
@@ -184,7 +203,10 @@ export default function Categories() {
                         className={inputClass}
                       />
                     </Field>
-                    <Field label="Label (IT)" htmlFor={`lit-${cat.key}`}>
+                    <Field
+                      label={t("store.categories.labelIt")}
+                      htmlFor={`lit-${cat.key}`}
+                    >
                       <input
                         id={`lit-${cat.key}`}
                         value={editing.labelIt}
@@ -216,20 +238,20 @@ export default function Categories() {
                           })
                         }
                       >
-                        Save
+                        {t("store.categories.save")}
                       </PrimaryButton>
                       <SecondaryButton onClick={() => setEditing(null)}>
-                        Cancel
+                        {t("store.categories.cancel")}
                       </SecondaryButton>
                     </div>
                   </div>
                 ) : deleting?.key === cat.key ? (
                   <div className="flex flex-wrap items-center gap-3">
                     <span className="text-sm font-medium">
-                      Delete “{cat.key}” — move its products to:
+                      {t("store.categories.deletePrompt", { key: cat.key })}
                     </span>
                     <select
-                      aria-label="Move products to"
+                      aria-label={t("store.categories.moveProductsAria")}
                       value={deleting.reassignTo}
                       onChange={(e) =>
                         setDeleting((s) =>
@@ -255,10 +277,10 @@ export default function Categories() {
                         })
                       }
                     >
-                      Delete
+                      {t("store.categories.delete")}
                     </PrimaryButton>
                     <SecondaryButton onClick={() => setDeleting(null)}>
-                      Cancel
+                      {t("store.categories.cancel")}
                     </SecondaryButton>
                   </div>
                 ) : (
@@ -266,7 +288,9 @@ export default function Categories() {
                     <div className="flex flex-col">
                       <button
                         type="button"
-                        aria-label={`Move ${cat.key} up`}
+                        aria-label={t("store.categories.moveUpAria", {
+                          key: cat.key,
+                        })}
                         disabled={idx === 0 || reorder.isPending}
                         onClick={() => move(cat.key, -1)}
                         className="text-muted-foreground hover:text-foreground disabled:opacity-30"
@@ -275,7 +299,9 @@ export default function Categories() {
                       </button>
                       <button
                         type="button"
-                        aria-label={`Move ${cat.key} down`}
+                        aria-label={t("store.categories.moveDownAria", {
+                          key: cat.key,
+                        })}
                         disabled={
                           idx === categories.length - 1 || reorder.isPending
                         }
@@ -296,14 +322,18 @@ export default function Categories() {
                           cat.labelIt ? `IT: ${cat.labelIt}` : null,
                         ]
                           .filter(Boolean)
-                          .join(" · ") || "No translated labels"}
+                          .join(" · ") || t("store.categories.noLabels")}
                         {cat.extraIncludes.length > 0 &&
-                          ` · also shows: ${cat.extraIncludes.join(", ")}`}
+                          ` · ${t("store.categories.alsoShows", {
+                            list: cat.extraIncludes.join(", "),
+                          })}`}
                       </p>
                     </div>
                     <button
                       type="button"
-                      aria-label={`Edit ${cat.key}`}
+                      aria-label={t("store.categories.editAria", {
+                        key: cat.key,
+                      })}
                       onClick={() =>
                         setEditing({
                           key: cat.key,
@@ -321,7 +351,9 @@ export default function Categories() {
                     {cat.key !== FALLBACK_KEY && (
                       <button
                         type="button"
-                        aria-label={`Delete ${cat.key}`}
+                        aria-label={t("store.categories.deleteAria", {
+                          key: cat.key,
+                        })}
                         onClick={() => startDelete(cat.key)}
                         className="text-muted-foreground hover:text-destructive"
                       >
@@ -337,14 +369,14 @@ export default function Categories() {
       </SettingsCard>
 
       <SettingsCard
-        title="Add a category"
-        description="The name is what the AI, POS, and website use; the German, French and Italian labels are shown to shoppers browsing in those languages."
+        title={t("store.categories.addTitle")}
+        description={t("store.categories.addDescription")}
         footer={
           <PrimaryButton
             loading={create.isPending}
             onClick={() => {
               if (!newKey.trim()) {
-                toast.error("Enter a category name.");
+                toast.error(t("store.categories.nameRequired"));
                 return;
               }
               create.mutate({
@@ -356,22 +388,28 @@ export default function Categories() {
             }}
           >
             <Plus className="mr-1 h-4 w-4" />
-            Add category
+            {t("store.categories.addCategory")}
           </PrimaryButton>
         }
       >
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-          <Field label="Name (English)" htmlFor="new-cat-key">
+          <Field
+            label={t("store.categories.newNameLabel")}
+            htmlFor="new-cat-key"
+          >
             <input
               id="new-cat-key"
               value={newKey}
               onChange={(e) => setNewKey(e.target.value)}
-              placeholder="e.g. Planters"
+              placeholder={t("store.categories.newNamePlaceholder")}
               maxLength={64}
               className={inputClass}
             />
           </Field>
-          <Field label="German label (optional)" htmlFor="new-cat-de">
+          <Field
+            label={t("store.categories.newDeLabel")}
+            htmlFor="new-cat-de"
+          >
             <input
               id="new-cat-de"
               value={newLabelDe}
@@ -381,7 +419,10 @@ export default function Categories() {
               className={inputClass}
             />
           </Field>
-          <Field label="French label (optional)" htmlFor="new-cat-fr">
+          <Field
+            label={t("store.categories.newFrLabel")}
+            htmlFor="new-cat-fr"
+          >
             <input
               id="new-cat-fr"
               value={newLabelFr}
@@ -391,7 +432,10 @@ export default function Categories() {
               className={inputClass}
             />
           </Field>
-          <Field label="Italian label (optional)" htmlFor="new-cat-it">
+          <Field
+            label={t("store.categories.newItLabel")}
+            htmlFor="new-cat-it"
+          >
             <input
               id="new-cat-it"
               value={newLabelIt}

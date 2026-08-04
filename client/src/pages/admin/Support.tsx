@@ -3,6 +3,7 @@
  * support channel copy plus links to docs and platform status. Static content;
  * the plan tier only changes which channel is highlighted.
  */
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { LifeBuoy, BookOpen, Activity, Mail } from "lucide-react";
@@ -14,13 +15,10 @@ import { featuresForPlan } from "@shared/platform";
 // was keyed free/maker/studio/atelier; after the Free/Pro pivot "pro" hit the
 // `?? free` fallback and a paying merchant was told they had community support
 // with a multi-day response — while the pricing page sold them "Priority human
-// support".
-const SUPPORT_LEVEL = {
-  priority: "Priority human support, answered within one business day.",
-  standard: "Community & email support, answered within a few business days.",
-} as const;
+// support". The copy itself lives in store.support.level* locale keys.
 
 export default function Support() {
+  const { t } = useTranslation("admin");
   useAuth();
   const me = trpc.tenant.me.useQuery(undefined, { retry: false });
   const plan = me.data?.plan ?? "free";
@@ -28,21 +26,21 @@ export default function Support() {
   return (
     <div>
       <PageHeader
-        title="Support"
-        description="Get help running your shop. We're makers too."
+        title={t("store.support.title")}
+        description={t("store.support.description")}
       />
 
-      <SettingsCard title="Your support level">
+      <SettingsCard title={t("store.support.levelTitle")}>
         <div className="flex items-start gap-3">
           <LifeBuoy className="mt-0.5 h-5 w-5 text-primary" />
           <div>
             <p className="text-sm font-medium capitalize text-foreground">
-              {plan} plan
+              {t("store.support.planName", { plan })}
             </p>
             <p className="mt-0.5 text-sm text-muted-foreground">
               {featuresForPlan(plan).prioritySupport
-                ? SUPPORT_LEVEL.priority
-                : SUPPORT_LEVEL.standard}
+                ? t("store.support.levelPriority")
+                : t("store.support.levelStandard")}
             </p>
           </div>
         </div>
@@ -54,7 +52,9 @@ export default function Support() {
           className="group rounded-xl border bg-card p-5 transition-colors hover:border-primary"
         >
           <Mail className="h-5 w-5 text-muted-foreground group-hover:text-primary" />
-          <p className="mt-3 text-sm font-medium text-foreground">Email us</p>
+          <p className="mt-3 text-sm font-medium text-foreground">
+            {t("store.support.emailUs")}
+          </p>
           <p className="mt-0.5 text-xs text-muted-foreground">
             support@zolto.ch
           </p>
@@ -67,19 +67,19 @@ export default function Support() {
         >
           <BookOpen className="h-5 w-5 text-muted-foreground group-hover:text-primary" />
           <p className="mt-3 text-sm font-medium text-foreground">
-            Guides & docs
+            {t("store.support.guidesDocs")}
           </p>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            How-tos for every feature
+            {t("store.support.guidesNote")}
           </p>
         </a>
         <div className="rounded-xl border bg-card p-5">
           <Activity className="h-5 w-5 text-emerald-500" />
           <p className="mt-3 text-sm font-medium text-foreground">
-            Platform status
+            {t("store.support.statusTitle")}
           </p>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            All systems operational
+            {t("store.support.statusNote")}
           </p>
         </div>
       </div>

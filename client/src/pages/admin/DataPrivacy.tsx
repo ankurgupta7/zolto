@@ -5,6 +5,7 @@
  * needed for a first, honest version.
  */
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -18,6 +19,7 @@ import {
 } from "@/components/admin/ui";
 
 export default function DataPrivacy() {
+  const { t } = useTranslation("admin");
   const { user } = useAuth();
   const me = trpc.tenant.me.useQuery(undefined, { retry: false });
   const utils = trpc.useUtils();
@@ -49,9 +51,9 @@ export default function DataPrivacy() {
       a.download = `${me.data?.slug ?? "store"}-export-${new Date().toISOString().slice(0, 10)}.json`;
       a.click();
       URL.revokeObjectURL(url);
-      toast.success("Export downloaded.");
+      toast.success(t("store.dataPrivacy.exportedToast"));
     } catch {
-      toast.error("Could not build the export. Please try again.");
+      toast.error(t("store.dataPrivacy.exportError"));
     } finally {
       setExporting(false);
     }
@@ -60,30 +62,27 @@ export default function DataPrivacy() {
   return (
     <div>
       <PageHeader
-        title="Data & privacy"
-        description="Your data is yours. Export it any time, or ask us to delete your store."
+        title={t("store.dataPrivacy.title")}
+        description={t("store.dataPrivacy.description")}
       />
 
       <SettingsCard
-        title="Export your data"
-        description="Download your catalogue and store profile as a JSON file."
+        title={t("store.dataPrivacy.exportTitle")}
+        description={t("store.dataPrivacy.exportDescription")}
       >
         <PrimaryButton onClick={handleExport} loading={exporting}>
           <Download className="h-4 w-4" />
-          Download export
+          {t("store.dataPrivacy.downloadExport")}
         </PrimaryButton>
       </SettingsCard>
 
       <SettingsCard
-        title="Delete your store"
-        description="Permanently remove your store, catalogue, and data from Zolto."
+        title={t("store.dataPrivacy.deleteTitle")}
+        description={t("store.dataPrivacy.deleteDescription")}
       >
         <div className="flex items-start gap-3 rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800 dark:border-rose-900/50 dark:bg-rose-950/30 dark:text-rose-200">
           <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
-          <p>
-            Deletion is permanent and can't be undone. To protect against
-            mistakes and confirm ownership, we handle it as a support request.
-          </p>
+          <p>{t("store.dataPrivacy.deleteWarning")}</p>
         </div>
         <div className="mt-4">
           <SecondaryButton
@@ -92,7 +91,7 @@ export default function DataPrivacy() {
                 "mailto:support@zolto.ch?subject=Delete%20my%20store")
             }
           >
-            Request deletion
+            {t("store.dataPrivacy.requestDeletion")}
           </SecondaryButton>
         </div>
       </SettingsCard>
