@@ -80,7 +80,13 @@ final class PriceOverrideAndCustomItemTests: XCTestCase {
     }
 
     // MARK: - ProductViewModel cart logic
+    //
+    // ProductViewModel.init is @MainActor (it subscribes to the main-actor
+    // OfflinePaymentManager), so every test that constructs one must run on
+    // the main actor too. XCTest executes synchronous tests on the main
+    // thread, so the annotation only makes that explicit to the compiler.
 
+    @MainActor
     func testChargedPriceIsListPriceWhenNoOverrideSet() {
         let viewModel = ProductViewModel()
         let product = Product(
@@ -90,6 +96,7 @@ final class PriceOverrideAndCustomItemTests: XCTestCase {
         XCTAssertEqual(viewModel.chargedPriceRappen(for: product), 5000)
     }
 
+    @MainActor
     func testChargedPriceIsTheBargainedOverrideWhenSet() {
         let viewModel = ProductViewModel()
         let product = Product(
@@ -100,6 +107,7 @@ final class PriceOverrideAndCustomItemTests: XCTestCase {
         XCTAssertEqual(viewModel.chargedPriceRappen(for: product), 3500)
     }
 
+    @MainActor
     func testSettingOverrideToNilClearsIt() {
         let viewModel = ProductViewModel()
         let product = Product(
@@ -111,6 +119,7 @@ final class PriceOverrideAndCustomItemTests: XCTestCase {
         XCTAssertEqual(viewModel.chargedPriceRappen(for: product), 5000)
     }
 
+    @MainActor
     func testDeselectingAProductClearsItsOverride() {
         let viewModel = ProductViewModel()
         viewModel.toggleSelection(productId: 1)
@@ -121,6 +130,7 @@ final class PriceOverrideAndCustomItemTests: XCTestCase {
         XCTAssertNil(viewModel.priceOverrides[1])
     }
 
+    @MainActor
     func testAddAndRemoveCustomItem() {
         let viewModel = ProductViewModel()
         viewModel.addCustomItem(name: "Custom bracelet", priceRappen: 4200)
@@ -133,6 +143,7 @@ final class PriceOverrideAndCustomItemTests: XCTestCase {
         XCTAssertEqual(viewModel.totalRappen(), 0)
     }
 
+    @MainActor
     func testClearSelectionClearsOverridesAndCustomItemsToo() {
         let viewModel = ProductViewModel()
         viewModel.toggleSelection(productId: 1)
