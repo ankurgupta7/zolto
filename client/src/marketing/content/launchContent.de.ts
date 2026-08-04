@@ -210,7 +210,12 @@ const diary2: Article = {
           "Neugierige Bestandskundschaft",
         ],
         ["WhatsApp (direkt geteilt)", "8", "0", "Freunde und Familie"],
-        ["Direkt (URL eingetippt)", "3", "0", "Vermutlich die Macherin beim Testen"],
+        [
+          "Direkt (URL eingetippt)",
+          "3",
+          "0",
+          "Vermutlich die Macherin beim Testen",
+        ],
         ["Total", "34", "0", "An Tag 1 zählt Präsenz, nicht Verkauf"],
       ],
     },
@@ -311,7 +316,13 @@ const diary3: Article = {
     { type: "h2", text: "Monat 1 im Detail" },
     {
       type: "table",
-      head: ["Woche", "Online-Bestellungen", "Ø Bestellwert", "Traffic", "Anmerkungen"],
+      head: [
+        "Woche",
+        "Online-Bestellungen",
+        "Ø Bestellwert",
+        "Traffic",
+        "Anmerkungen",
+      ],
       rows: [
         ["Woche 1 (Launch)", "3", "CHF 58", "156 Besucher", "Instagram-Effekt"],
         ["Woche 2", "2", "CHF 52", "89 Besucher", "Ruhe nach dem Launch"],
@@ -483,7 +494,11 @@ const caseStudy: Article = {
         ["Verkäufe total", "~60/Monat", "~67/Monat"],
         ["Kundenreichweite", "Zürcher Märkte", "Schweiz + Deutschland"],
         ["Bestandsführung", "Im Kopf", "Echtzeit-Synchronisation"],
-        ["Support-Aufwand", "Alles bei der Macherin", "81% von der KI erledigt"],
+        [
+          "Support-Aufwand",
+          "Alles bei der Macherin",
+          "81% von der KI erledigt",
+        ],
       ],
     },
     {

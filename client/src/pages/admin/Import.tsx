@@ -3,38 +3,35 @@
  * A hub linking to the existing import tools (CSV import, bulk photo upload,
  * duplicate cleanup), which remain their own full-screen flows.
  */
+import { useTranslation } from "react-i18next";
 import { Link } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
-import {
-  FileSpreadsheet,
-  Images,
-  Copy,
-  ArrowRight,
-} from "lucide-react";
+import { FileSpreadsheet, Images, Copy, ArrowRight } from "lucide-react";
 import { PageHeader, AdminOnly } from "@/components/admin/ui";
 
 const TOOLS = [
   {
     href: "/admin/csv-import",
     icon: FileSpreadsheet,
-    title: "CSV import",
-    body: "Bring in a whole catalogue from a spreadsheet. Map your columns and preview before importing.",
+    titleKey: "ops.import.csvTitle",
+    bodyKey: "ops.import.csvBody",
   },
   {
     href: "/admin/bulk-upload",
     icon: Images,
-    title: "Bulk photo upload",
-    body: "Drop a batch of photos and let AI draft a name, description, and price for each piece.",
+    titleKey: "ops.import.photosTitle",
+    bodyKey: "ops.import.photosBody",
   },
   {
     href: "/admin/duplicates",
     icon: Copy,
-    title: "Duplicate cleanup",
-    body: "Find and merge near-identical products created by repeated imports.",
+    titleKey: "ops.import.duplicatesTitle",
+    bodyKey: "ops.import.duplicatesBody",
   },
 ] as const;
 
 export default function Import() {
+  const { t } = useTranslation("admin");
   const { user } = useAuth();
   if (user && user.role !== "admin" && user.role !== "superadmin") {
     return <AdminOnly />;
@@ -43,12 +40,12 @@ export default function Import() {
   return (
     <div>
       <PageHeader
-        title="Import"
-        description="Add products in bulk — from a spreadsheet, a folder of photos, or by tidying duplicates."
+        title={t("ops.import.title")}
+        description={t("ops.import.description")}
       />
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        {TOOLS.map(({ href, icon: Icon, title, body }) => (
+        {TOOLS.map(({ href, icon: Icon, titleKey, bodyKey }) => (
           <Link
             key={href}
             href={href}
@@ -56,11 +53,13 @@ export default function Import() {
           >
             <Icon className="h-6 w-6 text-primary" />
             <h3 className="mt-4 text-base font-semibold text-foreground">
-              {title}
+              {t(titleKey)}
             </h3>
-            <p className="mt-1 flex-1 text-sm text-muted-foreground">{body}</p>
+            <p className="mt-1 flex-1 text-sm text-muted-foreground">
+              {t(bodyKey)}
+            </p>
             <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-primary">
-              Open
+              {t("ops.import.open")}
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </span>
           </Link>

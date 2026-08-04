@@ -315,7 +315,13 @@ const diary3: Article = {
     { type: "h2", text: "Le mois 1 en détail" },
     {
       type: "table",
-      head: ["Semaine", "Commandes en ligne", "Panier moyen", "Trafic", "Remarques"],
+      head: [
+        "Semaine",
+        "Commandes en ligne",
+        "Panier moyen",
+        "Trafic",
+        "Remarques",
+      ],
       rows: [
         [
           "Semaine 1 (lancement)",
@@ -324,7 +330,13 @@ const diary3: Article = {
           "156 visiteurs",
           "Effet Instagram",
         ],
-        ["Semaine 2", "2", "CHF 52", "89 visiteurs", "Calme après le lancement"],
+        [
+          "Semaine 2",
+          "2",
+          "CHF 52",
+          "89 visiteurs",
+          "Calme après le lancement",
+        ],
         [
           "Semaine 3",
           "4",
@@ -509,7 +521,12 @@ const caseStudy: Article = {
     { type: "h2", text: "Ce qui a été construit à partir des retours" },
     {
       type: "table",
-      head: ["Jour", "Le client a dit", "Ce qui a été construit", "Délai de mise en ligne"],
+      head: [
+        "Jour",
+        "Le client a dit",
+        "Ce qui a été construit",
+        "Délai de mise en ligne",
+      ],
       rows: [
         [
           "3",

@@ -58,7 +58,7 @@ const diary1: Article = {
     },
     {
       type: "p",
-      text: 'Questa è la storia di come è nato quel primo negozio online. Non un caso di growth hacking. Non un racconto "come ho guadagnato sei cifre". Solo un\'artigiana vera che capisce come vendere online senza diventare un\'esperta di tecnologia.',
+      text: "Questa è la storia di come è nato quel primo negozio online. Non un caso di growth hacking. Non un racconto \"come ho guadagnato sei cifre\". Solo un'artigiana vera che capisce come vendere online senza diventare un'esperta di tecnologia.",
     },
     { type: "h2", text: "L'artigiana" },
     {
@@ -315,7 +315,13 @@ const diary3: Article = {
     { type: "h2", text: "Il mese 1 nel dettaglio" },
     {
       type: "table",
-      head: ["Settimana", "Ordini online", "Valore medio ordine", "Traffico", "Note"],
+      head: [
+        "Settimana",
+        "Ordini online",
+        "Valore medio ordine",
+        "Traffico",
+        "Note",
+      ],
       rows: [
         [
           "Settimana 1 (lancio)",
@@ -324,7 +330,13 @@ const diary3: Article = {
           "156 visitatori",
           "Effetto Instagram",
         ],
-        ["Settimana 2", "2", "CHF 52", "89 visitatori", "Quiete dopo il lancio"],
+        [
+          "Settimana 2",
+          "2",
+          "CHF 52",
+          "89 visitatori",
+          "Quiete dopo il lancio",
+        ],
         [
           "Settimana 3",
           "4",
@@ -513,7 +525,12 @@ const caseStudy: Article = {
     { type: "h2", text: "Che cosa è stato costruito dai feedback" },
     {
       type: "table",
-      head: ["Giorno", "Il cliente ha detto", "Che cosa è stato costruito", "Tempo di rilascio"],
+      head: [
+        "Giorno",
+        "Il cliente ha detto",
+        "Che cosa è stato costruito",
+        "Tempo di rilascio",
+      ],
       rows: [
         [
           "3",

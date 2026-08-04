@@ -1,5 +1,15 @@
 import { Link } from "wouter";
-import { DIARY_POSTS, CASE_STUDY } from "../content/launchContent";
+import { useTranslation } from "react-i18next";
+// Load-bearing side-effect import: it guarantees i18next is initialised (with
+// the app's languages registered) before useTranslation runs — including under
+// vitest, where nothing else would have imported "@/lib/i18n".
+import "@/lib/i18n";
+import { matchSupportedLanguage } from "@/lib/languages";
+import {
+  getDiaryPosts,
+  getCaseStudy,
+  getBlogChrome,
+} from "../content/localizedContent";
 import { useDocumentMeta } from "../lib/useDocumentMeta";
 import { Container } from "../components/Container";
 
@@ -42,12 +52,20 @@ function PostCard({
 /**
  * The Launch Diary index (/blog). Lists the diary series plus the case study —
  * the Phase-1 content engine's discoverable entry point (business-plan §5.1).
+ *
+ * Content resolves per language, but slugs — and therefore URLs — do not:
+ * /blog/launch-diary-1 is the same document in de, en, fr and it.
  */
 export default function Blog() {
+  const { i18n } = useTranslation();
+  const lang = matchSupportedLanguage(i18n.language) ?? "en";
+  const chrome = getBlogChrome(lang);
+  const diaryPosts = getDiaryPosts(lang);
+  const caseStudy = getCaseStudy(lang);
+
   useDocumentMeta({
-    title: "Launch Diary — A Maker's First Online Store | Zolto",
-    description:
-      "The Launch Diary: an honest, week-by-week account of a Zurich pearl jewelry maker launching a first online store on Zolto. No growth hacks, just what happened.",
+    title: chrome.indexMetaTitle,
+    description: chrome.indexMetaDescription,
     path: "/blog",
   });
 
@@ -55,21 +73,18 @@ export default function Blog() {
     <Container width="5xl" className="py-20">
       <div className="max-w-2xl">
         <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
-          The Launch Diary
+          {chrome.indexEyebrow}
         </p>
         <h1 className="mt-2 font-serif text-4xl text-[var(--brand-text)]">
-          A maker's first online store, documented.
+          {chrome.indexTitle}
         </h1>
         <p className="mt-4 text-lg text-[var(--brand-muted-2)]">
-          A pearl jewelry maker in Zurich went from ~60 offline sales a month at
-          Christmas markets to a hybrid online-offline business. This is the
-          real process — setup, launch day, first month — written as it
-          happened.
+          {chrome.indexIntro}
         </p>
       </div>
 
       <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {DIARY_POSTS.map((post) => (
+        {diaryPosts.map((post) => (
           <PostCard
             key={post.slug}
             href={`/blog/${post.slug}`}
@@ -83,11 +98,11 @@ export default function Blog() {
 
       <div className="mt-10">
         <PostCard
-          href={`/stories/${CASE_STUDY.slug}`}
-          eyebrow="Case Study"
-          title={CASE_STUDY.title}
-          dek={CASE_STUDY.dek}
-          meta={CASE_STUDY.readingTime}
+          href={`/stories/${caseStudy.slug}`}
+          eyebrow={chrome.caseStudyEyebrow}
+          title={caseStudy.title}
+          dek={caseStudy.dek}
+          meta={caseStudy.readingTime}
         />
       </div>
     </Container>

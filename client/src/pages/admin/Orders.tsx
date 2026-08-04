@@ -3,8 +3,10 @@
  * (checkout.listOrders). In-person sales are reconciled separately (see
  * Reconciliation); this page is the record of what sold through the storefront.
  */
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
+import { DEFAULT_LANGUAGE, matchSupportedLanguage } from "@/lib/languages";
 import { Receipt } from "lucide-react";
 import {
   PageHeader,
@@ -17,7 +19,13 @@ function formatMoney(amountMinor: number, currency: string): string {
   return `${currency.toUpperCase()} ${(amountMinor / 100).toFixed(2)}`;
 }
 
+/** Swiss regional locale for the active UI language ("it" → "it-CH"). */
+function dateLocale(language: string): string {
+  return `${matchSupportedLanguage(language) ?? DEFAULT_LANGUAGE}-CH`;
+}
+
 export default function Orders() {
+  const { t, i18n } = useTranslation("admin");
   const { user } = useAuth();
   const orders = trpc.checkout.listOrders.useQuery(undefined, { retry: false });
 
@@ -25,32 +33,40 @@ export default function Orders() {
     return <AdminOnly />;
   }
 
+  const locale = dateLocale(i18n.language);
+
   return (
     <div>
       <PageHeader
-        title="Orders"
-        description="Paid orders from your online storefront."
+        title={t("ops.orders.title")}
+        description={t("ops.orders.description")}
       />
 
       {orders.isLoading ? (
-        <LoadingState label="Counting your orders…" />
+        <LoadingState label={t("ops.orders.loading")} />
       ) : orders.data && orders.data.length > 0 ? (
         <div className="overflow-hidden rounded-xl border bg-card">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-muted/30 text-left text-xs uppercase tracking-wide text-muted-foreground">
-                  <th className="px-4 py-3 font-medium">Order</th>
-                  <th className="px-4 py-3 font-medium">Customer</th>
+                  <th className="px-4 py-3 font-medium">
+                    {t("ops.orders.thOrder")}
+                  </th>
+                  <th className="px-4 py-3 font-medium">
+                    {t("ops.orders.thCustomer")}
+                  </th>
                   <th className="hidden px-4 py-3 font-medium sm:table-cell">
-                    Items
+                    {t("ops.orders.thItems")}
                   </th>
                   <th className="hidden px-4 py-3 font-medium md:table-cell">
-                    Method
+                    {t("ops.orders.thMethod")}
                   </th>
-                  <th className="px-4 py-3 text-right font-medium">Total</th>
+                  <th className="px-4 py-3 text-right font-medium">
+                    {t("ops.orders.thTotal")}
+                  </th>
                   <th className="hidden px-4 py-3 text-right font-medium sm:table-cell">
-                    Date
+                    {t("ops.orders.thDate")}
                   </th>
                 </tr>
               </thead>
@@ -80,7 +96,7 @@ export default function Orders() {
                       {formatMoney(o.amountTotal, o.currency)}
                     </td>
                     <td className="hidden px-4 py-3 text-right text-muted-foreground sm:table-cell">
-                      {new Date(o.createdAt).toLocaleDateString()}
+                      {new Date(o.createdAt).toLocaleDateString(locale)}
                     </td>
                   </tr>
                 ))}
@@ -91,9 +107,9 @@ export default function Orders() {
       ) : (
         <EmptyState
           icon={<Receipt className="h-8 w-8" />}
-          title="No orders yet"
-          description="When someone checks out on your storefront, their order lands here — with what they bought and where it's going."
-          note="the first one is a good day"
+          title={t("ops.orders.emptyTitle")}
+          description={t("ops.orders.emptyDescription")}
+          note={t("ops.orders.emptyNote")}
         />
       )}
     </div>

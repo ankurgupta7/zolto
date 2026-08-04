@@ -1,1 +1,298 @@
-{}
+{
+  "catalog": {
+    "admin": {
+      "auth": {
+        "title": "Accès administrateur",
+        "description": "Veuillez vous connecter pour accéder au panneau d'administration.",
+        "denied": "Accès refusé"
+      },
+      "header": {
+        "eyebrow": "Votre établi",
+        "title": "Gestion du catalogue",
+        "addByCamera": "Ajouter par appareil photo",
+        "csvImport": "Import CSV",
+        "duplicateCleanup": "Nettoyage des doublons",
+        "planBilling": "Forfait & facturation",
+        "recategorise": "Recatégoriser",
+        "recategoriseTitle": "Recatégoriser par IA tous les produits classés dans 'Other' (à vérifier avant application)",
+        "autoTranslate": "Traduction auto",
+        "autoTranslateTitle": "Compléter les traductions anglaises manquantes par IA (à vérifier avant application)",
+        "translateLocales": "Traduire de/en/fr/it",
+        "translateLocalesTitle": "Compléter par IA les traductions allemandes, anglaises, françaises et italiennes de la boutique pour chaque produit",
+        "reconcileStripe": "Rapprocher les paiements Stripe",
+        "reconcileStripeTitle": "Rechercher les paiements Stripe absents de nos registres et envoyer une demande de rapprochement par e-mail pour chacun",
+        "confirmPos": "Confirmer les ventes en personne",
+        "confirmPosTitle": "Trouver les ventes en personne saisies en montant seul et demander par e-mail de confirmer quelle pièce a été vendue",
+        "stripeConnected": "Stripe connecté",
+        "stripeConnectedTitle": "Le compte Stripe propre à cette boutique est lié — les paiements du checkout vous sont versés directement",
+        "connectStripe": "Connecter Stripe",
+        "connectStripeTitle": "Liez VOTRE propre compte Stripe pour que les clients de votre boutique paient directement dessus",
+        "tour": "Visite",
+        "tourTitle": "Rejouer la visite guidée de ce tableau de bord",
+        "tourAria": "Rejouer la visite guidée",
+        "addProduct": "Ajouter un produit"
+      },
+      "form": {
+        "title": "Ajouter un nouveau produit",
+        "name": "Nom",
+        "namePlaceholder": "p. ex. {{example}}",
+        "price": "Prix (CHF)",
+        "pricePlaceholder": "p. ex. 185.00",
+        "category": "Catégorie",
+        "quantity": "Quantité",
+        "imageUrl": "URL de l'image",
+        "description": "Description",
+        "descriptionPlaceholder": "Décrivez la pièce...",
+        "checking": "Vérification...",
+        "submit": "Ajouter un produit",
+        "cancel": "Annuler"
+      },
+      "duplicate": {
+        "title": "Doublon possible détecté",
+        "description": "Les produits existants suivants ressemblent à celui que vous ajoutez :",
+        "addAnyway": "Ajouter quand même"
+      },
+      "stats": {
+        "totalProducts": "Produits au total",
+        "inStock": "En stock",
+        "soldOut": "Épuisés",
+        "inventoryValue": "Valeur du stock"
+      },
+      "insights": {
+        "eyebrow": "IA",
+        "title": "Analyses ventes & stock",
+        "description": "Analyse par IA de votre catalogue et de vos données de vente",
+        "hide": "Masquer",
+        "show": "Afficher",
+        "refresh": "Actualiser",
+        "generate": "Générer les analyses",
+        "loading": "Analyse de votre catalogue et de vos données de vente…",
+        "highlights": "Points forts",
+        "recommendations": "Recommandations",
+        "topCategory": "Catégorie phare",
+        "slowMovers": "Ventes lentes",
+        "empty": "Cliquez sur « Générer les analyses » pour obtenir une analyse par IA de vos ventes et de votre stock."
+      },
+      "table": {
+        "product": "Produit",
+        "category": "Catégorie",
+        "price": "Prix",
+        "qty": "Qté",
+        "status": "Statut",
+        "actions": "Actions"
+      },
+      "empty": {
+        "eyebrow": "Une page blanche pour votre établi",
+        "title": "Aucun produit pour l'instant",
+        "description": "Ajoutez votre premier produit manuellement, par import CSV ou par envoi groupé de photos.",
+        "addFirst": "Ajouter le premier produit",
+        "csvImport": "Import CSV"
+      },
+      "row": {
+        "visible": "Visible",
+        "hidden": "Masqué",
+        "editTitle": "Modifier le produit",
+        "cancelEditTitle": "Annuler la modification",
+        "hideTitle": "Masquer le produit",
+        "showTitle": "Afficher le produit",
+        "deleteTitle": "Supprimer le produit",
+        "confirmDelete": "Suppr.",
+        "cancelDelete": "Non",
+        "fieldName": "Nom ({{code}})",
+        "fieldDescription": "Description ({{code}})",
+        "fieldPrice": "Prix (CHF)",
+        "fieldCategory": "Catégorie",
+        "save": "Enregistrer",
+        "cancel": "Annuler"
+      },
+      "instagram": {
+        "title": "Grille de publications sélectionnées",
+        "description": "Collez ci-dessous les URL de publications ou de reels Instagram. Elles apparaîtront sous forme de publications intégrées sur la page d'accueil."
+      },
+      "logs": {
+        "eyebrow": "Débogage",
+        "title": "Journaux IA de l'envoi groupé",
+        "description": "Échecs de l'analyse IA et de la création de produits pendant l'envoi groupé",
+        "empty": "Aucune erreur enregistrée pour l'instant.",
+        "thTime": "Heure",
+        "thOperation": "Opération",
+        "thReference": "Référence",
+        "thError": "Erreur"
+      },
+      "discord": {
+        "title": "Intégration Discord",
+        "description": "Publiez un message dans votre canal Discord connecté avec une photo, une description et un prix — le produit sera automatiquement ajouté au catalogue.",
+        "exampleLabel": "Exemple de message Discord :",
+        "note": "Le bot écoute en temps réel le canal Discord que vous avez désigné, via l'API Gateway."
+      },
+      "dialogs": {
+        "recategoriseTitle": "Vérifier les changements de catégorie",
+        "recategoriseDescription": "Ces produits quitteront 'Other' pour la catégorie indiquée. Décochez tout ce que vous ne voulez pas modifier.",
+        "translateTitle": "Vérifier les traductions",
+        "translateDescription": "Ces traductions anglaises seront complétées. Décochez tout ce que vous ne voulez pas appliquer."
+      },
+      "toasts": {
+        "stripeConnected": "Compte Stripe connecté — les paiements en ligne sont actifs.",
+        "stripeConnectFailedReason": "Échec de la connexion à Stripe : {{reason}}",
+        "stripeConnectFailed": "Échec de la connexion à Stripe. Veuillez réessayer.",
+        "productAdded": "Produit ajouté avec succès",
+        "productAddFailed": "Échec de l'ajout du produit",
+        "fillRequired": "Veuillez remplir tous les champs obligatoires",
+        "validPrice": "Veuillez saisir un prix valide",
+        "quantityFailed": "Échec de la mise à jour de la quantité",
+        "visibilityFailed": "Échec de la mise à jour de la visibilité",
+        "productDeleted": "Produit supprimé",
+        "productDeleteFailed": "Échec de la suppression du produit",
+        "productUpdated": "Produit mis à jour",
+        "productUpdateFailed": "Échec de la mise à jour du produit",
+        "nameDescriptionRequired": "Le nom et la description sont obligatoires",
+        "enterValidPrice": "Saisissez un prix valide",
+        "translateAllPresent": "Tous les produits ont déjà une traduction anglaise.",
+        "translatePreviewFailed": "Échec de l'aperçu de la traduction automatique. Veuillez réessayer.",
+        "translateFailed": "Échec de la traduction automatique. Veuillez réessayer.",
+        "translatedToEnglish_one": "{{count}} produit traduit en anglais.",
+        "translatedToEnglish_other": "{{count}} produits traduits en anglais.",
+        "localesAllPresent": "Tous les produits ont déjà des traductions de/en/fr/it.",
+        "localesFailed": "Échec de la traduction de la boutique. Veuillez réessayer.",
+        "localesTranslated_one": "{{count}} produit traduit en allemand, anglais, français et italien.",
+        "localesTranslated_other": "{{count}} produits traduits en allemand, anglais, français et italien.",
+        "recategoriseAllDone": "Tous les produits non catégorisés étaient déjà classés.",
+        "recategorisePreviewFailed": "Échec de l'aperçu de la recatégorisation. Veuillez réessayer.",
+        "recategoriseFailed": "Échec de la recatégorisation. Veuillez réessayer.",
+        "recategorised_one": "{{count}} produit recatégorisé.",
+        "recategorised_other": "{{count}} produits recatégorisés.",
+        "stripeFoundSent_one": "{{count}} paiement non rapproché trouvé — e-mail de vérification envoyé.",
+        "stripeFoundSent_other": "{{count}} paiements non rapprochés trouvés — e-mail de vérification envoyé.",
+        "stripeFoundNotSent_one": "{{count}} paiement non rapproché trouvé — l'e-mail de vérification n'a pas pu être envoyé, consultez les journaux du serveur.",
+        "stripeFoundNotSent_other": "{{count}} paiements non rapprochés trouvés — l'e-mail de vérification n'a pas pu être envoyé, consultez les journaux du serveur.",
+        "stripeNoCandidates_one": "{{count}} paiement non rapproché trouvé, mais aucun produit en stock n'était assez proche en prix pour proposer une correspondance.",
+        "stripeNoCandidates_other": "{{count}} paiements non rapprochés trouvés, mais aucun produit en stock n'était assez proche en prix pour proposer une correspondance.",
+        "stripeClean": "Aucun paiement Stripe non rapproché trouvé ({{count}} vérifiés).",
+        "stripeReconcileFailed": "Le rapprochement Stripe a échoué. Veuillez réessayer.",
+        "posFoundSent_one": "{{count}} vente en montant seul à confirmer — e-mail de vérification envoyé.",
+        "posFoundSent_other": "{{count}} ventes en montant seul à confirmer — e-mail de vérification envoyé.",
+        "posFoundNotSent_one": "{{count}} vente en montant seul à confirmer — l'e-mail de vérification n'a pas pu être envoyé, consultez les journaux du serveur.",
+        "posFoundNotSent_other": "{{count}} ventes en montant seul à confirmer — l'e-mail de vérification n'a pas pu être envoyé, consultez les journaux du serveur.",
+        "posNoCandidates_one": "{{count}} vente en montant seul trouvée, mais aucune pièce en stock n'était assez proche en prix pour proposer une correspondance.",
+        "posNoCandidates_other": "{{count}} ventes en montant seul trouvées, mais aucune pièce en stock n'était assez proche en prix pour proposer une correspondance.",
+        "posClean": "Aucune vente en personne non attribuée trouvée ({{count}} vérifiées).",
+        "posReconcileFailed": "Le rapprochement des ventes en personne a échoué. Veuillez réessayer.",
+        "insightsFailed": "Échec de la génération des analyses. Veuillez réessayer."
+      }
+    },
+    "csv": {
+      "auth": {
+        "required": "Accès administrateur requis",
+        "denied": "Accès refusé"
+      },
+      "header": {
+        "eyebrow": "Admin",
+        "title": "Import CSV / tableur",
+        "description": "Importez des données produits depuis un fichier CSV ou Google Sheets",
+        "backToAdmin": "Admin"
+      },
+      "template": {
+        "title": "Téléchargez le modèle",
+        "columnsLabel": "Colonnes :",
+        "categoriesLabel": "Les catégories doivent être exactement :",
+        "download": "Télécharger le modèle"
+      },
+      "upload": {
+        "title": "Importer un fichier CSV",
+        "descriptionPrefix": "Enregistrez votre tableur au format CSV (UTF-8). Excel :",
+        "excelPath": "Fichier → Enregistrer sous → CSV UTF-8",
+        "selectFile": "Cliquez pour choisir un fichier .csv",
+        "dragDrop": "ou déposez-le ici"
+      },
+      "sheets": {
+        "title": "URL Google Sheets",
+        "shareBefore": "Partagez votre feuille avec",
+        "shareEmphasis": "« Toute personne disposant du lien »",
+        "shareAfter": ", puis collez l'URL ci-dessous.",
+        "columnsNote": "La première feuille (onglet) sera importée. Les noms de colonnes de la première ligne doivent correspondre au modèle.",
+        "fetching": "Chargement…",
+        "load": "Charger la feuille"
+      },
+      "handwriting": {
+        "title": "Photos d'inventaire manuscrit",
+        "aiBadge": "IA",
+        "description": "Photographiez les pages de votre carnet ou de votre cahier — sélectionnez-en autant que vous voulez d'un coup. L'IA lira sur chaque photo le nom, le prix, la catégorie et la quantité de chaque article et construira une liste unique que vous pourrez vérifier et modifier avant l'import.",
+        "reading": "Lecture de votre inventaire…",
+        "photoProgress": "Photo {{current}} sur {{total}}",
+        "uploadedAlt": "Inventaire envoyé {{index}}",
+        "previousAlt": "Envoi précédent {{index}}",
+        "upload": "Envoyez des photos de vos notes",
+        "formats": "JPEG, PNG, WebP ou HEIC · 10 Mo max. chacune · plusieurs possibles"
+      },
+      "preview": {
+        "validRows": "lignes valides",
+        "errorRows": "lignes en erreur (seront ignorées)",
+        "selectedForImport": "sélectionnées pour l'import",
+        "back": "Retour",
+        "importing": "Import {{done}}/{{total}}…",
+        "importButton_one": "Importer {{count}} produit",
+        "importButton_other": "Importer {{count}} produits",
+        "uncheckNote": "Décochez toute ligne que vous ne voulez pas importer — rien n'est écrit tant que vous n'avez pas cliqué sur Importer.",
+        "errorNote": "Les lignes en erreur seront ignorées. Modifiez le nom, la description, le prix ou la catégorie directement dans le tableau ci-dessus pour les corriger avant l'import."
+      },
+      "table": {
+        "selectAllAria": "Sélectionner toutes les lignes",
+        "selectRowAria": "Sélectionner {{name}} pour l'import",
+        "rowFallback": "la ligne",
+        "thName": "Nom",
+        "thAction": "Action",
+        "thCategory": "Catégorie",
+        "thPrice": "Prix",
+        "thQty": "Qté",
+        "thImageUrl": "URL de l'image",
+        "thIssues": "Problèmes",
+        "update": "Mise à jour #{{id}}",
+        "updateTitle": "Mettra à jour le produit existant #{{id}}",
+        "create": "Créer",
+        "phName": "Nom",
+        "phDescription": "Description",
+        "phNameEn": "Nom (anglais)",
+        "phDescriptionEn": "Description (anglais)",
+        "phNameFr": "Nom (français)",
+        "phDescriptionFr": "Description (français)",
+        "phNameIt": "Nom (italien)",
+        "phDescriptionIt": "Description (italien)"
+      },
+      "errors": {
+        "nameRequired": "nom obligatoire",
+        "descriptionRequired": "description obligatoire",
+        "invalidPrice": "prix invalide",
+        "invalidCategory": "catégorie invalide",
+        "categoryMustBeOneOf": "la catégorie doit être l'une de : {{categories}}"
+      },
+      "done": {
+        "created_one": "{{count}} produit créé",
+        "created_other": "{{count}} produits créés",
+        "updatedSuffix": ", {{count}} mis à jour",
+        "updatedNote": "Les lignes correspondant au nom d'un produit existant ont été mises à jour sur place au lieu d'être dupliquées.",
+        "visibleNote": "Les produits sont maintenant visibles dans la boutique. Vous pouvez ajouter des photos depuis le panneau d'administration.",
+        "failed": "{{count}} en échec : {{names}}",
+        "importMore": "Importer d'autres",
+        "goToAdmin": "Aller au panneau d'administration"
+      },
+      "toasts": {
+        "noDataRows": "Aucune ligne de données trouvée — vérifiez que le fichier a une ligne d'en-tête et au moins une ligne de données",
+        "notCsv": "Veuillez importer un fichier .csv. Pour Excel : Fichier → Enregistrer sous → CSV.",
+        "readFailed": "Échec de la lecture du fichier",
+        "badImageType": "{{file}} : veuillez importer une image JPEG, PNG, WebP ou HEIC",
+        "imageTooLarge": "{{file}} : l'image doit faire moins de 10 Mo",
+        "readImagesFailed": "Échec de la lecture d'une ou plusieurs images",
+        "aiParseFailed": "Échec de l'analyse IA pour : {{files}}",
+        "aiNoItems": "L'IA n'a pu extraire aucun article de ces photos — essayez des photos plus nettes",
+        "aiExtracted": "L'IA a extrait {{items}} de {{photos}}",
+        "itemCount_one": "{{count}} article",
+        "itemCount_other": "{{count}} articles",
+        "photoCount_one": "{{count}} photo",
+        "photoCount_other": "{{count}} photos",
+        "enterSheetUrl": "Saisissez une URL Google Sheets",
+        "noRowsSelected": "Aucune ligne sélectionnée pour l'import",
+        "batchFailed": "Un lot n'a pas pu être importé : {{message}}"
+      }
+    }
+  }
+}

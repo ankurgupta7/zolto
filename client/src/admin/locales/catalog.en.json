@@ -1,1 +1,298 @@
-{}
+{
+  "catalog": {
+    "admin": {
+      "auth": {
+        "title": "Admin Access",
+        "description": "Please sign in to access the admin panel.",
+        "denied": "Access Denied"
+      },
+      "header": {
+        "eyebrow": "Your maker’s bench",
+        "title": "Catalogue Management",
+        "addByCamera": "Add by Camera",
+        "csvImport": "CSV Import",
+        "duplicateCleanup": "Duplicate Cleanup",
+        "planBilling": "Plan & Billing",
+        "recategorise": "Re-Categorise",
+        "recategoriseTitle": "AI re-categorise all products in 'Other' into the correct category (review before applying)",
+        "autoTranslate": "Auto-Translate",
+        "autoTranslateTitle": "Fill missing English translations using AI (review before applying)",
+        "translateLocales": "Translate de/en/fr/it",
+        "translateLocalesTitle": "Fill missing German, English, French and Italian storefront translations for every product using AI",
+        "reconcileStripe": "Reconcile Stripe Payments",
+        "reconcileStripeTitle": "Check for Stripe payments missing from our records and email a match request for each",
+        "confirmPos": "Confirm In-Person Sales",
+        "confirmPosTitle": "Find amount-only in-person sales and email a request to confirm which piece each one sold",
+        "stripeConnected": "Stripe Connected",
+        "stripeConnectedTitle": "This store's own Stripe account is linked — checkout pays out directly to you",
+        "connectStripe": "Connect Stripe",
+        "connectStripeTitle": "Link your OWN Stripe account so your storefront's customers pay directly into it",
+        "tour": "Tour",
+        "tourTitle": "Replay the guided tour of this dashboard",
+        "tourAria": "Replay guided tour",
+        "addProduct": "Add Product"
+      },
+      "form": {
+        "title": "Add New Product",
+        "name": "Name",
+        "namePlaceholder": "e.g. {{example}}",
+        "price": "Price (CHF)",
+        "pricePlaceholder": "e.g. 185.00",
+        "category": "Category",
+        "quantity": "Quantity",
+        "imageUrl": "Image URL",
+        "description": "Description",
+        "descriptionPlaceholder": "Describe the item...",
+        "checking": "Checking...",
+        "submit": "Add Product",
+        "cancel": "Cancel"
+      },
+      "duplicate": {
+        "title": "Possible duplicate detected",
+        "description": "The following existing products appear similar to the one you're adding:",
+        "addAnyway": "Add Anyway"
+      },
+      "stats": {
+        "totalProducts": "Total Products",
+        "inStock": "In Stock",
+        "soldOut": "Sold Out",
+        "inventoryValue": "Inventory Value"
+      },
+      "insights": {
+        "eyebrow": "AI",
+        "title": "Sales & Inventory Insights",
+        "description": "AI-generated analysis of your catalogue and sales data",
+        "hide": "Hide",
+        "show": "Show",
+        "refresh": "Refresh",
+        "generate": "Generate Insights",
+        "loading": "Analysing your catalogue and sales data…",
+        "highlights": "Highlights",
+        "recommendations": "Recommendations",
+        "topCategory": "Top Category",
+        "slowMovers": "Slow Movers",
+        "empty": "Click \"Generate Insights\" to get AI-powered analysis of your sales and inventory."
+      },
+      "table": {
+        "product": "Product",
+        "category": "Category",
+        "price": "Price",
+        "qty": "Qty",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "empty": {
+        "eyebrow": "A blank page for your bench",
+        "title": "No products yet",
+        "description": "Add your first product manually, via CSV import, or bulk photo upload.",
+        "addFirst": "Add First Product",
+        "csvImport": "CSV Import"
+      },
+      "row": {
+        "visible": "Visible",
+        "hidden": "Hidden",
+        "editTitle": "Edit product",
+        "cancelEditTitle": "Cancel edit",
+        "hideTitle": "Hide product",
+        "showTitle": "Show product",
+        "deleteTitle": "Delete product",
+        "confirmDelete": "Del",
+        "cancelDelete": "No",
+        "fieldName": "Name ({{code}})",
+        "fieldDescription": "Description ({{code}})",
+        "fieldPrice": "Price (CHF)",
+        "fieldCategory": "Category",
+        "save": "Save",
+        "cancel": "Cancel"
+      },
+      "instagram": {
+        "title": "Curated Post Grid",
+        "description": "Paste Instagram post or reel URLs below. They will appear as embedded posts on the home page."
+      },
+      "logs": {
+        "eyebrow": "Debug",
+        "title": "Bulk Upload AI Logs",
+        "description": "Failures from AI analysis and product creation during bulk upload",
+        "empty": "No errors recorded yet.",
+        "thTime": "Time",
+        "thOperation": "Operation",
+        "thReference": "Reference",
+        "thError": "Error"
+      },
+      "discord": {
+        "title": "Discord Integration",
+        "description": "Post a message in your connected Discord channel with a photo, description, and price — the product will be automatically added to the catalogue.",
+        "exampleLabel": "Example Discord message:",
+        "note": "The bot listens to your designated Discord channel in real time via the Gateway API."
+      },
+      "dialogs": {
+        "recategoriseTitle": "Review category changes",
+        "recategoriseDescription": "These products will move out of 'Other' into the category shown. Uncheck anything you don't want changed.",
+        "translateTitle": "Review translations",
+        "translateDescription": "These English translations will be filled in. Uncheck anything you don't want applied."
+      },
+      "toasts": {
+        "stripeConnected": "Stripe account connected — online payments are live.",
+        "stripeConnectFailedReason": "Stripe connection failed: {{reason}}",
+        "stripeConnectFailed": "Stripe connection failed. Please try again.",
+        "productAdded": "Product added successfully",
+        "productAddFailed": "Failed to add product",
+        "fillRequired": "Please fill in all required fields",
+        "validPrice": "Please enter a valid price",
+        "quantityFailed": "Failed to update quantity",
+        "visibilityFailed": "Failed to update visibility",
+        "productDeleted": "Product deleted",
+        "productDeleteFailed": "Failed to delete product",
+        "productUpdated": "Product updated",
+        "productUpdateFailed": "Failed to update product",
+        "nameDescriptionRequired": "Name and description are required",
+        "enterValidPrice": "Enter a valid price",
+        "translateAllPresent": "All products already have English translations.",
+        "translatePreviewFailed": "Auto-translation preview failed. Please try again.",
+        "translateFailed": "Auto-translation failed. Please try again.",
+        "translatedToEnglish_one": "{{count}} product translated to English.",
+        "translatedToEnglish_other": "{{count}} products translated to English.",
+        "localesAllPresent": "All products already have de/en/fr/it translations.",
+        "localesFailed": "Storefront translation failed. Please try again.",
+        "localesTranslated_one": "Translated {{count}} product into German, English, French and Italian.",
+        "localesTranslated_other": "Translated {{count}} products into German, English, French and Italian.",
+        "recategoriseAllDone": "All uncategorised products were already classified.",
+        "recategorisePreviewFailed": "Re-categorisation preview failed. Please try again.",
+        "recategoriseFailed": "Re-categorisation failed. Please try again.",
+        "recategorised_one": "{{count}} product re-categorised.",
+        "recategorised_other": "{{count}} products re-categorised.",
+        "stripeFoundSent_one": "{{count}} unmatched payment found — review email sent.",
+        "stripeFoundSent_other": "{{count}} unmatched payments found — review email sent.",
+        "stripeFoundNotSent_one": "{{count}} unmatched payment found — review email could not be sent, check server logs.",
+        "stripeFoundNotSent_other": "{{count}} unmatched payments found — review email could not be sent, check server logs.",
+        "stripeNoCandidates_one": "{{count}} unmatched payment found, but no in-stock product was close enough in price to guess.",
+        "stripeNoCandidates_other": "{{count}} unmatched payments found, but no in-stock product was close enough in price to guess.",
+        "stripeClean": "No unmatched Stripe payments found ({{count}} checked).",
+        "stripeReconcileFailed": "Stripe reconciliation failed. Please try again.",
+        "posFoundSent_one": "{{count}} amount-only sale to confirm — review email sent.",
+        "posFoundSent_other": "{{count}} amount-only sales to confirm — review email sent.",
+        "posFoundNotSent_one": "{{count}} amount-only sale to confirm — review email could not be sent, check server logs.",
+        "posFoundNotSent_other": "{{count}} amount-only sales to confirm — review email could not be sent, check server logs.",
+        "posNoCandidates_one": "{{count}} amount-only sale found, but no in-stock piece was close enough in price to guess.",
+        "posNoCandidates_other": "{{count}} amount-only sales found, but no in-stock piece was close enough in price to guess.",
+        "posClean": "No unattributed in-person sales found ({{count}} checked).",
+        "posReconcileFailed": "In-person sale reconciliation failed. Please try again.",
+        "insightsFailed": "Failed to generate insights. Please try again."
+      }
+    },
+    "csv": {
+      "auth": {
+        "required": "Admin Required",
+        "denied": "Access Denied"
+      },
+      "header": {
+        "eyebrow": "Admin",
+        "title": "CSV / Spreadsheet Import",
+        "description": "Import product data from a CSV file or Google Sheets",
+        "backToAdmin": "Admin"
+      },
+      "template": {
+        "title": "Download the template",
+        "columnsLabel": "Columns:",
+        "categoriesLabel": "Categories must be exactly:",
+        "download": "Download Template"
+      },
+      "upload": {
+        "title": "Upload CSV File",
+        "descriptionPrefix": "Save your spreadsheet as CSV (UTF-8). Excel:",
+        "excelPath": "File → Save As → CSV UTF-8",
+        "selectFile": "Click to select a .csv file",
+        "dragDrop": "or drag and drop here"
+      },
+      "sheets": {
+        "title": "Google Sheets URL",
+        "shareBefore": "Share your sheet with",
+        "shareEmphasis": "\"Anyone with the link\"",
+        "shareAfter": ", then paste the URL below.",
+        "columnsNote": "The first sheet (tab) will be imported. Column names in the first row must match the template.",
+        "fetching": "Fetching…",
+        "load": "Load Sheet"
+      },
+      "handwriting": {
+        "title": "Handwritten Inventory Photos",
+        "aiBadge": "AI",
+        "description": "Photograph pages from your diary or notebook — select as many as you like at once. AI will read each item's name, price, category, and quantity from every photo and build a combined list you can review and edit before importing.",
+        "reading": "Reading your inventory…",
+        "photoProgress": "Photo {{current}} of {{total}}",
+        "uploadedAlt": "Uploaded inventory {{index}}",
+        "previousAlt": "Previous upload {{index}}",
+        "upload": "Upload photos of your notes",
+        "formats": "JPEG, PNG, WebP or HEIC · max 10 MB each · multiple allowed"
+      },
+      "preview": {
+        "validRows": "valid rows",
+        "errorRows": "rows with errors (will be skipped)",
+        "selectedForImport": "selected for import",
+        "back": "Back",
+        "importing": "Importing {{done}}/{{total}}…",
+        "importButton_one": "Import {{count}} Product",
+        "importButton_other": "Import {{count}} Products",
+        "uncheckNote": "Uncheck any row you don't want to import — nothing is written until you click Import.",
+        "errorNote": "Rows with errors will be skipped. Edit the name, description, price, or category directly in the table above to fix them before importing."
+      },
+      "table": {
+        "selectAllAria": "Select all rows",
+        "selectRowAria": "Select {{name}} for import",
+        "rowFallback": "row",
+        "thName": "Name",
+        "thAction": "Action",
+        "thCategory": "Category",
+        "thPrice": "Price",
+        "thQty": "Qty",
+        "thImageUrl": "Image URL",
+        "thIssues": "Issues",
+        "update": "Update #{{id}}",
+        "updateTitle": "Will update existing product #{{id}}",
+        "create": "Create",
+        "phName": "Name",
+        "phDescription": "Description",
+        "phNameEn": "Name (English)",
+        "phDescriptionEn": "Description (English)",
+        "phNameFr": "Name (French)",
+        "phDescriptionFr": "Description (French)",
+        "phNameIt": "Name (Italian)",
+        "phDescriptionIt": "Description (Italian)"
+      },
+      "errors": {
+        "nameRequired": "name required",
+        "descriptionRequired": "description required",
+        "invalidPrice": "invalid price",
+        "invalidCategory": "invalid category",
+        "categoryMustBeOneOf": "category must be one of: {{categories}}"
+      },
+      "done": {
+        "created_one": "{{count}} product created",
+        "created_other": "{{count}} products created",
+        "updatedSuffix": ", {{count}} updated",
+        "updatedNote": "Rows matching an existing product name were updated in place instead of duplicated.",
+        "visibleNote": "Products are now visible in the shop. You can add photos via the admin panel.",
+        "failed": "{{count}} failed: {{names}}",
+        "importMore": "Import More",
+        "goToAdmin": "Go to Admin Panel"
+      },
+      "toasts": {
+        "noDataRows": "No data rows found — check the file has a header row and at least one data row",
+        "notCsv": "Please upload a .csv file. For Excel, use File → Save As → CSV.",
+        "readFailed": "Failed to read file",
+        "badImageType": "{{file}}: please upload a JPEG, PNG, WebP or HEIC image",
+        "imageTooLarge": "{{file}}: image must be under 10 MB",
+        "readImagesFailed": "Failed to read one or more images",
+        "aiParseFailed": "AI parsing failed for: {{files}}",
+        "aiNoItems": "AI could not extract any items from these photos — try clearer photos",
+        "aiExtracted": "AI extracted {{items}} from {{photos}}",
+        "itemCount_one": "{{count}} item",
+        "itemCount_other": "{{count}} items",
+        "photoCount_one": "{{count}} photo",
+        "photoCount_other": "{{count}} photos",
+        "enterSheetUrl": "Enter a Google Sheets URL",
+        "noRowsSelected": "No rows selected to import",
+        "batchFailed": "A batch failed to import: {{message}}"
+      }
+    }
+  }
+}

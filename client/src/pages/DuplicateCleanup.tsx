@@ -1,7 +1,11 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { isStoreAdminRole } from "@/admin/nav";
 import { trpc } from "@/lib/trpc";
+// This page renders outside the admin shell, so nothing else in its import
+// graph initialises the shared i18n instance — pull it in explicitly.
+import "@/lib/i18n";
 import { toast } from "sonner";
 import { SignInOptions } from "@/components/SignInOptions";
 import { Loader2, Copy, CheckCircle2, Trash2, RefreshCw } from "lucide-react";
@@ -9,6 +13,7 @@ import { Link } from "wouter";
 import BulkChangeReviewDialog from "@/components/BulkChangeReviewDialog";
 
 export default function DuplicateCleanup() {
+  const { t } = useTranslation("admin");
   const { user, isAuthenticated, loading } = useAuth();
   const utils = trpc.useUtils();
 
@@ -39,9 +44,7 @@ export default function DuplicateCleanup() {
 
   const mergeMutation = trpc.products.mergeDuplicates.useMutation({
     onSuccess: (result) => {
-      toast.success(
-        `Removed ${result.removed} duplicate product${result.removed !== 1 ? "s" : ""}`,
-      );
+      toast.success(t("ops.duplicates.removed", { count: result.removed }));
       utils.products.adminList.invalidate();
       utils.products.list.invalidate();
       setShowConfirm(false);
@@ -94,7 +97,7 @@ export default function DuplicateCleanup() {
       <div className="min-h-screen flex items-center justify-center pt-20 bg-background">
         <div className="text-center max-w-sm">
           <h2 className="font-serif text-foreground text-2xl mb-4">
-            Admin Required
+            {t("ops.duplicates.adminRequired")}
           </h2>
           <SignInOptions className="text-left" next={window.location.href} />
         </div>
@@ -106,7 +109,7 @@ export default function DuplicateCleanup() {
       <div className="min-h-screen flex items-center justify-center pt-20 bg-background">
         <div className="text-center max-w-sm">
           <h2 className="font-serif text-foreground text-2xl mb-4">
-            Access Denied
+            {t("ops.duplicates.accessDenied")}
           </h2>
         </div>
       </div>
@@ -119,21 +122,20 @@ export default function DuplicateCleanup() {
         <div className="container flex items-center justify-between flex-wrap gap-4">
           <div>
             <p className="text-[var(--brand-accent)] text-xs uppercase tracking-[0.3em] mb-1 font-sans">
-              Admin
+              {t("ops.duplicates.eyebrow")}
             </p>
             <h1 className="font-serif text-white text-2xl">
-              Duplicate Cleanup
+              {t("ops.duplicates.title")}
             </h1>
             <p className="text-white/50 text-xs font-sans mt-1">
-              Products that share the exact same name — usually left behind by
-              re-importing a spreadsheet
+              {t("ops.duplicates.subtitle")}
             </p>
           </div>
           <Link
             href="/admin"
             className="text-white/60 hover:text-white text-xs uppercase tracking-[0.15em] font-sans transition-colors"
           >
-            ← Admin
+            {t("ops.duplicates.backToAdmin")}
           </Link>
         </div>
       </section>
@@ -150,7 +152,7 @@ export default function DuplicateCleanup() {
           <div className="bg-white border border-[var(--brand-border)] p-10 text-center">
             <CheckCircle2 size={32} className="mx-auto mb-3 text-green-600" />
             <p className="font-serif text-foreground text-lg">
-              No duplicate product names found
+              {t("ops.duplicates.noneFound")}
             </p>
           </div>
         ) : (
@@ -162,8 +164,8 @@ export default function DuplicateCleanup() {
                   className="text-[var(--brand-accent)] flex-shrink-0"
                 />
                 <span className="text-sm font-sans">
-                  <strong>{groups.length}</strong> duplicate group
-                  {groups.length !== 1 ? "s" : ""} found
+                  <strong>{groups.length}</strong>{" "}
+                  {t("ops.duplicates.groupsFound", { count: groups.length })}
                 </span>
               </div>
               <div className="flex gap-3">
@@ -173,7 +175,7 @@ export default function DuplicateCleanup() {
                   className="flex items-center gap-2 border border-[var(--brand-ink)]/20 text-muted-foreground px-4 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:border-[var(--brand-ink)] hover:text-foreground transition-colors"
                 >
                   <RefreshCw size={14} />
-                  Refresh
+                  {t("ops.duplicates.refresh")}
                 </button>
                 <button
                   type="button"
@@ -181,14 +183,13 @@ export default function DuplicateCleanup() {
                   className="flex items-center gap-2 bg-red-600 text-white px-6 py-2.5 text-xs uppercase tracking-[0.15em] font-sans font-medium hover:bg-red-700 transition-colors disabled:opacity-60"
                 >
                   <Trash2 size={14} />
-                  Delete All Duplicates
+                  {t("ops.duplicates.deleteAll")}
                 </button>
               </div>
             </div>
 
             <p className="text-xs text-muted-foreground font-sans mb-6">
-              Deleting a duplicate permanently removes it from the catalogue —
-              this cannot be undone. Pick which copy of each product to keep.
+              {t("ops.duplicates.warning")}
             </p>
 
             <div className="space-y-6">
@@ -201,7 +202,9 @@ export default function DuplicateCleanup() {
                     <p className="font-serif text-foreground text-sm">
                       {group.products[0].name}{" "}
                       <span className="text-muted-foreground text-xs font-sans">
-                        ({group.products.length} copies)
+                        {t("ops.duplicates.copies", {
+                          count: group.products.length,
+                        })}
                       </span>
                     </p>
                     <button
@@ -209,7 +212,7 @@ export default function DuplicateCleanup() {
                       onClick={() => openConfirmForGroup(group.key)}
                       className="text-xs uppercase tracking-[0.12em] font-sans text-red-600 hover:text-red-700 transition-colors disabled:opacity-50"
                     >
-                      Delete the rest
+                      {t("ops.duplicates.deleteRest")}
                     </button>
                   </div>
                   <table className="w-full text-sm font-sans">
@@ -239,19 +242,23 @@ export default function DuplicateCleanup() {
                             CHF {Number(p.price).toFixed(2)}
                           </td>
                           <td className="px-2 py-3 text-muted-foreground">
-                            Qty {p.quantity}
+                            {t("ops.duplicates.qty", { qty: p.quantity })}
                           </td>
                           <td className="px-2 py-3">
                             {p.visible ? (
-                              <span className="text-green-700">Visible</span>
+                              <span className="text-green-700">
+                                {t("ops.duplicates.visible")}
+                              </span>
                             ) : (
                               <span className="text-muted-foreground">
-                                Hidden
+                                {t("ops.duplicates.hidden")}
                               </span>
                             )}
                           </td>
                           <td className="px-2 py-3 text-muted-foreground">
-                            {p.imageUrl ? "Has photo" : "No photo"}
+                            {p.imageUrl
+                              ? t("ops.duplicates.hasPhoto")
+                              : t("ops.duplicates.noPhoto")}
                           </td>
                         </tr>
                       ))}
@@ -266,10 +273,10 @@ export default function DuplicateCleanup() {
 
       <BulkChangeReviewDialog
         open={showConfirm}
-        title="Confirm deleting duplicates"
-        description="These products will be permanently removed from the catalogue, including their photos. This cannot be undone."
+        title={t("ops.duplicates.confirmTitle")}
+        description={t("ops.duplicates.confirmDescription")}
         destructive
-        confirmLabel="Deletion"
+        confirmLabel={t("ops.duplicates.confirmLabel")}
         items={candidateIds.map((id) => {
           const p = productById.get(id);
           return {
