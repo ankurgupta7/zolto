@@ -71,9 +71,13 @@ final class TwintModelsTests: XCTestCase {
         XCTAssertEqual(decoded.customItems.count, 1)
     }
 
-    /// Contract snapshot: the exact JSON the iOS app sends to
+    /// Contract snapshot: the JSON the iOS app sends to
     /// POST /api/pos/twint-intent. If this ever drifts from what
-    /// Kalakosh-ch/server/pos.ts expects, the build breaks.
+    /// server/pos.ts expects, the build breaks.
+    ///
+    /// The snapshot is taken with .sortedKeys — JSON object key order is not
+    /// part of the wire contract, and Swift Dictionary iteration order is
+    /// re-seeded every process, so comparing unsorted output is a coin flip.
     func testTwintIntentRequestMatchesBackendContractSnapshot() throws {
         let request = TwintIntentRequest(
             productIds: [1, 2],
@@ -82,12 +86,14 @@ final class TwintModelsTests: XCTestCase {
             customItems: [CustomLineItemRequest(name: "Gift wrap", priceRappen: 500)]
         )
 
-        let data = try encoder.encode(request)
+        let snapshotEncoder = JSONEncoder()
+        snapshotEncoder.outputFormatting = .sortedKeys
+        let data = try snapshotEncoder.encode(request)
         let jsonString = String(data: data, encoding: .utf8)!
 
         XCTAssertEqual(
             jsonString,
-            #"{"productIds":[1,2],"allowHidden":true,"priceOverrides":{"1":3500,"2":2200},"customItems":[{"name":"Gift wrap","priceRappen":500}]}"#
+            #"{"allowHidden":true,"customItems":[{"name":"Gift wrap","priceRappen":500}],"priceOverrides":{"1":3500,"2":2200},"productIds":[1,2]}"#
         )
     }
 
