@@ -39,7 +39,7 @@ class ApiService {
     static let shared = ApiService()
 
     var baseURL: String {
-        get { UserDefaults.standard.string(forKey: "pos_base_url") ?? "https://kalakosh.ch" }
+        get { UserDefaults.standard.string(forKey: "pos_base_url") ?? "https://zolto.ch" }
         set { UserDefaults.standard.set(newValue.trimmingCharacters(in: .whitespacesAndNewlines), forKey: "pos_base_url") }
     }
 

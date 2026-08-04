@@ -34,7 +34,7 @@ targets:
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         # Overridden at build time by Codemagic (App settings → Environment variables → POS_API_KEY).
         # Never put the real value here.
-        POS_BASE_URL: "https://kalakosh.ch"
+        POS_BASE_URL: "https://zolto.ch"
         POS_API_KEY: ""
     dependencies:
       - package: StripeTerminal
