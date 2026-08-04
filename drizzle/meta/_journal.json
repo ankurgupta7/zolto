@@ -127,6 +127,13 @@
       "when": 1785690001000,
       "tag": "0018_seed_jewellery_categories",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "5",
+      "when": 1785858850338,
+      "tag": "0019_migrate_from_provider",
+      "breakpoints": true
     }
   ]
 }

@@ -12,6 +12,11 @@ import {
 import { slugify, isValidSlug } from "../slug";
 import { Container } from "../components/Container";
 import { VERTICALS, VERTICAL_PRESETS, type Vertical } from "@shared/verticals";
+import {
+  MIGRATE_FROM_LABELS,
+  MIGRATE_FROM_PROVIDERS,
+  type MigrateFromProvider,
+} from "@shared/const";
 
 /**
  * Signup wizard: details → template → branding.
@@ -49,6 +54,12 @@ export default function Signup() {
   // tunes the AI tools. Part of "details": it's identity, not looks.
   const [vertical, setVertical] = useState<Vertical>("other");
   const [verticalDescription, setVerticalDescription] = useState("");
+  // Where they sell today, if anywhere. Empty = starting fresh. Rides along on
+  // tenant.create and aims the onboarding checklist's catalogue step at the
+  // matching importer (server/onboarding.ts) instead of "add your first
+  // product" — a switching merchant should never re-type what they've already
+  // keyed into Stripe/SumUp/Worldline.
+  const [migrateFrom, setMigrateFrom] = useState<MigrateFromProvider | "">("");
 
   // Auto-derive slug from the store name until the user edits the slug directly.
   const effectiveSlug = slugTouched ? slug : slugify(name);
@@ -180,6 +191,7 @@ export default function Signup() {
       email: email.trim(),
       vertical,
       verticalDescription: verticalDescription.trim() || undefined,
+      migrateFrom: migrateFrom || undefined,
       templateId,
       primaryColor,
       logo: logo
@@ -301,6 +313,36 @@ export default function Signup() {
                 className="w-full rounded-md border border-[var(--brand-border-2)] bg-white px-4 py-2.5 text-[var(--brand-text)] outline-none focus:border-[var(--brand-accent)]"
               />
             </Field>
+
+            <Field
+              label="Already selling somewhere?"
+              hint="We'll set up your first step to bring that catalogue across instead of re-typing it."
+            >
+              <select
+                value={migrateFrom}
+                onChange={(e) =>
+                  setMigrateFrom(e.target.value as MigrateFromProvider | "")
+                }
+                className="w-full rounded-md border border-[var(--brand-border-2)] bg-white px-4 py-2.5 text-[var(--brand-text)] outline-none focus:border-[var(--brand-accent)]"
+              >
+                <option value="">No — starting fresh</option>
+                {MIGRATE_FROM_PROVIDERS.map((p) => (
+                  <option key={p} value={p}>
+                    {p === "other"
+                      ? "Somewhere else"
+                      : `Yes — ${MIGRATE_FROM_LABELS[p]}`}
+                  </option>
+                ))}
+              </select>
+            </Field>
+
+            {migrateFrom && migrateFrom !== "other" && (
+              <p className="rounded-xl border border-[var(--brand-accent)]/40 bg-[var(--brand-accent)]/8 p-4 text-sm text-[var(--brand-text)]">
+                {migrateFrom === "stripe"
+                  ? "Good news — link the Stripe account you already have and your products import in one click. Your checkout keeps working throughout."
+                  : `Export your items as CSV from ${MIGRATE_FROM_LABELS[migrateFrom]} and we'll read it for you — Swiss price formats and German or French column names included.`}
+              </p>
+            )}
 
             <button
               type="button"

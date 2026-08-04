@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { NOT_ADMIN_ERR_MSG } from "@shared/const";
+import { MIGRATE_FROM_PROVIDERS, NOT_ADMIN_ERR_MSG } from "@shared/const";
 import { TEMPLATE_IDS, STORE_TEMPLATES } from "@shared/templates";
 import {
   router,
@@ -220,6 +220,10 @@ export const tenantRouter = router({
         // prompt vocabulary. Defaults to jewellery for older signup clients.
         vertical: z.enum(VERTICALS).default("jewellery"),
         verticalDescription: z.string().trim().max(500).optional(),
+        // "Already selling somewhere?" — tailors the onboarding checklist's
+        // catalogue step toward the matching importer. Optional: a fresh
+        // start (and every older signup client) simply omits it.
+        migrateFrom: z.enum(MIGRATE_FROM_PROVIDERS).optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -309,6 +313,7 @@ export const tenantRouter = router({
         ...(input.templateId ? { templateId: input.templateId } : {}),
         ...(input.primaryColor ? { primaryColor: input.primaryColor } : {}),
         ...(logoUrl ? { logoUrl } : {}),
+        ...(input.migrateFrom ? { migrateFrom: input.migrateFrom } : {}),
       });
       await seedTenantCategories(tenantId, input.vertical);
 
