@@ -95,12 +95,18 @@ jobs:
 
       # Smoke-test the live POS backend: the endpoint requires a valid
       # POS_API_KEY and returns 200 only when Stripe secrets are configured.
+      # Runs only when POS_API_BASE_URL is set — Zolto is multi-tenant with
+      # no hardcoded backend, so there is no default host to ping (the old
+      # kalakosh.ch fallback belonged to the standalone Kalakosh repo).
       - name: Verify POS server health
         env:
           POS_API_BASE_URL: ${{ secrets.POS_API_BASE_URL }}
           POS_API_KEY: ${{ secrets.POS_API_KEY }}
         run: |
-          POS_API_BASE_URL="${POS_API_BASE_URL:-https://kalakosh.ch}"
+          if [ -z "${POS_API_BASE_URL}" ]; then
+            echo "POS_API_BASE_URL secret not set — skipping the live health check."
+            exit 0
+          fi
           echo "Checking POS health at ${POS_API_BASE_URL}/api/pos/health ..."
           curl -fsS -H "x-pos-key: ${POS_API_KEY}" "${POS_API_BASE_URL}/api/pos/health"
 
