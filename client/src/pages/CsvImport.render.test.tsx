@@ -15,6 +15,15 @@ const mocks = vi.hoisted(() => ({
   adminListInvalidate: vi.fn(),
   listInvalidate: vi.fn(),
   fetchSheetMutateAsync: vi.fn(),
+  parseProviderCsvMutate: vi.fn(),
+  fetchStripeCatalogMutate: vi.fn(),
+  migrationStatus: {
+    stripe: { connected: false, connectAvailable: true },
+    csvProviders: ["sumup", "worldline", "generic"],
+  } as {
+    stripe: { connected: boolean; connectAvailable: boolean };
+    csvProviders: string[];
+  },
   authState: {
     user: { role: "admin" } as { role: string } | null,
     isAuthenticated: true,
@@ -29,6 +38,10 @@ vi.mock("@/lib/trpc", () => ({
         products: {
           csvImport: { mutate: mocks.csvImportMutate },
           parseHandwrittenInventory: { mutate: mocks.parseHandwrittenMutate },
+        },
+        migration: {
+          parseProviderCsv: { mutate: mocks.parseProviderCsvMutate },
+          fetchStripeCatalog: { mutate: mocks.fetchStripeCatalogMutate },
         },
       },
       products: {
@@ -74,10 +87,24 @@ vi.mock("@/lib/trpc", () => ({
         }),
       },
     },
+    // Provider migration (Stripe/SumUp/Worldline switch-in).
+    migration: {
+      status: {
+        useQuery: () => ({ data: mocks.migrationStatus }),
+      },
+    },
     // Vertical lookup for template/fallback copy.
     tenant: {
       me: { useQuery: () => ({ data: null }) },
       getSettings: { useQuery: () => ({ data: null }) },
+      getStripeConnectUrl: {
+        useQuery: () => ({
+          data: { url: "https://connect.stripe.com/oauth/x", connected: false },
+          isLoading: false,
+          isFetching: false,
+          isError: false,
+        }),
+      },
     },
     // Used by the signed-out state's SignInOptions.
     auth: {
@@ -97,7 +124,7 @@ vi.mock("@/_core/hooks/useAuth", () => ({
 }));
 
 vi.mock("sonner", () => ({
-  toast: { error: vi.fn(), success: vi.fn() },
+  toast: { error: vi.fn(), success: vi.fn(), info: vi.fn() },
 }));
 
 function makeCsvFile(text: string) {
@@ -110,11 +137,18 @@ beforeEach(() => {
   mocks.adminListInvalidate.mockReset();
   mocks.listInvalidate.mockReset();
   mocks.fetchSheetMutateAsync.mockReset();
+  mocks.parseProviderCsvMutate.mockReset();
+  mocks.fetchStripeCatalogMutate.mockReset();
+  mocks.migrationStatus = {
+    stripe: { connected: false, connectAvailable: true },
+    csvProviders: ["sumup", "worldline", "generic"],
+  };
   mocks.authState.user = { role: "admin" };
   mocks.authState.isAuthenticated = true;
   mocks.authState.loading = false;
   vi.mocked(toast.error).mockClear();
   vi.mocked(toast.success).mockClear();
+  vi.mocked(toast.info).mockClear();
 });
 
 afterEach(() => {
@@ -682,5 +716,150 @@ describe("CsvImport: multi-photo edge cases", () => {
     });
 
     FileReader.prototype.readAsDataURL = originalReadAsDataURL;
+  });
+});
+
+describe("CsvImport: provider migration (Stripe / SumUp / Worldline)", () => {
+  it("offers all three providers on the input stage", () => {
+    const { container } = render(<CsvImport />);
+    expect(container.textContent).toContain(
+      "Switching from Stripe, SumUp or Worldline?",
+    );
+    expect(screen.getByTestId("migrate-stripe-button")).toBeTruthy();
+    expect(screen.getByTestId("migrate-sumup-button")).toBeTruthy();
+    expect(screen.getByTestId("migrate-worldline-button")).toBeTruthy();
+  });
+
+  it("labels the Stripe card as a connect step until the account is linked", () => {
+    render(<CsvImport />);
+    expect(
+      screen.getByTestId("migrate-stripe-button").textContent,
+    ).toContain("Connect Stripe account");
+  });
+
+  it("imports the Stripe catalogue in one click once connected", async () => {
+    mocks.migrationStatus = {
+      stripe: { connected: true, connectAvailable: true },
+      csvProviders: ["sumup", "worldline", "generic"],
+    };
+    mocks.fetchStripeCatalogMutate.mockResolvedValue({
+      rows: [
+        {
+          name: "Keramiktasse",
+          description: "Handgetöpferte Tasse",
+          price: 34.5,
+          rawCategory: "",
+          quantity: 1,
+        },
+      ],
+      warnings: ["Stripe doesn't track stock, so every product starts with quantity 1 — adjust stock in the preview."],
+      skipped: 0,
+    });
+
+    const { container } = render(<CsvImport />);
+    const button = screen.getByTestId("migrate-stripe-button");
+    expect(button.textContent).toContain("Import Stripe catalogue");
+
+    fireEvent.click(button);
+    await waitFor(() =>
+      expect(mocks.fetchStripeCatalogMutate).toHaveBeenCalledTimes(1),
+    );
+    await waitFor(() =>
+      expect(screen.getByDisplayValue("Keramiktasse")).toBeTruthy(),
+    );
+    // Parse notes survive into the preview, not just a toast.
+    expect(screen.getByTestId("migration-warnings").textContent).toContain(
+      "quantity 1",
+    );
+  });
+
+  it("parses an uploaded SumUp export server-side and previews the rows", async () => {
+    mocks.parseProviderCsvMutate.mockResolvedValue({
+      rows: [
+        {
+          name: "Silberring",
+          description: "",
+          price: 89.5,
+          rawCategory: "Rings",
+          quantity: 3,
+        },
+      ],
+      warnings: [],
+      skipped: 0,
+    });
+
+    const { container } = render(<CsvImport />);
+    fireEvent.change(screen.getByTestId("migrate-sumup-input"), {
+      target: {
+        files: [makeCsvFile("Artikelname;Preis\nSilberring;89,50")],
+      },
+    });
+
+    await waitFor(() =>
+      expect(mocks.parseProviderCsvMutate).toHaveBeenCalledTimes(1),
+    );
+    expect(mocks.parseProviderCsvMutate.mock.calls[0][0]).toMatchObject({
+      provider: "sumup",
+    });
+    // Two hits: the description fell back to the item name for review.
+    await waitFor(() =>
+      expect(screen.getAllByDisplayValue("Silberring")).toHaveLength(2),
+    );
+    expect(container.textContent).toContain("1 valid rows");
+  });
+
+  it("sends Worldline uploads with the worldline provider tag", async () => {
+    mocks.parseProviderCsvMutate.mockResolvedValue({
+      rows: [
+        {
+          name: "Espresso",
+          description: "",
+          price: 5,
+          rawCategory: "",
+          quantity: 1,
+        },
+      ],
+      warnings: ["2 repeated transaction rows collapsed"],
+      skipped: 0,
+    });
+
+    render(<CsvImport />);
+    fireEvent.change(screen.getByTestId("migrate-worldline-input"), {
+      target: {
+        files: [makeCsvFile("Bezeichnung;Betrag\nEspresso;5.00")],
+      },
+    });
+
+    await waitFor(() =>
+      expect(mocks.parseProviderCsvMutate).toHaveBeenCalledTimes(1),
+    );
+    expect(mocks.parseProviderCsvMutate.mock.calls[0][0]).toMatchObject({
+      provider: "worldline",
+    });
+    await waitFor(() =>
+      expect(screen.getByTestId("migration-warnings").textContent).toContain(
+        "repeated transaction rows",
+      ),
+    );
+  });
+
+  it("shows an error instead of an empty preview when nothing was found", async () => {
+    mocks.parseProviderCsvMutate.mockResolvedValue({
+      rows: [],
+      warnings: ["No item-name column recognized"],
+      skipped: 0,
+    });
+
+    const { container } = render(<CsvImport />);
+    fireEvent.change(screen.getByTestId("migrate-sumup-input"), {
+      target: { files: [makeCsvFile("Datum;Betrag\n01.01.2026;5")] },
+    });
+
+    await waitFor(() =>
+      expect(toast.error).toHaveBeenCalledWith(
+        "No item-name column recognized",
+      ),
+    );
+    expect(container.textContent).not.toContain("valid rows");
   });
 });
