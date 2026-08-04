@@ -21,6 +21,9 @@ import {
   DATA_RESIDENCY,
   FAQ_CATEGORIES,
   faqsByCategory,
+  SOVEREIGNTY,
+  SOVEREIGNTY_STATE_LABEL,
+  sovereigntyByState,
 } from "./platform";
 
 describe("platform facts", () => {
@@ -216,6 +219,17 @@ describe("DATA_RESIDENCY", () => {
     expect(privacy.some((f) => /leave Europe/i.test(f.q))).toBe(true);
   });
 
+  it("is the hosting detail behind the wider Swissness claim", () => {
+    // DATA_RESIDENCY answers "where are the servers"; SOVEREIGNTY answers
+    // "where is the company and everything else". The servers row of the
+    // ledger must be built from this constant, not typed in beside it.
+    const servers = SOVEREIGNTY.ledger.find((e) => /database/i.test(e.piece));
+    expect(servers?.today).toContain(DATA_RESIDENCY.provider);
+    expect(servers?.today).toContain(DATA_RESIDENCY.primaryCountry);
+    // And there is exactly one sub-processor caveat between them.
+    expect(SOVEREIGNTY.caveat).toBe(DATA_RESIDENCY.caveat);
+  });
+
   it("has a comparison row for where the data sits", () => {
     const row = INCUMBENT_COMPARISON.find(
       (r) => r.feature === "Where your data lives",
@@ -361,5 +375,96 @@ describe("COMPETITORS", () => {
       expect(c.betterWhen.length).toBeGreaterThanOrEqual(2);
       expect(c.zoltoWhen.length).toBeGreaterThanOrEqual(2);
     }
+  });
+});
+
+describe("SOVEREIGNTY", () => {
+  it("claims Switzerland for the company and states who it serves, in order", () => {
+    expect(SOVEREIGNTY.headline).toMatch(/Made in Switzerland/i);
+    // Swiss first, Europe next, then everyone — the order is the claim.
+    const serving = SOVEREIGNTY.serving;
+    expect(serving).toMatch(/Z(ü|u)rich/);
+    expect(serving.indexOf("Swiss")).toBeLessThan(serving.indexOf("Europe"));
+    expect(serving).toMatch(/anyone|everyone|rest of the world/i);
+  });
+
+  it("publishes a ledger that includes the unflattering rows", () => {
+    // A ledger of only-finished rows is a badge. The whole reason this is a
+    // structure and not a paragraph is that the pending and never-moving rows
+    // ship alongside the done ones.
+    expect(SOVEREIGNTY.ledger.length).toBeGreaterThanOrEqual(6);
+    expect(sovereigntyByState("moving").length).toBeGreaterThan(0);
+    expect(sovereigntyByState("foreign").length).toBeGreaterThan(0);
+    expect(
+      sovereigntyByState("swiss").length +
+        sovereigntyByState("european").length,
+    ).toBeGreaterThan(0);
+  });
+
+  it("gives every row a present-tense today, and every unfinished row a next", () => {
+    for (const entry of SOVEREIGNTY.ledger) {
+      expect(entry.piece.length).toBeGreaterThan(0);
+      expect(entry.today.length).toBeGreaterThan(0);
+      expect(SOVEREIGNTY_STATE_LABEL[entry.state]).toBeTruthy();
+      // "moving" is a promise the page makes on our behalf: it has to say
+      // where to, and "foreign" has to say why not. Only finished rows may
+      // stay silent.
+      if (entry.state === "moving" || entry.state === "foreign") {
+        expect(entry.next, `${entry.piece} needs a next/why`).toBeTruthy();
+      }
+    }
+  });
+
+  it("does not describe an aspiration in the present tense", () => {
+    // The failure mode this guards is a row whose `today` quietly claims the
+    // destination — "Swiss payment processor" in today, with the move in next.
+    for (const entry of sovereigntyByState("moving")) {
+      expect(entry.today).not.toMatch(/^Swiss\b/i);
+      expect(entry.today.toLowerCase()).not.toContain("switzerland");
+    }
+  });
+
+  it("names the card networks as permanently foreign rather than omitting them", () => {
+    const never = sovereigntyByState("foreign");
+    const text = never.map((e) => `${e.piece} ${e.today} ${e.next}`).join(" ");
+    expect(text).toMatch(/visa|mastercard/i);
+    expect(text).toMatch(/apple pay|google pay/i);
+    // …and points at the rail that IS Swiss end to end.
+    expect(text).toMatch(/TWINT/);
+  });
+
+  it("says why, in terms of the customer rather than the flag", () => {
+    expect(SOVEREIGNTY.why.length).toBeGreaterThanOrEqual(3);
+    const why = SOVEREIGNTY.why.join(" ");
+    expect(why).toMatch(/customers?/i);
+    expect(why).toMatch(/GDPR|FADP/);
+  });
+
+  it("commits to keeping the ledger honest as rows land", () => {
+    expect(SOVEREIGNTY.promise.length).toBeGreaterThan(0);
+    expect(SOVEREIGNTY.promise).toMatch(/complete list|whole list/i);
+  });
+
+  it("points at a route the app actually serves", () => {
+    expect(SOVEREIGNTY.href).toBe("/made-in-switzerland");
+  });
+
+  it("carries a compact hero form of the same facts", () => {
+    expect(SOVEREIGNTY.heroBadges.length).toBe(3);
+    const badges = SOVEREIGNTY.heroBadges.join(" ");
+    expect(badges).toMatch(/Made in Switzerland/);
+    expect(badges).toContain(DATA_RESIDENCY.region);
+    expect(badges).toMatch(/TWINT/);
+  });
+
+  it("answers the Swissness questions in the FAQ too", () => {
+    const questions = FAQS.map((f) => f.q).join(" | ");
+    expect(questions).toMatch(/Is Zolto Swiss/i);
+    expect(questions).toMatch(/moving the rest of the stack to Europe/i);
+    // Both answers must point at the ledger rather than re-asserting a vibe.
+    const answers = FAQS.filter((f) => /swiss|europe/i.test(f.q))
+      .map((f) => f.a)
+      .join(" ");
+    expect(answers).toContain(SOVEREIGNTY.href);
   });
 });

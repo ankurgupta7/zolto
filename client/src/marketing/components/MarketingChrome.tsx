@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { Menu, Store } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { storeAdminUrl } from "@/lib/surface";
-import { DATA_RESIDENCY } from "@shared/platform";
+import { DATA_RESIDENCY, SOVEREIGNTY } from "@shared/platform";
 import {
   Sheet,
   SheetContent,
@@ -29,6 +29,10 @@ const NAV = [
   { label: "Who it's for", href: "/for" },
   { label: "Pricing", href: "/pricing" },
   { label: "Compare", href: "/compare" },
+  // Short label on purpose: the bar already carries six links plus the auth
+  // slot, and "Made in Switzerland" spelled out pushes it into a wrap at
+  // laptop widths. The page it points at says the whole thing.
+  { label: "Swiss-made", href: SOVEREIGNTY.href },
   { label: "FAQ", href: "/faq" },
   { label: "Launch Diary", href: "/blog" },
 ];
@@ -227,8 +231,11 @@ export function MarketingNav() {
           </span>
         </Link>
 
-        {/* Desktop */}
-        <nav aria-label="Main" className="hidden items-center gap-6 sm:flex">
+        {/* Desktop. The bar switches to the sheet at `lg`, not `sm`: seven
+            links plus the logo and the auth slot need roughly 900px, so on a
+            640–1023px tablet the row used to run off the edge — visibly, and
+            before this nav item was added. */}
+        <nav aria-label="Main" className="hidden items-center gap-5 lg:flex">
           {NAV.map((item) => (
             <Link
               key={item.href}
@@ -241,8 +248,8 @@ export function MarketingNav() {
           <AuthActions />
         </nav>
 
-        {/* Mobile — CTA stays in the bar, links move into the sheet */}
-        <div className="flex items-center gap-2 sm:hidden">
+        {/* Mobile + tablet — CTA stays in the bar, links move into the sheet */}
+        <div className="flex items-center gap-2 lg:hidden">
           <AuthActions compact />
           <MobileMenu open={menuOpen} onOpenChange={setMenuOpen} />
         </div>
@@ -260,12 +267,19 @@ export function MarketingFooter() {
             © {new Date().getFullYear()} Zolto — commerce for makers, handmade
             in Zürich, built to keep more money in your pocket.
           </p>
-          {/* Residency, in the one place every page carries. Sourced from
-              DATA_RESIDENCY so the footer can't drift from the landing band,
-              the FAQ or the privacy policy. */}
+          {/* Origin + residency, in the one place every page carries. Sourced
+              from SOVEREIGNTY/DATA_RESIDENCY so the footer can't drift from the
+              landing band, the ledger page, the FAQ or the privacy policy. */}
           <p className="mt-1.5 text-[13px] text-[var(--brand-muted)]">
-            Hosted in {DATA_RESIDENCY.region} — {DATA_RESIDENCY.provider}{" "}
-            servers, mostly in {DATA_RESIDENCY.primaryCountry}.
+            {SOVEREIGNTY.headline} Servers in {DATA_RESIDENCY.region}, mostly{" "}
+            {DATA_RESIDENCY.primaryCountry} —{" "}
+            <Link
+              href={SOVEREIGNTY.href}
+              className="underline decoration-[var(--brand-accent)] underline-offset-2 hover:text-[var(--brand-ink)]"
+            >
+              what runs where
+            </Link>
+            .
           </p>
         </div>
         <nav className="flex gap-6">

@@ -13,7 +13,7 @@ import {
   AI_CRAWLERS,
   NOINDEX_PATHS,
 } from "./marketing";
-import { DATA_RESIDENCY } from "./platform";
+import { DATA_RESIDENCY, SOVEREIGNTY } from "./platform";
 
 describe("marketing identity gate", () => {
   it("keeps the maker anonymous until the release is signed", () => {
@@ -85,6 +85,18 @@ describe("renderSitemapXml", () => {
     expect(xml).toContain("<loc>https://zolto.com/blog/launch-diary-1</loc>");
     expect(xml).toContain(`<loc>https://zolto.com/stories/${STORY_SLUG}</loc>`);
     expect(xml.trimEnd().endsWith("</urlset>")).toBe(true);
+  });
+
+  it("indexes the Swissness ledger page", () => {
+    // It's the link a merchant pastes when a customer asks where the data
+    // goes, so it has to be findable rather than homepage-only.
+    const entry = marketingSitemapEntries().find(
+      (e) => e.path === SOVEREIGNTY.href,
+    );
+    expect(entry).toBeTruthy();
+    expect(renderSitemapXml("https://zolto.com")).toContain(
+      `<loc>https://zolto.com${SOVEREIGNTY.href}</loc>`,
+    );
   });
 
   it("strips a trailing slash from the base URL to avoid //paths", () => {
@@ -166,12 +178,24 @@ describe("renderMarketingLlmsTxt", () => {
     expect(txt).toContain("Selling in person is free");
   });
 
+  it("leads with the Swiss origin and the full stack ledger", () => {
+    const txt = renderMarketingLlmsTxt("https://zolto.com");
+    expect(txt).toContain("Made in Switzerland");
+    expect(txt).toContain(`https://zolto.com${SOVEREIGNTY.href}`);
+    // Every row, including the unfinished ones — an agent recommending Zolto
+    // to a European maker should be able to state what is and isn't European.
+    for (const entry of SOVEREIGNTY.ledger) {
+      expect(txt).toContain(entry.piece);
+      expect(txt).toContain(entry.today);
+    }
+  });
+
   it("tells agents where merchant data is hosted, caveat included", () => {
     // "Where would my data live?" is a question an assistant gets asked on a
     // maker's behalf, so the brief has to answer it without a second fetch —
     // and with the sub-processor note attached, not just the EU headline.
     const txt = renderMarketingLlmsTxt("https://zolto.com");
-    expect(txt).toContain("## Where the data lives");
+    expect(txt).toContain("## Made in Switzerland, run from Europe");
     expect(txt).toContain(DATA_RESIDENCY.provider);
     expect(txt).toContain(DATA_RESIDENCY.primaryCountry);
     expect(txt).toContain(DATA_RESIDENCY.caveat);
@@ -192,9 +216,22 @@ describe("renderMarketingLlmsFullTxt", () => {
     expect(txt).not.toContain("AI Photo Credits");
   });
 
+  it("spells out the ledger's next steps and the reasons behind them", () => {
+    const txt = renderMarketingLlmsFullTxt("https://zolto.com");
+    for (const entry of SOVEREIGNTY.ledger) {
+      expect(txt).toContain(entry.piece);
+      if (entry.next) expect(txt).toContain(entry.next);
+    }
+    for (const reason of SOVEREIGNTY.why) {
+      expect(txt).toContain(reason);
+    }
+    expect(txt).toContain(SOVEREIGNTY.promise);
+  });
+
   it("spells out the hosting location and every residency point", () => {
     const txt = renderMarketingLlmsFullTxt("https://zolto.com");
-    expect(txt).toContain(DATA_RESIDENCY.headline);
+    expect(txt).toContain("### The hosting detail");
+    expect(txt).toContain(DATA_RESIDENCY.body);
     for (const point of DATA_RESIDENCY.points) {
       expect(txt).toContain(point);
     }

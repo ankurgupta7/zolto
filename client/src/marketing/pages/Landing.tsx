@@ -5,6 +5,7 @@ import {
   PRICING_PROMISE,
   COST_COMPARISON,
   INCUMBENT_COMPARISON,
+  SOVEREIGNTY,
   formatPrice,
 } from "@shared/platform";
 import {
@@ -18,7 +19,7 @@ import { ScrollReveal } from "../components/ScrollReveal";
 import { CardReaderGag } from "../components/CardReaderGag";
 import { DiaryTeaser } from "../components/DiaryTeaser";
 import { ZeroCostPos } from "../components/ZeroCostPos";
-import { DataResidency } from "../components/DataResidency";
+import { SwissMade } from "../components/SwissMade";
 
 export default function Landing() {
   return (
@@ -65,6 +66,19 @@ export default function Landing() {
                 See pricing
               </Link>
             </div>
+
+            {/* Where we're from, above the fold. Three facts, no sentence —
+                the ledger band further down does the explaining. */}
+            <ul className="mt-10 flex flex-wrap items-center gap-x-5 gap-y-2 text-[11px] uppercase tracking-[0.16em] text-white/50">
+              {SOVEREIGNTY.heroBadges.map((badge) => (
+                <li key={badge} className="flex items-center gap-2">
+                  <span aria-hidden className="text-[var(--brand-accent)]">
+                    ✦
+                  </span>
+                  {badge}
+                </li>
+              ))}
+            </ul>
           </div>
 
           {/* Line-drawn market stall — the product's world, not stock art */}
@@ -143,6 +157,9 @@ export default function Landing() {
           </ScrollReveal>
         </Container>
       </section>
+
+      {/* ── Made in Switzerland — the ledger, high on the page, not a badge ── */}
+      <SwissMade />
 
       {/* ── Why not the old guard (Direction A) — the comparison table ── */}
       <section className="bg-[var(--brand-surface)]">
@@ -314,9 +331,6 @@ export default function Landing() {
           </div>
         </Container>
       </section>
-
-      {/* ── Where the shop physically runs — European hosting, stated plainly ── */}
-      <DataResidency />
 
       {/* ── Proof you can go and check, before we ask for the signup ── */}
       <DiaryTeaser />

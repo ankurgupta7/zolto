@@ -11,6 +11,7 @@ import {
   REVENUE_SHARE,
   PRO_BREAK_EVEN_ONLINE_CHF,
   DATA_RESIDENCY,
+  SOVEREIGNTY,
 } from "@shared/platform";
 import {
   getPublicStores,
@@ -340,6 +341,21 @@ async function runPlatformTool(
           summary: DATA_RESIDENCY.body,
           subProcessorNote: DATA_RESIDENCY.caveat,
           privacyUrl: `${base}${DATA_RESIDENCY.href}`,
+        },
+        // Origin + the European-stack roadmap. An agent asked "is there a
+        // Swiss/European option for this?" should be able to answer with the
+        // actual state of each piece, including the ones still outside Europe.
+        madeIn: {
+          country: "Switzerland",
+          city: "Zürich",
+          serving: SOVEREIGNTY.serving,
+          stack: SOVEREIGNTY.ledger.map((e) => ({
+            piece: e.piece,
+            today: e.today,
+            state: e.state,
+            next: e.next ?? null,
+          })),
+          url: `${base}${SOVEREIGNTY.href}`,
         },
         signupUrl: `${base}/signup`,
         pricingUrl: `${base}/pricing`,

@@ -486,6 +486,151 @@ export const DATA_RESIDENCY = {
   href: "/legal/privacy",
 } as const;
 
+/**
+ * How European a given piece of the stack is today.
+ *
+ * `moving` is the only state that makes a promise, and it is the reason this
+ * whole structure exists rather than a paragraph of copy: a row that says
+ * "moving" is a commitment the page is publishing on our behalf. When one
+ * lands, flip it to `swiss`/`european` and update `today` — do not leave a
+ * shipped move advertised as pending, and do not advertise a move nobody has
+ * agreed to make. `foreign` is not an embarrassment to hide; it is the row
+ * that makes the others believable.
+ */
+export type SovereigntyState = "swiss" | "european" | "moving" | "foreign";
+
+export interface SovereigntyEntry {
+  /** The part of the stack, in the merchant's words, not ours. */
+  piece: string;
+  /** Where it runs TODAY. Present tense, honest, no aspiration. */
+  today: string;
+  state: SovereigntyState;
+  /** Where it's going (`moving`), or why it can't (`foreign`). */
+  next?: string;
+}
+
+/**
+ * Zolto's Swissness claim and the European-stack roadmap — the prominent,
+ * page-level version of what DATA_RESIDENCY says about hosting alone.
+ *
+ * The claim is deliberately three-layered, because only the first layer is
+ * finished: the company and the product are Swiss (that's a fact about where
+ * we are), the infrastructure is European and moving toward Switzerland (a
+ * direction, with rows still open), and some of it will never be either (card
+ * schemes, phone wallets — stated rather than skipped).
+ *
+ * The ledger is the whole point. A "Made in Switzerland" badge with nothing
+ * behind it is a flag; a row-by-row list of where each piece actually runs,
+ * including the ones that are still foreign, is a claim a merchant can check
+ * and an AI assistant can quote. It also creates an obligation — see
+ * SovereigntyState above, and docs/planning/swiss-stack-migration.md for the
+ * research the `moving` rows are drawn from.
+ *
+ * NOTE ON THE LABEL: "Made in Switzerland" here describes where the company
+ * and the work are, which is the checkable claim. Using it as a formal origin
+ * *label* is governed by Swiss "Swissness" legislation (broadly: registered
+ * office and actual administration in Switzerland for a service) — worth a
+ * lawyer's five minutes before it goes on anything more formal than a website.
+ */
+export const SOVEREIGNTY = {
+  eyebrow: "made in switzerland",
+  /** Split for the hand-drawn underline — see ZERO_COST_POS on why. */
+  headline: "Made in Switzerland.",
+  headlineEmphasis: "Run from Europe.",
+  /** Who we build for, in order — Swiss first, Europe next, then everyone. */
+  serving:
+    "Zolto is built in Zürich, for Swiss makers first, for Europe next, and after that for anyone anywhere who likes how we do things.",
+  body: "We're moving every piece of Zolto we control onto European infrastructure, and into Switzerland where there's a Swiss option worth having. Some of it is already there. Some of it isn't yet. Here's the whole list, including the parts that make us look bad.",
+  /**
+   * Every piece of the stack, in the order a merchant would care about it.
+   * The servers row reads DATA_RESIDENCY so the two can't tell different
+   * stories about the same machines.
+   */
+  ledger: [
+    {
+      piece: "The company and the product",
+      today: "Built in Zürich, by a Swiss company",
+      state: "swiss",
+    },
+    {
+      piece: "Servers and your database",
+      today: `${DATA_RESIDENCY.provider} · ${DATA_RESIDENCY.region}, mostly ${DATA_RESIDENCY.primaryCountry}`,
+      state: "european",
+      next: "A Swiss data centre, so the machines and the company share a country.",
+    },
+    {
+      piece: "TWINT at your stall",
+      today: "Your own TWINT account — Swiss rails, end to end",
+      state: "swiss",
+    },
+    {
+      piece: "Card payments and payouts",
+      today: "Stripe — money goes straight to your own account, never ours",
+      state: "moving",
+      next: "A Swiss payment processor. Our research says it would also be cheaper per sale than what you pay now, which is the rare case of the principled option being the cheap one.",
+    },
+    {
+      piece: "The AI (listings, translations, chat)",
+      today: "A model provider outside Europe",
+      state: "moving",
+      next: "Swiss-hosted open models. Our AI layer already speaks a standard API, so this is the shortest hop on the list — the thing we're testing is whether the quality holds.",
+    },
+    {
+      piece: "Your product photos",
+      today: "Object storage that isn't guaranteed European yet",
+      state: "moving",
+      next: "The same European data centre as the servers, so your photos and your orders stop living in different jurisdictions.",
+    },
+    {
+      piece: "Account emails",
+      today: "A sending service outside Europe",
+      state: "moving",
+      next: "A European sender. Small job, low risk, genuinely just not done yet.",
+    },
+    {
+      piece: "Card networks and phone wallets",
+      today: "Visa, Mastercard, Apple Pay, Google Pay",
+      state: "foreign",
+      next: "These are not European and never will be. If you want a sale to stay in Switzerland from end to end, take it over TWINT — which is also the cheapest way for you to get paid.",
+    },
+  ] as SovereigntyEntry[],
+  /** Why we're spending money on this rather than shipping another feature. */
+  why: [
+    "Your customers are starting to ask where their data goes. “I don't know” is an answer that costs you the sale.",
+    "Here, data protection is a right rather than an upgrade: the GDPR and the revised Swiss FADP apply to your store whether or not anyone ever audits us.",
+    "The money and the data stay inside the jurisdiction whose rules they're subject to. That's the whole idea, and it stops being true the moment either one leaves.",
+    "European infrastructure only keeps existing if European companies actually buy it. We'd rather be a customer of it than an argument about it.",
+  ],
+  /** The promise the ledger implies, said out loud so it can be held to. */
+  promise:
+    "This is the complete list. When a row moves we'll change it here and say what moved — an old promise quietly repainted as an achievement is worth less than the flag we'd be printing it on.",
+  /** The sub-processor footnote, shared with DATA_RESIDENCY — one caveat only. */
+  caveat: DATA_RESIDENCY.caveat,
+  /** The page that carries the full ledger. */
+  href: "/made-in-switzerland",
+  /** Compact form for the hero strip — three facts, no sentence. */
+  heroBadges: [
+    "Made in Switzerland",
+    `Servers in ${DATA_RESIDENCY.region}`,
+    "TWINT built in",
+  ],
+} as const;
+
+/** Ledger rows in a given state — used by the page's grouped rendering. */
+export function sovereigntyByState(
+  state: SovereigntyState,
+): SovereigntyEntry[] {
+  return SOVEREIGNTY.ledger.filter((e) => e.state === state);
+}
+
+/** Human label for a ledger state, shown as the row's chip. */
+export const SOVEREIGNTY_STATE_LABEL: Record<SovereigntyState, string> = {
+  swiss: "Swiss today",
+  european: "European today",
+  moving: "Moving",
+  foreign: "Never will be",
+};
+
 export interface ComparisonRow {
   feature: string;
   them: string;
@@ -631,6 +776,11 @@ export const FAQS: Faq[] = [
     a: "Makers, artisans, and small shop owners who sell at craft fairs, markets, and pop-ups and want to sell online too — without hiring a developer or learning complex software.",
   },
   {
+    category: "About Zolto",
+    q: "Is Zolto Swiss?",
+    a: "Yes — Zolto is built in Zürich by a Swiss company, for Swiss makers first, for Europe next, and after that for anyone anywhere. Prices are in Swiss francs, TWINT is built in rather than bolted on, and the infrastructure is European with an open plan to move the rest of it into Switzerland. The full row-by-row list of what already runs where lives at /made-in-switzerland.",
+  },
+  {
     category: "Getting started",
     q: "How long does it take to set up a store?",
     a: "About an afternoon. Upload a few products (or import a CSV), let the AI draft descriptions and style your photos, connect payments, and you can be live the same day.",
@@ -714,6 +864,11 @@ export const FAQS: Faq[] = [
     category: "Privacy & data",
     q: "Is Zolto covered by the GDPR and Swiss data protection?",
     a: "Both apply. Zolto serves merchants in Switzerland and the EU, so the revised Swiss Federal Act on Data Protection (revFADP) and the GDPR both come into play — where they differ we work to the stricter one. Hosting in the EU makes that a much shorter conversation, and where we process your customers' data on your behalf, a Data Processing Agreement governs it.",
+  },
+  {
+    category: "Privacy & data",
+    q: "Are you moving the rest of the stack to Europe?",
+    a: "Yes, piece by piece, and we publish the state of it rather than the ambition. Servers and your database are already European; TWINT already runs on Swiss rails. Card payments, the AI, product-photo storage and account email are the ones still outside Europe, each with a stated next step — the whole ledger is at /made-in-switzerland, including the parts (card networks, phone wallets) that are never going to be European.",
   },
   {
     category: "Privacy & data",

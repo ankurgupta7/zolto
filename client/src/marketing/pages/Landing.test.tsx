@@ -2,7 +2,7 @@ import { describe, it, expect, afterEach } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
 import { Router } from "wouter";
 import { memoryLocation } from "wouter/memory-location";
-import { DATA_RESIDENCY } from "@shared/platform";
+import { SOVEREIGNTY } from "@shared/platform";
 import Landing from "./Landing";
 
 afterEach(cleanup);
@@ -55,15 +55,24 @@ describe("Landing", () => {
     ).toBeTruthy();
   });
 
-  it("tells visitors where their data physically lives", () => {
+  it("puts the Swiss claim above the fold and the ledger on the page", () => {
     renderLanding();
+    // Hero badges: where we're from, before anyone scrolls.
+    for (const badge of SOVEREIGNTY.heroBadges) {
+      expect(screen.getByText(badge)).toBeTruthy();
+    }
     expect(
       screen.getByRole("heading", {
-        name: `${DATA_RESIDENCY.headline} ${DATA_RESIDENCY.headlineEmphasis}`,
+        name: `${SOVEREIGNTY.headline} ${SOVEREIGNTY.headlineEmphasis}`,
       }),
     ).toBeTruthy();
-    // …with the caveat, not just the flattering half.
-    expect(screen.getByText(DATA_RESIDENCY.caveat)).toBeTruthy();
+    // Every row, including the ones still outside Europe.
+    for (const entry of SOVEREIGNTY.ledger) {
+      expect(screen.getByText(entry.piece)).toBeTruthy();
+    }
+    expect(
+      screen.getByRole("link", { name: /moving next/i }).getAttribute("href"),
+    ).toBe(SOVEREIGNTY.href);
   });
 
   it("offers the primary and secondary calls to action", () => {

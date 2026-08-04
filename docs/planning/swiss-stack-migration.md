@@ -267,6 +267,34 @@ surgery lands last.
 
 ---
 
+## 4b. The roadmap is now public — which makes it a commitment
+
+Shipped 2026-08-04: the marketing surface carries the Swissness claim
+prominently — hero badges, a ledger band on the homepage, a `/made-in-switzerland`
+page, a nav item, the footer, the sitemap, the llms briefs and the MCP
+`get_platform_info` tool. Copy lives in `SOVEREIGNTY` (`shared/platform.ts`).
+
+The ledger publishes **every** piece of the stack with a state: `swiss`,
+`european`, `moving` or `foreign`. That means §4's sequence is no longer an
+internal plan — four rows are advertised to merchants and to AI assistants as
+*moving*: card payments, the AI, product-photo storage and account email.
+
+Consequences to hold to:
+
+- **A `moving` row is a promise.** When one lands, flip its state and rewrite
+  `today` in the same change. When one is abandoned, say so and remove it —
+  `SovereigntyState`'s doc comment and `platform.test.ts` both make this
+  explicit, and a test fails if a `moving` row loses its `next`.
+- **`today` must never describe the destination.** A test asserts no `moving`
+  row's `today` starts with "Swiss" or mentions Switzerland, because the
+  cheapest way to fake this ledger is to write the plan in the present tense.
+- **Product-photo storage is the row we should close first.** It is the only
+  `moving` row where the honest state ("not guaranteed European yet") is worse
+  than the servers row it sits next to, and it is also the cheapest to fix —
+  §2.2 is an env change plus a bucket copy.
+
+---
+
 ## 5. What would make this a bad idea
 
 Kill criteria, stated up front so they can be checked rather than argued:

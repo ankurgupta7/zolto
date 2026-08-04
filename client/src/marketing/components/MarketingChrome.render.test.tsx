@@ -9,7 +9,7 @@ import {
 } from "@testing-library/react";
 import { Router } from "wouter";
 import { memoryLocation } from "wouter/memory-location";
-import { DATA_RESIDENCY } from "@shared/platform";
+import { DATA_RESIDENCY, SOVEREIGNTY } from "@shared/platform";
 import {
   MarketingNav,
   MarketingFooter,
@@ -201,14 +201,30 @@ describe("MarketingFooter", () => {
     );
   }
 
-  it("carries the hosting location on every page", () => {
-    // The footer is the one surface a visitor sees regardless of route, so the
-    // residency answer lives here as well as on the landing band.
+  it("carries the origin and hosting location on every page", () => {
+    // The footer is the one surface a visitor sees regardless of route, so
+    // where Zolto is from — and where it runs — lives here as well as on the
+    // landing band, with a link to the row-by-row version.
     const { container } = renderFooter();
     const text = container.textContent ?? "";
-    expect(text).toContain(DATA_RESIDENCY.provider);
+    expect(text).toContain(SOVEREIGNTY.headline);
     expect(text).toContain(DATA_RESIDENCY.region);
     expect(text).toContain(DATA_RESIDENCY.primaryCountry);
+    expect(
+      screen
+        .getByRole("link", { name: /what runs where/i })
+        .getAttribute("href"),
+    ).toBe(SOVEREIGNTY.href);
+  });
+
+  it("offers the Swissness page from the main nav too", () => {
+    // Prominence is the point: a claim reachable only from the homepage band
+    // is not a claim a returning visitor can find again.
+    renderNav();
+    const nav = screen.getByRole("navigation", { name: "Main" });
+    expect(
+      within(nav).getByRole("link", { name: /swiss/i }).getAttribute("href"),
+    ).toBe(SOVEREIGNTY.href);
   });
 
   it("still links the legal pages", () => {
