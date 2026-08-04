@@ -159,7 +159,7 @@ client/
 android/               ← POS Terminal Android app (Tap to Pay)
 ios/                   ← iOS apps: Kalakosh WebView companion + ZoltoPOS
   Kalakosh/            ← WebView companion app sources
-  ZoltoPOS/         ← native POS Terminal app (Tap to Pay, TWINT, offline)
+  ZoltoPOS/            ← native POS Terminal app (Tap to Pay, TWINT, offline)
                          — migrated from ankurgupta7/kalakosh-pos-ios; CI in
                          .github/workflows/ios-pos-build.yml + codemagic.yaml
 drizzle/               ← Schema & migrations
