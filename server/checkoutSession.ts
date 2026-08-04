@@ -171,6 +171,13 @@ export async function createStorefrontCheckoutSession(params: {
   channel: SalesChannel;
   /** Absolute base URL for the success/cancel redirects. */
   baseUrl: string;
+  /**
+   * Storefront language the customer is browsing in (de/en/fr/it). Renders
+   * the Stripe Checkout page in that language and is stored on the order so
+   * the receipt email matches; omitted → Stripe auto-detects, receipt
+   * defaults to English.
+   */
+  locale?: "de" | "en" | "fr" | "it";
 }): Promise<CreateCheckoutResult> {
   const { tenant, channel, baseUrl } = params;
 
@@ -320,7 +327,7 @@ export async function createStorefrontCheckoutSession(params: {
       },
     ],
     phone_number_collection: { enabled: true },
-    locale: "auto" as const,
+    locale: params.locale ?? ("auto" as const),
     // Controls the merchant name shown on TWINT and bank statements. 22-char
     // max. The Stripe account business profile name (on the tenant's OWN
     // connected account) also affects TWINT display.
@@ -385,6 +392,7 @@ export async function createStorefrontCheckoutSession(params: {
       productIds: uniqueIds.join(","),
       channel,
       platformFeeRappen: chargedFeeRappen,
+      locale: params.locale ?? null,
     });
 
     return {

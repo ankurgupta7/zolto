@@ -236,7 +236,7 @@ export type InsertProduct = typeof products.$inferInsert;
 // ═══════════════════════════════════════════════════════════════════════════════
 // Seeded from the tenant's vertical preset (shared/verticals.ts) at signup,
 // then freely editable by the store admin. `key` is the canonical value stored
-// in products.category; the bilingual labels are display-only, so renaming a
+// in products.category; the per-language labels (en/de/fr/it) are display-only, so renaming a
 // label never touches products (renaming a KEY cascades — see
 // server/db.ts renameTenantCategoryKey).
 
@@ -248,6 +248,8 @@ export const tenantCategories = mysqlTable(
     key: varchar("key", { length: 64 }).notNull(),
     labelEn: varchar("label_en", { length: 64 }).notNull(),
     labelDe: varchar("label_de", { length: 64 }),
+    labelFr: varchar("label_fr", { length: 64 }),
+    labelIt: varchar("label_it", { length: 64 }),
     // Sibling keys folded into this category's listing when browsing (e.g.
     // jewellery "Sets" surface under both Necklaces and Earrings).
     extraIncludes: json("extra_includes").$type<string[]>(),
@@ -313,6 +315,10 @@ export const orders = mysqlTable("orders", {
   currency: varchar("currency", { length: 10 }).default("chf").notNull(),
   productIds: varchar("productIds", { length: 512 }).notNull(),
   paymentMethod: varchar("paymentMethod", { length: 32 }),
+  // Storefront language the customer was browsing in when they checked out
+  // (de/en/fr/it). Drives the receipt email's language; nullable for orders
+  // that predate capture.
+  locale: varchar("locale", { length: 5 }),
   // Sales channel: "web" (storefront) or "agent" (AI-agent-originated, e.g.
   // store chat / MCP). In-person sales live in posOrders, so together the
   // three channels are cleanly separable — the pivot's north-star metric.

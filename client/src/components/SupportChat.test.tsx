@@ -83,6 +83,9 @@ describe("SupportChat", () => {
     expect(mocks.askMutate).toHaveBeenCalledWith({
       message: "Do you ship to Germany?",
       history: [{ role: "user", content: "Do you ship to Germany?" }],
+      // The visitor's storefront language rides along so the assistant
+      // quotes product names the way the customer sees them.
+      locale: "en",
     });
     expect(screen.getByText("Do you ship to Germany?")).toBeTruthy();
     expect(

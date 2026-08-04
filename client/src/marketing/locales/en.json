@@ -1,0 +1,455 @@
+{
+  "nav": {
+    "product": "Product",
+    "whoItsFor": "Who it's for",
+    "pricing": "Pricing",
+    "compare": "Compare",
+    "faq": "FAQ",
+    "launchDiary": "Launch Diary",
+    "menu": "Menu",
+    "openMenu": "Open menu",
+    "signIn": "Sign in",
+    "startFree": "Start free",
+    "goToYourStore": "Go to your store",
+    "myStore": "My store",
+    "signedInAs": "Signed in as {{email}}"
+  },
+  "footer": {
+    "copyright": "© {{year}} Zolto — commerce for makers, handmade in Zürich, built to keep more money in your pocket.",
+    "pricing": "Pricing",
+    "faq": "FAQ",
+    "privacy": "Privacy",
+    "terms": "Terms"
+  },
+  "landing": {
+    "startFree": "Start free →",
+    "seePricing": "See pricing",
+    "pledgeEyebrow": "our pledge to makers",
+    "pledgeSignature": "— the Zolto team",
+    "comparisonEyebrow": "the honest comparison",
+    "comparisonHeading": "What you’re actually paying them for.",
+    "comparisonBody": "Stripe, SumUp and Worldline were built for a time when websites were hard and a card reader was basically a status symbol. You're still paying for that era — not for anything you actually need today.",
+    "colOldGuard": "The old guard",
+    "howEyebrow": "here’s how it works",
+    "howHeading": "One shop. Everywhere you sell.",
+    "inventoryTitle": "One inventory, two channels",
+    "inventoryBody": "Sell at the market and online from the same catalogue. Sell the last one at your stall and it comes off the website in real time — no double entry, no oversells.",
+    "photoTitle": "Snap a photo, get a listing",
+    "photoBody": "Photograph a piece and the AI drafts the title, description and a suggested price — in every language you sell in. You review and publish; the busywork is done for you.",
+    "messyEyebrow": "AI that’s fine with messy",
+    "messyHeading": "Sell first. Sort it out later.",
+    "messyBody": "A real market stall is glorious chaos. Don’t stop mid-sale to tag every piece — your phone’s the card machine, the AI’s the back office, and you’re just there to sell cool stuff.",
+    "emailFrom": "From",
+    "emailSubjectLabel": "Subject:",
+    "emailSubject": "Your day — 2 sales to confirm",
+    "emailBody": "You took CHF 165 across 2 taps today. Based on what’s in stock and what usually sells at this fair, here’s our best guess — tap the right piece for each:",
+    "emailItem1Name": "Baroque pearl necklace",
+    "emailItem1Meta": "CHF 120 · 1 in stock",
+    "emailItem2Name": "Pearl drop earrings",
+    "emailItem2Meta": "CHF 45 · 3 in stock",
+    "emailConfirm": "That’s it ✓",
+    "ctaEyebrow": "ready when you are",
+    "ctaHeading": "Your store, live this week.",
+    "ctaBody": "Free to sell in person, forever. 14-day trial on Pro, no credit card needed to poke around — and no card reader, ever. Promise.",
+    "ctaButton": "Create your store →"
+  },
+  "pricing": {
+    "eyebrow": "fair & simple",
+    "heading": "Simple pricing for makers.",
+    "intro": "Selling in person is free, forever. We only make money when we actually help you make money online — {{percent}} on Free, or go flat-rate with Pro and keep the whole thing.",
+    "oldWay": "The old way",
+    "perYearShort": "/yr",
+    "perMonthShort": "/mo",
+    "zoltoPlan": "Zolto {{plan}}",
+    "mostPopular": "Most popular",
+    "perMonth": "/ month",
+    "feeEyebrow": "the only fee we charge",
+    "feeHeading": "{{percent}} on {{appliesTo}} — nothing in person",
+    "onlineOnly": "online only",
+    "feePoint1": "At the market stall, we take nothing — TWINT QR and Tap to Pay, all season, CHF 0. Every time.",
+    "feePoint2": "Online and AI-agent orders on the Free plan carry a {{percent}} fee, taken automatically inside the Stripe payment — no separate bill, and a month with no online sales costs CHF 0.",
+    "feePoint3": "{{plan}} (CHF {{price}}/month) kills the fee entirely. Past about CHF {{breakEven}}/month online it's the cheaper option — your dashboard will tell you when.",
+    "feePoint4": "AI usage is never the meter: descriptions, translations and chat aren't counted, and Pro's AI is unmetered. Plans scale on products, photos and storage, not on how much you lean on it.",
+    "questions": "Questions"
+  },
+  "faqPage": {
+    "metaTitle": "FAQ — {{name}}",
+    "metaDescription": "Answers to the questions makers ask about {{name}}: what it costs, how setup works, getting paid, and selling in person and online.",
+    "eyebrow": "straight answers",
+    "heading": "Frequently asked questions",
+    "intro1": "Everything makers ask before opening a store. Still stuck?",
+    "introLink": "Start free",
+    "intro2": "— it costs nothing to look around.",
+    "readyHeading": "Ready to open your store?",
+    "startFree": "Start free",
+    "seePricing": "See pricing"
+  },
+  "feeCalculator": {
+    "eyebrow": "do the math yourself",
+    "heading": "What would we actually charge you?",
+    "intro": "Drag your month. We’ll show you the bill — and tell you when you’d be better off on the cheaper plan, even when that’s not the one we’d rather sell you.",
+    "sliderLabel": "Your online sales this month",
+    "sliderNote": "Market-stall sales aren’t in this box on purpose — they’re free on every plan, so they could never change the answer.",
+    "onFree": "On Free",
+    "onPlan": "On {{plan}}",
+    "freeMeta": "{{percent}} of online sales · no subscription",
+    "proMeta": "flat monthly · 0% on every sale",
+    "verdictNoSales": "No online sales? Then we don’t get paid. <hl>CHF 0.00.</hl> Sell at the stall all month and we’ll happily earn nothing.",
+    "verdictFree": "Stay on Free — it’s cheaper for you by <hl>{{saving}}</hl> this month. We’ll tell you the day that flips, around CHF {{breakEven}} online.",
+    "verdictPro": "Nice month. {{plan}} would save you <hl>{{saving}}</hl> — and your dashboard nudges you the moment that’s true, so you don’t have to keep checking."
+  },
+  "agentPitch": {
+    "assistantLabel": "Your customer’s AI assistant",
+    "chatUser1": "Find me a handmade ceramic mug under CHF 40 that ships to Zürich by Friday.",
+    "chatAssistant1a": "Bergblume Keramik, a small studio in Bern, has the",
+    "chatProductName": "Alpine Glaze Mug",
+    "chatAssistant1b": "— hand-thrown, CHF 38, 3 in stock, ships tomorrow.",
+    "chatProductMeta": "CHF 38 · 3 in stock · bergblume.zolto.ch",
+    "chatAssistant1c": "Want me to order it?",
+    "chatUser2": "Yes — order it.",
+    "orderPlaced": "Order placed ✓",
+    "orderPlacedRest": "— confirmation sent. Paid straight into the maker’s Stripe.",
+    "mcpCaption": "live stock & checkout via bergblume.zolto.ch/mcp",
+    "howEyebrow": "no setup, no plugin, no agency",
+    "howHeading": "How an AI buys from you."
+  },
+  "zeroCostPos": {
+    "planInPerson": "{{plan}} plan, in person",
+    "perMonth": "/mo",
+    "startFree": "Start free →"
+  },
+  "diaryTeaser": {
+    "eyebrow": "the launch diary",
+    "heading": "Someone already did this. Here’s the unedited version.",
+    "body": "A Zurich jeweller went from Christmas-market-only to selling online, and let us write down how it actually went — the slow bits included. No growth hacks, no six-figure screenshots.",
+    "readAll": "Read the whole diary →"
+  },
+  "cardReaderGag": {
+    "eyebrow": "a brief digression",
+    "heading": "Things that cost about as much as a card reader.",
+    "punchlineStrong": "{{months}} months of Zolto {{plan}}.",
+    "punchlineRest": "Which is the one on this list that also runs your shop.",
+    "footnote": "Taking CHF {{anchor}} as the top of the range above. Your phone already does the tapping, so you don’t have to spend it on any of this."
+  },
+  "legal": {
+    "disclaimer": "This is a plain-language summary of Zolto's platform terms. It is not legal advice. Merchants remain responsible for their own storefront's customer-facing policies.",
+    "privacy": {
+      "title": "Privacy Policy",
+      "updated": "Draft — pending legal review",
+      "intro": "This policy explains what data Zolto processes when you use the platform to run a store. It covers Zolto's role as the platform provider; each merchant is the controller for their own customers' data.",
+      "sections": [
+        {
+          "heading": "1. Two data-protection regimes apply",
+          "body": [
+            "Zolto serves merchants in Switzerland and the EU, and these are governed by different laws. Swiss merchants and their customers are covered by the revised Swiss Federal Act on Data Protection (revFADP/nFADP). EU merchants and customers are covered by the GDPR. We apply the stricter of the two where they differ.",
+            "Where we act as a processor for a merchant (handling their customers' data on their behalf), a Data Processing Agreement governs that relationship."
+          ]
+        },
+        {
+          "heading": "2. What we collect",
+          "body": [
+            "Account data: your name, email, store name, and login credentials. Store data: products, orders, and inventory you enter. Usage data: how you interact with the platform, to improve it and provide support.",
+            "Payment card details are handled directly by our payment processor (Stripe) and are never stored on Zolto's servers."
+          ]
+        },
+        {
+          "heading": "3. Cookies & analytics",
+          "body": [
+            "The platform sets a single cookie, app_session_id, which keeps you signed in. It is strictly necessary — the service cannot authenticate you without it — so it requires no consent banner and cannot be disabled while using the service. We set no advertising, preference, or third-party tracking cookies.",
+            "We measure page views with Umami, a privacy-focused analytics tool that works without cookies and without cross-site identifiers; it gives us aggregate statistics, not profiles of individual visitors. Webfonts are served from our own infrastructure, so viewing a page sends no request to third-party font networks. During checkout you are redirected to Stripe, which may set its own cookies on its own domain under Stripe's privacy policy."
+          ]
+        },
+        {
+          "heading": "4. Your rights",
+          "body": [
+            "You may request access to, correction of, or deletion of your personal data, and you may object to certain processing. Contact us to exercise these rights. EU users additionally have the rights granted under the GDPR, including data portability and the right to lodge a complaint with a supervisory authority."
+          ]
+        },
+        {
+          "heading": "5. Retention & sub-processors",
+          "body": [
+            "We keep data for as long as your account is active and as required by law. We use a small set of sub-processors (hosting, payments, email, AI, analytics) under contract; a current list is available on request."
+          ]
+        }
+      ]
+    },
+    "terms": {
+      "title": "Terms of Service",
+      "updated": "Draft — pending legal review",
+      "intro": "These terms govern your use of the Zolto platform to operate an online store and point-of-sale.",
+      "sections": [
+        {
+          "heading": "1. Subscriptions & trials",
+          "body": [
+            "Paid plans are billed monthly and are month-to-month — cancel anytime, effective at the next billing cycle. Paid features may include a 14-day free trial. After the trial, the plan renews at the then-current price unless cancelled."
+          ]
+        },
+        {
+          "heading": "2. Prices and taxes",
+          "body": [
+            "Prices are stated in Swiss francs (CHF). Zolto's turnover is below the CHF 100,000 threshold at which Swiss VAT registration becomes mandatory, so no VAT is charged on subscriptions or on the platform fee — the price shown is the price you pay. Should Zolto cross that threshold, or become liable for tax in another jurisdiction, we will update these terms and notify affected customers before any tax is applied."
+          ]
+        },
+        {
+          "heading": "3. AI-assisted features",
+          "body": [
+            "Zolto includes AI features that draft product descriptions, answer support questions, and speed up setup. AI output can be inaccurate — you are responsible for reviewing content before it goes live to your customers. Changes that affect billing, payments, or inventory are always applied by a human, never auto-deployed by the assistant."
+          ]
+        },
+        {
+          "heading": "4. Your responsibilities",
+          "body": [
+            "You are responsible for the legality of what you sell, for your storefront's own customer-facing policies (returns, shipping, privacy), and for the accuracy of your product and inventory data."
+          ]
+        },
+        {
+          "heading": "5. Liability & governing law",
+          "body": [
+            "The platform is provided on an as-is basis to the extent permitted by law. These terms are governed by Swiss law; mandatory consumer-protection rights in your country of residence are unaffected."
+          ]
+        }
+      ]
+    }
+  },
+  "shared": {
+    "platform": {
+      "pricingSummary": "Free to sell in person, forever (no card required). Online and AI-agent orders carry a 1% platform fee on the Free plan — a month with no online sales costs CHF 0. Pro is CHF 25/month with a 14-day free trial: 0% platform fee and unmetered AI. Month-to-month, cancel anytime."
+    },
+    "revenueShare": {
+      "appliesTo": "online and AI-agent orders"
+    },
+    "plans": {
+      "free": {
+        "name": "Free",
+        "blurb": "A complete store. Free in person, 1% online.",
+        "cta": "Get started free",
+        "features": [
+          "Full POS — Tap to Pay, TWINT QR, cash — CHF 0 on in-person sales",
+          "Online store on your own zolto.ch address",
+          "Real-time POS ↔ online inventory sync",
+          "AI descriptions & translation (fair use)",
+          "5 AI photo shots / month",
+          "Found by AI agents — llms.txt, MCP & store chat",
+          "1% platform fee on online & agent orders only",
+          "Up to 200 products · 5 GB photo storage",
+          "One-click full data export",
+          "Community support"
+        ]
+      },
+      "pro": {
+        "name": "Pro",
+        "blurb": "For makers selling online every week.",
+        "cta": "Start 14-day free trial",
+        "features": [
+          "Everything in Free",
+          "0% platform fee — keep every online sale",
+          "Unmetered AI — photos, descriptions, chat",
+          "Your own custom domain + managed SSL",
+          "Your brand only — no \"runs on Zolto\"",
+          "Advanced analytics & AI insights",
+          "3 staff seats",
+          "Priority human support",
+          "Up to 5,000 products · 50 GB photo storage"
+        ]
+      }
+    },
+    "pricingPromise": {
+      "headline": "You don't pay us until the internet pays you.",
+      "pledge": "Selling in person is free, forever — your store, POS and inventory cost CHF 0/month, and Zolto adds nothing on in-person payments. Here's the honest version: we already have enough money. We're not here to skim off small makers — we're here to help you keep what you earn, and that's not changing.",
+      "points": [
+        "Sell at the market and pay us nothing, forever: full POS, inventory sync and your online storefront, all included at CHF 0/month.",
+        "Online and AI-agent orders carry a 1% fee on the Free plan. No online sales this month? You pay CHF 0. That's it.",
+        "Pro (CHF 25/month) kills the 1% fee entirely and unlocks unmetered AI. Selling past roughly CHF 2,500/month online? Pro's cheaper — we'll tell you in-app the moment it's worth switching.",
+        "We'll never nickel-and-dime your AI usage. Talk to it as much as you want — plans scale on products, photos and storage, not on how chatty you get."
+      ]
+    },
+    "costComparison": {
+      "themLabel": "A year with the old guard",
+      "themNote": "reader hardware · monthly fees · lock-in",
+      "usLabel": "A month with Zolto",
+      "usNote": "no hardware · cancel anytime · your Stripe, your money",
+      "multiplier": "one-hundredth the cost"
+    },
+    "zeroCostPos": {
+      "eyebrow": "the bit people re-read",
+      "headline": "A whole shop in your pocket.",
+      "headlineEmphasis": "For nothing.",
+      "body": "Photos, names, prices, stock counts — your actual catalogue, in the till on your phone. Tap to take the payment. Watch it sync to your website. Then pay us CHF 0.00 at the end of the month, and again the month after that.",
+      "includes": [
+        "Full POS — Tap to Pay, TWINT QR and cash",
+        "Every piece with its photo, name and price",
+        "Real-time POS ↔ online inventory sync",
+        "Your online storefront, on your own zolto.ch address"
+      ],
+      "catch": "No trial clock. No starter tier that quietly expires. The only thing we ever charge for is the online sales we bring you — and if there aren't any, there's nothing to charge."
+    },
+    "aiNativePitch": {
+      "eyebrow": "commerce is moving into the chat window",
+      "headline": "Your next customer",
+      "headlineEmphasis": "is an AI.",
+      "body": "Search built the last era of shops. Assistants are building this one — and they can only recommend stores they can read. Every Zolto store ships llms.txt, MCP and agent checkout from day one, kept current as the protocols move, so your shop compounds in the answers while retrofitted websites fade out of them.",
+      "chart": {
+        "title": "where buyers start their search",
+        "decliningLabel": "search engines",
+        "risingLabel": "AI assistants",
+        "caption": "Assistants only recommend stores they can read. A store that's invisible to them isn't in the answer — no matter how good its SEO was."
+      },
+      "proof": {
+        "eyebrow": "not a roadmap — live today",
+        "headline": "Watch an AI buy from a Zolto store.",
+        "body": "Your customer asks their assistant. The assistant reads the store's brief, checks live stock over MCP, and places the order — payment lands in the maker's own Stripe like any other sale. Point your own AI at zolto.ch/llms.txt and ask it about us."
+      },
+      "steps": [
+        {
+          "k": "Found",
+          "title": "The assistant reads your brief",
+          "body": "Every store publishes yourstore.zolto.ch/llms.txt — a plain-language summary of who you are and what you sell, written for AI readers."
+        },
+        {
+          "k": "Asked",
+          "title": "It checks live stock over MCP",
+          "body": "Real products, real prices, real quantities — straight from your inventory, not a stale scrape from last month."
+        },
+        {
+          "k": "Bought",
+          "title": "It checks out in the chat",
+          "body": "The order lands like any other sale: stock syncs, you get the notification, and the money goes straight into your Stripe."
+        }
+      ],
+      "footnote": "You don't set any of this up. It ships with the store — on the Free plan too, and 1% only when an agent actually sells for you."
+    },
+    "sellingFlow": [
+      {
+        "title": "Scan your notebook",
+        "detail": "Photograph your handwritten stock list. The AI reads it into a real catalogue — names, prices, quantities.",
+        "timeOfDay": "07:40 — stall going up"
+      },
+      {
+        "title": "Tap to take payment",
+        "detail": "Enter an amount and let the customer tap their phone or card. NFC and TWINT QR — nothing to buy or plug in.",
+        "timeOfDay": "11:15 — first rush"
+      },
+      {
+        "title": "Confirm at day's end",
+        "detail": "Zolto emails what it thinks you sold. Tap to confirm and stock syncs across your POS and online store.",
+        "timeOfDay": "18:30 — packing up"
+      }
+    ],
+    "cardReaderGag": {
+      "items": [
+        "Roughly sixty flat whites.",
+        "A really good pair of flush cutters, and the case.",
+        "A season of stall fees, depending on the market."
+      ]
+    },
+    "comparison": {
+      "Your catalogue on your phone": {
+        "feature": "Your catalogue on your phone",
+        "them": "Part of a paid tier, or a separate product entirely",
+        "us": "Photos, names & prices — CHF 0/month, no clock on it"
+      },
+      "Card reader": {
+        "feature": "Card reader",
+        "them": "Sold to you, CHF 50–300+",
+        "us": "Your phone — NFC tap & TWINT QR"
+      },
+      "Building the store": {
+        "feature": "Building the store",
+        "them": "A developer, or weeks in Shopify",
+        "us": "AI drafts it in an afternoon"
+      },
+      "Inventory": {
+        "feature": "Inventory",
+        "them": "Rigid grids you maintain by hand",
+        "us": "Scan your notebook; the AI keeps it"
+      },
+      "Pricing": {
+        "feature": "Pricing",
+        "them": "Opaque tiers, surprise fees",
+        "us": "Free in person. 1% online, or flat CHF 25"
+      },
+      "Your money": {
+        "feature": "Your money",
+        "them": "Held, then paid out",
+        "us": "Straight into your own Stripe"
+      }
+    },
+    "faqCategories": {
+      "About Zolto": "About Zolto",
+      "Getting started": "Getting started",
+      "Selling": "Selling",
+      "Pricing & billing": "Pricing & billing",
+      "AI & discovery": "AI & discovery"
+    },
+    "faqs": {
+      "What is Zolto?": {
+        "q": "What is Zolto?",
+        "a": "Zolto is an AI-run commerce platform for independent makers. It gives you a point-of-sale and an online store that share one inventory, plus an AI assistant that handles product photos, descriptions, and customer support."
+      },
+      "Who is Zolto for?": {
+        "q": "Who is Zolto for?",
+        "a": "Makers, artisans, and small shop owners who sell at craft fairs, markets, and pop-ups and want to sell online too — without hiring a developer or learning complex software."
+      },
+      "How long does it take to set up a store?": {
+        "q": "How long does it take to set up a store?",
+        "a": "About an afternoon. Upload a few products (or import a CSV), let the AI draft descriptions and style your photos, connect payments, and you can be live the same day."
+      },
+      "Do I need to be technical?": {
+        "q": "Do I need to be technical?",
+        "a": "No. Zolto is built for makers, not store managers. The AI does the setup busywork, and a guided tour walks you through the dashboard."
+      },
+      "How much does it cost?": {
+        "q": "How much does it cost?",
+        "a": "Selling in person is free, forever — the store, POS and inventory sync cost CHF 0/month and Zolto adds nothing on in-person payments. Online and AI-agent orders carry a 1% platform fee on the Free plan (a month with no online sales costs CHF 0). Pro is CHF 25/month with a 14-day free trial: it removes the 1% and unlocks unmetered AI. Month-to-month — cancel anytime."
+      },
+      "Can I sell both in person and online?": {
+        "q": "Can I sell both in person and online?",
+        "a": "Yes — that's the core of Zolto. One inventory powers both your point-of-sale and your online store, and stock stays in sync in real time so you never oversell."
+      },
+      "How do I get paid?": {
+        "q": "How do I get paid?",
+        "a": "You connect your own Stripe account and your customers pay directly into it — Zolto never holds your money. On the Free plan a 1% platform fee is taken automatically on online and AI-agent orders only; in-person sales are always fee-free, and Pro removes the fee entirely."
+      },
+      "Do I need to buy a card reader?": {
+        "q": "Do I need to buy a card reader?",
+        "a": "No — payments happen on the phone you already own, via the Zolto POS app: contactless card, Apple Pay / Google Pay, and TWINT QR. Nobody inserts a card anymore, they tap, so there's no reader to buy, rent, or plug in."
+      },
+      "How is Zolto cheaper than Stripe, SumUp, or Worldline?": {
+        "q": "How is Zolto cheaper than Stripe, SumUp, or Worldline?",
+        "a": "Those tools were built for an era when websites were hard and a card reader was king, so they charge for hardware, setup, and lock-in — easily around CHF 2,000 a year. AI builds your store in an afternoon and your phone is the terminal, so the real cost is tiny. Zolto passes that saving on: selling in person is free, online orders carry just a 1% platform fee on the Free plan, and Pro is a flat CHF 25/month — roughly one-hundredth of the old way."
+      },
+      "What if I keep my inventory in a notebook?": {
+        "q": "What if I keep my inventory in a notebook?",
+        "a": "That's fine — keep it however you already do. Snap a photo of your handwritten list and the AI reads it into a real catalogue (names, prices, quantities). AI is good with ambiguity, so you don't have to become an 'inventory person.'"
+      },
+      "Do I have to tag every sale at a busy market?": {
+        "q": "Do I have to tag every sale at a busy market?",
+        "a": "No. Just enter the amount and take the tap. At the end of the day Zolto emails its best guess at what you sold; you tap to confirm and each piece is marked sold across your store and POS automatically."
+      },
+      "Can I bring products from another platform?": {
+        "q": "Can I bring products from another platform?",
+        "a": "Yes. Import your catalogue with CSV or bulk photo upload, so switching from Shopify, Square, or a spreadsheet is quick."
+      },
+      "Will AI assistants be able to find my products?": {
+        "q": "Will AI assistants be able to find my products?",
+        "a": "Yes. Every store publishes an llms.txt and a Model Context Protocol (MCP) endpoint, so AI assistants and agents can discover and recommend your products, alongside normal search-engine SEO."
+      },
+      "What about product photos?": {
+        "q": "What about product photos?",
+        "a": "Take one rough phone photo and the AI restyles it into a clean product shot or an on-model image — no photographer or studio needed. AI-styled images are always disclosed."
+      },
+      "Can I upgrade or downgrade anytime?": {
+        "q": "Can I upgrade or downgrade anytime?",
+        "a": "Yes. Changes take effect at your next billing cycle."
+      },
+      "Is there a contract?": {
+        "q": "Is there a contract?",
+        "a": "No. All paid plans are month-to-month. Cancel anytime."
+      },
+      "Do prices include VAT?": {
+        "q": "Do prices include VAT?",
+        "a": "There's no VAT to add. Zolto is under the CHF 100,000 Swiss VAT registration threshold, so the price you see is the price you pay. If that ever changes, we'll say so before it does."
+      }
+    }
+  }
+}

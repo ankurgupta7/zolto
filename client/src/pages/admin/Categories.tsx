@@ -2,7 +2,7 @@
  * Categories (store plane) — the tenant's own product category list.
  *
  * Seeded from the store's vertical preset at signup (shared/verticals.ts) and
- * fully editable here: rename (EN/DE labels or the key itself — key renames
+ * fully editable here: rename (EN/DE/FR/IT labels or the key itself — key renames
  * cascade to every product), add, delete (products move to a category the
  * admin picks), and reorder. The storefront filter chips, admin selects, POS
  * apps, and AI prompts all follow this list.
@@ -39,6 +39,8 @@ export default function Categories() {
       invalidate();
       setNewKey("");
       setNewLabelDe("");
+      setNewLabelFr("");
+      setNewLabelIt("");
       toast.success("Category added.");
     },
     onError: (e) => toast.error(e.message || "Could not add category."),
@@ -77,11 +79,15 @@ export default function Categories() {
 
   const [newKey, setNewKey] = useState("");
   const [newLabelDe, setNewLabelDe] = useState("");
+  const [newLabelFr, setNewLabelFr] = useState("");
+  const [newLabelIt, setNewLabelIt] = useState("");
   const [editing, setEditing] = useState<{
     key: string;
     newKey: string;
     labelEn: string;
     labelDe: string;
+    labelFr: string;
+    labelIt: string;
   } | null>(null);
   const [deleting, setDeleting] = useState<{
     key: string;
@@ -166,6 +172,30 @@ export default function Categories() {
                         className={inputClass}
                       />
                     </Field>
+                    <Field label="Label (FR)" htmlFor={`lfr-${cat.key}`}>
+                      <input
+                        id={`lfr-${cat.key}`}
+                        value={editing.labelFr}
+                        onChange={(e) =>
+                          setEditing((s) =>
+                            s ? { ...s, labelFr: e.target.value } : s,
+                          )
+                        }
+                        className={inputClass}
+                      />
+                    </Field>
+                    <Field label="Label (IT)" htmlFor={`lit-${cat.key}`}>
+                      <input
+                        id={`lit-${cat.key}`}
+                        value={editing.labelIt}
+                        onChange={(e) =>
+                          setEditing((s) =>
+                            s ? { ...s, labelIt: e.target.value } : s,
+                          )
+                        }
+                        className={inputClass}
+                      />
+                    </Field>
                     <div className="flex items-center gap-2 sm:col-span-3">
                       <PrimaryButton
                         loading={update.isPending}
@@ -180,9 +210,9 @@ export default function Categories() {
                               editing.labelEn.trim() ||
                               editing.newKey.trim() ||
                               editing.key,
-                            ...(editing.labelDe.trim()
-                              ? { labelDe: editing.labelDe.trim() }
-                              : {}),
+                            labelDe: editing.labelDe.trim() || null,
+                            labelFr: editing.labelFr.trim() || null,
+                            labelIt: editing.labelIt.trim() || null,
                           })
                         }
                       >
@@ -260,7 +290,13 @@ export default function Categories() {
                         {cat.key}
                       </p>
                       <p className="truncate text-xs text-muted-foreground">
-                        {cat.labelDe ? `DE: ${cat.labelDe}` : "No German label"}
+                        {[
+                          cat.labelDe ? `DE: ${cat.labelDe}` : null,
+                          cat.labelFr ? `FR: ${cat.labelFr}` : null,
+                          cat.labelIt ? `IT: ${cat.labelIt}` : null,
+                        ]
+                          .filter(Boolean)
+                          .join(" · ") || "No translated labels"}
                         {cat.extraIncludes.length > 0 &&
                           ` · also shows: ${cat.extraIncludes.join(", ")}`}
                       </p>
@@ -274,6 +310,8 @@ export default function Categories() {
                           newKey: cat.key,
                           labelEn: cat.labelEn,
                           labelDe: cat.labelDe ?? "",
+                          labelFr: cat.labelFr ?? "",
+                          labelIt: cat.labelIt ?? "",
                         })
                       }
                       className="text-muted-foreground hover:text-foreground"
@@ -300,7 +338,7 @@ export default function Categories() {
 
       <SettingsCard
         title="Add a category"
-        description="The name is what the AI, POS, and website use; the German label is shown to German-speaking shoppers."
+        description="The name is what the AI, POS, and website use; the German, French and Italian labels are shown to shoppers browsing in those languages."
         footer={
           <PrimaryButton
             loading={create.isPending}
@@ -312,6 +350,8 @@ export default function Categories() {
               create.mutate({
                 key: newKey.trim(),
                 ...(newLabelDe.trim() ? { labelDe: newLabelDe.trim() } : {}),
+                ...(newLabelFr.trim() ? { labelFr: newLabelFr.trim() } : {}),
+                ...(newLabelIt.trim() ? { labelIt: newLabelIt.trim() } : {}),
               });
             }}
           >
@@ -337,6 +377,26 @@ export default function Categories() {
               value={newLabelDe}
               onChange={(e) => setNewLabelDe(e.target.value)}
               placeholder="z.B. Übertöpfe"
+              maxLength={64}
+              className={inputClass}
+            />
+          </Field>
+          <Field label="French label (optional)" htmlFor="new-cat-fr">
+            <input
+              id="new-cat-fr"
+              value={newLabelFr}
+              onChange={(e) => setNewLabelFr(e.target.value)}
+              placeholder="p.ex. Cache-pots"
+              maxLength={64}
+              className={inputClass}
+            />
+          </Field>
+          <Field label="Italian label (optional)" htmlFor="new-cat-it">
+            <input
+              id="new-cat-it"
+              value={newLabelIt}
+              onChange={(e) => setNewLabelIt(e.target.value)}
+              placeholder="ad es. Portavasi"
               maxLength={64}
               className={inputClass}
             />

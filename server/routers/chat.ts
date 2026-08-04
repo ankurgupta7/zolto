@@ -22,6 +22,45 @@ const MAX_MESSAGE = 1000;
 /** Cap catalog context so big shops stay within token budget. */
 const MAX_CATALOG_ITEMS = 60;
 
+/** Storefront UI languages; the catalog lines follow the visitor's locale. */
+const LOCALES = ["de", "en", "fr", "it"] as const;
+type Locale = (typeof LOCALES)[number];
+
+type LocalizedRow = {
+  name: string;
+  description: string;
+  nameEn: string | null;
+  descriptionEn: string | null;
+  nameDe: string | null;
+  descriptionDe: string | null;
+  nameFr: string | null;
+  descriptionFr: string | null;
+  nameIt: string | null;
+  descriptionIt: string | null;
+};
+
+/**
+ * Product name/description in the visitor's language, falling back to the
+ * primary text — mirrors client/src/lib/localize.ts so the assistant quotes
+ * products the way the customer sees them on the page.
+ */
+function localizedProductText(p: LocalizedRow, locale: Locale) {
+  const bySuffix: Record<
+    Locale,
+    { name: string | null; description: string | null }
+  > = {
+    en: { name: p.nameEn, description: p.descriptionEn },
+    de: { name: p.nameDe, description: p.descriptionDe },
+    fr: { name: p.nameFr, description: p.descriptionFr },
+    it: { name: p.nameIt, description: p.descriptionIt },
+  };
+  const t = bySuffix[locale];
+  return {
+    name: t.name?.trim() || p.name,
+    description: t.description?.trim() || p.description,
+  };
+}
+
 export const chatRouter = router({
   ask: publicProcedure
     .use(requireTenant)
@@ -37,6 +76,9 @@ export const chatRouter = router({
           )
           .max(MAX_HISTORY)
           .default([]),
+        // Visitor's storefront UI language; grounds catalog lines in the
+        // matching product translations. Optional so older clients keep working.
+        locale: z.enum(LOCALES).default("en"),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -49,12 +91,12 @@ export const chatRouter = router({
       const inStock = catalog.filter((p) => !p.sold && p.quantity > 0);
       const catalogLines = inStock
         .slice(0, MAX_CATALOG_ITEMS)
-        .map(
-          (p) =>
-            `- ${p.nameEn ?? p.name} (${Number(p.price).toFixed(2)} ${(
-              settings?.currency || "chf"
-            ).toUpperCase()}): ${(p.descriptionEn ?? p.description).slice(0, 200)}`,
-        )
+        .map((p) => {
+          const { name, description } = localizedProductText(p, input.locale);
+          return `- ${name} (${Number(p.price).toFixed(2)} ${(
+            settings?.currency || "chf"
+          ).toUpperCase()}): ${description.slice(0, 200)}`;
+        })
         .join("\n");
 
       const contact = [

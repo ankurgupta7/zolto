@@ -10,6 +10,7 @@ import {
 import { Router } from "wouter";
 import { memoryLocation } from "wouter/memory-location";
 import { MarketingNav, StoreShortcut, SIGN_IN_PATH } from "./MarketingChrome";
+import i18n from "@/lib/i18n";
 
 const mocks = vi.hoisted(() => ({
   meData: undefined as unknown,
@@ -196,6 +197,55 @@ describe("MarketingNav — mobile navigation", () => {
     fireEvent.click(within(nav).getByRole("link", { name: "Pricing" }));
 
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  });
+});
+
+describe("MarketingNav — language picker", () => {
+  afterEach(async () => {
+    // Leave the suite in its jsdom baseline language (en) with no saved choice.
+    await i18n.changeLanguage("en");
+    localStorage.removeItem("kalakosh_lang");
+    document.documentElement.lang = "";
+  });
+
+  it("offers the four languages as uppercase codes", () => {
+    renderNav();
+    const picker = screen.getAllByLabelText(
+      "Switch language",
+    )[0] as HTMLSelectElement;
+    const options = Array.from(picker.options);
+    expect(options.map((o) => o.value)).toEqual(["de", "en", "fr", "it"]);
+    expect(options.map((o) => o.textContent)).toEqual([
+      "DE",
+      "EN",
+      "FR",
+      "IT",
+    ]);
+  });
+
+  it("switches the UI language, persists it, and updates <html lang>", async () => {
+    renderNav();
+    const picker = screen.getAllByLabelText(
+      "Switch language",
+    )[0] as HTMLSelectElement;
+    fireEvent.change(picker, { target: { value: "fr" } });
+
+    // Same persistence contract as the storefront switcher.
+    expect(localStorage.getItem("kalakosh_lang")).toBe("fr");
+    expect(document.documentElement.lang).toBe("fr-CH");
+    // The nav itself re-renders in French.
+    await waitFor(() =>
+      expect(screen.getByRole("link", { name: "Tarifs" })).toBeTruthy(),
+    );
+    expect(screen.queryByRole("link", { name: "Pricing" })).toBeNull();
+  });
+
+  it("is reachable from the mobile sheet too", async () => {
+    renderNav();
+    fireEvent.click(screen.getByRole("button", { name: "Open menu" }));
+    await waitFor(() => expect(screen.getByRole("dialog")).toBeTruthy());
+    const sheet = screen.getByRole("dialog");
+    expect(within(sheet).getByLabelText("Switch language")).toBeTruthy();
   });
 });
 

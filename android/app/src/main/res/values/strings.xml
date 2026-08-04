@@ -26,6 +26,7 @@
     <string name="toggle_category">Toggle category</string>
     <string name="quantity_badge">%d left</string>
     <string name="selected_summary">%d selected — CHF %s</string>
+    <string name="product_hidden">Hidden</string>
 
     <!-- Sale review -->
     <string name="review_sale">Review Sale</string>

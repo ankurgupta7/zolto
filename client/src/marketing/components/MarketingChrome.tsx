@@ -5,6 +5,14 @@ import { Menu, Store } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { storeAdminUrl } from "@/lib/surface";
 import { SignOutButton } from "@/components/SignOutButton";
+import i18n from "@/lib/i18n";
+import {
+  DEFAULT_LANGUAGE,
+  HTML_LANG,
+  SUPPORTED_LANGUAGES,
+  matchSupportedLanguage,
+  type SupportedLanguage,
+} from "@/lib/languages";
 import {
   Sheet,
   SheetContent,
@@ -13,6 +21,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Container } from "./Container";
+import { useMarketingT } from "../lib/marketingI18n";
 
 /**
  * Zolto marketing chrome — nav + footer.
@@ -25,13 +34,46 @@ import { Container } from "./Container";
  */
 
 const NAV = [
-  { label: "Product", href: "/#product" },
-  { label: "Who it's for", href: "/for" },
-  { label: "Pricing", href: "/pricing" },
-  { label: "Compare", href: "/compare" },
-  { label: "FAQ", href: "/faq" },
-  { label: "Launch Diary", href: "/blog" },
-];
+  { key: "product", href: "/#product" },
+  { key: "whoItsFor", href: "/for" },
+  { key: "pricing", href: "/pricing" },
+  { key: "compare", href: "/compare" },
+  { key: "faq", href: "/faq" },
+  { key: "launchDiary", href: "/blog" },
+] as const;
+
+/**
+ * The marketing language picker — the same mechanism as the storefront's
+ * (Navbar.tsx): persist to the shared "kalakosh_lang" key, switch the global
+ * i18next instance, and keep <html lang> truthful. Styled for the marketing
+ * chrome rather than the storefront's.
+ */
+export function LanguageSwitcher({ className = "" }: { className?: string }) {
+  const { i18n: i18nInst } = useMarketingT();
+  const currentLang =
+    matchSupportedLanguage(i18nInst.language) ?? DEFAULT_LANGUAGE;
+
+  const switchTo = (next: SupportedLanguage) => {
+    i18n.changeLanguage(next);
+    localStorage.setItem("kalakosh_lang", next);
+    document.documentElement.lang = HTML_LANG[next];
+  };
+
+  return (
+    <select
+      value={currentLang}
+      onChange={(e) => switchTo(e.target.value as SupportedLanguage)}
+      aria-label="Switch language"
+      className={`cursor-pointer appearance-none rounded-md border border-[var(--brand-border)] bg-transparent px-2 py-1 text-xs font-medium uppercase tracking-[0.15em] text-[var(--brand-muted-2)] transition-colors hover:border-[var(--brand-ink)]/40 hover:text-[var(--brand-ink)] ${className}`}
+    >
+      {SUPPORTED_LANGUAGES.map((lang) => (
+        <option key={lang} value={lang} className="text-black">
+          {lang.toUpperCase()}
+        </option>
+      ))}
+    </select>
+  );
+}
 
 /**
  * Sign-in target for a *returning* merchant.
@@ -91,6 +133,7 @@ function AuthSlotSkeleton() {
  * the acquisition CTA is unchanged for them.
  */
 export function StoreShortcut() {
+  const { t } = useMarketingT();
   const me = trpc.auth.me.useQuery(undefined, { retry: false });
   const store = trpc.tenant.myStore.useQuery(undefined, {
     retry: false,
@@ -108,8 +151,8 @@ export function StoreShortcut() {
       className="inline-flex items-center gap-2 rounded-md bg-[var(--brand-ink)] px-4 py-2 text-xs font-medium uppercase tracking-[0.12em] text-white transition-colors hover:bg-[var(--brand-ink-hover)]"
     >
       <Store className="h-3.5 w-3.5" />
-      <span className="hidden sm:inline">Go to your store</span>
-      <span className="sm:hidden">My store</span>
+      <span className="hidden sm:inline">{t("nav.goToYourStore")}</span>
+      <span className="sm:hidden">{t("nav.myStore")}</span>
     </a>
   );
 }
@@ -124,6 +167,7 @@ export function StoreShortcut() {
  * in" text link moves into the sheet, where it has room to breathe.
  */
 function AuthActions({ compact = false }: { compact?: boolean }) {
+  const { t } = useMarketingT();
   const me = trpc.auth.me.useQuery(undefined, { retry: false });
 
   if (me.isLoading) return <AuthSlotSkeleton />;
@@ -157,14 +201,14 @@ function AuthActions({ compact = false }: { compact?: boolean }) {
           href={SIGN_IN_PATH}
           className="text-sm text-[var(--brand-muted-2)] transition-colors hover:text-[var(--brand-ink)]"
         >
-          Sign in
+          {t("nav.signIn")}
         </Link>
       )}
       <Link
         href="/signup"
         className="rounded-md bg-[var(--brand-ink)] px-4 py-2 text-xs font-medium uppercase tracking-[0.12em] text-white transition-colors hover:bg-[var(--brand-ink-hover)]"
       >
-        Start free
+        {t("nav.startFree")}
       </Link>
     </>
   );
@@ -183,13 +227,14 @@ function MobileMenu({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const { t } = useMarketingT();
   const me = trpc.auth.me.useQuery(undefined, { retry: false });
   const close = () => onOpenChange(false);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetTrigger
-        aria-label="Open menu"
+        aria-label={t("nav.openMenu")}
         className="-mr-1 inline-flex items-center justify-center rounded-md p-2 text-[var(--brand-text)]/70 transition-colors hover:text-[var(--brand-ink)]"
       >
         <Menu className="h-5 w-5" />
@@ -200,7 +245,7 @@ function MobileMenu({
       >
         <SheetHeader>
           <SheetTitle className="font-serif text-lg font-normal text-[var(--brand-text)]">
-            Menu
+            {t("nav.menu")}
           </SheetTitle>
         </SheetHeader>
         <nav aria-label="Mobile" className="flex flex-col px-4">
@@ -211,7 +256,7 @@ function MobileMenu({
               onClick={close}
               className="border-b border-[var(--brand-border)] py-3.5 text-sm text-[var(--brand-muted-2)] transition-colors hover:text-[var(--brand-ink)]"
             >
-              {item.label}
+              {t(`nav.${item.key}`)}
             </Link>
           ))}
           {!me.isLoading && !me.data && (
@@ -220,7 +265,7 @@ function MobileMenu({
               onClick={close}
               className="border-b border-[var(--brand-border)] py-3.5 text-sm text-[var(--brand-muted-2)] transition-colors hover:text-[var(--brand-ink)]"
             >
-              Sign in
+              {t("nav.signIn")}
             </Link>
           )}
           {/* The drawer is the only place a phone can reach this — the in-bar
@@ -229,12 +274,16 @@ function MobileMenu({
             <div className="border-b border-[var(--brand-border)] py-3.5">
               {me.data.email && (
                 <p className="truncate text-xs text-[var(--brand-muted)]">
-                  Signed in as {me.data.email}
+                  {t("nav.signedInAs", { email: me.data.email })}
                 </p>
               )}
               <SignOutButton className="mt-1 text-sm text-[var(--brand-muted-2)] transition-colors hover:text-[var(--brand-ink)]" />
             </div>
           )}
+          {/* Language picker — the sheet is the only place a phone can reach it. */}
+          <div className="py-3.5">
+            <LanguageSwitcher />
+          </div>
         </nav>
       </SheetContent>
     </Sheet>
@@ -242,6 +291,7 @@ function MobileMenu({
 }
 
 export function MarketingNav() {
+  const { t } = useMarketingT();
   const [location] = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -268,9 +318,10 @@ export function MarketingNav() {
               href={item.href}
               className="text-sm text-[var(--brand-muted-2)] transition-colors hover:text-[var(--brand-ink)]"
             >
-              {item.label}
+              {t(`nav.${item.key}`)}
             </Link>
           ))}
+          <LanguageSwitcher />
           <AuthActions />
         </nav>
 
@@ -285,25 +336,23 @@ export function MarketingNav() {
 }
 
 export function MarketingFooter() {
+  const { t } = useMarketingT();
   return (
     <footer className="border-t border-[var(--brand-border)] bg-[var(--brand-surface)]">
       <Container className="flex flex-col gap-4 py-10 text-sm text-[var(--brand-muted-2)] sm:flex-row sm:items-center sm:justify-between">
-        <p>
-          © {new Date().getFullYear()} Zolto — commerce for makers, handmade in
-          Zürich, built to keep more money in your pocket.
-        </p>
+        <p>{t("footer.copyright", { year: new Date().getFullYear() })}</p>
         <nav className="flex gap-6">
           <Link href="/pricing" className="hover:text-[var(--brand-ink)]">
-            Pricing
+            {t("footer.pricing")}
           </Link>
           <Link href="/faq" className="hover:text-[var(--brand-ink)]">
-            FAQ
+            {t("footer.faq")}
           </Link>
           <Link href="/legal/privacy" className="hover:text-[var(--brand-ink)]">
-            Privacy
+            {t("footer.privacy")}
           </Link>
           <Link href="/legal/terms" className="hover:text-[var(--brand-ink)]">
-            Terms
+            {t("footer.terms")}
           </Link>
         </nav>
       </Container>

@@ -3,6 +3,7 @@ import { Link, useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import { formatPrice, useCurrency } from "@/lib/money";
 import { localizedName } from "@/lib/localize";
+import { matchSupportedLanguage } from "@/lib/languages";
 import { Trash2, Lock, CreditCard } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
@@ -52,6 +53,9 @@ export default function Checkout() {
     try {
       const result = await createSession.mutateAsync({
         productIds: items.map((i) => i.id),
+        // Stripe Checkout page and the receipt email follow the language
+        // the customer is shopping in.
+        locale: matchSupportedLanguage(i18n.language) ?? undefined,
       });
       if (result.url) {
         window.location.href = result.url;

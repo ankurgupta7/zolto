@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { Link } from "wouter";
+import { useTranslation } from "react-i18next";
 import { useTenant } from "@/contexts/TenantContext";
 import { whatsappHref } from "@/lib/branding";
-import { genericFaq, type FaqItem } from "@/lib/storefrontContent";
+import { genericFaq, pageChrome, type FaqItem } from "@/lib/storefrontContent";
+import { matchSupportedLanguage } from "@/lib/languages";
 
 function FaqSchema({ items }: { items: FaqItem[] }) {
   const schema = {
@@ -76,8 +78,11 @@ function AccordionItem({
 
 export default function FAQ() {
   const { branding } = useTenant();
+  const { i18n } = useTranslation();
+  const lang = matchSupportedLanguage(i18n.language) ?? "en";
   const [openIndex, setOpenIndex] = useState<number | null>(0);
-  const items = genericFaq(branding);
+  const items = genericFaq(branding, lang);
+  const chrome = pageChrome(branding, lang).faq;
   const waHref = whatsappHref(branding);
 
   return (
@@ -87,14 +92,13 @@ export default function FAQ() {
       <section className="bg-[var(--brand-ink)] py-20">
         <div className="container text-center">
           <p className="text-[var(--brand-accent)] text-xs uppercase tracking-[0.3em] mb-3 font-sans">
-            Frequently Asked Questions
+            {chrome.eyebrow}
           </p>
           <h1 className="font-serif text-white text-4xl md:text-5xl mb-4">
-            How can we help?
+            {chrome.title}
           </h1>
           <p className="text-white/60 font-sans font-light max-w-xl mx-auto">
-            Answers about payment, shipping, returns, and getting in touch with{" "}
-            {branding.storeName}.
+            {chrome.subtitle}
           </p>
           <div className="divider-gold w-16 mx-auto mt-6" />
         </div>
@@ -116,10 +120,10 @@ export default function FAQ() {
       <section className="py-20 bg-[var(--brand-ink)] text-center">
         <div className="container">
           <h2 className="font-serif text-white text-3xl mb-4">
-            Still have questions?
+            {chrome.stillQuestions}
           </h2>
           <p className="text-white/60 font-sans font-light mb-8 max-w-lg mx-auto">
-            Reach out — we usually reply within a day.
+            {chrome.reachOut}
           </p>
           <div className="flex flex-wrap justify-center gap-4">
             {waHref && (
@@ -136,7 +140,7 @@ export default function FAQ() {
               href="/contact"
               className="inline-flex items-center gap-2 border border-white/30 text-white px-8 py-3.5 text-sm uppercase tracking-[0.15em] font-sans font-medium hover:border-[var(--brand-accent)] hover:text-[var(--brand-accent)] transition-colors duration-300"
             >
-              Contact Form
+              {chrome.contactForm}
             </Link>
           </div>
         </div>

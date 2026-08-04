@@ -3,13 +3,16 @@
  *
  * Copy lives in AI_NATIVE_PITCH (shared/platform.ts) so the landing page, the
  * llms/MCP briefs and the tests all read one source; these components are the
- * render only. The chat mock stages a purchase the product genuinely supports
- * (per-store MCP `create_checkout` — see server/mcp.ts), which is what lets
- * the proof band call itself "live today" rather than a concept reel.
+ * render only, translated through the marketing locale files with the shared
+ * English strings as fallback. The chat mock stages a purchase the product
+ * genuinely supports (per-store MCP `create_checkout` — see server/mcp.ts),
+ * which is what lets the proof band call itself "live today" rather than a
+ * concept reel.
  */
 
 import { AI_NATIVE_PITCH } from "@shared/platform";
 import { ScrollReveal } from "./ScrollReveal";
+import { useMarketingT } from "../lib/marketingI18n";
 
 /**
  * Schematic two-curve chart: search declining, assistants rising. A claim
@@ -17,17 +20,23 @@ import { ScrollReveal } from "./ScrollReveal";
  * keeps the caption free of invented percentages).
  */
 export function DiscoveryShiftChart() {
+  const { st } = useMarketingT();
   const c = AI_NATIVE_PITCH.chart;
+  const decliningLabel = st(
+    "aiNativePitch.chart.decliningLabel",
+    c.decliningLabel,
+  );
+  const risingLabel = st("aiNativePitch.chart.risingLabel", c.risingLabel);
   return (
     <div className="rounded-2xl border border-white/15 bg-white/[0.04] p-7">
       <p className="text-[11px] uppercase tracking-[0.2em] text-white/45">
-        {c.title}
+        {st("aiNativePitch.chart.title", c.title)}
       </p>
       <svg
         viewBox="0 0 360 200"
         className="mt-4 w-full"
         role="img"
-        aria-label={`${c.decliningLabel} declining, ${c.risingLabel} rising`}
+        aria-label={`${decliningLabel} declining, ${risingLabel} rising`}
       >
         <line
           x1="8"
@@ -44,7 +53,7 @@ export function DiscoveryShiftChart() {
           strokeDasharray="6 5"
         />
         <text x="14" y="30" fill="rgba(255,255,255,0.45)" fontSize="12">
-          {c.decliningLabel}
+          {decliningLabel}
         </text>
         <path
           d="M8 168 C 140 160, 240 110, 352 34"
@@ -59,7 +68,7 @@ export function DiscoveryShiftChart() {
           fontSize="12"
           fontWeight="600"
         >
-          {c.risingLabel}
+          {risingLabel}
         </text>
         <text x="8" y="196" fill="rgba(255,255,255,0.35)" fontSize="11">
           {c.startYear}
@@ -68,7 +77,9 @@ export function DiscoveryShiftChart() {
           {c.endYear}
         </text>
       </svg>
-      <p className="mt-4 text-sm leading-relaxed text-white/60">{c.caption}</p>
+      <p className="mt-4 text-sm leading-relaxed text-white/60">
+        {st("aiNativePitch.chart.caption", c.caption)}
+      </p>
     </div>
   );
 }
@@ -79,6 +90,7 @@ export function DiscoveryShiftChart() {
  * staged; the mechanism (llms.txt → MCP → checkout) is the shipped one.
  */
 export function AgentChatMock() {
+  const { t } = useMarketingT();
   return (
     <div
       data-testid="agent-chat-mock"
@@ -87,18 +99,17 @@ export function AgentChatMock() {
       <div className="flex items-center gap-2.5 border-b border-[var(--brand-border)] px-5 py-3">
         <span aria-hidden className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
         <span className="text-[13px] text-[var(--brand-muted)]">
-          Your customer&rsquo;s AI assistant
+          {t("agentPitch.assistantLabel")}
         </span>
       </div>
       <div className="grid gap-3 px-5 py-5">
         <div className="ml-auto max-w-[85%] rounded-2xl rounded-br-md bg-[var(--brand-ink)] px-4 py-2.5 text-[14px] leading-relaxed text-white">
-          Find me a handmade ceramic mug under CHF 40 that ships to Zürich by
-          Friday.
+          {t("agentPitch.chatUser1")}
         </div>
         <div className="max-w-[92%] rounded-2xl rounded-bl-md bg-[var(--brand-surface-2)] px-4 py-3 text-[14px] leading-relaxed text-[var(--brand-text)]">
-          Bergblume Keramik, a small studio in Bern, has the{" "}
-          <span className="font-medium">Alpine Glaze Mug</span> — hand-thrown,
-          CHF 38, 3 in stock, ships tomorrow.
+          {t("agentPitch.chatAssistant1a")}{" "}
+          <span className="font-medium">{t("agentPitch.chatProductName")}</span>{" "}
+          {t("agentPitch.chatAssistant1b")}
           <div className="mt-2.5 flex items-center gap-3 rounded-lg border border-[var(--brand-border)] bg-white px-3 py-2.5">
             <span
               aria-hidden
@@ -106,24 +117,26 @@ export function AgentChatMock() {
             />
             <span className="min-w-0">
               <span className="block font-serif text-[15px]">
-                Alpine Glaze Mug
+                {t("agentPitch.chatProductName")}
               </span>
               <span className="text-[12px] text-[var(--brand-muted)] lining-nums tabular-nums">
-                CHF 38 · 3 in stock · bergblume.zolto.ch
+                {t("agentPitch.chatProductMeta")}
               </span>
             </span>
           </div>
-          Want me to order it?
+          {t("agentPitch.chatAssistant1c")}
         </div>
         <div className="ml-auto max-w-[85%] rounded-2xl rounded-br-md bg-[var(--brand-ink)] px-4 py-2.5 text-[14px] text-white">
-          Yes — order it.
+          {t("agentPitch.chatUser2")}
         </div>
         <div className="max-w-[92%] rounded-2xl rounded-bl-md bg-[var(--brand-surface-2)] px-4 py-3 text-[14px] text-[var(--brand-text)]">
-          <span className="font-medium text-emerald-700">Order placed ✓</span> —
-          confirmation sent. Paid straight into the maker&rsquo;s Stripe.
+          <span className="font-medium text-emerald-700">
+            {t("agentPitch.orderPlaced")}
+          </span>{" "}
+          {t("agentPitch.orderPlacedRest")}
         </div>
         <p className="mt-1 text-center font-mono text-[11px] tracking-tight text-[var(--brand-muted)]">
-          live stock &amp; checkout via bergblume.zolto.ch/mcp
+          {t("agentPitch.mcpCaption")}
         </p>
       </div>
     </div>
@@ -132,19 +145,20 @@ export function AgentChatMock() {
 
 /** The proof band: the chat mock, framed as something you can go try. */
 export function AgentProofBand() {
+  const { st } = useMarketingT();
   const p = AI_NATIVE_PITCH.proof;
   return (
     <section className="bg-[var(--brand-ink-deep)]">
       <div className="mx-auto grid w-full max-w-6xl items-center gap-10 px-4 py-20 sm:px-6 md:grid-cols-[0.9fr_1.1fr]">
         <ScrollReveal>
           <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
-            {p.eyebrow}
+            {st("aiNativePitch.proof.eyebrow", p.eyebrow)}
           </p>
           <h2 className="mt-3 font-serif text-3xl leading-[1.15] text-white sm:text-4xl">
-            {p.headline}
+            {st("aiNativePitch.proof.headline", p.headline)}
           </h2>
           <p className="mt-6 max-w-md leading-relaxed text-white/70">
-            {p.body}
+            {st("aiNativePitch.proof.body", p.body)}
           </p>
           <a
             href="/llms.txt"
@@ -163,15 +177,16 @@ export function AgentProofBand() {
 
 /** Found → Asked → Bought — the mechanics, one card per step. */
 export function HowAnAiBuys() {
+  const { t, st } = useMarketingT();
   return (
     <section className="border-b border-[var(--brand-border)] bg-[var(--brand-surface)]">
       <div className="mx-auto w-full max-w-6xl px-4 py-20 sm:px-6">
         <div className="mb-12 text-center">
           <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
-            no setup, no plugin, no agency
+            {t("agentPitch.howEyebrow")}
           </p>
           <h2 className="mt-2 font-serif text-3xl text-[var(--brand-text)]">
-            How an AI buys from you.
+            {t("agentPitch.howHeading")}
           </h2>
         </div>
         <div className="grid gap-6 md:grid-cols-3">
@@ -181,19 +196,19 @@ export function HowAnAiBuys() {
               className="rounded-2xl border border-[var(--brand-border)] bg-white p-7 shadow-[0_18px_44px_-34px_rgba(45,38,32,0.5)]"
             >
               <p className="font-hand text-xl text-[var(--brand-accent)]">
-                {i + 1}. {s.k}
+                {i + 1}. {st(`aiNativePitch.steps.${i}.k`, s.k)}
               </p>
               <h3 className="mt-2 font-serif text-xl text-[var(--brand-text)]">
-                {s.title}
+                {st(`aiNativePitch.steps.${i}.title`, s.title)}
               </h3>
               <p className="mt-3 text-[15px] leading-relaxed text-[var(--brand-muted-2)]">
-                {s.body}
+                {st(`aiNativePitch.steps.${i}.body`, s.body)}
               </p>
             </ScrollReveal>
           ))}
         </div>
         <p className="mt-10 text-center text-sm text-[var(--brand-muted)]">
-          {AI_NATIVE_PITCH.footnote}
+          {st("aiNativePitch.footnote", AI_NATIVE_PITCH.footnote)}
         </p>
       </div>
     </section>

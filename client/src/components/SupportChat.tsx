@@ -7,7 +7,9 @@
  * admin/checkout flows and when the tenant has no products yet.
  */
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { trpc } from "@/lib/trpc";
+import { matchSupportedLanguage } from "@/lib/languages";
 import { useLocation } from "wouter";
 import { MessageCircle, Send, X, Loader2, Sparkles } from "lucide-react";
 
@@ -20,6 +22,7 @@ const HIDDEN_PREFIXES = ["/admin", "/checkout", "/claim-staff", "/login"];
 
 export default function SupportChat() {
   const [location] = useLocation();
+  const { i18n } = useTranslation();
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -46,7 +49,12 @@ export default function SupportChat() {
     setInput("");
     const next: ChatMessage[] = [...messages, { role: "user", content: text }];
     setMessages(next);
-    ask.mutate({ message: text, history: next.slice(-20) });
+    ask.mutate({
+      message: text,
+      history: next.slice(-20),
+      // Catalog lines follow the storefront language the visitor is browsing in.
+      locale: matchSupportedLanguage(i18n.language) ?? "en",
+    });
   };
 
   return (

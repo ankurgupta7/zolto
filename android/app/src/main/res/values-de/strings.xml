@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- app_name is intentionally omitted: the brand name stays untranslated
+         and inherits from the default values/strings.xml. The pos_api_* dev
+         defaults and stripe_location_id are configuration, not UI text, and
+         also inherit from the defaults. -->
+
+    <!-- Payment method labels (must match server-side PaymentMethod enum) -->
+    <string name="method_card">Karte</string>
+    <string name="method_cash">Bar</string>
+    <string name="method_twint">TWINT</string>
+
+    <!-- Product browsing -->
+    <string name="products_loading">Produkte werden geladen…</string>
+    <string name="products_empty">Keine Produkte verfügbar</string>
+    <string name="products_error">Produkte konnten nicht geladen werden</string>
+    <string name="category_all">Alle</string>
+    <string name="search_hint">Name, Kategorie, Preis suchen…</string>
+    <string name="no_matches">Keine Stücke entsprechen Ihrer Suche</string>
+    <string name="toggle_category">Kategorie ein-/ausblenden</string>
+    <string name="quantity_badge">Noch %d</string>
+    <string name="selected_summary">%d ausgewählt — CHF %s</string>
+    <string name="product_hidden">Ausgeblendet</string>
+
+    <!-- Sale review -->
+    <string name="review_sale">Verkauf prüfen</string>
+    <string name="sale_review_title">Verkaufsübersicht</string>
+    <string name="charge_button">CHF %s abbuchen</string>
+    <string name="total_label">Total: CHF %s</string>
+    <string name="pay_button">CHF %s bezahlen</string>
+    <string name="remove">Entfernen</string>
+    <string name="bargain">Rabatt</string>
+
+    <!-- Custom items -->
+    <string name="add_custom_item">Eigenen Artikel hinzufügen</string>
+    <string name="custom_items_label">Eigene Artikel</string>
+    <string name="custom_item_name_hint">Artikelname</string>
+    <string name="custom_item_price_hint">Preis (CHF)</string>
+    <string name="add">Hinzufügen</string>
+    <string name="invalid_price">Ungültiger Preis</string>
+    <string name="name_required">Name ist erforderlich</string>
+
+    <!-- Payment -->
+    <string name="payment_title">Zahlung</string>
+    <string name="pay_card">Karte</string>
+    <string name="pay_cash">Bar</string>
+    <string name="pay_twint">TWINT</string>
+    <string name="tap_card_prompt">Karte oder Telefon hinhalten</string>
+    <string name="processing_payment">Zahlung wird verarbeitet…</string>
+    <string name="recording_cash_sale">Barverkauf wird erfasst…</string>
+    <string name="twint_scan_prompt">Mit Ihrer TWINT-App scannen</string>
+    <string name="twint_sticker_prompt">Scannen Sie den Code und geben Sie diesen Betrag in Ihrer TWINT-App ein</string>
+    <string name="twint_sticker_confirm">%1$s erhalten</string>
+    <string name="method_twint_qr">TWINT (QR-Code)</string>
+    <string name="pay_twint_qr">TWINT QR</string>
+    <string name="twint_sticker_missing">Für diesen Shop ist noch kein TWINT-QR-Code eingerichtet. Fügen Sie einen in Zolto unter «Point of Sale» hinzu.</string>
+
+    <!-- Payment result -->
+    <string name="payment_success_title">Zahlung erfolgreich</string>
+    <string name="payment_successful">Zahlung erfolgreich!</string>
+    <string name="payment_success_offline">Verkauf erfasst — wird synchronisiert, sobald wieder online</string>
+    <string name="payment_failed_title">Zahlung fehlgeschlagen</string>
+    <string name="payment_failed">Zahlung fehlgeschlagen</string>
+    <string name="order_id_label">Bestellung Nr. %d</string>
+    <string name="order_id">Bestellung Nr. %d</string>
+    <string name="charged_label">Belastet: CHF %s</string>
+    <string name="done">Fertig</string>
+    <string name="cancel">Abbrechen</string>
+    <string name="try_again">Erneut versuchen</string>
+    <string name="retry">Wiederholen</string>
+
+    <!-- Receipt / customer collection -->
+    <string name="send_receipt_prompt">Beleg an Kunden senden</string>
+    <string name="send_receipt">Beleg senden</string>
+    <string name="receipt_sent">Beleg gesendet!</string>
+    <string name="email_hint">E-Mail-Adresse</string>
+    <string name="phone_hint">Telefonnummer</string>
+
+    <!-- Setup -->
+    <string name="setup_location_title">Kartenzahlungen noch nicht eingerichtet</string>
+    <string name="setup_location_message">Tap to Pay benötigt einen Stripe-Terminal-Standort, bevor auf diesem Telefon Karten akzeptiert werden können.\n\nSo beheben Sie das:\n\n1. Installieren Sie die Stripe-Dashboard-App und prüfen Sie zuerst dort, ob «Tap to Pay auf diesem Telefon» funktioniert. Dadurch wird Tap to Pay für Ihr Konto aktiviert und die einmalige Einrichtung auf diesem Gerät abgeschlossen.\n\n2. Erstellen Sie im Stripe-Dashboard einen Terminal-Standort und kopieren Sie dessen ID (sie beginnt mit «tml_»).\n\n3. Setzen Sie STRIPE_LOCATION_ID auf dem POS-API-Server und öffnen Sie diesen Bildschirm erneut.</string>
+
+    <!-- Sales history -->
+    <string name="sales_history_title">Verkaufsverlauf</string>
+    <string name="no_sales">Noch keine Verkäufe erfasst</string>
+    <string name="returning_in">Rückkehr in %d Sekunden…</string>
+
+    <!-- Offline status indicators -->
+    <string name="offline_cash_only">Offline — nur Barverkäufe. Wird synchronisiert, sobald wieder online.</string>
+    <string name="pending_sync_count">%d Verkauf/Verkäufe warten auf Synchronisierung</string>
+    <string name="offline_mode_label">Offline-Modus</string>
+    <string name="offline_sync_note">Verkäufe werden synchronisiert, sobald Sie wieder online sind</string>
+
+    <!-- PaymentActivity -->
+    <string name="payment_error_location">Terminal-Standort nicht konfiguriert</string>
+    <string name="payment_error_location_detail">Kartenzahlungen erfordern eine Stripe-Terminal-Standort-ID. Prüfen Sie die POS-Einrichtung.</string>
+    <string name="payment_error_no_reader">Kein Lesegerät verbunden</string>
+    <string name="payment_error_no_reader_detail">Verbinden Sie zuerst ein Kartenlesegerät.</string>
+    <string name="payment_error_no_location_detail">Terminal-Standort nicht konfiguriert. Prüfen Sie die POS-Einrichtung.</string>
+    <string name="connect_reader">Lesegerät verbinden</string>
+    <string name="discovering_readers">Lesegeräte werden gesucht…</string>
+    <string name="connecting_reader">Verbindung wird hergestellt…</string>
+    <string name="collecting_payment">Karte hinhalten oder einstecken…</string>
+    <string name="processing">Wird verarbeitet…</string>
+    <string name="payment_cancelled">Zahlung abgebrochen</string>
+    <string name="unknown_state">Unbekannter Status: %s</string>
+    <string name="reader_connected">Lesegerät verbunden</string>
+    <string name="ready_to_charge">Bereit zum Abbuchen</string>
+    <string name="twint_waiting">Warten auf TWINT…</string>
+    <string name="select_reader">Lesegerät auswählen</string>
+    <string name="simulated_reader">Simuliertes Lesegerät</string>
+    <string name="payment_error_generic">Zahlungsfehler: %s</string>
+
+    <!-- First-launch store binding (multi-tenant) -->
+    <string name="setup_title">Diese Kasse verbinden</string>
+    <string name="setup_subtitle">Verbinden Sie dieses Gerät mit Ihrem Shop: die Zolto-Server-URL und der POS-Schlüssel Ihres Shops (aus den Admin-Einstellungen Ihres Shops).</string>
+    <string name="setup_url_hint">https://ihr-shop-server</string>
+    <string name="setup_key_hint">POS-API-Schlüssel</string>
+    <string name="setup_connect">Verbinden</string>
+    <string name="setup_checking">Wird geprüft…</string>
+
+    <!-- First-time Tap to Pay provisioning -->
+    <string name="t2p_provision_title">Einrichtung des Kartenlesegeräts</string>
+    <string name="t2p_provision_body">Einmalige Einrichtung: Geben Sie Ihre Geschäftsadresse ein, damit Kartenzahlungen auf Ihrem Stripe-Konto aktiviert werden können.</string>
+    <string name="t2p_address_line1">Strasse und Hausnummer</string>
+    <string name="t2p_address_city">Ort</string>
+    <string name="t2p_address_postal">Postleitzahl</string>
+    <string name="t2p_address_country">Ländercode (z. B. CH)</string>
+    <string name="t2p_provision_save">Kartenzahlungen aktivieren</string>
+</resources>

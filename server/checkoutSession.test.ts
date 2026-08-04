@@ -124,6 +124,22 @@ describe("createStorefrontCheckoutSession", () => {
     );
   });
 
+  it("passes the customer's language to Stripe and stores it on the order", async () => {
+    await run({ locale: "fr" });
+    expect(sessionsCreate.mock.calls[0][0].locale).toBe("fr");
+    expect(createOrder).toHaveBeenCalledWith(
+      expect.objectContaining({ locale: "fr" }),
+    );
+  });
+
+  it("falls back to Stripe auto-detection and a null order locale when none is sent", async () => {
+    await run();
+    expect(sessionsCreate.mock.calls[0][0].locale).toBe("auto");
+    expect(createOrder).toHaveBeenCalledWith(
+      expect.objectContaining({ locale: null }),
+    );
+  });
+
   it("refuses when this store hasn't connected Stripe", async () => {
     await expect(
       run({ tenant: { ...tenant, stripeConnectedAccountId: null } as Tenant }),

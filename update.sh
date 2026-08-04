@@ -800,6 +800,35 @@ else
   ok "0037 tenant_settings.migrate_from already exists"
 fi
 
+# ── 0038: French + Italian category labels ────────────────────────────────────
+# Ships drizzle/0020_tenant_category_locale_fr_it.sql. Storefront category
+# chips fell back to English for fr/it visitors; nullable like label_de, so
+# additive and safe ahead of any content existing.
+if [ "$(col_exists tenant_categories label_fr)" = "0" ]; then
+  run_sql "0038 add tenant_categories.label_fr" \
+    "ALTER TABLE \`tenant_categories\` ADD \`label_fr\` varchar(64) NULL;"
+else
+  ok "0038 tenant_categories.label_fr already exists"
+fi
+
+if [ "$(col_exists tenant_categories label_it)" = "0" ]; then
+  run_sql "0038 add tenant_categories.label_it" \
+    "ALTER TABLE \`tenant_categories\` ADD \`label_it\` varchar(64) NULL;"
+else
+  ok "0038 tenant_categories.label_it already exists"
+fi
+
+# ── 0039: order locale ────────────────────────────────────────────────────────
+# Ships drizzle/0021_order_locale.sql. Captures which storefront language the
+# customer bought in (de/en/fr/it) so the receipt email matches; nullable —
+# pre-capture orders fall back to English.
+if [ "$(col_exists orders locale)" = "0" ]; then
+  run_sql "0039 add orders.locale" \
+    "ALTER TABLE \`orders\` ADD \`locale\` varchar(5) NULL;"
+else
+  ok "0039 orders.locale already exists"
+fi
+
 # ── Record the applied migration set ──────────────────────────────────────────
 # Only reached when every migration above succeeded — `set -e` plus run_sql's
 # die() mean a failure never gets this far, so a half-applied schema is never

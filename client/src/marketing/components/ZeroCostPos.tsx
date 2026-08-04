@@ -2,6 +2,7 @@ import { Link } from "wouter";
 import { ZERO_COST_POS, FREE_PLAN, formatPrice } from "@shared/platform";
 import { SketchUnderline } from "@/components/SketchAccents";
 import { ScrollReveal } from "./ScrollReveal";
+import { useMarketingT } from "../lib/marketingI18n";
 
 /**
  * ZeroCostPos — the differentiator, given the loudest band on the page.
@@ -17,20 +18,24 @@ import { ScrollReveal } from "./ScrollReveal";
  * and lets the comparison table handle the contrast.
  */
 export function ZeroCostPos() {
+  const { t, st } = useMarketingT();
   return (
     <section className="bg-[var(--brand-ink)]">
       <div className="mx-auto w-full max-w-5xl px-4 py-20 sm:px-6">
         <ScrollReveal className="grid gap-10 md:grid-cols-[1.15fr_0.85fr] md:items-center">
           <div>
             <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
-              {ZERO_COST_POS.eyebrow}
+              {st("zeroCostPos.eyebrow", ZERO_COST_POS.eyebrow)}
             </p>
             <h2 className="mt-3 font-serif text-3xl leading-[1.15] text-white sm:text-4xl">
-              {ZERO_COST_POS.headline}{" "}
+              {st("zeroCostPos.headline", ZERO_COST_POS.headline)}{" "}
               {/* Only the punchline is underlined, so the stroke stays tight
                   to the words however the heading wraps. */}
               <span className="relative inline-block">
-                {ZERO_COST_POS.headlineEmphasis}
+                {st(
+                  "zeroCostPos.headlineEmphasis",
+                  ZERO_COST_POS.headlineEmphasis,
+                )}
                 <span
                   aria-hidden
                   className="absolute -bottom-2 left-0 w-full text-[var(--brand-accent)]"
@@ -40,17 +45,19 @@ export function ZeroCostPos() {
               </span>
             </h2>
             <p className="mt-8 max-w-lg leading-relaxed text-white/70">
-              {ZERO_COST_POS.body}
+              {st("zeroCostPos.body", ZERO_COST_POS.body)}
             </p>
             <p className="mt-5 max-w-lg text-sm leading-relaxed text-white/55">
-              {ZERO_COST_POS.catch}
+              {st("zeroCostPos.catch", ZERO_COST_POS.catch)}
             </p>
           </div>
 
           {/* The price, stated plainly, with what it buys underneath. */}
           <div className="rounded-2xl border border-white/15 bg-white/[0.04] p-7">
             <p className="text-[11px] uppercase tracking-[0.2em] text-white/45">
-              {FREE_PLAN.name} plan, in person
+              {t("zeroCostPos.planInPerson", {
+                plan: st("plans.free.name", FREE_PLAN.name),
+              })}
             </p>
             {/* lining-nums is load-bearing, not decoration: Cormorant defaults
                 to oldstyle figures, which renders this "0" at x-height so the
@@ -61,11 +68,11 @@ export function ZeroCostPos() {
             >
               {formatPrice(FREE_PLAN.priceChf)}
               <span className="ml-1.5 align-baseline text-lg font-normal text-white/50">
-                /mo
+                {t("zeroCostPos.perMonth")}
               </span>
             </p>
             <ul className="mt-6 grid gap-3">
-              {ZERO_COST_POS.includes.map((item) => (
+              {ZERO_COST_POS.includes.map((item, i) => (
                 <li
                   key={item}
                   className="flex gap-3 text-sm leading-relaxed text-white/75"
@@ -73,7 +80,7 @@ export function ZeroCostPos() {
                   <span aria-hidden className="text-[var(--brand-accent)]">
                     ✓
                   </span>
-                  {item}
+                  {st(`zeroCostPos.includes.${i}`, item)}
                 </li>
               ))}
             </ul>
@@ -81,7 +88,7 @@ export function ZeroCostPos() {
               href="/signup"
               className="mt-7 inline-block rounded-md bg-[var(--brand-accent)] px-6 py-3 text-xs font-medium uppercase tracking-[0.14em] text-[var(--brand-ink)] transition-colors hover:bg-[var(--brand-accent-light)]"
             >
-              Start free →
+              {t("zeroCostPos.startFree")}
             </Link>
           </div>
         </ScrollReveal>

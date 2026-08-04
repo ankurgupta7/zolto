@@ -96,8 +96,12 @@ function getField(raw: Record<string, string>, ...keys: string[]): string {
 export interface CsvRow {
   name: string;
   nameEn?: string;
+  nameFr?: string;
+  nameIt?: string;
   description: string;
   descriptionEn?: string;
+  descriptionFr?: string;
+  descriptionIt?: string;
   price: number;
   category: ProductCategory;
   quantity: number;
@@ -133,6 +137,8 @@ export function mapRows(
     return {
       name: name || "(empty)",
       nameEn: getField(r, "nameEn", "nameenglish", "name_en") || undefined,
+      nameFr: getField(r, "nameFr", "namefrench", "name_fr") || undefined,
+      nameIt: getField(r, "nameIt", "nameitalian", "name_it") || undefined,
       description: description || "",
       descriptionEn:
         getField(
@@ -141,6 +147,22 @@ export function mapRows(
           "description_en",
           "descen",
           "descriptionenglish",
+        ) || undefined,
+      descriptionFr:
+        getField(
+          r,
+          "descriptionFr",
+          "description_fr",
+          "descfr",
+          "descriptionfrench",
+        ) || undefined,
+      descriptionIt:
+        getField(
+          r,
+          "descriptionIt",
+          "description_it",
+          "descit",
+          "descriptionitalian",
         ) || undefined,
       price: Number.isNaN(price) ? 0 : price,
       category: (category ?? "Other") as ProductCategory,
@@ -177,15 +199,19 @@ export function revalidateRow(row: CsvRow): CsvRow {
 function downloadTemplate(example: {
   name: string;
   nameEn: string;
+  nameFr: string;
+  nameIt: string;
   description: string;
   descriptionEn: string;
+  descriptionFr: string;
+  descriptionIt: string;
   category: string;
 }) {
   const headers =
-    "name,nameEn,description,descriptionEn,price,category,quantity,imageUrl";
+    "name,nameEn,nameFr,nameIt,description,descriptionEn,descriptionFr,descriptionIt,price,category,quantity,imageUrl";
   const exampleRow =
-    `"${example.name}","${example.nameEn}",` +
-    `"${example.description}","${example.descriptionEn}",` +
+    `"${example.name}","${example.nameEn}","${example.nameFr}","${example.nameIt}",` +
+    `"${example.description}","${example.descriptionEn}","${example.descriptionFr}","${example.descriptionIt}",` +
     `185,${example.category},1,https://example.com/image.jpg`;
   const blob = new Blob([`${headers}\n${exampleRow}`], { type: "text/csv" });
   const url = URL.createObjectURL(blob);
@@ -298,8 +324,12 @@ export default function CsvImport() {
     return {
       name: preset.exampleItemNameDe,
       nameEn: preset.exampleItemNameEn,
+      nameFr: preset.exampleItemNameFr,
+      nameIt: preset.exampleItemNameIt,
       description: preset.fallback.description,
       descriptionEn: preset.fallback.descriptionEn,
+      descriptionFr: preset.fallback.descriptionFr,
+      descriptionIt: preset.fallback.descriptionIt,
       category: validCategories[0] ?? "Other",
     };
   }, [settings?.vertical, validCategories]);
@@ -598,8 +628,12 @@ export default function CsvImport() {
           rows: chunks[i].map((r) => ({
             name: r.name,
             nameEn: r.nameEn,
+            nameFr: r.nameFr,
+            nameIt: r.nameIt,
             description: r.description,
             descriptionEn: r.descriptionEn,
+            descriptionFr: r.descriptionFr,
+            descriptionIt: r.descriptionIt,
             price: r.price,
             category: r.category,
             quantity: r.quantity,
@@ -816,8 +850,9 @@ export default function CsvImport() {
                 <p className="text-muted-foreground text-xs font-sans">
                   Columns:{" "}
                   <span className="font-mono text-[11px]">
-                    name, nameEn, description, descriptionEn, price, category,
-                    quantity, imageUrl
+                    name, nameEn, nameFr, nameIt, description, descriptionEn,
+                    descriptionFr, descriptionIt, price, category, quantity,
+                    imageUrl
                   </span>
                 </p>
                 <p className="text-muted-foreground text-xs font-sans mt-0.5">
@@ -1224,6 +1259,50 @@ export default function CsvImport() {
                                 })
                               }
                               placeholder="Description (English)"
+                              className="w-full bg-transparent border-b border-transparent hover:border-[var(--brand-border)] focus:border-[var(--brand-accent)] focus:outline-none text-muted-foreground/80 text-[11px] italic py-0.5"
+                            />
+                            <input
+                              type="text"
+                              value={row.nameFr ?? ""}
+                              onChange={(e) =>
+                                updateRow(i, {
+                                  nameFr: e.target.value || undefined,
+                                })
+                              }
+                              placeholder="Name (French)"
+                              className="w-full bg-transparent border-b border-transparent hover:border-[var(--brand-border)] focus:border-[var(--brand-accent)] focus:outline-none text-muted-foreground/80 text-[11px] italic py-0.5 mt-0.5"
+                            />
+                            <input
+                              type="text"
+                              value={row.descriptionFr ?? ""}
+                              onChange={(e) =>
+                                updateRow(i, {
+                                  descriptionFr: e.target.value || undefined,
+                                })
+                              }
+                              placeholder="Description (French)"
+                              className="w-full bg-transparent border-b border-transparent hover:border-[var(--brand-border)] focus:border-[var(--brand-accent)] focus:outline-none text-muted-foreground/80 text-[11px] italic py-0.5"
+                            />
+                            <input
+                              type="text"
+                              value={row.nameIt ?? ""}
+                              onChange={(e) =>
+                                updateRow(i, {
+                                  nameIt: e.target.value || undefined,
+                                })
+                              }
+                              placeholder="Name (Italian)"
+                              className="w-full bg-transparent border-b border-transparent hover:border-[var(--brand-border)] focus:border-[var(--brand-accent)] focus:outline-none text-muted-foreground/80 text-[11px] italic py-0.5 mt-0.5"
+                            />
+                            <input
+                              type="text"
+                              value={row.descriptionIt ?? ""}
+                              onChange={(e) =>
+                                updateRow(i, {
+                                  descriptionIt: e.target.value || undefined,
+                                })
+                              }
+                              placeholder="Description (Italian)"
                               className="w-full bg-transparent border-b border-transparent hover:border-[var(--brand-border)] focus:border-[var(--brand-accent)] focus:outline-none text-muted-foreground/80 text-[11px] italic py-0.5"
                             />
                           </td>

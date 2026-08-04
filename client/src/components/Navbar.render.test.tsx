@@ -5,6 +5,8 @@ import { memoryLocation } from "wouter/memory-location";
 import i18n from "@/lib/i18n";
 import en from "@/locales/en.json";
 import de from "@/locales/de.json";
+import fr from "@/locales/fr.json";
+import itLocale from "@/locales/it.json";
 import { CartProvider, useCart, type CartItem } from "@/contexts/CartContext";
 import Navbar from "./Navbar";
 
@@ -158,20 +160,36 @@ describe("Navbar", () => {
     expect(probe().getAttribute("data-open")).toBe("true");
   });
 
-  it("switches the storefront language and persists the choice", () => {
+  it("offers all four languages, switches and persists the choice", () => {
     renderNavbar();
-    const switcher = screen.getAllByLabelText("Switch language")[0];
-    expect(switcher.textContent).toBe("DE");
+    const switcher = screen.getAllByLabelText(
+      "Switch language",
+    )[0] as HTMLSelectElement;
+    expect(switcher.value).toBe("en");
+    expect(Array.from(switcher.options).map((o) => o.value)).toEqual([
+      "de",
+      "en",
+      "fr",
+      "it",
+    ]);
 
-    fireEvent.click(switcher);
+    fireEvent.change(switcher, { target: { value: "de" } });
     expect(i18n.language).toBe("de");
     expect(localStorage.getItem("kalakosh_lang")).toBe("de");
     expect(screen.getAllByText(de.nav.home).length).toBeGreaterThan(0);
-    expect(switcher.textContent).toBe("EN");
+    expect(document.documentElement.lang).toBe("de-CH");
 
-    fireEvent.click(switcher);
-    expect(i18n.language).toBe("en");
-    expect(localStorage.getItem("kalakosh_lang")).toBe("en");
+    fireEvent.change(switcher, { target: { value: "fr" } });
+    expect(i18n.language).toBe("fr");
+    expect(localStorage.getItem("kalakosh_lang")).toBe("fr");
+    expect(screen.getAllByText(fr.nav.home).length).toBeGreaterThan(0);
+    expect(document.documentElement.lang).toBe("fr-CH");
+
+    fireEvent.change(switcher, { target: { value: "it" } });
+    expect(i18n.language).toBe("it");
+    expect(localStorage.getItem("kalakosh_lang")).toBe("it");
+    expect(screen.getAllByText(itLocale.nav.home).length).toBeGreaterThan(0);
+    expect(document.documentElement.lang).toBe("it-CH");
   });
 
   it("toggles the mobile menu open and closed", () => {

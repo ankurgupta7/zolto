@@ -75,11 +75,23 @@ const EMPTY_FORM: AddForm = {
 interface EditForm {
   name: string;
   nameEn: string;
+  nameFr: string;
+  nameIt: string;
   description: string;
   descriptionEn: string;
+  descriptionFr: string;
+  descriptionIt: string;
   price: string;
   category: ProductCategory;
 }
+
+// Translation inputs rendered for the edit row; the primary name/description
+// (German by convention) keep their own required fields.
+const EDIT_LOCALES = [
+  { code: "EN", nameKey: "nameEn", descKey: "descriptionEn" },
+  { code: "FR", nameKey: "nameFr", descKey: "descriptionFr" },
+  { code: "IT", nameKey: "nameIt", descKey: "descriptionIt" },
+] as const;
 
 // ─── Product Row ──────────────────────────────────────────────────────────────
 
@@ -88,8 +100,12 @@ interface ProductRowProps {
     id: number;
     name: string;
     nameEn: string | null;
+    nameFr: string | null;
+    nameIt: string | null;
     description: string;
     descriptionEn: string | null;
+    descriptionFr: string | null;
+    descriptionIt: string | null;
     price: string;
     category: string;
     imageUrl: string | null;
@@ -109,8 +125,12 @@ function ProductRow({ product, onRefetch }: ProductRowProps) {
   const [editForm, setEditForm] = useState<EditForm>({
     name: product.name,
     nameEn: product.nameEn ?? "",
+    nameFr: product.nameFr ?? "",
+    nameIt: product.nameIt ?? "",
     description: product.description,
     descriptionEn: product.descriptionEn ?? "",
+    descriptionFr: product.descriptionFr ?? "",
+    descriptionIt: product.descriptionIt ?? "",
     price: String(Number(product.price).toFixed(2)),
     category: product.category as ProductCategory,
   });
@@ -171,8 +191,12 @@ function ProductRow({ product, onRefetch }: ProductRowProps) {
       id: product.id,
       name: editForm.name.trim(),
       nameEn: editForm.nameEn.trim() || null,
+      nameFr: editForm.nameFr.trim() || null,
+      nameIt: editForm.nameIt.trim() || null,
       description: editForm.description.trim(),
       descriptionEn: editForm.descriptionEn.trim() || null,
+      descriptionFr: editForm.descriptionFr.trim() || null,
+      descriptionIt: editForm.descriptionIt.trim() || null,
       price,
       category: editForm.category,
     });
@@ -182,8 +206,12 @@ function ProductRow({ product, onRefetch }: ProductRowProps) {
     setEditForm({
       name: product.name,
       nameEn: product.nameEn ?? "",
+      nameFr: product.nameFr ?? "",
+      nameIt: product.nameIt ?? "",
       description: product.description,
       descriptionEn: product.descriptionEn ?? "",
+      descriptionFr: product.descriptionFr ?? "",
+      descriptionIt: product.descriptionIt ?? "",
       price: String(Number(product.price).toFixed(2)),
       category: product.category as ProductCategory,
     });
@@ -400,23 +428,25 @@ function ProductRow({ product, onRefetch }: ProductRowProps) {
                   className="w-full border border-[var(--brand-ink)]/20 px-3 py-2 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] bg-white"
                 />
               </div>
-              <div>
-                <label
-                  htmlFor={`edit-nameEn-${product.id}`}
-                  className="block text-[10px] uppercase tracking-[0.12em] text-foreground font-sans mb-1"
-                >
-                  Name (EN)
-                </label>
-                <input
-                  id={`edit-nameEn-${product.id}`}
-                  type="text"
-                  value={editForm.nameEn}
-                  onChange={(e) =>
-                    setEditForm((f) => ({ ...f, nameEn: e.target.value }))
-                  }
-                  className="w-full border border-[var(--brand-ink)]/20 px-3 py-2 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] bg-white"
-                />
-              </div>
+              {EDIT_LOCALES.map(({ code, nameKey }) => (
+                <div key={nameKey}>
+                  <label
+                    htmlFor={`edit-${nameKey}-${product.id}`}
+                    className="block text-[10px] uppercase tracking-[0.12em] text-foreground font-sans mb-1"
+                  >
+                    Name ({code})
+                  </label>
+                  <input
+                    id={`edit-${nameKey}-${product.id}`}
+                    type="text"
+                    value={editForm[nameKey]}
+                    onChange={(e) =>
+                      setEditForm((f) => ({ ...f, [nameKey]: e.target.value }))
+                    }
+                    className="w-full border border-[var(--brand-ink)]/20 px-3 py-2 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] bg-white"
+                  />
+                </div>
+              ))}
               <div>
                 <label
                   htmlFor={`edit-price-${product.id}`}
@@ -478,26 +508,28 @@ function ProductRow({ product, onRefetch }: ProductRowProps) {
                   className="w-full border border-[var(--brand-ink)]/20 px-3 py-2 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] bg-white resize-none"
                 />
               </div>
-              <div>
-                <label
-                  htmlFor={`edit-descriptionEn-${product.id}`}
-                  className="block text-[10px] uppercase tracking-[0.12em] text-foreground font-sans mb-1"
-                >
-                  Description (EN)
-                </label>
-                <textarea
-                  id={`edit-descriptionEn-${product.id}`}
-                  value={editForm.descriptionEn}
-                  onChange={(e) =>
-                    setEditForm((f) => ({
-                      ...f,
-                      descriptionEn: e.target.value,
-                    }))
-                  }
-                  rows={3}
-                  className="w-full border border-[var(--brand-ink)]/20 px-3 py-2 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] bg-white resize-none"
-                />
-              </div>
+              {EDIT_LOCALES.map(({ code, descKey }) => (
+                <div key={descKey}>
+                  <label
+                    htmlFor={`edit-${descKey}-${product.id}`}
+                    className="block text-[10px] uppercase tracking-[0.12em] text-foreground font-sans mb-1"
+                  >
+                    Description ({code})
+                  </label>
+                  <textarea
+                    id={`edit-${descKey}-${product.id}`}
+                    value={editForm[descKey]}
+                    onChange={(e) =>
+                      setEditForm((f) => ({
+                        ...f,
+                        [descKey]: e.target.value,
+                      }))
+                    }
+                    rows={3}
+                    className="w-full border border-[var(--brand-ink)]/20 px-3 py-2 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] bg-white resize-none"
+                  />
+                </div>
+              ))}
             </div>
             <div className="flex gap-3">
               <button
@@ -705,7 +737,7 @@ export default function Admin() {
         toast.error("Auto-translation preview failed. Please try again."),
     });
 
-  // Storefront locale translation (de/en/fr): fills each product's missing
+  // Storefront locale translation (de/en/fr/it): fills each product's missing
   // locale fields one product at a time; storefront renders the visitor's
   // locale via client/src/lib/localize.ts and falls back to the primary text.
   const translateLocalesMutation =
@@ -725,8 +757,8 @@ export default function Admin() {
       refetch();
       toast.success(
         translated > 0
-          ? `Translated ${translated} product${translated !== 1 ? "s" : ""} into German, English and French.`
-          : "All products already have de/en/fr translations.",
+          ? `Translated ${translated} product${translated !== 1 ? "s" : ""} into German, English, French and Italian.`
+          : "All products already have de/en/fr/it translations.",
       );
     } catch {
       toast.error("Storefront translation failed. Please try again.");
@@ -1020,7 +1052,7 @@ export default function Admin() {
               type="button"
               onClick={handleTranslateLocales}
               disabled={translatingLocales}
-              title="Fill missing German, English and French storefront translations for every product using AI"
+              title="Fill missing German, English, French and Italian storefront translations for every product using AI"
               className="flex items-center gap-2 border border-white/20 text-white/80 px-4 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:border-white hover:text-white transition-colors disabled:opacity-50"
             >
               {translatingLocales ? (
@@ -1028,7 +1060,7 @@ export default function Admin() {
               ) : (
                 <Languages size={14} />
               )}
-              Translate de/en/fr
+              Translate de/en/fr/it
             </button>
             <button
               type="button"

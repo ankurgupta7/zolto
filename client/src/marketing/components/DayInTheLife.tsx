@@ -2,6 +2,7 @@ import type { ComponentType } from "react";
 import { SELLING_FLOW } from "@shared/platform";
 import { useInView } from "@/hooks/useInView";
 import { ScrollReveal } from "./ScrollReveal";
+import { useMarketingT } from "../lib/marketingI18n";
 import {
   StallOpensScene,
   TapToPayScene,
@@ -42,6 +43,7 @@ function Beat({
   step: (typeof SELLING_FLOW)[number];
   index: number;
 }) {
+  const { st } = useMarketingT();
   // Each beat inks itself in independently, so the sequence follows the reader
   // down the page instead of firing all at once when the section appears.
   const { ref, inView } = useInView<HTMLDivElement>({ threshold: 0.35 });
@@ -66,13 +68,13 @@ function Beat({
       >
         <div>
           <p className="font-hand text-xl leading-none text-[var(--brand-accent)]">
-            {step.timeOfDay}
+            {st(`sellingFlow.${index}.timeOfDay`, step.timeOfDay)}
           </p>
           <h3 className="mt-2 font-serif text-xl text-[var(--brand-text)]">
-            {step.title}
+            {st(`sellingFlow.${index}.title`, step.title)}
           </h3>
           <p className="mt-2 max-w-md text-sm leading-relaxed text-[var(--brand-muted-2)]">
-            {step.detail}
+            {st(`sellingFlow.${index}.detail`, step.detail)}
           </p>
         </div>
 

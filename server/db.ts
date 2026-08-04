@@ -1890,6 +1890,8 @@ function presetCategoryRows(
     key: c.key,
     labelEn: c.labelEn,
     labelDe: c.labelDe,
+    labelFr: c.labelFr,
+    labelIt: c.labelIt,
     extraIncludes: c.extraIncludes ? [...c.extraIncludes] : null,
     sortOrder: i,
   }));
@@ -1925,6 +1927,8 @@ export async function getTenantCategories(
     key: r.key,
     labelEn: r.labelEn,
     labelDe: r.labelDe ?? null,
+    labelFr: r.labelFr ?? null,
+    labelIt: r.labelIt ?? null,
     extraIncludes: r.extraIncludes ?? null,
     sortOrder: r.sortOrder ?? i,
     createdAt: new Date(0),
@@ -1950,6 +1954,8 @@ export async function createTenantCategoryRow(row: {
   key: string;
   labelEn: string;
   labelDe?: string | null;
+  labelFr?: string | null;
+  labelIt?: string | null;
   extraIncludes?: string[] | null;
   sortOrder?: number;
 }): Promise<void> {
@@ -1970,7 +1976,12 @@ export async function createTenantCategoryRow(row: {
 export async function updateTenantCategoryLabels(
   tenantId: number,
   key: string,
-  labels: { labelEn?: string; labelDe?: string | null },
+  labels: {
+    labelEn?: string;
+    labelDe?: string | null;
+    labelFr?: string | null;
+    labelIt?: string | null;
+  },
 ): Promise<void> {
   await withDbOrThrow((db) =>
     db

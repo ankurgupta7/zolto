@@ -62,6 +62,17 @@ describe("VERTICAL_PRESETS", () => {
     }
   });
 
+  it("every category carries all four labels (en/de/fr/it) non-empty", () => {
+    for (const preset of Object.values(VERTICAL_PRESETS)) {
+      for (const cat of preset.categories) {
+        expect(cat.labelEn.trim().length).toBeGreaterThan(0);
+        expect(cat.labelDe.trim().length).toBeGreaterThan(0);
+        expect(cat.labelFr.trim().length).toBeGreaterThan(0);
+        expect(cat.labelIt.trim().length).toBeGreaterThan(0);
+      }
+    }
+  });
+
   it("extraIncludes only reference real sibling keys and never self-fold", () => {
     for (const preset of Object.values(VERTICAL_PRESETS)) {
       const keys = new Set(preset.categories.map((c) => c.key));
@@ -78,12 +89,24 @@ describe("VERTICAL_PRESETS", () => {
     for (const preset of Object.values(VERTICAL_PRESETS)) {
       expect(preset.storeNoun).toMatch(/^an? /);
       expect(preset.itemNounEn.length).toBeGreaterThan(0);
+      expect(preset.labelFr.length).toBeGreaterThan(0);
+      expect(preset.labelIt.length).toBeGreaterThan(0);
       expect(preset.listingRules).toContain("- name:");
       expect(preset.listingRules).toContain("- name_en:");
       expect(preset.listingRules).toContain("- description:");
       expect(preset.listingRules).toContain("- description_en:");
+      expect(preset.listingRules).toContain("- name_fr:");
+      expect(preset.listingRules).toContain("- description_fr:");
+      expect(preset.listingRules).toContain("- name_it:");
+      expect(preset.listingRules).toContain("- description_it:");
+      expect(preset.exampleItemNameFr.length).toBeGreaterThan(0);
+      expect(preset.exampleItemNameIt.length).toBeGreaterThan(0);
       expect(preset.fallback.name.length).toBeGreaterThan(0);
       expect(preset.fallback.nameEn.length).toBeGreaterThan(0);
+      expect(preset.fallback.nameFr.length).toBeGreaterThan(0);
+      expect(preset.fallback.nameIt.length).toBeGreaterThan(0);
+      expect(preset.fallback.descriptionFr.length).toBeGreaterThan(0);
+      expect(preset.fallback.descriptionIt.length).toBeGreaterThan(0);
       expect(preset.ocrHeadingHint).toContain("heading");
       expect(preset.ocrCategoryNote).toContain(`"${FALLBACK_CATEGORY_KEY}"`);
       expect(preset.catalogueLine.length).toBeGreaterThan(0);
@@ -113,8 +136,12 @@ describe("jewellery preset (kalakosh equivalence tripwire)", () => {
     expect(jewellery.fallback).toEqual({
       name: "Schmueckstück",
       nameEn: "Jewelry Piece",
+      nameFr: "Bijou",
+      nameIt: "Gioiello",
       description: "Handgefertigtes Schmueckstück.",
       descriptionEn: "Handcrafted jewelry piece.",
+      descriptionFr: "Bijou fait main.",
+      descriptionIt: "Gioiello fatto a mano.",
     });
     expect(jewellery.returnsFooter).toBe(
       "14-day returns on unworn, undamaged pieces",

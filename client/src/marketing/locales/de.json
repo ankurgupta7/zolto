@@ -1,0 +1,455 @@
+{
+  "nav": {
+    "product": "Produkt",
+    "whoItsFor": "Für wen",
+    "pricing": "Preise",
+    "compare": "Vergleich",
+    "faq": "FAQ",
+    "launchDiary": "Launch-Tagebuch",
+    "menu": "Menü",
+    "openMenu": "Menü öffnen",
+    "signIn": "Anmelden",
+    "startFree": "Gratis starten",
+    "goToYourStore": "Zu Ihrem Shop",
+    "myStore": "Mein Shop",
+    "signedInAs": "Angemeldet als {{email}}"
+  },
+  "footer": {
+    "copyright": "© {{year}} Zolto — Commerce für Kunstschaffende, von Hand gebaut in Zürich, damit mehr Geld in Ihrer Tasche bleibt.",
+    "pricing": "Preise",
+    "faq": "FAQ",
+    "privacy": "Datenschutz",
+    "terms": "AGB"
+  },
+  "landing": {
+    "startFree": "Gratis starten →",
+    "seePricing": "Preise ansehen",
+    "pledgeEyebrow": "unser Versprechen an Macherinnen und Macher",
+    "pledgeSignature": "— das Zolto-Team",
+    "comparisonEyebrow": "der ehrliche Vergleich",
+    "comparisonHeading": "Wofür Sie dort eigentlich bezahlen.",
+    "comparisonBody": "Stripe, SumUp und Worldline wurden für eine Zeit gebaut, in der Websites schwierig waren und ein Kartenlesegerät praktisch ein Statussymbol. Für diese Ära zahlen Sie noch heute — nicht für etwas, das Sie tatsächlich brauchen.",
+    "colOldGuard": "Die alte Garde",
+    "howEyebrow": "so funktioniert es",
+    "howHeading": "Ein Laden. Überall, wo Sie verkaufen.",
+    "inventoryTitle": "Ein Inventar, zwei Kanäle",
+    "inventoryBody": "Verkaufen Sie am Markt und online aus demselben Katalog. Geht das letzte Stück am Stand weg, verschwindet es in Echtzeit von der Website — keine Doppelerfassung, keine Überverkäufe.",
+    "photoTitle": "Foto knipsen, Angebot erhalten",
+    "photoBody": "Fotografieren Sie ein Stück, und die KI entwirft Titel, Beschreibung und einen Preisvorschlag — in jeder Sprache, in der Sie verkaufen. Sie prüfen und veröffentlichen; die Fleissarbeit ist erledigt.",
+    "messyEyebrow": "KI, die mit Chaos klarkommt",
+    "messyHeading": "Erst verkaufen. Später sortieren.",
+    "messyBody": "Ein echter Marktstand ist herrliches Chaos. Unterbrechen Sie keinen Verkauf, um jedes Stück zu erfassen — Ihr Handy ist das Kartengerät, die KI das Backoffice, und Sie sind nur da, um schöne Dinge zu verkaufen.",
+    "emailFrom": "Von",
+    "emailSubjectLabel": "Betreff:",
+    "emailSubject": "Ihr Tag — 2 Verkäufe zu bestätigen",
+    "emailBody": "Sie haben heute CHF 165 mit 2 Taps eingenommen. Aufgrund des Lagerbestands und dessen, was an dieser Messe üblicherweise läuft, hier unsere beste Vermutung — tippen Sie jeweils auf das richtige Stück:",
+    "emailItem1Name": "Barockperlen-Halskette",
+    "emailItem1Meta": "CHF 120 · 1 an Lager",
+    "emailItem2Name": "Perltropfen-Ohrringe",
+    "emailItem2Meta": "CHF 45 · 3 an Lager",
+    "emailConfirm": "Genau das ✓",
+    "ctaEyebrow": "bereit, wenn Sie es sind",
+    "ctaHeading": "Ihr Shop, diese Woche live.",
+    "ctaBody": "Vor Ort verkaufen ist gratis, für immer. 14 Tage Pro testen, keine Kreditkarte nötig zum Umschauen — und nie ein Kartenlesegerät. Versprochen.",
+    "ctaButton": "Shop erstellen →"
+  },
+  "pricing": {
+    "eyebrow": "fair & einfach",
+    "heading": "Einfache Preise für Kunstschaffende.",
+    "intro": "Vor Ort verkaufen ist gratis, für immer. Wir verdienen nur, wenn wir Ihnen tatsächlich helfen, online Geld zu verdienen — {{percent}} im Gratis-Plan, oder Sie wählen die Pauschale mit Pro und behalten alles.",
+    "oldWay": "Der alte Weg",
+    "perYearShort": "/Jahr",
+    "perMonthShort": "/Mt.",
+    "zoltoPlan": "Zolto {{plan}}",
+    "mostPopular": "Am beliebtesten",
+    "perMonth": "/ Monat",
+    "feeEyebrow": "die einzige Gebühr, die wir verlangen",
+    "feeHeading": "{{percent}} auf {{appliesTo}} — nichts vor Ort",
+    "onlineOnly": "nur online",
+    "feePoint1": "Am Marktstand nehmen wir nichts — TWINT QR und Tap to Pay, die ganze Saison, CHF 0. Jedes Mal.",
+    "feePoint2": "Online- und KI-Agenten-Bestellungen im Gratis-Plan kosten {{percent}} Gebühr, automatisch innerhalb der Stripe-Zahlung abgezogen — keine separate Rechnung, und ein Monat ohne Online-Verkäufe kostet CHF 0.",
+    "feePoint3": "{{plan}} (CHF {{price}}/Monat) schafft die Gebühr komplett ab. Ab etwa CHF {{breakEven}}/Monat online ist das die günstigere Option — Ihr Dashboard sagt Ihnen, wann es so weit ist.",
+    "feePoint4": "KI-Nutzung ist nie der Zähler: Beschreibungen, Übersetzungen und Chat werden nicht gezählt, und die KI in Pro ist unlimitiert. Pläne skalieren über Produkte, Fotos und Speicher — nicht darüber, wie stark Sie die KI nutzen.",
+    "questions": "Fragen"
+  },
+  "faqPage": {
+    "metaTitle": "FAQ — {{name}}",
+    "metaDescription": "Antworten auf die Fragen, die Kunstschaffende zu {{name}} stellen: was es kostet, wie die Einrichtung läuft, wie Sie bezahlt werden und wie Sie vor Ort und online verkaufen.",
+    "eyebrow": "klare Antworten",
+    "heading": "Häufig gestellte Fragen",
+    "intro1": "Alles, was Kunstschaffende vor der Shop-Eröffnung fragen. Noch unsicher?",
+    "introLink": "Gratis starten",
+    "intro2": "— sich umzuschauen kostet nichts.",
+    "readyHeading": "Bereit, Ihren Shop zu eröffnen?",
+    "startFree": "Gratis starten",
+    "seePricing": "Preise ansehen"
+  },
+  "feeCalculator": {
+    "eyebrow": "rechnen Sie selbst nach",
+    "heading": "Was würden wir Ihnen tatsächlich verrechnen?",
+    "intro": "Ziehen Sie Ihren Monat auf. Wir zeigen Ihnen die Rechnung — und sagen Ihnen, wann Sie mit dem günstigeren Plan besser fahren, selbst wenn es nicht der ist, den wir lieber verkaufen würden.",
+    "sliderLabel": "Ihre Online-Verkäufe diesen Monat",
+    "sliderNote": "Marktstand-Verkäufe fehlen hier mit Absicht — sie sind in jedem Plan gratis und könnten die Antwort darum nie verändern.",
+    "onFree": "Im Gratis-Plan",
+    "onPlan": "Im {{plan}}-Plan",
+    "freeMeta": "{{percent}} der Online-Verkäufe · kein Abo",
+    "proMeta": "fixe Monatspauschale · 0% auf jeden Verkauf",
+    "verdictNoSales": "Keine Online-Verkäufe? Dann verdienen wir nichts. <hl>CHF 0.00.</hl> Verkaufen Sie den ganzen Monat am Stand, und wir gehen gerne leer aus.",
+    "verdictFree": "Bleiben Sie im Gratis-Plan — er ist für Sie diesen Monat um <hl>{{saving}}</hl> günstiger. Wir melden uns, sobald das kippt, etwa ab CHF {{breakEven}} online.",
+    "verdictPro": "Starker Monat. {{plan}} würde Ihnen <hl>{{saving}}</hl> sparen — und Ihr Dashboard stupst Sie an, sobald das zutrifft, damit Sie nicht ständig nachrechnen müssen."
+  },
+  "agentPitch": {
+    "assistantLabel": "Der KI-Assistent Ihrer Kundschaft",
+    "chatUser1": "Finde mir eine handgemachte Keramiktasse unter CHF 40, die bis Freitag nach Zürich geliefert wird.",
+    "chatAssistant1a": "Bergblume Keramik, ein kleines Atelier in Bern, hat die",
+    "chatProductName": "Alpine Glaze Mug",
+    "chatAssistant1b": "— von Hand gedreht, CHF 38, 3 an Lager, Versand morgen.",
+    "chatProductMeta": "CHF 38 · 3 an Lager · bergblume.zolto.ch",
+    "chatAssistant1c": "Soll ich sie bestellen?",
+    "chatUser2": "Ja — bestell sie.",
+    "orderPlaced": "Bestellung aufgegeben ✓",
+    "orderPlacedRest": "— Bestätigung verschickt. Direkt ins Stripe-Konto der Herstellerin bezahlt.",
+    "mcpCaption": "Live-Bestand & Checkout via bergblume.zolto.ch/mcp",
+    "howEyebrow": "kein Setup, kein Plugin, keine Agentur",
+    "howHeading": "Wie eine KI bei Ihnen einkauft."
+  },
+  "zeroCostPos": {
+    "planInPerson": "{{plan}}-Plan, vor Ort",
+    "perMonth": "/Mt.",
+    "startFree": "Gratis starten →"
+  },
+  "diaryTeaser": {
+    "eyebrow": "das Launch-Tagebuch",
+    "heading": "Jemand hat das schon gemacht. Hier die ungeschönte Version.",
+    "body": "Eine Zürcher Schmuckdesignerin ging vom reinen Weihnachtsmarkt zum Online-Verkauf — und liess uns aufschreiben, wie es wirklich lief, die zähen Momente inklusive. Keine Growth-Hacks, keine sechsstelligen Screenshots.",
+    "readAll": "Das ganze Tagebuch lesen →"
+  },
+  "cardReaderGag": {
+    "eyebrow": "ein kurzer Exkurs",
+    "heading": "Dinge, die ungefähr so viel kosten wie ein Kartenlesegerät.",
+    "punchlineStrong": "{{months}} Monate Zolto {{plan}}.",
+    "punchlineRest": "Das Einzige auf dieser Liste, das nebenbei auch Ihren Laden führt.",
+    "footnote": "Gerechnet mit CHF {{anchor}}, dem oberen Ende der Spanne oben. Ihr Handy kann das Tippen bereits — Sie müssen das Geld also für nichts davon ausgeben."
+  },
+  "legal": {
+    "disclaimer": "Dies ist eine allgemein verständliche Zusammenfassung der Plattform-Bedingungen von Zolto. Sie ist keine Rechtsberatung. Händlerinnen und Händler bleiben für die kundenseitigen Richtlinien ihres eigenen Shops verantwortlich.",
+    "privacy": {
+      "title": "Datenschutzerklärung",
+      "updated": "Entwurf — juristische Prüfung ausstehend",
+      "intro": "Diese Erklärung beschreibt, welche Daten Zolto verarbeitet, wenn Sie die Plattform für den Betrieb eines Shops nutzen. Sie deckt die Rolle von Zolto als Plattformanbieter ab; jede Händlerin und jeder Händler ist Verantwortliche(r) für die Daten der eigenen Kundschaft.",
+      "sections": [
+        {
+          "heading": "1. Zwei Datenschutzregime gelten",
+          "body": [
+            "Zolto bedient Händlerinnen und Händler in der Schweiz und in der EU, und für diese gelten unterschiedliche Gesetze. Schweizer Händler und ihre Kundschaft unterstehen dem revidierten Schweizer Datenschutzgesetz (revDSG/nDSG). EU-Händler und -Kundschaft unterstehen der DSGVO. Wo sich die beiden unterscheiden, wenden wir das strengere Recht an.",
+            "Wo wir als Auftragsverarbeiter für einen Händler handeln (also Daten seiner Kundschaft in seinem Auftrag verarbeiten), regelt ein Auftragsverarbeitungsvertrag dieses Verhältnis."
+          ]
+        },
+        {
+          "heading": "2. Was wir erheben",
+          "body": [
+            "Kontodaten: Ihr Name, Ihre E-Mail-Adresse, der Shop-Name und Ihre Anmeldedaten. Shop-Daten: Produkte, Bestellungen und Inventar, die Sie erfassen. Nutzungsdaten: wie Sie mit der Plattform interagieren, um sie zu verbessern und Support zu leisten.",
+            "Zahlungskartendaten werden direkt von unserem Zahlungsabwickler (Stripe) verarbeitet und nie auf den Servern von Zolto gespeichert."
+          ]
+        },
+        {
+          "heading": "3. Cookies & Analytik",
+          "body": [
+            "Die Plattform setzt ein einziges Cookie, app_session_id, das Sie angemeldet hält. Es ist zwingend erforderlich — ohne dieses Cookie kann der Dienst Sie nicht authentifizieren — und braucht darum weder ein Einwilligungsbanner noch lässt es sich während der Nutzung deaktivieren. Wir setzen keine Werbe-, Präferenz- oder Dritt-Tracking-Cookies.",
+            "Seitenaufrufe messen wir mit Umami, einem datenschutzfreundlichen Analysetool, das ohne Cookies und ohne seitenübergreifende Kennungen auskommt; es liefert uns aggregierte Statistiken, keine Profile einzelner Besucherinnen und Besucher. Webfonts werden von unserer eigenen Infrastruktur ausgeliefert, sodass beim Betrachten einer Seite keine Anfrage an Drittanbieter-Schriftnetzwerke geht. Beim Checkout werden Sie zu Stripe weitergeleitet, das auf seiner eigenen Domain eigene Cookies gemäss der Stripe-Datenschutzerklärung setzen kann."
+          ]
+        },
+        {
+          "heading": "4. Ihre Rechte",
+          "body": [
+            "Sie können Auskunft über Ihre Personendaten sowie deren Berichtigung oder Löschung verlangen und bestimmten Verarbeitungen widersprechen. Kontaktieren Sie uns, um diese Rechte auszuüben. EU-Nutzerinnen und -Nutzer haben zusätzlich die Rechte der DSGVO, einschliesslich Datenübertragbarkeit und des Rechts auf Beschwerde bei einer Aufsichtsbehörde."
+          ]
+        },
+        {
+          "heading": "5. Aufbewahrung & Unterauftragsverarbeiter",
+          "body": [
+            "Wir bewahren Daten auf, solange Ihr Konto aktiv ist und soweit gesetzlich vorgeschrieben. Wir setzen eine kleine Zahl von Unterauftragsverarbeitern ein (Hosting, Zahlungen, E-Mail, KI, Analytik), jeweils vertraglich gebunden; eine aktuelle Liste ist auf Anfrage erhältlich."
+          ]
+        }
+      ]
+    },
+    "terms": {
+      "title": "Nutzungsbedingungen",
+      "updated": "Entwurf — juristische Prüfung ausstehend",
+      "intro": "Diese Bedingungen regeln Ihre Nutzung der Zolto-Plattform zum Betrieb eines Onlineshops und eines Kassensystems.",
+      "sections": [
+        {
+          "heading": "1. Abonnemente & Testphasen",
+          "body": [
+            "Bezahlte Pläne werden monatlich abgerechnet und laufen von Monat zu Monat — jederzeit kündbar, wirksam auf den nächsten Abrechnungszyklus. Bezahlte Funktionen können eine 14-tägige kostenlose Testphase enthalten. Nach der Testphase verlängert sich der Plan zum dann gültigen Preis, sofern nicht gekündigt wird."
+          ]
+        },
+        {
+          "heading": "2. Preise und Steuern",
+          "body": [
+            "Preise sind in Schweizer Franken (CHF) angegeben. Der Umsatz von Zolto liegt unter der Schwelle von CHF 100'000, ab der die Schweizer Mehrwertsteuerpflicht beginnt; deshalb wird auf Abonnemente und die Plattformgebühr keine MWST erhoben — der angezeigte Preis ist der Preis, den Sie bezahlen. Sollte Zolto diese Schwelle überschreiten oder in einem anderen Land steuerpflichtig werden, aktualisieren wir diese Bedingungen und informieren betroffene Kundinnen und Kunden, bevor eine Steuer erhoben wird."
+          ]
+        },
+        {
+          "heading": "3. KI-gestützte Funktionen",
+          "body": [
+            "Zolto enthält KI-Funktionen, die Produktbeschreibungen entwerfen, Supportfragen beantworten und die Einrichtung beschleunigen. KI-Ausgaben können fehlerhaft sein — Sie sind dafür verantwortlich, Inhalte zu prüfen, bevor sie für Ihre Kundschaft live gehen. Änderungen mit Auswirkungen auf Abrechnung, Zahlungen oder Inventar werden immer von einem Menschen vorgenommen und nie automatisch vom Assistenten ausgerollt."
+          ]
+        },
+        {
+          "heading": "4. Ihre Pflichten",
+          "body": [
+            "Sie sind verantwortlich für die Rechtmässigkeit dessen, was Sie verkaufen, für die kundenseitigen Richtlinien Ihres eigenen Shops (Rückgaben, Versand, Datenschutz) und für die Richtigkeit Ihrer Produkt- und Inventardaten."
+          ]
+        },
+        {
+          "heading": "5. Haftung & anwendbares Recht",
+          "body": [
+            "Die Plattform wird, soweit gesetzlich zulässig, ohne Gewähr bereitgestellt. Diese Bedingungen unterstehen Schweizer Recht; zwingende Konsumentenschutzrechte in Ihrem Wohnsitzland bleiben unberührt."
+          ]
+        }
+      ]
+    }
+  },
+  "shared": {
+    "platform": {
+      "pricingSummary": "Vor Ort verkaufen ist gratis, für immer (keine Karte nötig). Online- und KI-Agenten-Bestellungen kosten im Gratis-Plan 1% Plattformgebühr — ein Monat ohne Online-Verkäufe kostet CHF 0. Pro kostet CHF 25/Monat mit 14 Tagen kostenloser Testphase: 0% Plattformgebühr und unlimitierte KI. Monatlich kündbar, jederzeit."
+    },
+    "revenueShare": {
+      "appliesTo": "Online- und KI-Agenten-Bestellungen"
+    },
+    "plans": {
+      "free": {
+        "name": "Gratis",
+        "blurb": "Ein kompletter Shop. Gratis vor Ort, 1% online.",
+        "cta": "Kostenlos loslegen",
+        "features": [
+          "Volles Kassensystem — Tap to Pay, TWINT QR, Bargeld — CHF 0 auf Verkäufe vor Ort",
+          "Onlineshop auf Ihrer eigenen zolto.ch-Adresse",
+          "Echtzeit-Sync zwischen Kasse und Online-Inventar",
+          "KI-Beschreibungen & -Übersetzungen (Fair Use)",
+          "5 KI-Fotoaufnahmen / Monat",
+          "Von KI-Agenten gefunden — llms.txt, MCP & Shop-Chat",
+          "1% Plattformgebühr nur auf Online- & Agenten-Bestellungen",
+          "Bis zu 200 Produkte · 5 GB Fotospeicher",
+          "Vollständiger Datenexport mit einem Klick",
+          "Community-Support"
+        ]
+      },
+      "pro": {
+        "name": "Pro",
+        "blurb": "Für alle, die jede Woche online verkaufen.",
+        "cta": "14 Tage kostenlos testen",
+        "features": [
+          "Alles aus Gratis",
+          "0% Plattformgebühr — jeder Online-Verkauf bleibt bei Ihnen",
+          "Unlimitierte KI — Fotos, Beschreibungen, Chat",
+          "Ihre eigene Domain + verwaltetes SSL",
+          "Nur Ihre Marke — kein «runs on Zolto»",
+          "Erweiterte Analysen & KI-Insights",
+          "3 Team-Plätze",
+          "Bevorzugter menschlicher Support",
+          "Bis zu 5'000 Produkte · 50 GB Fotospeicher"
+        ]
+      }
+    },
+    "pricingPromise": {
+      "headline": "Sie zahlen uns erst, wenn das Internet Sie bezahlt.",
+      "pledge": "Vor Ort verkaufen ist gratis, für immer — Ihr Shop, Ihre Kasse und Ihr Inventar kosten CHF 0/Monat, und auf Zahlungen vor Ort schlägt Zolto nichts drauf. Hier die ehrliche Version: Wir haben schon genug Geld. Wir sind nicht hier, um bei kleinen Kunstschaffenden abzuschöpfen — wir sind hier, damit Sie behalten, was Sie verdienen. Und das ändert sich nicht.",
+      "points": [
+        "Verkaufen Sie am Markt und zahlen Sie uns nichts, für immer: volles Kassensystem, Inventar-Sync und Ihr Online-Storefront, alles inklusive für CHF 0/Monat.",
+        "Online- und KI-Agenten-Bestellungen kosten im Gratis-Plan 1% Gebühr. Keine Online-Verkäufe diesen Monat? Sie zahlen CHF 0. Das war's.",
+        "Pro (CHF 25/Monat) schafft die 1% komplett ab und schaltet unlimitierte KI frei. Verkaufen Sie online über rund CHF 2'500/Monat? Dann ist Pro günstiger — wir sagen es Ihnen in der App, sobald sich der Wechsel lohnt.",
+        "Wir werden Ihre KI-Nutzung nie kleinlich abrechnen. Reden Sie mit ihr, so viel Sie wollen — Pläne skalieren über Produkte, Fotos und Speicher, nicht darüber, wie gesprächig Sie sind."
+      ]
+    },
+    "costComparison": {
+      "themLabel": "Ein Jahr mit der alten Garde",
+      "themNote": "Lesegerät-Hardware · Monatsgebühren · Lock-in",
+      "usLabel": "Ein Monat mit Zolto",
+      "usNote": "keine Hardware · jederzeit kündbar · Ihr Stripe, Ihr Geld",
+      "multiplier": "ein Hundertstel der Kosten"
+    },
+    "zeroCostPos": {
+      "eyebrow": "die Stelle, die alle zweimal lesen",
+      "headline": "Ein ganzer Laden in Ihrer Tasche.",
+      "headlineEmphasis": "Für nichts.",
+      "body": "Fotos, Namen, Preise, Lagerbestände — Ihr echter Katalog, in der Kasse auf Ihrem Handy. Tippen, Zahlung entgegennehmen. Zusehen, wie alles mit Ihrer Website synchronisiert. Und uns am Monatsende CHF 0.00 bezahlen — und im Monat darauf wieder.",
+      "includes": [
+        "Volles Kassensystem — Tap to Pay, TWINT QR und Bargeld",
+        "Jedes Stück mit Foto, Name und Preis",
+        "Echtzeit-Sync zwischen Kasse und Online-Inventar",
+        "Ihr Online-Storefront auf Ihrer eigenen zolto.ch-Adresse"
+      ],
+      "catch": "Keine Testphasen-Uhr. Kein Einsteiger-Tarif, der still ausläuft. Das Einzige, was wir je verrechnen, sind die Online-Verkäufe, die wir Ihnen bringen — und gibt es keine, gibt es nichts zu verrechnen."
+    },
+    "aiNativePitch": {
+      "eyebrow": "der Handel zieht ins Chat-Fenster",
+      "headline": "Ihre nächste Kundschaft",
+      "headlineEmphasis": "ist eine KI.",
+      "body": "Die Suche hat die letzte Ära der Shops gebaut. Assistenten bauen die nächste — und sie können nur Shops empfehlen, die sie lesen können. Jeder Zolto-Shop liefert llms.txt, MCP und Agenten-Checkout vom ersten Tag an, aktuell gehalten, während sich die Protokolle weiterentwickeln — Ihr Laden gewinnt in den Antworten an Gewicht, während nachgerüstete Websites daraus verschwinden.",
+      "chart": {
+        "title": "wo Käuferinnen und Käufer ihre Suche beginnen",
+        "decliningLabel": "Suchmaschinen",
+        "risingLabel": "KI-Assistenten",
+        "caption": "Assistenten empfehlen nur Shops, die sie lesen können. Ein Shop, der für sie unsichtbar ist, kommt in der Antwort nicht vor — egal, wie gut sein SEO war."
+      },
+      "proof": {
+        "eyebrow": "keine Roadmap — heute live",
+        "headline": "Sehen Sie zu, wie eine KI in einem Zolto-Shop einkauft.",
+        "body": "Ihre Kundin fragt ihren Assistenten. Der Assistent liest das Kurzprofil des Shops, prüft den Live-Bestand über MCP und gibt die Bestellung auf — die Zahlung landet wie jeder andere Verkauf im eigenen Stripe-Konto. Richten Sie Ihre eigene KI auf zolto.ch/llms.txt und fragen Sie sie nach uns."
+      },
+      "steps": [
+        {
+          "k": "Gefunden",
+          "title": "Der Assistent liest Ihr Kurzprofil",
+          "body": "Jeder Shop publiziert ihrshop.zolto.ch/llms.txt — eine Zusammenfassung in einfacher Sprache, wer Sie sind und was Sie verkaufen, geschrieben für KI-Leser."
+        },
+        {
+          "k": "Gefragt",
+          "title": "Sie prüft den Live-Bestand über MCP",
+          "body": "Echte Produkte, echte Preise, echte Mengen — direkt aus Ihrem Inventar, kein veralteter Scrape vom letzten Monat."
+        },
+        {
+          "k": "Gekauft",
+          "title": "Sie schliesst den Kauf im Chat ab",
+          "body": "Die Bestellung landet wie jeder andere Verkauf: Der Bestand synchronisiert, Sie erhalten die Benachrichtigung, und das Geld geht direkt in Ihr Stripe-Konto."
+        }
+      ],
+      "footnote": "Sie richten davon nichts ein. Es kommt mit dem Shop — auch im Gratis-Plan, und 1% nur, wenn ein Agent tatsächlich für Sie verkauft."
+    },
+    "sellingFlow": [
+      {
+        "title": "Notizbuch scannen",
+        "detail": "Fotografieren Sie Ihre handgeschriebene Bestandsliste. Die KI liest sie in einen echten Katalog ein — Namen, Preise, Mengen.",
+        "timeOfDay": "07:40 — der Stand wird aufgebaut"
+      },
+      {
+        "title": "Zahlung per Tap",
+        "detail": "Betrag eingeben, und die Kundschaft hält Handy oder Karte hin. NFC und TWINT QR — nichts zu kaufen, nichts einzustecken.",
+        "timeOfDay": "11:15 — erster Ansturm"
+      },
+      {
+        "title": "Am Abend bestätigen",
+        "detail": "Zolto mailt Ihnen, was Sie vermutlich verkauft haben. Antippen zum Bestätigen, und der Bestand synchronisiert über Kasse und Onlineshop.",
+        "timeOfDay": "18:30 — Zusammenpacken"
+      }
+    ],
+    "cardReaderGag": {
+      "items": [
+        "Ungefähr sechzig Flat Whites.",
+        "Ein richtig guter Seitenschneider, mit Etui.",
+        "Eine Saison Standgebühren, je nach Markt."
+      ]
+    },
+    "comparison": {
+      "Your catalogue on your phone": {
+        "feature": "Ihr Katalog auf Ihrem Handy",
+        "them": "Teil eines Bezahl-Tarifs oder gleich ein separates Produkt",
+        "us": "Fotos, Namen & Preise — CHF 0/Monat, ohne Ablaufdatum"
+      },
+      "Card reader": {
+        "feature": "Kartenlesegerät",
+        "them": "Wird Ihnen verkauft, CHF 50–300+",
+        "us": "Ihr Handy — NFC-Tap & TWINT QR"
+      },
+      "Building the store": {
+        "feature": "Den Shop bauen",
+        "them": "Ein Entwickler, oder Wochen in Shopify",
+        "us": "Die KI entwirft ihn an einem Nachmittag"
+      },
+      "Inventory": {
+        "feature": "Inventar",
+        "them": "Starre Tabellen, die Sie von Hand pflegen",
+        "us": "Notizbuch scannen; die KI führt es"
+      },
+      "Pricing": {
+        "feature": "Preise",
+        "them": "Undurchsichtige Tarife, Überraschungsgebühren",
+        "us": "Gratis vor Ort. 1% online, oder pauschal CHF 25"
+      },
+      "Your money": {
+        "feature": "Ihr Geld",
+        "them": "Einbehalten, dann ausbezahlt",
+        "us": "Direkt in Ihr eigenes Stripe-Konto"
+      }
+    },
+    "faqCategories": {
+      "About Zolto": "Über Zolto",
+      "Getting started": "Erste Schritte",
+      "Selling": "Verkaufen",
+      "Pricing & billing": "Preise & Abrechnung",
+      "AI & discovery": "KI & Auffindbarkeit"
+    },
+    "faqs": {
+      "What is Zolto?": {
+        "q": "Was ist Zolto?",
+        "a": "Zolto ist eine KI-geführte Commerce-Plattform für unabhängige Kunstschaffende. Sie erhalten ein Kassensystem und einen Onlineshop mit gemeinsamem Inventar, dazu einen KI-Assistenten, der Produktfotos, Beschreibungen und Kundensupport übernimmt."
+      },
+      "Who is Zolto for?": {
+        "q": "Für wen ist Zolto?",
+        "a": "Kunstschaffende, Handwerkerinnen und kleine Ladenbesitzer, die an Kunsthandwerksmessen, Märkten und Pop-ups verkaufen und auch online verkaufen möchten — ohne einen Entwickler anzustellen oder komplexe Software zu lernen."
+      },
+      "How long does it take to set up a store?": {
+        "q": "Wie lange dauert die Einrichtung eines Shops?",
+        "a": "Etwa einen Nachmittag. Laden Sie ein paar Produkte hoch (oder importieren Sie ein CSV), lassen Sie die KI Beschreibungen entwerfen und Ihre Fotos stylen, verbinden Sie die Zahlungen — und Sie können noch am selben Tag live sein."
+      },
+      "Do I need to be technical?": {
+        "q": "Muss ich technisch versiert sein?",
+        "a": "Nein. Zolto ist für Kunstschaffende gebaut, nicht für Shop-Manager. Die KI erledigt die Einrichtungs-Fleissarbeit, und eine geführte Tour begleitet Sie durch das Dashboard."
+      },
+      "How much does it cost?": {
+        "q": "Was kostet es?",
+        "a": "Vor Ort verkaufen ist gratis, für immer — Shop, Kasse und Inventar-Sync kosten CHF 0/Monat, und auf Zahlungen vor Ort schlägt Zolto nichts drauf. Online- und KI-Agenten-Bestellungen kosten im Gratis-Plan 1% Plattformgebühr (ein Monat ohne Online-Verkäufe kostet CHF 0). Pro kostet CHF 25/Monat mit 14 Tagen kostenloser Testphase: Es entfernt das 1% und schaltet unlimitierte KI frei. Monatlich — jederzeit kündbar."
+      },
+      "Can I sell both in person and online?": {
+        "q": "Kann ich vor Ort und online verkaufen?",
+        "a": "Ja — genau das ist der Kern von Zolto. Ein Inventar speist Ihre Kasse und Ihren Onlineshop, und der Bestand bleibt in Echtzeit synchron, sodass Sie nie überverkaufen."
+      },
+      "How do I get paid?": {
+        "q": "Wie werde ich bezahlt?",
+        "a": "Sie verbinden Ihr eigenes Stripe-Konto, und Ihre Kundschaft zahlt direkt dorthin — Zolto hält Ihr Geld nie zurück. Im Gratis-Plan wird automatisch 1% Plattformgebühr nur auf Online- und KI-Agenten-Bestellungen erhoben; Verkäufe vor Ort sind immer gebührenfrei, und Pro entfernt die Gebühr komplett."
+      },
+      "Do I need to buy a card reader?": {
+        "q": "Muss ich ein Kartenlesegerät kaufen?",
+        "a": "Nein — Zahlungen laufen über das Handy, das Sie schon besitzen, via Zolto-POS-App: kontaktlose Karte, Apple Pay / Google Pay und TWINT QR. Niemand steckt mehr eine Karte ein, alle tippen — es gibt also kein Lesegerät zu kaufen, zu mieten oder anzuschliessen."
+      },
+      "How is Zolto cheaper than Stripe, SumUp, or Worldline?": {
+        "q": "Wie ist Zolto günstiger als Stripe, SumUp oder Worldline?",
+        "a": "Diese Tools wurden für eine Ära gebaut, in der Websites schwierig waren und das Kartenlesegerät König — sie verlangen darum Geld für Hardware, Setup und Lock-in, schnell rund CHF 2'000 im Jahr. Die KI baut Ihren Shop an einem Nachmittag, und Ihr Handy ist das Terminal — die echten Kosten sind winzig. Zolto gibt diese Ersparnis weiter: Vor Ort verkaufen ist gratis, Online-Bestellungen kosten im Gratis-Plan nur 1% Plattformgebühr, und Pro kostet pauschal CHF 25/Monat — rund ein Hundertstel des alten Wegs."
+      },
+      "What if I keep my inventory in a notebook?": {
+        "q": "Was, wenn ich mein Inventar in einem Notizbuch führe?",
+        "a": "Kein Problem — führen Sie es weiter, wie Sie es gewohnt sind. Fotografieren Sie Ihre handgeschriebene Liste, und die KI liest sie in einen echten Katalog ein (Namen, Preise, Mengen). KI kommt gut mit Mehrdeutigkeit zurecht — Sie müssen also kein «Inventar-Mensch» werden."
+      },
+      "Do I have to tag every sale at a busy market?": {
+        "q": "Muss ich an einem vollen Markt jeden Verkauf erfassen?",
+        "a": "Nein. Geben Sie einfach den Betrag ein und nehmen Sie den Tap entgegen. Am Ende des Tages mailt Ihnen Zolto seine beste Vermutung, was Sie verkauft haben; Sie tippen zum Bestätigen, und jedes Stück wird automatisch in Shop und Kasse als verkauft markiert."
+      },
+      "Can I bring products from another platform?": {
+        "q": "Kann ich Produkte von einer anderen Plattform mitbringen?",
+        "a": "Ja. Importieren Sie Ihren Katalog per CSV oder Massen-Fotoupload — der Wechsel von Shopify, Square oder einer Tabelle geht schnell."
+      },
+      "Will AI assistants be able to find my products?": {
+        "q": "Werden KI-Assistenten meine Produkte finden können?",
+        "a": "Ja. Jeder Shop publiziert eine llms.txt und einen Model-Context-Protocol-Endpunkt (MCP), sodass KI-Assistenten und Agenten Ihre Produkte entdecken und empfehlen können — zusätzlich zum normalen Suchmaschinen-SEO."
+      },
+      "What about product photos?": {
+        "q": "Und die Produktfotos?",
+        "a": "Machen Sie ein grobes Handyfoto, und die KI verwandelt es in ein sauberes Produktbild oder eine Aufnahme am Model — kein Fotograf, kein Studio nötig. KI-gestylte Bilder werden immer als solche ausgewiesen."
+      },
+      "Can I upgrade or downgrade anytime?": {
+        "q": "Kann ich jederzeit up- oder downgraden?",
+        "a": "Ja. Änderungen werden auf den nächsten Abrechnungszyklus wirksam."
+      },
+      "Is there a contract?": {
+        "q": "Gibt es einen Vertrag?",
+        "a": "Nein. Alle Bezahl-Pläne laufen von Monat zu Monat. Jederzeit kündbar."
+      },
+      "Do prices include VAT?": {
+        "q": "Sind die Preise inklusive MWST?",
+        "a": "Es kommt keine MWST dazu. Zolto liegt unter der Schweizer MWST-Registrierungsschwelle von CHF 100'000 — der Preis, den Sie sehen, ist der Preis, den Sie bezahlen. Sollte sich das je ändern, sagen wir es, bevor es so weit ist."
+      }
+    }
+  }
+}

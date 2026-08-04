@@ -5,6 +5,13 @@ import { Link, useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import { ShoppingBag } from "lucide-react";
 import i18n from "@/lib/i18n";
+import {
+  DEFAULT_LANGUAGE,
+  HTML_LANG,
+  SUPPORTED_LANGUAGES,
+  matchSupportedLanguage,
+  type SupportedLanguage,
+} from "@/lib/languages";
 import { useCart } from "@/contexts/CartContext";
 import { useTenant } from "@/contexts/TenantContext";
 import { instagramHref } from "@/lib/branding";
@@ -22,24 +29,28 @@ const InstagramIcon = () => (
 
 function LanguageSwitcher() {
   const { i18n: i18nInst } = useTranslation();
-  const currentLang = i18nInst.language;
+  const currentLang =
+    matchSupportedLanguage(i18nInst.language) ?? DEFAULT_LANGUAGE;
 
-  const toggle = () => {
-    const next = currentLang === "de" ? "en" : "de";
+  const switchTo = (next: SupportedLanguage) => {
     i18n.changeLanguage(next);
     localStorage.setItem("kalakosh_lang", next);
-    document.documentElement.lang = next === "de" ? "de-CH" : "en";
+    document.documentElement.lang = HTML_LANG[next];
   };
 
   return (
-    <button
-      type="button"
-      onClick={toggle}
+    <select
+      value={currentLang}
+      onChange={(e) => switchTo(e.target.value as SupportedLanguage)}
       aria-label="Switch language"
-      className="text-xs uppercase tracking-[0.15em] font-sans transition-colors duration-200 border px-2 py-1 text-[var(--brand-text)]/50 border-[var(--brand-text)]/15 hover:text-[var(--brand-accent)] hover:border-[var(--brand-accent)]"
+      className="text-xs uppercase tracking-[0.15em] font-sans transition-colors duration-200 border px-2 py-1 bg-transparent cursor-pointer appearance-none text-[var(--brand-text)]/50 border-[var(--brand-text)]/15 hover:text-[var(--brand-accent)] hover:border-[var(--brand-accent)]"
     >
-      {currentLang === "de" ? "EN" : "DE"}
-    </button>
+      {SUPPORTED_LANGUAGES.map((lang) => (
+        <option key={lang} value={lang} className="text-black">
+          {lang.toUpperCase()}
+        </option>
+      ))}
+    </select>
   );
 }
 

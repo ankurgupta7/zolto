@@ -185,11 +185,16 @@ export async function fulfillOrder(
         id: p.id,
         name: p.name,
         nameEn: p.nameEn ?? null,
+        nameDe: p.nameDe ?? null,
+        nameFr: p.nameFr ?? null,
+        nameIt: p.nameIt ?? null,
         price: p.price,
         imageUrl: p.imageUrl ?? null,
       })),
       amountTotal: order.amountTotal,
       paymentMethod: paymentMethod ?? null,
+      // Receipt renders in the language the customer shopped in.
+      locale: order.locale,
     }).catch((err) =>
       console.error("[Stripe] Customer receipt email failed:", err),
     );

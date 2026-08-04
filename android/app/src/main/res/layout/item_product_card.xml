@@ -50,7 +50,7 @@
             android:paddingEnd="6dp"
             android:paddingTop="3dp"
             android:paddingBottom="3dp"
-            android:text="Hidden"
+            android:text="@string/product_hidden"
             android:textColor="@android:color/white"
             android:textSize="10sp"
             android:letterSpacing="0.1"

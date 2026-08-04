@@ -1,10 +1,12 @@
 import { useId, useState } from "react";
+import { Trans } from "react-i18next";
 import {
   monthlyCostAt,
   PRO_PLAN,
   PRO_BREAK_EVEN_ONLINE_CHF,
   REVENUE_SHARE,
 } from "@shared/platform";
+import { useMarketingT } from "../lib/marketingI18n";
 
 /**
  * FeeCalculator — drag your month, see the bill.
@@ -33,13 +35,18 @@ function chf(amount: number): string {
   return `CHF ${amount.toFixed(2)}`;
 }
 
+/** The gold highlight the verdict's <hl> tag maps onto. */
+const highlight = <span className="text-[var(--brand-accent)]" />;
+
 export function FeeCalculator() {
+  const { t, st, numberLocale } = useMarketingT();
   const [sales, setSales] = useState(DEFAULT_SALES_CHF);
   const sliderId = useId();
   const cost = monthlyCostAt(sales);
 
   const isFree = cost.cheaper === "free" || cost.cheaper === "tie";
   const nothingOwed = cost.freePlanChf === 0;
+  const proName = st("plans.pro.name", PRO_PLAN.name);
 
   return (
     <div
@@ -47,15 +54,13 @@ export function FeeCalculator() {
       className="mx-auto max-w-3xl rounded-2xl border border-[var(--brand-border)] bg-white p-8 md:p-10"
     >
       <p className="font-hand text-xl leading-none text-[var(--brand-accent)]">
-        do the math yourself
+        {t("feeCalculator.eyebrow")}
       </p>
       <h2 className="mt-2 font-serif text-2xl text-[var(--brand-text)]">
-        What would we actually charge you?
+        {t("feeCalculator.heading")}
       </h2>
       <p className="mt-2 text-sm leading-relaxed text-[var(--brand-muted-2)]">
-        Drag your month. We&rsquo;ll show you the bill — and tell you when
-        you&rsquo;d be better off on the cheaper plan, even when that&rsquo;s
-        not the one we&rsquo;d rather sell you.
+        {t("feeCalculator.intro")}
       </p>
 
       <div className="mt-8">
@@ -64,10 +69,10 @@ export function FeeCalculator() {
           className="flex flex-wrap items-baseline justify-between gap-2"
         >
           <span className="text-sm font-medium text-[var(--brand-text)]">
-            Your online sales this month
+            {t("feeCalculator.sliderLabel")}
           </span>
           <span className="font-serif text-2xl text-[var(--brand-ink)] lining-nums tabular-nums">
-            CHF {sales.toLocaleString("en-US")}
+            CHF {sales.toLocaleString(numberLocale)}
             {sales === MAX_SALES_CHF && "+"}
           </span>
         </label>
@@ -82,8 +87,7 @@ export function FeeCalculator() {
           className="mt-3 w-full accent-[var(--brand-accent)]"
         />
         <p className="mt-2 text-xs text-[var(--brand-muted)]">
-          Market-stall sales aren&rsquo;t in this box on purpose — they&rsquo;re
-          free on every plan, so they could never change the answer.
+          {t("feeCalculator.sliderNote")}
         </p>
       </div>
 
@@ -103,13 +107,15 @@ export function FeeCalculator() {
           }`}
         >
           <p className="text-[11px] uppercase tracking-[0.16em] text-[var(--brand-muted)]">
-            On Free
+            {t("feeCalculator.onFree")}
           </p>
           <p className="mt-1 font-serif text-3xl text-[var(--brand-ink)] lining-nums tabular-nums">
             {chf(cost.freePlanChf)}
           </p>
           <p className="mt-1 text-xs text-[var(--brand-muted-2)]">
-            {REVENUE_SHARE.percentLabel} of online sales · no subscription
+            {t("feeCalculator.freeMeta", {
+              percent: REVENUE_SHARE.percentLabel,
+            })}
           </p>
         </div>
         <div
@@ -121,13 +127,13 @@ export function FeeCalculator() {
           }`}
         >
           <p className="text-[11px] uppercase tracking-[0.16em] text-[var(--brand-muted)]">
-            On {PRO_PLAN.name}
+            {t("feeCalculator.onPlan", { plan: proName })}
           </p>
           <p className="mt-1 font-serif text-3xl text-[var(--brand-ink)] lining-nums tabular-nums">
             {chf(cost.proPlanChf)}
           </p>
           <p className="mt-1 text-xs text-[var(--brand-muted-2)]">
-            flat monthly · 0% on every sale
+            {t("feeCalculator.proMeta")}
           </p>
         </div>
       </div>
@@ -137,29 +143,28 @@ export function FeeCalculator() {
         className="mt-6 font-serif text-lg leading-snug text-[var(--brand-text)]"
       >
         {nothingOwed ? (
-          <>
-            No online sales? Then we don&rsquo;t get paid.{" "}
-            <span className="text-[var(--brand-accent)]">CHF 0.00.</span> Sell
-            at the stall all month and we&rsquo;ll happily earn nothing.
-          </>
+          <Trans
+            t={t}
+            i18nKey="feeCalculator.verdictNoSales"
+            components={{ hl: highlight }}
+          />
         ) : isFree ? (
-          <>
-            Stay on Free — it&rsquo;s cheaper for you by{" "}
-            <span className="text-[var(--brand-accent)]">
-              {chf(cost.savingChf)}
-            </span>{" "}
-            this month. We&rsquo;ll tell you the day that flips, around CHF{" "}
-            {PRO_BREAK_EVEN_ONLINE_CHF.toLocaleString("en-US")} online.
-          </>
+          <Trans
+            t={t}
+            i18nKey="feeCalculator.verdictFree"
+            values={{
+              saving: chf(cost.savingChf),
+              breakEven: PRO_BREAK_EVEN_ONLINE_CHF.toLocaleString(numberLocale),
+            }}
+            components={{ hl: highlight }}
+          />
         ) : (
-          <>
-            Nice month. {PRO_PLAN.name} would save you{" "}
-            <span className="text-[var(--brand-accent)]">
-              {chf(cost.savingChf)}
-            </span>{" "}
-            — and your dashboard nudges you the moment that&rsquo;s true, so you
-            don&rsquo;t have to keep checking.
-          </>
+          <Trans
+            t={t}
+            i18nKey="feeCalculator.verdictPro"
+            values={{ plan: proName, saving: chf(cost.savingChf) }}
+            components={{ hl: highlight }}
+          />
         )}
       </p>
     </div>

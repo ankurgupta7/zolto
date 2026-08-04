@@ -134,6 +134,20 @@
       "when": 1785858850338,
       "tag": "0019_migrate_from_provider",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "5",
+      "when": 1785858851338,
+      "tag": "0020_tenant_category_locale_fr_it",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "5",
+      "when": 1785858852338,
+      "tag": "0021_order_locale",
+      "breakpoints": true
     }
   ]
 }

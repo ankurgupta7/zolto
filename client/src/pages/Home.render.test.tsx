@@ -3,6 +3,7 @@ import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import { Router } from "wouter";
 import { memoryLocation } from "wouter/memory-location";
 import type { ProductItem } from "@shared/types";
+import i18n from "@/lib/i18n";
 import Home from "./Home";
 
 const mocks = vi.hoisted(() => ({
@@ -88,8 +89,11 @@ function renderHome() {
   return { ...view, history };
 }
 
-beforeEach(() => {
+beforeEach(async () => {
   vi.clearAllMocks();
+  // The storefront defaults to German (see lib/i18n); pin English per test so
+  // copy assertions are deterministic.
+  await i18n.changeLanguage("en");
   mocks.products = [];
   mocks.branding.instagramHandle = "aurora.atelier";
   // jsdom ships none of these; framer-motion's whileInView and embla need them.
@@ -194,5 +198,17 @@ describe("Home page", () => {
     renderHome();
     expect(screen.queryByText("Shop by category")).toBeNull();
     expect(screen.queryByText("New in the shop")).toBeNull();
+  });
+
+  it("renders the storefront copy in German when the language is de", async () => {
+    await i18n.changeLanguage("de");
+    mocks.products = [makeProduct({ id: 1, category: "Rings" })];
+    renderHome();
+    expect(screen.getByText("Willkommen")).toBeTruthy();
+    const cta = screen.getByRole("link", { name: "Zum Shop" });
+    expect(cta.getAttribute("href")).toBe("/shop");
+    expect(screen.getByText("Sicherer Checkout")).toBeTruthy();
+    expect(screen.getByText("Neu im Shop")).toBeTruthy();
+    expect(screen.queryByText("Explore the shop")).toBeNull();
   });
 });
