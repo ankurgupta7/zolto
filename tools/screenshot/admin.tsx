@@ -26,6 +26,7 @@ import Pos from "@/pages/admin/Pos";
 import Channels from "@/pages/admin/Channels";
 import Keys from "@/pages/admin/Keys";
 import Categories from "@/pages/admin/Categories";
+import CsvImport from "@/pages/CsvImport";
 
 const route =
   new URLSearchParams(location.search).get("route") ?? "/admin/account";
@@ -97,6 +98,12 @@ const RESPONSES: Record<string, unknown> = {
     ],
   },
   "instagram.adminList": [],
+  // Import page: provider migration cards + existing-product matching.
+  "migration.status": {
+    stripe: { connected: true, connectAvailable: true },
+    csvProviders: ["sumup", "worldline", "generic"],
+  },
+  "products.adminList": [],
 };
 
 window.fetch = (async (input: RequestInfo | URL) => {
@@ -113,6 +120,7 @@ window.fetch = (async (input: RequestInfo | URL) => {
 
 const PAGES: Record<string, React.ComponentType> = {
   categories: Categories,
+  import: CsvImport,
   account: ShopProfile,
   me: MyAccount,
   pos: Pos,

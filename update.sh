@@ -788,6 +788,18 @@ fi
 # Idempotent; see migrate_0036_merchant_verticals in deploy/lib/db.sh.
 migrate_0036_merchant_verticals
 
+# ── 0037: where the merchant is migrating from ───────────────────────────────
+# Ships drizzle/0019_migrate_from_provider.sql. Signup's "already selling
+# somewhere?" answer, which aims the onboarding checklist's catalogue step at
+# the matching importer (server/onboarding.ts). NULL = started fresh, so every
+# existing store is untouched. Idempotent.
+if [ "$(col_exists tenant_settings migrate_from)" = "0" ]; then
+  run_sql "0037 add tenant_settings.migrate_from" \
+    "ALTER TABLE \`tenant_settings\` ADD \`migrate_from\` varchar(16) NULL;"
+else
+  ok "0037 tenant_settings.migrate_from already exists"
+fi
+
 # ── Record the applied migration set ──────────────────────────────────────────
 # Only reached when every migration above succeeded — `set -e` plus run_sql's
 # die() mean a failure never gets this far, so a half-applied schema is never

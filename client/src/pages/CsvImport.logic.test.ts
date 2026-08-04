@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   IMPORT_CHUNK_SIZE,
   mapHandwrittenItems,
+  mapMigrationRows,
   mapRows,
   parseCsv,
   revalidateRow,
@@ -273,5 +274,78 @@ describe("IMPORT_CHUNK_SIZE", () => {
   it("is a small positive batch size", () => {
     expect(IMPORT_CHUNK_SIZE).toBeGreaterThan(0);
     expect(IMPORT_CHUNK_SIZE).toBeLessThanOrEqual(20);
+  });
+});
+
+describe("mapMigrationRows", () => {
+  it("maps a provider row onto the store's categories", () => {
+    const [row] = mapMigrationRows(
+      [
+        {
+          name: "Silberring",
+          description: "Handgemacht",
+          price: 89.5,
+          rawCategory: "rings",
+          quantity: 3,
+          imageUrl: "https://example.com/r.jpg",
+        },
+      ],
+      TEST_CATEGORIES,
+    );
+    expect(row).toMatchObject({
+      name: "Silberring",
+      description: "Handgemacht",
+      price: 89.5,
+      category: "Rings",
+      quantity: 3,
+      imageUrl: "https://example.com/r.jpg",
+      _valid: true,
+    });
+  });
+
+  it("falls back to the name when the export has no description", () => {
+    const [row] = mapMigrationRows(
+      [
+        {
+          name: "Espresso",
+          description: "",
+          price: 4.5,
+          rawCategory: "",
+          quantity: 1,
+        },
+      ],
+      TEST_CATEGORIES,
+    );
+    expect(row.description).toBe("Espresso");
+    expect(row.category).toBe("Other");
+    expect(row._valid).toBe(true);
+  });
+
+  it("keeps unpriced rows visible but invalid so the merchant fills them in", () => {
+    const [row] = mapMigrationRows(
+      [
+        {
+          name: "Kette",
+          description: "",
+          price: null,
+          rawCategory: "Unbekannt",
+          quantity: 0,
+        },
+      ],
+      TEST_CATEGORIES,
+    );
+    expect(row.price).toBe(0);
+    expect(row.quantity).toBe(1);
+    expect(row._valid).toBe(false);
+    expect(row._errors).toContain("invalid price");
+  });
+
+  it("flags a nameless row instead of dropping it silently", () => {
+    const [row] = mapMigrationRows(
+      [{ name: "  ", description: "x", price: 5, rawCategory: "", quantity: 1 }],
+      TEST_CATEGORIES,
+    );
+    expect(row.name).toBe("(empty)");
+    expect(row._valid).toBe(false);
   });
 });

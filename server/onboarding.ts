@@ -8,6 +8,10 @@
  * progress, -1 = dismissed), written by the two mutations in routers/tenant.ts.
  */
 
+import {
+  MIGRATE_FROM_LABELS,
+  type MigrateFromProvider,
+} from "@shared/const";
 import type { Tenant } from "../drizzle/schema";
 import {
   countTenantProducts,
@@ -69,19 +73,48 @@ export async function deriveOnboardingStatus(
     done: Boolean(settings?.logoUrl || settings?.primaryColor),
   });
 
-  tasks.push({
-    id: "first-product",
-    title: "Add your first product",
-    body: "Snap a photo and let the AI draft the description, or import a CSV of your catalog.",
-    href: "/admin",
-    tourId: "add-product",
-    done: productCount >= 1,
-  });
+  // "Already selling somewhere?" (signup) tailors the catalogue step toward
+  // the matching importer, so a switching merchant is routed to the migration
+  // flow instead of re-typing what they already keyed into Stripe/SumUp/
+  // Worldline. Completion is the same real signal either way: a product row.
+  const migrateFrom = (settings?.migrateFrom ?? null) as
+    | MigrateFromProvider
+    | null;
+  if (migrateFrom === "sumup" || migrateFrom === "worldline") {
+    const label = MIGRATE_FROM_LABELS[migrateFrom];
+    tasks.push({
+      id: "first-product",
+      title: `Bring your catalogue from ${label}`,
+      body: `Export your items as CSV from your ${label} dashboard and upload it on the Import page — you review every item before anything is written.`,
+      href: "/admin/products/import",
+      done: productCount >= 1,
+    });
+  } else if (migrateFrom === "stripe") {
+    tasks.push({
+      id: "first-product",
+      title: "Import your Stripe catalogue",
+      body: "Once your Stripe account is connected (the payments step below), one click on the Import page brings your products across.",
+      href: "/admin/products/import",
+      done: productCount >= 1,
+    });
+  } else {
+    tasks.push({
+      id: "first-product",
+      title: "Add your first product",
+      body: "Snap a photo and let the AI draft the description, or import a CSV of your catalog.",
+      href: "/admin",
+      tourId: "add-product",
+      done: productCount >= 1,
+    });
+  }
 
   tasks.push({
     id: "connect-stripe",
     title: "Connect payments",
-    body: "Link your Stripe account to accept cards online and TWINT / Tap to Pay at the market.",
+    body:
+      migrateFrom === "stripe"
+        ? "Link the Stripe account you already have — your checkout keeps working, and it unlocks the one-click catalogue import above."
+        : "Link your Stripe account to accept cards online and TWINT / Tap to Pay at the market.",
     href: "/admin",
     done: Boolean(tenant.stripeConnectedAccountId),
   });

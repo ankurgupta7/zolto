@@ -136,8 +136,9 @@ describe("Signup wizard", () => {
     fireEvent.change(screen.getByPlaceholderText("you@example.com"), {
       target: { value: "owner@ton.example" },
     });
-    // The only select on step 1 is the vertical picker.
-    fireEvent.change(screen.getByRole("combobox"), {
+    // Step 1 has two selects: the vertical picker, then "already selling
+    // somewhere?".
+    fireEvent.change(screen.getAllByRole("combobox")[0], {
       target: { value: "ceramics" },
     });
     fireEvent.change(
@@ -155,6 +156,62 @@ describe("Signup wizard", () => {
       vertical: "ceramics",
       verticalDescription: "Wheel-thrown stoneware from Bern",
     });
+  });
+
+  it("sends no migration source when the merchant is starting fresh", () => {
+    renderSignup();
+    fillDetailsAndContinue();
+    fireEvent.click(
+      screen.getByRole("button", { name: /choose your colors/i }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: /create store/i }));
+    expect(mocks.createVars).toMatchObject({ migrateFrom: undefined });
+  });
+
+  it("carries the provider a switching merchant names through to create", () => {
+    renderSignup();
+    fireEvent.change(screen.getByPlaceholderText("Your store name"), {
+      target: { value: "Aurora Atelier" },
+    });
+    fireEvent.change(screen.getByPlaceholderText("you@example.com"), {
+      target: { value: "owner@aurora.example" },
+    });
+    // Second select on step 1 — see the vertical test above.
+    fireEvent.change(screen.getAllByRole("combobox")[1], {
+      target: { value: "sumup" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /choose your look/i }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /choose your colors/i }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: /create store/i }));
+    expect(mocks.createVars).toMatchObject({ migrateFrom: "sumup" });
+  });
+
+  it("reassures a switcher about what happens to their catalogue", () => {
+    const { container } = renderSignup();
+    // Nothing promised before they say they're switching.
+    expect(container.textContent).not.toContain("Export your items as CSV");
+
+    fireEvent.change(screen.getAllByRole("combobox")[1], {
+      target: { value: "worldline" },
+    });
+    expect(container.textContent).toContain("Worldline / SIX");
+    expect(container.textContent).toContain("Export your items as CSV");
+
+    // Stripe gets the one-click promise instead of the CSV instructions.
+    fireEvent.change(screen.getAllByRole("combobox")[1], {
+      target: { value: "stripe" },
+    });
+    expect(container.textContent).toContain("one click");
+    expect(container.textContent).not.toContain("Export your items as CSV");
+
+    // "Somewhere else" has no importer of its own, so it promises nothing.
+    fireEvent.change(screen.getAllByRole("combobox")[1], {
+      target: { value: "other" },
+    });
+    expect(container.textContent).not.toContain("Export your items as CSV");
+    expect(container.textContent).not.toContain("one click");
   });
 
   it("selecting a template carries its default color into the branding step", () => {

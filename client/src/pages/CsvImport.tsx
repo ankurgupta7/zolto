@@ -19,8 +19,12 @@ import {
   ChevronRight,
   NotebookPen,
   Sparkles,
+  ArrowRightLeft,
+  CreditCard,
+  AlertTriangle,
 } from "lucide-react";
 import { Link } from "wouter";
+import { resolveConnectPrompt } from "@/lib/connectPrompt";
 
 // ─── CSV parsing ──────────────────────────────────────────────────────────────
 
@@ -224,6 +228,49 @@ export function mapHandwrittenItems(
   });
 }
 
+// ─── Map provider-migration rows to CsvRow ────────────────────────────────────
+
+/**
+ * Rows as server/providerMigration.ts returns them — from a SumUp/Worldline
+ * CSV export or the tenant's connected Stripe catalogue.
+ */
+export interface MigrationSourceRow {
+  name: string;
+  description: string;
+  price: number | null;
+  rawCategory: string;
+  quantity: number;
+  imageUrl?: string;
+}
+
+export function mapMigrationRows(
+  items: MigrationSourceRow[],
+  validCategories: readonly string[],
+): CsvRow[] {
+  return items.map((item) => {
+    const errors: string[] = [];
+    const name = item.name?.trim() ?? "";
+    // Payment providers rarely carry a product description; the storefront
+    // needs one, so start from the name and let the merchant refine it in
+    // the preview instead of flagging every imported row as broken.
+    const description = item.description?.trim() || name;
+    if (!name) errors.push("name required");
+    if (!item.price || item.price <= 0) errors.push("invalid price");
+    const category = normalizeCategory(item.rawCategory ?? "", validCategories);
+    return {
+      name: name || "(empty)",
+      description,
+      price: item.price ?? 0,
+      category: (category ?? "Other") as ProductCategory,
+      quantity: item.quantity > 0 ? item.quantity : 1,
+      imageUrl: item.imageUrl || undefined,
+      _valid: errors.length === 0,
+      _errors: errors,
+      _selected: true,
+    };
+  });
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
 
 type Stage = "input" | "preview" | "done";
@@ -259,8 +306,16 @@ export default function CsvImport() {
 
   const fileRef = useRef<HTMLInputElement>(null);
   const handwritingRef = useRef<HTMLInputElement>(null);
+  const sumupRef = useRef<HTMLInputElement>(null);
+  const worldlineRef = useRef<HTMLInputElement>(null);
 
   const [stage, setStage] = useState<Stage>("input");
+  // Notes from the provider migration parse ("2 repeated rows collapsed",
+  // "prices are in EUR"…) shown above the preview so they survive past a toast.
+  const [migrationWarnings, setMigrationWarnings] = useState<string[]>([]);
+  const [migrationBusy, setMigrationBusy] = useState<
+    "stripe" | "sumup" | "worldline" | null
+  >(null);
   const [sheetUrl, setSheetUrl] = useState("");
   const [rows, setRows] = useState<CsvRow[]>([]);
   const [importResult, setImportResult] = useState<{
@@ -292,6 +347,90 @@ export default function CsvImport() {
     onError: (e) => toast.error(e.message),
   });
 
+  // ── Provider migration (Stripe / SumUp / Worldline) ───────────────────────
+  const isAdmin = isAuthenticated && isStoreAdminRole(user?.role);
+  const { data: migrationStatus } = trpc.migration.status.useQuery(undefined, {
+    enabled: isAdmin,
+  });
+  const stripeConnected = Boolean(migrationStatus?.stripe.connected);
+  // Only needed to offer the connect link when Stripe isn't linked yet.
+  const stripeConnectQuery = trpc.tenant.getStripeConnectUrl.useQuery(
+    undefined,
+    { enabled: isAdmin && migrationStatus !== undefined && !stripeConnected },
+  );
+
+  const showMigrationResult = (
+    rows: MigrationSourceRow[],
+    warnings: string[],
+    sourceLabel: string,
+  ) => {
+    if (rows.length === 0) {
+      toast.error(
+        warnings[0] ??
+          `No products found in the ${sourceLabel} data — check you exported the product/catalogue list.`,
+      );
+      return;
+    }
+    setRows(mapMigrationRows(rows, validCategories));
+    setMigrationWarnings(warnings);
+    setStage("preview");
+    toast.success(
+      `Found ${rows.length} product${rows.length !== 1 ? "s" : ""} in your ${sourceLabel} data — review before importing`,
+    );
+  };
+
+  const handleStripeImport = async () => {
+    if (!stripeConnected) {
+      // Not linked yet: send them through the same Connect flow checkout
+      // uses — linking once powers both payments and this import.
+      const prompt = resolveConnectPrompt(stripeConnectQuery);
+      if (prompt.kind === "redirect") {
+        window.location.href = prompt.url;
+      } else if (prompt.kind === "pending") {
+        toast.info(prompt.message);
+      } else {
+        toast.error(prompt.message);
+      }
+      return;
+    }
+    setMigrationBusy("stripe");
+    try {
+      const result = await utils.client.migration.fetchStripeCatalog.mutate();
+      showMigrationResult(result.rows, result.warnings, "Stripe");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      toast.error(message);
+    } finally {
+      setMigrationBusy(null);
+    }
+  };
+
+  const handleProviderFile =
+    (provider: "sumup" | "worldline", sourceLabel: string) =>
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      e.target.value = "";
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onerror = () => toast.error("Failed to read file");
+      reader.onload = async () => {
+        setMigrationBusy(provider);
+        try {
+          const result = await utils.client.migration.parseProviderCsv.mutate({
+            provider,
+            csv: reader.result as string,
+          });
+          showMigrationResult(result.rows, result.warnings, sourceLabel);
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          toast.error(message);
+        } finally {
+          setMigrationBusy(null);
+        }
+      };
+      reader.readAsText(file, "UTF-8");
+    };
+
   const loadCsv = (text: string) => {
     const raw = parseCsv(text);
     if (raw.length === 0) {
@@ -302,6 +441,7 @@ export default function CsvImport() {
     }
     const mapped = mapRows(raw, validCategories);
     setRows(mapped);
+    setMigrationWarnings([]);
     setStage("preview");
   };
 
@@ -401,6 +541,7 @@ export default function CsvImport() {
     }
     const mapped = mapHandwrittenItems(allItems, validCategories);
     setRows(mapped);
+    setMigrationWarnings([]);
     setStage("preview");
     toast.success(
       `AI extracted ${allItems.length} item${allItems.length !== 1 ? "s" : ""} from ${dataUrls.length} photo${dataUrls.length !== 1 ? "s" : ""}`,
@@ -550,6 +691,122 @@ export default function CsvImport() {
         {/* ── Stage: Input ── */}
         {stage === "input" && (
           <div>
+            {/* Switching from another provider */}
+            <div className="bg-white border border-[var(--brand-border)] p-6 mb-6">
+              <div className="flex items-center gap-2 mb-1">
+                <ArrowRightLeft
+                  size={18}
+                  className="text-[var(--brand-accent)]"
+                />
+                <h2 className="font-serif text-foreground text-lg">
+                  Switching from Stripe, SumUp or Worldline?
+                </h2>
+              </div>
+              <p className="text-muted-foreground text-xs font-sans mb-5">
+                Bring your existing catalogue with you — nothing is written to
+                your shop until you've reviewed every item.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Stripe */}
+                <div className="border border-[var(--brand-border)] p-4 flex flex-col">
+                  <p className="font-serif text-foreground text-sm mb-1">
+                    Stripe
+                  </p>
+                  <p className="text-muted-foreground text-xs font-sans mb-4 flex-1">
+                    {stripeConnected
+                      ? "Your Stripe account is linked — import your product catalogue in one click."
+                      : "Link the Stripe account you already have: your checkout keeps working and your catalogue imports in one click."}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleStripeImport}
+                    disabled={migrationBusy !== null}
+                    data-testid="migrate-stripe-button"
+                    className="flex items-center justify-center gap-2 border border-[var(--brand-ink)] text-[var(--brand-ink)] px-4 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:bg-[var(--brand-ink)] hover:text-white transition-colors disabled:opacity-60"
+                  >
+                    {migrationBusy === "stripe" ? (
+                      <Loader2 size={13} className="animate-spin" />
+                    ) : (
+                      <CreditCard size={13} />
+                    )}
+                    {migrationBusy === "stripe"
+                      ? "Fetching catalogue…"
+                      : stripeConnected
+                        ? "Import Stripe catalogue"
+                        : "Connect Stripe account"}
+                  </button>
+                </div>
+                {/* SumUp */}
+                <div className="border border-[var(--brand-border)] p-4 flex flex-col">
+                  <p className="font-serif text-foreground text-sm mb-1">
+                    SumUp
+                  </p>
+                  <p className="text-muted-foreground text-xs font-sans mb-4 flex-1">
+                    In SumUp, export your item catalogue as CSV (Items → Export)
+                    and upload the file here.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => sumupRef.current?.click()}
+                    disabled={migrationBusy !== null}
+                    data-testid="migrate-sumup-button"
+                    className="flex items-center justify-center gap-2 border border-[var(--brand-ink)] text-[var(--brand-ink)] px-4 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:bg-[var(--brand-ink)] hover:text-white transition-colors disabled:opacity-60"
+                  >
+                    {migrationBusy === "sumup" ? (
+                      <Loader2 size={13} className="animate-spin" />
+                    ) : (
+                      <Upload size={13} />
+                    )}
+                    {migrationBusy === "sumup"
+                      ? "Reading export…"
+                      : "Upload SumUp export"}
+                  </button>
+                  <input
+                    ref={sumupRef}
+                    type="file"
+                    accept=".csv,text/csv"
+                    className="hidden"
+                    onChange={handleProviderFile("sumup", "SumUp")}
+                    data-testid="migrate-sumup-input"
+                  />
+                </div>
+                {/* Worldline */}
+                <div className="border border-[var(--brand-border)] p-4 flex flex-col">
+                  <p className="font-serif text-foreground text-sm mb-1">
+                    Worldline / SIX
+                  </p>
+                  <p className="text-muted-foreground text-xs font-sans mb-4 flex-1">
+                    Upload a Worldline/SIX article or transaction export (CSV) —
+                    repeated sales collapse into one product each.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => worldlineRef.current?.click()}
+                    disabled={migrationBusy !== null}
+                    data-testid="migrate-worldline-button"
+                    className="flex items-center justify-center gap-2 border border-[var(--brand-ink)] text-[var(--brand-ink)] px-4 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:bg-[var(--brand-ink)] hover:text-white transition-colors disabled:opacity-60"
+                  >
+                    {migrationBusy === "worldline" ? (
+                      <Loader2 size={13} className="animate-spin" />
+                    ) : (
+                      <Upload size={13} />
+                    )}
+                    {migrationBusy === "worldline"
+                      ? "Reading export…"
+                      : "Upload Worldline export"}
+                  </button>
+                  <input
+                    ref={worldlineRef}
+                    type="file"
+                    accept=".csv,text/csv"
+                    className="hidden"
+                    onChange={handleProviderFile("worldline", "Worldline")}
+                    data-testid="migrate-worldline-input"
+                  />
+                </div>
+              </div>
+            </div>
+
             {/* Template download */}
             <div className="bg-white border border-[var(--brand-border)] p-5 mb-6 flex items-center justify-between flex-wrap gap-4">
               <div>
@@ -769,6 +1026,28 @@ export default function CsvImport() {
         {/* ── Stage: Preview ── */}
         {stage === "preview" && (
           <div>
+            {/* Notes from the provider-migration parse */}
+            {migrationWarnings.length > 0 && (
+              <div
+                className="border border-amber-300 bg-amber-50 p-4 mb-6"
+                data-testid="migration-warnings"
+              >
+                <div className="flex items-center gap-2 mb-1.5">
+                  <AlertTriangle size={14} className="text-amber-600" />
+                  <p className="font-sans text-xs uppercase tracking-[0.12em] text-amber-800">
+                    Worth checking before you import
+                  </p>
+                </div>
+                <ul className="list-disc pl-5 space-y-1">
+                  {migrationWarnings.map((w) => (
+                    <li key={w} className="text-xs font-sans text-amber-900">
+                      {w}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             {/* Summary bar */}
             <div className="flex flex-wrap items-center gap-4 mb-6">
               <div className="flex items-center gap-2 bg-white border border-[var(--brand-border)] px-4 py-2.5">
@@ -803,6 +1082,7 @@ export default function CsvImport() {
                     setStage("input");
                     setSheetUrl("");
                     setHandwritingPreviews([]);
+                    setMigrationWarnings([]);
                   }}
                   disabled={importProgress !== null}
                   className="border border-[var(--brand-ink)]/20 text-muted-foreground px-5 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:border-[var(--brand-ink)] hover:text-foreground transition-colors disabled:opacity-60"
@@ -1092,6 +1372,7 @@ export default function CsvImport() {
                   setImportResult(null);
                   setSheetUrl("");
                   setHandwritingPreviews([]);
+                  setMigrationWarnings([]);
                 }}
                 className="flex items-center justify-center gap-2 border border-[var(--brand-ink)] text-[var(--brand-ink)] px-8 py-3 text-sm uppercase tracking-[0.15em] font-sans hover:bg-[var(--brand-ink)] hover:text-white transition-colors"
               >

@@ -214,6 +214,30 @@ describe("tenant.create", () => {
     expect(dbMock.seedTenantCategories).toHaveBeenCalledWith(42, "ceramics");
   });
 
+  it("stores where the merchant is migrating from", async () => {
+    await tenantRouter.createCaller(ctx()).create({
+      name: "Ton & Teller",
+      slug: "ton-teller",
+      email: "owner@ton.example",
+      migrateFrom: "sumup",
+    });
+    expect(dbMock.createTenantSettings).toHaveBeenCalledWith(
+      expect.objectContaining({ migrateFrom: "sumup" }),
+    );
+  });
+
+  it("rejects an unknown migration source", async () => {
+    await expect(
+      tenantRouter.createCaller(ctx()).create({
+        name: "Threads",
+        slug: "threads",
+        email: "owner@threads.example",
+        migrateFrom: "square" as never,
+      }),
+    ).rejects.toThrow();
+    expect(dbMock.createTenant).not.toHaveBeenCalled();
+  });
+
   it("rejects an unknown vertical", async () => {
     await expect(
       tenantRouter.createCaller(ctx()).create({

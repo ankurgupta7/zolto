@@ -94,6 +94,11 @@ export const tenantSettings = mysqlTable("tenant_settings", {
   // "jewellery" so every pre-existing store keeps its original behaviour.
   vertical: varchar("vertical", { length: 32 }).notNull().default("jewellery"),
   verticalDescription: text("vertical_description"),
+  // Where this merchant sold before Zolto (signup's "already selling
+  // somewhere?"): 'stripe' | 'sumup' | 'worldline' | 'other', null = fresh
+  // start. Drives the onboarding checklist's bring-your-catalogue step
+  // (server/onboarding.ts) toward the matching importer.
+  migrateFrom: varchar("migrate_from", { length: 16 }),
   // External channel IDs (for multi-tenant bot mapping). These are Discord
   // snowflake IDs, not secrets — the platform's single bot token stays in env
   // (DISCORD_BOT_TOKEN); each tenant just tells us which of THEIR channels the

@@ -11,3 +11,25 @@ export const NOT_ADMIN_ERR_MSG = "You do not have required permission (10002)";
  * remains for call sites that still name the concept.
  */
 export type ProductCategory = string;
+
+/**
+ * Where a new merchant sold before Zolto — signup's "already selling
+ * somewhere?" answer, stored in tenant_settings.migrate_from. Drives the
+ * onboarding checklist's bring-your-catalogue step toward the matching
+ * importer (server/onboarding.ts → /admin/products/import).
+ */
+export const MIGRATE_FROM_PROVIDERS = [
+  "stripe",
+  "sumup",
+  "worldline",
+  "other",
+] as const;
+export type MigrateFromProvider = (typeof MIGRATE_FROM_PROVIDERS)[number];
+
+/** Merchant-facing names for the switch-in sources. */
+export const MIGRATE_FROM_LABELS: Record<MigrateFromProvider, string> = {
+  stripe: "Stripe",
+  sumup: "SumUp",
+  worldline: "Worldline / SIX",
+  other: "somewhere else",
+};
