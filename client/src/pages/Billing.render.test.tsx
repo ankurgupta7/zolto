@@ -5,7 +5,9 @@ import {
   fireEvent,
   waitFor,
   cleanup,
+  act,
 } from "@testing-library/react";
+import i18n from "@/lib/i18n";
 import Billing from "./Billing";
 
 const mocks = vi.hoisted(() => ({
@@ -149,11 +151,12 @@ vi.mock("@/lib/trpc", () => ({
   },
 }));
 
-beforeEach(() => {
+beforeEach(async () => {
   vi.clearAllMocks();
   mocks.authState.user = { role: "admin" };
   mocks.authState.isAuthenticated = true;
   window.history.replaceState({}, "", "/admin/billing");
+  await i18n.changeLanguage("en");
 });
 
 afterEach(() => cleanup());
@@ -173,7 +176,9 @@ describe("Billing page", () => {
 
   it("shows this month's online sales, fee, and agent split", () => {
     render(<Billing />);
-    expect(screen.getByText("CHF 3,200")).toBeTruthy();
+    // Money follows the UI language's Swiss locale (en → en-CH), so thousands
+    // group with an apostrophe rather than the US comma.
+    expect(screen.getByText("CHF 3'200")).toBeTruthy();
     expect(screen.getByText("CHF 32")).toBeTruthy();
     expect(screen.getByText(/via AI agents/)).toBeTruthy();
     expect(screen.getByText(/never carry a Zolto fee/)).toBeTruthy();
@@ -269,5 +274,36 @@ describe("Billing page", () => {
     expect(screen.getByText(/aren't purchasable/)).toBeTruthy();
     expect(screen.queryByText("Upgrade")).toBeNull();
     mocks.statusData = original;
+  });
+});
+
+// Every line of copy here is one `admin`-namespace lookup away from a raw key,
+// so pin that the account fragment resolves in a non-default language rather
+// than falling back to English (or rendering "catalog.account.billing.…").
+describe("Billing page — translated", () => {
+  afterEach(async () => {
+    await act(async () => {
+      await i18n.changeLanguage("en");
+    });
+  });
+
+  it("renders its headings, copy and money in German", async () => {
+    await act(async () => {
+      await i18n.changeLanguage("de");
+    });
+    render(<Billing />);
+    expect(screen.getByText("Plan & Abrechnung")).toBeTruthy();
+    expect(screen.getByText("Online-Verkäufe diesen Monat")).toBeTruthy();
+    expect(screen.getByText("Aktuell")).toBeTruthy();
+    expect(
+      screen.getByText(/Mit Pro würden Sie diesen Monat CHF 7 sparen/),
+    ).toBeTruthy();
+    expect(screen.getByText("Teamplätze")).toBeTruthy();
+    // Swiss grouping holds in every language, and the plan names do not
+    // translate — "Pro" stays "Pro".
+    expect(screen.getByText("CHF 3'200")).toBeTruthy();
+    expect(screen.getByText("Pro")).toBeTruthy();
+    // The invite placeholder is user-visible chrome, so it translates too.
+    expect(screen.getByPlaceholderText("teamkollege@example.com")).toBeTruthy();
   });
 });

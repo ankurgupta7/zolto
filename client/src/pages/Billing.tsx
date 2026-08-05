@@ -9,9 +9,11 @@
  * (see server/billing.ts).
  */
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { isStoreAdminRole } from "@/admin/nav";
 import { trpc } from "@/lib/trpc";
+import { DEFAULT_LANGUAGE, matchSupportedLanguage } from "@/lib/languages";
 import { toast } from "sonner";
 import { Link, useLocation } from "wouter";
 import { SignInOptions } from "@/components/SignInOptions";
@@ -40,7 +42,17 @@ function planLabel(id: string): string {
   return id.charAt(0).toUpperCase() + id.slice(1);
 }
 
+/**
+ * Swiss regional locale for the active UI language ("it" → "it-CH") — money
+ * and invoice dates on this page follow the language the merchant chose, not
+ * whatever locale their browser happens to be set to.
+ */
+function swissLocale(language: string): string {
+  return `${matchSupportedLanguage(language) ?? DEFAULT_LANGUAGE}-CH`;
+}
+
 export default function Billing() {
+  const { t, i18n } = useTranslation("admin");
   const { user, isAuthenticated, loading } = useAuth();
   const [location] = useLocation();
   const utils = trpc.useUtils();
@@ -68,9 +80,9 @@ export default function Billing() {
     onSuccess: ({ emailed, claimUrl }) => {
       setInviteEmail("");
       utils.staff.list.invalidate();
-      if (emailed) toast.success("Invite sent");
+      if (emailed) toast.success(t("catalog.account.billing.toastInviteSent"));
       else {
-        toast.info("Email isn't configured — copy the invite link instead.");
+        toast.info(t("catalog.account.billing.toastInviteLink"));
         navigator.clipboard?.writeText(claimUrl).catch(() => {});
       }
     },
@@ -93,7 +105,7 @@ export default function Billing() {
   const [currencyInput, setCurrencyInput] = useState<string | null>(null);
   const settingsMutation = trpc.tenant.updateSettings.useMutation({
     onSuccess: () => {
-      toast.success("Settings saved");
+      toast.success(t("catalog.account.billing.toastSettingsSaved"));
       utils.tenant.domainStatus.invalidate();
       utils.tenant.getSettings.invalidate();
     },
@@ -104,13 +116,13 @@ export default function Billing() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("upgraded")) {
-      toast.success("Plan updated — welcome aboard!");
+      toast.success(t("catalog.account.billing.toastUpgraded"));
       utils.billing.getStatus.invalidate();
       utils.billing.photoCreditHistory.invalidate();
     } else if (params.get("cancelled")) {
-      toast.info("Checkout cancelled — nothing was charged");
+      toast.info(t("catalog.account.billing.toastCancelled"));
     }
-  }, [location, utils]);
+  }, [location, utils, t]);
 
   if (loading) {
     return (
@@ -127,11 +139,10 @@ export default function Billing() {
     return (
       <div className="max-w-sm mx-auto px-4 py-16 text-center">
         <h2 className="font-serif text-2xl mb-3">
-          Sign in to manage your plan
+          {t("catalog.account.billing.signedOutTitle")}
         </h2>
         <p className="text-sm text-muted-foreground mb-8">
-          Your session has ended — sign in and we&rsquo;ll bring you right back
-          here.
+          {t("catalog.account.billing.signedOutDescription")}
         </p>
         <SignInOptions className="text-left" next={window.location.href} />
       </div>
@@ -141,13 +152,16 @@ export default function Billing() {
   if (!isStoreAdminRole(user?.role)) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-16 text-center">
-        <p className="text-muted-foreground">Admins only.</p>
+        <p className="text-muted-foreground">
+          {t("catalog.account.billing.adminsOnly")}
+        </p>
       </div>
     );
   }
 
   const data = status.data;
   const currentPlan = data?.plan ?? "free";
+  const locale = swissLocale(i18n.language);
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-10 space-y-10">
@@ -156,13 +170,16 @@ export default function Billing() {
           href="/admin"
           className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
         >
-          <ArrowLeft className="h-4 w-4" /> Back to Admin
+          <ArrowLeft className="h-4 w-4" />{" "}
+          {t("catalog.account.billing.backToAdmin")}
         </Link>
-        <h1 className="text-3xl font-semibold mt-2">Plan &amp; Billing</h1>
+        <h1 className="text-3xl font-semibold mt-2">
+          {t("catalog.account.billing.title")}
+        </h1>
         <p className="text-muted-foreground mt-1">
-          Free in person, forever. {data?.onlineFees.feePercentLabel ?? "1%"} on
-          online &amp; AI-agent orders — or Pro, which removes it.
-          Month-to-month, cancel anytime.
+          {t("catalog.account.billing.description", {
+            fee: data?.onlineFees.feePercentLabel ?? "1%",
+          })}
         </p>
       </div>
 
@@ -174,8 +191,7 @@ export default function Billing() {
 
       {data && !data.billingConfigured && (
         <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
-          Paid plans aren't purchasable on this deployment yet (Stripe prices
-          not configured). Everything on your current plan keeps working.
+          {t("catalog.account.billing.notConfigured")}
         </div>
       )}
 
@@ -183,7 +199,8 @@ export default function Billing() {
       {data && (
         <section>
           <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            <CreditCard className="h-5 w-5" /> Plans
+            <CreditCard className="h-5 w-5" />{" "}
+            {t("catalog.account.billing.plansTitle")}
           </h2>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {PLAN_ORDER.map((planId) => {
@@ -207,28 +224,37 @@ export default function Billing() {
                     <span className="font-medium">{planLabel(planId)}</span>
                     {isCurrent && (
                       <span className="text-xs bg-primary text-primary-foreground rounded px-2 py-0.5">
-                        Current
+                        {t("catalog.account.billing.current")}
                       </span>
                     )}
                   </div>
                   <div className="mt-1 text-2xl font-semibold">
-                    {plan.priceChf === 0 ? "Free" : `CHF ${plan.priceChf}`}
+                    {plan.priceChf === 0
+                      ? t("catalog.account.billing.priceFree")
+                      : `CHF ${plan.priceChf}`}
                     {plan.priceChf > 0 && (
                       <span className="text-sm font-normal text-muted-foreground">
-                        /mo
+                        {t("catalog.account.billing.perMonth")}
                       </span>
                     )}
                   </div>
                   <div className="mt-1 text-xs text-muted-foreground">
                     {plan.onlineFeeBps > 0
-                      ? `${plan.onlineFeeBps / 100}% fee on online & agent orders`
-                      : "0% platform fee — keep every sale"}
+                      ? t("catalog.account.billing.planFee", {
+                          percent: plan.onlineFeeBps / 100,
+                        })
+                      : t("catalog.account.billing.planNoFee")}
                   </div>
                   <div className="mt-0.5 text-xs text-muted-foreground">
                     {plan.aiPhotoAllowancePerMonth === null
-                      ? "Unmetered AI"
-                      : `${plan.aiPhotoAllowancePerMonth} AI photo shots / month`}
-                    {` · ${plan.maxProducts.toLocaleString()} products · ${plan.storageGb} GB`}
+                      ? t("catalog.account.billing.planUnmeteredAi")
+                      : t("catalog.account.billing.planAiShots", {
+                          count: plan.aiPhotoAllowancePerMonth,
+                        })}
+                    {` · ${t("catalog.account.billing.planLimits", {
+                      products: plan.maxProducts.toLocaleString(locale),
+                      storage: plan.storageGb,
+                    })}`}
                   </div>
                   <div className="mt-auto pt-4">
                     {canUpgrade ? (
@@ -241,21 +267,21 @@ export default function Billing() {
                         {planCheckout.isPending ? (
                           <Loader2 className="h-4 w-4 animate-spin inline" />
                         ) : (
-                          "Upgrade"
+                          t("catalog.account.billing.upgrade")
                         )}
                       </button>
                     ) : (
                       isCurrent && (
                         <div className="text-center text-sm text-muted-foreground py-2">
                           {data.subscriptionStatus === "trialing"
-                            ? `Trial until ${
-                                data.trialEndsAt
+                            ? t("catalog.account.billing.trialUntil", {
+                                date: data.trialEndsAt
                                   ? new Date(
                                       data.trialEndsAt,
-                                    ).toLocaleDateString()
-                                  : "—"
-                              }`
-                            : "Active"}
+                                    ).toLocaleDateString(locale)
+                                  : "—",
+                              })
+                            : t("catalog.account.billing.active")}
                         </div>
                       )
                     )}
@@ -271,41 +297,52 @@ export default function Billing() {
       {data && (
         <section>
           <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            <CreditCard className="h-5 w-5" /> Online sales this month
+            <CreditCard className="h-5 w-5" />{" "}
+            {t("catalog.account.billing.onlineSalesTitle")}
           </h2>
           <div className="rounded-lg border p-5 space-y-3">
             <div className="flex flex-wrap gap-8">
               <div>
                 <div className="text-3xl font-semibold">
-                  CHF {data.onlineFees.monthGmvChf.toLocaleString()}
+                  CHF {data.onlineFees.monthGmvChf.toLocaleString(locale)}
                 </div>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {data.onlineFees.monthOrderCount} online &amp; agent orders
+                  {t("catalog.account.billing.orderCount", {
+                    count: data.onlineFees.monthOrderCount,
+                  })}
                   {data.onlineFees.monthAgentGmvChf > 0 &&
-                    ` — CHF ${data.onlineFees.monthAgentGmvChf.toLocaleString()} via AI agents`}
+                    ` — ${t("catalog.account.billing.agentSplit", {
+                      amount:
+                        data.onlineFees.monthAgentGmvChf.toLocaleString(locale),
+                    })}`}
                 </p>
               </div>
               <div>
                 <div className="text-3xl font-semibold">
-                  CHF {data.onlineFees.monthFeeChf.toLocaleString()}
+                  CHF {data.onlineFees.monthFeeChf.toLocaleString(locale)}
                 </div>
                 <p className="text-sm text-muted-foreground mt-1">
                   {data.plan === "pro"
-                    ? "Platform fees (0% on Pro)"
-                    : `Platform fees (${data.onlineFees.feePercentLabel} on ${data.onlineFees.appliesTo})`}
+                    ? t("catalog.account.billing.feesOnPro")
+                    : t("catalog.account.billing.feesOnFree", {
+                        percent: data.onlineFees.feePercentLabel,
+                        appliesTo: data.onlineFees.appliesTo,
+                      })}
                 </p>
               </div>
             </div>
             <p className="text-xs text-muted-foreground">
-              In-person POS sales never carry a Zolto fee, on any plan.
+              {t("catalog.account.billing.posNeverFee")}
             </p>
             {data.upsell && data.upsell.savingsChf > 0 && (
               <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
-                You'd save CHF {data.upsell.savingsChf.toLocaleString()} on Pro
-                this month — past CHF{" "}
-                {data.upsell.breakEvenOnlineChf.toLocaleString()}/month online,
-                Pro's flat CHF {data.upsell.proPriceChf} beats the{" "}
-                {data.onlineFees.feePercentLabel} fee.
+                {t("catalog.account.billing.upsell", {
+                  savings: data.upsell.savingsChf.toLocaleString(locale),
+                  breakEven:
+                    data.upsell.breakEvenOnlineChf.toLocaleString(locale),
+                  proPrice: data.upsell.proPriceChf,
+                  percent: data.onlineFees.feePercentLabel,
+                })}
                 {data.billingConfigured && (
                   <button
                     type="button"
@@ -313,7 +350,7 @@ export default function Billing() {
                     disabled={planCheckout.isPending}
                     onClick={() => planCheckout.mutate({ plan: "pro" })}
                   >
-                    Upgrade now
+                    {t("catalog.account.billing.upgradeNow")}
                   </button>
                 )}
               </div>
@@ -326,15 +363,18 @@ export default function Billing() {
       {data && (
         <section>
           <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            <Sparkles className="h-5 w-5" /> AI photo shots
+            <Sparkles className="h-5 w-5" />{" "}
+            {t("catalog.account.billing.aiTitle")}
           </h2>
           <div className="rounded-lg border p-5">
             {data.ai.allowancePerMonth === null ? (
               <p className="text-sm">
-                <span className="text-2xl font-semibold">Unmetered</span>
+                <span className="text-2xl font-semibold">
+                  {t("catalog.account.billing.unmetered")}
+                </span>
                 <span className="text-muted-foreground">
                   {" "}
-                  — AI photos, descriptions and chat are never counted on Pro.
+                  {t("catalog.account.billing.unmeteredNote")}
                 </span>
               </p>
             ) : (
@@ -343,12 +383,13 @@ export default function Billing() {
                   {data.ai.usedThisMonth}
                   <span className="text-base font-normal text-muted-foreground">
                     {" "}
-                    of {data.ai.allowancePerMonth} used this month
+                    {t("catalog.account.billing.aiUsed", {
+                      allowance: data.ai.allowancePerMonth,
+                    })}
                   </span>
                 </div>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Your allowance resets monthly. Upgrade to Pro for unmetered AI
-                  — queries are never the meter, on any plan.
+                  {t("catalog.account.billing.aiNote")}
                 </p>
               </div>
             )}
@@ -360,7 +401,8 @@ export default function Billing() {
       {history.data && history.data.length > 0 && (
         <section>
           <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            <ImageIcon className="h-5 w-5" /> AI generation log
+            <ImageIcon className="h-5 w-5" />{" "}
+            {t("catalog.account.billing.logTitle")}
           </h2>
           <div className="rounded-lg border divide-y">
             {history.data.map((entry) => (
@@ -378,16 +420,18 @@ export default function Billing() {
                   </span>
                   <span className="text-muted-foreground">
                     {entry.kind === "monthly_grant" &&
-                      "Plan bucket (pre-pivot)"}
+                      t("catalog.account.billing.ledgerMonthlyGrant")}
                     {entry.kind === "purchase" &&
-                      "Credit pack purchase (pre-pivot)"}
-                    {entry.kind === "consumption" && "AI photo generated"}
+                      t("catalog.account.billing.ledgerPurchase")}
+                    {entry.kind === "consumption" &&
+                      t("catalog.account.billing.ledgerConsumption")}
                     {entry.kind === "manual_adjustment" &&
-                      (entry.note ?? "Adjustment")}
+                      (entry.note ??
+                        t("catalog.account.billing.ledgerAdjustment"))}
                   </span>
                 </div>
                 <span className="text-xs text-muted-foreground">
-                  {new Date(entry.createdAt).toLocaleDateString()}
+                  {new Date(entry.createdAt).toLocaleDateString(locale)}
                 </span>
               </div>
             ))}
@@ -399,9 +443,13 @@ export default function Billing() {
       {staffQuery.data && (
         <section>
           <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            <Users className="h-5 w-5" /> Team seats
+            <Users className="h-5 w-5" />{" "}
+            {t("catalog.account.billing.teamTitle")}
             <span className="text-sm font-normal text-muted-foreground">
-              {staffQuery.data.seatsUsed} of {staffQuery.data.seatLimit} used
+              {t("catalog.account.billing.seatsUsed", {
+                used: staffQuery.data.seatsUsed,
+                limit: staffQuery.data.seatLimit,
+              })}
             </span>
           </h2>
           <div className="rounded-lg border divide-y">
@@ -423,7 +471,9 @@ export default function Billing() {
                     className="text-muted-foreground hover:text-red-600"
                     disabled={removeMutation.isPending}
                     onClick={() => removeMutation.mutate({ userId: member.id })}
-                    aria-label={`Remove ${member.email}`}
+                    aria-label={t("catalog.account.billing.removeAria", {
+                      email: member.email,
+                    })}
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
@@ -436,7 +486,7 @@ export default function Billing() {
                 className="flex items-center justify-between px-4 py-2.5 text-sm"
               >
                 <span className="text-muted-foreground">
-                  {invite.email} · invited
+                  {invite.email} · {t("catalog.account.billing.invited")}
                 </span>
                 <button
                   type="button"
@@ -444,7 +494,7 @@ export default function Billing() {
                   disabled={revokeMutation.isPending}
                   onClick={() => revokeMutation.mutate({ inviteId: invite.id })}
                 >
-                  Revoke
+                  {t("catalog.account.billing.revoke")}
                 </button>
               </div>
             ))}
@@ -460,7 +510,7 @@ export default function Billing() {
             <input
               type="email"
               required
-              placeholder="teammate@example.com"
+              placeholder={t("catalog.account.billing.invitePlaceholder")}
               value={inviteEmail}
               onChange={(e) => setInviteEmail(e.target.value)}
               className="flex-1 rounded-md border px-3 py-2 text-sm"
@@ -473,12 +523,13 @@ export default function Billing() {
               }
               className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm text-primary-foreground hover:opacity-90 disabled:opacity-50"
             >
-              <UserPlus className="h-4 w-4" /> Invite
+              <UserPlus className="h-4 w-4" />{" "}
+              {t("catalog.account.billing.invite")}
             </button>
           </form>
           {staffQuery.data.seatsUsed >= staffQuery.data.seatLimit && (
             <p className="text-xs text-muted-foreground mt-1.5">
-              All seats are in use — upgrade for more.
+              {t("catalog.account.billing.seatsFull")}
             </p>
           )}
         </section>
@@ -488,15 +539,18 @@ export default function Billing() {
       {data && (
         <section>
           <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            <Globe className="h-5 w-5" /> Store settings
+            <Globe className="h-5 w-5" />{" "}
+            {t("catalog.account.billing.storeSettingsTitle")}
           </h2>
           <div className="rounded-lg border p-5 space-y-5">
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium">Custom domain</span>
+                <span className="text-sm font-medium">
+                  {t("catalog.account.billing.customDomain")}
+                </span>
                 {!CUSTOM_DOMAIN_PLANS.has(currentPlan) && (
                   <span className="text-xs text-muted-foreground">
-                    Pro plan
+                    {t("catalog.account.billing.proPlanBadge")}
                   </span>
                 )}
               </div>
@@ -512,7 +566,9 @@ export default function Billing() {
                   >
                     <input
                       type="text"
-                      placeholder="shop.example.com"
+                      placeholder={t(
+                        "catalog.account.billing.domainPlaceholder",
+                      )}
                       value={domainInput ?? domainStatus.data?.domain ?? ""}
                       onChange={(e) => setDomainInput(e.target.value)}
                       className="flex-1 rounded-md border px-3 py-2 text-sm"
@@ -522,20 +578,23 @@ export default function Billing() {
                       disabled={settingsMutation.isPending}
                       className="rounded-md bg-primary px-3 py-2 text-sm text-primary-foreground hover:opacity-90 disabled:opacity-50"
                     >
-                      Save
+                      {t("catalog.account.billing.save")}
                     </button>
                   </form>
                   {domainStatus.data?.domain && domainStatus.data.expected && (
                     <p className="text-xs mt-1.5">
                       {domainStatus.data.pointsToUs ? (
                         <span className="text-green-700">
-                          ✓ {domainStatus.data.domain} points to us — HTTPS is
-                          issued automatically on first visit.
+                          {t("catalog.account.billing.domainOk", {
+                            domain: domainStatus.data.domain,
+                          })}
                         </span>
                       ) : (
                         <span className="text-amber-700">
-                          Create a CNAME record: {domainStatus.data.domain} →{" "}
-                          {domainStatus.data.expected}, then wait a few minutes.
+                          {t("catalog.account.billing.domainPending", {
+                            domain: domainStatus.data.domain,
+                            expected: domainStatus.data.expected,
+                          })}
                         </span>
                       )}
                     </p>
@@ -543,17 +602,19 @@ export default function Billing() {
                 </>
               ) : (
                 <p className="text-sm text-muted-foreground">
-                  Serve your store on your own domain with managed HTTPS.
+                  {t("catalog.account.billing.domainLocked")}
                 </p>
               )}
             </div>
 
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium">Store currency</span>
+                <span className="text-sm font-medium">
+                  {t("catalog.account.billing.storeCurrency")}
+                </span>
                 {!MULTI_CURRENCY_PLANS.has(currentPlan) && (
                   <span className="text-xs text-muted-foreground">
-                    Pro plan
+                    {t("catalog.account.billing.proPlanBadge")}
                   </span>
                 )}
               </div>
@@ -585,12 +646,11 @@ export default function Billing() {
                   }
                   className="rounded-md bg-primary px-3 py-2 text-sm text-primary-foreground hover:opacity-90 disabled:opacity-50"
                 >
-                  Save
+                  {t("catalog.account.billing.save")}
                 </button>
               </form>
               <p className="text-xs text-muted-foreground mt-1.5">
-                Prices across your storefront and Stripe checkout are shown and
-                charged in this currency. Amounts stay as entered.
+                {t("catalog.account.billing.currencyNote")}
               </p>
             </div>
           </div>
@@ -599,8 +659,8 @@ export default function Billing() {
 
       {data && (
         <p className="text-xs text-muted-foreground flex items-center gap-1">
-          <Check className="h-3 w-3" /> Payments are handled by Stripe. Cancel
-          anytime — your store and data stay on the free plan.
+          <Check className="h-3 w-3" />{" "}
+          {t("catalog.account.billing.stripeFooter")}
         </p>
       )}
     </div>
