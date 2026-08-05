@@ -118,23 +118,28 @@ describe("GuidedTour", () => {
         <div>
           {running && (
             <button type="button" data-tour="late">
-              Late
+              Unfolded control
             </button>
           )}
           <GuidedTour
             tourId="test"
             steps={[
-              { target: '[data-tour="late"]', titleKey: "Late", bodyKey: "b" },
+              {
+                target: '[data-tour="late"]',
+                titleKey: "Late step",
+                bodyKey: "b",
+              },
             ]}
           />
         </div>
       );
     }
     render(<LateTarget />);
-    // The step is not skipped: the target appears a commit later and the
-    // tooltip lands on it.
-    expect(await screen.findByText("Late")).toBeTruthy();
-    await waitFor(() => expect(screen.getByRole("group")).toBeTruthy());
+    // The target appears a commit after the tour starts…
+    expect(await screen.findByText("Unfolded control")).toBeTruthy();
+    // …and the step is shown rather than skipped for having no target.
+    expect(await screen.findByText("Late step")).toBeTruthy();
+    expect(screen.getByTestId("tour-spotlight")).toBeTruthy();
   });
 
   it("reports that a tour is running only while it is on", async () => {

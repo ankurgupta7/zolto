@@ -921,8 +921,10 @@ describe("Admin page — header tools on a phone", () => {
       expect(screen.getByRole("link", { name: "CSV Import" })).toBeTruthy(),
     );
     expect(screen.getByRole("button", { name: "Connect Stripe" })).toBeTruthy();
-    // The merchant never opened it, so it folds away when the tour ends.
-    fireEvent.click(screen.getByText("Skip"));
+    // The merchant never opened it, so it folds away when the tour ends. The
+    // overlay renders a frame after the menu unfolds — it needs one measure
+    // pass to place itself — so wait for its Skip rather than assuming it.
+    fireEvent.click(await screen.findByText("Skip"));
     await waitFor(() =>
       expect(screen.queryByRole("link", { name: "CSV Import" })).toBeNull(),
     );
