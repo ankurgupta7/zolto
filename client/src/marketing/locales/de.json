@@ -394,6 +394,10 @@
         "q": "Wie lange dauert die Einrichtung eines Shops?",
         "a": "Etwa einen Nachmittag. Laden Sie ein paar Produkte hoch (oder importieren Sie ein CSV), lassen Sie die KI Beschreibungen entwerfen und Ihre Fotos stylen, verbinden Sie die Zahlungen — und Sie können noch am selben Tag live sein."
       },
+      "I already sell with Stripe, SumUp or Worldline — how do I switch?": {
+        "q": "Ich verkaufe bereits mit Stripe, SumUp oder Worldline — wie wechsle ich?",
+        "a": "Nehmen Sie Ihren Katalog mit, statt ihn neu zu erfassen. Wenn Sie Stripe nutzen, verbinden Sie einfach Ihr bestehendes Stripe-Konto — Ihr Checkout läuft weiter und Ihre Produkte werden mit einem Klick importiert. Von SumUp oder Worldline/SIX laden Sie den CSV-Export aus deren Dashboard hoch, und Zolto liest ihn aus (inklusive deutscher und französischer Spaltentitel sowie Schweizer Preisformate). Sie prüfen jeden Artikel, bevor irgendetwas in Ihren Shop geschrieben wird."
+      },
       "Do I need to be technical?": {
         "q": "Muss ich technisch versiert sein?",
         "a": "Nein. Zolto ist für Kunstschaffende gebaut, nicht für Shop-Manager. Die KI erledigt die Einrichtungs-Fleissarbeit, und eine geführte Tour begleitet Sie durch das Dashboard."

@@ -394,6 +394,10 @@
         "q": "How long does it take to set up a store?",
         "a": "About an afternoon. Upload a few products (or import a CSV), let the AI draft descriptions and style your photos, connect payments, and you can be live the same day."
       },
+      "I already sell with Stripe, SumUp or Worldline — how do I switch?": {
+        "q": "I already sell with Stripe, SumUp or Worldline — how do I switch?",
+        "a": "Bring your catalogue with you instead of re-typing it. If you're on Stripe, link the Stripe account you already have — your checkout keeps working and your products import in one click. From SumUp or Worldline/SIX, upload the CSV export from their dashboard and Zolto reads it (including German/French headers and Swiss price formats). You review every item before anything is written to your shop."
+      },
       "Do I need to be technical?": {
         "q": "Do I need to be technical?",
         "a": "No. Zolto is built for makers, not store managers. The AI does the setup busywork, and a guided tour walks you through the dashboard."

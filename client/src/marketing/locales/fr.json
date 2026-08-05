@@ -394,6 +394,10 @@
         "q": "Combien de temps faut-il pour créer une boutique ?",
         "a": "Environ un après-midi. Ajoutez quelques produits (ou importez un CSV), laissez l'IA rédiger les descriptions et styliser vos photos, connectez les paiements, et vous pouvez être en ligne le jour même."
       },
+      "I already sell with Stripe, SumUp or Worldline — how do I switch?": {
+        "q": "Je vends déjà avec Stripe, SumUp ou Worldline — comment migrer ?",
+        "a": "Emportez votre catalogue au lieu de le ressaisir. Si vous êtes sur Stripe, reliez le compte Stripe que vous avez déjà — votre paiement continue de fonctionner et vos produits s'importent en un clic. Depuis SumUp ou Worldline/SIX, téléversez l'export CSV de leur tableau de bord et Zolto le lit (y compris les en-têtes allemands et français et les formats de prix suisses). Vous vérifiez chaque article avant que quoi que ce soit ne soit écrit dans votre boutique."
+      },
       "Do I need to be technical?": {
         "q": "Dois-je être à l'aise avec la technique ?",
         "a": "Non. Zolto est conçu pour les artisans, pas pour les gérants de boutique. L'IA fait la corvée de mise en place, et une visite guidée vous accompagne dans le tableau de bord."

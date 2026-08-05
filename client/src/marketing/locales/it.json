@@ -394,6 +394,10 @@
         "q": "Quanto tempo serve per configurare un negozio?",
         "a": "Circa un pomeriggio. Carichi qualche prodotto (o importi un CSV), lasci che l'IA prepari le descrizioni e sistemi le foto, colleghi i pagamenti, e può essere online il giorno stesso."
       },
+      "I already sell with Stripe, SumUp or Worldline — how do I switch?": {
+        "q": "Vendo già con Stripe, SumUp o Worldline — come faccio a passare a Zolto?",
+        "a": "Porti con sé il Suo catalogo invece di riscriverlo. Se usa Stripe, colleghi l'account Stripe che ha già — il Suo checkout continua a funzionare e i prodotti si importano con un clic. Da SumUp o Worldline/SIX, carichi l'esportazione CSV dalla loro dashboard e Zolto la legge (comprese le intestazioni in tedesco e francese e i formati di prezzo svizzeri). Lei controlla ogni articolo prima che qualcosa venga scritto nel Suo negozio."
+      },
       "Do I need to be technical?": {
         "q": "Devo essere esperto di tecnologia?",
         "a": "No. Zolto è costruito per artigiani, non per gestori di negozi. L'IA si occupa del lavoro noioso della configurazione, e un tour guidato La accompagna nella dashboard."
