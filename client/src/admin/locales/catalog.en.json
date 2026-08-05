@@ -518,6 +518,93 @@
         "next": "Next",
         "done": "Done"
       }
+    },
+    "tour": {
+      "addProduct": {
+        "add": {
+          "title": "Add your first product",
+          "body": "Click here. Snap a photo — the AI drafts the title, description and price for you."
+        },
+        "bulk": {
+          "title": "…or import a whole box",
+          "body": "Have a batch of items? Point your camera at each one — a draft product is created per photo."
+        }
+      },
+      "connectStripe": {
+        "connect": {
+          "title": "Connect your Stripe account",
+          "body": "Click here to link your own Stripe — customers pay directly into it, and it unlocks Tap to Pay in the POS app."
+        }
+      },
+      "admin": {
+        "welcome": {
+          "title": "Welcome to your catalogue",
+          "body": "This is your store's control room — add and edit products, import in bulk, and see how the store is doing. Here's a 30-second tour."
+        },
+        "addProduct": {
+          "title": "Add a product",
+          "body": "Add a single item by hand — name, price, category, photo, and description. The AI can draft the description for you."
+        },
+        "csvImport": {
+          "title": "Import in bulk",
+          "body": "Already have a spreadsheet? Import your whole catalogue at once with CSV, and use Bulk Photo Upload to attach images."
+        },
+        "autoTranslate": {
+          "title": "Let AI fill the gaps",
+          "body": "Auto-Translate and Re-Categorise use AI to complete missing English copy and sort products into the right category — you review before anything is applied."
+        },
+        "connectStripe": {
+          "title": "Get paid directly",
+          "body": "Connect your own Stripe account so your storefront's customers pay straight into it. Until you do, checkout falls back to a manual flow."
+        },
+        "insights": {
+          "title": "See what's working",
+          "body": "Insights summarises your orders and revenue so you can spot your best sellers. That's the tour — you can replay it anytime."
+        }
+      }
+    },
+    "onboarding": {
+      "tasks": {
+        "claimAdmin": {
+          "title": "Claim your store",
+          "body": "Sign in so this account becomes the store's admin."
+        },
+        "brandStore": {
+          "title": "Add your branding",
+          "body": "Upload your logo and pick your brand color — the storefront themes itself from these."
+        },
+        "firstProduct": {
+          "title": "Add your first product",
+          "body": "Snap a photo and let the AI draft the description, or import a CSV of your catalog.",
+          "migrateTitle": "Bring your catalogue from {{provider}}",
+          "migrateBody": "Export your items as CSV from your {{provider}} dashboard and upload it on the Import page — you review every item before anything is written.",
+          "stripeTitle": "Import your Stripe catalogue",
+          "stripeBody": "Once your Stripe account is connected (the payments step below), one click on the Import page brings your products across."
+        },
+        "connectStripe": {
+          "title": "Connect payments",
+          "body": "Link your Stripe account to accept cards online and TWINT / Tap to Pay at the market.",
+          "migrateBody": "Link the Stripe account you already have — your checkout keeps working, and it unlocks the one-click catalogue import above."
+        },
+        "firstAiPhoto": {
+          "title": "Style a product photo with AI",
+          "body": "Turn one phone photo into a clean catalogue shot — included with your plan."
+        },
+        "inviteStaff": {
+          "title": "Invite your team",
+          "body_one": "Your plan includes {{count}} staff seat — invite a teammate to run the register.",
+          "body_other": "Your plan includes {{count}} staff seats — invite a teammate to run the register."
+        },
+        "customDomain": {
+          "title": "Set up your custom domain",
+          "body": "Serve the store on your own domain with managed HTTPS."
+        },
+        "posReady": {
+          "title": "Take a card payment on your phone",
+          "body": "Install the Zolto POS app and sign in with your POS key — the first card sale finishes the setup automatically.",
+          "blockedStripe": "Connect Stripe first (the step above)."
+        }
+      }
     }
   }
 }

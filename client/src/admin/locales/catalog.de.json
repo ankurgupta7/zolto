@@ -518,6 +518,93 @@
         "next": "Weiter",
         "done": "Fertig"
       }
+    },
+    "tour": {
+      "addProduct": {
+        "add": {
+          "title": "Fügen Sie Ihr erstes Produkt hinzu",
+          "body": "Klicken Sie hier. Machen Sie ein Foto — die KI entwirft Titel, Beschreibung und Preis für Sie."
+        },
+        "bulk": {
+          "title": "… oder importieren Sie gleich eine ganze Kiste",
+          "body": "Haben Sie einen Schwung Artikel? Richten Sie die Kamera auf jeden einzelnen — pro Foto entsteht ein Produktentwurf."
+        }
+      },
+      "connectStripe": {
+        "connect": {
+          "title": "Verbinden Sie Ihr Stripe-Konto",
+          "body": "Klicken Sie hier, um Ihr eigenes Stripe zu verknüpfen — die Kundschaft zahlt direkt darauf ein, und Tap to Pay in der POS-App wird freigeschaltet."
+        }
+      },
+      "admin": {
+        "welcome": {
+          "title": "Willkommen in Ihrem Katalog",
+          "body": "Das ist die Schaltzentrale Ihres Shops — Produkte anlegen und bearbeiten, in Massen importieren und sehen, wie der Shop läuft. Hier ist eine 30-Sekunden-Tour."
+        },
+        "addProduct": {
+          "title": "Produkt hinzufügen",
+          "body": "Legen Sie einen einzelnen Artikel von Hand an — Name, Preis, Kategorie, Foto und Beschreibung. Die KI kann die Beschreibung für Sie entwerfen."
+        },
+        "csvImport": {
+          "title": "In Massen importieren",
+          "body": "Haben Sie bereits eine Tabelle? Importieren Sie Ihren ganzen Katalog auf einmal per CSV und hängen Sie die Bilder per Massen-Foto-Upload an."
+        },
+        "autoTranslate": {
+          "title": "Lassen Sie die KI die Lücken füllen",
+          "body": "Auto-Übersetzen und Neu kategorisieren ergänzen per KI fehlende englische Texte und sortieren Produkte in die richtige Kategorie — Sie prüfen alles, bevor etwas übernommen wird."
+        },
+        "connectStripe": {
+          "title": "Direkt bezahlt werden",
+          "body": "Verbinden Sie Ihr eigenes Stripe-Konto, damit die Kundschaft Ihres Shops direkt darauf einzahlt. Bis dahin fällt der Checkout auf einen manuellen Ablauf zurück."
+        },
+        "insights": {
+          "title": "Sehen Sie, was funktioniert",
+          "body": "Insights fasst Ihre Bestellungen und Ihren Umsatz zusammen, damit Sie Ihre Bestseller erkennen. Das war die Tour — Sie können sie jederzeit erneut abspielen."
+        }
+      }
+    },
+    "onboarding": {
+      "tasks": {
+        "claimAdmin": {
+          "title": "Übernehmen Sie Ihren Shop",
+          "body": "Melden Sie sich an, damit dieses Konto zum Admin des Shops wird."
+        },
+        "brandStore": {
+          "title": "Fügen Sie Ihr Branding hinzu",
+          "body": "Laden Sie Ihr Logo hoch und wählen Sie Ihre Markenfarbe — Ihr Shop gestaltet sich daraus selbst."
+        },
+        "firstProduct": {
+          "title": "Fügen Sie Ihr erstes Produkt hinzu",
+          "body": "Machen Sie ein Foto und lassen Sie die KI die Beschreibung entwerfen, oder importieren Sie eine CSV-Datei Ihres Katalogs.",
+          "migrateTitle": "Holen Sie Ihren Katalog von {{provider}}",
+          "migrateBody": "Exportieren Sie Ihre Artikel als CSV aus Ihrem {{provider}}-Dashboard und laden Sie die Datei auf der Import-Seite hoch — Sie prüfen jeden Artikel, bevor etwas geschrieben wird.",
+          "stripeTitle": "Importieren Sie Ihren Stripe-Katalog",
+          "stripeBody": "Sobald Ihr Stripe-Konto verbunden ist (der Zahlungsschritt unten), holt ein Klick auf der Import-Seite Ihre Produkte herüber."
+        },
+        "connectStripe": {
+          "title": "Zahlungen verbinden",
+          "body": "Verknüpfen Sie Ihr Stripe-Konto, um online Karten und am Markt TWINT / Tap to Pay zu akzeptieren.",
+          "migrateBody": "Verknüpfen Sie das Stripe-Konto, das Sie bereits haben — Ihr Checkout läuft weiter, und der Ein-Klick-Katalogimport oben wird freigeschaltet."
+        },
+        "firstAiPhoto": {
+          "title": "Gestalten Sie ein Produktfoto mit KI",
+          "body": "Machen Sie aus einem Handyfoto eine saubere Katalogaufnahme — in Ihrem Plan enthalten."
+        },
+        "inviteStaff": {
+          "title": "Laden Sie Ihr Team ein",
+          "body_one": "Ihr Plan enthält {{count}} Mitarbeiterplatz — laden Sie eine Kollegin oder einen Kollegen ein, die Kasse zu übernehmen.",
+          "body_other": "Ihr Plan enthält {{count}} Mitarbeiterplätze — laden Sie eine Kollegin oder einen Kollegen ein, die Kasse zu übernehmen."
+        },
+        "customDomain": {
+          "title": "Richten Sie Ihre eigene Domain ein",
+          "body": "Betreiben Sie den Shop unter Ihrer eigenen Domain mit verwaltetem HTTPS."
+        },
+        "posReady": {
+          "title": "Nehmen Sie eine Kartenzahlung auf Ihrem Handy entgegen",
+          "body": "Installieren Sie die Zolto POS-App und melden Sie sich mit Ihrem POS-Schlüssel an — der erste Kartenverkauf schliesst die Einrichtung automatisch ab.",
+          "blockedStripe": "Verbinden Sie zuerst Stripe (der Schritt oben)."
+        }
+      }
     }
   }
 }

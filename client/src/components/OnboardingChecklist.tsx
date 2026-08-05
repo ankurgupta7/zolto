@@ -7,6 +7,10 @@
  * While visible it polls every 5s. Open tasks offer "Go there" (deep link)
  * and "Show me" (launches the GuidedTour for that task); blocked tasks are
  * greyed with the server's reason. All done → congratulates and offers dismiss.
+ *
+ * Copy is translated HERE, not on the server: a task arrives as an i18next key
+ * plus its interpolation values (server/onboarding.ts), so the checklist
+ * follows the merchant's language instead of the server's.
  */
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -114,15 +118,17 @@ export default function OnboardingChecklist() {
                         : "text-[var(--brand-text)]"
                     }`}
                   >
-                    {task.title}
+                    {t(task.titleKey, task.params ?? {})}
                   </p>
                   {!task.done && (
                     <p className="mt-0.5 text-xs text-[var(--brand-muted-2)]">
-                      {task.blockedReason ?? task.body}
+                      {task.blockedReasonKey
+                        ? t(task.blockedReasonKey)
+                        : t(task.bodyKey, task.params ?? {})}
                     </p>
                   )}
                 </div>
-                {!task.done && !task.blockedReason && (
+                {!task.done && !task.blockedReasonKey && (
                   <div className="flex flex-shrink-0 items-center gap-2">
                     {task.href && (
                       <Link
@@ -144,7 +150,7 @@ export default function OnboardingChecklist() {
                     )}
                   </div>
                 )}
-                {!task.done && task.blockedReason && (
+                {!task.done && task.blockedReasonKey && (
                   <span className="flex-shrink-0 text-[10px] uppercase tracking-[0.1em] text-[var(--brand-muted)]">
                     {t("catalog.components.onboarding.blocked")}
                   </span>

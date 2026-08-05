@@ -541,6 +541,94 @@
         "next": "Avanti",
         "done": "Fine"
       }
+    },
+    "tour": {
+      "addProduct": {
+        "add": {
+          "title": "Aggiunga il Suo primo prodotto",
+          "body": "Clicchi qui. Scatti una foto — l'IA redige titolo, descrizione e prezzo per Lei."
+        },
+        "bulk": {
+          "title": "… o importi un'intera cassa",
+          "body": "Ha un lotto di articoli? Punti la fotocamera su ognuno — per ogni foto viene creata una bozza di prodotto."
+        }
+      },
+      "connectStripe": {
+        "connect": {
+          "title": "Colleghi il Suo conto Stripe",
+          "body": "Clicchi qui per collegare il Suo conto Stripe — i clienti pagano direttamente su di esso e si sblocca Tap to Pay nell'app POS."
+        }
+      },
+      "admin": {
+        "welcome": {
+          "title": "Benvenuto nel Suo catalogo",
+          "body": "Questa è la cabina di regia del Suo negozio — aggiunga e modifichi prodotti, importi in blocco e veda come sta andando il negozio. Ecco un tour di 30 secondi."
+        },
+        "addProduct": {
+          "title": "Aggiungere un prodotto",
+          "body": "Aggiunga un singolo articolo a mano — nome, prezzo, categoria, foto e descrizione. L'IA può redigere la descrizione per Lei."
+        },
+        "csvImport": {
+          "title": "Importare in blocco",
+          "body": "Ha già un foglio di calcolo? Importi tutto il Suo catalogo in una volta con CSV e usi il caricamento foto in blocco per allegare le immagini."
+        },
+        "autoTranslate": {
+          "title": "Lasci che l'IA colmi le lacune",
+          "body": "Traduzione automatica e Ricategorizza usano l'IA per completare i testi inglesi mancanti e ordinare i prodotti nella categoria giusta — Lei verifica prima che venga applicato qualsiasi cosa."
+        },
+        "connectStripe": {
+          "title": "Si faccia pagare direttamente",
+          "body": "Colleghi il Suo conto Stripe così i clienti della Sua vetrina pagano direttamente su di esso. Fino ad allora il checkout ricade su un flusso manuale."
+        },
+        "insights": {
+          "title": "Veda cosa funziona",
+          "body": "Insights riassume i Suoi ordini e ricavi così può individuare i Suoi articoli più venduti. Il tour finisce qui — può riprodurlo in qualsiasi momento."
+        }
+      }
+    },
+    "onboarding": {
+      "tasks": {
+        "claimAdmin": {
+          "title": "Rivendichi il Suo negozio",
+          "body": "Acceda affinché questo account diventi l'amministratore del negozio."
+        },
+        "brandStore": {
+          "title": "Aggiunga il Suo marchio",
+          "body": "Carichi il Suo logo e scelga il colore del marchio — la vetrina ne ricava il proprio tema."
+        },
+        "firstProduct": {
+          "title": "Aggiunga il Suo primo prodotto",
+          "body": "Scatti una foto e lasci che l'IA rediga la descrizione, oppure importi un CSV del Suo catalogo.",
+          "migrateTitle": "Porti il Suo catalogo da {{provider}}",
+          "migrateBody": "Esporti i Suoi articoli in CSV dalla dashboard {{provider}} e carichi il file nella pagina Importazione — verifica ogni articolo prima che venga scritto qualcosa.",
+          "stripeTitle": "Importi il Suo catalogo Stripe",
+          "stripeBody": "Una volta collegato il Suo conto Stripe (il passo sui pagamenti qui sotto), un clic nella pagina Importazione porta di qua i Suoi prodotti."
+        },
+        "connectStripe": {
+          "title": "Colleghi i pagamenti",
+          "body": "Colleghi il Suo conto Stripe per accettare carte online e TWINT / Tap to Pay al mercato.",
+          "migrateBody": "Colleghi il conto Stripe che ha già — il Suo checkout continua a funzionare e si sblocca l'importazione del catalogo con un clic qui sopra."
+        },
+        "firstAiPhoto": {
+          "title": "Perfezioni una foto di prodotto con l'IA",
+          "body": "Trasformi una foto dal telefono in uno scatto da catalogo pulito — incluso nel Suo piano."
+        },
+        "inviteStaff": {
+          "title": "Inviti il Suo team",
+          "body_one": "Il Suo piano include {{count}} postazione per il personale — inviti un collega a gestire la cassa.",
+          "body_many": "Il Suo piano include {{count}} postazioni per il personale — inviti un collega a gestire la cassa.",
+          "body_other": "Il Suo piano include {{count}} postazioni per il personale — inviti un collega a gestire la cassa."
+        },
+        "customDomain": {
+          "title": "Configuri il Suo dominio personalizzato",
+          "body": "Pubblichi il negozio sul Suo dominio con HTTPS gestito."
+        },
+        "posReady": {
+          "title": "Accetti un pagamento con carta dal Suo telefono",
+          "body": "Installi l'app Zolto POS e acceda con la Sua chiave POS — la prima vendita con carta completa automaticamente la configurazione.",
+          "blockedStripe": "Colleghi prima Stripe (il passo qui sopra)."
+        }
+      }
     }
   }
 }

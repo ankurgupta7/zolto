@@ -6,6 +6,9 @@
  * Targets use data-tour="…" attributes in the Admin UI — never CSS classes or
  * DOM position, which break on redesigns. When adding a tour, add the
  * data-tour anchor to the target element in the same commit.
+ *
+ * Copy lives in the admin locale fragments under `catalog.tour.*`; the steps
+ * carry the keys and GuidedTour resolves them (see TourStep in lib/tour.ts).
  */
 
 import type { TourStep } from "@/lib/tour";
@@ -14,22 +17,22 @@ export const TOURS: Record<string, TourStep[]> = {
   "add-product": [
     {
       target: '[data-tour="add-product"]',
-      title: "Add your first product",
-      body: "Click here. Snap a photo — the AI drafts the title, description and price for you.",
+      titleKey: "catalog.tour.addProduct.add.title",
+      bodyKey: "catalog.tour.addProduct.add.body",
       placement: "bottom",
     },
     {
       target: '[data-tour="bulk-upload"]',
-      title: "…or import a whole box",
-      body: "Have a batch of items? Point your camera at each one — a draft product is created per photo.",
+      titleKey: "catalog.tour.addProduct.bulk.title",
+      bodyKey: "catalog.tour.addProduct.bulk.body",
       placement: "bottom",
     },
   ],
   "connect-stripe": [
     {
       target: '[data-tour="connect-stripe"]',
-      title: "Connect your Stripe account",
-      body: "Click here to link your own Stripe — customers pay directly into it, and it unlocks Tap to Pay in the POS app.",
+      titleKey: "catalog.tour.connectStripe.connect.title",
+      bodyKey: "catalog.tour.connectStripe.connect.body",
       placement: "bottom",
     },
   ],

@@ -6,12 +6,13 @@
  * never stored as booleans that can drift. The only persisted state is the
  * wizard cursor / dismissal in tenants.onboardingStep (0 = fresh, n = wizard
  * progress, -1 = dismissed), written by the two mutations in routers/tenant.ts.
+ *
+ * Copy is NAMED here, not written here: each task carries i18next keys plus
+ * the values to interpolate, and the client renders them in the merchant's
+ * language (see OnboardingTask).
  */
 
-import {
-  MIGRATE_FROM_LABELS,
-  type MigrateFromProvider,
-} from "@shared/const";
+import { MIGRATE_FROM_LABELS, type MigrateFromProvider } from "@shared/const";
 import type { Tenant } from "../drizzle/schema";
 import {
   countTenantProducts,
@@ -23,8 +24,19 @@ import { PLAN_FEATURES, type PlanId } from "./_core/trpc";
 
 export interface OnboardingTask {
   id: string;
-  title: string;
-  body: string;
+  /**
+   * i18next keys (admin namespace, `catalog.onboarding.tasks.*`) for the
+   * merchant-facing copy, plus the values to interpolate into them.
+   *
+   * Language is a CLIENT concern: the server has no reliable notion of the
+   * viewer's locale (the checklist is polled every 5s and can be open in two
+   * languages at once), so it names the copy and the client renders it. Brand
+   * names arrive as interpolation values — `provider` is a proper noun that is
+   * never translated, `count` drives i18next pluralisation.
+   */
+  titleKey: string;
+  bodyKey: string;
+  params?: Record<string, string | number>;
   /** Where "Go there" takes the merchant. */
   href?: string;
   /** GuidedTour registry key (client/src/lib/tours.ts) for "Show me". */
@@ -32,7 +44,7 @@ export interface OnboardingTask {
   done: boolean;
   /** Set when the task can't be completed in this deployment right now
    *  (e.g. Stripe prices unconfigured) — the UI greys it with this reason. */
-  blockedReason?: string;
+  blockedReasonKey?: string;
 }
 
 export interface OnboardingStatus {
@@ -60,15 +72,15 @@ export async function deriveOnboardingStatus(
 
   tasks.push({
     id: "claim-admin",
-    title: "Claim your store",
-    body: "Sign in so this account becomes the store's admin.",
+    titleKey: "catalog.onboarding.tasks.claimAdmin.title",
+    bodyKey: "catalog.onboarding.tasks.claimAdmin.body",
     done: staffCount >= 1,
   });
 
   tasks.push({
     id: "brand-store",
-    title: "Add your branding",
-    body: "Upload your logo and pick your brand color — the storefront themes itself from these.",
+    titleKey: "catalog.onboarding.tasks.brandStore.title",
+    bodyKey: "catalog.onboarding.tasks.brandStore.body",
     href: "/admin/billing",
     done: Boolean(settings?.logoUrl || settings?.primaryColor),
   });
@@ -77,31 +89,31 @@ export async function deriveOnboardingStatus(
   // the matching importer, so a switching merchant is routed to the migration
   // flow instead of re-typing what they already keyed into Stripe/SumUp/
   // Worldline. Completion is the same real signal either way: a product row.
-  const migrateFrom = (settings?.migrateFrom ?? null) as
-    | MigrateFromProvider
-    | null;
+  const migrateFrom = (settings?.migrateFrom ??
+    null) as MigrateFromProvider | null;
   if (migrateFrom === "sumup" || migrateFrom === "worldline") {
     const label = MIGRATE_FROM_LABELS[migrateFrom];
     tasks.push({
       id: "first-product",
-      title: `Bring your catalogue from ${label}`,
-      body: `Export your items as CSV from your ${label} dashboard and upload it on the Import page — you review every item before anything is written.`,
+      titleKey: "catalog.onboarding.tasks.firstProduct.migrateTitle",
+      bodyKey: "catalog.onboarding.tasks.firstProduct.migrateBody",
+      params: { provider: label },
       href: "/admin/products/import",
       done: productCount >= 1,
     });
   } else if (migrateFrom === "stripe") {
     tasks.push({
       id: "first-product",
-      title: "Import your Stripe catalogue",
-      body: "Once your Stripe account is connected (the payments step below), one click on the Import page brings your products across.",
+      titleKey: "catalog.onboarding.tasks.firstProduct.stripeTitle",
+      bodyKey: "catalog.onboarding.tasks.firstProduct.stripeBody",
       href: "/admin/products/import",
       done: productCount >= 1,
     });
   } else {
     tasks.push({
       id: "first-product",
-      title: "Add your first product",
-      body: "Snap a photo and let the AI draft the description, or import a CSV of your catalog.",
+      titleKey: "catalog.onboarding.tasks.firstProduct.title",
+      bodyKey: "catalog.onboarding.tasks.firstProduct.body",
       href: "/admin",
       tourId: "add-product",
       done: productCount >= 1,
@@ -110,11 +122,11 @@ export async function deriveOnboardingStatus(
 
   tasks.push({
     id: "connect-stripe",
-    title: "Connect payments",
-    body:
+    titleKey: "catalog.onboarding.tasks.connectStripe.title",
+    bodyKey:
       migrateFrom === "stripe"
-        ? "Link the Stripe account you already have — your checkout keeps working, and it unlocks the one-click catalogue import above."
-        : "Link your Stripe account to accept cards online and TWINT / Tap to Pay at the market.",
+        ? "catalog.onboarding.tasks.connectStripe.migrateBody"
+        : "catalog.onboarding.tasks.connectStripe.body",
     href: "/admin",
     done: Boolean(tenant.stripeConnectedAccountId),
   });
@@ -123,8 +135,8 @@ export async function deriveOnboardingStatus(
   // photo shots (the "taste of AI"), and Pro is unmetered.
   tasks.push({
     id: "first-ai-photo",
-    title: "Style a product photo with AI",
-    body: "Turn one phone photo into a clean catalogue shot — included with your plan.",
+    titleKey: "catalog.onboarding.tasks.firstAiPhoto.title",
+    bodyKey: "catalog.onboarding.tasks.firstAiPhoto.body",
     href: "/admin",
     done: aiPhotoUsed,
   });
@@ -134,8 +146,12 @@ export async function deriveOnboardingStatus(
   if (features?.maxStaff && features.maxStaff > 1) {
     tasks.push({
       id: "invite-staff",
-      title: "Invite your team",
-      body: `Your plan includes ${features.maxStaff} staff seats — invite a teammate to run the register.`,
+      titleKey: "catalog.onboarding.tasks.inviteStaff.title",
+      bodyKey: "catalog.onboarding.tasks.inviteStaff.body",
+      // `count` (not `seats`) so i18next picks the plural form: French and
+      // Italian agree the noun with the number, and this task only ever
+      // renders above 1 seat but must still read right if that changes.
+      params: { count: features.maxStaff },
       href: "/admin/billing",
       done: staffCount >= 2,
     });
@@ -144,8 +160,8 @@ export async function deriveOnboardingStatus(
   if (features?.customDomain) {
     tasks.push({
       id: "custom-domain",
-      title: "Set up your custom domain",
-      body: "Serve the store on your own domain with managed HTTPS.",
+      titleKey: "catalog.onboarding.tasks.customDomain.title",
+      bodyKey: "catalog.onboarding.tasks.customDomain.body",
       href: "/admin/billing",
       done: Boolean(settings?.publicDomain),
     });
@@ -153,12 +169,13 @@ export async function deriveOnboardingStatus(
 
   const posTask: OnboardingTask = {
     id: "pos-ready",
-    title: "Take a card payment on your phone",
-    body: "Install the Zolto POS app and sign in with your POS key — the first card sale finishes the setup automatically.",
+    titleKey: "catalog.onboarding.tasks.posReady.title",
+    bodyKey: "catalog.onboarding.tasks.posReady.body",
     done: Boolean(tenant.terminalLocationId),
   };
   if (!posTask.done && !tenant.stripeConnectedAccountId) {
-    posTask.blockedReason = "Connect Stripe first (the step above).";
+    posTask.blockedReasonKey =
+      "catalog.onboarding.tasks.posReady.blockedStripe";
   }
   tasks.push(posTask);
 

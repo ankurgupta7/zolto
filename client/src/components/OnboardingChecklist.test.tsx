@@ -5,28 +5,30 @@ import OnboardingChecklist from "./OnboardingChecklist";
 const mocks = vi.hoisted(() => ({
   dismissMutate: vi.fn(),
   invalidate: vi.fn(),
+  // Shaped like what server/onboarding.ts actually returns: i18next keys,
+  // not copy — the assertions below are on the ENGLISH the keys resolve to.
   statusData: {
     tasks: [
       {
         id: "claim-admin",
-        title: "Claim your store",
-        body: "Sign in.",
+        titleKey: "catalog.onboarding.tasks.claimAdmin.title",
+        bodyKey: "catalog.onboarding.tasks.claimAdmin.body",
         done: true,
       },
       {
         id: "first-product",
-        title: "Add your first product",
-        body: "Snap a photo.",
+        titleKey: "catalog.onboarding.tasks.firstProduct.title",
+        bodyKey: "catalog.onboarding.tasks.firstProduct.body",
         href: "/admin",
         tourId: "add-product",
         done: false,
       },
       {
         id: "pos-ready",
-        title: "Take a card payment",
-        body: "Install the app.",
+        titleKey: "catalog.onboarding.tasks.posReady.title",
+        bodyKey: "catalog.onboarding.tasks.posReady.body",
         done: false,
-        blockedReason: "Connect Stripe first (the step above).",
+        blockedReasonKey: "catalog.onboarding.tasks.posReady.blockedStripe",
       },
     ],
     doneCount: 1,
@@ -66,6 +68,21 @@ vi.mock("./GuidedTour", () => ({
 }));
 
 import { TOURS, hasTour } from "@/lib/tours";
+import i18n from "@/lib/i18n";
+import catalogEn from "@/admin/locales/catalog.en.json";
+
+/** Resolve a dotted i18next key against the English admin catalog fragment. */
+function enLeaf(key: string): unknown {
+  return key
+    .split(".")
+    .reduce<unknown>(
+      (node, part) =>
+        node && typeof node === "object"
+          ? (node as Record<string, unknown>)[part]
+          : undefined,
+      catalogEn,
+    );
+}
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -115,6 +132,80 @@ describe("OnboardingChecklist", () => {
   });
 });
 
+/**
+ * The server names the copy (i18next keys + interpolation values); the panel
+ * renders it. That is what keeps the checklist in the merchant's language —
+ * it used to arrive as English sentences and stayed English in every UI
+ * language, because the server has no reliable notion of the viewer's locale.
+ */
+describe("OnboardingChecklist — translated task copy", () => {
+  const originalTasks = mocks.statusData!.tasks;
+
+  afterEach(async () => {
+    mocks.statusData!.tasks = originalTasks;
+    await i18n.changeLanguage("en");
+  });
+
+  it("interpolates the server's values into the translated sentence", () => {
+    mocks.statusData!.tasks = [
+      {
+        id: "first-product",
+        titleKey: "catalog.onboarding.tasks.firstProduct.migrateTitle",
+        bodyKey: "catalog.onboarding.tasks.firstProduct.migrateBody",
+        params: { provider: "Worldline / SIX" },
+        href: "/admin/products/import",
+        done: false,
+      },
+      {
+        id: "invite-staff",
+        titleKey: "catalog.onboarding.tasks.inviteStaff.title",
+        bodyKey: "catalog.onboarding.tasks.inviteStaff.body",
+        params: { count: 5 },
+        done: false,
+      },
+    ];
+    render(<OnboardingChecklist />);
+    expect(
+      screen.getByText("Bring your catalogue from Worldline / SIX"),
+    ).toBeTruthy();
+    expect(screen.getByText(/Your plan includes 5 staff seats/)).toBeTruthy();
+  });
+
+  it("follows the UI language, leaving brand names alone", async () => {
+    await i18n.changeLanguage("de");
+    render(<OnboardingChecklist />);
+    expect(screen.getByText("Übernehmen Sie Ihren Shop")).toBeTruthy();
+    expect(screen.getByText("Fügen Sie Ihr erstes Produkt hinzu")).toBeTruthy();
+    // The blocked reason is translated too — it used to be a server sentence.
+    expect(
+      screen.getByText("Verbinden Sie zuerst Stripe (der Schritt oben)."),
+    ).toBeTruthy();
+    expect(screen.queryByText("Claim your store")).toBeNull();
+  });
+
+  it("agrees the seat noun with the count in French", async () => {
+    await i18n.changeLanguage("fr");
+    const seatTask = (count: number) => [
+      {
+        id: "invite-staff",
+        titleKey: "catalog.onboarding.tasks.inviteStaff.title",
+        bodyKey: "catalog.onboarding.tasks.inviteStaff.body",
+        params: { count },
+        done: false,
+      },
+    ];
+
+    mocks.statusData!.tasks = seatTask(1);
+    render(<OnboardingChecklist />);
+    expect(screen.getByText(/1 place d'équipe/)).toBeTruthy();
+    cleanup();
+
+    mocks.statusData!.tasks = seatTask(3);
+    render(<OnboardingChecklist />);
+    expect(screen.getByText(/3 places d'équipe/)).toBeTruthy();
+  });
+});
+
 describe("tour registry", () => {
   it("every checklist tourId has a definition with valid anchors", () => {
     expect(hasTour("add-product")).toBe(true);
@@ -123,8 +214,10 @@ describe("tour registry", () => {
     for (const steps of Object.values(TOURS)) {
       for (const step of steps) {
         expect(step.target).toMatch(/^\[data-tour="[a-z-]+"\]$/);
-        expect(step.title.length).toBeGreaterThan(3);
-        expect(step.body.length).toBeGreaterThan(10);
+        // Steps carry i18next keys; an unresolvable one renders the raw
+        // dotted path to the merchant, so check the copy really exists.
+        expect(typeof enLeaf(step.titleKey)).toBe("string");
+        expect(typeof enLeaf(step.bodyKey)).toBe("string");
       }
     }
   });

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Link, useSearch } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { storeAdminUrl } from "@/lib/surface";
@@ -225,6 +226,10 @@ function ClaimStep({
 
 export default function Onboarding() {
   const { t } = useMarketingT();
+  // Checklist copy is server-derived and keyed into the admin namespace
+  // (server/onboarding.ts returns keys, not sentences), so it needs its own
+  // translator alongside this page's marketing one.
+  const { t: tTask } = useTranslation("admin");
   const search = useSearch();
   const { store, urlToken } = useMemo(() => {
     const params = new URLSearchParams(search);
@@ -303,12 +308,14 @@ export default function Onboarding() {
               <h3
                 className={`font-serif text-lg ${task.done ? "text-[var(--brand-muted)] line-through" : "text-[var(--brand-text)]"}`}
               >
-                {task.title}
+                {tTask(task.titleKey, task.params)}
               </h3>
               <p className="mt-1 text-sm text-[var(--brand-muted-2)]">
-                {task.blockedReason ?? task.body}
+                {task.blockedReasonKey
+                  ? tTask(task.blockedReasonKey, task.params)
+                  : tTask(task.bodyKey, task.params)}
               </p>
-              {!task.done && task.href && !task.blockedReason && (
+              {!task.done && task.href && !task.blockedReasonKey && (
                 <Link
                   href={task.href}
                   className="mt-2 inline-block text-xs font-medium uppercase tracking-[0.12em] text-[var(--brand-accent)] hover:underline"

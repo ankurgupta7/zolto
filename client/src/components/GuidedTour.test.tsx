@@ -8,6 +8,20 @@ import {
 } from "@testing-library/react";
 import GuidedTour from "./GuidedTour";
 import { isTourCompleted, type TourStep } from "@/lib/tour";
+import catalogEn from "@/admin/locales/catalog.en.json";
+
+/** Resolve a dotted i18next key against the English admin catalog fragment. */
+function enLeaf(key: string): unknown {
+  return key
+    .split(".")
+    .reduce<unknown>(
+      (node, part) =>
+        node && typeof node === "object"
+          ? (node as Record<string, unknown>)[part]
+          : undefined,
+      catalogEn,
+    );
+}
 
 // jsdom doesn't implement scrollIntoView; stub it so the layout effect is happy.
 beforeEach(() => {
@@ -16,9 +30,12 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 
+// Fixture steps use keys that no locale defines: i18next echoes an unknown
+// key back verbatim, so these render as "First"/"Do A" and the assertions
+// below stay about tour BEHAVIOUR rather than about any real copy.
 const STEPS: TourStep[] = [
-  { target: '[data-tour="a"]', title: "First", body: "Do A" },
-  { target: '[data-tour="b"]', title: "Second", body: "Do B" },
+  { target: '[data-tour="a"]', titleKey: "First", bodyKey: "Do A" },
+  { target: '[data-tour="b"]', titleKey: "Second", bodyKey: "Do B" },
 ];
 
 function renderTour(steps: TourStep[] = STEPS, props = {}) {
@@ -79,8 +96,8 @@ describe("GuidedTour", () => {
 
   it("skips a step whose target is missing from the page", async () => {
     const steps: TourStep[] = [
-      { target: '[data-tour="missing"]', title: "Ghost", body: "gone" },
-      { target: '[data-tour="b"]', title: "Real", body: "here" },
+      { target: '[data-tour="missing"]', titleKey: "Ghost", bodyKey: "gone" },
+      { target: '[data-tour="b"]', titleKey: "Real", bodyKey: "here" },
     ];
     renderTour(steps);
     // The missing first step is skipped; the second renders.
@@ -331,7 +348,9 @@ describe("GuidedTour positioning", () => {
         </button>
         <GuidedTour
           tourId="test"
-          steps={[{ target: '[data-tour="dup"]', title: "Dup", body: "b" }]}
+          steps={[
+            { target: '[data-tour="dup"]', titleKey: "Dup", bodyKey: "b" },
+          ]}
         />
       </div>,
     );
@@ -366,15 +385,30 @@ describe("GuidedTour positioning", () => {
 });
 
 describe("admin tour config", () => {
-  it("targets only data-tour selectors and has content per step", async () => {
+  it("targets only data-tour selectors and has resolvable copy per step", async () => {
     const { ADMIN_TOUR_STEPS, ADMIN_TOUR_ID } = await import("@/lib/adminTour");
     expect(ADMIN_TOUR_ID.length).toBeGreaterThan(0);
     expect(ADMIN_TOUR_STEPS.length).toBeGreaterThan(0);
     for (const step of ADMIN_TOUR_STEPS) {
       expect(step.target.startsWith('[data-tour="')).toBe(true);
-      expect(step.title.length).toBeGreaterThan(0);
-      expect(step.body.length).toBeGreaterThan(0);
+      // Steps carry keys, so "has content" now means the key actually
+      // resolves — a typo'd key renders the raw dotted path to the merchant.
+      for (const key of [step.titleKey, step.bodyKey]) {
+        expect(enLeaf(key), `catalog.en.json missing ${key}`).toBeTypeOf(
+          "string",
+        );
+      }
     }
+  });
+
+  it("renders a real step's copy from the locale, not the key", async () => {
+    const { ADMIN_TOUR_STEPS } = await import("@/lib/adminTour");
+    const step = { ...ADMIN_TOUR_STEPS[0], target: '[data-tour="a"]' };
+    renderTour([step]);
+    expect(
+      await screen.findByText(enLeaf(step.titleKey) as string),
+    ).toBeTruthy();
+    expect(screen.getByText(enLeaf(step.bodyKey) as string)).toBeTruthy();
   });
 
   it("points every step at an anchor that exists in Admin.tsx", async () => {

@@ -68,8 +68,9 @@ export default function GuidedTour({
   startSignal,
   onFinish,
 }: GuidedTourProps) {
-  // Step `title`/`body` are supplied by the caller (client/src/lib/tours.ts,
-  // adminTour.ts); only the overlay's own chrome is translated here.
+  // Steps carry i18next KEYS (client/src/lib/tours.ts, adminTour.ts) rather
+  // than copy, so the step lists stay language-free module constants and both
+  // the overlay chrome and the step copy resolve here, at render time.
   const { t } = useTranslation("admin");
   const [active, setActive] = useState(false);
   const [index, setIndex] = useState(0);
@@ -370,10 +371,10 @@ export default function GuidedTour({
           })}
         </p>
         <h3 className="mt-1 text-base font-semibold text-white">
-          {step.title}
+          {t(step.titleKey)}
         </h3>
         <p className="mt-2 text-sm leading-relaxed text-slate-300">
-          {step.body}
+          {t(step.bodyKey)}
         </p>
 
         <div className="mt-4 flex items-center justify-between">
