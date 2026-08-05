@@ -82,7 +82,13 @@
       "posNoCandidates_one": "{{count}} vente trouvée, mais aucune pièce en stock n'était assez proche en prix pour proposer une correspondance.",
       "posNoCandidates_other": "{{count}} ventes trouvées, mais aucune pièce en stock n'était assez proche en prix pour proposer une correspondance.",
       "posClean": "Aucune vente en personne non attribuée trouvée ({{count}} vérifiées).",
-      "posFailed": "Le rapprochement des ventes en personne a échoué."
+      "posFailed": "Le rapprochement des ventes en personne a échoué.",
+      "stripeFoundSent_many": "{{count}} paiements non rapprochés trouvés — un e-mail de vérification a été envoyé.",
+      "stripeFoundNotSent_many": "{{count}} paiements non rapprochés trouvés — mais l'e-mail de vérification n'a pas pu être envoyé.",
+      "stripeNoCandidates_many": "{{count}} paiements non rapprochés trouvés, mais aucune pièce en stock n'était assez proche en prix pour proposer une correspondance.",
+      "posFoundSent_many": "{{count}} ventes à confirmer — un e-mail de vérification a été envoyé.",
+      "posFoundNotSent_many": "{{count}} ventes à confirmer — mais l'e-mail de vérification n'a pas pu être envoyé.",
+      "posNoCandidates_many": "{{count}} ventes trouvées, mais aucune pièce en stock n'était assez proche en prix pour proposer une correspondance."
     },
     "pos": {
       "title": "Point de vente",
@@ -216,7 +222,12 @@
       "subsActive": "Actifs",
       "subsTrialing": "En essai",
       "subsPastDue": "En retard",
-      "subsCanceled": "Résiliés"
+      "subsCanceled": "Résiliés",
+      "toastScanned_many": "{{count}} boutiques analysées",
+      "toastQueued_many": "{{count}} paiements mis en file pour vérification.",
+      "resultStores_many": "{{count}} boutiques analysées",
+      "resultEmails_many": "{{count}} e-mails envoyés",
+      "failedLine_many": "{{count}} boutiques n'ont pas pu être analysées — listées ci-dessous. Le reste s'est tout de même terminé."
     },
     "import": {
       "title": "Import",
@@ -254,7 +265,10 @@
       "removed_other": "{{count}} produits en double supprimés",
       "confirmTitle": "Confirmer la suppression des doublons",
       "confirmDescription": "Ces produits seront définitivement retirés du catalogue, photos comprises. C'est irréversible.",
-      "confirmLabel": "Suppression"
+      "confirmLabel": "Suppression",
+      "groupsFound_many": "groupes de doublons trouvés",
+      "copies_many": "({{count}} copies)",
+      "removed_many": "{{count}} produits en double supprimés"
     }
   }
 }

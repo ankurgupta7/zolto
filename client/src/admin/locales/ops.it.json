@@ -82,7 +82,13 @@
       "posNoCandidates_one": "{{count}} vendita trovata, ma nessun pezzo disponibile era abbastanza vicino nel prezzo per proporre un abbinamento.",
       "posNoCandidates_other": "{{count}} vendite trovate, ma nessun pezzo disponibile era abbastanza vicino nel prezzo per proporre un abbinamento.",
       "posClean": "Nessuna vendita di persona non attribuita trovata ({{count}} controllate).",
-      "posFailed": "Riconciliazione delle vendite di persona non riuscita."
+      "posFailed": "Riconciliazione delle vendite di persona non riuscita.",
+      "stripeFoundSent_many": "{{count}} pagamenti non abbinati trovati — è stata inviata un'e-mail di verifica.",
+      "stripeFoundNotSent_many": "{{count}} pagamenti non abbinati trovati — ma non è stato possibile inviare l'e-mail di verifica.",
+      "stripeNoCandidates_many": "{{count}} pagamenti non abbinati trovati, ma nessun pezzo disponibile era abbastanza vicino nel prezzo per proporre un abbinamento.",
+      "posFoundSent_many": "{{count}} vendite da confermare — è stata inviata un'e-mail di verifica.",
+      "posFoundNotSent_many": "{{count}} vendite da confermare — ma non è stato possibile inviare l'e-mail di verifica.",
+      "posNoCandidates_many": "{{count}} vendite trovate, ma nessun pezzo disponibile era abbastanza vicino nel prezzo per proporre un abbinamento."
     },
     "pos": {
       "title": "Punto vendita",
@@ -216,7 +222,12 @@
       "subsActive": "Attivi",
       "subsTrialing": "In prova",
       "subsPastDue": "In ritardo",
-      "subsCanceled": "Disdetti"
+      "subsCanceled": "Disdetti",
+      "toastScanned_many": "{{count}} negozi esaminati",
+      "toastQueued_many": "{{count}} pagamenti in coda per la verifica.",
+      "resultStores_many": "{{count}} negozi esaminati",
+      "resultEmails_many": "{{count}} e-mail inviate",
+      "failedLine_many": "{{count}} negozi non hanno potuto essere esaminati — elencati qui sotto. Il resto è comunque stato completato."
     },
     "import": {
       "title": "Importazione",
@@ -254,7 +265,10 @@
       "removed_other": "{{count}} prodotti duplicati rimossi",
       "confirmTitle": "Conferma l'eliminazione dei duplicati",
       "confirmDescription": "Questi prodotti verranno rimossi definitivamente dal catalogo, foto comprese. L'operazione non può essere annullata.",
-      "confirmLabel": "Eliminazione"
+      "confirmLabel": "Eliminazione",
+      "groupsFound_many": "gruppi di duplicati trovati",
+      "copies_many": "({{count}} copie)",
+      "removed_many": "{{count}} prodotti duplicati rimossi"
     }
   }
 }

@@ -177,7 +177,16 @@
         "posNoCandidates_other": "{{count}} vendite solo a importo trovate, ma nessun pezzo disponibile era abbastanza vicino nel prezzo per proporre un abbinamento.",
         "posClean": "Nessuna vendita di persona non attribuita trovata ({{count}} controllate).",
         "posReconcileFailed": "Riconciliazione delle vendite di persona non riuscita. Riprovi.",
-        "insightsFailed": "Impossibile generare le analisi. Riprovi."
+        "insightsFailed": "Impossibile generare le analisi. Riprovi.",
+        "translatedToEnglish_many": "{{count}} prodotti tradotti in inglese.",
+        "localesTranslated_many": "{{count}} prodotti tradotti in tedesco, inglese, francese e italiano.",
+        "recategorised_many": "{{count}} prodotti ricategorizzati.",
+        "stripeFoundSent_many": "{{count}} pagamenti non abbinati trovati — e-mail di verifica inviata.",
+        "stripeFoundNotSent_many": "{{count}} pagamenti non abbinati trovati — non è stato possibile inviare l'e-mail di verifica, controlli i log del server.",
+        "stripeNoCandidates_many": "{{count}} pagamenti non abbinati trovati, ma nessun prodotto disponibile era abbastanza vicino nel prezzo per proporre un abbinamento.",
+        "posFoundSent_many": "{{count}} vendite solo a importo da confermare — e-mail di verifica inviata.",
+        "posFoundNotSent_many": "{{count}} vendite solo a importo da confermare — non è stato possibile inviare l'e-mail di verifica, controlli i log del server.",
+        "posNoCandidates_many": "{{count}} vendite solo a importo trovate, ma nessun pezzo disponibile era abbastanza vicino nel prezzo per proporre un abbinamento."
       }
     },
     "csv": {
@@ -233,7 +242,8 @@
         "importButton_one": "Importa {{count}} prodotto",
         "importButton_other": "Importa {{count}} prodotti",
         "uncheckNote": "Tolga la spunta a ogni riga che non vuole importare — finché non clicca su Importa non viene scritto nulla.",
-        "errorNote": "Le righe con errori verranno saltate. Modifichi nome, descrizione, prezzo o categoria direttamente nella tabella qui sopra per correggerle prima dell'importazione."
+        "errorNote": "Le righe con errori verranno saltate. Modifichi nome, descrizione, prezzo o categoria direttamente nella tabella qui sopra per correggerle prima dell'importazione.",
+        "importButton_many": "Importa {{count}} prodotti"
       },
       "table": {
         "selectAllAria": "Seleziona tutte le righe",
@@ -273,7 +283,8 @@
         "visibleNote": "I prodotti sono ora visibili nel negozio. Può aggiungere le foto dal pannello di amministrazione.",
         "failed": "{{count}} non riuscite: {{names}}",
         "importMore": "Importa altri",
-        "goToAdmin": "Vai al pannello di amministrazione"
+        "goToAdmin": "Vai al pannello di amministrazione",
+        "created_many": "{{count}} prodotti creati"
       },
       "toasts": {
         "noDataRows": "Nessuna riga di dati trovata — controlli che il file abbia una riga di intestazione e almeno una riga di dati",
@@ -291,7 +302,9 @@
         "photoCount_other": "{{count}} foto",
         "enterSheetUrl": "Inserisca un URL di Google Sheets",
         "noRowsSelected": "Nessuna riga selezionata per l'importazione",
-        "batchFailed": "Un lotto non è stato importato: {{message}}"
+        "batchFailed": "Un lotto non è stato importato: {{message}}",
+        "itemCount_many": "{{count}} articoli",
+        "photoCount_many": "{{count}} foto"
       }
     }
   }

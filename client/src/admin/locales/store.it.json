@@ -253,7 +253,8 @@
       "removeFallbackName": "membro",
       "noMembers": "Ancora nessun membro del team.",
       "pendingTitle": "Inviti in sospeso",
-      "revoke": "Revoca"
+      "revoke": "Revoca",
+      "seatsFullNotice_many": "Tutte le {{count}} postazioni del Suo piano sono occupate. Passi a un piano superiore per aggiungere altri collaboratori."
     },
     "support": {
       "title": "Assistenza",

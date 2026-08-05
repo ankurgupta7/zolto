@@ -13,6 +13,13 @@
  *    missing in another) is not.
  * 2. A fragment nests everything under its own group name only, so the
  *    shallow spread in lib/i18n.ts can never clobber another group.
+ *
+ * Plural keys are compared by their base name, because the set of plural
+ * categories is a property of the language, not of the key: French has a
+ * `many` category (used from 1,000,000) that English and German do not, so
+ * `foo_many` existing only in fr.json is correct rather than drift. Each
+ * language is instead checked against the categories CLDR actually defines
+ * for it, via Intl.PluralRules.
  */
 
 import { describe, expect, it } from "vitest";
@@ -56,6 +63,42 @@ function leafPaths(node: unknown, prefix = ""): string[] {
   return [prefix];
 }
 
+/** i18next plural suffixes, per the CLDR categories Intl.PluralRules reports. */
+const PLURAL_SUFFIXES = ["zero", "one", "two", "few", "many", "other"];
+
+const PLURAL_RE = new RegExp(`_(${PLURAL_SUFFIXES.join("|")})$`);
+
+/** `store.team.seatsFullNotice_many` → `store.team.seatsFullNotice`. */
+function pluralBase(path: string): string {
+  return path.replace(PLURAL_RE, "");
+}
+
+/** Distinct leaf paths with plural suffixes collapsed to their base key. */
+function pluralAgnosticPaths(node: unknown): string[] {
+  return [...new Set(leafPaths(node).map(pluralBase))].sort();
+}
+
+/** The plural categories CLDR defines for `lang` (cardinal). */
+function pluralCategories(lang: Lang): Set<string> {
+  const rules = new Intl.PluralRules(lang);
+  // resolvedOptions().pluralCategories is the authoritative list; probing
+  // sample values would miss categories like `many` that need large numbers.
+  return new Set(rules.resolvedOptions().pluralCategories);
+}
+
+/** Plural base keys → the suffixes present for them in one fragment. */
+function pluralFormsByBase(node: unknown): Map<string, Set<string>> {
+  const byBase = new Map<string, Set<string>>();
+  for (const path of leafPaths(node)) {
+    const match = path.match(PLURAL_RE);
+    if (!match) continue;
+    const base = pluralBase(path);
+    if (!byBase.has(base)) byBase.set(base, new Set());
+    byBase.get(base)!.add(match[1]);
+  }
+  return byBase;
+}
+
 /** Leaf paths whose value is not a non-blank string. */
 function badLeaves(node: unknown, prefix = ""): string[] {
   if (node !== null && typeof node === "object" && !Array.isArray(node)) {
@@ -81,12 +124,27 @@ describe.each(Object.keys(GROUPS))("admin locale fragment group: %s", (group) =>
   });
 
   it("carries an identical key tree in all four languages", () => {
-    const reference = leafPaths(byLang.en).sort();
+    const reference = pluralAgnosticPaths(byLang.en);
     for (const lang of LANGS) {
       expect(
-        leafPaths(byLang[lang]).sort(),
+        pluralAgnosticPaths(byLang[lang]),
         `${group}.${lang}.json diverges from ${group}.en.json`,
       ).toEqual(reference);
+    }
+  });
+
+  it("gives every plural key exactly the categories its language needs", () => {
+    for (const lang of LANGS) {
+      const required = pluralCategories(lang);
+      for (const [base, forms] of pluralFormsByBase(byLang[lang])) {
+        // Missing a category silently falls back to another form and renders
+        // the wrong grammatical number; an extra one is dead weight i18next
+        // will never select.
+        expect(
+          [...forms].sort(),
+          `${group}.${lang}.json: "${base}" plural forms`,
+        ).toEqual([...required].sort());
+      }
     }
   });
 

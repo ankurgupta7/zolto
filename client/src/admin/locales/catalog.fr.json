@@ -177,7 +177,16 @@
         "posNoCandidates_other": "{{count}} ventes en montant seul trouvées, mais aucune pièce en stock n'était assez proche en prix pour proposer une correspondance.",
         "posClean": "Aucune vente en personne non attribuée trouvée ({{count}} vérifiées).",
         "posReconcileFailed": "Le rapprochement des ventes en personne a échoué. Veuillez réessayer.",
-        "insightsFailed": "Échec de la génération des analyses. Veuillez réessayer."
+        "insightsFailed": "Échec de la génération des analyses. Veuillez réessayer.",
+        "translatedToEnglish_many": "{{count}} produits traduits en anglais.",
+        "localesTranslated_many": "{{count}} produits traduits en allemand, anglais, français et italien.",
+        "recategorised_many": "{{count}} produits recatégorisés.",
+        "stripeFoundSent_many": "{{count}} paiements non rapprochés trouvés — e-mail de vérification envoyé.",
+        "stripeFoundNotSent_many": "{{count}} paiements non rapprochés trouvés — l'e-mail de vérification n'a pas pu être envoyé, consultez les journaux du serveur.",
+        "stripeNoCandidates_many": "{{count}} paiements non rapprochés trouvés, mais aucun produit en stock n'était assez proche en prix pour proposer une correspondance.",
+        "posFoundSent_many": "{{count}} ventes en montant seul à confirmer — e-mail de vérification envoyé.",
+        "posFoundNotSent_many": "{{count}} ventes en montant seul à confirmer — l'e-mail de vérification n'a pas pu être envoyé, consultez les journaux du serveur.",
+        "posNoCandidates_many": "{{count}} ventes en montant seul trouvées, mais aucune pièce en stock n'était assez proche en prix pour proposer une correspondance."
       }
     },
     "csv": {
@@ -233,7 +242,8 @@
         "importButton_one": "Importer {{count}} produit",
         "importButton_other": "Importer {{count}} produits",
         "uncheckNote": "Décochez toute ligne que vous ne voulez pas importer — rien n'est écrit tant que vous n'avez pas cliqué sur Importer.",
-        "errorNote": "Les lignes en erreur seront ignorées. Modifiez le nom, la description, le prix ou la catégorie directement dans le tableau ci-dessus pour les corriger avant l'import."
+        "errorNote": "Les lignes en erreur seront ignorées. Modifiez le nom, la description, le prix ou la catégorie directement dans le tableau ci-dessus pour les corriger avant l'import.",
+        "importButton_many": "Importer {{count}} produits"
       },
       "table": {
         "selectAllAria": "Sélectionner toutes les lignes",
@@ -273,7 +283,8 @@
         "visibleNote": "Les produits sont maintenant visibles dans la boutique. Vous pouvez ajouter des photos depuis le panneau d'administration.",
         "failed": "{{count}} en échec : {{names}}",
         "importMore": "Importer d'autres",
-        "goToAdmin": "Aller au panneau d'administration"
+        "goToAdmin": "Aller au panneau d'administration",
+        "created_many": "{{count}} produits créés"
       },
       "toasts": {
         "noDataRows": "Aucune ligne de données trouvée — vérifiez que le fichier a une ligne d'en-tête et au moins une ligne de données",
@@ -291,7 +302,9 @@
         "photoCount_other": "{{count}} photos",
         "enterSheetUrl": "Saisissez une URL Google Sheets",
         "noRowsSelected": "Aucune ligne sélectionnée pour l'import",
-        "batchFailed": "Un lot n'a pas pu être importé : {{message}}"
+        "batchFailed": "Un lot n'a pas pu être importé : {{message}}",
+        "itemCount_many": "{{count}} articles",
+        "photoCount_many": "{{count}} photos"
       }
     }
   }
