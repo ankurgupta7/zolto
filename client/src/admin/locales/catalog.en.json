@@ -191,6 +191,20 @@
         "description": "Import product data from a CSV file or Google Sheets",
         "backToAdmin": "Admin"
       },
+      "migration": {
+        "title": "Switching from Stripe, SumUp or Worldline?",
+        "description": "Bring your existing catalogue with you — nothing is written to your shop until you've reviewed every item.",
+        "stripeLinked": "Your Stripe account is linked — import your product catalogue in one click.",
+        "stripeUnlinked": "Link the Stripe account you already have: your checkout keeps working and your catalogue imports in one click.",
+        "stripeFetching": "Fetching catalogue…",
+        "stripeImport": "Import Stripe catalogue",
+        "stripeConnect": "Connect Stripe account",
+        "sumupDescription": "In SumUp, export your item catalogue as CSV (Items → Export) and upload the file here.",
+        "sumupUpload": "Upload SumUp export",
+        "worldlineDescription": "Upload a Worldline/SIX article or transaction export (CSV) — repeated sales collapse into one product each.",
+        "worldlineUpload": "Upload Worldline export",
+        "readingExport": "Reading export…"
+      },
       "template": {
         "title": "Download the template",
         "columnsLabel": "Columns:",
@@ -225,6 +239,7 @@
         "formats": "JPEG, PNG, WebP or HEIC · max 10 MB each · multiple allowed"
       },
       "preview": {
+        "warningsTitle": "Worth checking before you import",
         "validRows": "valid rows",
         "errorRows": "rows with errors (will be skipped)",
         "selectedForImport": "selected for import",
@@ -271,7 +286,8 @@
         "updatedSuffix": ", {{count}} updated",
         "updatedNote": "Rows matching an existing product name were updated in place instead of duplicated.",
         "visibleNote": "Products are now visible in the shop. You can add photos via the admin panel.",
-        "failed": "{{count}} failed: {{names}}",
+        "failed_one": "{{count}} failed: {{names}}",
+        "failed_other": "{{count}} failed: {{names}}",
         "importMore": "Import More",
         "goToAdmin": "Go to Admin Panel"
       },
@@ -291,7 +307,10 @@
         "photoCount_other": "{{count}} photos",
         "enterSheetUrl": "Enter a Google Sheets URL",
         "noRowsSelected": "No rows selected to import",
-        "batchFailed": "A batch failed to import: {{message}}"
+        "batchFailed": "A batch failed to import: {{message}}",
+        "migrationEmpty": "No products found in the {{source}} data — check you exported the product/catalogue list.",
+        "migrationFound_one": "Found {{count}} product in your {{source}} data — review before importing",
+        "migrationFound_other": "Found {{count}} products in your {{source}} data — review before importing"
       }
     }
   }

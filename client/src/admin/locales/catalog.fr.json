@@ -200,6 +200,20 @@
         "description": "Importez des données produits depuis un fichier CSV ou Google Sheets",
         "backToAdmin": "Admin"
       },
+      "migration": {
+        "title": "Vous migrez depuis Stripe, SumUp ou Worldline ?",
+        "description": "Emportez votre catalogue existant avec vous — rien n'est écrit dans votre boutique tant que vous n'avez pas vérifié chaque article.",
+        "stripeLinked": "Votre compte Stripe est lié — importez votre catalogue de produits en un clic.",
+        "stripeUnlinked": "Liez le compte Stripe que vous avez déjà : votre paiement continue de fonctionner et votre catalogue s'importe en un clic.",
+        "stripeFetching": "Récupération du catalogue…",
+        "stripeImport": "Importer le catalogue Stripe",
+        "stripeConnect": "Lier le compte Stripe",
+        "sumupDescription": "Dans SumUp, exportez votre catalogue d'articles au format CSV (Articles → Exporter) et importez le fichier ici.",
+        "sumupUpload": "Importer l'export SumUp",
+        "worldlineDescription": "Importez un export d'articles ou de transactions Worldline/SIX (CSV) — les ventes répétées sont regroupées en un produit chacune.",
+        "worldlineUpload": "Importer l'export Worldline",
+        "readingExport": "Lecture de l'export…"
+      },
       "template": {
         "title": "Téléchargez le modèle",
         "columnsLabel": "Colonnes :",
@@ -234,6 +248,7 @@
         "formats": "JPEG, PNG, WebP ou HEIC · 10 Mo max. chacune · plusieurs possibles"
       },
       "preview": {
+        "warningsTitle": "À vérifier avant d'importer",
         "validRows": "lignes valides",
         "errorRows": "lignes en erreur (seront ignorées)",
         "selectedForImport": "sélectionnées pour l'import",
@@ -281,7 +296,9 @@
         "updatedSuffix": ", {{count}} mis à jour",
         "updatedNote": "Les lignes correspondant au nom d'un produit existant ont été mises à jour sur place au lieu d'être dupliquées.",
         "visibleNote": "Les produits sont maintenant visibles dans la boutique. Vous pouvez ajouter des photos depuis le panneau d'administration.",
-        "failed": "{{count}} en échec : {{names}}",
+        "failed_one": "{{count}} en échec : {{names}}",
+        "failed_many": "{{count}} en échec : {{names}}",
+        "failed_other": "{{count}} en échec : {{names}}",
         "importMore": "Importer d'autres",
         "goToAdmin": "Aller au panneau d'administration",
         "created_many": "{{count}} produits créés"
@@ -304,7 +321,11 @@
         "noRowsSelected": "Aucune ligne sélectionnée pour l'import",
         "batchFailed": "Un lot n'a pas pu être importé : {{message}}",
         "itemCount_many": "{{count}} articles",
-        "photoCount_many": "{{count}} photos"
+        "photoCount_many": "{{count}} photos",
+        "migrationEmpty": "Aucun produit trouvé dans les données {{source}} — vérifiez que vous avez bien exporté la liste des produits/du catalogue.",
+        "migrationFound_one": "{{count}} produit trouvé dans vos données {{source}} — vérifiez avant d'importer",
+        "migrationFound_many": "{{count}} produits trouvés dans vos données {{source}} — vérifiez avant d'importer",
+        "migrationFound_other": "{{count}} produits trouvés dans vos données {{source}} — vérifiez avant d'importer"
       }
     }
   }

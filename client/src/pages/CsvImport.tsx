@@ -1,4 +1,6 @@
 import { useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+import i18n from "@/lib/i18n";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { isStoreAdminRole } from "@/admin/nav";
 import { trpc } from "@/lib/trpc";
@@ -25,6 +27,14 @@ import {
 } from "lucide-react";
 import { Link } from "wouter";
 import { resolveConnectPrompt } from "@/lib/connectPrompt";
+
+// Row validation happens in plain functions outside the component (they are
+// exported and unit-tested on their own), so they translate through the i18n
+// singleton rather than a hook-provided `t`. The messages are stored on the
+// row already rendered, which is fine: a row is re-validated on every edit.
+function tError(key: string, params?: Record<string, unknown>): string {
+  return i18n.t(`catalog.csv.errors.${key}`, { ns: "admin", ...params });
+}
 
 // ─── CSV parsing ──────────────────────────────────────────────────────────────
 
@@ -122,14 +132,18 @@ export function mapRows(
     const priceStr = getField(r, "price");
     const categoryStr = getField(r, "category", "cat");
 
-    if (!name) errors.push("name required");
-    if (!description) errors.push("description required");
+    if (!name) errors.push(tError("nameRequired"));
+    if (!description) errors.push(tError("descriptionRequired"));
     const price = parseFloat(priceStr.replace(/[^0-9.]/g, ""));
     if (!priceStr || Number.isNaN(price) || price <= 0)
-      errors.push("invalid price");
+      errors.push(tError("invalidPrice"));
     const category = normalizeCategory(categoryStr, validCategories);
     if (!category)
-      errors.push(`category must be one of: ${validCategories.join(", ")}`);
+      errors.push(
+        tError("categoryMustBeOneOf", {
+          categories: validCategories.join(", "),
+        }),
+      );
 
     const qtyStr = getField(r, "quantity", "qty", "stock");
     const quantity = qtyStr ? parseInt(qtyStr, 10) : 1;
@@ -188,9 +202,9 @@ export function mapRows(
 // the preview table only ever lets the admin pick from the store's list.
 export function revalidateRow(row: CsvRow): CsvRow {
   const errors: string[] = [];
-  if (!row.name.trim()) errors.push("name required");
-  if (!row.description.trim()) errors.push("description required");
-  if (!row.price || row.price <= 0) errors.push("invalid price");
+  if (!row.name.trim()) errors.push(tError("nameRequired"));
+  if (!row.description.trim()) errors.push(tError("descriptionRequired"));
+  if (!row.price || row.price <= 0) errors.push(tError("invalidPrice"));
   return { ...row, _valid: errors.length === 0, _errors: errors };
 }
 
@@ -236,11 +250,11 @@ export function mapHandwrittenItems(
 ): CsvRow[] {
   return items.map((item) => {
     const errors: string[] = [];
-    if (!item.name?.trim()) errors.push("name required");
-    if (!item.description?.trim()) errors.push("description required");
-    if (!item.price || item.price <= 0) errors.push("invalid price");
+    if (!item.name?.trim()) errors.push(tError("nameRequired"));
+    if (!item.description?.trim()) errors.push(tError("descriptionRequired"));
+    if (!item.price || item.price <= 0) errors.push(tError("invalidPrice"));
     const category = normalizeCategory(item.category ?? "", validCategories);
-    if (!category) errors.push("invalid category");
+    if (!category) errors.push(tError("invalidCategory"));
     return {
       name: item.name?.trim() || "(empty)",
       description: item.description?.trim() || "",
@@ -280,8 +294,8 @@ export function mapMigrationRows(
     // needs one, so start from the name and let the merchant refine it in
     // the preview instead of flagging every imported row as broken.
     const description = item.description?.trim() || name;
-    if (!name) errors.push("name required");
-    if (!item.price || item.price <= 0) errors.push("invalid price");
+    if (!name) errors.push(tError("nameRequired"));
+    if (!item.price || item.price <= 0) errors.push(tError("invalidPrice"));
     const category = normalizeCategory(item.rawCategory ?? "", validCategories);
     return {
       name: name || "(empty)",
@@ -302,6 +316,7 @@ export function mapMigrationRows(
 type Stage = "input" | "preview" | "done";
 
 export default function CsvImport() {
+  const { t } = useTranslation("admin");
   const { user, isAuthenticated, loading } = useAuth();
   const utils = trpc.useUtils();
 
@@ -397,7 +412,7 @@ export default function CsvImport() {
     if (rows.length === 0) {
       toast.error(
         warnings[0] ??
-          `No products found in the ${sourceLabel} data — check you exported the product/catalogue list.`,
+          t("catalog.csv.toasts.migrationEmpty", { source: sourceLabel }),
       );
       return;
     }
@@ -405,7 +420,10 @@ export default function CsvImport() {
     setMigrationWarnings(warnings);
     setStage("preview");
     toast.success(
-      `Found ${rows.length} product${rows.length !== 1 ? "s" : ""} in your ${sourceLabel} data — review before importing`,
+      t("catalog.csv.toasts.migrationFound", {
+        count: rows.length,
+        source: sourceLabel,
+      }),
     );
   };
 
@@ -442,7 +460,7 @@ export default function CsvImport() {
       e.target.value = "";
       if (!file) return;
       const reader = new FileReader();
-      reader.onerror = () => toast.error("Failed to read file");
+      reader.onerror = () => toast.error(t("catalog.csv.toasts.readFailed"));
       reader.onload = async () => {
         setMigrationBusy(provider);
         try {
@@ -464,9 +482,7 @@ export default function CsvImport() {
   const loadCsv = (text: string) => {
     const raw = parseCsv(text);
     if (raw.length === 0) {
-      toast.error(
-        "No data rows found — check the file has a header row and at least one data row",
-      );
+      toast.error(t("catalog.csv.toasts.noDataRows"));
       return;
     }
     const mapped = mapRows(raw, validCategories);
@@ -479,14 +495,12 @@ export default function CsvImport() {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.name.endsWith(".csv") && file.type !== "text/csv") {
-      toast.error(
-        "Please upload a .csv file. For Excel, use File → Save As → CSV.",
-      );
+      toast.error(t("catalog.csv.toasts.notCsv"));
       return;
     }
     const reader = new FileReader();
     reader.onload = () => loadCsv(reader.result as string);
-    reader.onerror = () => toast.error("Failed to read file");
+    reader.onerror = () => toast.error(t("catalog.csv.toasts.readFailed"));
     reader.readAsText(file, "UTF-8");
     e.target.value = "";
   };
@@ -515,13 +529,11 @@ export default function CsvImport() {
     ];
     for (const file of files) {
       if (file.type && !ALLOWED.includes(file.type)) {
-        toast.error(
-          `${file.name}: please upload a JPEG, PNG, WebP or HEIC image`,
-        );
+        toast.error(t("catalog.csv.toasts.badImageType", { file: file.name }));
         return;
       }
       if (file.size > 10 * 1024 * 1024) {
-        toast.error(`${file.name}: image must be under 10 MB`);
+        toast.error(t("catalog.csv.toasts.imageTooLarge", { file: file.name }));
         return;
       }
     }
@@ -530,7 +542,7 @@ export default function CsvImport() {
     try {
       dataUrls = await Promise.all(files.map(readFileAsDataUrl));
     } catch {
-      toast.error("Failed to read one or more images");
+      toast.error(t("catalog.csv.toasts.readImagesFailed"));
       return;
     }
     setHandwritingPreviews(dataUrls);
@@ -561,12 +573,14 @@ export default function CsvImport() {
     setHandwritingProgress(null);
 
     if (failedFiles.length > 0) {
-      toast.error(`AI parsing failed for: ${failedFiles.join(", ")}`);
+      toast.error(
+        t("catalog.csv.toasts.aiParseFailed", {
+          files: failedFiles.join(", "),
+        }),
+      );
     }
     if (allItems.length === 0) {
-      toast.error(
-        "AI could not extract any items from these photos — try clearer photos",
-      );
+      toast.error(t("catalog.csv.toasts.aiNoItems"));
       return;
     }
     const mapped = mapHandwrittenItems(allItems, validCategories);
@@ -574,7 +588,10 @@ export default function CsvImport() {
     setMigrationWarnings([]);
     setStage("preview");
     toast.success(
-      `AI extracted ${allItems.length} item${allItems.length !== 1 ? "s" : ""} from ${dataUrls.length} photo${dataUrls.length !== 1 ? "s" : ""}`,
+      t("catalog.csv.toasts.aiExtracted", {
+        items: t("catalog.csv.toasts.itemCount", { count: allItems.length }),
+        photos: t("catalog.csv.toasts.photoCount", { count: dataUrls.length }),
+      }),
     );
   };
 
@@ -596,7 +613,7 @@ export default function CsvImport() {
 
   const handleFetchSheet = async () => {
     if (!sheetUrl.trim()) {
-      toast.error("Enter a Google Sheets URL");
+      toast.error(t("catalog.csv.toasts.enterSheetUrl"));
       return;
     }
     const result = await fetchSheetMutation.mutateAsync({
@@ -608,7 +625,7 @@ export default function CsvImport() {
   const handleImport = async () => {
     const toImport = rows.filter((r) => r._valid && r._selected);
     if (toImport.length === 0) {
-      toast.error("No rows selected to import");
+      toast.error(t("catalog.csv.toasts.noRowsSelected"));
       return;
     }
 
@@ -646,7 +663,7 @@ export default function CsvImport() {
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         console.error("[CsvImport] Batch import failed:", err);
-        toast.error(`A batch failed to import: ${message}`);
+        toast.error(t("catalog.csv.toasts.batchFailed", { message }));
         failed.push(...chunks[i].map((r) => r.name));
       }
       setImportProgress({ done: i + 1, total: chunks.length });
@@ -672,7 +689,7 @@ export default function CsvImport() {
       <div className="min-h-screen flex items-center justify-center pt-20 bg-background">
         <div className="text-center max-w-sm">
           <h2 className="font-serif text-foreground text-2xl mb-4">
-            Admin Required
+            {t("catalog.csv.auth.required")}
           </h2>
           <SignInOptions className="text-left" next={window.location.href} />
         </div>
@@ -684,7 +701,7 @@ export default function CsvImport() {
       <div className="min-h-screen flex items-center justify-center pt-20 bg-background">
         <div className="text-center max-w-sm">
           <h2 className="font-serif text-foreground text-2xl mb-4">
-            Access Denied
+            {t("catalog.csv.auth.denied")}
           </h2>
         </div>
       </div>
@@ -703,20 +720,20 @@ export default function CsvImport() {
         <div className="container flex items-center justify-between">
           <div>
             <p className="text-[var(--brand-accent)] text-xs uppercase tracking-[0.3em] mb-1 font-sans">
-              Admin
+              {t("catalog.csv.header.eyebrow")}
             </p>
             <h1 className="font-serif text-white text-2xl">
-              CSV / Spreadsheet Import
+              {t("catalog.csv.header.title")}
             </h1>
             <p className="text-white/50 text-xs font-sans mt-1">
-              Import product data from a CSV file or Google Sheets
+              {t("catalog.csv.header.description")}
             </p>
           </div>
           <Link
             href="/admin"
             className="text-white/60 hover:text-white text-xs uppercase tracking-[0.15em] font-sans transition-colors"
           >
-            ← Admin
+            ← {t("catalog.csv.header.backToAdmin")}
           </Link>
         </div>
       </section>
@@ -733,12 +750,11 @@ export default function CsvImport() {
                   className="text-[var(--brand-accent)]"
                 />
                 <h2 className="font-serif text-foreground text-lg">
-                  Switching from Stripe, SumUp or Worldline?
+                  {t("catalog.csv.migration.title")}
                 </h2>
               </div>
               <p className="text-muted-foreground text-xs font-sans mb-5">
-                Bring your existing catalogue with you — nothing is written to
-                your shop until you've reviewed every item.
+                {t("catalog.csv.migration.description")}
               </p>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* Stripe */}
@@ -748,8 +764,8 @@ export default function CsvImport() {
                   </p>
                   <p className="text-muted-foreground text-xs font-sans mb-4 flex-1">
                     {stripeConnected
-                      ? "Your Stripe account is linked — import your product catalogue in one click."
-                      : "Link the Stripe account you already have: your checkout keeps working and your catalogue imports in one click."}
+                      ? t("catalog.csv.migration.stripeLinked")
+                      : t("catalog.csv.migration.stripeUnlinked")}
                   </p>
                   <button
                     type="button"
@@ -764,10 +780,10 @@ export default function CsvImport() {
                       <CreditCard size={13} />
                     )}
                     {migrationBusy === "stripe"
-                      ? "Fetching catalogue…"
+                      ? t("catalog.csv.migration.stripeFetching")
                       : stripeConnected
-                        ? "Import Stripe catalogue"
-                        : "Connect Stripe account"}
+                        ? t("catalog.csv.migration.stripeImport")
+                        : t("catalog.csv.migration.stripeConnect")}
                   </button>
                 </div>
                 {/* SumUp */}
@@ -776,8 +792,7 @@ export default function CsvImport() {
                     SumUp
                   </p>
                   <p className="text-muted-foreground text-xs font-sans mb-4 flex-1">
-                    In SumUp, export your item catalogue as CSV (Items → Export)
-                    and upload the file here.
+                    {t("catalog.csv.migration.sumupDescription")}
                   </p>
                   <button
                     type="button"
@@ -792,8 +807,8 @@ export default function CsvImport() {
                       <Upload size={13} />
                     )}
                     {migrationBusy === "sumup"
-                      ? "Reading export…"
-                      : "Upload SumUp export"}
+                      ? t("catalog.csv.migration.readingExport")
+                      : t("catalog.csv.migration.sumupUpload")}
                   </button>
                   <input
                     ref={sumupRef}
@@ -810,8 +825,7 @@ export default function CsvImport() {
                     Worldline / SIX
                   </p>
                   <p className="text-muted-foreground text-xs font-sans mb-4 flex-1">
-                    Upload a Worldline/SIX article or transaction export (CSV) —
-                    repeated sales collapse into one product each.
+                    {t("catalog.csv.migration.worldlineDescription")}
                   </p>
                   <button
                     type="button"
@@ -826,8 +840,8 @@ export default function CsvImport() {
                       <Upload size={13} />
                     )}
                     {migrationBusy === "worldline"
-                      ? "Reading export…"
-                      : "Upload Worldline export"}
+                      ? t("catalog.csv.migration.readingExport")
+                      : t("catalog.csv.migration.worldlineUpload")}
                   </button>
                   <input
                     ref={worldlineRef}
@@ -845,10 +859,10 @@ export default function CsvImport() {
             <div className="bg-white border border-[var(--brand-border)] p-5 mb-6 flex items-center justify-between flex-wrap gap-4">
               <div>
                 <p className="font-serif text-foreground text-sm mb-0.5">
-                  Download the template
+                  {t("catalog.csv.template.title")}
                 </p>
                 <p className="text-muted-foreground text-xs font-sans">
-                  Columns:{" "}
+                  {t("catalog.csv.template.columnsLabel")}{" "}
                   <span className="font-mono text-[11px]">
                     name, nameEn, nameFr, nameIt, description, descriptionEn,
                     descriptionFr, descriptionIt, price, category, quantity,
@@ -856,7 +870,7 @@ export default function CsvImport() {
                   </span>
                 </p>
                 <p className="text-muted-foreground text-xs font-sans mt-0.5">
-                  Categories must be exactly:{" "}
+                  {t("catalog.csv.template.categoriesLabel")}{" "}
                   {validCategories.map((c, i) => (
                     <span key={c}>
                       {i > 0 && " · "}
@@ -871,7 +885,7 @@ export default function CsvImport() {
                 className="flex items-center gap-2 border border-[var(--brand-ink)] text-[var(--brand-ink)] px-5 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:bg-[var(--brand-ink)] hover:text-white transition-colors flex-shrink-0"
               >
                 <Download size={14} />
-                Download Template
+                {t("catalog.csv.template.download")}
               </button>
             </div>
 
@@ -884,12 +898,12 @@ export default function CsvImport() {
                     className="text-[var(--brand-accent)]"
                   />
                   <h2 className="font-serif text-foreground text-lg">
-                    Upload CSV File
+                    {t("catalog.csv.upload.title")}
                   </h2>
                 </div>
                 <p className="text-muted-foreground text-xs font-sans mb-5">
-                  Save your spreadsheet as CSV (UTF-8). Excel:{" "}
-                  <em>File → Save As → CSV UTF-8</em>.
+                  {t("catalog.csv.upload.descriptionPrefix")}{" "}
+                  <em>{t("catalog.csv.upload.excelPath")}</em>.
                 </p>
                 <button
                   type="button"
@@ -901,10 +915,10 @@ export default function CsvImport() {
                     className="mx-auto mb-2 text-[var(--brand-ink)]/30 group-hover:text-[var(--brand-accent)] transition-colors"
                   />
                   <p className="font-serif text-foreground text-sm mb-0.5">
-                    Click to select a .csv file
+                    {t("catalog.csv.upload.selectFile")}
                   </p>
                   <p className="text-muted-foreground text-xs font-sans">
-                    or drag and drop here
+                    {t("catalog.csv.upload.dragDrop")}
                   </p>
                 </button>
                 <input
@@ -925,16 +939,16 @@ export default function CsvImport() {
                     className="text-[var(--brand-accent)]"
                   />
                   <h2 className="font-serif text-foreground text-lg">
-                    Google Sheets URL
+                    {t("catalog.csv.sheets.title")}
                   </h2>
                 </div>
                 <p className="text-muted-foreground text-xs font-sans mb-2">
-                  Share your sheet with <em>"Anyone with the link"</em>, then
-                  paste the URL below.
+                  {t("catalog.csv.sheets.shareBefore")}{" "}
+                  <em>{t("catalog.csv.sheets.shareEmphasis")}</em>
+                  {t("catalog.csv.sheets.shareAfter")}
                 </p>
                 <p className="text-muted-foreground text-xs font-sans mb-5">
-                  The first sheet (tab) will be imported. Column names in the
-                  first row must match the template.
+                  {t("catalog.csv.sheets.columnsNote")}
                 </p>
                 <input
                   type="url"
@@ -954,7 +968,9 @@ export default function CsvImport() {
                   ) : (
                     <ChevronRight size={15} />
                   )}
-                  {fetchSheetMutation.isPending ? "Fetching…" : "Load Sheet"}
+                  {fetchSheetMutation.isPending
+                    ? t("catalog.csv.sheets.fetching")
+                    : t("catalog.csv.sheets.load")}
                 </button>
               </div>
             </div>
@@ -964,18 +980,15 @@ export default function CsvImport() {
               <div className="flex items-center gap-2 mb-1">
                 <NotebookPen size={18} className="text-[var(--brand-accent)]" />
                 <h2 className="font-serif text-foreground text-lg">
-                  Handwritten Inventory Photos
+                  {t("catalog.csv.handwriting.title")}
                 </h2>
                 <span className="ml-2 flex items-center gap-1 text-[10px] uppercase tracking-[0.12em] text-[var(--brand-accent)] font-sans bg-[var(--brand-accent)]/10 px-2 py-0.5">
                   <Sparkles size={9} />
-                  AI
+                  {t("catalog.csv.handwriting.aiBadge")}
                 </span>
               </div>
               <p className="text-muted-foreground text-xs font-sans mb-5">
-                Photograph pages from your diary or notebook — select as many as
-                you like at once. AI will read each item's name, price,
-                category, and quantity from every photo and build a combined
-                list you can review and edit before importing.
+                {t("catalog.csv.handwriting.description")}
               </p>
 
               {handwritingProgress ? (
@@ -985,15 +998,16 @@ export default function CsvImport() {
                     className="text-[var(--brand-accent)] animate-pulse"
                   />
                   <p className="font-serif text-foreground">
-                    Reading your inventory…
+                    {t("catalog.csv.handwriting.reading")}
                   </p>
                   <p className="text-muted-foreground text-xs font-sans">
-                    Photo{" "}
-                    {Math.min(
-                      handwritingProgress.done + 1,
-                      handwritingProgress.total,
-                    )}{" "}
-                    of {handwritingProgress.total}
+                    {t("catalog.csv.handwriting.photoProgress", {
+                      current: Math.min(
+                        handwritingProgress.done + 1,
+                        handwritingProgress.total,
+                      ),
+                      total: handwritingProgress.total,
+                    })}
                   </p>
                   {handwritingPreviews.length > 0 && (
                     <div className="flex flex-wrap justify-center gap-2 mt-3">
@@ -1001,7 +1015,9 @@ export default function CsvImport() {
                         <img
                           key={i}
                           src={src}
-                          alt={`Uploaded inventory ${i + 1}`}
+                          alt={t("catalog.csv.handwriting.uploadedAlt", {
+                            index: i + 1,
+                          })}
                           className={`h-24 w-24 object-cover border ${
                             i < handwritingProgress.done
                               ? "border-[var(--brand-accent)]"
@@ -1024,11 +1040,10 @@ export default function CsvImport() {
                       className="mx-auto mb-2 text-[var(--brand-ink)]/30 group-hover:text-[var(--brand-accent)] transition-colors"
                     />
                     <p className="font-serif text-foreground text-sm mb-0.5">
-                      Upload photos of your notes
+                      {t("catalog.csv.handwriting.upload")}
                     </p>
                     <p className="text-muted-foreground text-xs font-sans">
-                      JPEG, PNG, WebP or HEIC · max 10 MB each · multiple
-                      allowed
+                      {t("catalog.csv.handwriting.formats")}
                     </p>
                   </button>
                   {handwritingPreviews.length > 0 && (
@@ -1037,7 +1052,9 @@ export default function CsvImport() {
                         <img
                           key={i}
                           src={src}
-                          alt={`Previous upload ${i + 1}`}
+                          alt={t("catalog.csv.handwriting.previousAlt", {
+                            index: i + 1,
+                          })}
                           className="w-16 h-16 object-cover border border-[var(--brand-border)]"
                         />
                       ))}
@@ -1070,7 +1087,7 @@ export default function CsvImport() {
                 <div className="flex items-center gap-2 mb-1.5">
                   <AlertTriangle size={14} className="text-amber-600" />
                   <p className="font-sans text-xs uppercase tracking-[0.12em] text-amber-800">
-                    Worth checking before you import
+                    {t("catalog.csv.preview.warningsTitle")}
                   </p>
                 </div>
                 <ul className="list-disc pl-5 space-y-1">
@@ -1091,22 +1108,23 @@ export default function CsvImport() {
                   className="text-green-600 flex-shrink-0"
                 />
                 <span className="text-sm font-sans">
-                  <strong>{validRows.length}</strong> valid rows
+                  <strong>{validRows.length}</strong>{" "}
+                  {t("catalog.csv.preview.validRows")}
                 </span>
               </div>
               {invalidRows.length > 0 && (
                 <div className="flex items-center gap-2 bg-white border border-[var(--brand-border)] px-4 py-2.5">
                   <XCircle size={16} className="text-red-500 flex-shrink-0" />
                   <span className="text-sm font-sans">
-                    <strong>{invalidRows.length}</strong> rows with errors (will
-                    be skipped)
+                    <strong>{invalidRows.length}</strong>{" "}
+                    {t("catalog.csv.preview.errorRows")}
                   </span>
                 </div>
               )}
               <div className="flex items-center gap-2 bg-white border border-[var(--brand-border)] px-4 py-2.5">
                 <span className="text-sm font-sans">
-                  <strong>{selectedForImport.length}</strong> selected for
-                  import
+                  <strong>{selectedForImport.length}</strong>{" "}
+                  {t("catalog.csv.preview.selectedForImport")}
                 </span>
               </div>
               <div className="ml-auto flex gap-3">
@@ -1122,7 +1140,7 @@ export default function CsvImport() {
                   disabled={importProgress !== null}
                   className="border border-[var(--brand-ink)]/20 text-muted-foreground px-5 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:border-[var(--brand-ink)] hover:text-foreground transition-colors disabled:opacity-60"
                 >
-                  ← Back
+                  ← {t("catalog.csv.preview.back")}
                 </button>
                 <button
                   type="button"
@@ -1138,15 +1156,19 @@ export default function CsvImport() {
                     <Upload size={14} />
                   )}
                   {importProgress
-                    ? `Importing ${importProgress.done}/${importProgress.total}…`
-                    : `Import ${selectedForImport.length} Product${selectedForImport.length !== 1 ? "s" : ""}`}
+                    ? t("catalog.csv.preview.importing", {
+                        done: importProgress.done,
+                        total: importProgress.total,
+                      })
+                    : t("catalog.csv.preview.importButton", {
+                        count: selectedForImport.length,
+                      })}
                 </button>
               </div>
             </div>
 
             <p className="text-xs text-muted-foreground font-sans mb-4">
-              Uncheck any row you don't want to import — nothing is written
-              until you click Import.
+              {t("catalog.csv.preview.uncheckNote")}
             </p>
 
             {/* Preview table */}
@@ -1163,30 +1185,30 @@ export default function CsvImport() {
                             if (el) el.indeterminate = someSelected;
                           }}
                           onChange={(e) => toggleAllSelected(e.target.checked)}
-                          aria-label="Select all rows"
+                          aria-label={t("catalog.csv.table.selectAllAria")}
                         />
                       </th>
                       <th className="text-left px-4 py-3 text-xs uppercase tracking-[0.12em] text-muted-foreground font-normal w-8"></th>
                       <th className="text-left px-4 py-3 text-xs uppercase tracking-[0.12em] text-muted-foreground font-normal">
-                        Name
+                        {t("catalog.csv.table.thName")}
                       </th>
                       <th className="text-left px-4 py-3 text-xs uppercase tracking-[0.12em] text-muted-foreground font-normal">
-                        Action
+                        {t("catalog.csv.table.thAction")}
                       </th>
                       <th className="text-left px-4 py-3 text-xs uppercase tracking-[0.12em] text-muted-foreground font-normal hidden md:table-cell">
-                        Category
+                        {t("catalog.csv.table.thCategory")}
                       </th>
                       <th className="text-left px-4 py-3 text-xs uppercase tracking-[0.12em] text-muted-foreground font-normal">
-                        Price
+                        {t("catalog.csv.table.thPrice")}
                       </th>
                       <th className="text-left px-4 py-3 text-xs uppercase tracking-[0.12em] text-muted-foreground font-normal hidden sm:table-cell">
-                        Qty
+                        {t("catalog.csv.table.thQty")}
                       </th>
                       <th className="text-left px-4 py-3 text-xs uppercase tracking-[0.12em] text-muted-foreground font-normal hidden lg:table-cell">
-                        Image URL
+                        {t("catalog.csv.table.thImageUrl")}
                       </th>
                       <th className="text-left px-4 py-3 text-xs uppercase tracking-[0.12em] text-muted-foreground font-normal">
-                        Issues
+                        {t("catalog.csv.table.thIssues")}
                       </th>
                     </tr>
                   </thead>
@@ -1207,7 +1229,11 @@ export default function CsvImport() {
                               onChange={(e) =>
                                 toggleRowSelected(i, e.target.checked)
                               }
-                              aria-label={`Select ${row.name || "row"} for import`}
+                              aria-label={t("catalog.csv.table.selectRowAria", {
+                                name:
+                                  row.name ||
+                                  t("catalog.csv.table.rowFallback"),
+                              })}
                             />
                           </td>
                           <td className="px-4 py-3">
@@ -1227,7 +1253,7 @@ export default function CsvImport() {
                               onChange={(e) =>
                                 updateRow(i, { name: e.target.value })
                               }
-                              placeholder="Name"
+                              placeholder={t("catalog.csv.table.phName")}
                               className="w-full bg-transparent border-b border-transparent hover:border-[var(--brand-border)] focus:border-[var(--brand-accent)] focus:outline-none font-serif text-foreground text-sm py-0.5"
                             />
                             <input
@@ -1236,7 +1262,7 @@ export default function CsvImport() {
                               onChange={(e) =>
                                 updateRow(i, { description: e.target.value })
                               }
-                              placeholder="Description"
+                              placeholder={t("catalog.csv.table.phDescription")}
                               className="w-full bg-transparent border-b border-transparent hover:border-[var(--brand-border)] focus:border-[var(--brand-accent)] focus:outline-none text-muted-foreground text-xs py-0.5 mt-0.5"
                             />
                             <input
@@ -1247,7 +1273,7 @@ export default function CsvImport() {
                                   nameEn: e.target.value || undefined,
                                 })
                               }
-                              placeholder="Name (English)"
+                              placeholder={t("catalog.csv.table.phNameEn")}
                               className="w-full bg-transparent border-b border-transparent hover:border-[var(--brand-border)] focus:border-[var(--brand-accent)] focus:outline-none text-muted-foreground/80 text-[11px] italic py-0.5 mt-0.5"
                             />
                             <input
@@ -1258,7 +1284,9 @@ export default function CsvImport() {
                                   descriptionEn: e.target.value || undefined,
                                 })
                               }
-                              placeholder="Description (English)"
+                              placeholder={t(
+                                "catalog.csv.table.phDescriptionEn",
+                              )}
                               className="w-full bg-transparent border-b border-transparent hover:border-[var(--brand-border)] focus:border-[var(--brand-accent)] focus:outline-none text-muted-foreground/80 text-[11px] italic py-0.5"
                             />
                             <input
@@ -1269,7 +1297,7 @@ export default function CsvImport() {
                                   nameFr: e.target.value || undefined,
                                 })
                               }
-                              placeholder="Name (French)"
+                              placeholder={t("catalog.csv.table.phNameFr")}
                               className="w-full bg-transparent border-b border-transparent hover:border-[var(--brand-border)] focus:border-[var(--brand-accent)] focus:outline-none text-muted-foreground/80 text-[11px] italic py-0.5 mt-0.5"
                             />
                             <input
@@ -1280,7 +1308,9 @@ export default function CsvImport() {
                                   descriptionFr: e.target.value || undefined,
                                 })
                               }
-                              placeholder="Description (French)"
+                              placeholder={t(
+                                "catalog.csv.table.phDescriptionFr",
+                              )}
                               className="w-full bg-transparent border-b border-transparent hover:border-[var(--brand-border)] focus:border-[var(--brand-accent)] focus:outline-none text-muted-foreground/80 text-[11px] italic py-0.5"
                             />
                             <input
@@ -1291,7 +1321,7 @@ export default function CsvImport() {
                                   nameIt: e.target.value || undefined,
                                 })
                               }
-                              placeholder="Name (Italian)"
+                              placeholder={t("catalog.csv.table.phNameIt")}
                               className="w-full bg-transparent border-b border-transparent hover:border-[var(--brand-border)] focus:border-[var(--brand-accent)] focus:outline-none text-muted-foreground/80 text-[11px] italic py-0.5 mt-0.5"
                             />
                             <input
@@ -1302,7 +1332,9 @@ export default function CsvImport() {
                                   descriptionIt: e.target.value || undefined,
                                 })
                               }
-                              placeholder="Description (Italian)"
+                              placeholder={t(
+                                "catalog.csv.table.phDescriptionIt",
+                              )}
                               className="w-full bg-transparent border-b border-transparent hover:border-[var(--brand-border)] focus:border-[var(--brand-accent)] focus:outline-none text-muted-foreground/80 text-[11px] italic py-0.5"
                             />
                           </td>
@@ -1310,13 +1342,17 @@ export default function CsvImport() {
                             {match ? (
                               <span
                                 className="text-[10px] uppercase tracking-[0.1em] px-2 py-0.5 font-sans bg-[#FFF0DC] text-[#8B5914]"
-                                title={`Will update existing product #${match.id}`}
+                                title={t("catalog.csv.table.updateTitle", {
+                                  id: match.id,
+                                })}
                               >
-                                Update #{match.id}
+                                {t("catalog.csv.table.update", {
+                                  id: match.id,
+                                })}
                               </span>
                             ) : (
                               <span className="text-[10px] uppercase tracking-[0.1em] px-2 py-0.5 font-sans bg-[#E8F4EC] text-[#2D6B4A]">
-                                Create
+                                {t("catalog.csv.table.create")}
                               </span>
                             )}
                           </td>
@@ -1410,9 +1446,7 @@ export default function CsvImport() {
 
             {invalidRows.length > 0 && (
               <p className="text-xs text-muted-foreground font-sans mt-3">
-                Rows with errors will be skipped. Edit the name, description,
-                price, or category directly in the table above to fix them
-                before importing.
+                {t("catalog.csv.preview.errorNote")}
               </p>
             )}
           </div>
@@ -1425,21 +1459,24 @@ export default function CsvImport() {
               <CheckCircle2 size={40} className="text-[var(--brand-accent)]" />
             </div>
             <h2 className="font-serif text-foreground text-3xl mb-3">
-              {importResult.created} product
-              {importResult.created !== 1 ? "s" : ""} created
-              {importResult.updated > 0 && `, ${importResult.updated} updated`}
+              {t("catalog.csv.done.created", { count: importResult.created })}
+              {importResult.updated > 0 &&
+                t("catalog.csv.done.updatedSuffix", {
+                  count: importResult.updated,
+                })}
             </h2>
             <p className="text-muted-foreground font-sans mb-2">
               {importResult.updated > 0
-                ? "Rows matching an existing product name were updated in place instead of duplicated. "
+                ? `${t("catalog.csv.done.updatedNote")} `
                 : ""}
-              Products are now visible in the shop. You can add photos via the
-              admin panel.
+              {t("catalog.csv.done.visibleNote")}
             </p>
             {importResult.failed.length > 0 && (
               <p className="text-amber-600 text-sm font-sans mb-4">
-                {importResult.failed.length} failed:{" "}
-                {importResult.failed.join(", ")}
+                {t("catalog.csv.done.failed", {
+                  count: importResult.failed.length,
+                  names: importResult.failed.join(", "),
+                })}
               </p>
             )}
             <div className="flex flex-col sm:flex-row gap-3 justify-center mt-8">
@@ -1456,13 +1493,13 @@ export default function CsvImport() {
                 className="flex items-center justify-center gap-2 border border-[var(--brand-ink)] text-[var(--brand-ink)] px-8 py-3 text-sm uppercase tracking-[0.15em] font-sans hover:bg-[var(--brand-ink)] hover:text-white transition-colors"
               >
                 <Upload size={14} />
-                Import More
+                {t("catalog.csv.done.importMore")}
               </button>
               <Link
                 href="/admin"
                 className="flex items-center justify-center gap-2 bg-[var(--brand-ink)] text-white px-8 py-3 text-sm uppercase tracking-[0.15em] font-sans hover:bg-[var(--brand-ink-hover)] transition-colors"
               >
-                Go to Admin Panel
+                {t("catalog.csv.done.goToAdmin")}
               </Link>
             </div>
           </div>

@@ -200,6 +200,20 @@
         "description": "Importi i dati dei prodotti da un file CSV o da Google Sheets",
         "backToAdmin": "Admin"
       },
+      "migration": {
+        "title": "Sta passando da Stripe, SumUp o Worldline?",
+        "description": "Porti con sé il Suo catalogo esistente — non viene scritto nulla nel Suo negozio finché non ha verificato ogni articolo.",
+        "stripeLinked": "Il Suo account Stripe è collegato — importi il Suo catalogo prodotti con un clic.",
+        "stripeUnlinked": "Colleghi l'account Stripe che ha già: il Suo checkout continua a funzionare e il catalogo si importa con un clic.",
+        "stripeFetching": "Caricamento del catalogo…",
+        "stripeImport": "Importa il catalogo Stripe",
+        "stripeConnect": "Collega l'account Stripe",
+        "sumupDescription": "In SumUp esporti il catalogo articoli in formato CSV (Articoli → Esporta) e carichi qui il file.",
+        "sumupUpload": "Carica l'export SumUp",
+        "worldlineDescription": "Carichi un export di articoli o transazioni Worldline/SIX (CSV) — le vendite ripetute vengono unite in un prodotto ciascuna.",
+        "worldlineUpload": "Carica l'export Worldline",
+        "readingExport": "Lettura dell'export…"
+      },
       "template": {
         "title": "Scarichi il modello",
         "columnsLabel": "Colonne:",
@@ -234,6 +248,7 @@
         "formats": "JPEG, PNG, WebP o HEIC · max 10 MB ciascuna · più file consentiti"
       },
       "preview": {
+        "warningsTitle": "Da controllare prima di importare",
         "validRows": "righe valide",
         "errorRows": "righe con errori (verranno saltate)",
         "selectedForImport": "selezionate per l'importazione",
@@ -281,7 +296,9 @@
         "updatedSuffix": ", {{count}} aggiornati",
         "updatedNote": "Le righe corrispondenti al nome di un prodotto esistente sono state aggiornate sul posto anziché duplicate.",
         "visibleNote": "I prodotti sono ora visibili nel negozio. Può aggiungere le foto dal pannello di amministrazione.",
-        "failed": "{{count}} non riuscite: {{names}}",
+        "failed_one": "{{count}} non riuscita: {{names}}",
+        "failed_many": "{{count}} non riuscite: {{names}}",
+        "failed_other": "{{count}} non riuscite: {{names}}",
         "importMore": "Importa altri",
         "goToAdmin": "Vai al pannello di amministrazione",
         "created_many": "{{count}} prodotti creati"
@@ -304,7 +321,11 @@
         "noRowsSelected": "Nessuna riga selezionata per l'importazione",
         "batchFailed": "Un lotto non è stato importato: {{message}}",
         "itemCount_many": "{{count}} articoli",
-        "photoCount_many": "{{count}} foto"
+        "photoCount_many": "{{count}} foto",
+        "migrationEmpty": "Nessun prodotto trovato nei dati {{source}} — controlli di aver esportato l'elenco prodotti/catalogo.",
+        "migrationFound_one": "{{count}} prodotto trovato nei Suoi dati {{source}} — verifichi prima di importare",
+        "migrationFound_many": "{{count}} prodotti trovati nei Suoi dati {{source}} — verifichi prima di importare",
+        "migrationFound_other": "{{count}} prodotti trovati nei Suoi dati {{source}} — verifichi prima di importare"
       }
     }
   }

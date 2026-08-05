@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
+  act,
   render,
   screen,
   fireEvent,
@@ -7,6 +8,7 @@ import {
   cleanup,
 } from "@testing-library/react";
 import { toast } from "sonner";
+import i18n from "@/lib/i18n";
 import CsvImport from "./CsvImport";
 
 const mocks = vi.hoisted(() => ({
@@ -732,9 +734,9 @@ describe("CsvImport: provider migration (Stripe / SumUp / Worldline)", () => {
 
   it("labels the Stripe card as a connect step until the account is linked", () => {
     render(<CsvImport />);
-    expect(
-      screen.getByTestId("migrate-stripe-button").textContent,
-    ).toContain("Connect Stripe account");
+    expect(screen.getByTestId("migrate-stripe-button").textContent).toContain(
+      "Connect Stripe account",
+    );
   });
 
   it("imports the Stripe catalogue in one click once connected", async () => {
@@ -752,7 +754,9 @@ describe("CsvImport: provider migration (Stripe / SumUp / Worldline)", () => {
           quantity: 1,
         },
       ],
-      warnings: ["Stripe doesn't track stock, so every product starts with quantity 1 — adjust stock in the preview."],
+      warnings: [
+        "Stripe doesn't track stock, so every product starts with quantity 1 — adjust stock in the preview.",
+      ],
       skipped: 0,
     });
 
@@ -861,5 +865,56 @@ describe("CsvImport: provider migration (Stripe / SumUp / Worldline)", () => {
       ),
     );
     expect(container.textContent).not.toContain("valid rows");
+  });
+});
+
+// Every string on this page is one `admin`-namespace lookup away from a raw
+// key, so pin that the catalog fragment actually resolves in a non-default
+// language — including the French plural on the import button, which needs the
+// `one`/`many`/`other` categories CLDR defines for fr but not for en.
+describe("CsvImport — translated", () => {
+  afterEach(async () => {
+    await act(async () => {
+      await i18n.changeLanguage("en");
+    });
+  });
+
+  it("renders its chrome, toasts and row-count plural in French", async () => {
+    await act(async () => {
+      await i18n.changeLanguage("fr");
+    });
+
+    const { container } = render(<CsvImport />);
+    expect(container.textContent).toContain("Import CSV / tableur");
+    expect(container.textContent).toContain(
+      "Vous migrez depuis Stripe, SumUp ou Worldline ?",
+    );
+    screen.getByRole("button", { name: /Télécharger le modèle/i });
+    screen.getByPlaceholderText("https://docs.google.com/spreadsheets/d/...");
+
+    fireEvent.change(screen.getByTestId("csv-file-input"), {
+      target: {
+        files: [
+          makeCsvFile(
+            'name,description,price,category\n"Bague","desc",10,Rings',
+          ),
+        ],
+      },
+    });
+
+    await waitFor(() =>
+      expect(container.textContent).toContain("1 lignes valides"),
+    );
+    // The French `one` form, not the English fallback ("Import 1 Product").
+    screen.getByRole("button", { name: /Importer 1 produit/i });
+
+    // Validation messages are built outside the component, through the i18n
+    // singleton — they must follow the language too.
+    fireEvent.change(screen.getByPlaceholderText("Nom"), {
+      target: { value: "" },
+    });
+    await waitFor(() =>
+      expect(container.textContent).toContain("nom obligatoire"),
+    );
   });
 });

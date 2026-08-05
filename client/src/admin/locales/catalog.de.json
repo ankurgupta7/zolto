@@ -191,6 +191,20 @@
         "description": "Produktdaten aus einer CSV-Datei oder aus Google Sheets importieren",
         "backToAdmin": "Admin"
       },
+      "migration": {
+        "title": "Wechseln Sie von Stripe, SumUp oder Worldline?",
+        "description": "Nehmen Sie Ihren bestehenden Katalog mit — bis Sie jeden Artikel geprüft haben, wird nichts in Ihren Shop geschrieben.",
+        "stripeLinked": "Ihr Stripe-Konto ist verknüpft — importieren Sie Ihren Produktkatalog mit einem Klick.",
+        "stripeUnlinked": "Verknüpfen Sie das Stripe-Konto, das Sie bereits haben: Ihr Checkout funktioniert weiter und Ihr Katalog wird mit einem Klick importiert.",
+        "stripeFetching": "Katalog wird geladen…",
+        "stripeImport": "Stripe-Katalog importieren",
+        "stripeConnect": "Stripe-Konto verknüpfen",
+        "sumupDescription": "Exportieren Sie in SumUp Ihren Artikelkatalog als CSV (Artikel → Exportieren) und laden Sie die Datei hier hoch.",
+        "sumupUpload": "SumUp-Export hochladen",
+        "worldlineDescription": "Laden Sie einen Artikel- oder Transaktionsexport von Worldline/SIX (CSV) hoch — wiederholte Verkäufe werden zu je einem Produkt zusammengefasst.",
+        "worldlineUpload": "Worldline-Export hochladen",
+        "readingExport": "Export wird gelesen…"
+      },
       "template": {
         "title": "Vorlage herunterladen",
         "columnsLabel": "Spalten:",
@@ -225,6 +239,7 @@
         "formats": "JPEG, PNG, WebP oder HEIC · max. 10 MB pro Bild · mehrere möglich"
       },
       "preview": {
+        "warningsTitle": "Vor dem Import prüfenswert",
         "validRows": "gültige Zeilen",
         "errorRows": "Zeilen mit Fehlern (werden übersprungen)",
         "selectedForImport": "für den Import ausgewählt",
@@ -271,7 +286,8 @@
         "updatedSuffix": ", {{count}} aktualisiert",
         "updatedNote": "Zeilen, die zu einem bestehenden Produktnamen passen, wurden an Ort und Stelle aktualisiert statt doppelt angelegt.",
         "visibleNote": "Die Produkte sind jetzt im Shop sichtbar. Fotos können Sie im Adminbereich ergänzen.",
-        "failed": "{{count}} fehlgeschlagen: {{names}}",
+        "failed_one": "{{count}} fehlgeschlagen: {{names}}",
+        "failed_other": "{{count}} fehlgeschlagen: {{names}}",
         "importMore": "Weitere importieren",
         "goToAdmin": "Zum Adminbereich"
       },
@@ -291,7 +307,10 @@
         "photoCount_other": "{{count}} Fotos",
         "enterSheetUrl": "Geben Sie eine Google-Sheets-URL ein",
         "noRowsSelected": "Keine Zeilen für den Import ausgewählt",
-        "batchFailed": "Ein Stapel konnte nicht importiert werden: {{message}}"
+        "batchFailed": "Ein Stapel konnte nicht importiert werden: {{message}}",
+        "migrationEmpty": "In den {{source}}-Daten wurden keine Produkte gefunden — prüfen Sie, ob Sie die Produkt-/Katalogliste exportiert haben.",
+        "migrationFound_one": "{{count}} Produkt in Ihren {{source}}-Daten gefunden — bitte vor dem Import prüfen",
+        "migrationFound_other": "{{count}} Produkte in Ihren {{source}}-Daten gefunden — bitte vor dem Import prüfen"
       }
     }
   }
