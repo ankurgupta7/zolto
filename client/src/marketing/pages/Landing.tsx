@@ -6,6 +6,7 @@ import {
   PRICING_PROMISE,
   COST_COMPARISON,
   INCUMBENT_COMPARISON,
+  SOVEREIGNTY,
   formatPrice,
 } from "@shared/platform";
 import {
@@ -23,6 +24,7 @@ import { ScrollReveal } from "../components/ScrollReveal";
 import { CardReaderGag } from "../components/CardReaderGag";
 import { DiaryTeaser } from "../components/DiaryTeaser";
 import { ZeroCostPos } from "../components/ZeroCostPos";
+import { SwissMade } from "../components/SwissMade";
 import { useMarketingT } from "../lib/marketingI18n";
 
 export default function Landing() {
@@ -72,6 +74,19 @@ export default function Landing() {
                 {t("landing.seePricing")}
               </Link>
             </div>
+
+            {/* Where we're from, above the fold. Three facts, no sentence —
+                the ledger band further down does the explaining. */}
+            <ul className="mt-10 flex flex-wrap items-center gap-x-5 gap-y-2 text-[11px] uppercase tracking-[0.16em] text-white/50">
+              {SOVEREIGNTY.heroBadges.map((badge, i) => (
+                <li key={badge} className="flex items-center gap-2">
+                  <span aria-hidden className="text-[var(--brand-accent)]">
+                    ✦
+                  </span>
+                  {st(`sovereignty.heroBadges.${i}`, badge)}
+                </li>
+              ))}
+            </ul>
           </div>
 
           {/* The discovery shift, drawn rather than asserted */}
@@ -157,6 +172,9 @@ export default function Landing() {
           </ScrollReveal>
         </Container>
       </section>
+
+      {/* ── Made in Switzerland — the ledger, high on the page, not a badge ── */}
+      <SwissMade />
 
       {/* ── Why not the old guard (Direction A) — the comparison table ── */}
       <section className="bg-[var(--brand-surface)]">

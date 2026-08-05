@@ -13,6 +13,8 @@ import {
   CARD_READER_GAG,
   INCUMBENT_COMPARISON,
   REVENUE_SHARE,
+  DATA_RESIDENCY,
+  SOVEREIGNTY,
   FEATURES,
   COMPETITORS,
 } from "@shared/platform";
@@ -198,6 +200,35 @@ describe("marketing locale files", () => {
         ]),
       ),
       faqCategories: Object.fromEntries(FAQ_CATEGORIES.map((c) => [c, c])),
+      // The residency band and the Swissness ledger. The ledger's `next` is
+      // optional in the source, so a row without one contributes no key —
+      // which the structural test then requires every language to match.
+      dataResidency: {
+        eyebrow: DATA_RESIDENCY.eyebrow,
+        headline: DATA_RESIDENCY.headline,
+        headlineEmphasis: DATA_RESIDENCY.headlineEmphasis,
+        provider: DATA_RESIDENCY.provider,
+        region: DATA_RESIDENCY.region,
+        primaryCountry: DATA_RESIDENCY.primaryCountry,
+        body: DATA_RESIDENCY.body,
+        points: [...DATA_RESIDENCY.points],
+        caveat: DATA_RESIDENCY.caveat,
+      },
+      sovereignty: {
+        eyebrow: SOVEREIGNTY.eyebrow,
+        headline: SOVEREIGNTY.headline,
+        headlineEmphasis: SOVEREIGNTY.headlineEmphasis,
+        serving: SOVEREIGNTY.serving,
+        body: SOVEREIGNTY.body,
+        ledger: SOVEREIGNTY.ledger.map((e) => ({
+          piece: e.piece,
+          today: e.today,
+          ...(e.next ? { next: e.next } : {}),
+        })),
+        why: [...SOVEREIGNTY.why],
+        promise: SOVEREIGNTY.promise,
+        heroBadges: [...SOVEREIGNTY.heroBadges],
+      },
       faqs: Object.fromEntries(FAQS.map((f) => [f.q, { q: f.q, a: f.a }])),
       // Segment.tsx renders SEGMENTS and the FEATURES they resolve to, so both
       // are translated through `st()` and both belong to the same contract.

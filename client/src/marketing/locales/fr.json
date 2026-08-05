@@ -12,14 +12,17 @@
     "startFree": "Commencer gratuitement",
     "goToYourStore": "Accéder à votre boutique",
     "myStore": "Ma boutique",
-    "signedInAs": "Connecté en tant que {{email}}"
+    "signedInAs": "Connecté en tant que {{email}}",
+    "swissMade": "Suisse"
   },
   "footer": {
     "copyright": "© {{year}} Zolto — le commerce pour les artisans, fait main à Zurich, conçu pour que plus d'argent reste dans votre poche.",
     "pricing": "Tarifs",
     "faq": "FAQ",
     "privacy": "Confidentialité",
-    "terms": "Conditions"
+    "terms": "Conditions",
+    "madeIn": "{{headline}} Serveurs en {{region}}, surtout en {{country}} —",
+    "whatRunsWhere": "ce qui tourne où"
   },
   "landing": {
     "startFree": "Commencer gratuitement →",
@@ -153,22 +156,29 @@
           ]
         },
         {
-          "heading": "3. Cookies & statistiques",
+          "heading": "3. Où vivent vos données",
+          "body": [
+            "Zolto tourne sur des machines que nous louons chez Hetzner, un hébergeur allemand, dans des centres de données européens — en Allemagne dans la plupart des cas. Votre catalogue, vos commandes et les adresses de vos clients se trouvent dans une base de données sur ces machines. Deux régimes de protection des données s'appliquent : le RGPD et la nLPD suisse révisée. Là où ils divergent, nous nous tenons au plus strict des deux.",
+            "Nous n'exploitons pas tout nous-mêmes : les paiements par carte passent par Stripe, nos fonctions d'IA appellent un fournisseur de modèles et les e-mails de compte partent via un service d'envoi — certaines données parviennent donc aussi à ces entreprises, et toutes ne sont pas européennes. La liste complète, ligne par ligne, de ce qui tourne où et de ce qui déménage est publiée sur /made-in-switzerland."
+          ]
+        },
+        {
+          "heading": "4. Cookies & statistiques",
           "body": [
             "La plateforme dépose un seul cookie, app_session_id, qui vous maintient connecté. Il est strictement nécessaire — le service ne peut pas vous authentifier sans lui — il ne requiert donc aucune bannière de consentement et ne peut pas être désactivé pendant l'utilisation du service. Nous ne déposons aucun cookie publicitaire, de préférence ou de suivi tiers.",
             "Nous mesurons les pages vues avec Umami, un outil d'analyse respectueux de la vie privée qui fonctionne sans cookies et sans identifiants intersites ; il nous fournit des statistiques agrégées, pas des profils de visiteurs individuels. Les polices web sont servies depuis notre propre infrastructure : consulter une page n'envoie donc aucune requête à des réseaux de polices tiers. Lors du paiement, vous êtes redirigé vers Stripe, qui peut déposer ses propres cookies sur son propre domaine selon la politique de confidentialité de Stripe."
           ]
         },
         {
-          "heading": "4. Vos droits",
+          "heading": "5. Vos droits",
           "body": [
             "Vous pouvez demander l'accès à vos données personnelles, leur rectification ou leur suppression, et vous opposer à certains traitements. Contactez-nous pour exercer ces droits. Les utilisateurs de l'UE disposent en outre des droits accordés par le RGPD, y compris la portabilité des données et le droit de déposer une plainte auprès d'une autorité de contrôle."
           ]
         },
         {
-          "heading": "5. Conservation & sous-traitants",
+          "heading": "6. Conservation & sous-traitants",
           "body": [
-            "Nous conservons les données tant que votre compte est actif et aussi longtemps que la loi l'exige. Nous faisons appel à un petit nombre de sous-traitants (hébergement, paiements, e-mail, IA, statistiques) sous contrat ; une liste à jour est disponible sur demande."
+            "Nous conservons les données tant que votre compte est actif et aussi longtemps que la loi l'exige. Nous faisons appel à un petit nombre de sous-traitants sous contrat : hébergement (Hetzner, Europe), paiements (Stripe), e-mails transactionnels, le fournisseur du modèle d'IA derrière les fonctions d'assistance et l'analytique (Umami). Une liste à jour est disponible sur demande."
           ]
         }
       ]
@@ -561,6 +571,11 @@
         "feature": "Votre argent",
         "them": "Retenu, puis reversé",
         "us": "Directement sur votre propre Stripe"
+      },
+      "Where your data lives": {
+        "feature": "Où vivent vos données",
+        "them": "Dans les régions cloud qu'ils utilisent — voyez leur liste de sous-traitants",
+        "us": "Europe, surtout l'Allemagne — des serveurs loués chez Hetzner"
       }
     },
     "faqCategories": {
@@ -568,7 +583,8 @@
       "Getting started": "Premiers pas",
       "Selling": "Vendre",
       "Pricing & billing": "Tarifs & facturation",
-      "AI & discovery": "IA & découverte"
+      "AI & discovery": "IA & découverte",
+      "Privacy & data": "Confidentialité et données"
     },
     "faqs": {
       "What is Zolto?": {
@@ -642,6 +658,30 @@
       "Do prices include VAT?": {
         "q": "Les prix incluent-ils la TVA ?",
         "a": "Il n'y a pas de TVA à ajouter. Zolto est en dessous du seuil suisse d'assujettissement à la TVA de CHF 100 000, donc le prix affiché est le prix que vous payez. Si cela change un jour, nous le dirons avant que cela n'arrive."
+      },
+      "Is Zolto Swiss?": {
+        "q": "Zolto est-il suisse ?",
+        "a": "Oui — Zolto est conçu à Zurich par une société suisse, d'abord pour les artisans suisses, ensuite pour l'Europe, et après cela pour tout le monde. Les prix sont en francs, TWINT est intégré plutôt que rajouté, et l'infrastructure est européenne avec un plan public pour amener le reste en Suisse. La liste détaillée de ce qui tourne déjà où se trouve sur /made-in-switzerland."
+      },
+      "Where is my store's data stored?": {
+        "q": "Où sont stockées les données de ma boutique ?",
+        "a": "En Europe. Zolto tourne sur des serveurs que nous louons chez Hetzner, un hébergeur allemand, dans des centres de données européens — en Allemagne dans la plupart des cas. Vos produits, vos commandes et les coordonnées de vos clients vivent dans une base de données sur ces machines, pas dans une région cloud de l'autre côté d'un océan."
+      },
+      "Does any of my data leave Europe?": {
+        "q": "Est-ce qu'une partie de mes données quitte l'Europe ?",
+        "a": "Une partie parvient à des entreprises que nous n'exploitons pas nous-mêmes : les paiements par carte sont traités par Stripe (les numéros de carte ne touchent jamais les serveurs de Zolto), nos fonctions d'IA envoient du texte et des photos à un fournisseur de modèles, et les e-mails de compte passent par un service d'envoi — et toutes ne sont pas européennes. Tout ce que Zolto stocke lui-même reste sur nos serveurs européens. Les sous-traitants sont nommés dans la politique de confidentialité et la liste à jour est disponible sur demande."
+      },
+      "Is Zolto covered by the GDPR and Swiss data protection?": {
+        "q": "Zolto est-il couvert par le RGPD et la protection des données suisse ?",
+        "a": "Les deux s'appliquent. Zolto sert des commerçants en Suisse et dans l'UE : la loi fédérale révisée sur la protection des données (nLPD) et le RGPD entrent donc en jeu — là où ils divergent, nous travaillons selon le plus strict. Héberger dans l'UE rend cette conversation beaucoup plus courte, et lorsque nous traitons les données de vos clients pour votre compte, un contrat de sous-traitance l'encadre."
+      },
+      "Are you moving the rest of the stack to Europe?": {
+        "q": "Allez-vous déplacer le reste de la technique en Europe ?",
+        "a": "Oui, pièce par pièce, et nous publions l'état des lieux plutôt que l'ambition. Les serveurs et votre base de données sont déjà européens ; TWINT tourne déjà sur des rails suisses. Les paiements par carte, l'IA, le stockage des photos et les e-mails de compte sont encore hors d'Europe, chacun avec une prochaine étape annoncée — le registre complet est sur /made-in-switzerland, y compris ce qui ne sera jamais européen (réseaux de cartes, portefeuilles mobiles)."
+      },
+      "Can I get my data out again?": {
+        "q": "Puis-je récupérer mes données ?",
+        "a": "Oui, sur tous les plans — y compris le gratuit. Exportez votre catalogue et le profil de votre boutique en JSON depuis « Données et confidentialité » dans votre administration, quand vous voulez, sans nous le demander. La suppression de la boutique passe par le support uniquement pour que nous puissions confirmer que c'est bien vous."
       }
     },
     "segments": {
@@ -746,6 +786,10 @@
       "insights": {
         "name": "Analyses IA des ventes et du stock",
         "description": "Une analyse en langage clair de votre catalogue et de vos ventes pour repérer les meilleures ventes et les réassorts nécessaires."
+      },
+      "eu-hosting": {
+        "name": "Hébergement européen — vos données restent en Europe",
+        "description": "Zolto tourne sur des serveurs loués chez Hetzner en Europe, la plupart en Allemagne. Votre catalogue, vos commandes et les données de vos clients vivent dans un centre de données européen, sous le RGPD et la nLPD suisse révisée — pas dans la région cloud qui se trouvait être le réglage par défaut."
       }
     },
     "research": {
@@ -901,6 +945,114 @@
         "tagline": "Bleus côtiers aériens, nets et ouverts",
         "bestFor": "Bien-être, papeterie et essentiels modernes"
       }
+    },
+    "dataResidency": {
+      "eyebrow": "où vit vraiment votre boutique",
+      "headline": "Votre boutique vit en Europe.",
+      "headlineEmphasis": "Surtout en Allemagne.",
+      "provider": "Hetzner",
+      "region": "Europe",
+      "primaryCountry": "Allemagne",
+      "body": "Zolto tourne sur des machines que nous louons chez Hetzner, un hébergeur allemand, dans des centres de données européens — en Allemagne dans la plupart des cas. Votre catalogue, vos commandes et les adresses de vos clients se trouvent dans une base de données sur ces machines. Pas de l'autre côté d'un océan parce que c'était le réglage par défaut.",
+      "points": [
+        "Serveurs applicatifs et base de données en Europe — loués chez Hetzner, la plupart en Allemagne.",
+        "Deux régimes de protection des données s'appliquent : le RGPD et la nLPD suisse révisée. Là où ils divergent, nous nous tenons au plus strict.",
+        "Les noms et adresses de vos clients restent sous le droit européen — utile quand un client pose la question, et quand vous vendez dans l'UE.",
+        "Export en un clic sur tous les plans, suppression sur demande. Des données que vous pouvez emporter ne sont retenues nulle part."
+      ],
+      "caveat": "La note honnête : nous n'exploitons pas tout nous-mêmes. Les paiements par carte passent par Stripe, nos fonctions d'IA appellent un fournisseur de modèles et les e-mails de compte partent via un service d'envoi — certaines données parviennent donc aussi à ces entreprises, et toutes ne sont pas européennes. Elles sont nommées dans la politique de confidentialité, pas enfouies dedans."
+    },
+    "sovereignty": {
+      "eyebrow": "fabriqué en suisse",
+      "headline": "Fabriqué en Suisse.",
+      "headlineEmphasis": "Exploité depuis l'Europe.",
+      "serving": "Zolto est conçu à Zurich, d'abord pour les artisans suisses, ensuite pour l'Europe, et après cela pour quiconque, où qu'il soit, aime notre façon de faire.",
+      "body": "Nous déplaçons chaque pièce de Zolto que nous maîtrisons vers une infrastructure européenne, et vers la Suisse lorsqu'il existe une option suisse qui en vaut la peine. Une partie y est déjà. Une partie non. Voici la liste entière, y compris ce qui nous met mal à l'aise.",
+      "ledger": [
+        {
+          "piece": "L'entreprise et le produit",
+          "today": "Conçu à Zurich, par une société suisse"
+        },
+        {
+          "piece": "Les serveurs et votre base de données",
+          "today": "Hetzner · Europe, surtout en Allemagne",
+          "next": "Un centre de données suisse, pour que les machines et l'entreprise partagent un pays."
+        },
+        {
+          "piece": "TWINT sur votre stand",
+          "today": "Votre propre compte TWINT — rails suisses de bout en bout"
+        },
+        {
+          "piece": "Paiements par carte et versements",
+          "today": "Stripe — l'argent va directement sur votre compte, jamais sur le nôtre",
+          "next": "Un prestataire de paiement suisse. Nos recherches indiquent qu'il serait même moins cher par vente qu'aujourd'hui : le cas rare où l'option de principe est aussi l'option économique."
+        },
+        {
+          "piece": "L'IA (fiches, traductions, chat)",
+          "today": "Un fournisseur de modèles hors d'Europe",
+          "next": "Des modèles ouverts hébergés en Suisse. Notre couche d'IA parle déjà une API standard : c'est le saut le plus court de la liste — ce que nous testons, c'est si la qualité tient."
+        },
+        {
+          "piece": "Vos photos de produits",
+          "today": "Un stockage objet qui n'est pas encore garanti européen",
+          "next": "Le même centre de données européen que les serveurs, pour que vos photos et vos commandes cessent de vivre dans des juridictions différentes."
+        },
+        {
+          "piece": "Les e-mails de compte",
+          "today": "Un service d'envoi hors d'Europe",
+          "next": "Un expéditeur européen. Petit chantier, risque faible, honnêtement juste pas encore fait."
+        },
+        {
+          "piece": "Réseaux de cartes et portefeuilles mobiles",
+          "today": "Visa, Mastercard, Apple Pay, Google Pay",
+          "next": "Ceux-là ne sont pas européens et ne le seront jamais. Si vous voulez qu'une vente reste en Suisse de bout en bout, encaissez-la par TWINT — c'est de toute façon la façon la moins chère d'être payé."
+        }
+      ],
+      "why": [
+        "Vos clients commencent à demander où vont leurs données. « Je ne sais pas » est une réponse qui coûte la vente.",
+        "Ici, la protection des données est un droit et non une option payante : le RGPD et la nLPD suisse révisée s'appliquent à votre boutique, que quelqu'un nous audite un jour ou non.",
+        "L'argent et les données restent dans la juridiction dont ils suivent les règles. C'est toute l'idée, et elle cesse d'être vraie dès que l'un des deux en sort.",
+        "L'infrastructure européenne ne continue d'exister que si les entreprises européennes l'achètent. Nous préférons en être client qu'en faire un débat."
+      ],
+      "promise": "C'est la liste complète. Quand une ligne bouge, nous la changeons ici et nous disons ce qui a bougé — une vieille promesse discrètement repeinte en réussite vaut moins que le drapeau sur lequel nous l'imprimerions.",
+      "heroBadges": [
+        "Fabriqué en Suisse",
+        "Serveurs en Europe",
+        "TWINT intégré"
+      ]
+    }
+  },
+  "sovereignty": {
+    "state": {
+      "swiss": "Suisse aujourd'hui",
+      "european": "Européen aujourd'hui",
+      "moving": "En cours",
+      "foreign": "Ne le sera jamais"
+    },
+    "whatsNextLink": "Ce qui déménage ensuite, et pourquoi →"
+  },
+  "sovereigntyPage": {
+    "metaTitle": "Fabriqué en Suisse — {{platform}}",
+    "metaDescription": "{{platform}} est conçu à Zurich et tourne sur une infrastructure européenne. La liste complète : ce qui tourne déjà où, ce qui déménage ensuite et ce qui ne sera jamais européen.",
+    "ledgerTitle": "Où tourne chaque pièce",
+    "ledgerIntro": "L'état actuel d'abord, le plan en dessous. Les lignes « en cours » sont des engagements, pas des espoirs — et la dernière ligne ne bougera jamais.",
+    "nextLabel": "Ensuite : ",
+    "whyNotLabel": "Pourquoi pas : ",
+    "whyTitle": "Pourquoi nous nous donnons cette peine",
+    "ctaTitle": "Une boutique suisse, à des conditions suisses.",
+    "ctaBody": "Vendre en personne reste gratuit, pour toujours. Votre argent sur votre propre compte, vos données en Europe, et une liste sur laquelle nous attendre.",
+    "ctaButton": "Créer votre boutique →"
+  },
+  "dataResidency": {
+    "readPolicy": "Lire la politique de confidentialité →",
+    "facts": {
+      "title": "Où ça tourne",
+      "serversLabel": "Serveurs",
+      "serversValue": "{{provider}} · {{region}}, surtout en {{country}}",
+      "databaseLabel": "Votre base de données",
+      "databaseValue": "Mêmes machines, même pays",
+      "lawLabel": "Droit applicable",
+      "lawValue": "RGPD + nLPD suisse révisée"
     }
   }
 }

@@ -1,10 +1,7 @@
 import { Link } from "wouter";
 import { useTranslation } from "react-i18next";
 import type { Article, Block } from "../content/launchContent";
-import {
-  formatArticleDate,
-  getBlogChrome,
-} from "../content/localizedContent";
+import { formatArticleDate, getBlogChrome } from "../content/localizedContent";
 import { matchSupportedLanguage } from "@/lib/languages";
 import { useDocumentMeta } from "../lib/useDocumentMeta";
 import { Container } from "./Container";

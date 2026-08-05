@@ -12,14 +12,17 @@
     "startFree": "Gratis starten",
     "goToYourStore": "Zu Ihrem Shop",
     "myStore": "Mein Shop",
-    "signedInAs": "Angemeldet als {{email}}"
+    "signedInAs": "Angemeldet als {{email}}",
+    "swissMade": "Swiss made"
   },
   "footer": {
     "copyright": "© {{year}} Zolto — Commerce für Kunstschaffende, von Hand gebaut in Zürich, damit mehr Geld in Ihrer Tasche bleibt.",
     "pricing": "Preise",
     "faq": "FAQ",
     "privacy": "Datenschutz",
-    "terms": "AGB"
+    "terms": "AGB",
+    "madeIn": "{{headline}} Server in {{region}}, meist in {{country}} —",
+    "whatRunsWhere": "was wo läuft"
   },
   "landing": {
     "startFree": "Gratis starten →",
@@ -153,22 +156,29 @@
           ]
         },
         {
-          "heading": "3. Cookies & Analytik",
+          "heading": "3. Wo Ihre Daten liegen",
+          "body": [
+            "Zolto läuft auf Maschinen, die wir bei Hetzner mieten, einem deutschen Hosting-Unternehmen, in europäischen Rechenzentren — in den meisten Fällen in Deutschland. Ihr Katalog, Ihre Bestellungen und die Adressen Ihrer Kundinnen und Kunden liegen in einer Datenbank auf diesen Maschinen. Zwei Datenschutzregime gelten dafür: die DSGVO und das revidierte Schweizer DSG. Wo sie sich unterscheiden, halten wir uns an das strengere.",
+            "Wir betreiben nicht alles selbst: Kartenzahlungen laufen über Stripe, unsere KI-Funktionen rufen einen Modellanbieter auf, und Konto-E-Mails gehen über einen E-Mail-Dienst — so erreichen einige Daten auch diese Unternehmen, und nicht alle davon sind europäisch. Die vollständige Liste, Zeile für Zeile, was wo läuft und was gerade umzieht, veröffentlichen wir unter /made-in-switzerland."
+          ]
+        },
+        {
+          "heading": "4. Cookies & Analytik",
           "body": [
             "Die Plattform setzt ein einziges Cookie, app_session_id, das Sie angemeldet hält. Es ist zwingend erforderlich — ohne dieses Cookie kann der Dienst Sie nicht authentifizieren — und braucht darum weder ein Einwilligungsbanner noch lässt es sich während der Nutzung deaktivieren. Wir setzen keine Werbe-, Präferenz- oder Dritt-Tracking-Cookies.",
             "Seitenaufrufe messen wir mit Umami, einem datenschutzfreundlichen Analysetool, das ohne Cookies und ohne seitenübergreifende Kennungen auskommt; es liefert uns aggregierte Statistiken, keine Profile einzelner Besucherinnen und Besucher. Webfonts werden von unserer eigenen Infrastruktur ausgeliefert, sodass beim Betrachten einer Seite keine Anfrage an Drittanbieter-Schriftnetzwerke geht. Beim Checkout werden Sie zu Stripe weitergeleitet, das auf seiner eigenen Domain eigene Cookies gemäss der Stripe-Datenschutzerklärung setzen kann."
           ]
         },
         {
-          "heading": "4. Ihre Rechte",
+          "heading": "5. Ihre Rechte",
           "body": [
             "Sie können Auskunft über Ihre Personendaten sowie deren Berichtigung oder Löschung verlangen und bestimmten Verarbeitungen widersprechen. Kontaktieren Sie uns, um diese Rechte auszuüben. EU-Nutzerinnen und -Nutzer haben zusätzlich die Rechte der DSGVO, einschliesslich Datenübertragbarkeit und des Rechts auf Beschwerde bei einer Aufsichtsbehörde."
           ]
         },
         {
-          "heading": "5. Aufbewahrung & Unterauftragsverarbeiter",
+          "heading": "6. Aufbewahrung & Unterauftragsverarbeiter",
           "body": [
-            "Wir bewahren Daten auf, solange Ihr Konto aktiv ist und soweit gesetzlich vorgeschrieben. Wir setzen eine kleine Zahl von Unterauftragsverarbeitern ein (Hosting, Zahlungen, E-Mail, KI, Analytik), jeweils vertraglich gebunden; eine aktuelle Liste ist auf Anfrage erhältlich."
+            "Wir bewahren Daten so lange auf, wie Ihr Konto aktiv ist und wie es das Gesetz verlangt. Wir setzen eine kleine Zahl vertraglich gebundener Unterauftragsverarbeiter ein: Hosting (Hetzner, Europa), Zahlungen (Stripe), transaktionale E-Mails, den KI-Modellanbieter hinter den Assistenzfunktionen und Analytics (Umami). Eine aktuelle Liste erhalten Sie auf Anfrage."
           ]
         }
       ]
@@ -561,6 +571,11 @@
         "feature": "Ihr Geld",
         "them": "Einbehalten, dann ausbezahlt",
         "us": "Direkt in Ihr eigenes Stripe-Konto"
+      },
+      "Where your data lives": {
+        "feature": "Wo Ihre Daten liegen",
+        "them": "In den Cloud-Regionen, die sie nutzen — schauen Sie in deren Unterauftragsverarbeiter-Liste",
+        "us": "Europa, meist Deutschland — Server, die wir bei Hetzner mieten"
       }
     },
     "faqCategories": {
@@ -568,7 +583,8 @@
       "Getting started": "Erste Schritte",
       "Selling": "Verkaufen",
       "Pricing & billing": "Preise & Abrechnung",
-      "AI & discovery": "KI & Auffindbarkeit"
+      "AI & discovery": "KI & Auffindbarkeit",
+      "Privacy & data": "Datenschutz & Daten"
     },
     "faqs": {
       "What is Zolto?": {
@@ -642,6 +658,30 @@
       "Do prices include VAT?": {
         "q": "Sind die Preise inklusive MWST?",
         "a": "Es kommt keine MWST dazu. Zolto liegt unter der Schweizer MWST-Registrierungsschwelle von CHF 100'000 — der Preis, den Sie sehen, ist der Preis, den Sie bezahlen. Sollte sich das je ändern, sagen wir es, bevor es so weit ist."
+      },
+      "Is Zolto Swiss?": {
+        "q": "Ist Zolto schweizerisch?",
+        "a": "Ja — Zolto wird in Zürich von einer Schweizer Firma gebaut, zuerst für Schweizer Macherinnen und Macher, dann für Europa und danach für alle anderen. Die Preise sind in Franken, TWINT ist eingebaut statt angeschraubt, und die Infrastruktur ist europäisch, mit einem offenen Plan, den Rest in die Schweiz zu holen. Die vollständige Liste, was heute wo läuft, steht unter /made-in-switzerland."
+      },
+      "Where is my store's data stored?": {
+        "q": "Wo werden die Daten meines Ladens gespeichert?",
+        "a": "In Europa. Zolto läuft auf Servern, die wir bei Hetzner mieten, einem deutschen Hosting-Unternehmen, in europäischen Rechenzentren — in den meisten Fällen in Deutschland. Ihre Produkte, Bestellungen und Kundendaten liegen in einer Datenbank auf diesen Maschinen, nicht in einer Cloud-Region auf der anderen Seite eines Ozeans."
+      },
+      "Does any of my data leave Europe?": {
+        "q": "Verlassen meine Daten Europa?",
+        "a": "Ein Teil erreicht Unternehmen, die wir nicht selbst betreiben: Kartenzahlungen wickelt Stripe ab (Kartennummern berühren Zoltos Server nie), unsere KI-Funktionen senden Text und Fotos an einen Modellanbieter, und Konto-E-Mails laufen über einen E-Mail-Dienst — und nicht alle davon sind europäisch. Alles, was Zolto selbst speichert, bleibt auf unseren europäischen Servern. Die Unterauftragsverarbeiter sind in der Datenschutzerklärung benannt, die aktuelle Liste gibt es auf Anfrage."
+      },
+      "Is Zolto covered by the GDPR and Swiss data protection?": {
+        "q": "Gilt für Zolto die DSGVO und das Schweizer Datenschutzrecht?",
+        "a": "Beides. Zolto bedient Händlerinnen und Händler in der Schweiz und in der EU, also kommen das revidierte Schweizer Datenschutzgesetz (revDSG) und die DSGVO ins Spiel — wo sie sich unterscheiden, arbeiten wir nach dem strengeren. Das Hosting in der EU macht dieses Gespräch deutlich kürzer, und wo wir Daten Ihrer Kundschaft in Ihrem Auftrag verarbeiten, regelt das ein Auftragsverarbeitungsvertrag."
+      },
+      "Are you moving the rest of the stack to Europe?": {
+        "q": "Zieht der Rest der Technik auch nach Europa um?",
+        "a": "Ja, Stück für Stück — und wir veröffentlichen den Stand, nicht den Wunsch. Server und Ihre Datenbank sind bereits europäisch; TWINT läuft schon auf Schweizer Schienen. Kartenzahlungen, die KI, der Fotospeicher und Konto-E-Mails sind noch ausserhalb Europas, jeweils mit einem benannten nächsten Schritt — die ganze Aufstellung steht unter /made-in-switzerland, samt der Teile (Kartennetzwerke, Handy-Wallets), die nie europäisch sein werden."
+      },
+      "Can I get my data out again?": {
+        "q": "Bekomme ich meine Daten wieder heraus?",
+        "a": "Ja, in jedem Tarif — auch im kostenlosen. Laden Sie Katalog und Ladenprofil jederzeit als JSON-Datei unter «Daten & Datenschutz» im Adminbereich herunter, ohne uns zu fragen. Das Löschen des Ladens läuft nur deshalb über den Support, damit wir sicher sein können, dass Sie es wirklich selbst sind."
       }
     },
     "segments": {
@@ -746,6 +786,10 @@
       "insights": {
         "name": "KI-Auswertungen zu Verkauf und Bestand",
         "description": "Auswertung Ihres Katalogs und Ihrer Verkäufe in Klartext, um Bestseller und Nachschubbedarf zu erkennen."
+      },
+      "eu-hosting": {
+        "name": "Europäisches Hosting — Ihre Daten bleiben in Europa",
+        "description": "Zolto läuft auf Servern, die wir bei Hetzner in Europa mieten, die meisten davon in Deutschland. Ihr Katalog, Ihre Bestellungen und die Daten Ihrer Kundschaft liegen in einem europäischen Rechenzentrum, unter DSGVO und revidiertem Schweizer DSG — nicht in irgendeiner Cloud-Region, die zufällig voreingestellt war."
       }
     },
     "research": {
@@ -896,6 +940,114 @@
         "tagline": "Luftige Küstenblautöne, klar und offen",
         "bestFor": "Wellness, Schreibwaren und moderne Essentials"
       }
+    },
+    "dataResidency": {
+      "eyebrow": "wo Ihr Laden wirklich lebt",
+      "headline": "Ihr Laden lebt in Europa.",
+      "headlineEmphasis": "Meist in Deutschland.",
+      "provider": "Hetzner",
+      "region": "Europa",
+      "primaryCountry": "Deutschland",
+      "body": "Zolto läuft auf Maschinen, die wir bei Hetzner mieten, einem deutschen Hosting-Unternehmen, in europäischen Rechenzentren — in den meisten Fällen in Deutschland. Ihr Katalog, Ihre Bestellungen und die Adressen Ihrer Kundinnen und Kunden liegen in einer Datenbank auf diesen Maschinen. Nicht auf der anderen Seite eines Ozeans, weil das die Standardeinstellung war.",
+      "points": [
+        "Anwendungsserver und Datenbank in Europa — gemietet bei Hetzner, die meisten davon in Deutschland.",
+        "Zwei Datenschutzregime decken das ab: die DSGVO und das revidierte Schweizer DSG. Wo sie sich unterscheiden, halten wir uns an das strengere.",
+        "Die Namen und Adressen Ihrer Kundschaft bleiben unter europäischem Recht — praktisch, wenn jemand fragt, und wenn Sie in die EU verkaufen.",
+        "Ein-Klick-Export in jedem Tarif, Löschung auf Anfrage. Daten, die Sie mitnehmen können, sind nirgends wirklich Geisel."
+      ],
+      "caveat": "Die ehrliche Fussnote: Wir betreiben nicht alles selbst. Kartenzahlungen laufen über Stripe, unsere KI-Funktionen rufen einen Modellanbieter auf, und Konto-E-Mails gehen über einen E-Mail-Dienst — so erreichen einige Daten auch diese Unternehmen, und nicht alle davon sind europäisch. Sie sind in der Datenschutzerklärung benannt statt darin vergraben."
+    },
+    "sovereignty": {
+      "eyebrow": "made in switzerland",
+      "headline": "Made in Switzerland.",
+      "headlineEmphasis": "Betrieben aus Europa.",
+      "serving": "Zolto wird in Zürich gebaut — zuerst für Schweizer Macherinnen und Macher, dann für Europa und danach für alle anderen, denen gefällt, wie wir es machen.",
+      "body": "Wir verschieben jedes Stück von Zolto, das wir selbst in der Hand haben, auf europäische Infrastruktur — und in die Schweiz, wo es eine Schweizer Option gibt, die etwas taugt. Einiges ist schon dort. Einiges noch nicht. Hier ist die ganze Liste, samt der Teile, bei denen wir schlecht dastehen.",
+      "ledger": [
+        {
+          "piece": "Das Unternehmen und das Produkt",
+          "today": "In Zürich gebaut, von einer Schweizer Firma"
+        },
+        {
+          "piece": "Server und Ihre Datenbank",
+          "today": "Hetzner · Europa, meist Deutschland",
+          "next": "Ein Schweizer Rechenzentrum, damit Maschinen und Firma im selben Land sitzen."
+        },
+        {
+          "piece": "TWINT an Ihrem Stand",
+          "today": "Ihr eigenes TWINT-Konto — Schweizer Schienen, Ende zu Ende"
+        },
+        {
+          "piece": "Kartenzahlungen und Auszahlungen",
+          "today": "Stripe — das Geld geht direkt auf Ihr eigenes Konto, nie auf unseres",
+          "next": "Ein Schweizer Zahlungsanbieter. Unsere Recherche sagt: pro Verkauf sogar günstiger als heute — der seltene Fall, in dem die prinzipientreue Variante auch die billige ist."
+        },
+        {
+          "piece": "Die KI (Listings, Übersetzungen, Chat)",
+          "today": "Ein Modellanbieter ausserhalb Europas",
+          "next": "In der Schweiz gehostete Open-Source-Modelle. Unsere KI-Schicht spricht bereits eine Standard-API, das ist der kürzeste Sprung auf dieser Liste — geprüft wird, ob die Qualität hält."
+        },
+        {
+          "piece": "Ihre Produktfotos",
+          "today": "Objektspeicher, der noch nicht garantiert europäisch ist",
+          "next": "Dasselbe europäische Rechenzentrum wie die Server, damit Ihre Fotos und Ihre Bestellungen nicht länger in verschiedenen Rechtsräumen liegen."
+        },
+        {
+          "piece": "Konto-E-Mails",
+          "today": "Ein Versanddienst ausserhalb Europas",
+          "next": "Ein europäischer Versender. Kleine Aufgabe, geringes Risiko, ehrlich gesagt einfach noch nicht erledigt."
+        },
+        {
+          "piece": "Kartennetzwerke und Handy-Wallets",
+          "today": "Visa, Mastercard, Apple Pay, Google Pay",
+          "next": "Die sind nicht europäisch und werden es nie sein. Wenn ein Verkauf von Anfang bis Ende in der Schweiz bleiben soll, nehmen Sie ihn über TWINT — das ist für Sie ohnehin der günstigste Weg, bezahlt zu werden."
+        }
+      ],
+      "why": [
+        "Ihre Kundinnen und Kunden fangen an zu fragen, wohin ihre Daten gehen. «Weiss ich nicht» ist eine Antwort, die den Verkauf kostet.",
+        "Hier ist Datenschutz ein Recht und kein Upgrade: Die DSGVO und das revidierte Schweizer DSG gelten für Ihren Laden, ob uns je jemand prüft oder nicht.",
+        "Das Geld und die Daten bleiben in der Rechtsordnung, deren Regeln für sie gelten. Genau darum geht es — und das stimmt in dem Moment nicht mehr, in dem eines von beidem sie verlässt.",
+        "Europäische Infrastruktur existiert nur weiter, wenn europäische Firmen sie auch kaufen. Wir sind lieber ihr Kunde als ein Argument über sie."
+      ],
+      "promise": "Das ist die vollständige Liste. Wenn eine Zeile umzieht, ändern wir sie hier und sagen, was sich bewegt hat — ein stillschweigend zur Errungenschaft umgemaltes altes Versprechen ist weniger wert als die Fahne, auf die wir es drucken würden.",
+      "heroBadges": [
+        "Made in Switzerland",
+        "Server in Europa",
+        "TWINT eingebaut"
+      ]
+    }
+  },
+  "sovereignty": {
+    "state": {
+      "swiss": "Heute Schweiz",
+      "european": "Heute Europa",
+      "moving": "Zieht um",
+      "foreign": "Wird es nie"
+    },
+    "whatsNextLink": "Was als Nächstes umzieht — und warum →"
+  },
+  "sovereigntyPage": {
+    "metaTitle": "Made in Switzerland — {{platform}}",
+    "metaDescription": "{{platform}} wird in Zürich gebaut und läuft auf europäischer Infrastruktur. Die vollständige Liste: was bereits wo läuft, was als Nächstes umzieht und was nie europäisch sein wird.",
+    "ledgerTitle": "Wo jedes Stück läuft",
+    "ledgerIntro": "Oben der heutige Stand, darunter der Plan. Zeilen mit «Zieht um» sind Zusagen, keine Hoffnungen — und die letzte Zeile zieht nie um.",
+    "nextLabel": "Als Nächstes: ",
+    "whyNotLabel": "Warum nicht: ",
+    "whyTitle": "Warum wir uns die Mühe machen",
+    "ctaTitle": "Ein Schweizer Laden, zu Schweizer Bedingungen.",
+    "ctaBody": "Vor Ort verkaufen ist für immer gratis. Ihr Geld auf Ihr eigenes Konto, Ihre Daten in Europa — und eine Liste, an der Sie uns messen können.",
+    "ctaButton": "Laden eröffnen →"
+  },
+  "dataResidency": {
+    "readPolicy": "Datenschutzerklärung lesen →",
+    "facts": {
+      "title": "Wo es läuft",
+      "serversLabel": "Server",
+      "serversValue": "{{provider}} · {{region}}, meist {{country}}",
+      "databaseLabel": "Ihre Datenbank",
+      "databaseValue": "Dieselben Maschinen, dasselbe Land",
+      "lawLabel": "Geltendes Recht",
+      "lawValue": "DSGVO + revidiertes Schweizer DSG"
     }
   }
 }

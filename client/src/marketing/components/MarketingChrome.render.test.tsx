@@ -9,7 +9,13 @@ import {
 } from "@testing-library/react";
 import { Router } from "wouter";
 import { memoryLocation } from "wouter/memory-location";
-import { MarketingNav, StoreShortcut, SIGN_IN_PATH } from "./MarketingChrome";
+import { DATA_RESIDENCY, SOVEREIGNTY } from "@shared/platform";
+import {
+  MarketingNav,
+  MarketingFooter,
+  StoreShortcut,
+  SIGN_IN_PATH,
+} from "./MarketingChrome";
 import i18n from "@/lib/i18n";
 
 const mocks = vi.hoisted(() => ({
@@ -215,12 +221,7 @@ describe("MarketingNav — language picker", () => {
     )[0] as HTMLSelectElement;
     const options = Array.from(picker.options);
     expect(options.map((o) => o.value)).toEqual(["de", "en", "fr", "it"]);
-    expect(options.map((o) => o.textContent)).toEqual([
-      "DE",
-      "EN",
-      "FR",
-      "IT",
-    ]);
+    expect(options.map((o) => o.textContent)).toEqual(["DE", "EN", "FR", "IT"]);
   });
 
   it("switches the UI language, persists it, and updates <html lang>", async () => {
@@ -303,5 +304,51 @@ describe("MarketingNav — the signed-in account is visible and escapable", () =
     fireEvent.click(screen.getByRole("button", { name: /open menu|menu/i }));
     const drawerText = document.body.textContent ?? "";
     expect(drawerText).toMatch(/Signed in as anna@bergblume\.ch/);
+  });
+});
+
+describe("MarketingFooter", () => {
+  function renderFooter() {
+    const { hook } = memoryLocation({ path: "/", static: true });
+    return render(
+      <Router hook={hook}>
+        <MarketingFooter />
+      </Router>,
+    );
+  }
+
+  it("carries the origin and hosting location on every page", () => {
+    // The footer is the one surface a visitor sees regardless of route, so
+    // where Zolto is from — and where it runs — lives here as well as on the
+    // landing band, with a link to the row-by-row version.
+    const { container } = renderFooter();
+    const text = container.textContent ?? "";
+    expect(text).toContain(SOVEREIGNTY.headline);
+    expect(text).toContain(DATA_RESIDENCY.region);
+    expect(text).toContain(DATA_RESIDENCY.primaryCountry);
+    expect(
+      screen
+        .getByRole("link", { name: /what runs where/i })
+        .getAttribute("href"),
+    ).toBe(SOVEREIGNTY.href);
+  });
+
+  it("offers the Swissness page from the main nav too", () => {
+    // Prominence is the point: a claim reachable only from the homepage band
+    // is not a claim a returning visitor can find again.
+    renderNav();
+    const nav = screen.getByRole("navigation", { name: "Main" });
+    expect(
+      within(nav).getByRole("link", { name: /swiss/i }).getAttribute("href"),
+    ).toBe(SOVEREIGNTY.href);
+  });
+
+  it("still links the legal pages", () => {
+    renderFooter();
+    const hrefs = screen
+      .getAllByRole("link")
+      .map((a) => a.getAttribute("href"));
+    expect(hrefs).toContain("/legal/privacy");
+    expect(hrefs).toContain("/legal/terms");
   });
 });

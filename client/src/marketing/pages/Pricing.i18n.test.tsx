@@ -36,12 +36,11 @@ describe("Pricing — multilingual rendering", () => {
     expect(screen.getByRole("heading", { name: "Gratis" })).toBeTruthy();
     expect(screen.getByText("14 Tage kostenlos testen")).toBeTruthy();
     // …and the pledge (PRICING_PROMISE) is no longer the English source text.
-    expect(screen.queryByText(/You don't pay us until the internet pays you/))
-      .toBeNull();
     expect(
-      screen.getByText(
-        "Sie zahlen uns erst, wenn das Internet Sie bezahlt.",
-      ),
+      screen.queryByText(/You don't pay us until the internet pays you/),
+    ).toBeNull();
+    expect(
+      screen.getByText("Sie zahlen uns erst, wenn das Internet Sie bezahlt."),
     ).toBeTruthy();
   });
 
@@ -55,7 +54,9 @@ describe("Pricing — multilingual rendering", () => {
     ).toBeTruthy();
     expect(screen.getByRole("heading", { name: "Gratuit" })).toBeTruthy();
     expect(
-      screen.getByText("Vous ne nous payez pas tant qu'Internet ne vous paie pas."),
+      screen.getByText(
+        "Vous ne nous payez pas tant qu'Internet ne vous paie pas.",
+      ),
     ).toBeTruthy();
   });
 

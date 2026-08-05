@@ -12,6 +12,7 @@ import {
   COMPETITORS,
   findCompetitor,
   INCUMBENT_COMPARISON,
+  SOVEREIGNTY,
 } from "@shared/platform";
 import { authorJsonLd } from "@shared/authors";
 import {
@@ -249,6 +250,28 @@ export function getMarketingSeo(
         // The full Q&A in plain text: this is the page an AI assistant is most
         // likely to quote, so give it the answers rather than a teaser.
         noscript: FAQS.map((f) => `${f.q} ${f.a}`).join(" "),
+      };
+    case SOVEREIGNTY.href:
+      return {
+        path: SOVEREIGNTY.href,
+        title: `Made in Switzerland — ${PLATFORM.name}`,
+        description: `${PLATFORM.name} is built in Zürich and runs on European infrastructure. What already runs where, what's moving next, and what will never be European.`,
+        jsonLd: [
+          ...common,
+          breadcrumb(base, [
+            ["Home", "/"],
+            ["Made in Switzerland", SOVEREIGNTY.href],
+          ]),
+        ],
+        // The whole ledger in plain text. This is the page a merchant links
+        // when a customer asks where the data goes, and the one an assistant
+        // will quote from — give it the rows, not a teaser.
+        noscript: `${SOVEREIGNTY.serving} ${SOVEREIGNTY.body} ${SOVEREIGNTY.ledger
+          .map(
+            (e) =>
+              `${e.piece}: ${e.today} (${e.state})${e.next ? ` — ${e.next}` : ""}`,
+          )
+          .join(" ")} ${SOVEREIGNTY.why.join(" ")} ${SOVEREIGNTY.caveat}`,
       };
     case "/compare":
       return {

@@ -33,6 +33,8 @@ import {
   HOW_TO_START,
   PRICING_PROMISE,
   COMPETITORS,
+  DATA_RESIDENCY,
+  SOVEREIGNTY,
 } from "./platform";
 import { SEGMENTS } from "./segments";
 
@@ -154,6 +156,15 @@ export function marketingSitemapEntries(): SitemapEntry[] {
       lastmod: "2026-07-30",
       changefreq: "monthly",
       priority: 0.7,
+    },
+    {
+      // The Swissness ledger. Higher priority than the other explainer pages
+      // because "is this company European / where is my data" is a question
+      // merchants get asked and need a link for.
+      path: SOVEREIGNTY.href,
+      lastmod: "2026-08-04",
+      changefreq: "monthly",
+      priority: 0.8,
     },
     ...COMPETITORS.map(
       (c): SitemapEntry => ({
@@ -349,6 +360,16 @@ ${planLines}
 
 **The fee model in one line:** ${PRICING_PROMISE.pledge}
 
+## Made in Switzerland, run from Europe
+
+${SOVEREIGNTY.serving} ${DATA_RESIDENCY.body}
+
+Where each piece runs today — the same ledger the site publishes at ${base}${SOVEREIGNTY.href}:
+
+${SOVEREIGNTY.ledger.map((e) => `- **${e.piece}** — ${e.today} (${e.state})${e.next ? `. Next: ${e.next}` : ""}`).join("\n")}
+
+${DATA_RESIDENCY.caveat}
+
 ## How a maker gets started
 
 ${HOW_TO_START.map((s, i) => `${i + 1}. ${s}`).join("\n")}
@@ -358,6 +379,7 @@ ${HOW_TO_START.map((s, i) => `${i + 1}. ${s}`).join("\n")}
 - [Sign up free](${base}/signup): open a store — no card required.
 - [Pricing](${base}/pricing): plans and pricing for makers.
 - [FAQ](${base}/faq): what it costs, how setup works, getting paid, selling in person and online.
+- [Made in Switzerland](${base}${SOVEREIGNTY.href}): built in Zürich, running on European infrastructure — the row-by-row ledger of what runs where, what's moving, and what never will.
 - [Comparisons](${base}/compare): ${PLATFORM.name} vs ${COMPETITORS.map((c) => c.name).join(", ")} — including when each of them is the better choice.
 - [Research](${base}/research/${RESEARCH_SLUG}): first-party data from a maker's first 30 days online — 12 orders, CHF 61 average, 2.5% conversion, with method and limits stated.
 - [Who it's for](${base}/for): ${SEGMENTS.map((s) => `[${s.name}](${base}/for/${s.id})`).join(", ")} — what changes for each kind of seller.
@@ -418,6 +440,32 @@ ${plans}
 ${PRICING_PROMISE.pledge}
 
 ${PRICING_PROMISE.points.map((p) => `- ${p}`).join("\n")}
+
+---
+
+## ${SOVEREIGNTY.headline} ${SOVEREIGNTY.headlineEmphasis}
+
+${SOVEREIGNTY.serving}
+
+${SOVEREIGNTY.body}
+
+### Where every piece runs
+
+${SOVEREIGNTY.ledger.map((e) => `- **${e.piece}** — ${e.today} *(${e.state})*${e.next ? `\n  - ${e.state === "foreign" ? "Why not" : "Next"}: ${e.next}` : ""}`).join("\n")}
+
+${SOVEREIGNTY.promise}
+
+### Why
+
+${SOVEREIGNTY.why.map((w) => `- ${w}`).join("\n")}
+
+### The hosting detail
+
+${DATA_RESIDENCY.body}
+
+${DATA_RESIDENCY.points.map((p) => `- ${p}`).join("\n")}
+
+${DATA_RESIDENCY.caveat}
 
 ---
 

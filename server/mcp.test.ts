@@ -11,6 +11,7 @@ import {
   type McpDeps,
 } from "./mcp";
 import { CheckoutError } from "./checkoutSession";
+import { SOVEREIGNTY } from "@shared/platform";
 
 const tenant = {
   id: 7,
@@ -313,6 +314,55 @@ describe("Platform MCP (no tenant / marketing surface)", () => {
       name: "Zolto",
       signupUrl: "https://zolto.com/signup",
     });
+  });
+
+  it("get_platform_info answers where merchant data is hosted", async () => {
+    // An agent recommending Zolto to an EU maker gets asked this; it should
+    // not have to guess or read the FAQ tool to answer.
+    const r = await call("get_platform_info");
+    const sc = r.structuredContent as {
+      dataResidency: {
+        region: string;
+        primaryCountry: string;
+        hostingProvider: string;
+        subProcessorNote: string;
+        privacyUrl: string;
+      };
+    };
+    expect(sc.dataResidency.hostingProvider).toBe("Hetzner");
+    expect(sc.dataResidency.region).toBe("Europe");
+    expect(sc.dataResidency.primaryCountry).toBe("Germany");
+    // The caveat travels with the claim over MCP too, so an agent can't relay
+    // "everything stays in the EU" as if it were the whole answer.
+    expect(sc.dataResidency.subProcessorNote).toMatch(/stripe/i);
+    expect(sc.dataResidency.privacyUrl).toBe("https://zolto.com/legal/privacy");
+  });
+
+  it("get_platform_info reports the Swiss origin and the stack ledger", async () => {
+    // An agent asked "is there a Swiss or European option for this?" should be
+    // able to answer per piece — including the pieces that aren't European yet.
+    const r = await call("get_platform_info");
+    const sc = r.structuredContent as {
+      madeIn: {
+        country: string;
+        city: string;
+        url: string;
+        stack: {
+          piece: string;
+          today: string;
+          state: string;
+          next: string | null;
+        }[];
+      };
+    };
+    expect(sc.madeIn.country).toBe("Switzerland");
+    expect(sc.madeIn.url).toBe("https://zolto.com/made-in-switzerland");
+    expect(sc.madeIn.stack.length).toBe(SOVEREIGNTY.ledger.length);
+    expect(sc.madeIn.stack.some((s) => s.state === "moving")).toBe(true);
+    expect(sc.madeIn.stack.some((s) => s.state === "foreign")).toBe(true);
+    for (const row of sc.madeIn.stack) {
+      if (row.state === "moving") expect(row.next).toBeTruthy();
+    }
   });
 
   it("get_pricing returns the two CHF plans and the online platform fee", async () => {

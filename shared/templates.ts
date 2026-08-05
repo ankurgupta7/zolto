@@ -144,7 +144,8 @@ export const STORE_TEMPLATES: readonly StoreTemplate[] = [
 
 export function isTemplateId(value: unknown): value is TemplateId {
   return (
-    typeof value === "string" && (TEMPLATE_IDS as readonly string[]).includes(value)
+    typeof value === "string" &&
+    (TEMPLATE_IDS as readonly string[]).includes(value)
   );
 }
 

@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { Menu, Store } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { storeAdminUrl } from "@/lib/surface";
+import { DATA_RESIDENCY, SOVEREIGNTY } from "@shared/platform";
 import { SignOutButton } from "@/components/SignOutButton";
 import i18n from "@/lib/i18n";
 import {
@@ -38,6 +39,10 @@ const NAV = [
   { key: "whoItsFor", href: "/for" },
   { key: "pricing", href: "/pricing" },
   { key: "compare", href: "/compare" },
+  // Short label on purpose ("Swiss-made"): the bar already carries six links
+  // plus the auth slot, and the spelled-out claim pushes it into a wrap at
+  // laptop widths. The page it points at says the whole thing.
+  { key: "swissMade", href: SOVEREIGNTY.href },
   { key: "faq", href: "/faq" },
   { key: "launchDiary", href: "/blog" },
 ] as const;
@@ -311,7 +316,11 @@ export function MarketingNav() {
         </Link>
 
         {/* Desktop */}
-        <nav aria-label="Main" className="hidden items-center gap-6 sm:flex">
+        {/* Desktop. The bar switches to the sheet at `lg`, not `sm`: seven
+            links plus the logo and the auth slot need roughly 900px, so on a
+            640–1023px tablet the row used to run off the edge — visibly, and
+            before this nav item was added. */}
+        <nav aria-label="Main" className="hidden items-center gap-5 lg:flex">
           {NAV.map((item) => (
             <Link
               key={item.href}
@@ -326,7 +335,7 @@ export function MarketingNav() {
         </nav>
 
         {/* Mobile — CTA stays in the bar, links move into the sheet */}
-        <div className="flex items-center gap-2 sm:hidden">
+        <div className="flex items-center gap-2 lg:hidden">
           <AuthActions compact />
           <MobileMenu open={menuOpen} onOpenChange={setMenuOpen} />
         </div>
@@ -336,11 +345,33 @@ export function MarketingNav() {
 }
 
 export function MarketingFooter() {
-  const { t } = useMarketingT();
+  const { t, st } = useMarketingT();
   return (
     <footer className="border-t border-[var(--brand-border)] bg-[var(--brand-surface)]">
       <Container className="flex flex-col gap-4 py-10 text-sm text-[var(--brand-muted-2)] sm:flex-row sm:items-center sm:justify-between">
-        <p>{t("footer.copyright", { year: new Date().getFullYear() })}</p>
+        <div>
+          <p>{t("footer.copyright", { year: new Date().getFullYear() })}</p>
+          {/* Origin + residency, in the one place every page carries. The
+              countries come from SOVEREIGNTY/DATA_RESIDENCY so the footer can't
+              drift from the landing band, the ledger page or the policy. */}
+          <p className="mt-1.5 text-[13px] text-[var(--brand-muted)]">
+            {t("footer.madeIn", {
+              headline: st("sovereignty.headline", SOVEREIGNTY.headline),
+              region: st("dataResidency.region", DATA_RESIDENCY.region),
+              country: st(
+                "dataResidency.primaryCountry",
+                DATA_RESIDENCY.primaryCountry,
+              ),
+            })}{" "}
+            <Link
+              href={SOVEREIGNTY.href}
+              className="underline decoration-[var(--brand-accent)] underline-offset-2 hover:text-[var(--brand-ink)]"
+            >
+              {t("footer.whatRunsWhere")}
+            </Link>
+            .
+          </p>
+        </div>
         <nav className="flex gap-6">
           <Link href="/pricing" className="hover:text-[var(--brand-ink)]">
             {t("footer.pricing")}

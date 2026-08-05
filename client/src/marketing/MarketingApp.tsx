@@ -14,6 +14,7 @@ import Faq from "./pages/Faq";
 import Compare from "./pages/Compare";
 import Research from "./pages/Research";
 import Segment from "./pages/Segment";
+import Sovereignty from "./pages/Sovereignty";
 import { Privacy, Terms } from "./pages/Legal";
 import PlatformApp from "../platform/PlatformApp";
 import { isPlatformPath } from "../platform/nav";
@@ -52,6 +53,7 @@ export default function MarketingApp() {
         <Route path="/" component={Landing} />
         <Route path="/pricing" component={Pricing} />
         <Route path="/faq" component={Faq} />
+        <Route path="/made-in-switzerland" component={Sovereignty} />
         <Route path="/compare" component={Compare} />
         <Route path="/compare/:slug" component={Compare} />
         <Route path="/signup" component={Signup} />

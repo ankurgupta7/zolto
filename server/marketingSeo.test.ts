@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { getMarketingSeo, injectMarketingHead } from "./marketingSeo";
 import { marketingSitemapEntries } from "@shared/marketing";
-import { COMPETITORS, FAQS } from "@shared/platform";
+import { COMPETITORS, FAQS, SOVEREIGNTY } from "@shared/platform";
 import { PILOT_METHODOLOGY, PILOT_METRICS } from "@shared/research";
 import { authorJsonLd } from "@shared/authors";
 import { SEGMENTS, segmentFeatures } from "@shared/segments";
@@ -100,6 +100,20 @@ describe("injectMarketingHead", () => {
     for (const item of FAQS) {
       expect(out).toContain(item.q);
     }
+  });
+
+  it("gives crawlers the whole Swissness ledger, unfinished rows included", () => {
+    const seo = getMarketingSeo(SOVEREIGNTY.href, BASE)!;
+    expect(seo).not.toBeNull();
+    expect(seo.title).toMatch(/Made in Switzerland/i);
+    for (const entry of SOVEREIGNTY.ledger) {
+      expect(seo.noscript).toContain(entry.piece);
+      expect(seo.noscript).toContain(entry.today);
+      if (entry.next) expect(seo.noscript).toContain(entry.next);
+    }
+    // The sub-processor caveat reaches non-JS crawlers as well, so the page
+    // can't read as an unqualified "everything is European" to a machine.
+    expect(seo.noscript).toContain(SOVEREIGNTY.caveat);
   });
 
   it("renders a comparison page per named incumbent", () => {

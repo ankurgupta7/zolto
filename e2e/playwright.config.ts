@@ -49,6 +49,15 @@ export default defineConfig({
   use: {
     baseURL: BASE_URL,
     trace: "on-first-retry",
+    // Pin the browser language. The app picks its UI language from
+    // navigator.language when nothing is saved (client/src/lib/i18n.ts), so an
+    // unpinned locale makes every text assertion depend on whatever the runner's
+    // Chromium happens to report — which is exactly how the storefront smoke
+    // test broke on main: it asserted German nav labels while CI's Chromium
+    // reported en-US, so the app rendered English and "Kontakt" was never found.
+    // English is pinned because the storefront journey asserts English copy
+    // throughout; the German path is covered explicitly in smoke.spec.ts.
+    locale: "en-US",
     ...(executablePath ? { launchOptions: { executablePath } } : {}),
   },
   projects: [

@@ -22,9 +22,7 @@ test.describe("marketing shell", () => {
 
     await expect(page).toHaveTitle(/Zolto/i);
     // The hero CTA is client-rendered, proving React hydrated (not just the shell).
-    await expect(
-      page.getByText(/explore the shop/i).first(),
-    ).toBeVisible();
+    await expect(page.getByText(/explore the shop/i).first()).toBeVisible();
     // Value props render from client-side content.
     await expect(page.getByText(/secure checkout/i).first()).toBeVisible();
 
@@ -35,12 +33,31 @@ test.describe("marketing shell", () => {
     await page.goto("/", { waitUntil: "domcontentloaded" });
     const nav = page.locator("nav, header").first();
     await expect(nav).toBeVisible();
-    // German marketing nav labels rendered by the client.
-    for (const label of ["Shop", "FAQ", "Kontakt"]) {
+    // Nav labels rendered by the client, in the language the config pins
+    // (playwright.config.ts `locale`). These were German until the platform
+    // became language-aware; the labels themselves are not the point, the
+    // client-rendered nav is.
+    for (const label of ["Shop", "FAQ", "Contact"]) {
       await expect(
         page.getByRole("link", { name: new RegExp(label, "i") }).first(),
       ).toBeVisible();
     }
+  });
+
+  test("switching language re-renders the nav in German", async ({ page }) => {
+    // The platform ships in de/fr/it/en and stores the choice under
+    // "kalakosh_lang". Worth one browser-level assertion: the unit tests can
+    // prove the locale files agree, but only a real page load proves the saved
+    // choice beats the browser's own language on first paint.
+    await page.addInitScript(() =>
+      window.localStorage.setItem("kalakosh_lang", "de"),
+    );
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+
+    await expect(
+      page.getByRole("link", { name: /Kontakt/i }).first(),
+    ).toBeVisible();
+    await expect(page.locator("html")).toHaveAttribute("lang", "de-CH");
   });
 
   test("client-side routing to the FAQ page works without a full reload", async ({
@@ -49,10 +66,7 @@ test.describe("marketing shell", () => {
     const errors = trackPageErrors(page);
     await page.goto("/", { waitUntil: "networkidle" });
 
-    await page
-      .getByRole("link", { name: /FAQ/i })
-      .first()
-      .click();
+    await page.getByRole("link", { name: /FAQ/i }).first().click();
 
     await expect(page).toHaveURL(/\/faq/i);
     // The FAQ route rendered some content client-side.

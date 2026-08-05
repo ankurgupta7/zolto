@@ -43,7 +43,10 @@ function marketingStrings(): { where: string; text: string }[] {
   for (const f of FAQS) {
     out.push({ where: `FAQS "${f.q}"`, text: `${f.q} ${f.a}` });
   }
-  out.push({ where: "PRICING_PROMISE.headline", text: PRICING_PROMISE.headline });
+  out.push({
+    where: "PRICING_PROMISE.headline",
+    text: PRICING_PROMISE.headline,
+  });
   out.push({ where: "PRICING_PROMISE.pledge", text: PRICING_PROMISE.pledge });
   for (const point of PRICING_PROMISE.points) {
     out.push({ where: "PRICING_PROMISE.points", text: point });
@@ -59,7 +62,9 @@ function marketingStrings(): { where: string; text: string }[] {
  * "zolto.shop" written in prose, not just a full URL.
  */
 function domainsIn(text: string): string[] {
-  const matches = text.match(/\b[a-z0-9][a-z0-9-]*(?:\.[a-z0-9-]+)*\.[a-z]{2,}\b/gi);
+  const matches = text.match(
+    /\b[a-z0-9][a-z0-9-]*(?:\.[a-z0-9-]+)*\.[a-z]{2,}\b/gi,
+  );
   return matches ?? [];
 }
 
