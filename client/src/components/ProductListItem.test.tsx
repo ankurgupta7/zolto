@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
+import i18n from "@/lib/i18n";
 import ProductListItem from "./ProductListItem";
 
 // Locale columns ride along on real product rows; extra fields must not
@@ -28,7 +29,12 @@ const handlers = {
   onToggleSold: vi.fn(),
 };
 
-beforeEach(() => vi.clearAllMocks());
+// The storefront falls back to German when the browser asks for it; pin
+// English so the label assertions below read the source strings.
+beforeEach(async () => {
+  vi.clearAllMocks();
+  await i18n.changeLanguage("en");
+});
 afterEach(() => cleanup());
 
 describe("ProductListItem", () => {
@@ -38,7 +44,8 @@ describe("ProductListItem", () => {
     expect(screen.getByText("Hand-forged sterling silver")).toBeTruthy();
     expect(screen.getByText("CHF 49.90")).toBeTruthy();
     expect(screen.getByText("Qty: 3")).toBeTruthy();
-    expect(screen.getByText("May 12, 2026")).toBeTruthy();
+    // Dates follow the active language's Swiss locale (en -> en-CH), not en-US.
+    expect(screen.getByText("12 May 2026")).toBeTruthy();
     const img = screen.getByAltText("Silver Ring") as HTMLImageElement;
     expect(img.src).toBe("https://cdn.example/ring.jpg");
   });

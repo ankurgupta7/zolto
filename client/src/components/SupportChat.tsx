@@ -8,6 +8,9 @@
  */
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+// Ensure the shared i18n instance is initialized even when the widget is
+// rendered in isolation (e.g. under test) before main.tsx has run.
+import "@/lib/i18n";
 import { trpc } from "@/lib/trpc";
 import { matchSupportedLanguage } from "@/lib/languages";
 import { useLocation } from "wouter";
@@ -22,7 +25,7 @@ const HIDDEN_PREFIXES = ["/admin", "/checkout", "/claim-staff", "/login"];
 
 export default function SupportChat() {
   const [location] = useLocation();
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -64,11 +67,11 @@ export default function SupportChat() {
           <div className="flex items-center justify-between border-b border-[var(--brand-border)] bg-[var(--brand-surface)] px-4 py-3">
             <span className="flex items-center gap-2 text-sm font-medium text-[var(--brand-text)]">
               <Sparkles size={14} className="text-[var(--brand-accent)]" />
-              Ask us anything
+              {t("support.title")}
             </span>
             <button
               type="button"
-              aria-label="Close chat"
+              aria-label={t("support.closeChat")}
               onClick={() => setOpen(false)}
               className="text-[var(--brand-muted-2)] hover:text-[var(--brand-text)]"
             >
@@ -79,8 +82,7 @@ export default function SupportChat() {
           <div className="flex-1 space-y-3 overflow-y-auto px-4 py-3">
             {messages.length === 0 && (
               <p className="text-sm text-[var(--brand-muted-2)]">
-                Questions about materials, sizing, availability or a specific
-                piece? I'll answer from the shop's own catalog.
+                {t("support.intro")}
               </p>
             )}
             {messages.map((m, i) => (
@@ -114,14 +116,14 @@ export default function SupportChat() {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Type your question…"
+              placeholder={t("support.placeholder")}
               className="flex-1 rounded-md border border-[var(--brand-border)] px-3 py-2 text-sm"
               maxLength={1000}
             />
             <button
               type="submit"
               disabled={ask.isPending || !input.trim()}
-              aria-label="Send"
+              aria-label={t("support.send")}
               className="rounded-md bg-[var(--brand-accent)] px-3 text-[var(--brand-ink)] disabled:opacity-50"
             >
               <Send size={16} />
@@ -133,7 +135,7 @@ export default function SupportChat() {
       {!open && (
         <button
           type="button"
-          aria-label="Open chat"
+          aria-label={t("support.openChat")}
           onClick={() => setOpen(true)}
           className="grid h-12 w-12 place-items-center rounded-full bg-[var(--brand-accent)] text-[var(--brand-ink)] shadow-lg hover:opacity-90"
         >

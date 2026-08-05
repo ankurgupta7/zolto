@@ -6,6 +6,7 @@ import {
   cleanup,
   act,
 } from "@testing-library/react";
+import i18n from "@/lib/i18n";
 import SupportChat from "./SupportChat";
 
 type AskOpts = {
@@ -37,8 +38,12 @@ vi.mock("@/lib/trpc", () => ({
   },
 }));
 
-beforeEach(() => {
+// The storefront falls back to German when the browser asks for it; pin
+// English so the label assertions (and the locale sent with each question)
+// below read the source strings.
+beforeEach(async () => {
   vi.clearAllMocks();
+  await i18n.changeLanguage("en");
   mocks.location = "/";
   mocks.askPending = false;
   Element.prototype.scrollIntoView = vi.fn();

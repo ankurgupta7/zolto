@@ -20,6 +20,7 @@
     "location": "Sede",
     "locationValue": "Zurigo, Svizzera",
     "whatsapp": "WhatsApp",
+    "whatsappButton": "Ci scriva su WhatsApp",
     "instagram": "Instagram",
     "followCaption": "Ci segua per scoprire le novità",
     "responseTime": "Tempo di risposta",
@@ -45,6 +46,18 @@
     "errorRequired": "La preghiamo di compilare tutti i campi obbligatori.",
     "successMessage": "Il Suo messaggio è stato inviato. La ricontatteremo presto."
   },
+  "support": {
+    "title": "Ci chieda pure",
+    "intro": "Domande su materiali, taglie, disponibilità o un pezzo specifico? Rispondo in base al catalogo del negozio.",
+    "placeholder": "Scriva la sua domanda…",
+    "send": "Invia",
+    "openChat": "Apri la chat",
+    "closeChat": "Chiudi la chat"
+  },
+  "aiChat": {
+    "placeholder": "Scriva il suo messaggio...",
+    "emptyState": "Avvii una conversazione con l'IA"
+  },
   "shop": {
     "title": "La Collezione",
     "pieces_one": "{{count}} articolo",
@@ -54,6 +67,23 @@
     "noPiecesCategory": "Nessun articolo nella collezione {{category}} per il momento.",
     "noPiecesAll": "La collezione è in fase di allestimento. Torni a trovarci presto."
   },
+  "discovery": {
+    "sortBy": "Ordina per:",
+    "sortNewest": "Più recenti",
+    "sortCategory": "Per categoria",
+    "sortName": "Per nome (A-Z)",
+    "view": "Vista:",
+    "gridView": "Vista a griglia",
+    "gridViewTitle": "Vista a griglia con miniature",
+    "listView": "Vista a elenco",
+    "listViewTitle": "Vista a elenco con dettagli",
+    "categories": "Categorie:",
+    "expandAll": "Espandi tutto",
+    "collapseAll": "Comprimi tutto",
+    "products_one": "{{count}} prodotto",
+    "products_many": "{{count}} prodotti",
+    "products_other": "{{count}} prodotti"
+  },
   "product": {
     "sold": "Venduto",
     "enquireWhatsApp": "Richiedi via WhatsApp",
@@ -62,6 +92,23 @@
     "uniqueCaption": "Scelto con cura",
     "enquirySimilar": "Buongiorno, mi interessa un articolo simile a \"{{name}}\" — potrebbe dirmi se è disponibile qualcosa di simile? La contatto tramite il pulsante del sito web: {{link}}",
     "enquiryAvailable": "Buongiorno, mi interessa \"{{name}}\" — potrebbe dirmi qualcosa di più? La contatto tramite il pulsante del sito web: {{link}}"
+  },
+  "productList": {
+    "qty": "Qtà: {{quantity}}",
+    "hideFromShop": "Nascondi dallo shop",
+    "showInShop": "Mostra nello shop",
+    "editProduct": "Modifica prodotto",
+    "deleteProduct": "Elimina prodotto",
+    "categoryCount": "({{n}})"
+  },
+  "lightbox": {
+    "title": "Vista a schermo intero",
+    "imageAlt": "Vista {{index}} di {{total}}",
+    "counter": "{{index}} / {{total}}",
+    "close": "Chiudi",
+    "previous": "Immagine precedente",
+    "next": "Immagine successiva",
+    "goTo": "Vai all'immagine {{index}}"
   },
   "cart": {
     "title": "Carrello",
@@ -211,5 +258,9 @@
     "body": "O forse non è mai esistita — difficile a dirsi. In ogni caso, qui non c'è nulla. Le cose belle sono a un clic di distanza.",
     "shop": "Sfoglia lo shop",
     "home": "Torna alla pagina iniziale"
+  },
+  "errors": {
+    "unexpected": "Si è verificato un errore imprevisto.",
+    "reload": "Ricarica la pagina"
   }
 }

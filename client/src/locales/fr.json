@@ -20,6 +20,7 @@
     "location": "Adresse",
     "locationValue": "Zurich, Suisse",
     "whatsapp": "WhatsApp",
+    "whatsappButton": "Discutez avec nous sur WhatsApp",
     "instagram": "Instagram",
     "followCaption": "Suivez-nous pour découvrir les nouveautés",
     "responseTime": "Délai de réponse",
@@ -45,6 +46,18 @@
     "errorRequired": "Veuillez remplir tous les champs obligatoires.",
     "successMessage": "Votre message a bien été envoyé. Nous vous répondrons bientôt."
   },
+  "support": {
+    "title": "Posez-nous vos questions",
+    "intro": "Des questions sur les matériaux, les tailles, la disponibilité ou une pièce en particulier? Je réponds à partir du catalogue de la boutique.",
+    "placeholder": "Saisissez votre question…",
+    "send": "Envoyer",
+    "openChat": "Ouvrir le chat",
+    "closeChat": "Fermer le chat"
+  },
+  "aiChat": {
+    "placeholder": "Saisissez votre message...",
+    "emptyState": "Démarrez une conversation avec l'IA"
+  },
   "shop": {
     "title": "La Collection",
     "pieces_one": "{{count}} article",
@@ -54,6 +67,23 @@
     "noPiecesCategory": "Aucun article dans la collection {{category}} pour le moment.",
     "noPiecesAll": "La collection est en cours de constitution. Revenez bientôt."
   },
+  "discovery": {
+    "sortBy": "Trier par :",
+    "sortNewest": "Plus récents",
+    "sortCategory": "Par catégorie",
+    "sortName": "Par nom (A-Z)",
+    "view": "Affichage :",
+    "gridView": "Vue en grille",
+    "gridViewTitle": "Vue en grille avec vignettes",
+    "listView": "Vue en liste",
+    "listViewTitle": "Vue en liste avec détails",
+    "categories": "Catégories :",
+    "expandAll": "Tout déplier",
+    "collapseAll": "Tout replier",
+    "products_one": "{{count}} produit",
+    "products_many": "{{count}} produits",
+    "products_other": "{{count}} produits"
+  },
   "product": {
     "sold": "Vendu",
     "enquireWhatsApp": "Demander via WhatsApp",
@@ -62,6 +92,23 @@
     "uniqueCaption": "Sélectionné avec soin",
     "enquirySimilar": "Bonjour, je m'intéresse à un article semblable à \"{{name}}\" — pourriez-vous me dire si quelque chose de similaire est disponible? Je vous contacte via le bouton du site web : {{link}}",
     "enquiryAvailable": "Bonjour, je m'intéresse à \"{{name}}\" — pourriez-vous m'en dire plus? Je vous contacte via le bouton du site web : {{link}}"
+  },
+  "productList": {
+    "qty": "Qté : {{quantity}}",
+    "hideFromShop": "Masquer de la boutique",
+    "showInShop": "Afficher dans la boutique",
+    "editProduct": "Modifier le produit",
+    "deleteProduct": "Supprimer le produit",
+    "categoryCount": "({{n}})"
+  },
+  "lightbox": {
+    "title": "Vue plein écran",
+    "imageAlt": "Vue {{index}} sur {{total}}",
+    "counter": "{{index}} / {{total}}",
+    "close": "Fermer",
+    "previous": "Image précédente",
+    "next": "Image suivante",
+    "goTo": "Aller à l'image {{index}}"
   },
   "cart": {
     "title": "Votre panier",
@@ -211,5 +258,9 @@
     "body": "Ou elle n'a jamais existé — difficile à dire. Quoi qu'il en soit, il n'y a rien ici. Les belles choses sont à un clic.",
     "shop": "Découvrir la boutique",
     "home": "Retour à l'accueil"
+  },
+  "errors": {
+    "unexpected": "Une erreur inattendue s'est produite.",
+    "reload": "Recharger la page"
   }
 }
