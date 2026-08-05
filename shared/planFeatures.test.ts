@@ -18,7 +18,9 @@ describe("PLAN_FEATURES", () => {
   });
 
   it("gives Pro every capability Free lacks, and never the reverse", () => {
-    for (const key of Object.keys(PLAN_FEATURES.free) as (keyof typeof PLAN_FEATURES.free)[]) {
+    for (const key of Object.keys(
+      PLAN_FEATURES.free,
+    ) as (keyof typeof PLAN_FEATURES.free)[]) {
       const free = PLAN_FEATURES.free[key];
       const pro = PLAN_FEATURES.pro[key];
       if (typeof free === "boolean" && typeof pro === "boolean") {

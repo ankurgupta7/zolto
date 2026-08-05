@@ -41,11 +41,33 @@ const URL = process.env.SHOT_URL ?? "http://localhost:5199/";
 // pre-installed one; point at the pinned binary when it exists.
 const executablePath = process.env.CHROMIUM_PATH ?? "/opt/pw-browsers/chromium";
 
+// The storefront, marketing site and admin console all render in de/en/fr/it,
+// so a shot is only evidence for the language it was taken in. SHOT_LANG picks
+// one; it seeds the same localStorage key the app persists (client/src/lib/
+// i18n.ts) and the browser locale behind it, so date and number formatting is
+// checked too. Unset → whatever the app's own default resolves to.
+const shotLang = process.env.SHOT_LANG;
+const HTML_LANG = { de: "de-CH", en: "en", fr: "fr-CH", it: "it-CH" };
+if (shotLang && !HTML_LANG[shotLang]) {
+  throw new Error(
+    `SHOT_LANG must be one of ${Object.keys(HTML_LANG).join(", ")} — got "${shotLang}"`,
+  );
+}
+
 const browser = await chromium.launch({ executablePath });
 const page = await browser.newPage({
   viewport: { width: 1280, height: 900 },
   deviceScaleFactor: 2,
+  ...(shotLang ? { locale: HTML_LANG[shotLang] } : {}),
 });
+
+if (shotLang) {
+  // Runs before any page script, so i18n reads it during module init rather
+  // than booting English and re-rendering after the shot is already taken.
+  await page.addInitScript((lang) => {
+    localStorage.setItem("kalakosh_lang", lang);
+  }, shotLang);
+}
 
 const errors = [];
 page.on("pageerror", (e) => errors.push(String(e)));

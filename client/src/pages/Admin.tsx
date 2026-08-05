@@ -1,7 +1,9 @@
 import { useState, useMemo, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { categoryColor } from "@/lib/categoryColors";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
+import "@/lib/i18n";
 import { toast } from "sonner";
 import { isStoreAdminRole } from "@/admin/nav";
 import { resolveConnectPrompt } from "@/lib/connectPrompt";
@@ -75,11 +77,23 @@ const EMPTY_FORM: AddForm = {
 interface EditForm {
   name: string;
   nameEn: string;
+  nameFr: string;
+  nameIt: string;
   description: string;
   descriptionEn: string;
+  descriptionFr: string;
+  descriptionIt: string;
   price: string;
   category: ProductCategory;
 }
+
+// Translation inputs rendered for the edit row; the primary name/description
+// (German by convention) keep their own required fields.
+const EDIT_LOCALES = [
+  { code: "EN", nameKey: "nameEn", descKey: "descriptionEn" },
+  { code: "FR", nameKey: "nameFr", descKey: "descriptionFr" },
+  { code: "IT", nameKey: "nameIt", descKey: "descriptionIt" },
+] as const;
 
 // ─── Product Row ──────────────────────────────────────────────────────────────
 
@@ -88,8 +102,12 @@ interface ProductRowProps {
     id: number;
     name: string;
     nameEn: string | null;
+    nameFr: string | null;
+    nameIt: string | null;
     description: string;
     descriptionEn: string | null;
+    descriptionFr: string | null;
+    descriptionIt: string | null;
     price: string;
     category: string;
     imageUrl: string | null;
@@ -102,6 +120,7 @@ interface ProductRowProps {
 }
 
 function ProductRow({ product, onRefetch }: ProductRowProps) {
+  const { t } = useTranslation("admin");
   // Store's own category keys (server-driven, per-tenant).
   const CATEGORIES = useCategories().categories.map((c) => c.key);
   const [qtyValue, setQtyValue] = useState(String(product.quantity));
@@ -109,8 +128,12 @@ function ProductRow({ product, onRefetch }: ProductRowProps) {
   const [editForm, setEditForm] = useState<EditForm>({
     name: product.name,
     nameEn: product.nameEn ?? "",
+    nameFr: product.nameFr ?? "",
+    nameIt: product.nameIt ?? "",
     description: product.description,
     descriptionEn: product.descriptionEn ?? "",
+    descriptionFr: product.descriptionFr ?? "",
+    descriptionIt: product.descriptionIt ?? "",
     price: String(Number(product.price).toFixed(2)),
     category: product.category as ProductCategory,
   });
@@ -122,29 +145,29 @@ function ProductRow({ product, onRefetch }: ProductRowProps) {
 
   const qtyMutation = trpc.products.setQuantity.useMutation({
     onSuccess: onRefetch,
-    onError: () => toast.error("Failed to update quantity"),
+    onError: () => toast.error(t("catalog.admin.toasts.quantityFailed")),
   });
 
   const toggleMutation = trpc.products.toggleVisibility.useMutation({
     onSuccess: onRefetch,
-    onError: () => toast.error("Failed to update visibility"),
+    onError: () => toast.error(t("catalog.admin.toasts.visibilityFailed")),
   });
 
   const deleteMutation = trpc.products.delete.useMutation({
     onSuccess: () => {
       onRefetch();
-      toast.success("Product deleted");
+      toast.success(t("catalog.admin.toasts.productDeleted"));
     },
-    onError: () => toast.error("Failed to delete product"),
+    onError: () => toast.error(t("catalog.admin.toasts.productDeleteFailed")),
   });
 
   const updateMutation = trpc.products.update.useMutation({
     onSuccess: () => {
       onRefetch();
       setEditing(false);
-      toast.success("Product updated");
+      toast.success(t("catalog.admin.toasts.productUpdated"));
     },
-    onError: () => toast.error("Failed to update product"),
+    onError: () => toast.error(t("catalog.admin.toasts.productUpdateFailed")),
   });
 
   const commitQty = () => {
@@ -160,19 +183,23 @@ function ProductRow({ product, onRefetch }: ProductRowProps) {
   const handleSaveEdit = () => {
     const price = parseFloat(editForm.price);
     if (!editForm.name.trim() || !editForm.description.trim()) {
-      toast.error("Name and description are required");
+      toast.error(t("catalog.admin.toasts.nameDescriptionRequired"));
       return;
     }
     if (Number.isNaN(price) || price <= 0) {
-      toast.error("Enter a valid price");
+      toast.error(t("catalog.admin.toasts.enterValidPrice"));
       return;
     }
     updateMutation.mutate({
       id: product.id,
       name: editForm.name.trim(),
       nameEn: editForm.nameEn.trim() || null,
+      nameFr: editForm.nameFr.trim() || null,
+      nameIt: editForm.nameIt.trim() || null,
       description: editForm.description.trim(),
       descriptionEn: editForm.descriptionEn.trim() || null,
+      descriptionFr: editForm.descriptionFr.trim() || null,
+      descriptionIt: editForm.descriptionIt.trim() || null,
       price,
       category: editForm.category,
     });
@@ -182,8 +209,12 @@ function ProductRow({ product, onRefetch }: ProductRowProps) {
     setEditForm({
       name: product.name,
       nameEn: product.nameEn ?? "",
+      nameFr: product.nameFr ?? "",
+      nameIt: product.nameIt ?? "",
       description: product.description,
       descriptionEn: product.descriptionEn ?? "",
+      descriptionFr: product.descriptionFr ?? "",
+      descriptionIt: product.descriptionIt ?? "",
       price: String(Number(product.price).toFixed(2)),
       category: product.category as ProductCategory,
     });
@@ -298,7 +329,9 @@ function ProductRow({ product, onRefetch }: ProductRowProps) {
           <span
             className={`text-[10px] uppercase tracking-[0.1em] px-2 py-0.5 font-sans ${product.visible ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-500"}`}
           >
-            {product.visible ? "Visible" : "Hidden"}
+            {product.visible
+              ? t("catalog.admin.row.visible")
+              : t("catalog.admin.row.hidden")}
           </span>
         </td>
 
@@ -309,7 +342,11 @@ function ProductRow({ product, onRefetch }: ProductRowProps) {
             <button
               type="button"
               onClick={() => (editing ? setEditing(false) : startEdit())}
-              title={editing ? "Cancel edit" : "Edit product"}
+              title={
+                editing
+                  ? t("catalog.admin.row.cancelEditTitle")
+                  : t("catalog.admin.row.editTitle")
+              }
               className={`p-2 transition-colors ${editing ? "text-[var(--brand-accent)]" : "text-muted-foreground hover:text-[var(--brand-ink)]"}`}
             >
               <Pencil size={15} />
@@ -325,7 +362,11 @@ function ProductRow({ product, onRefetch }: ProductRowProps) {
                 })
               }
               disabled={isBusy}
-              title={product.visible ? "Hide product" : "Show product"}
+              title={
+                product.visible
+                  ? t("catalog.admin.row.hideTitle")
+                  : t("catalog.admin.row.showTitle")
+              }
               className="p-2 text-muted-foreground hover:text-[var(--brand-ink)] transition-colors disabled:opacity-40"
             >
               {toggleMutation.isPending ? (
@@ -349,14 +390,14 @@ function ProductRow({ product, onRefetch }: ProductRowProps) {
                   disabled={deleteMutation.isPending}
                   className="px-2 py-1 text-[11px] uppercase tracking-wide font-sans text-white bg-red-600 hover:bg-red-700 transition-colors"
                 >
-                  Del
+                  {t("catalog.admin.row.confirmDelete")}
                 </button>
                 <button
                   type="button"
                   onClick={() => setConfirmingDelete(false)}
                   className="px-2 py-1 text-[11px] font-sans text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  No
+                  {t("catalog.admin.row.cancelDelete")}
                 </button>
               </div>
             ) : (
@@ -364,7 +405,7 @@ function ProductRow({ product, onRefetch }: ProductRowProps) {
                 type="button"
                 onClick={() => setConfirmingDelete(true)}
                 disabled={isBusy}
-                title="Delete product"
+                title={t("catalog.admin.row.deleteTitle")}
                 className="p-2 text-muted-foreground hover:text-red-600 transition-colors disabled:opacity-40"
               >
                 {deleteMutation.isPending ? (
@@ -388,7 +429,7 @@ function ProductRow({ product, onRefetch }: ProductRowProps) {
                   htmlFor={`edit-name-${product.id}`}
                   className="block text-[10px] uppercase tracking-[0.12em] text-foreground font-sans mb-1"
                 >
-                  Name (DE) *
+                  {t("catalog.admin.row.fieldName", { code: "DE" })} *
                 </label>
                 <input
                   id={`edit-name-${product.id}`}
@@ -400,29 +441,31 @@ function ProductRow({ product, onRefetch }: ProductRowProps) {
                   className="w-full border border-[var(--brand-ink)]/20 px-3 py-2 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] bg-white"
                 />
               </div>
-              <div>
-                <label
-                  htmlFor={`edit-nameEn-${product.id}`}
-                  className="block text-[10px] uppercase tracking-[0.12em] text-foreground font-sans mb-1"
-                >
-                  Name (EN)
-                </label>
-                <input
-                  id={`edit-nameEn-${product.id}`}
-                  type="text"
-                  value={editForm.nameEn}
-                  onChange={(e) =>
-                    setEditForm((f) => ({ ...f, nameEn: e.target.value }))
-                  }
-                  className="w-full border border-[var(--brand-ink)]/20 px-3 py-2 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] bg-white"
-                />
-              </div>
+              {EDIT_LOCALES.map(({ code, nameKey }) => (
+                <div key={nameKey}>
+                  <label
+                    htmlFor={`edit-${nameKey}-${product.id}`}
+                    className="block text-[10px] uppercase tracking-[0.12em] text-foreground font-sans mb-1"
+                  >
+                    {t("catalog.admin.row.fieldName", { code })}
+                  </label>
+                  <input
+                    id={`edit-${nameKey}-${product.id}`}
+                    type="text"
+                    value={editForm[nameKey]}
+                    onChange={(e) =>
+                      setEditForm((f) => ({ ...f, [nameKey]: e.target.value }))
+                    }
+                    className="w-full border border-[var(--brand-ink)]/20 px-3 py-2 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] bg-white"
+                  />
+                </div>
+              ))}
               <div>
                 <label
                   htmlFor={`edit-price-${product.id}`}
                   className="block text-[10px] uppercase tracking-[0.12em] text-foreground font-sans mb-1"
                 >
-                  Price (CHF) *
+                  {t("catalog.admin.row.fieldPrice")} *
                 </label>
                 <input
                   id={`edit-price-${product.id}`}
@@ -441,7 +484,7 @@ function ProductRow({ product, onRefetch }: ProductRowProps) {
                   htmlFor={`edit-category-${product.id}`}
                   className="block text-[10px] uppercase tracking-[0.12em] text-foreground font-sans mb-1"
                 >
-                  Category *
+                  {t("catalog.admin.row.fieldCategory")} *
                 </label>
                 <select
                   id={`edit-category-${product.id}`}
@@ -466,7 +509,7 @@ function ProductRow({ product, onRefetch }: ProductRowProps) {
                   htmlFor={`edit-description-${product.id}`}
                   className="block text-[10px] uppercase tracking-[0.12em] text-foreground font-sans mb-1"
                 >
-                  Description (DE) *
+                  {t("catalog.admin.row.fieldDescription", { code: "DE" })} *
                 </label>
                 <textarea
                   id={`edit-description-${product.id}`}
@@ -478,26 +521,28 @@ function ProductRow({ product, onRefetch }: ProductRowProps) {
                   className="w-full border border-[var(--brand-ink)]/20 px-3 py-2 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] bg-white resize-none"
                 />
               </div>
-              <div>
-                <label
-                  htmlFor={`edit-descriptionEn-${product.id}`}
-                  className="block text-[10px] uppercase tracking-[0.12em] text-foreground font-sans mb-1"
-                >
-                  Description (EN)
-                </label>
-                <textarea
-                  id={`edit-descriptionEn-${product.id}`}
-                  value={editForm.descriptionEn}
-                  onChange={(e) =>
-                    setEditForm((f) => ({
-                      ...f,
-                      descriptionEn: e.target.value,
-                    }))
-                  }
-                  rows={3}
-                  className="w-full border border-[var(--brand-ink)]/20 px-3 py-2 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] bg-white resize-none"
-                />
-              </div>
+              {EDIT_LOCALES.map(({ code, descKey }) => (
+                <div key={descKey}>
+                  <label
+                    htmlFor={`edit-${descKey}-${product.id}`}
+                    className="block text-[10px] uppercase tracking-[0.12em] text-foreground font-sans mb-1"
+                  >
+                    {t("catalog.admin.row.fieldDescription", { code })}
+                  </label>
+                  <textarea
+                    id={`edit-${descKey}-${product.id}`}
+                    value={editForm[descKey]}
+                    onChange={(e) =>
+                      setEditForm((f) => ({
+                        ...f,
+                        [descKey]: e.target.value,
+                      }))
+                    }
+                    rows={3}
+                    className="w-full border border-[var(--brand-ink)]/20 px-3 py-2 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] bg-white resize-none"
+                  />
+                </div>
+              ))}
             </div>
             <div className="flex gap-3">
               <button
@@ -511,7 +556,7 @@ function ProductRow({ product, onRefetch }: ProductRowProps) {
                 ) : (
                   <Check size={13} />
                 )}
-                Save
+                {t("catalog.admin.row.save")}
               </button>
               <button
                 type="button"
@@ -519,7 +564,7 @@ function ProductRow({ product, onRefetch }: ProductRowProps) {
                 className="flex items-center gap-2 border border-[var(--brand-ink)]/20 text-muted-foreground px-6 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:border-[var(--brand-ink)] hover:text-foreground transition-colors"
               >
                 <X size={13} />
-                Cancel
+                {t("catalog.admin.row.cancel")}
               </button>
             </div>
           </td>
@@ -545,6 +590,7 @@ type InsightsData = {
 };
 
 export default function Admin() {
+  const { t } = useTranslation("admin");
   const { user, isAuthenticated, loading } = useAuth();
   // Store's own category keys (server-driven, per-tenant).
   const storeCategories = useCategories().categories;
@@ -604,13 +650,14 @@ export default function Admin() {
     const status = params.get("stripeConnect");
     if (!status) return;
     if (status === "success") {
-      toast.success("Stripe account connected — online payments are live.");
+      toast.success(t("catalog.admin.toasts.stripeConnected"));
       utils.tenant.getStripeConnectUrl.invalidate();
     } else if (status === "error") {
+      const reason = params.get("reason");
       toast.error(
-        params.get("reason")
-          ? `Stripe connection failed: ${params.get("reason")}`
-          : "Stripe connection failed. Please try again.",
+        reason
+          ? t("catalog.admin.toasts.stripeConnectFailedReason", { reason })
+          : t("catalog.admin.toasts.stripeConnectFailed"),
       );
     }
     params.delete("stripeConnect");
@@ -674,13 +721,13 @@ export default function Admin() {
   const createMutation = trpc.products.create.useMutation({
     onSuccess: () => {
       refetch();
-      toast.success("Product added successfully");
+      toast.success(t("catalog.admin.toasts.productAdded"));
       setForm(EMPTY_FORM);
       setShowAddForm(false);
       setDupState("idle");
       setDupResults([]);
     },
-    onError: () => toast.error("Failed to add product"),
+    onError: () => toast.error(t("catalog.admin.toasts.productAddFailed")),
   });
 
   // Auto-translate: preview computes AI suggestions without writing anything;
@@ -695,17 +742,17 @@ export default function Admin() {
     trpc.products.previewAutoTranslateAll.useMutation({
       onSuccess: (data) => {
         if (data.proposals.length === 0) {
-          toast.success("All products already have English translations.");
+          toast.success(t("catalog.admin.toasts.translateAllPresent"));
           return;
         }
         setTranslateProposals(data.proposals);
         setShowTranslateReview(true);
       },
       onError: () =>
-        toast.error("Auto-translation preview failed. Please try again."),
+        toast.error(t("catalog.admin.toasts.translatePreviewFailed")),
     });
 
-  // Storefront locale translation (de/en/fr): fills each product's missing
+  // Storefront locale translation (de/en/fr/it): fills each product's missing
   // locale fields one product at a time; storefront renders the visitor's
   // locale via client/src/lib/localize.ts and falls back to the primary text.
   const translateLocalesMutation =
@@ -725,11 +772,11 @@ export default function Admin() {
       refetch();
       toast.success(
         translated > 0
-          ? `Translated ${translated} product${translated !== 1 ? "s" : ""} into German, English and French.`
-          : "All products already have de/en/fr translations.",
+          ? t("catalog.admin.toasts.localesTranslated", { count: translated })
+          : t("catalog.admin.toasts.localesAllPresent"),
       );
     } catch {
-      toast.error("Storefront translation failed. Please try again.");
+      toast.error(t("catalog.admin.toasts.localesFailed"));
     } finally {
       setTranslatingLocales(false);
     }
@@ -741,10 +788,12 @@ export default function Admin() {
         refetch();
         setShowTranslateReview(false);
         toast.success(
-          `${data.updated} product${data.updated !== 1 ? "s" : ""} translated to English.`,
+          t("catalog.admin.toasts.translatedToEnglish", {
+            count: data.updated,
+          }),
         );
       },
-      onError: () => toast.error("Auto-translation failed. Please try again."),
+      onError: () => toast.error(t("catalog.admin.toasts.translateFailed")),
     });
 
   // Re-categorise: same preview → review → apply shape as auto-translate.
@@ -757,14 +806,14 @@ export default function Admin() {
     trpc.products.previewRecategorizeAll.useMutation({
       onSuccess: (data) => {
         if (data.proposals.length === 0) {
-          toast.success("All uncategorised products were already classified.");
+          toast.success(t("catalog.admin.toasts.recategoriseAllDone"));
           return;
         }
         setRecategorizeProposals(data.proposals);
         setShowRecategorizeReview(true);
       },
       onError: () =>
-        toast.error("Re-categorisation preview failed. Please try again."),
+        toast.error(t("catalog.admin.toasts.recategorisePreviewFailed")),
     });
 
   const applyRecategoriseMutation =
@@ -773,31 +822,40 @@ export default function Admin() {
         refetch();
         setShowRecategorizeReview(false);
         toast.success(
-          `${data.updated} product${data.updated !== 1 ? "s" : ""} re-categorised.`,
+          t("catalog.admin.toasts.recategorised", { count: data.updated }),
         );
       },
-      onError: () => toast.error("Re-categorisation failed. Please try again."),
+      onError: () => toast.error(t("catalog.admin.toasts.recategoriseFailed")),
     });
 
   const reconciliationMutation = trpc.reconciliation.run.useMutation({
     onSuccess: (data) => {
       if (data.newPendingReview > 0) {
         toast.success(
-          `${data.newPendingReview} unmatched payment${data.newPendingReview === 1 ? "" : "s"} found — ${data.emailSent ? "review email sent." : "review email could not be sent, check server logs."}`,
+          t(
+            data.emailSent
+              ? "catalog.admin.toasts.stripeFoundSent"
+              : "catalog.admin.toasts.stripeFoundNotSent",
+            { count: data.newPendingReview },
+          ),
         );
       } else if (data.newNoCandidates > 0) {
         toast.success(
-          `${data.newNoCandidates} unmatched payment${data.newNoCandidates === 1 ? "" : "s"} found, but no in-stock product was close enough in price to guess.`,
+          t("catalog.admin.toasts.stripeNoCandidates", {
+            count: data.newNoCandidates,
+          }),
         );
       } else {
         toast.success(
-          `No unmatched Stripe payments found (${data.scannedSucceededPayments} checked).`,
+          t("catalog.admin.toasts.stripeClean", {
+            count: data.scannedSucceededPayments,
+          }),
         );
       }
     },
     onError: (err) =>
       toast.error(
-        err.message || "Stripe reconciliation failed. Please try again.",
+        err.message || t("catalog.admin.toasts.stripeReconcileFailed"),
       ),
   });
 
@@ -805,23 +863,27 @@ export default function Admin() {
     onSuccess: (data) => {
       if (data.newPendingReview > 0) {
         toast.success(
-          `${data.newPendingReview} amount-only sale${data.newPendingReview === 1 ? "" : "s"} to confirm — ${data.emailSent ? "review email sent." : "review email could not be sent, check server logs."}`,
+          t(
+            data.emailSent
+              ? "catalog.admin.toasts.posFoundSent"
+              : "catalog.admin.toasts.posFoundNotSent",
+            { count: data.newPendingReview },
+          ),
         );
       } else if (data.newNoCandidates > 0) {
         toast.success(
-          `${data.newNoCandidates} amount-only sale${data.newNoCandidates === 1 ? "" : "s"} found, but no in-stock piece was close enough in price to guess.`,
+          t("catalog.admin.toasts.posNoCandidates", {
+            count: data.newNoCandidates,
+          }),
         );
       } else {
         toast.success(
-          `No unattributed in-person sales found (${data.scannedLines} checked).`,
+          t("catalog.admin.toasts.posClean", { count: data.scannedLines }),
         );
       }
     },
     onError: (err) =>
-      toast.error(
-        err.message ||
-          "In-person sale reconciliation failed. Please try again.",
-      ),
+      toast.error(err.message || t("catalog.admin.toasts.posReconcileFailed")),
   });
 
   const insightsMutation = trpc.products.insights.useMutation({
@@ -829,8 +891,7 @@ export default function Admin() {
       setInsightsData(data);
       setShowInsights(true);
     },
-    onError: () =>
-      toast.error("Failed to generate insights. Please try again."),
+    onError: () => toast.error(t("catalog.admin.toasts.insightsFailed")),
   });
 
   const duplicateCheckMutation = trpc.products.checkDuplicate.useMutation();
@@ -838,12 +899,12 @@ export default function Admin() {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name || !form.description || !form.price) {
-      toast.error("Please fill in all required fields");
+      toast.error(t("catalog.admin.toasts.fillRequired"));
       return;
     }
     const price = parseFloat(form.price);
     if (Number.isNaN(price) || price <= 0) {
-      toast.error("Please enter a valid price");
+      toast.error(t("catalog.admin.toasts.validPrice"));
       return;
     }
     const quantity = parseInt(form.quantity, 10);
@@ -897,10 +958,10 @@ export default function Admin() {
             ◇
           </div>
           <h2 className="font-serif text-foreground text-2xl mb-4">
-            Admin Access
+            {t("catalog.admin.auth.title")}
           </h2>
           <p className="text-muted-foreground text-sm font-sans mb-8">
-            Please sign in to access the admin panel.
+            {t("catalog.admin.auth.description")}
           </p>
           <SignInOptions className="text-left" next={window.location.href} />
         </div>
@@ -915,7 +976,7 @@ export default function Admin() {
             ✕
           </div>
           <h2 className="font-serif text-foreground text-2xl mb-4">
-            Access Denied
+            {t("catalog.admin.auth.denied")}
           </h2>
         </div>
       </div>
@@ -944,13 +1005,13 @@ export default function Admin() {
         <div className="container flex items-center justify-between flex-wrap gap-4">
           <div>
             <p className="font-hand text-[var(--brand-accent)] leading-none mb-1">
-              Your maker&rsquo;s bench
+              {t("catalog.admin.header.eyebrow")}
             </p>
             <h1
               data-tour="admin-title"
               className="font-serif text-white text-2xl"
             >
-              Catalogue Management
+              {t("catalog.admin.header.title")}
             </h1>
             <div className="mt-1.5 w-44 text-[var(--brand-accent)]/70">
               <SketchUnderline />
@@ -963,7 +1024,7 @@ export default function Admin() {
               className="flex items-center gap-2 bg-[var(--brand-accent)] text-[var(--brand-ink)] px-4 py-2.5 text-xs uppercase tracking-[0.15em] font-sans font-semibold hover:brightness-110 transition-[filter]"
             >
               <Camera size={14} />
-              Add by Camera
+              {t("catalog.admin.header.addByCamera")}
             </Link>
             <Link
               href="/admin/csv-import"
@@ -971,27 +1032,27 @@ export default function Admin() {
               className="flex items-center gap-2 border border-white/20 text-white/80 px-4 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:border-white hover:text-white transition-colors"
             >
               <FileSpreadsheet size={14} />
-              CSV Import
+              {t("catalog.admin.header.csvImport")}
             </Link>
             <Link
               href="/admin/duplicates"
               className="flex items-center gap-2 border border-white/20 text-white/80 px-4 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:border-white hover:text-white transition-colors"
             >
               <Copy size={14} />
-              Duplicate Cleanup
+              {t("catalog.admin.header.duplicateCleanup")}
             </Link>
             <Link
               href="/admin/billing"
               className="flex items-center gap-2 border border-white/20 text-white/80 px-4 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:border-white hover:text-white transition-colors"
             >
               <CreditCard size={14} />
-              Plan &amp; Billing
+              {t("catalog.admin.header.planBilling")}
             </Link>
             <button
               type="button"
               onClick={() => previewRecategoriseMutation.mutate()}
               disabled={previewRecategoriseMutation.isPending}
-              title="AI re-categorise all products in 'Other' into the correct category (review before applying)"
+              title={t("catalog.admin.header.recategoriseTitle")}
               className="flex items-center gap-2 border border-white/20 text-white/80 px-4 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:border-white hover:text-white transition-colors disabled:opacity-50"
             >
               {previewRecategoriseMutation.isPending ? (
@@ -999,14 +1060,14 @@ export default function Admin() {
               ) : (
                 <Tag size={14} />
               )}
-              Re-Categorise
+              {t("catalog.admin.header.recategorise")}
             </button>
             <button
               type="button"
               onClick={() => previewTranslateMutation.mutate()}
               disabled={previewTranslateMutation.isPending}
               data-tour="auto-translate"
-              title="Fill missing English translations using AI (review before applying)"
+              title={t("catalog.admin.header.autoTranslateTitle")}
               className="flex items-center gap-2 border border-white/20 text-white/80 px-4 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:border-white hover:text-white transition-colors disabled:opacity-50"
             >
               {previewTranslateMutation.isPending ? (
@@ -1014,13 +1075,13 @@ export default function Admin() {
               ) : (
                 <Languages size={14} />
               )}
-              Auto-Translate
+              {t("catalog.admin.header.autoTranslate")}
             </button>
             <button
               type="button"
               onClick={handleTranslateLocales}
               disabled={translatingLocales}
-              title="Fill missing German, English and French storefront translations for every product using AI"
+              title={t("catalog.admin.header.translateLocalesTitle")}
               className="flex items-center gap-2 border border-white/20 text-white/80 px-4 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:border-white hover:text-white transition-colors disabled:opacity-50"
             >
               {translatingLocales ? (
@@ -1028,13 +1089,13 @@ export default function Admin() {
               ) : (
                 <Languages size={14} />
               )}
-              Translate de/en/fr
+              {t("catalog.admin.header.translateLocales")}
             </button>
             <button
               type="button"
               onClick={() => reconciliationMutation.mutate({})}
               disabled={reconciliationMutation.isPending}
-              title="Check for Stripe payments missing from our records and email a match request for each"
+              title={t("catalog.admin.header.reconcileStripeTitle")}
               className="flex items-center gap-2 border border-white/20 text-white/80 px-4 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:border-white hover:text-white transition-colors disabled:opacity-50"
             >
               {reconciliationMutation.isPending ? (
@@ -1042,13 +1103,13 @@ export default function Admin() {
               ) : (
                 <CreditCard size={14} />
               )}
-              Reconcile Stripe Payments
+              {t("catalog.admin.header.reconcileStripe")}
             </button>
             <button
               type="button"
               onClick={() => posAttributionMutation.mutate({})}
               disabled={posAttributionMutation.isPending}
-              title="Find amount-only in-person sales and email a request to confirm which piece each one sold"
+              title={t("catalog.admin.header.confirmPosTitle")}
               className="flex items-center gap-2 border border-white/20 text-white/80 px-4 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:border-white hover:text-white transition-colors disabled:opacity-50"
             >
               {posAttributionMutation.isPending ? (
@@ -1056,16 +1117,16 @@ export default function Admin() {
               ) : (
                 <Receipt size={14} />
               )}
-              Confirm In-Person Sales
+              {t("catalog.admin.header.confirmPos")}
             </button>
             {stripeConnectQuery.data?.connected ? (
               <span
                 data-tour="connect-stripe"
-                title="This store's own Stripe account is linked — checkout pays out directly to you"
+                title={t("catalog.admin.header.stripeConnectedTitle")}
                 className="flex items-center gap-2 border border-emerald-400/40 text-emerald-300 px-4 py-2.5 text-xs uppercase tracking-[0.15em] font-sans"
               >
                 <CheckCircle2 size={14} />
-                Stripe Connected
+                {t("catalog.admin.header.stripeConnected")}
               </span>
             ) : (
               <button
@@ -1073,7 +1134,7 @@ export default function Admin() {
                 onClick={handleConnectStripe}
                 disabled={stripeConnectQuery.isLoading}
                 data-tour="connect-stripe"
-                title="Link your OWN Stripe account so your storefront's customers pay directly into it"
+                title={t("catalog.admin.header.connectStripeTitle")}
                 className="flex items-center gap-2 border border-white/20 text-white/80 px-4 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:border-white hover:text-white transition-colors disabled:opacity-50"
               >
                 {stripeConnectQuery.isLoading ? (
@@ -1081,7 +1142,7 @@ export default function Admin() {
                 ) : (
                   <CreditCard size={14} />
                 )}
-                Connect Stripe
+                {t("catalog.admin.header.connectStripe")}
               </button>
             )}
             <button
@@ -1090,12 +1151,12 @@ export default function Admin() {
                 clearTourCompletion(ADMIN_TOUR_ID);
                 setTourSignal((n) => n + 1);
               }}
-              title="Replay the guided tour of this dashboard"
-              aria-label="Replay guided tour"
+              title={t("catalog.admin.header.tourTitle")}
+              aria-label={t("catalog.admin.header.tourAria")}
               className="flex items-center gap-2 border border-white/20 text-white/80 px-3 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:border-white hover:text-white transition-colors"
             >
               <HelpCircle size={14} />
-              Tour
+              {t("catalog.admin.header.tour")}
             </button>
             <button
               type="button"
@@ -1104,7 +1165,7 @@ export default function Admin() {
               className="flex items-center gap-2 bg-[var(--brand-accent)] text-[var(--brand-ink)] px-5 py-2.5 text-xs uppercase tracking-[0.15em] font-sans font-medium hover:bg-[var(--brand-accent-light)] transition-colors"
             >
               <Plus size={14} />
-              Add Product
+              {t("catalog.admin.header.addProduct")}
             </button>
           </div>
         </div>
@@ -1137,7 +1198,7 @@ export default function Admin() {
         {showAddForm && (
           <div className="bg-white border border-[var(--brand-border)] p-8 mb-8">
             <h2 className="font-serif text-foreground text-xl mb-6">
-              Add New Product
+              {t("catalog.admin.form.title")}
             </h2>
             <form
               onSubmit={handleCreate}
@@ -1148,7 +1209,8 @@ export default function Admin() {
                   htmlFor="create-name"
                   className="block text-xs uppercase tracking-[0.15em] text-foreground font-sans mb-2"
                 >
-                  Name <span className="text-[var(--brand-accent)]">*</span>
+                  {t("catalog.admin.form.name")}{" "}
+                  <span className="text-[var(--brand-accent)]">*</span>
                 </label>
                 <input
                   id="create-name"
@@ -1159,7 +1221,9 @@ export default function Admin() {
                   }
                   required
                   className="w-full border border-[var(--brand-ink)]/20 px-4 py-2.5 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] transition-colors bg-transparent"
-                  placeholder={`e.g. ${preset.exampleItemNameEn}`}
+                  placeholder={t("catalog.admin.form.namePlaceholder", {
+                    example: preset.exampleItemNameEn,
+                  })}
                 />
               </div>
 
@@ -1168,7 +1232,7 @@ export default function Admin() {
                   htmlFor="create-price"
                   className="block text-xs uppercase tracking-[0.15em] text-foreground font-sans mb-2"
                 >
-                  Price (CHF){" "}
+                  {t("catalog.admin.form.price")}{" "}
                   <span className="text-[var(--brand-accent)]">*</span>
                 </label>
                 <input
@@ -1182,7 +1246,7 @@ export default function Admin() {
                   }
                   required
                   className="w-full border border-[var(--brand-ink)]/20 px-4 py-2.5 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] transition-colors bg-transparent"
-                  placeholder="e.g. 185.00"
+                  placeholder={t("catalog.admin.form.pricePlaceholder")}
                 />
               </div>
 
@@ -1191,7 +1255,8 @@ export default function Admin() {
                   htmlFor="create-category"
                   className="block text-xs uppercase tracking-[0.15em] text-foreground font-sans mb-2"
                 >
-                  Category <span className="text-[var(--brand-accent)]">*</span>
+                  {t("catalog.admin.form.category")}{" "}
+                  <span className="text-[var(--brand-accent)]">*</span>
                 </label>
                 <select
                   id="create-category"
@@ -1217,7 +1282,7 @@ export default function Admin() {
                   htmlFor="create-quantity"
                   className="block text-xs uppercase tracking-[0.15em] text-foreground font-sans mb-2"
                 >
-                  Quantity
+                  {t("catalog.admin.form.quantity")}
                 </label>
                 <input
                   id="create-quantity"
@@ -1237,7 +1302,7 @@ export default function Admin() {
                   htmlFor="create-imageUrl"
                   className="block text-xs uppercase tracking-[0.15em] text-foreground font-sans mb-2"
                 >
-                  Image URL
+                  {t("catalog.admin.form.imageUrl")}
                 </label>
                 <input
                   id="create-imageUrl"

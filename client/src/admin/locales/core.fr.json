@@ -1,0 +1,63 @@
+{
+  "core": {
+    "nav": {
+      "groups": {
+        "store": "Boutique",
+        "account": "Compte Zolto"
+      },
+      "home": "Accueil",
+      "products": "Produits",
+      "import": "Importation",
+      "categories": "Catégories",
+      "orders": "Commandes",
+      "reconciliation": "Rapprochement",
+      "storefront": "Vitrine",
+      "domain": "Domaine",
+      "channels": "Canaux",
+      "pos": "POS",
+      "insights": "Statistiques",
+      "shop-profile": "Profil de la boutique",
+      "my-account": "Mon compte",
+      "team": "Équipe",
+      "plan-billing": "Forfait et facturation",
+      "ai-usage": "Utilisation de l'IA",
+      "keys-access": "Clés et accès",
+      "data-privacy": "Données et confidentialité",
+      "support": "Assistance",
+      "legal-invoices": "Juridique et factures",
+      "platform-metrics": "Métriques de la plateforme"
+    },
+    "layout": {
+      "navLabel": "Navigation d'administration",
+      "openNav": "Ouvrir la navigation",
+      "closeNav": "Fermer la navigation",
+      "requiresPlan": "Nécessite le forfait {{plan}}",
+      "defaultTitle": "Admin",
+      "switchLanguage": "Changer de langue"
+    },
+    "placeholder": {
+      "body": "Cette section est en cours de refonte dans le cadre du nouvel espace d'administration et apparaîtra ici dans une prochaine version."
+    },
+    "ui": {
+      "loading": "Nous récupérons vos données…",
+      "planGate": {
+        "title": "{{feature}} est une fonctionnalité du forfait {{plan}}",
+        "description": "Passez au forfait {{plan}} ou supérieur pour débloquer {{featureLower}}.",
+        "viewPlans": "Voir les forfaits"
+      },
+      "adminOnly": {
+        "title": "Réservé aux admins",
+        "description": "Cette partie de votre compte Zolto est gérée par le propriétaire de la boutique ou un admin."
+      }
+    },
+    "pos": {
+      "notPublished": "{{platform}} — pas encore publiée",
+      "getFor": "Télécharger pour {{platform}}",
+      "testingNote": "L'application de caisse est encore en phase de test. Demandez-nous une version et nous vous l'enverrons — tout le reste de cette page fonctionne déjà.",
+      "firstLaunch": "Ce que l'application demande au premier lancement",
+      "step1": "1. Serveur",
+      "copyServer": "Copier l'adresse du serveur",
+      "step2": "2. Votre clé API POS"
+    }
+  }
+}

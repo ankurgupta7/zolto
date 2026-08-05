@@ -96,6 +96,54 @@ describe("buildReceiptHtml", () => {
     expect(html).toContain("#00042");
   });
 
+  it("renders the receipt in the order's locale (fr)", () => {
+    const html = buildReceiptHtml({
+      ...baseOpts,
+      locale: "fr",
+      items: [
+        {
+          id: 1,
+          name: "Goldkette",
+          nameEn: "Gold Necklace",
+          nameFr: "Collier en or",
+          nameIt: null,
+          price: "120.00",
+          imageUrl: null,
+        },
+      ],
+    });
+    expect(html).toContain("Quittance");
+    expect(html).toContain("Facturé à");
+    expect(html).toContain("Collier en or");
+    expect(html).not.toContain("Gold Necklace");
+    expect(html).toContain("1 janvier 2026");
+  });
+
+  it("renders German labels and falls back to the primary name when a translation is missing", () => {
+    const html = buildReceiptHtml({ ...baseOpts, locale: "de" });
+    expect(html).toContain("Quittung");
+    expect(html).toContain("Rechnung an");
+    // No nameDe on the item → primary (German-by-convention) name.
+    expect(html).toContain("Goldkette");
+  });
+
+  it("renders Italian labels", () => {
+    const html = buildReceiptHtml({ ...baseOpts, locale: "it" });
+    expect(html).toContain("Ricevuta");
+    expect(html).toContain("Totale");
+  });
+
+  it("defaults to English for missing or unknown locales", () => {
+    for (const locale of [undefined, null, "rm", "xx"]) {
+      const html = buildReceiptHtml({
+        ...baseOpts,
+        locale: locale as string | null | undefined,
+      });
+      expect(html).toContain("Receipt");
+      expect(html).toContain("Gold Necklace");
+    }
+  });
+
   it("renders the branding's vertical-specific returns footer", () => {
     const jewellery = buildReceiptHtml({
       ...baseOpts,
@@ -383,13 +431,11 @@ describe("sendOwnerOrderEmail", () => {
     process.env.RESEND_API_KEY = "re_test";
     vi.stubGlobal(
       "fetch",
-      vi
-        .fn()
-        .mockResolvedValue({
-          ok: false,
-          status: 500,
-          text: async () => "oops",
-        }),
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        text: async () => "oops",
+      }),
     );
 
     await expect(sendOwnerOrderEmail(baseOpts)).rejects.toThrow(

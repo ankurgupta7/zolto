@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, cleanup } from "@testing-library/react";
+import { render, screen, cleanup, fireEvent } from "@testing-library/react";
+import i18n from "@/lib/i18n";
 import { AdminLayout } from "./AdminLayout";
 
 // Display state comes from two injected sources; both are mocked so the test
@@ -18,8 +19,11 @@ function asViewer(role: string, plan: string) {
   mockMeQuery.mockReturnValue({ data: { plan } });
 }
 
-beforeEach(() => {
+beforeEach(async () => {
   vi.clearAllMocks();
+  localStorage.clear();
+  // The language tests below switch languages; every test starts from English.
+  await i18n.changeLanguage("en");
 });
 
 afterEach(() => cleanup());
@@ -63,5 +67,77 @@ describe("AdminLayout", () => {
     render(<AdminLayout><p>x</p></AdminLayout>);
     expect(screen.getByText("Products")).toBeTruthy();
     expect(screen.queryByText("Team")).toBeNull();
+  });
+
+  it("renders German nav labels and group titles after a language change", async () => {
+    asViewer("admin", "pro");
+    await i18n.changeLanguage("de");
+    render(<AdminLayout><p>x</p></AdminLayout>);
+    // Manifest labels stay English data; the shell translates them.
+    expect(screen.getByText("Produkte")).toBeTruthy();
+    expect(screen.getByText("Bestellungen")).toBeTruthy();
+    expect(screen.getByText("Plan & Abrechnung")).toBeTruthy();
+    expect(screen.getByText("Zolto-Konto")).toBeTruthy();
+    // The switcher itself is translated too, and still offers all four.
+    const switcher = screen.getByLabelText(
+      "Sprache wechseln",
+    ) as HTMLSelectElement;
+    expect(Array.from(switcher.options).map((o) => o.value)).toEqual([
+      "de",
+      "en",
+      "fr",
+      "it",
+    ]);
+  });
+
+  // App.tsx hands the header the nav manifest's English label, so without the
+  // same lookup the sidebar reads "Kategorien" while the title above it still
+  // says "Categories".
+  it("translates the header title it is handed from the nav manifest", async () => {
+    asViewer("admin", "pro");
+    await i18n.changeLanguage("de");
+    render(
+      <AdminLayout title="Categories">
+        <p>x</p>
+      </AdminLayout>,
+    );
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Kategorien" }),
+    ).toBeTruthy();
+  });
+
+  it("passes through a title that is not a nav manifest label", async () => {
+    asViewer("admin", "pro");
+    await i18n.changeLanguage("de");
+    render(
+      <AdminLayout title="Aurora Atelier">
+        <p>x</p>
+      </AdminLayout>,
+    );
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Aurora Atelier" }),
+    ).toBeTruthy();
+  });
+
+  it("ships a language switcher that switches and persists the choice", () => {
+    asViewer("admin", "pro");
+    render(<AdminLayout><p>x</p></AdminLayout>);
+    const switcher = screen.getByLabelText(
+      "Switch language",
+    ) as HTMLSelectElement;
+    expect(switcher.value).toBe("en");
+    expect(Array.from(switcher.options).map((o) => o.value)).toEqual([
+      "de",
+      "en",
+      "fr",
+      "it",
+    ]);
+
+    fireEvent.change(switcher, { target: { value: "fr" } });
+    expect(i18n.language).toBe("fr");
+    // Same persistence contract as the storefront switcher.
+    expect(localStorage.getItem("kalakosh_lang")).toBe("fr");
+    expect(document.documentElement.lang).toBe("fr-CH");
+    expect(screen.getByText("Commandes")).toBeTruthy();
   });
 });

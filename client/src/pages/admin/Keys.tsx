@@ -5,6 +5,7 @@
  * Rotating immediately invalidates the old key on every terminal.
  */
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { QRCodeSVG } from "qrcode.react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
@@ -19,6 +20,7 @@ import {
 import { buildPosPairingPayload } from "@/lib/posPairing";
 
 export default function Keys() {
+  const { t } = useTranslation("admin");
   const { user } = useAuth();
   const [plaintext, setPlaintext] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -28,11 +30,9 @@ export default function Keys() {
     onSuccess: (data) => {
       setPlaintext(data.posApiKey);
       setConfirming(false);
-      toast.success(
-        "New POS key generated. Copy it now — it won't be shown again.",
-      );
+      toast.success(t("store.keys.rotatedToast"));
     },
-    onError: (e) => toast.error(e.message || "Could not rotate the key."),
+    onError: (e) => toast.error(e.message || t("store.keys.rotateError")),
   });
 
   if (user && user.role !== "admin" && user.role !== "superadmin") {
@@ -42,27 +42,23 @@ export default function Keys() {
   return (
     <div>
       <PageHeader
-        title="Keys & access"
-        description="Credentials that connect your terminals and tools to this store."
+        title={t("store.keys.title")}
+        description={t("store.keys.description")}
       />
 
       <SettingsCard
-        title="POS API key"
-        description="Your point-of-sale app authenticates with this key. It's stored hashed — we can't show an existing key, only replace it."
+        title={t("store.keys.posTitle")}
+        description={t("store.keys.posDescription")}
       >
         <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-          <p>
-            Rotating the key immediately stops the old one from working. Every
-            terminal will need the new key re-entered before it can take
-            payments again.
-          </p>
+          <p>{t("store.keys.rotateWarning")}</p>
         </div>
 
         {plaintext && (
           <div className="mt-4">
             <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Your new key — copy it now
+              {t("store.keys.newKeyLabel")}
             </p>
             <div className="flex items-center gap-2">
               <code className="flex-1 overflow-x-auto rounded-md border bg-muted px-3 py-2 font-mono text-sm text-foreground">
@@ -70,7 +66,7 @@ export default function Keys() {
               </code>
               <button
                 type="button"
-                aria-label="Copy key"
+                aria-label={t("store.keys.copyKeyAria")}
                 onClick={() => {
                   navigator.clipboard?.writeText(plaintext);
                   setCopied(true);
@@ -104,15 +100,14 @@ export default function Keys() {
               </div>
               <div className="text-sm text-muted-foreground">
                 <p className="font-medium text-foreground">
-                  Or pair by scanning
+                  {t("store.keys.pairTitle")}
                 </p>
                 <p className="mt-1">
-                  In the Zolto POS app, choose{" "}
-                  <span className="text-foreground">Scan to pair</span> and
-                  point the camera here — the server address and key are set in
-                  one go. The code disappears when you leave this page, and
-                  anyone who scans it can take payments for your store, so treat
-                  it like the key itself.
+                  {t("store.keys.pairBefore")}{" "}
+                  <span className="text-foreground">
+                    {t("store.keys.pairChoice")}
+                  </span>{" "}
+                  {t("store.keys.pairAfter")}
                 </p>
               </div>
             </div>
@@ -128,32 +123,31 @@ export default function Keys() {
                 className="bg-rose-600 hover:bg-rose-700"
               >
                 <RefreshCw className="h-4 w-4" />
-                Yes, rotate the key
+                {t("store.keys.confirmRotate")}
               </PrimaryButton>
               <button
                 type="button"
                 onClick={() => setConfirming(false)}
                 className="text-sm text-muted-foreground hover:text-foreground"
               >
-                Cancel
+                {t("store.keys.cancel")}
               </button>
             </>
           ) : (
             <PrimaryButton onClick={() => setConfirming(true)}>
               <KeyRound className="h-4 w-4" />
-              {plaintext ? "Rotate again" : "Generate a new key"}
+              {plaintext ? t("store.keys.rotateAgain") : t("store.keys.generate")}
             </PrimaryButton>
           )}
         </div>
       </SettingsCard>
 
       <SettingsCard
-        title="Public API access"
-        description="Programmatic access to your catalogue and orders."
+        title={t("store.keys.apiTitle")}
+        description={t("store.keys.apiDescription")}
       >
         <p className="text-sm text-muted-foreground">
-          A public API for building your own integrations is part of a future
-          Business plan and is coming soon. It'll live here when it's ready.
+          {t("store.keys.apiNote")}
         </p>
       </SettingsCard>
     </div>

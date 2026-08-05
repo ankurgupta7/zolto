@@ -1,0 +1,610 @@
+{
+  "catalog": {
+    "account": {
+      "signIn": {
+        "loadingAria": "Sie werden angemeldet",
+        "title": "Zum Fortfahren anmelden",
+        "description": "Ihre Sitzung ist abgelaufen. Melden Sie sich an, und wir bringen Sie zurück zu dem, was Sie gerade getan haben."
+      },
+      "claimStaff": {
+        "accepting": "Einladung wird angenommen…",
+        "errorTitle": "Einladung konnte nicht verwendet werden",
+        "invalidLink": "Dieser Einladungslink ist ungültig.",
+        "welcome": "Willkommen im Team!",
+        "redirecting": "Sie werden in den Adminbereich weitergeleitet…"
+      },
+      "billing": {
+        "signedOutTitle": "Melden Sie sich an, um Ihren Plan zu verwalten",
+        "signedOutDescription": "Ihre Sitzung ist abgelaufen — melden Sie sich an, und wir bringen Sie direkt hierher zurück.",
+        "adminsOnly": "Nur für Admins.",
+        "backToAdmin": "Zurück zum Adminbereich",
+        "title": "Plan & Abrechnung",
+        "description": "Vor Ort dauerhaft kostenlos. {{fee}} auf Online- und KI-Agenten-Bestellungen — oder Pro, womit sie entfällt. Monatlich, jederzeit kündbar.",
+        "notConfigured": "Bezahlte Pläne sind auf dieser Installation noch nicht käuflich (Stripe-Preise nicht konfiguriert). Alles in Ihrem aktuellen Plan funktioniert weiter.",
+        "plansTitle": "Pläne",
+        "current": "Aktuell",
+        "priceFree": "Kostenlos",
+        "perMonth": "/Mt.",
+        "planFee": "{{percent}}% Gebühr auf Online- und Agenten-Bestellungen",
+        "planNoFee": "0% Plattformgebühr — Sie behalten jeden Verkauf",
+        "planUnmeteredAi": "Unbegrenzte KI",
+        "planAiShots_one": "{{count}} KI-Fotoaufnahme / Monat",
+        "planAiShots_other": "{{count}} KI-Fotoaufnahmen / Monat",
+        "planLimits": "{{products}} Produkte · {{storage}} GB",
+        "upgrade": "Upgrade",
+        "trialUntil": "Testphase bis {{date}}",
+        "active": "Aktiv",
+        "onlineSalesTitle": "Online-Verkäufe diesen Monat",
+        "orderCount_one": "{{count}} Online- und Agenten-Bestellung",
+        "orderCount_other": "{{count}} Online- und Agenten-Bestellungen",
+        "agentSplit": "CHF {{amount}} über KI-Agenten",
+        "feesOnPro": "Plattformgebühren (0% mit Pro)",
+        "feesOnFree": "Plattformgebühren ({{percent}} auf {{appliesTo}})",
+        "posNeverFee": "Verkäufe vor Ort an der Kasse tragen in keinem Plan eine Zolto-Gebühr.",
+        "upsell": "Mit Pro würden Sie diesen Monat CHF {{savings}} sparen — ab CHF {{breakEven}}/Monat online schlägt der Pauschalpreis von CHF {{proPrice}} für Pro die Gebühr von {{percent}}.",
+        "upgradeNow": "Jetzt upgraden",
+        "aiTitle": "KI-Fotoaufnahmen",
+        "unmetered": "Unbegrenzt",
+        "unmeteredNote": "— KI-Fotos, Beschreibungen und Chat werden mit Pro nie gezählt.",
+        "aiUsed": "von {{allowance}} diesen Monat genutzt",
+        "aiNote": "Ihr Kontingent wird monatlich zurückgesetzt. Mit einem Upgrade auf Pro nutzen Sie die KI unbegrenzt — Anfragen werden in keinem Plan gezählt.",
+        "logTitle": "KI-Generierungsprotokoll",
+        "ledgerMonthlyGrant": "Plan-Kontingent (vor der Umstellung)",
+        "ledgerPurchase": "Kauf eines Guthabenpakets (vor der Umstellung)",
+        "ledgerConsumption": "KI-Foto generiert",
+        "ledgerAdjustment": "Korrektur",
+        "teamTitle": "Teamplätze",
+        "seatsUsed": "{{used}} von {{limit}} belegt",
+        "removeAria": "{{email}} entfernen",
+        "invited": "eingeladen",
+        "revoke": "Widerrufen",
+        "invitePlaceholder": "teamkollege@example.com",
+        "invite": "Einladen",
+        "seatsFull": "Alle Plätze sind belegt — mit einem Upgrade erhalten Sie mehr.",
+        "storeSettingsTitle": "Shop-Einstellungen",
+        "customDomain": "Eigene Domain",
+        "proPlanBadge": "Pro-Plan",
+        "domainPlaceholder": "shop.example.com",
+        "save": "Speichern",
+        "domainOk": "✓ {{domain}} zeigt auf uns — HTTPS wird beim ersten Besuch automatisch ausgestellt.",
+        "domainPending": "Erstellen Sie einen CNAME-Eintrag: {{domain}} → {{expected}}, und warten Sie dann ein paar Minuten.",
+        "domainLocked": "Betreiben Sie Ihren Shop unter Ihrer eigenen Domain mit verwaltetem HTTPS.",
+        "storeCurrency": "Shop-Währung",
+        "currencyNote": "Preise in Ihrer Storefront und im Stripe-Checkout werden in dieser Währung angezeigt und abgerechnet. Die Beträge bleiben wie eingegeben.",
+        "stripeFooter": "Zahlungen werden von Stripe abgewickelt. Jederzeit kündbar — Ihr Shop und Ihre Daten bleiben im kostenlosen Plan.",
+        "toastInviteSent": "Einladung gesendet",
+        "toastInviteLink": "E-Mail ist nicht konfiguriert — kopieren Sie stattdessen den Einladungslink.",
+        "toastSettingsSaved": "Einstellungen gespeichert",
+        "toastUpgraded": "Plan aktualisiert — willkommen an Bord!",
+        "toastCancelled": "Checkout abgebrochen — es wurde nichts belastet"
+      }
+    },
+    "admin": {
+      "auth": {
+        "title": "Adminzugang",
+        "description": "Bitte melden Sie sich an, um auf den Adminbereich zuzugreifen.",
+        "denied": "Zugriff verweigert"
+      },
+      "header": {
+        "eyebrow": "Ihre Werkbank",
+        "title": "Katalogverwaltung",
+        "addByCamera": "Per Kamera hinzufügen",
+        "csvImport": "CSV-Import",
+        "duplicateCleanup": "Duplikate bereinigen",
+        "planBilling": "Plan & Abrechnung",
+        "recategorise": "Neu kategorisieren",
+        "recategoriseTitle": "Alle Produkte in 'Other' per KI in die richtige Kategorie einordnen (vor dem Anwenden prüfen)",
+        "autoTranslate": "Auto-Übersetzen",
+        "autoTranslateTitle": "Fehlende englische Übersetzungen per KI ergänzen (vor dem Anwenden prüfen)",
+        "translateLocales": "de/en/fr/it übersetzen",
+        "translateLocalesTitle": "Fehlende deutsche, englische, französische und italienische Shop-Übersetzungen für jedes Produkt per KI ergänzen",
+        "reconcileStripe": "Stripe-Zahlungen abgleichen",
+        "reconcileStripeTitle": "Nach Stripe-Zahlungen suchen, die in unseren Aufzeichnungen fehlen, und für jede eine Zuordnungsanfrage per E-Mail verschicken",
+        "confirmPos": "Verkäufe vor Ort bestätigen",
+        "confirmPosTitle": "Verkäufe vor Ort mit reinem Betrag finden und per E-Mail bestätigen lassen, welches Stück jeweils verkauft wurde",
+        "stripeConnected": "Stripe verbunden",
+        "stripeConnectedTitle": "Das eigene Stripe-Konto dieses Shops ist verknüpft — Auszahlungen aus dem Checkout gehen direkt an Sie",
+        "connectStripe": "Stripe verbinden",
+        "connectStripeTitle": "Verknüpfen Sie Ihr EIGENES Stripe-Konto, damit die Kundschaft Ihres Shops direkt darauf einzahlt",
+        "tour": "Tour",
+        "tourTitle": "Die geführte Tour durch dieses Dashboard erneut abspielen",
+        "tourAria": "Geführte Tour erneut abspielen",
+        "addProduct": "Produkt hinzufügen"
+      },
+      "form": {
+        "title": "Neues Produkt hinzufügen",
+        "name": "Name",
+        "namePlaceholder": "z. B. {{example}}",
+        "price": "Preis (CHF)",
+        "pricePlaceholder": "z. B. 185.00",
+        "category": "Kategorie",
+        "quantity": "Menge",
+        "imageUrl": "Bild-URL",
+        "description": "Beschreibung",
+        "descriptionPlaceholder": "Beschreiben Sie das Stück...",
+        "checking": "Wird geprüft...",
+        "submit": "Produkt hinzufügen",
+        "cancel": "Abbrechen"
+      },
+      "duplicate": {
+        "title": "Mögliches Duplikat erkannt",
+        "description": "Die folgenden bestehenden Produkte ähneln dem, das Sie gerade hinzufügen:",
+        "addAnyway": "Trotzdem hinzufügen"
+      },
+      "stats": {
+        "totalProducts": "Produkte gesamt",
+        "inStock": "An Lager",
+        "soldOut": "Ausverkauft",
+        "inventoryValue": "Lagerwert"
+      },
+      "insights": {
+        "eyebrow": "KI",
+        "title": "Verkaufs- & Lager-Insights",
+        "description": "KI-generierte Analyse Ihres Katalogs und Ihrer Verkaufsdaten",
+        "hide": "Ausblenden",
+        "show": "Anzeigen",
+        "refresh": "Aktualisieren",
+        "generate": "Insights erstellen",
+        "loading": "Ihr Katalog und Ihre Verkaufsdaten werden analysiert…",
+        "highlights": "Highlights",
+        "recommendations": "Empfehlungen",
+        "topCategory": "Top-Kategorie",
+        "slowMovers": "Ladenhüter",
+        "empty": "Klicken Sie auf \"Insights erstellen\", um eine KI-gestützte Analyse Ihrer Verkäufe und Ihres Lagers zu erhalten."
+      },
+      "table": {
+        "product": "Produkt",
+        "category": "Kategorie",
+        "price": "Preis",
+        "qty": "Anz.",
+        "status": "Status",
+        "actions": "Aktionen"
+      },
+      "empty": {
+        "eyebrow": "Ein leeres Blatt für Ihre Werkbank",
+        "title": "Noch keine Produkte",
+        "description": "Fügen Sie Ihr erstes Produkt manuell, per CSV-Import oder per Foto-Massenupload hinzu.",
+        "addFirst": "Erstes Produkt hinzufügen",
+        "csvImport": "CSV-Import"
+      },
+      "row": {
+        "visible": "Sichtbar",
+        "hidden": "Verborgen",
+        "editTitle": "Produkt bearbeiten",
+        "cancelEditTitle": "Bearbeitung abbrechen",
+        "hideTitle": "Produkt ausblenden",
+        "showTitle": "Produkt anzeigen",
+        "deleteTitle": "Produkt löschen",
+        "confirmDelete": "Entf.",
+        "cancelDelete": "Nein",
+        "fieldName": "Name ({{code}})",
+        "fieldDescription": "Beschreibung ({{code}})",
+        "fieldPrice": "Preis (CHF)",
+        "fieldCategory": "Kategorie",
+        "save": "Speichern",
+        "cancel": "Abbrechen"
+      },
+      "instagram": {
+        "title": "Kuratiertes Beitragsraster",
+        "description": "Fügen Sie unten URLs von Instagram-Beiträgen oder -Reels ein. Sie erscheinen als eingebettete Beiträge auf der Startseite."
+      },
+      "logs": {
+        "eyebrow": "Debug",
+        "title": "KI-Protokolle des Massenuploads",
+        "description": "Fehler bei KI-Analyse und Produkterstellung während des Massenuploads",
+        "empty": "Noch keine Fehler erfasst.",
+        "thTime": "Zeit",
+        "thOperation": "Vorgang",
+        "thReference": "Referenz",
+        "thError": "Fehler"
+      },
+      "discord": {
+        "title": "Discord-Integration",
+        "description": "Posten Sie in Ihrem verbundenen Discord-Kanal eine Nachricht mit Foto, Beschreibung und Preis — das Produkt wird automatisch in den Katalog aufgenommen.",
+        "exampleLabel": "Beispiel für eine Discord-Nachricht:",
+        "note": "Der Bot hört Ihren festgelegten Discord-Kanal in Echtzeit über die Gateway-API ab."
+      },
+      "dialogs": {
+        "recategoriseTitle": "Kategorieänderungen prüfen",
+        "recategoriseDescription": "Diese Produkte werden aus 'Other' in die angezeigte Kategorie verschoben. Entfernen Sie den Haken bei allem, was nicht geändert werden soll.",
+        "translateTitle": "Übersetzungen prüfen",
+        "translateDescription": "Diese englischen Übersetzungen werden ergänzt. Entfernen Sie den Haken bei allem, was nicht übernommen werden soll."
+      },
+      "toasts": {
+        "stripeConnected": "Stripe-Konto verbunden — Online-Zahlungen sind aktiv.",
+        "stripeConnectFailedReason": "Stripe-Verbindung fehlgeschlagen: {{reason}}",
+        "stripeConnectFailed": "Stripe-Verbindung fehlgeschlagen. Bitte versuchen Sie es erneut.",
+        "productAdded": "Produkt erfolgreich hinzugefügt",
+        "productAddFailed": "Produkt konnte nicht hinzugefügt werden",
+        "fillRequired": "Bitte füllen Sie alle Pflichtfelder aus",
+        "validPrice": "Bitte geben Sie einen gültigen Preis ein",
+        "quantityFailed": "Menge konnte nicht aktualisiert werden",
+        "visibilityFailed": "Sichtbarkeit konnte nicht aktualisiert werden",
+        "productDeleted": "Produkt gelöscht",
+        "productDeleteFailed": "Produkt konnte nicht gelöscht werden",
+        "productUpdated": "Produkt aktualisiert",
+        "productUpdateFailed": "Produkt konnte nicht aktualisiert werden",
+        "nameDescriptionRequired": "Name und Beschreibung sind erforderlich",
+        "enterValidPrice": "Geben Sie einen gültigen Preis ein",
+        "translateAllPresent": "Alle Produkte haben bereits englische Übersetzungen.",
+        "translatePreviewFailed": "Vorschau der automatischen Übersetzung fehlgeschlagen. Bitte versuchen Sie es erneut.",
+        "translateFailed": "Automatische Übersetzung fehlgeschlagen. Bitte versuchen Sie es erneut.",
+        "translatedToEnglish_one": "{{count}} Produkt ins Englische übersetzt.",
+        "translatedToEnglish_other": "{{count}} Produkte ins Englische übersetzt.",
+        "localesAllPresent": "Alle Produkte haben bereits de/en/fr/it-Übersetzungen.",
+        "localesFailed": "Shop-Übersetzung fehlgeschlagen. Bitte versuchen Sie es erneut.",
+        "localesTranslated_one": "{{count}} Produkt ins Deutsche, Englische, Französische und Italienische übersetzt.",
+        "localesTranslated_other": "{{count}} Produkte ins Deutsche, Englische, Französische und Italienische übersetzt.",
+        "recategoriseAllDone": "Alle nicht kategorisierten Produkte waren bereits eingeordnet.",
+        "recategorisePreviewFailed": "Vorschau der Neukategorisierung fehlgeschlagen. Bitte versuchen Sie es erneut.",
+        "recategoriseFailed": "Neukategorisierung fehlgeschlagen. Bitte versuchen Sie es erneut.",
+        "recategorised_one": "{{count}} Produkt neu kategorisiert.",
+        "recategorised_other": "{{count}} Produkte neu kategorisiert.",
+        "stripeFoundSent_one": "{{count}} nicht zugeordnete Zahlung gefunden — Prüf-E-Mail verschickt.",
+        "stripeFoundSent_other": "{{count}} nicht zugeordnete Zahlungen gefunden — Prüf-E-Mail verschickt.",
+        "stripeFoundNotSent_one": "{{count}} nicht zugeordnete Zahlung gefunden — Prüf-E-Mail konnte nicht verschickt werden, prüfen Sie die Server-Logs.",
+        "stripeFoundNotSent_other": "{{count}} nicht zugeordnete Zahlungen gefunden — Prüf-E-Mail konnte nicht verschickt werden, prüfen Sie die Server-Logs.",
+        "stripeNoCandidates_one": "{{count}} nicht zugeordnete Zahlung gefunden, aber kein vorrätiges Produkt lag preislich nahe genug für eine Vermutung.",
+        "stripeNoCandidates_other": "{{count}} nicht zugeordnete Zahlungen gefunden, aber kein vorrätiges Produkt lag preislich nahe genug für eine Vermutung.",
+        "stripeClean": "Keine nicht zugeordneten Stripe-Zahlungen gefunden ({{count}} geprüft).",
+        "stripeReconcileFailed": "Stripe-Abgleich fehlgeschlagen. Bitte versuchen Sie es erneut.",
+        "posFoundSent_one": "{{count}} Verkauf mit reinem Betrag zu bestätigen — Prüf-E-Mail verschickt.",
+        "posFoundSent_other": "{{count}} Verkäufe mit reinem Betrag zu bestätigen — Prüf-E-Mail verschickt.",
+        "posFoundNotSent_one": "{{count}} Verkauf mit reinem Betrag zu bestätigen — Prüf-E-Mail konnte nicht verschickt werden, prüfen Sie die Server-Logs.",
+        "posFoundNotSent_other": "{{count}} Verkäufe mit reinem Betrag zu bestätigen — Prüf-E-Mail konnte nicht verschickt werden, prüfen Sie die Server-Logs.",
+        "posNoCandidates_one": "{{count}} Verkauf mit reinem Betrag gefunden, aber kein vorrätiges Stück lag preislich nahe genug für eine Vermutung.",
+        "posNoCandidates_other": "{{count}} Verkäufe mit reinem Betrag gefunden, aber kein vorrätiges Stück lag preislich nahe genug für eine Vermutung.",
+        "posClean": "Keine nicht zugeordneten Verkäufe vor Ort gefunden ({{count}} geprüft).",
+        "posReconcileFailed": "Abgleich der Verkäufe vor Ort fehlgeschlagen. Bitte versuchen Sie es erneut.",
+        "insightsFailed": "Insights konnten nicht erstellt werden. Bitte versuchen Sie es erneut."
+      }
+    },
+    "csv": {
+      "auth": {
+        "required": "Admin erforderlich",
+        "denied": "Zugriff verweigert"
+      },
+      "header": {
+        "eyebrow": "Admin",
+        "title": "CSV-/Tabellen-Import",
+        "description": "Produktdaten aus einer CSV-Datei oder aus Google Sheets importieren",
+        "backToAdmin": "Admin"
+      },
+      "migration": {
+        "title": "Wechseln Sie von Stripe, SumUp oder Worldline?",
+        "description": "Nehmen Sie Ihren bestehenden Katalog mit — bis Sie jeden Artikel geprüft haben, wird nichts in Ihren Shop geschrieben.",
+        "stripeLinked": "Ihr Stripe-Konto ist verknüpft — importieren Sie Ihren Produktkatalog mit einem Klick.",
+        "stripeUnlinked": "Verknüpfen Sie das Stripe-Konto, das Sie bereits haben: Ihr Checkout funktioniert weiter und Ihr Katalog wird mit einem Klick importiert.",
+        "stripeFetching": "Katalog wird geladen…",
+        "stripeImport": "Stripe-Katalog importieren",
+        "stripeConnect": "Stripe-Konto verknüpfen",
+        "sumupDescription": "Exportieren Sie in SumUp Ihren Artikelkatalog als CSV (Artikel → Exportieren) und laden Sie die Datei hier hoch.",
+        "sumupUpload": "SumUp-Export hochladen",
+        "worldlineDescription": "Laden Sie einen Artikel- oder Transaktionsexport von Worldline/SIX (CSV) hoch — wiederholte Verkäufe werden zu je einem Produkt zusammengefasst.",
+        "worldlineUpload": "Worldline-Export hochladen",
+        "readingExport": "Export wird gelesen…"
+      },
+      "template": {
+        "title": "Vorlage herunterladen",
+        "columnsLabel": "Spalten:",
+        "categoriesLabel": "Kategorien müssen exakt lauten:",
+        "download": "Vorlage herunterladen"
+      },
+      "upload": {
+        "title": "CSV-Datei hochladen",
+        "descriptionPrefix": "Speichern Sie Ihre Tabelle als CSV (UTF-8). Excel:",
+        "excelPath": "Datei → Speichern unter → CSV UTF-8",
+        "selectFile": "Klicken, um eine .csv-Datei auszuwählen",
+        "dragDrop": "oder hierher ziehen und ablegen"
+      },
+      "sheets": {
+        "title": "Google-Sheets-URL",
+        "shareBefore": "Freigabe Ihrer Tabelle für",
+        "shareEmphasis": "\"Jeder mit dem Link\"",
+        "shareAfter": ", dann fügen Sie die URL unten ein.",
+        "columnsNote": "Das erste Tabellenblatt (Register) wird importiert. Die Spaltennamen in der ersten Zeile müssen der Vorlage entsprechen.",
+        "fetching": "Wird geladen…",
+        "load": "Tabelle laden"
+      },
+      "handwriting": {
+        "title": "Fotos handschriftlicher Inventarlisten",
+        "aiBadge": "KI",
+        "description": "Fotografieren Sie Seiten aus Ihrem Heft oder Notizbuch — wählen Sie beliebig viele auf einmal aus. Die KI liest aus jedem Foto Name, Preis, Kategorie und Menge jedes Artikels und erstellt eine gemeinsame Liste, die Sie vor dem Import prüfen und bearbeiten können.",
+        "reading": "Ihr Inventar wird gelesen…",
+        "photoProgress": "Foto {{current}} von {{total}}",
+        "uploadedAlt": "Hochgeladenes Inventar {{index}}",
+        "previousAlt": "Vorheriger Upload {{index}}",
+        "upload": "Fotos Ihrer Notizen hochladen",
+        "formats": "JPEG, PNG, WebP oder HEIC · max. 10 MB pro Bild · mehrere möglich"
+      },
+      "preview": {
+        "warningsTitle": "Vor dem Import prüfenswert",
+        "validRows": "gültige Zeilen",
+        "errorRows": "Zeilen mit Fehlern (werden übersprungen)",
+        "selectedForImport": "für den Import ausgewählt",
+        "back": "Zurück",
+        "importing": "Import läuft {{done}}/{{total}}…",
+        "importButton_one": "{{count}} Produkt importieren",
+        "importButton_other": "{{count}} Produkte importieren",
+        "uncheckNote": "Entfernen Sie den Haken bei jeder Zeile, die Sie nicht importieren möchten — bis Sie auf Importieren klicken, wird nichts geschrieben.",
+        "errorNote": "Zeilen mit Fehlern werden übersprungen. Bearbeiten Sie Name, Beschreibung, Preis oder Kategorie direkt in der Tabelle oben, um sie vor dem Import zu korrigieren."
+      },
+      "table": {
+        "selectAllAria": "Alle Zeilen auswählen",
+        "selectRowAria": "{{name}} für den Import auswählen",
+        "rowFallback": "Zeile",
+        "thName": "Name",
+        "thAction": "Aktion",
+        "thCategory": "Kategorie",
+        "thPrice": "Preis",
+        "thQty": "Anz.",
+        "thImageUrl": "Bild-URL",
+        "thIssues": "Probleme",
+        "update": "Update #{{id}}",
+        "updateTitle": "Aktualisiert das bestehende Produkt #{{id}}",
+        "create": "Anlegen",
+        "phName": "Name",
+        "phDescription": "Beschreibung",
+        "phNameEn": "Name (Englisch)",
+        "phDescriptionEn": "Beschreibung (Englisch)",
+        "phNameFr": "Name (Französisch)",
+        "phDescriptionFr": "Beschreibung (Französisch)",
+        "phNameIt": "Name (Italienisch)",
+        "phDescriptionIt": "Beschreibung (Italienisch)"
+      },
+      "errors": {
+        "nameRequired": "Name erforderlich",
+        "descriptionRequired": "Beschreibung erforderlich",
+        "invalidPrice": "ungültiger Preis",
+        "invalidCategory": "ungültige Kategorie",
+        "categoryMustBeOneOf": "Kategorie muss eine von diesen sein: {{categories}}"
+      },
+      "done": {
+        "created_one": "{{count}} Produkt erstellt",
+        "created_other": "{{count}} Produkte erstellt",
+        "updatedSuffix": ", {{count}} aktualisiert",
+        "updatedNote": "Zeilen, die zu einem bestehenden Produktnamen passen, wurden an Ort und Stelle aktualisiert statt doppelt angelegt.",
+        "visibleNote": "Die Produkte sind jetzt im Shop sichtbar. Fotos können Sie im Adminbereich ergänzen.",
+        "failed_one": "{{count}} fehlgeschlagen: {{names}}",
+        "failed_other": "{{count}} fehlgeschlagen: {{names}}",
+        "importMore": "Weitere importieren",
+        "goToAdmin": "Zum Adminbereich"
+      },
+      "toasts": {
+        "noDataRows": "Keine Datenzeilen gefunden — prüfen Sie, ob die Datei eine Kopfzeile und mindestens eine Datenzeile enthält",
+        "notCsv": "Bitte laden Sie eine .csv-Datei hoch. Bei Excel: Datei → Speichern unter → CSV.",
+        "readFailed": "Datei konnte nicht gelesen werden",
+        "badImageType": "{{file}}: Bitte laden Sie ein JPEG-, PNG-, WebP- oder HEIC-Bild hoch",
+        "imageTooLarge": "{{file}}: Bild muss kleiner als 10 MB sein",
+        "readImagesFailed": "Ein oder mehrere Bilder konnten nicht gelesen werden",
+        "aiParseFailed": "KI-Auswertung fehlgeschlagen für: {{files}}",
+        "aiNoItems": "Die KI konnte aus diesen Fotos keine Artikel auslesen — versuchen Sie es mit schärferen Fotos",
+        "aiExtracted": "Die KI hat {{items}} aus {{photos}} ausgelesen",
+        "itemCount_one": "{{count}} Artikel",
+        "itemCount_other": "{{count}} Artikel",
+        "photoCount_one": "{{count}} Foto",
+        "photoCount_other": "{{count}} Fotos",
+        "enterSheetUrl": "Geben Sie eine Google-Sheets-URL ein",
+        "noRowsSelected": "Keine Zeilen für den Import ausgewählt",
+        "batchFailed": "Ein Stapel konnte nicht importiert werden: {{message}}",
+        "migrationEmpty": "In den {{source}}-Daten wurden keine Produkte gefunden — prüfen Sie, ob Sie die Produkt-/Katalogliste exportiert haben.",
+        "migrationFound_one": "{{count}} Produkt in Ihren {{source}}-Daten gefunden — bitte vor dem Import prüfen",
+        "migrationFound_other": "{{count}} Produkte in Ihren {{source}}-Daten gefunden — bitte vor dem Import prüfen"
+      }
+    },
+    "components": {
+      "signIn": {
+        "google": "Weiter mit Google",
+        "apple": "Weiter mit Apple",
+        "orEmail": "Oder mit E-Mail fortfahren",
+        "emailPlaceholder": "name@example.com",
+        "sending": "Wird gesendet…",
+        "sendLink": "Link senden",
+        "linkSentBefore": "Wir haben einen Anmeldelink an",
+        "linkSentAfter": "geschickt. Er ist einmal gültig und läuft in 15 Minuten ab.",
+        "previewNote": "E-Mail ist auf dieser Installation nicht konfiguriert — nutzen Sie den Link direkt:",
+        "error": "Der Link konnte nicht gesendet werden. Bitte versuchen Sie es erneut."
+      },
+      "signOut": {
+        "label": "Abmelden",
+        "busy": "Wird abgemeldet…"
+      },
+      "manus": {
+        "logoAlt": "Dialoggrafik",
+        "description": "Bitte melden Sie sich mit Manus an, um fortzufahren",
+        "login": "Mit Manus anmelden"
+      },
+      "bulkChange": {
+        "selectedNote_one": "{{count}} von {{total}} ausgewählt — es ändert sich nichts, bis Sie bestätigen.",
+        "selectedNote_other": "{{count}} von {{total}} ausgewählt — es ändert sich nichts, bis Sie bestätigen.",
+        "permanentNote": "Diese Aktion ist endgültig und kann nicht rückgängig gemacht werden.",
+        "cancel": "Abbrechen",
+        "confirmDefault_one": "{{count}} Änderung bestätigen",
+        "confirmDefault_other": "{{count}} Änderungen bestätigen",
+        "confirmLabeled_one": "{{count}} {{label}} bestätigen",
+        "confirmLabeled_other": "{{count}} {{label}} bestätigen"
+      },
+      "instagram": {
+        "add": "Hinzufügen",
+        "addedToast": "Beitrag zum Raster hinzugefügt",
+        "addFailed": "Beitrag konnte nicht hinzugefügt werden",
+        "removedToast": "Beitrag entfernt",
+        "removeFailed": "Beitrag konnte nicht entfernt werden",
+        "loading": "Beiträge werden geladen…",
+        "emptyTitle": "Noch keine Beiträge. Fügen Sie oben die URL eines Instagram-Beitrags ein, um zu starten.",
+        "emptyTip": "Tipp: Öffnen Sie einen Beitrag auf Instagram, kopieren Sie die URL aus dem Browser und fügen Sie sie hier ein.",
+        "countInGrid_one": "{{count}} Beitrag im Raster",
+        "countInGrid_other": "{{count}} Beiträge im Raster",
+        "openPost": "Beitrag öffnen",
+        "removeFromGrid": "Aus dem Raster entfernen",
+        "footnote": "Beiträge erscheinen auf der Startseite als eingebettete Instagram-Widgets. Unterstützt werden /p/-Beiträge und /reel/-Reels."
+      },
+      "onboarding": {
+        "ariaLabel": "Setup-Checkliste",
+        "allDoneTitle": "Ihr Shop ist vollständig eingerichtet 🎉",
+        "title": "Ihren Shop live schalten",
+        "hideAria": "Checkliste ausblenden",
+        "goThere": "Öffnen",
+        "showMe": "Zeigen",
+        "blocked": "Blockiert",
+        "hideChecklist": "Diese Checkliste ausblenden"
+      },
+      "capabilities": {
+        "ariaLabel": "Ihre Zolto-Werkstatt",
+        "eyebrow": "Ihre Werkstatt auf einen Blick",
+        "tagline": "Online & vor Ort verkaufen",
+        "storeTitle": "Onlineshop",
+        "storeBlurb": "Ihr Katalog, live im Netz",
+        "statusLive": "Live",
+        "statusConnect": "Verbinden",
+        "posTitle": "Tap to Pay",
+        "posBlurb": "Karte & TWINT am Markt annehmen",
+        "statusReady": "Bereit",
+        "aiTitle": "KI-Studio",
+        "aiBlurb": "Fotos werden zu Produkten",
+        "statusActive": "Aktiv",
+        "insightsTitle": "Statistiken",
+        "insightsBlurb": "Sehen, was sich verkauft",
+        "statusGenerate": "Erstellen"
+      },
+      "productImages": {
+        "toggleHide": "Zusatzbilder ausblenden",
+        "toggleManage": "Zusatzbilder verwalten",
+        "forProductBefore": "Zusatzbilder für",
+        "forProductAfter": "— im Produktfenster durchblätterbar.",
+        "loading": "Wird geladen…",
+        "photoAlt": "Produktfoto",
+        "removeImage": "Bild entfernen",
+        "add": "Hinzufügen",
+        "emptyNote": "Noch keine Zusatzbilder. Klicken Sie auf das +, um hochzuladen.",
+        "restyle": "Hauptfoto mit KI neu gestalten",
+        "shotsLeft_one": "{{count}} Aufnahme diesen Monat übrig",
+        "shotsLeft_other": "{{count}} Aufnahmen diesen Monat übrig",
+        "styleClean": "Klare Katalogaufnahme vor nahtlosem weissem Hintergrund, weiches Studiolicht",
+        "styleLifestyle": "Elegantes Lifestyle-Flatlay auf Naturleinen mit weichem Morgenlicht",
+        "styleMacro": "Luxuriöse Makroaufnahme, die Material und Textur hervorhebt",
+        "allowanceUsedTitle": "Monatliches KI-Fotokontingent aufgebraucht — für unbegrenzte KI auf Pro upgraden",
+        "generateTitle": "Ein KI-gestaltetes Bild erzeugen",
+        "generate": "Erzeugen",
+        "allowanceUsedBefore": "Kontingent für diesen Monat aufgebraucht — upgraden Sie auf Pro unter",
+        "allowanceLink": "Plan & Abrechnung",
+        "allowanceUsedAfter": "für unbegrenzte KI.",
+        "disclosure": "KI-gestaltete Bilder werden als KI-generiert gekennzeichnet.",
+        "toastAiAdded": "KI-Foto hinzugefügt",
+        "toastAiAddedRemaining_one": "KI-Foto hinzugefügt — {{count}} diesen Monat übrig",
+        "toastAiAddedRemaining_other": "KI-Foto hinzugefügt — {{count}} diesen Monat übrig",
+        "toastImageAdded": "Bild hinzugefügt",
+        "toastUploadFailed": "Bild konnte nicht hochgeladen werden",
+        "toastImageRemoved": "Bild entfernt",
+        "toastRemoveFailed": "Bild konnte nicht entfernt werden",
+        "toastTooLarge": "{{name}} ist zu gross (max. 8 MB)"
+      },
+      "dashboard": {
+        "signInTitle": "Anmelden, um fortzufahren",
+        "signInDescription": "Der Zugriff auf dieses Dashboard erfordert eine Anmeldung. Wählen Sie, wie Sie sich anmelden möchten.",
+        "toggleNav": "Navigation umschalten",
+        "navigation": "Navigation",
+        "page1": "Seite 1",
+        "page2": "Seite 2",
+        "signOut": "Abmelden",
+        "menu": "Menü"
+      },
+      "tour": {
+        "skipAria": "Tour überspringen",
+        "stepAria": "Tour-Schritt {{current}} von {{total}}",
+        "stepLabel": "Schritt {{current}} von {{total}}",
+        "skip": "Überspringen",
+        "back": "Zurück",
+        "next": "Weiter",
+        "done": "Fertig"
+      }
+    },
+    "tour": {
+      "addProduct": {
+        "add": {
+          "title": "Fügen Sie Ihr erstes Produkt hinzu",
+          "body": "Klicken Sie hier. Machen Sie ein Foto — die KI entwirft Titel, Beschreibung und Preis für Sie."
+        },
+        "bulk": {
+          "title": "… oder importieren Sie gleich eine ganze Kiste",
+          "body": "Haben Sie einen Schwung Artikel? Richten Sie die Kamera auf jeden einzelnen — pro Foto entsteht ein Produktentwurf."
+        }
+      },
+      "connectStripe": {
+        "connect": {
+          "title": "Verbinden Sie Ihr Stripe-Konto",
+          "body": "Klicken Sie hier, um Ihr eigenes Stripe zu verknüpfen — die Kundschaft zahlt direkt darauf ein, und Tap to Pay in der POS-App wird freigeschaltet."
+        }
+      },
+      "admin": {
+        "welcome": {
+          "title": "Willkommen in Ihrem Katalog",
+          "body": "Das ist die Schaltzentrale Ihres Shops — Produkte anlegen und bearbeiten, in Massen importieren und sehen, wie der Shop läuft. Hier ist eine 30-Sekunden-Tour."
+        },
+        "addProduct": {
+          "title": "Produkt hinzufügen",
+          "body": "Legen Sie einen einzelnen Artikel von Hand an — Name, Preis, Kategorie, Foto und Beschreibung. Die KI kann die Beschreibung für Sie entwerfen."
+        },
+        "csvImport": {
+          "title": "In Massen importieren",
+          "body": "Haben Sie bereits eine Tabelle? Importieren Sie Ihren ganzen Katalog auf einmal per CSV und hängen Sie die Bilder per Massen-Foto-Upload an."
+        },
+        "autoTranslate": {
+          "title": "Lassen Sie die KI die Lücken füllen",
+          "body": "Auto-Übersetzen und Neu kategorisieren ergänzen per KI fehlende englische Texte und sortieren Produkte in die richtige Kategorie — Sie prüfen alles, bevor etwas übernommen wird."
+        },
+        "connectStripe": {
+          "title": "Direkt bezahlt werden",
+          "body": "Verbinden Sie Ihr eigenes Stripe-Konto, damit die Kundschaft Ihres Shops direkt darauf einzahlt. Bis dahin fällt der Checkout auf einen manuellen Ablauf zurück."
+        },
+        "insights": {
+          "title": "Sehen Sie, was funktioniert",
+          "body": "Insights fasst Ihre Bestellungen und Ihren Umsatz zusammen, damit Sie Ihre Bestseller erkennen. Das war die Tour — Sie können sie jederzeit erneut abspielen."
+        }
+      }
+    },
+    "onboarding": {
+      "tasks": {
+        "claimAdmin": {
+          "title": "Übernehmen Sie Ihren Shop",
+          "body": "Melden Sie sich an, damit dieses Konto zum Admin des Shops wird."
+        },
+        "brandStore": {
+          "title": "Fügen Sie Ihr Branding hinzu",
+          "body": "Laden Sie Ihr Logo hoch und wählen Sie Ihre Markenfarbe — Ihr Shop gestaltet sich daraus selbst."
+        },
+        "firstProduct": {
+          "title": "Fügen Sie Ihr erstes Produkt hinzu",
+          "body": "Machen Sie ein Foto und lassen Sie die KI die Beschreibung entwerfen, oder importieren Sie eine CSV-Datei Ihres Katalogs.",
+          "migrateTitle": "Holen Sie Ihren Katalog von {{provider}}",
+          "migrateBody": "Exportieren Sie Ihre Artikel als CSV aus Ihrem {{provider}}-Dashboard und laden Sie die Datei auf der Import-Seite hoch — Sie prüfen jeden Artikel, bevor etwas geschrieben wird.",
+          "stripeTitle": "Importieren Sie Ihren Stripe-Katalog",
+          "stripeBody": "Sobald Ihr Stripe-Konto verbunden ist (der Zahlungsschritt unten), holt ein Klick auf der Import-Seite Ihre Produkte herüber."
+        },
+        "connectStripe": {
+          "title": "Zahlungen verbinden",
+          "body": "Verknüpfen Sie Ihr Stripe-Konto, um online Karten und am Markt TWINT / Tap to Pay zu akzeptieren.",
+          "migrateBody": "Verknüpfen Sie das Stripe-Konto, das Sie bereits haben — Ihr Checkout läuft weiter, und der Ein-Klick-Katalogimport oben wird freigeschaltet."
+        },
+        "firstAiPhoto": {
+          "title": "Gestalten Sie ein Produktfoto mit KI",
+          "body": "Machen Sie aus einem Handyfoto eine saubere Katalogaufnahme — in Ihrem Plan enthalten."
+        },
+        "inviteStaff": {
+          "title": "Laden Sie Ihr Team ein",
+          "body_one": "Ihr Plan enthält {{count}} Mitarbeiterplatz — laden Sie eine Kollegin oder einen Kollegen ein, die Kasse zu übernehmen.",
+          "body_other": "Ihr Plan enthält {{count}} Mitarbeiterplätze — laden Sie eine Kollegin oder einen Kollegen ein, die Kasse zu übernehmen."
+        },
+        "customDomain": {
+          "title": "Richten Sie Ihre eigene Domain ein",
+          "body": "Betreiben Sie den Shop unter Ihrer eigenen Domain mit verwaltetem HTTPS."
+        },
+        "posReady": {
+          "title": "Nehmen Sie eine Kartenzahlung auf Ihrem Handy entgegen",
+          "body": "Installieren Sie die Zolto POS-App und melden Sie sich mit Ihrem POS-Schlüssel an — der erste Kartenverkauf schliesst die Einrichtung automatisch ab.",
+          "blockedStripe": "Verbinden Sie zuerst Stripe (der Schritt oben)."
+        }
+      }
+    }
+  }
+}

@@ -1,6 +1,7 @@
 import { Link } from "wouter";
 import { DIARY_POSTS } from "../content/launchContent";
 import { ScrollReveal } from "./ScrollReveal";
+import { useMarketingT } from "../lib/marketingI18n";
 
 /**
  * DiaryTeaser — the Launch Diary, surfaced where first-time visitors are.
@@ -16,20 +17,19 @@ import { ScrollReveal } from "./ScrollReveal";
  * the articles speak for themselves.
  */
 export function DiaryTeaser() {
+  const { t } = useMarketingT();
   return (
     <section className="border-t border-[var(--brand-border)] bg-[var(--brand-surface-2)]">
       <div className="mx-auto w-full max-w-5xl px-4 py-20 sm:px-6">
         <div className="mb-12 max-w-2xl">
           <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
-            the launch diary
+            {t("diaryTeaser.eyebrow")}
           </p>
           <h2 className="mt-2 font-serif text-3xl text-[var(--brand-text)]">
-            Someone already did this. Here&rsquo;s the unedited version.
+            {t("diaryTeaser.heading")}
           </h2>
           <p className="mt-3 text-[var(--brand-muted-2)]">
-            A Zurich jeweller went from Christmas-market-only to selling online,
-            and let us write down how it actually went — the slow bits included.
-            No growth hacks, no six-figure screenshots.
+            {t("diaryTeaser.body")}
           </p>
         </div>
 
@@ -63,7 +63,7 @@ export function DiaryTeaser() {
           href="/blog"
           className="mt-8 inline-block text-sm text-[var(--brand-ink)] underline decoration-[var(--brand-accent)] underline-offset-4 transition-colors hover:text-[var(--brand-accent)]"
         >
-          Read the whole diary →
+          {t("diaryTeaser.readAll")}
         </Link>
       </div>
     </section>

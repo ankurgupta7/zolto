@@ -8,8 +8,10 @@
  * (docs/planning/pricing-pivot-agent-commerce.md §5).
  */
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
+import { DEFAULT_LANGUAGE, matchSupportedLanguage } from "@/lib/languages";
 import type { inferRouterOutputs } from "@trpc/server";
 import type { AppRouter } from "../../../../server/routers";
 import { toast } from "sonner";
@@ -43,15 +45,22 @@ function Stat({
   );
 }
 
-const chf = (n: number) =>
-  `CHF ${n.toLocaleString("en-CH", { maximumFractionDigits: 2 })}`;
+/** Swiss regional locale for the active UI language ("it" → "it-CH"). */
+function numberLocale(language: string): string {
+  return `${matchSupportedLanguage(language) ?? DEFAULT_LANGUAGE}-CH`;
+}
 
 type SweepResult =
   inferRouterOutputs<AppRouter>["platform"]["reconcileAllTenants"];
 
 export default function Platform() {
+  const { t, i18n } = useTranslation("admin");
   const { user } = useAuth();
   const isSuperadmin = user?.role === "superadmin";
+
+  const locale = numberLocale(i18n.language);
+  const chf = (n: number) =>
+    `CHF ${n.toLocaleString(locale, { maximumFractionDigits: 2 })}`;
 
   const query = trpc.platform.metrics.useQuery(undefined, {
     enabled: isSuperadmin,
@@ -62,12 +71,9 @@ export default function Platform() {
   const rotateTestKey = trpc.platform.rotatePosTestKey.useMutation({
     onSuccess: (data) => {
       setTestKey(data.posApiKey);
-      toast.success(
-        "POS test key rotated — copy it now, it can't be shown again.",
-      );
+      toast.success(t("ops.platform.rotated"));
     },
-    onError: (e) =>
-      toast.error(e.message || "Could not rotate the POS test key."),
+    onError: (e) => toast.error(e.message || t("ops.platform.rotateFailed")),
   });
 
   const [sweep, setSweep] = useState<SweepResult | null>(null);
@@ -75,31 +81,34 @@ export default function Platform() {
     onSuccess: (data) => {
       setSweep(data);
       toast.success(
-        `Scanned ${data.tenantsScanned} store${data.tenantsScanned === 1 ? "" : "s"} — ${data.totals.newPendingReview} payment${data.totals.newPendingReview === 1 ? "" : "s"} queued for review.`,
+        `${t("ops.platform.toastScanned", { count: data.tenantsScanned })} — ${t(
+          "ops.platform.toastQueued",
+          { count: data.totals.newPendingReview },
+        )}`,
       );
     },
-    onError: (e) => toast.error(e.message || "Platform reconciliation failed."),
+    onError: (e) => toast.error(e.message || t("ops.platform.sweepFailed")),
   });
 
   if (!isSuperadmin) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-16 text-center">
         <p className="text-muted-foreground">
-          Platform metrics are for the Zolto operator only.
+          {t("ops.platform.operatorOnly")}
         </p>
       </div>
     );
   }
 
   if (query.isLoading) {
-    return <LoadingState label="Pulling the platform numbers…" />;
+    return <LoadingState label={t("ops.platform.loading")} />;
   }
 
   const m = query.data;
   if (!m) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-16 text-center">
-        <p className="text-muted-foreground">Metrics are unavailable.</p>
+        <p className="text-muted-foreground">{t("ops.platform.unavailable")}</p>
       </div>
     );
   }
@@ -109,102 +118,121 @@ export default function Platform() {
   return (
     <div>
       <PageHeader
-        title="Platform metrics"
-        description={`Zolto-wide, for ${m.month} (UTC). Free vendors pay ${m.model.feePercentLabel} on online and agent orders; Pro is CHF ${m.model.proPriceChf}/mo and pays none.`}
+        title={t("ops.platform.title")}
+        description={t("ops.platform.description", {
+          month: m.month,
+          fee: m.model.feePercentLabel,
+          price: m.model.proPriceChf,
+        })}
       />
 
       {/* The north star, given the space it deserves. */}
       <div className="mb-6 rounded-xl border-2 border-primary bg-card p-6">
         <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          North star — free in-person vendors selling online
+          {t("ops.platform.northStarLabel")}
         </span>
         <p className="mt-2 text-5xl font-semibold tabular-nums text-foreground">
           {ns.conversionPct === null ? "—" : `${ns.conversionPct}%`}
         </p>
         <p className="mt-2 text-sm text-muted-foreground">
-          {ns.freeInPersonVendorsSellingOnline} of {ns.freeInPersonVendors} free
-          vendors who sold in person this month also made an online or agent
-          sale.{" "}
-          {ns.conversionPct === null &&
-            "No free vendor has sold in person yet this month, so there is nothing to convert."}
+          {t("ops.platform.northStarLine", {
+            selling: ns.freeInPersonVendorsSellingOnline,
+            total: ns.freeInPersonVendors,
+          })}{" "}
+          {ns.conversionPct === null && t("ops.platform.northStarNone")}
         </p>
         <p className="mt-3 text-xs text-muted-foreground">
-          A free, in-person-only vendor pays Zolto nothing — by design. This
-          ratio is whether the model works.
+          {t("ops.platform.northStarFootnote")}
         </p>
       </div>
 
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Stat
-          label="Online + agent GMV"
+          label={t("ops.platform.statOnlineGmv")}
           value={chf(m.online.gmvChf)}
-          hint={`${m.online.orders} orders from ${m.online.sellingTenants} stores`}
+          hint={t("ops.platform.statOnlineGmvHint", {
+            orders: m.online.orders,
+            stores: m.online.sellingTenants,
+          })}
         />
         <Stat
-          label="Platform fees earned"
+          label={t("ops.platform.statFees")}
           value={chf(m.online.feeChf)}
-          hint="The Free plan's share of online sales"
+          hint={t("ops.platform.statFeesHint")}
         />
         <Stat
-          label="Agent-originated"
+          label={t("ops.platform.statAgent")}
           value={chf(m.online.agentGmvChf)}
-          hint={`${m.online.agentOrders} orders bought by AI agents`}
+          hint={t("ops.platform.statAgentHint", {
+            orders: m.online.agentOrders,
+          })}
         />
       </div>
 
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Stat
-          label="In-person GMV"
+          label={t("ops.platform.statInPersonGmv")}
           value={chf(m.inPerson.gmvChf)}
-          hint={`${m.inPerson.orders} sales — Zolto takes nothing here`}
+          hint={t("ops.platform.statInPersonHint", {
+            orders: m.inPerson.orders,
+          })}
         />
         <Stat
-          label="Stores"
+          label={t("ops.platform.statStores")}
           value={String(m.tenants.total)}
-          hint={`${m.tenants.free} free · ${m.tenants.pro} Pro`}
+          hint={t("ops.platform.statStoresHint", {
+            free: m.tenants.free,
+            pro: m.tenants.pro,
+          })}
         />
         <Stat
-          label="Pro conversion"
+          label={t("ops.platform.statProConversion")}
           value={
             m.tenants.total === 0
               ? "—"
               : `${Math.round((m.tenants.pro / m.tenants.total) * 1000) / 10}%`
           }
-          hint={`Break-even at CHF 2,500 online/mo`}
+          hint={t("ops.platform.statProConversionHint")}
         />
       </div>
 
       <SettingsCard
-        title="Stripe reconciliation — all stores"
-        description="Scan every store that has connected Stripe, each against their own account, for succeeded payments missing from our records. Each merchant is emailed their own shortlist to confirm."
+        title={t("ops.platform.sweepTitle")}
+        description={t("ops.platform.sweepDescription")}
         footer={
           <PrimaryButton
             onClick={() => reconcileAll.mutate({})}
             loading={reconcileAll.isPending}
           >
             <CreditCard className="h-4 w-4" />
-            Reconcile every store
+            {t("ops.platform.sweepButton")}
           </PrimaryButton>
         }
       >
         {sweep ? (
           <div>
             <p className="text-sm text-foreground">
-              {sweep.tenantsScanned} store
-              {sweep.tenantsScanned === 1 ? "" : "s"} scanned ·{" "}
-              {sweep.totals.scannedSucceededPayments} payments checked ·{" "}
-              {sweep.totals.newPendingReview} queued for review ·{" "}
-              {sweep.totals.newNoCandidates} with no close match ·{" "}
-              {sweep.totals.emailsSent} email
-              {sweep.totals.emailsSent === 1 ? "" : "s"} sent
+              {[
+                t("ops.platform.resultStores", { count: sweep.tenantsScanned }),
+                t("ops.platform.resultChecked", {
+                  count: sweep.totals.scannedSucceededPayments,
+                }),
+                t("ops.platform.resultQueued", {
+                  count: sweep.totals.newPendingReview,
+                }),
+                t("ops.platform.resultNoMatch", {
+                  count: sweep.totals.newNoCandidates,
+                }),
+                t("ops.platform.resultEmails", {
+                  count: sweep.totals.emailsSent,
+                }),
+              ].join(" · ")}
             </p>
 
             {sweep.tenantsFailed > 0 && (
               <p className="mt-2 flex items-center gap-1.5 text-sm text-amber-700 dark:text-amber-400">
                 <AlertTriangle className="h-4 w-4 shrink-0" />
-                {sweep.tenantsFailed} store
-                {sweep.tenantsFailed === 1 ? "" : "s"} could not be scanned —
-                listed below. The rest still completed.
+                {t("ops.platform.failedLine", { count: sweep.tenantsFailed })}
               </p>
             )}
 
@@ -213,33 +241,44 @@ export default function Platform() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b text-left text-xs uppercase tracking-wide text-muted-foreground">
-                      <th className="py-2 pr-4 font-medium">Store</th>
-                      <th className="py-2 pr-4 font-medium">Checked</th>
-                      <th className="py-2 pr-4 font-medium">To review</th>
-                      <th className="py-2 font-medium">Result</th>
+                      <th className="py-2 pr-4 font-medium">
+                        {t("ops.platform.thStore")}
+                      </th>
+                      <th className="py-2 pr-4 font-medium">
+                        {t("ops.platform.thChecked")}
+                      </th>
+                      <th className="py-2 pr-4 font-medium">
+                        {t("ops.platform.thToReview")}
+                      </th>
+                      <th className="py-2 font-medium">
+                        {t("ops.platform.thResult")}
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
-                    {sweep.perTenant.map((t) => (
-                      <tr key={t.tenantId} className="border-b last:border-0">
+                    {sweep.perTenant.map((tenant) => (
+                      <tr
+                        key={tenant.tenantId}
+                        className="border-b last:border-0"
+                      >
                         <td className="py-2 pr-4 text-foreground">
-                          {t.name}{" "}
+                          {tenant.name}{" "}
                           <span className="text-muted-foreground">
-                            /{t.slug}
+                            /{tenant.slug}
                           </span>
                         </td>
                         <td className="py-2 pr-4 tabular-nums">
-                          {t.ok ? t.scannedSucceededPayments : "—"}
+                          {tenant.ok ? tenant.scannedSucceededPayments : "—"}
                         </td>
                         <td className="py-2 pr-4 tabular-nums">
-                          {t.ok ? t.newPendingReview : "—"}
+                          {tenant.ok ? tenant.newPendingReview : "—"}
                         </td>
                         <td className="py-2 text-muted-foreground">
-                          {t.ok
-                            ? t.emailSent
-                              ? "emailed"
-                              : "nothing to send"
-                            : t.error}
+                          {tenant.ok
+                            ? tenant.emailSent
+                              ? t("ops.platform.emailed")
+                              : t("ops.platform.nothingToSend")
+                            : tenant.error}
                         </td>
                       </tr>
                     ))}
@@ -250,31 +289,28 @@ export default function Platform() {
           </div>
         ) : (
           <p className="text-sm text-muted-foreground">
-            Stores with no connected Stripe account are skipped — an
-            in-person-only merchant has no online payments to reconcile. Safe to
-            re-run: a payment already recorded is never queued twice.
+            {t("ops.platform.sweepIdle")}
           </p>
         )}
       </SettingsCard>
 
       <SettingsCard
-        title="POS test key"
-        description="The platform's own POS API key, backing the ordinary 'platform-tests' store. The POS apps' CI authenticates with it, so no pipeline ever skips a test for lack of a key — and because it is a normal per-tenant key with no special rules, CI reproduces issues faithfully."
+        title={t("ops.platform.keyTitle")}
+        description={t("ops.platform.keyDescription")}
         footer={
           <PrimaryButton
             onClick={() => rotateTestKey.mutate()}
             loading={rotateTestKey.isPending}
           >
             <KeyRound className="h-4 w-4" />
-            Rotate POS test key
+            {t("ops.platform.rotateButton")}
           </PrimaryButton>
         }
       >
         {testKey ? (
           <div>
             <p className="mb-2 text-sm text-foreground">
-              Shown once — copy it into the POS apps&apos; CI secret
-              (POS_API_KEY) now. It cannot be shown again.
+              {t("ops.platform.shownOnce")}
             </p>
             <div className="flex items-center gap-2">
               <code className="min-w-0 flex-1 break-all rounded-md border bg-muted px-3 py-2 text-xs">
@@ -286,34 +322,43 @@ export default function Platform() {
                 onClick={() => {
                   navigator.clipboard
                     .writeText(testKey)
-                    .then(() => toast.success("Key copied."))
-                    .catch(() =>
-                      toast.error("Copy failed — select it by hand."),
-                    );
+                    .then(() => toast.success(t("ops.platform.copied")))
+                    .catch(() => toast.error(t("ops.platform.copyFailed")));
                 }}
               >
                 <Copy className="h-3.5 w-3.5" />
-                Copy
+                {t("ops.platform.copy")}
               </button>
             </div>
           </div>
         ) : (
           <p className="text-sm text-muted-foreground">
-            Rotating provisions the store on first use and invalidates the
-            previous key immediately — update the CI secret in the same sitting.
+            {t("ops.platform.rotateIdle")}
           </p>
         )}
       </SettingsCard>
 
       <SettingsCard
-        title="Subscriptions"
-        description="Watch canceled and past-due through the off-season — seasonality is the model's known weak point."
+        title={t("ops.platform.subsTitle")}
+        description={t("ops.platform.subsDescription")}
       >
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <Stat label="Active" value={String(m.subscriptions.active)} />
-          <Stat label="Trialing" value={String(m.subscriptions.trialing)} />
-          <Stat label="Past due" value={String(m.subscriptions.pastDue)} />
-          <Stat label="Canceled" value={String(m.subscriptions.canceled)} />
+          <Stat
+            label={t("ops.platform.subsActive")}
+            value={String(m.subscriptions.active)}
+          />
+          <Stat
+            label={t("ops.platform.subsTrialing")}
+            value={String(m.subscriptions.trialing)}
+          />
+          <Stat
+            label={t("ops.platform.subsPastDue")}
+            value={String(m.subscriptions.pastDue)}
+          />
+          <Stat
+            label={t("ops.platform.subsCanceled")}
+            value={String(m.subscriptions.canceled)}
+          />
         </div>
       </SettingsCard>
     </div>

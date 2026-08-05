@@ -44,8 +44,11 @@ function ctx(opts: {
   userTenantId?: number;
   hostTenantId?: number | null;
 }): TrpcContext {
-  const { role = "admin", userTenantId = TENANT_A, hostTenantId = TENANT_A } =
-    opts;
+  const {
+    role = "admin",
+    userTenantId = TENANT_A,
+    hostTenantId = TENANT_A,
+  } = opts;
   return {
     req: { protocol: "https", headers: {} } as never,
     res: {} as never,
@@ -83,9 +86,7 @@ beforeEach(() => {
 
 describe("categories.list", () => {
   it("returns the host store's categories, public", async () => {
-    const res = await categoriesRouter
-      .createCaller(ctx({ role: null }))
-      .list();
+    const res = await categoriesRouter.createCaller(ctx({ role: null })).list();
     expect(res.map((c) => c.key)).toEqual(["Bowls", "Vases", "Other"]);
     expect(res[1].extraIncludes).toEqual(["Bowls"]);
     expect(dbMock.getTenantCategories).toHaveBeenCalledWith(TENANT_A);
@@ -93,7 +94,9 @@ describe("categories.list", () => {
 
   it("404s with no store host", async () => {
     await expect(
-      categoriesRouter.createCaller(ctx({ role: null, hostTenantId: null })).list(),
+      categoriesRouter
+        .createCaller(ctx({ role: null, hostTenantId: null }))
+        .list(),
     ).rejects.toMatchObject({ code: "NOT_FOUND" });
   });
 });
@@ -119,7 +122,11 @@ describe("categories mutations — authorization", () => {
     await expect(
       categoriesRouter
         .createCaller(
-          ctx({ role: "admin", userTenantId: TENANT_B, hostTenantId: TENANT_A }),
+          ctx({
+            role: "admin",
+            userTenantId: TENANT_B,
+            hostTenantId: TENANT_A,
+          }),
         )
         .create({ key: "X" }),
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
@@ -135,6 +142,26 @@ describe("categories.create", () => {
       key: "Planters",
       labelEn: "Planters",
       labelDe: null,
+      labelFr: null,
+      labelIt: null,
+    });
+  });
+
+  it("stores all four labels when provided", async () => {
+    await categoriesRouter.createCaller(ctx({})).create({
+      key: "Planters",
+      labelEn: "Planters",
+      labelDe: "Übertöpfe",
+      labelFr: "Cache-pots",
+      labelIt: "Portavasi",
+    });
+    expect(dbMock.createTenantCategoryRow).toHaveBeenCalledWith({
+      tenantId: TENANT_A,
+      key: "Planters",
+      labelEn: "Planters",
+      labelDe: "Übertöpfe",
+      labelFr: "Cache-pots",
+      labelIt: "Portavasi",
     });
   });
 
@@ -174,6 +201,17 @@ describe("categories.update", () => {
       TENANT_A,
       "Serving Bowls",
       { labelDe: "Schalen" },
+    );
+  });
+
+  it("updates fr/it labels, including clearing them with null", async () => {
+    await categoriesRouter
+      .createCaller(ctx({}))
+      .update({ key: "Bowls", labelFr: "Bols", labelIt: null });
+    expect(dbMock.updateTenantCategoryLabels).toHaveBeenCalledWith(
+      TENANT_A,
+      "Bowls",
+      { labelFr: "Bols", labelIt: null },
     );
   });
 

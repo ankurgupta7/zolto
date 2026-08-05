@@ -1,5 +1,9 @@
 import { useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
+import { useTranslation } from "react-i18next";
+// Ensure the shared i18n instance is initialized even when the lightbox is
+// rendered in isolation (e.g. under test) before main.tsx has run.
+import "@/lib/i18n";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface Props {
@@ -19,6 +23,7 @@ export default function ImageLightbox({
   onPrev,
   onGoTo,
 }: Props) {
+  const { t } = useTranslation();
   const hasMultiple = images.length > 1;
 
   const handleKey = useCallback(
@@ -51,11 +56,14 @@ export default function ImageLightbox({
       }}
       role="dialog"
       aria-modal="true"
-      aria-label="Full image view"
+      aria-label={t("lightbox.title")}
     >
       <img
         src={images[activeIndex]}
-        alt={`View ${activeIndex + 1} of ${images.length}`}
+        alt={t("lightbox.imageAlt", {
+          index: activeIndex + 1,
+          total: images.length,
+        })}
         className="max-h-[90vh] max-w-[90vw] object-contain select-none"
         draggable={false}
       />
@@ -65,7 +73,7 @@ export default function ImageLightbox({
         type="button"
         onClick={onClose}
         className="absolute top-4 right-4 w-9 h-9 flex items-center justify-center bg-white/10 text-white hover:bg-white/25 transition-colors rounded-full"
-        aria-label="Close"
+        aria-label={t("lightbox.close")}
       >
         <X size={18} />
       </button>
@@ -73,7 +81,10 @@ export default function ImageLightbox({
       {/* Counter */}
       {hasMultiple && (
         <div className="absolute top-4 left-4 text-white/60 text-xs font-sans tracking-widest">
-          {activeIndex + 1} / {images.length}
+          {t("lightbox.counter", {
+            index: activeIndex + 1,
+            total: images.length,
+          })}
         </div>
       )}
 
@@ -86,7 +97,7 @@ export default function ImageLightbox({
             onPrev();
           }}
           className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center bg-white/10 text-white hover:bg-white/25 transition-colors rounded-full"
-          aria-label="Previous image"
+          aria-label={t("lightbox.previous")}
         >
           <ChevronLeft size={22} />
         </button>
@@ -101,7 +112,7 @@ export default function ImageLightbox({
             onNext();
           }}
           className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center bg-white/10 text-white hover:bg-white/25 transition-colors rounded-full"
-          aria-label="Next image"
+          aria-label={t("lightbox.next")}
         >
           <ChevronRight size={22} />
         </button>
@@ -123,7 +134,7 @@ export default function ImageLightbox({
                   ? "bg-[var(--brand-accent)] w-5"
                   : "bg-white/30 hover:bg-white/60 w-1.5"
               }`}
-              aria-label={`Go to image ${i + 1}`}
+              aria-label={t("lightbox.goTo", { index: i + 1 })}
             />
           ))}
         </div>

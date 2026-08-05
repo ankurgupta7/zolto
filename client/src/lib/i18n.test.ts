@@ -1,4 +1,8 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+
+function mockBrowserLanguage(tag: string) {
+  vi.spyOn(window.navigator, "language", "get").mockReturnValue(tag);
+}
 
 describe("i18n bootstrap", () => {
   beforeEach(() => {
@@ -6,22 +10,42 @@ describe("i18n bootstrap", () => {
     localStorage.clear();
   });
 
-  it("initialises i18next with de and en resources", async () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("initialises i18next with de, en, fr and it resources", async () => {
     const { default: i18n } = await import("./i18n");
     expect(i18n.isInitialized).toBe(true);
     expect(i18n.options.fallbackLng).toContain("de");
-    expect(i18n.hasResourceBundle("de", "translation")).toBe(true);
-    expect(i18n.hasResourceBundle("en", "translation")).toBe(true);
+    for (const lang of ["de", "en", "fr", "it"]) {
+      expect(i18n.hasResourceBundle(lang, "translation")).toBe(true);
+    }
   });
 
-  it("defaults to German when no language is saved", async () => {
+  it("defaults to German when nothing is saved and the browser language is unsupported", async () => {
+    mockBrowserLanguage("pt-BR");
     const { default: i18n } = await import("./i18n");
     expect(i18n.language).toBe("de");
   });
 
-  it("honours a previously saved language preference", async () => {
-    localStorage.setItem("kalakosh_lang", "en");
+  it("picks up the browser language when it is supported", async () => {
+    mockBrowserLanguage("fr-CH");
     const { default: i18n } = await import("./i18n");
-    expect(i18n.language).toBe("en");
+    expect(i18n.language).toBe("fr");
+  });
+
+  it("honours a previously saved language preference over the browser", async () => {
+    mockBrowserLanguage("fr-CH");
+    localStorage.setItem("kalakosh_lang", "it");
+    const { default: i18n } = await import("./i18n");
+    expect(i18n.language).toBe("it");
+  });
+
+  it("ignores an unsupported saved value", async () => {
+    mockBrowserLanguage("pt-BR");
+    localStorage.setItem("kalakosh_lang", "xx");
+    const { default: i18n } = await import("./i18n");
+    expect(i18n.language).toBe("de");
   });
 });

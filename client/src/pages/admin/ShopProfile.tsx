@@ -6,6 +6,7 @@
  * tenant.updateSettings.
  */
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -26,16 +27,13 @@ import { VERTICALS, VERTICAL_PRESETS, isVertical } from "@shared/verticals";
  * The currencies a Swiss-first marketplace plausibly sells in. The server
  * accepts any 3-letter code (tenant.updateSettings), so this list is a
  * convenience, not a constraint — it exists because a free-text box invites
- * typos into every price on the storefront.
+ * typos into every price on the storefront. Labels live in the admin locale
+ * fragments (store.shopProfile.currencies.*).
  */
-const CURRENCIES = [
-  { code: "chf", label: "Swiss franc" },
-  { code: "eur", label: "Euro" },
-  { code: "usd", label: "US dollar" },
-  { code: "gbp", label: "Pound sterling" },
-] as const;
+const CURRENCY_CODES = ["chf", "eur", "usd", "gbp"] as const;
 
 export default function ShopProfile() {
+  const { t } = useTranslation("admin");
   const { user } = useAuth();
   const { tenant, settings, invalidate } = useTenantSettings();
   const [contactEmail, setContactEmail] = useState("");
@@ -62,9 +60,9 @@ export default function ShopProfile() {
   const save = trpc.tenant.updateSettings.useMutation({
     onSuccess: () => {
       invalidate();
-      toast.success("Shop profile saved.");
+      toast.success(t("store.shopProfile.savedToast"));
     },
-    onError: (e) => toast.error(e.message || "Could not save."),
+    onError: (e) => toast.error(e.message || t("store.shopProfile.saveError")),
   });
 
   if (user && user.role !== "admin" && user.role !== "superadmin") {
@@ -75,7 +73,7 @@ export default function ShopProfile() {
 
   const onSave = () => {
     if (contactEmail && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(contactEmail)) {
-      toast.error("Enter a valid contact email.");
+      toast.error(t("store.shopProfile.invalidEmail"));
       return;
     }
     save.mutate({
@@ -92,15 +90,15 @@ export default function ShopProfile() {
   return (
     <div>
       <PageHeader
-        title="Shop profile"
-        description="Your store's identity and business contact details."
+        title={t("store.shopProfile.title")}
+        description={t("store.shopProfile.description")}
       />
 
-      <SettingsCard title="Identity">
+      <SettingsCard title={t("store.shopProfile.identityTitle")}>
         <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Store name
+              {t("store.shopProfile.storeName")}
             </dt>
             <dd className="mt-1 text-sm text-foreground">
               {tenant?.name ?? "—"}
@@ -108,7 +106,7 @@ export default function ShopProfile() {
           </div>
           <div>
             <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Store address
+              {t("store.shopProfile.storeAddress")}
             </dt>
             <dd className="mt-1 flex items-center gap-2 text-sm text-foreground">
               {storeUrl ? (
@@ -116,7 +114,7 @@ export default function ShopProfile() {
                   <span>{storeUrl}</span>
                   <button
                     type="button"
-                    aria-label="Copy store address"
+                    aria-label={t("store.shopProfile.copyAddressAria")}
                     onClick={() => {
                       navigator.clipboard?.writeText(`https://${storeUrl}`);
                       setCopied(true);
@@ -138,7 +136,7 @@ export default function ShopProfile() {
           </div>
           <div>
             <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Plan
+              {t("store.shopProfile.plan")}
             </dt>
             <dd className="mt-1 text-sm capitalize text-foreground">
               {tenant?.plan ?? "free"}
@@ -146,7 +144,7 @@ export default function ShopProfile() {
           </div>
           <div>
             <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Status
+              {t("store.shopProfile.status")}
             </dt>
             <dd className="mt-1 text-sm capitalize text-foreground">
               {tenant?.subscriptionStatus ?? "trialing"}
@@ -154,22 +152,24 @@ export default function ShopProfile() {
           </div>
         </dl>
         <p className="mt-4 text-xs text-muted-foreground">
-          Need to rename your store or change its address? Contact support — the
-          address is tied to links customers may have already saved.
+          {t("store.shopProfile.renameNote")}
         </p>
       </SettingsCard>
 
       <SettingsCard
-        title="Business contact"
-        description="Shown to customers on your storefront and used for order-related email."
+        title={t("store.shopProfile.contactTitle")}
+        description={t("store.shopProfile.contactDescription")}
         footer={
           <PrimaryButton onClick={onSave} loading={save.isPending}>
-            Save changes
+            {t("store.shopProfile.saveChanges")}
           </PrimaryButton>
         }
       >
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-          <Field label="Contact email" htmlFor="contact-email">
+          <Field
+            label={t("store.shopProfile.contactEmail")}
+            htmlFor="contact-email"
+          >
             <input
               id="contact-email"
               type="email"
@@ -179,7 +179,10 @@ export default function ShopProfile() {
               className={inputClass}
             />
           </Field>
-          <Field label="Contact phone" htmlFor="contact-phone">
+          <Field
+            label={t("store.shopProfile.contactPhone")}
+            htmlFor="contact-phone"
+          >
             <input
               id="contact-phone"
               type="tel"
@@ -191,9 +194,9 @@ export default function ShopProfile() {
           </Field>
 
           <Field
-            label="Currency"
+            label={t("store.shopProfile.currency")}
             htmlFor="currency"
-            hint="Used on your storefront, in the POS, and at checkout."
+            hint={t("store.shopProfile.currencyHint")}
           >
             <select
               id="currency"
@@ -201,23 +204,24 @@ export default function ShopProfile() {
               onChange={(e) => setCurrency(e.target.value)}
               className={inputClass}
             >
-              {CURRENCIES.map((c) => (
-                <option key={c.code} value={c.code}>
-                  {c.code.toUpperCase()} — {c.label}
+              {CURRENCY_CODES.map((code) => (
+                <option key={code} value={code}>
+                  {code.toUpperCase()} —{" "}
+                  {t(`store.shopProfile.currencies.${code}`)}
                 </option>
               ))}
               {/* A code set outside this list (by support, or before this
                   selector existed) must not silently reset to CHF on save. */}
-              {!CURRENCIES.some((c) => c.code === currency) && (
+              {!CURRENCY_CODES.some((code) => code === currency) && (
                 <option value={currency}>{currency.toUpperCase()}</option>
               )}
             </select>
           </Field>
 
           <Field
-            label="What do you sell?"
+            label={t("store.shopProfile.verticalLabel")}
             htmlFor="vertical"
-            hint="Tunes the AI tools (photo listings, imports, chat) to your kind of store. Your category list is edited separately under Categories."
+            hint={t("store.shopProfile.verticalHint")}
           >
             <select
               id="vertical"
@@ -234,9 +238,9 @@ export default function ShopProfile() {
           </Field>
 
           <Field
-            label="Describe your range (optional)"
+            label={t("store.shopProfile.rangeLabel")}
             htmlFor="vertical-description"
-            hint="One or two sentences in your own words — the AI uses this to write better listings."
+            hint={t("store.shopProfile.rangeHint")}
           >
             <textarea
               id="vertical-description"
@@ -244,21 +248,21 @@ export default function ShopProfile() {
               onChange={(e) => setVerticalDescription(e.target.value)}
               rows={2}
               maxLength={500}
-              placeholder="e.g. Wheel-thrown stoneware tableware in muted glazes"
+              placeholder={t("store.shopProfile.rangePlaceholder")}
               className={`${inputClass} resize-none`}
             />
           </Field>
 
           <div className="sm:col-span-2">
             <p className="text-xs text-muted-foreground">
-              Prices are stored as plain numbers, so changing this relabels them
-              — it does not convert them.
+              {t("store.shopProfile.currencyNote")}
               {currency !== savedCurrency ? (
                 <>
                   {" "}
-                  A product at {formatPrice(50, savedCurrency)} would become{" "}
-                  {formatPrice(50, currency)}, not its exchange-rate equivalent.
-                  Re-price your catalogue after saving.
+                  {t("store.shopProfile.currencyChangeNote", {
+                    old: formatPrice(50, savedCurrency),
+                    new: formatPrice(50, currency),
+                  })}
                 </>
               ) : null}
             </p>

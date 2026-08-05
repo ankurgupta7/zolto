@@ -9,6 +9,7 @@ import {
   PRICING_PROMISE,
   REVENUE_SHARE,
 } from "@shared/platform";
+import { useMarketingT } from "../lib/marketingI18n";
 
 /**
  * /compare/zolto-vs-:slug — a decision-stage page per named incumbent.
@@ -22,17 +23,24 @@ import {
  * a comparison that never gives ground reads as an advert and gets discounted.
  */
 export default function Compare() {
+  const { t, st } = useMarketingT();
   const params = useParams<{ slug?: string }>();
   const slug = (params.slug ?? "").replace(/^zolto-vs-/, "");
   const competitor = findCompetitor(slug);
 
   useDocumentMeta({
     title: competitor
-      ? `${PLATFORM.name} vs ${competitor.name} — which fits a maker better?`
-      : `Compare ${PLATFORM.name}`,
+      ? t("compare.metaTitle", {
+          name: PLATFORM.name,
+          competitor: competitor.name,
+        })
+      : t("compare.metaTitleIndex", { name: PLATFORM.name }),
     description: competitor
-      ? `An honest comparison of ${PLATFORM.name} and ${competitor.name} for independent makers: hardware, setup effort, where the money lands, and when ${competitor.name} is the better choice.`
-      : `How ${PLATFORM.name} compares to the payment and store providers makers usually consider.`,
+      ? t("compare.metaDescription", {
+          name: PLATFORM.name,
+          competitor: competitor.name,
+        })
+      : t("compare.metaDescriptionIndex", { name: PLATFORM.name }),
     path: competitor ? `/compare/zolto-vs-${competitor.id}` : "/compare",
   });
 
@@ -40,11 +48,10 @@ export default function Compare() {
     return (
       <Container className="py-20">
         <h1 className="text-center font-serif text-4xl text-[var(--brand-text)]">
-          Compare {PLATFORM.name}
+          {t("compare.indexHeading", { name: PLATFORM.name })}
         </h1>
         <p className="mx-auto mt-4 max-w-xl text-center text-[var(--brand-muted-2)]">
-          How {PLATFORM.name} stacks up against the providers makers usually
-          consider.
+          {t("compare.indexIntro", { name: PLATFORM.name })}
         </p>
         <ul className="mx-auto mt-12 grid max-w-2xl gap-4">
           {COMPETITORS.map((c) => (
@@ -54,10 +61,13 @@ export default function Compare() {
                 className="block rounded-xl border border-[var(--brand-border)] bg-white p-6 transition-colors hover:border-[var(--brand-accent)]"
               >
                 <span className="font-serif text-xl text-[var(--brand-text)]">
-                  {PLATFORM.name} vs {c.name}
+                  {t("compare.versus", {
+                    name: PLATFORM.name,
+                    competitor: c.name,
+                  })}
                 </span>
                 <span className="mt-2 block text-sm text-[var(--brand-muted-2)]">
-                  {c.summary}
+                  {st(`competitors.${c.id}.summary`, c.summary)}
                 </span>
               </Link>
             </li>
@@ -71,13 +81,16 @@ export default function Compare() {
     <Container className="py-20">
       <div className="text-center">
         <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
-          an honest look
+          {t("compare.eyebrow")}
         </p>
         <h1 className="mt-2 font-serif text-4xl text-[var(--brand-text)]">
-          {PLATFORM.name} vs {competitor.name}
+          {t("compare.versus", {
+            name: PLATFORM.name,
+            competitor: competitor.name,
+          })}
         </h1>
         <p className="mx-auto mt-4 max-w-2xl text-[var(--brand-muted-2)]">
-          {competitor.summary}
+          {st(`competitors.${competitor.id}.summary`, competitor.summary)}
         </p>
       </div>
 
@@ -85,8 +98,7 @@ export default function Compare() {
       <div className="mx-auto mt-14 max-w-3xl overflow-x-auto">
         <table className="w-full border-collapse text-left text-sm">
           <caption className="sr-only">
-            {PLATFORM.name} compared with the traditional store-and-terminal
-            model
+            {t("compare.tableCaption", { name: PLATFORM.name })}
           </caption>
           <thead>
             <tr className="border-b border-[var(--brand-border)]">
@@ -97,7 +109,7 @@ export default function Compare() {
                 scope="col"
                 className="py-3 pr-4 font-medium text-[var(--brand-muted-2)]"
               >
-                The traditional way
+                {t("compare.traditionalWay")}
               </th>
               <th
                 scope="col"
@@ -117,23 +129,25 @@ export default function Compare() {
                   scope="row"
                   className="py-4 pr-4 align-top font-medium text-[var(--brand-text)]"
                 >
-                  {row.feature}
+                  {st(`comparison.${row.feature}.feature`, row.feature)}
                 </th>
                 <td className="py-4 pr-4 align-top text-[var(--brand-muted-2)]">
-                  {row.them}
+                  {st(`comparison.${row.feature}.them`, row.them)}
                 </td>
                 <td className="py-4 align-top text-[var(--brand-ink)]">
-                  {row.us}
+                  {st(`comparison.${row.feature}.us`, row.us)}
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
         <p className="mt-4 text-xs text-[var(--brand-muted)]">
-          {competitor.name}&rsquo;s plans and rates vary by country, contract
-          and volume — check their own pricing page for current figures.{" "}
-          {PLATFORM.name}&rsquo;s side is {REVENUE_SHARE.percentLabel} on{" "}
-          {REVENUE_SHARE.appliesTo}, and nothing in person.
+          {t("compare.rateNote", {
+            name: PLATFORM.name,
+            competitor: competitor.name,
+            percent: REVENUE_SHARE.percentLabel,
+            appliesTo: st("revenueShare.appliesTo", REVENUE_SHARE.appliesTo),
+          })}
         </p>
       </div>
 
@@ -141,30 +155,30 @@ export default function Compare() {
       <div className="mx-auto mt-16 grid max-w-3xl gap-6 md:grid-cols-2">
         <div className="rounded-xl border border-[var(--brand-border)] bg-white p-6">
           <h2 className="font-serif text-xl text-[var(--brand-text)]">
-            When {competitor.name} is the better choice
+            {t("compare.betterWhenHeading", { competitor: competitor.name })}
           </h2>
           <ul className="mt-4 space-y-3 text-sm text-[var(--brand-muted-2)]">
-            {competitor.betterWhen.map((point) => (
+            {competitor.betterWhen.map((point, i) => (
               <li key={point} className="flex gap-2.5">
                 <span aria-hidden className="text-[var(--brand-muted)]">
                   —
                 </span>
-                {point}
+                {st(`competitors.${competitor.id}.betterWhen.${i}`, point)}
               </li>
             ))}
           </ul>
         </div>
         <div className="rounded-xl border border-[var(--brand-accent)] bg-white p-6 ring-1 ring-[var(--brand-accent)]">
           <h2 className="font-serif text-xl text-[var(--brand-text)]">
-            When {PLATFORM.name} fits better
+            {t("compare.zoltoWhenHeading", { name: PLATFORM.name })}
           </h2>
           <ul className="mt-4 space-y-3 text-sm text-[var(--brand-muted-2)]">
-            {competitor.zoltoWhen.map((point) => (
+            {competitor.zoltoWhen.map((point, i) => (
               <li key={point} className="flex gap-2.5">
                 <span aria-hidden className="text-[var(--brand-accent)]">
                   ✓
                 </span>
-                {point}
+                {st(`competitors.${competitor.id}.zoltoWhen.${i}`, point)}
               </li>
             ))}
           </ul>
@@ -173,26 +187,28 @@ export default function Compare() {
 
       <div className="mx-auto mt-16 max-w-3xl rounded-2xl border border-[var(--brand-accent)]/40 bg-[var(--brand-surface-2)] p-8 text-center">
         <p className="font-serif text-xl italic text-[var(--brand-muted-2)]">
-          &ldquo;{PRICING_PROMISE.pledge}&rdquo;
+          &ldquo;{st("pricingPromise.pledge", PRICING_PROMISE.pledge)}&rdquo;
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-3">
           <Link
             href="/signup"
             className="rounded-md bg-[var(--brand-accent)] px-5 py-2.5 text-xs font-medium uppercase tracking-[0.12em] text-[var(--brand-ink)] transition-colors hover:bg-[var(--brand-accent-light)]"
           >
-            Start free
+            {t("compare.startFree")}
           </Link>
           <Link
             href="/pricing"
             className="rounded-md border border-[var(--brand-ink)]/25 px-5 py-2.5 text-xs font-medium uppercase tracking-[0.12em] text-[var(--brand-ink)] transition-colors hover:bg-[var(--brand-ink)] hover:text-white"
           >
-            See pricing
+            {t("compare.seePricing")}
           </Link>
         </div>
       </div>
 
       <nav className="mx-auto mt-12 max-w-3xl text-center text-sm">
-        <span className="text-[var(--brand-muted)]">Also compare: </span>
+        <span className="text-[var(--brand-muted)]">
+          {t("compare.alsoCompare")}{" "}
+        </span>
         {COMPETITORS.filter((c) => c.id !== competitor.id).map((c, i) => (
           <span key={c.id}>
             {i > 0 && <span className="text-[var(--brand-muted)]"> · </span>}
@@ -200,7 +216,10 @@ export default function Compare() {
               href={`/compare/zolto-vs-${c.id}`}
               className="text-[var(--brand-accent)] hover:underline"
             >
-              {PLATFORM.name} vs {c.name}
+              {t("compare.versus", {
+                name: PLATFORM.name,
+                competitor: c.name,
+              })}
             </Link>
           </span>
         ))}

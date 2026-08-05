@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, afterEach } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
+import { DATA_RESIDENCY, SOVEREIGNTY } from "@shared/platform";
 import { Privacy, Terms } from "./Legal";
 
 afterEach(cleanup);
@@ -36,14 +37,26 @@ describe("marketing Privacy page", () => {
 
   it("says where the data lives, with the sub-processors that don't", () => {
     // The residency section is the human-readable half of what
-    // /made-in-switzerland publishes as a ledger; the caveat has to travel
+    // /made-in-switzerland publishes as a ledger; the disclosure has to travel
     // with it here too, or the policy claims more than the site does.
     render(<Privacy />);
     expect(
       screen.getByRole("heading", { name: /where your data lives/i }),
     ).toBeTruthy();
-    expect(screen.getAllByText(/Hetzner/).length).toBeGreaterThan(0);
-    expect(screen.getByText(/The honest footnote/)).toBeTruthy();
+    // Named, not categorised — and consistent with the constants the ledger,
+    // the band and the llms brief all read. This copy lives in the locale
+    // files (like the rest of the policy), so nothing but this assertion stops
+    // it drifting to a different country than the rest of the site claims.
+    const residency = screen.getAllByText(new RegExp(DATA_RESIDENCY.provider));
+    expect(residency.length).toBeGreaterThan(0);
+    expect(
+      screen.getAllByText(new RegExp(DATA_RESIDENCY.primaryCountry)).length,
+    ).toBeGreaterThan(0);
+    // The three sub-processors that are not European are disclosed by name.
+    expect(screen.getAllByText(/Stripe/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/model provider/).length).toBeGreaterThan(0);
+    // …and the reader is pointed at the full ledger.
+    expect(screen.getByText(new RegExp(SOVEREIGNTY.href))).toBeTruthy();
   });
 });
 

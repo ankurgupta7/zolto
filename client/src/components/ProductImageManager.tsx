@@ -3,7 +3,11 @@
  * Shown inline in the Admin panel product table row expansion.
  */
 import { useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { trpc } from "@/lib/trpc";
+// Ensure the shared i18n instance is initialized even when this block is
+// pulled in isolation (e.g. under test) before main.tsx has run.
+import "@/lib/i18n";
 import { toast } from "sonner";
 import {
   ImagePlus,
@@ -19,17 +23,36 @@ interface Props {
   productName: string;
 }
 
-/** Ready-made styles for the AI photo generator (1 credit per image). */
+/**
+ * Ready-made styles for the AI photo generator (1 credit per image).
+ *
+ * The `prompt` is what the model is given and stays English in every UI
+ * language — it is an instruction to the image model, not merchant-facing
+ * copy; only the `labelKey` shown in the dropdown is translated.
+ */
 const AI_STYLES = [
-  "Clean catalogue shot on a seamless white background, soft studio light",
-  "Elegant lifestyle flat-lay on natural linen with soft morning light",
-  "Luxury macro close-up highlighting the material details and texture",
+  {
+    labelKey: "catalog.components.productImages.styleClean",
+    prompt:
+      "Clean catalogue shot on a seamless white background, soft studio light",
+  },
+  {
+    labelKey: "catalog.components.productImages.styleLifestyle",
+    prompt:
+      "Elegant lifestyle flat-lay on natural linen with soft morning light",
+  },
+  {
+    labelKey: "catalog.components.productImages.styleMacro",
+    prompt:
+      "Luxury macro close-up highlighting the material details and texture",
+  },
 ] as const;
 
 export default function ProductImageManager({ productId, productName }: Props) {
+  const { t } = useTranslation("admin");
   const [expanded, setExpanded] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [aiStyle, setAiStyle] = useState<string>(AI_STYLES[0]);
+  const [aiStyle, setAiStyle] = useState<string>(AI_STYLES[0].prompt);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const utils = trpc.useUtils();
@@ -59,8 +82,10 @@ export default function ProductImageManager({ productId, productName }: Props) {
       utils.billing.photoCreditHistory.invalidate();
       toast.success(
         remainingThisMonth === null
-          ? "AI photo added"
-          : `AI photo added — ${remainingThisMonth} left this month`,
+          ? t("catalog.components.productImages.toastAiAdded")
+          : t("catalog.components.productImages.toastAiAddedRemaining", {
+              count: remainingThisMonth,
+            }),
       );
     },
     onError: (err) => toast.error(err.message),
@@ -69,11 +94,11 @@ export default function ProductImageManager({ productId, productName }: Props) {
   const addImageMutation = trpc.products.addImage.useMutation({
     onSuccess: () => {
       utils.products.getImages.invalidate({ productId });
-      toast.success("Image added");
+      toast.success(t("catalog.components.productImages.toastImageAdded"));
       setUploading(false);
     },
     onError: () => {
-      toast.error("Failed to upload image");
+      toast.error(t("catalog.components.productImages.toastUploadFailed"));
       setUploading(false);
     },
   });
@@ -81,9 +106,10 @@ export default function ProductImageManager({ productId, productName }: Props) {
   const deleteImageMutation = trpc.products.deleteImage.useMutation({
     onSuccess: () => {
       utils.products.getImages.invalidate({ productId });
-      toast.success("Image removed");
+      toast.success(t("catalog.components.productImages.toastImageRemoved"));
     },
-    onError: () => toast.error("Failed to remove image"),
+    onError: () =>
+      toast.error(t("catalog.components.productImages.toastRemoveFailed")),
   });
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -94,7 +120,11 @@ export default function ProductImageManager({ productId, productName }: Props) {
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       if (file.size > 8 * 1024 * 1024) {
-        toast.error(`${file.name} is too large (max 8 MB)`);
+        toast.error(
+          t("catalog.components.productImages.toastTooLarge", {
+            name: file.name,
+          }),
+        );
         continue;
       }
       const reader = new FileReader();
@@ -125,20 +155,23 @@ export default function ProductImageManager({ productId, productName }: Props) {
         className="flex items-center gap-1.5 text-xs uppercase tracking-[0.12em] font-sans text-[var(--brand-ink)] hover:text-[var(--brand-accent)] transition-colors"
       >
         {expanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-        {expanded ? "Hide" : "Manage"} Extra Images
+        {expanded
+          ? t("catalog.components.productImages.toggleHide")
+          : t("catalog.components.productImages.toggleManage")}
       </button>
 
       {expanded && (
         <div className="mt-3 p-4 bg-[var(--brand-surface-2)] border border-[var(--brand-border)]">
           <p className="text-xs text-muted-foreground font-sans mb-3">
-            Extra images for{" "}
-            <span className="font-medium text-foreground">{productName}</span> —
-            swipeable in the product modal.
+            {t("catalog.components.productImages.forProductBefore")}{" "}
+            <span className="font-medium text-foreground">{productName}</span>{" "}
+            {t("catalog.components.productImages.forProductAfter")}
           </p>
 
           {isLoading ? (
             <div className="flex items-center gap-2 text-muted-foreground text-xs font-sans">
-              <Loader2 size={12} className="animate-spin" /> Loading…
+              <Loader2 size={12} className="animate-spin" />{" "}
+              {t("catalog.components.productImages.loading")}
             </div>
           ) : (
             <div className="flex flex-wrap gap-2 mb-3">
@@ -146,7 +179,7 @@ export default function ProductImageManager({ productId, productName }: Props) {
                 <div key={img.id} className="relative group w-16 h-16">
                   <img
                     src={img.imageUrl}
-                    alt="Product photo"
+                    alt={t("catalog.components.productImages.photoAlt")}
                     className="w-full h-full object-cover border border-[var(--brand-border)]"
                   />
                   <button
@@ -156,7 +189,9 @@ export default function ProductImageManager({ productId, productName }: Props) {
                     }
                     disabled={deleteImageMutation.isPending}
                     className="absolute inset-0 flex items-center justify-center bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                    aria-label="Remove image"
+                    aria-label={t(
+                      "catalog.components.productImages.removeImage",
+                    )}
                   >
                     <Trash2 size={14} />
                   </button>
@@ -171,7 +206,7 @@ export default function ProductImageManager({ productId, productName }: Props) {
                   <>
                     <ImagePlus size={16} />
                     <span className="text-[9px] uppercase tracking-wider mt-0.5 font-sans">
-                      Add
+                      {t("catalog.components.productImages.add")}
                     </span>
                   </>
                 )}
@@ -190,7 +225,7 @@ export default function ProductImageManager({ productId, productName }: Props) {
 
           {images.length === 0 && !isLoading && (
             <p className="text-xs text-muted-foreground font-sans italic">
-              No extra images yet. Click the + to upload.
+              {t("catalog.components.productImages.emptyNote")}
             </p>
           )}
 
@@ -200,10 +235,12 @@ export default function ProductImageManager({ productId, productName }: Props) {
           <div className="mt-3 pt-3 border-t border-[var(--brand-border)]">
             <p className="text-xs font-sans text-muted-foreground mb-2 flex items-center gap-1.5">
               <Sparkles size={12} className="text-[var(--brand-accent)]" />
-              Restyle the main photo with AI
+              {t("catalog.components.productImages.restyle")}
               {remaining !== null && (
                 <span className="ml-auto">
-                  {remaining} shot{remaining === 1 ? "" : "s"} left this month
+                  {t("catalog.components.productImages.shotsLeft", {
+                    count: remaining,
+                  })}
                 </span>
               )}
             </p>
@@ -214,8 +251,8 @@ export default function ProductImageManager({ productId, productName }: Props) {
                 className="flex-1 min-w-48 text-xs font-sans border border-[var(--brand-border)] bg-white px-2 py-1.5"
               >
                 {AI_STYLES.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
+                  <option key={s.labelKey} value={s.prompt}>
+                    {t(s.labelKey)}
                   </option>
                 ))}
               </select>
@@ -228,8 +265,8 @@ export default function ProductImageManager({ productId, productName }: Props) {
                 className="flex items-center gap-1.5 text-xs uppercase tracking-[0.12em] font-sans border border-[var(--brand-accent)]/40 text-[var(--brand-accent)] px-3 py-1.5 hover:bg-[var(--brand-surface)] transition-colors disabled:opacity-50"
                 title={
                   remaining === 0
-                    ? "Monthly AI photo allowance used — upgrade to Pro for unmetered AI"
-                    : "Generate an AI-styled image"
+                    ? t("catalog.components.productImages.allowanceUsedTitle")
+                    : t("catalog.components.productImages.generateTitle")
                 }
               >
                 {aiPhotoMutation.isPending ? (
@@ -237,20 +274,20 @@ export default function ProductImageManager({ productId, productName }: Props) {
                 ) : (
                   <Sparkles size={12} />
                 )}
-                Generate
+                {t("catalog.components.productImages.generate")}
               </button>
             </div>
             {remaining === 0 && (
               <p className="text-xs font-sans text-muted-foreground mt-1.5">
-                Allowance used for this month — upgrade to Pro under{" "}
+                {t("catalog.components.productImages.allowanceUsedBefore")}{" "}
                 <a href="/admin/billing" className="underline">
-                  Plan &amp; Billing
+                  {t("catalog.components.productImages.allowanceLink")}
                 </a>{" "}
-                for unmetered AI.
+                {t("catalog.components.productImages.allowanceUsedAfter")}
               </p>
             )}
             <p className="text-[10px] font-sans text-muted-foreground/70 mt-1.5">
-              AI-styled images are disclosed as AI-generated.
+              {t("catalog.components.productImages.disclosure")}
             </p>
           </div>
         </div>

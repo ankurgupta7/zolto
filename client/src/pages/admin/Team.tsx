@@ -5,6 +5,7 @@
  * is the merchant-facing surface for it.
  */
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -21,6 +22,7 @@ import {
 } from "@/components/admin/ui";
 
 export default function Team() {
+  const { t } = useTranslation("admin");
   const { user } = useAuth();
   const utils = trpc.useUtils();
   const list = trpc.staff.list.useQuery(undefined, { retry: false });
@@ -31,29 +33,29 @@ export default function Team() {
       utils.staff.list.invalidate();
       setEmail("");
       if (data.emailed) {
-        toast.success("Invite sent.");
+        toast.success(t("store.team.inviteSentToast"));
       } else {
-        toast.success("Invite created — copy the link to share it.");
+        toast.success(t("store.team.inviteCreatedToast"));
         navigator.clipboard?.writeText(data.claimUrl);
       }
     },
-    onError: (e) => toast.error(e.message || "Could not send invite."),
+    onError: (e) => toast.error(e.message || t("store.team.inviteError")),
   });
 
   const revoke = trpc.staff.revokeInvite.useMutation({
     onSuccess: () => {
       utils.staff.list.invalidate();
-      toast.success("Invite revoked.");
+      toast.success(t("store.team.revokedToast"));
     },
-    onError: (e) => toast.error(e.message || "Could not revoke invite."),
+    onError: (e) => toast.error(e.message || t("store.team.revokeError")),
   });
 
   const remove = trpc.staff.removeStaff.useMutation({
     onSuccess: () => {
       utils.staff.list.invalidate();
-      toast.success("Removed from team.");
+      toast.success(t("store.team.removedToast"));
     },
-    onError: (e) => toast.error(e.message || "Could not remove member."),
+    onError: (e) => toast.error(e.message || t("store.team.removeError")),
   });
 
   if (user && user.role !== "admin" && user.role !== "superadmin") {
@@ -67,7 +69,7 @@ export default function Team() {
 
   const onInvite = () => {
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
-      toast.error("Enter a valid email address.");
+      toast.error(t("store.team.invalidEmail"));
       return;
     }
     invite.mutate({ email: email.trim() });
@@ -76,34 +78,33 @@ export default function Team() {
   return (
     <div>
       <PageHeader
-        title="Team"
-        description="Invite people to help run your shop. Seats are included with your plan."
+        title={t("store.team.title")}
+        description={t("store.team.description")}
         actions={
           <span className="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium text-muted-foreground">
             <Users className="h-3.5 w-3.5" />
-            {seatsUsed} / {seatLimit} seats used
+            {t("store.team.seatsUsed", { used: seatsUsed, limit: seatLimit })}
           </span>
         }
       />
 
-      <SettingsCard title="Invite a teammate">
+      <SettingsCard title={t("store.team.inviteTitle")}>
         {seatsFull ? (
           <div className="flex flex-col items-start gap-3">
             <p className="text-sm text-muted-foreground">
-              All {seatLimit} seat{seatLimit === 1 ? "" : "s"} on your plan are
-              in use. Upgrade to add more teammates.
+              {t("store.team.seatsFullNotice", { count: seatLimit })}
             </p>
             <Link
               href="/admin/account/plan"
               className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
             >
-              View plans
+              {t("store.team.viewPlans")}
             </Link>
           </div>
         ) : (
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
             <div className="flex-1">
-              <Field label="Email address" htmlFor="invite-email">
+              <Field label={t("store.team.emailLabel")} htmlFor="invite-email">
                 <input
                   id="invite-email"
                   type="email"
@@ -117,13 +118,13 @@ export default function Team() {
             </div>
             <PrimaryButton onClick={onInvite} loading={invite.isPending}>
               <UserPlus className="h-4 w-4" />
-              Send invite
+              {t("store.team.sendInvite")}
             </PrimaryButton>
           </div>
         )}
       </SettingsCard>
 
-      <SettingsCard title="Members">
+      <SettingsCard title={t("store.team.membersTitle")}>
         <ul className="divide-y">
           {data?.staff.map((m) => (
             <li
@@ -132,7 +133,7 @@ export default function Team() {
             >
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium text-foreground">
-                  {m.name || m.email || "Team member"}
+                  {m.name || m.email || t("store.team.memberFallback")}
                 </p>
                 {m.email && (
                   <p className="truncate text-xs text-muted-foreground">
@@ -147,7 +148,9 @@ export default function Team() {
                 {m.role === "staff" && (
                   <button
                     type="button"
-                    aria-label={`Remove ${m.email ?? "member"}`}
+                    aria-label={t("store.team.removeAria", {
+                      name: m.email ?? t("store.team.removeFallbackName"),
+                    })}
                     onClick={() => remove.mutate({ userId: m.id })}
                     disabled={remove.isPending}
                     className="text-muted-foreground transition-colors hover:text-rose-600 disabled:opacity-40"
@@ -160,14 +163,14 @@ export default function Team() {
           ))}
           {(!data || data.staff.length === 0) && (
             <li className="py-3 text-sm text-muted-foreground">
-              No team members yet.
+              {t("store.team.noMembers")}
             </li>
           )}
         </ul>
       </SettingsCard>
 
       {data && data.pendingInvites.length > 0 && (
-        <SettingsCard title="Pending invites">
+        <SettingsCard title={t("store.team.pendingTitle")}>
           <ul className="divide-y">
             {data.pendingInvites.map((inv) => (
               <li
@@ -186,7 +189,7 @@ export default function Team() {
                   className="px-3 py-1.5 text-xs"
                 >
                   <Copy className="h-3.5 w-3.5" />
-                  Revoke
+                  {t("store.team.revoke")}
                 </SecondaryButton>
               </li>
             ))}

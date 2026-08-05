@@ -10,6 +10,7 @@ import {
   REVENUE_SHARE,
   faqsByCategory,
 } from "@shared/platform";
+import { useMarketingT } from "../lib/marketingI18n";
 
 // Sourced from the shared FAQ set so these answers also reach the FAQPage
 // schema, /llms.txt and MCP — they used to live only in this file, which meant
@@ -23,19 +24,21 @@ const FAQ = faqsByCategory("Pricing & billing").filter((f) =>
 );
 
 export default function Pricing() {
+  const { t, st, numberLocale } = useMarketingT();
+  const percentLabel = REVENUE_SHARE.percentLabel;
+  const proName = st("plans.pro.name", PRO_PLAN.name);
+
   return (
     <Container className="py-20">
       <div className="text-center">
         <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
-          fair &amp; simple
+          {t("pricing.eyebrow")}
         </p>
         <h1 className="mt-2 font-serif text-4xl text-[var(--brand-text)]">
-          Simple pricing for makers.
+          {t("pricing.heading")}
         </h1>
         <p className="mx-auto mt-4 max-w-xl text-[var(--brand-muted-2)]">
-          Selling in person is free, forever. We only make money when we
-          actually help you make money online — {REVENUE_SHARE.percentLabel} on
-          Free, or go flat-rate with Pro and keep the whole thing.
+          {t("pricing.intro", { percent: percentLabel })}
         </p>
       </div>
 
@@ -44,13 +47,14 @@ export default function Pricing() {
         <div className="grid gap-8 md:grid-cols-[1fr_auto] md:items-center">
           <div>
             <h2 className="font-serif text-2xl text-[var(--brand-text)]">
-              {PRICING_PROMISE.headline}
+              {st("pricingPromise.headline", PRICING_PROMISE.headline)}
             </h2>
             <p className="mt-3 font-serif text-lg italic leading-snug text-[var(--brand-muted-2)]">
-              &ldquo;{PRICING_PROMISE.pledge}&rdquo;
+              &ldquo;
+              {st("pricingPromise.pledge", PRICING_PROMISE.pledge)}&rdquo;
             </p>
             <ul className="mt-5 grid gap-2.5">
-              {PRICING_PROMISE.points.map((point) => (
+              {PRICING_PROMISE.points.map((point, i) => (
                 <li
                   key={point}
                   className="flex gap-2.5 text-sm leading-relaxed text-[var(--brand-muted-2)]"
@@ -58,30 +62,30 @@ export default function Pricing() {
                   <span aria-hidden className="text-[var(--brand-accent)]">
                     —
                   </span>
-                  {point}
+                  {st(`pricingPromise.points.${i}`, point)}
                 </li>
               ))}
             </ul>
           </div>
           <div className="shrink-0 rounded-xl border border-[var(--brand-border)] bg-white px-8 py-6 text-center">
             <p className="text-[11px] uppercase tracking-[0.16em] text-[var(--brand-muted)]">
-              The old way
+              {t("pricing.oldWay")}
             </p>
             <p className="mt-1 font-serif text-2xl text-[var(--brand-muted-2)] line-through lining-nums tabular-nums">
-              CHF {COST_COMPARISON.themPerYearChf.toLocaleString("en-US")}
-              <span className="text-sm">/yr</span>
+              CHF {COST_COMPARISON.themPerYearChf.toLocaleString(numberLocale)}
+              <span className="text-sm">{t("pricing.perYearShort")}</span>
             </p>
             <p className="mt-4 text-[11px] uppercase tracking-[0.16em] text-[var(--brand-accent)]">
-              Zolto {PRO_PLAN.name}
+              {t("pricing.zoltoPlan", { plan: proName })}
             </p>
             <p className="mt-1 font-serif text-4xl font-bold text-[var(--brand-ink)] lining-nums tabular-nums">
               {formatPrice(COST_COMPARISON.usPerMonthChf)}
               <span className="text-sm font-normal text-[var(--brand-muted)]">
-                /mo
+                {t("pricing.perMonthShort")}
               </span>
             </p>
             <p className="mt-2 text-[11px] text-[var(--brand-muted)]">
-              {COST_COMPARISON.multiplier}
+              {st("costComparison.multiplier", COST_COMPARISON.multiplier)}
             </p>
           </div>
         </div>
@@ -100,28 +104,30 @@ export default function Pricing() {
           >
             {plan.highlight && (
               <span className="mb-3 inline-block w-fit rounded-full bg-[var(--brand-accent)]/15 px-3 py-1 text-xs font-medium uppercase tracking-[0.1em] text-[var(--brand-ink)]">
-                Most popular
+                {t("pricing.mostPopular")}
               </span>
             )}
             <h2 className="font-serif text-xl text-[var(--brand-text)]">
-              {plan.name}
+              {st(`plans.${plan.id}.name`, plan.name)}
             </h2>
             <div className="mt-2 flex items-baseline gap-1">
               <span className="text-3xl font-semibold tabular-nums text-[var(--brand-ink)]">
                 {formatPrice(plan.priceChf)}
               </span>
-              <span className="text-sm text-[var(--brand-muted)]">/ month</span>
+              <span className="text-sm text-[var(--brand-muted)]">
+                {t("pricing.perMonth")}
+              </span>
             </div>
             <p className="mt-2 text-sm text-[var(--brand-muted-2)]">
-              {plan.blurb}
+              {st(`plans.${plan.id}.blurb`, plan.blurb)}
             </p>
             <ul className="mt-6 flex-1 space-y-3 text-sm text-[var(--brand-muted-2)]">
-              {plan.features.map((f) => (
+              {plan.features.map((f, i) => (
                 <li key={f} className="flex gap-2">
                   <span aria-hidden className="text-[var(--brand-accent)]">
                     ✓
                   </span>
-                  {f}
+                  {st(`plans.${plan.id}.features.${i}`, f)}
                 </li>
               ))}
             </ul>
@@ -133,7 +139,7 @@ export default function Pricing() {
                   : "border border-[var(--brand-ink)]/25 text-[var(--brand-ink)] hover:bg-[var(--brand-ink)] hover:text-white"
               }`}
             >
-              {plan.cta}
+              {st(`plans.${plan.id}.cta`, plan.cta)}
             </Link>
           </div>
         ))}
@@ -148,27 +154,36 @@ export default function Pricing() {
         <div className="flex flex-wrap items-baseline justify-between gap-3">
           <div>
             <p className="font-hand text-xl leading-none text-[var(--brand-accent)]">
-              the only fee we charge
+              {t("pricing.feeEyebrow")}
             </p>
             <h2 className="mt-2 font-serif text-2xl text-[var(--brand-text)]">
-              {REVENUE_SHARE.percentLabel} on {REVENUE_SHARE.appliesTo} —
-              nothing in person
+              {t("pricing.feeHeading", {
+                percent: percentLabel,
+                appliesTo: st(
+                  "revenueShare.appliesTo",
+                  REVENUE_SHARE.appliesTo,
+                ),
+              })}
             </h2>
           </div>
           <p className="font-serif text-3xl text-[var(--brand-ink)] lining-nums tabular-nums">
-            {REVENUE_SHARE.percentLabel}
+            {percentLabel}
             <span className="text-sm text-[var(--brand-muted)]">
               {" "}
-              online only
+              {t("pricing.onlineOnly")}
             </span>
           </p>
         </div>
         <ul className="mt-5 grid gap-2.5">
           {[
-            "At the market stall, we take nothing — TWINT QR and Tap to Pay, all season, CHF 0. Every time.",
-            `Online and AI-agent orders on the Free plan carry a ${REVENUE_SHARE.percentLabel} fee, taken automatically inside the Stripe payment — no separate bill, and a month with no online sales costs CHF 0.`,
-            `${PRO_PLAN.name} (CHF ${PRO_PLAN.priceChf}/month) kills the fee entirely. Past about CHF ${PRO_BREAK_EVEN_ONLINE_CHF.toLocaleString("en-US")}/month online it's the cheaper option — your dashboard will tell you when.`,
-            "AI usage is never the meter: descriptions, translations and chat aren't counted, and Pro's AI is unmetered. Plans scale on products, photos and storage, not on how much you lean on it.",
+            t("pricing.feePoint1"),
+            t("pricing.feePoint2", { percent: percentLabel }),
+            t("pricing.feePoint3", {
+              plan: proName,
+              price: PRO_PLAN.priceChf,
+              breakEven: PRO_BREAK_EVEN_ONLINE_CHF.toLocaleString(numberLocale),
+            }),
+            t("pricing.feePoint4"),
           ].map((point) => (
             <li
               key={point}
@@ -204,7 +219,7 @@ export default function Pricing() {
       {/* FAQ */}
       <div className="mx-auto mt-20 max-w-2xl">
         <h2 className="text-center font-serif text-2xl text-[var(--brand-text)]">
-          Questions
+          {t("pricing.questions")}
         </h2>
         <dl className="mt-8 space-y-6">
           {FAQ.map((item) => (
@@ -212,9 +227,11 @@ export default function Pricing() {
               key={item.q}
               className="rounded-xl border border-[var(--brand-border)] bg-white p-6"
             >
-              <dt className="font-medium text-[var(--brand-text)]">{item.q}</dt>
+              <dt className="font-medium text-[var(--brand-text)]">
+                {st(`faqs.${item.q}.q`, item.q)}
+              </dt>
               <dd className="mt-2 text-sm text-[var(--brand-muted-2)]">
-                {item.a}
+                {st(`faqs.${item.q}.a`, item.a)}
               </dd>
             </div>
           ))}

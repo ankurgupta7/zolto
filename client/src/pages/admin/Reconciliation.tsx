@@ -6,6 +6,7 @@
  * Each scan is idempotent; the merchant runs it and confirms guesses by email.
  */
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -18,6 +19,7 @@ import {
 } from "@/components/admin/ui";
 
 export default function Reconciliation() {
+  const { t } = useTranslation("admin");
   const { user } = useAuth();
   const [stripeResult, setStripeResult] = useState<string | null>(null);
   const [posResult, setPosResult] = useState<string | null>(null);
@@ -26,29 +28,45 @@ export default function Reconciliation() {
     onSuccess: (data) => {
       const msg =
         data.newPendingReview > 0
-          ? `${data.newPendingReview} unmatched payment${data.newPendingReview === 1 ? "" : "s"} found — ${data.emailSent ? "a review email was sent." : "but the review email could not be sent."}`
+          ? t(
+              data.emailSent
+                ? "ops.reconciliation.stripeFoundSent"
+                : "ops.reconciliation.stripeFoundNotSent",
+              { count: data.newPendingReview },
+            )
           : data.newNoCandidates > 0
-            ? `${data.newNoCandidates} unmatched payment${data.newNoCandidates === 1 ? "" : "s"} found, but no in-stock piece was close enough in price to guess.`
-            : `No unmatched Stripe payments found (${data.scannedSucceededPayments} checked).`;
+            ? t("ops.reconciliation.stripeNoCandidates", {
+                count: data.newNoCandidates,
+              })
+            : t("ops.reconciliation.stripeClean", {
+                count: data.scannedSucceededPayments,
+              });
       setStripeResult(msg);
       toast.success(msg);
     },
-    onError: (e) => toast.error(e.message || "Stripe reconciliation failed."),
+    onError: (e) =>
+      toast.error(e.message || t("ops.reconciliation.stripeFailed")),
   });
 
   const posScan = trpc.reconciliation.runPos.useMutation({
     onSuccess: (data) => {
       const msg =
         data.newPendingReview > 0
-          ? `${data.newPendingReview} sale${data.newPendingReview === 1 ? "" : "s"} to confirm — ${data.emailSent ? "a review email was sent." : "but the review email could not be sent."}`
+          ? t(
+              data.emailSent
+                ? "ops.reconciliation.posFoundSent"
+                : "ops.reconciliation.posFoundNotSent",
+              { count: data.newPendingReview },
+            )
           : data.newNoCandidates > 0
-            ? `${data.newNoCandidates} sale${data.newNoCandidates === 1 ? "" : "s"} found, but no in-stock piece was close enough in price to guess.`
-            : `No unattributed in-person sales found (${data.scannedLines} checked).`;
+            ? t("ops.reconciliation.posNoCandidates", {
+                count: data.newNoCandidates,
+              })
+            : t("ops.reconciliation.posClean", { count: data.scannedLines });
       setPosResult(msg);
       toast.success(msg);
     },
-    onError: (e) =>
-      toast.error(e.message || "In-person reconciliation failed."),
+    onError: (e) => toast.error(e.message || t("ops.reconciliation.posFailed")),
   });
 
   if (user && user.role !== "admin" && user.role !== "superadmin") {
@@ -58,20 +76,20 @@ export default function Reconciliation() {
   return (
     <div>
       <PageHeader
-        title="Reconciliation"
-        description="Catch sales that slipped through without a clean match, and tie each one back to the right piece."
+        title={t("ops.reconciliation.title")}
+        description={t("ops.reconciliation.description")}
       />
 
       <SettingsCard
-        title="Stripe payments"
-        description="Scan recent payments on your own Stripe account for any missing from your records, and email a match request for each."
+        title={t("ops.reconciliation.stripeTitle")}
+        description={t("ops.reconciliation.stripeDescription")}
         footer={
           <PrimaryButton
             onClick={() => stripeScan.mutate({})}
             loading={stripeScan.isPending}
           >
             <CreditCard className="h-4 w-4" />
-            Reconcile Stripe payments
+            {t("ops.reconciliation.stripeButton")}
           </PrimaryButton>
         }
       >
@@ -79,23 +97,21 @@ export default function Reconciliation() {
           <p className="text-sm text-foreground">{stripeResult}</p>
         ) : (
           <p className="text-sm text-muted-foreground">
-            Reads your connected Stripe account — the one your customers pay
-            into. Best run at the end of a selling day. We'll never double-count
-            a payment already in your orders.
+            {t("ops.reconciliation.stripeIdle")}
           </p>
         )}
       </SettingsCard>
 
       <SettingsCard
-        title="In-person sales"
-        description="Find amount-only POS sales (cash, card, or TWINT) with no piece attached and email a one-click confirm for the likely match."
+        title={t("ops.reconciliation.posTitle")}
+        description={t("ops.reconciliation.posDescription")}
         footer={
           <PrimaryButton
             onClick={() => posScan.mutate({})}
             loading={posScan.isPending}
           >
             <Receipt className="h-4 w-4" />
-            Confirm in-person sales
+            {t("ops.reconciliation.posButton")}
           </PrimaryButton>
         }
       >
@@ -103,8 +119,7 @@ export default function Reconciliation() {
           <p className="text-sm text-foreground">{posResult}</p>
         ) : (
           <p className="text-sm text-muted-foreground">
-            Sold a piece at a market for a round number without scanning it?
-            This finds it and asks you to confirm which piece it was.
+            {t("ops.reconciliation.posIdle")}
           </p>
         )}
       </SettingsCard>

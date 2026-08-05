@@ -1,5 +1,6 @@
 import { useEffect, useMemo, type ReactNode } from "react";
 import { Link, useSearch } from "wouter";
+import { Trans } from "react-i18next";
 import { trpc } from "@/lib/trpc";
 import { storeAdminUrl } from "@/lib/surface";
 import { hardRedirect } from "@/lib/navigate";
@@ -7,6 +8,10 @@ import { Container } from "../components/Container";
 import { SignInOptions } from "@/components/SignInOptions";
 import { SignOutButton } from "@/components/SignOutButton";
 import { SIGNIN_PATH } from "@/const";
+import { useMarketingT } from "../lib/marketingI18n";
+
+/** Emphasis slot for the <Trans> sentences below (account email, store name). */
+const strongText = <span className="font-medium text-[var(--brand-text)]" />;
 
 /**
  * /signin — the returning merchant's front door.
@@ -38,6 +43,7 @@ const OAUTH_RETURN_MARK = "from=oauth";
 export const SIGNIN_RETURN_PATH = `/signin?${OAUTH_RETURN_MARK}`;
 
 export default function SignIn() {
+  const { t } = useMarketingT();
   const search = useSearch();
   const returnedFromOauth = useMemo(
     () => new URLSearchParams(search).get("from") === "oauth",
@@ -82,13 +88,14 @@ export default function SignIn() {
   // rather than choosing for them.
   if (!returnedFromOauth && signedIn && !store.isLoading && !pendingResolving) {
     return (
-      <SignInFrame title="You&rsquo;re already signed in.">
+      <SignInFrame title={t("signin.alreadyTitle")}>
         <p className="mt-3 text-[var(--brand-muted-2)]">
-          As{" "}
-          <span className="font-medium text-[var(--brand-text)]">
-            {me.data?.email ?? "this account"}
-          </span>
-          .
+          <Trans
+            t={t}
+            i18nKey="signin.alreadyAs"
+            values={{ email: me.data?.email ?? t("signin.thisAccount") }}
+            components={{ hl: strongText }}
+          />
         </p>
         <div className="mt-8 flex flex-col gap-3 sm:flex-row">
           {store.data ? (
@@ -96,7 +103,7 @@ export default function SignIn() {
               href={storeAdminUrl(store.data.slug)}
               className="rounded-md bg-[var(--brand-accent)] px-7 py-3 text-center text-xs font-medium uppercase tracking-[0.14em] text-[var(--brand-ink)] transition-colors hover:bg-[var(--brand-accent-light)]"
             >
-              Continue to {store.data.name} →
+              {t("signin.continueTo", { store: store.data.name })}
             </a>
           ) : pendingStore ? (
             // An unclaimed signup matches this account's email — resuming it
@@ -105,21 +112,21 @@ export default function SignIn() {
               href={finishSetupHref(pendingStore.slug)}
               className="rounded-md bg-[var(--brand-accent)] px-7 py-3 text-center text-xs font-medium uppercase tracking-[0.14em] text-[var(--brand-ink)] transition-colors hover:bg-[var(--brand-accent-light)]"
             >
-              Finish setting up {pendingStore.name} →
+              {t("signin.finishSetup", { store: pendingStore.name })}
             </Link>
           ) : (
             <Link
               href="/signup"
               className="rounded-md bg-[var(--brand-accent)] px-7 py-3 text-center text-xs font-medium uppercase tracking-[0.14em] text-[var(--brand-ink)] transition-colors hover:bg-[var(--brand-accent-light)]"
             >
-              Create your store →
+              {t("signin.createStore")}
             </Link>
           )}
           <SignOutButton
             to={SIGNIN_PATH}
             className="rounded-md border border-[var(--brand-ink)] px-7 py-3 text-center text-xs font-medium uppercase tracking-[0.14em] text-[var(--brand-ink)] transition-colors hover:bg-[var(--brand-ink)] hover:text-white"
           >
-            Use a different account
+            {t("signin.differentAccount")}
           </SignOutButton>
         </div>
       </SignInFrame>
@@ -133,35 +140,34 @@ export default function SignIn() {
   if (signedIn && !store.isLoading && !store.data && !pendingResolving) {
     if (pendingStore) {
       return (
-        <SignInFrame title="Your store is waiting.">
+        <SignInFrame title={t("signin.waitingTitle")}>
           <p className="mt-3 text-[var(--brand-muted-2)]">
-            You created{" "}
-            <span className="font-medium text-[var(--brand-text)]">
-              {pendingStore.name}
-            </span>{" "}
-            at signup but never finished setting it up. Pick up right where you
-            left off.
+            <Trans
+              t={t}
+              i18nKey="signin.waitingBody"
+              values={{ store: pendingStore.name }}
+              components={{ hl: strongText }}
+            />
           </p>
           <Link
             href={finishSetupHref(pendingStore.slug)}
             className="mt-8 inline-block rounded-md bg-[var(--brand-accent)] px-7 py-3 text-xs font-medium uppercase tracking-[0.14em] text-[var(--brand-ink)] transition-colors hover:bg-[var(--brand-accent-light)]"
           >
-            Finish setting up {pendingStore.name} →
+            {t("signin.finishSetup", { store: pendingStore.name })}
           </Link>
         </SignInFrame>
       );
     }
     return (
-      <SignInFrame title="You're signed in.">
+      <SignInFrame title={t("signin.signedInTitle")}>
         <p className="mt-3 text-[var(--brand-muted-2)]">
-          This account isn&rsquo;t attached to a store yet. Create one and
-          it&rsquo;ll be waiting here next time.
+          {t("signin.signedInBody")}
         </p>
         <Link
           href="/signup"
           className="mt-8 inline-block rounded-md bg-[var(--brand-accent)] px-7 py-3 text-xs font-medium uppercase tracking-[0.14em] text-[var(--brand-ink)] transition-colors hover:bg-[var(--brand-accent-light)]"
         >
-          Create your store →
+          {t("signin.createStore")}
         </Link>
       </SignInFrame>
     );
@@ -170,17 +176,15 @@ export default function SignIn() {
   // Came back from a provider without a session — the handshake failed.
   if (returnedFromOauth && !me.isLoading && !signedIn) {
     return (
-      <SignInFrame title={<>We couldn&rsquo;t sign you in.</>}>
+      <SignInFrame title={t("signin.failedTitle")}>
         <p className="mt-3 text-[var(--brand-muted-2)]">
-          The sign-in didn&rsquo;t complete. This usually means the browser is
-          blocking cookies — private windows and strict tracking protection stop
-          the session from being saved.
+          {t("signin.failedBody")}
         </p>
         <SignInOptions className="mt-8" next={SIGNIN_RETURN_PATH} />
         <p className="mt-6 text-sm text-[var(--brand-muted)]">
-          Don&rsquo;t have a store yet?{" "}
+          {t("signin.noStorePrompt")}{" "}
           <Link href="/signup" className="text-[var(--brand-accent)] underline">
-            Create one
+            {t("signin.noStoreLink")}
           </Link>
           .
         </p>
@@ -191,12 +195,12 @@ export default function SignIn() {
   // Not signed in yet and not mid-handshake: offer every sign-in method.
   if (!me.isLoading && !signedIn) {
     return (
-      <SignInFrame title="Sign in to your store.">
+      <SignInFrame title={t("signin.signInTitle")}>
         <SignInOptions className="mt-8" next={SIGNIN_RETURN_PATH} />
         <p className="mt-6 text-sm text-[var(--brand-muted)]">
-          Don&rsquo;t have a store yet?{" "}
+          {t("signin.noStorePrompt")}{" "}
           <Link href="/signup" className="text-[var(--brand-accent)] underline">
-            Create one
+            {t("signin.noStoreLink")}
           </Link>
           .
         </p>
@@ -208,11 +212,11 @@ export default function SignIn() {
   // store lookup, admin redirect) — one steady message rather than a flicker
   // through three different ones.
   return (
-    <SignInFrame title="Signing you in…">
+    <SignInFrame title={t("signin.progressTitle")}>
       <p className="mt-3 text-[var(--brand-muted-2)]">
         {signedIn && store.data
-          ? `Taking you to ${store.data.name}.`
-          : "One moment — we're taking you to your store."}
+          ? t("signin.takingYouTo", { store: store.data.name })
+          : t("signin.oneMoment")}
       </p>
       <span
         aria-hidden
@@ -232,10 +236,11 @@ function SignInFrame({
   title: ReactNode;
   children: ReactNode;
 }) {
+  const { t } = useMarketingT();
   return (
     <Container width="md" className="py-32">
       <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
-        welcome back
+        {t("signin.eyebrow")}
       </p>
       <h1 className="mt-2 font-serif text-3xl text-[var(--brand-text)]">
         {title}

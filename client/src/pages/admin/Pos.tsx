@@ -6,6 +6,7 @@
  * API key that pairs a terminal lives on Keys & access — linked from here.
  */
 import { useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -50,6 +51,7 @@ function StatusPill({
 }
 
 export default function Pos() {
+  const { t } = useTranslation("admin");
   const utils = trpc.useUtils();
   const me = trpc.tenant.me.useQuery(undefined, { retry: false });
   const connect = trpc.tenant.getStripeConnectUrl.useQuery(undefined, {
@@ -92,11 +94,11 @@ export default function Pos() {
     e.target.value = "";
     if (!file) return;
     if (!(QR_TYPES as readonly string[]).includes(file.type)) {
-      toast.error("Upload a PNG, JPEG or WebP image of your TWINT QR code.");
+      toast.error(t("ops.pos.errQrType"));
       return;
     }
     if (file.size > MAX_QR_BYTES) {
-      toast.error("That image is over 5 MB — try a smaller export.");
+      toast.error(t("ops.pos.errQrSize"));
       return;
     }
     setUploading(true);
@@ -108,7 +110,7 @@ export default function Pos() {
       });
     };
     reader.onerror = () => {
-      toast.error("Couldn't read that file.");
+      toast.error(t("ops.pos.errQrRead"));
       setUploading(false);
     };
     reader.readAsDataURL(file);
@@ -118,15 +120,22 @@ export default function Pos() {
     if (connect.data?.url) {
       window.location.href = connect.data.url;
     } else {
-      toast.error("Stripe Connect isn't set up on the platform yet.");
+      toast.error(t("ops.pos.connectMissing"));
     }
   };
+
+  const howSteps = [
+    t("ops.pos.howStep1"),
+    t("ops.pos.howStep2"),
+    t("ops.pos.howStep3"),
+    t("ops.pos.howStep4"),
+  ];
 
   return (
     <div>
       <PageHeader
-        title="Point of sale"
-        description="Take card and TWINT payments in person — at markets, fairs, or your studio — right from your phone."
+        title={t("ops.pos.title")}
+        description={t("ops.pos.description")}
       />
 
       {/* Readiness overview */}
@@ -136,16 +145,15 @@ export default function Pos() {
             <div className="flex items-center gap-2">
               <Nfc className="h-5 w-5 text-primary" />
               <span className="text-sm font-semibold text-foreground">
-                Tap to Pay
+                {t("ops.pos.tapToPay")}
               </span>
             </div>
             <StatusPill ok={connected}>
-              {connected ? "Ready" : "Not set up"}
+              {connected ? t("ops.pos.ready") : t("ops.pos.notSetUp")}
             </StatusPill>
           </div>
           <p className="text-sm text-muted-foreground">
-            Accept contactless cards and phones by tapping them to your device —
-            no extra hardware.
+            {t("ops.pos.tapToPayBody")}
           </p>
         </div>
 
@@ -154,16 +162,15 @@ export default function Pos() {
             <div className="flex items-center gap-2">
               <Smartphone className="h-5 w-5 text-primary" />
               <span className="text-sm font-semibold text-foreground">
-                TWINT
+                {t("ops.pos.twint")}
               </span>
             </div>
             <StatusPill ok={connected}>
-              {connected ? "Ready" : "Not set up"}
+              {connected ? t("ops.pos.ready") : t("ops.pos.notSetUp")}
             </StatusPill>
           </div>
           <p className="text-sm text-muted-foreground">
-            Swiss customers pay with the TWINT app. Enabled automatically once
-            payments are connected.
+            {t("ops.pos.twintBody")}
           </p>
         </div>
 
@@ -172,35 +179,33 @@ export default function Pos() {
             <div className="flex items-center gap-2">
               <QrCode className="h-5 w-5 text-primary" />
               <span className="text-sm font-semibold text-foreground">
-                TWINT QR sticker
+                {t("ops.pos.twintQrSticker")}
               </span>
             </div>
             <StatusPill ok={Boolean(twintQrUrl)}>
-              {twintQrUrl ? "Ready" : "Not uploaded"}
+              {twintQrUrl ? t("ops.pos.ready") : t("ops.pos.notUploaded")}
             </StatusPill>
           </div>
           <p className="text-sm text-muted-foreground">
-            Your own TWINT sticker, shown on screen to scan. Pays you directly
-            at TWINT's rate — no Stripe in between.
+            {t("ops.pos.qrCardBody")}
           </p>
         </div>
       </div>
 
       {/* Step 1 — connect payments */}
       <SettingsCard
-        title="1 · Connect payments"
-        description="Link your own Stripe account so in-person sales pay out directly to you."
+        title={t("ops.pos.step1Title")}
+        description={t("ops.pos.step1Description")}
       >
         {connected ? (
           <div className="flex items-center gap-2 text-sm text-emerald-700 dark:text-emerald-300">
             <CheckCircle2 className="h-4 w-4" />
-            Your Stripe account is connected — payouts go straight to you.
+            {t("ops.pos.connectedNote")}
           </div>
         ) : (
           <div className="flex flex-col items-start gap-3">
             <p className="text-sm text-muted-foreground">
-              You'll be taken to Stripe to connect or create an account. This is
-              the same connection used for online checkout.
+              {t("ops.pos.connectIntro")}
             </p>
             <PrimaryButton
               onClick={handleConnect}
@@ -208,7 +213,7 @@ export default function Pos() {
               disabled={connect.data?.url == null && !connect.isLoading}
             >
               <CreditCard className="h-4 w-4" />
-              Connect Stripe
+              {t("ops.pos.connectStripe")}
             </PrimaryButton>
           </div>
         )}
@@ -218,33 +223,35 @@ export default function Pos() {
           how to connect payments and where the API key lived, but never where
           to get the app those things are for. */}
       <SettingsCard
-        title="2 · Get the app"
-        description="The register runs as an app on your phone — that's what takes the payment."
+        title={t("ops.pos.step2Title")}
+        description={t("ops.pos.step2Description")}
       >
         <PosAppCard serverUrl={serverUrl} />
       </SettingsCard>
 
       {/* Step 3 — pair the terminal */}
       <SettingsCard
-        title="3 · Pair your phone"
-        description="Your POS app authenticates with your store's POS API key."
+        title={t("ops.pos.step3Title")}
+        description={t("ops.pos.step3Description")}
       >
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-start gap-3">
             <MapPin className="mt-0.5 h-5 w-5 text-muted-foreground" />
             <div>
               <p className="text-sm font-medium text-foreground">
-                Terminal location
+                {t("ops.pos.terminalLocation")}
               </p>
               <p className="text-xs text-muted-foreground">
                 {terminalReady
-                  ? "Provisioned — your device is registered for Tap to Pay."
-                  : "Created automatically the first time you take a payment."}
+                  ? t("ops.pos.terminalProvisionedNote")
+                  : t("ops.pos.terminalPendingNote")}
               </p>
             </div>
           </div>
           <StatusPill ok={terminalReady}>
-            {terminalReady ? "Provisioned" : "Pending first use"}
+            {terminalReady
+              ? t("ops.pos.provisioned")
+              : t("ops.pos.pendingFirstUse")}
           </StatusPill>
         </div>
 
@@ -254,22 +261,22 @@ export default function Pos() {
             className="inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
           >
             <KeyRound className="h-4 w-4" />
-            Manage POS API key
+            {t("ops.pos.manageKey")}
           </Link>
         </div>
       </SettingsCard>
 
       {/* TWINT QR sticker */}
       <SettingsCard
-        title="4 · Your TWINT QR sticker (optional)"
-        description="Upload the QR code TWINT gave you and the POS can show it on screen — the customer scans it and pays you directly, at TWINT's own rate."
+        title={t("ops.pos.step4Title")}
+        description={t("ops.pos.step4Description")}
       >
         <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
           <div className="flex h-40 w-40 shrink-0 items-center justify-center rounded-lg border bg-muted/40">
             {twintQrUrl ? (
               <img
                 src={twintQrUrl}
-                alt="Your TWINT QR code"
+                alt={t("ops.pos.qrAlt")}
                 className="h-full w-full rounded-lg object-contain p-2"
               />
             ) : (
@@ -279,14 +286,10 @@ export default function Pos() {
 
           <div className="flex-1">
             <p className="text-sm text-muted-foreground">
-              This is the sticker TWINT issues with your acceptance contract.
-              Because TWINT doesn't tell us when a scan is paid, the POS asks
-              you to confirm the payment landed in your TWINT app — the same way
-              it handles cash.
+              {t("ops.pos.qrExplain1")}
             </p>
             <p className="mt-2 text-sm text-muted-foreground">
-              The customer types the amount themselves, so the POS shows it in
-              large type next to your code.
+              {t("ops.pos.qrExplain2")}
             </p>
 
             <div className="mt-4 flex flex-wrap gap-2">
@@ -302,7 +305,7 @@ export default function Pos() {
                 loading={uploading}
               >
                 <Upload className="h-4 w-4" />
-                {twintQrUrl ? "Replace image" : "Upload QR code"}
+                {twintQrUrl ? t("ops.pos.replaceImage") : t("ops.pos.uploadQr")}
               </PrimaryButton>
               {twintQrUrl && (
                 <button
@@ -312,7 +315,7 @@ export default function Pos() {
                   className="inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent disabled:opacity-50"
                 >
                   <Trash2 className="h-4 w-4" />
-                  Remove
+                  {t("ops.pos.remove")}
                 </button>
               )}
             </div>
@@ -321,14 +324,9 @@ export default function Pos() {
       </SettingsCard>
 
       {/* How it works */}
-      <SettingsCard title="Taking a payment">
+      <SettingsCard title={t("ops.pos.howTitle")}>
         <ol className="space-y-3">
-          {[
-            "Open the Zolto POS app on your phone and sign in with your POS API key.",
-            "Add the item — or enter an amount — and choose Tap to Pay or TWINT.",
-            "Have the customer tap their card or phone, or scan the TWINT code.",
-            "Inventory syncs back here automatically, so a sold piece leaves your online shop too.",
-          ].map((step, i) => (
+          {howSteps.map((step, i) => (
             <li key={i} className="flex gap-3 text-sm text-foreground">
               <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
                 {i + 1}

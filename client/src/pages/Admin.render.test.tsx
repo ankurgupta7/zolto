@@ -536,13 +536,24 @@ describe("Admin page — product row actions", () => {
     fireEvent.change(screen.getByLabelText("Description (EN)"), {
       target: { value: "A new ring" },
     });
+    // French and Italian copy is hand-editable right in the row.
+    fireEvent.change(screen.getByLabelText("Name (FR)"), {
+      target: { value: "Bague neuve" },
+    });
+    fireEvent.change(screen.getByLabelText("Description (IT)"), {
+      target: { value: "Un anello nuovo" },
+    });
     fireEvent.click(screen.getByText("Save"));
     expect(mocks.updateMutate).toHaveBeenCalledWith({
       id: 1,
       name: "Neuer Ring",
       nameEn: null,
+      nameFr: "Bague neuve",
+      nameIt: null,
       description: "Ein Ring aus Silber",
       descriptionEn: "A new ring",
+      descriptionFr: null,
+      descriptionIt: "Un anello nuovo",
       price: 150,
       category: "Earrings",
     });
@@ -762,7 +773,9 @@ describe("Admin page — header tools", () => {
 
   it("translates storefront locales product by product", async () => {
     render(<Admin />);
-    fireEvent.click(screen.getByRole("button", { name: "Translate de/en/fr" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Translate de/en/fr/it" }),
+    );
     await waitFor(() =>
       expect(mocks.translateLocalesMutate).toHaveBeenCalledTimes(3),
     );
@@ -770,7 +783,7 @@ describe("Admin page — header tools", () => {
     expect(mocks.translateLocalesMutate).toHaveBeenCalledWith({ productId: 3 });
     await waitFor(() =>
       expect(toast.success).toHaveBeenCalledWith(
-        "Translated 3 products into German, English and French.",
+        "Translated 3 products into German, English, French and Italian.",
       ),
     );
     expect(mocks.adminListInvalidate).toHaveBeenCalled();
@@ -779,10 +792,12 @@ describe("Admin page — header tools", () => {
   it("reports when every product already has locale translations", async () => {
     mocks.translateLocalesResult = { skipped: true };
     render(<Admin />);
-    fireEvent.click(screen.getByRole("button", { name: "Translate de/en/fr" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Translate de/en/fr/it" }),
+    );
     await waitFor(() =>
       expect(toast.success).toHaveBeenCalledWith(
-        "All products already have de/en/fr translations.",
+        "All products already have de/en/fr/it translations.",
       ),
     );
   });

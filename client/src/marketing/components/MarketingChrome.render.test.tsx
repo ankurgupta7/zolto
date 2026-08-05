@@ -16,6 +16,7 @@ import {
   StoreShortcut,
   SIGN_IN_PATH,
 } from "./MarketingChrome";
+import i18n from "@/lib/i18n";
 
 const mocks = vi.hoisted(() => ({
   meData: undefined as unknown,
@@ -205,49 +206,47 @@ describe("MarketingNav — mobile navigation", () => {
   });
 });
 
-describe("MarketingFooter", () => {
-  function renderFooter() {
-    const { hook } = memoryLocation({ path: "/", static: true });
-    return render(
-      <Router hook={hook}>
-        <MarketingFooter />
-      </Router>,
-    );
-  }
-
-  it("carries the origin and hosting location on every page", () => {
-    // The footer is the one surface a visitor sees regardless of route, so
-    // where Zolto is from — and where it runs — lives here as well as on the
-    // landing band, with a link to the row-by-row version.
-    const { container } = renderFooter();
-    const text = container.textContent ?? "";
-    expect(text).toContain(SOVEREIGNTY.headline);
-    expect(text).toContain(DATA_RESIDENCY.region);
-    expect(text).toContain(DATA_RESIDENCY.primaryCountry);
-    expect(
-      screen
-        .getByRole("link", { name: /what runs where/i })
-        .getAttribute("href"),
-    ).toBe(SOVEREIGNTY.href);
+describe("MarketingNav — language picker", () => {
+  afterEach(async () => {
+    // Leave the suite in its jsdom baseline language (en) with no saved choice.
+    await i18n.changeLanguage("en");
+    localStorage.removeItem("kalakosh_lang");
+    document.documentElement.lang = "";
   });
 
-  it("offers the Swissness page from the main nav too", () => {
-    // Prominence is the point: a claim reachable only from the homepage band
-    // is not a claim a returning visitor can find again.
+  it("offers the four languages as uppercase codes", () => {
     renderNav();
-    const nav = screen.getByRole("navigation", { name: "Main" });
-    expect(
-      within(nav).getByRole("link", { name: /swiss/i }).getAttribute("href"),
-    ).toBe(SOVEREIGNTY.href);
+    const picker = screen.getAllByLabelText(
+      "Switch language",
+    )[0] as HTMLSelectElement;
+    const options = Array.from(picker.options);
+    expect(options.map((o) => o.value)).toEqual(["de", "en", "fr", "it"]);
+    expect(options.map((o) => o.textContent)).toEqual(["DE", "EN", "FR", "IT"]);
   });
 
-  it("still links the legal pages", () => {
-    renderFooter();
-    const hrefs = screen
-      .getAllByRole("link")
-      .map((a) => a.getAttribute("href"));
-    expect(hrefs).toContain("/legal/privacy");
-    expect(hrefs).toContain("/legal/terms");
+  it("switches the UI language, persists it, and updates <html lang>", async () => {
+    renderNav();
+    const picker = screen.getAllByLabelText(
+      "Switch language",
+    )[0] as HTMLSelectElement;
+    fireEvent.change(picker, { target: { value: "fr" } });
+
+    // Same persistence contract as the storefront switcher.
+    expect(localStorage.getItem("kalakosh_lang")).toBe("fr");
+    expect(document.documentElement.lang).toBe("fr-CH");
+    // The nav itself re-renders in French.
+    await waitFor(() =>
+      expect(screen.getByRole("link", { name: "Tarifs" })).toBeTruthy(),
+    );
+    expect(screen.queryByRole("link", { name: "Pricing" })).toBeNull();
+  });
+
+  it("is reachable from the mobile sheet too", async () => {
+    renderNav();
+    fireEvent.click(screen.getByRole("button", { name: "Open menu" }));
+    await waitFor(() => expect(screen.getByRole("dialog")).toBeTruthy());
+    const sheet = screen.getByRole("dialog");
+    expect(within(sheet).getByLabelText("Switch language")).toBeTruthy();
   });
 });
 
@@ -305,5 +304,51 @@ describe("MarketingNav — the signed-in account is visible and escapable", () =
     fireEvent.click(screen.getByRole("button", { name: /open menu|menu/i }));
     const drawerText = document.body.textContent ?? "";
     expect(drawerText).toMatch(/Signed in as anna@bergblume\.ch/);
+  });
+});
+
+describe("MarketingFooter", () => {
+  function renderFooter() {
+    const { hook } = memoryLocation({ path: "/", static: true });
+    return render(
+      <Router hook={hook}>
+        <MarketingFooter />
+      </Router>,
+    );
+  }
+
+  it("carries the origin and hosting location on every page", () => {
+    // The footer is the one surface a visitor sees regardless of route, so
+    // where Zolto is from — and where it runs — lives here as well as on the
+    // landing band, with a link to the row-by-row version.
+    const { container } = renderFooter();
+    const text = container.textContent ?? "";
+    expect(text).toContain(SOVEREIGNTY.headline);
+    expect(text).toContain(DATA_RESIDENCY.region);
+    expect(text).toContain(DATA_RESIDENCY.primaryCountry);
+    expect(
+      screen
+        .getByRole("link", { name: /what runs where/i })
+        .getAttribute("href"),
+    ).toBe(SOVEREIGNTY.href);
+  });
+
+  it("offers the Swissness page from the main nav too", () => {
+    // Prominence is the point: a claim reachable only from the homepage band
+    // is not a claim a returning visitor can find again.
+    renderNav();
+    const nav = screen.getByRole("navigation", { name: "Main" });
+    expect(
+      within(nav).getByRole("link", { name: /swiss/i }).getAttribute("href"),
+    ).toBe(SOVEREIGNTY.href);
+  });
+
+  it("still links the legal pages", () => {
+    renderFooter();
+    const hrefs = screen
+      .getAllByRole("link")
+      .map((a) => a.getAttribute("href"));
+    expect(hrefs).toContain("/legal/privacy");
+    expect(hrefs).toContain("/legal/terms");
   });
 });

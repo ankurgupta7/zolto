@@ -66,6 +66,9 @@ export const checkoutRouter = router({
         // "online" for fee purposes; the split feeds the pivot's north-star
         // metric (vendors with >= 1 online/agent sale per month).
         channel: z.enum(["web", "agent"]).default("web"),
+        // Storefront language the customer is browsing in — drives the
+        // Stripe Checkout page language and the receipt email's language.
+        locale: z.enum(["de", "en", "fr", "it"]).optional(),
       }),
     )
     .mutation(async ({ input, ctx }) => {
@@ -80,6 +83,7 @@ export const checkoutRouter = router({
           tenant: ctx.tenant,
           productIds: input.productIds,
           channel: input.channel,
+          locale: input.locale,
           baseUrl: resolveBaseUrl(),
         });
         return { url: result.url, sessionId: result.sessionId };

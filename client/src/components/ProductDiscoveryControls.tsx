@@ -1,4 +1,7 @@
-
+import { useTranslation } from "react-i18next";
+// Ensure the shared i18n instance is initialized even when this control is
+// rendered in isolation (e.g. under test) before main.tsx has run.
+import "@/lib/i18n";
 import { LayoutGrid, List, ChevronDown, ChevronUp } from "lucide-react";
 import {
   Select,
@@ -31,6 +34,8 @@ export default function ProductDiscoveryControls({
   onToggleCategory,
   totalProducts,
 }: ProductDiscoveryControlsProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="bg-white border border-[var(--brand-border)] p-6 mb-6">
       <div className="flex flex-col gap-4">
@@ -43,7 +48,7 @@ export default function ProductDiscoveryControls({
                 htmlFor="sort-select"
                 className="text-xs uppercase tracking-[0.15em] text-foreground font-sans font-medium"
               >
-                Sort by:
+                {t("discovery.sortBy")}
               </label>
               <Select
                 value={sortBy}
@@ -56,9 +61,15 @@ export default function ProductDiscoveryControls({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="newest">Newest First</SelectItem>
-                  <SelectItem value="category">By Category</SelectItem>
-                  <SelectItem value="name">By Name (A-Z)</SelectItem>
+                  <SelectItem value="newest">
+                    {t("discovery.sortNewest")}
+                  </SelectItem>
+                  <SelectItem value="category">
+                    {t("discovery.sortCategory")}
+                  </SelectItem>
+                  <SelectItem value="name">
+                    {t("discovery.sortName")}
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -66,7 +77,7 @@ export default function ProductDiscoveryControls({
             {/* View Mode Toggle */}
             <div className="flex items-center gap-2">
               <span className="text-xs uppercase tracking-[0.15em] text-foreground font-sans font-medium">
-                View:
+                {t("discovery.view")}
               </span>
               <ToggleGroup
                 type="single"
@@ -78,16 +89,16 @@ export default function ProductDiscoveryControls({
               >
                 <ToggleGroupItem
                   value="grid"
-                  aria-label="Grid view"
-                  title="Grid view with thumbnails"
+                  aria-label={t("discovery.gridView")}
+                  title={t("discovery.gridViewTitle")}
                   className="data-[state=on]:bg-[var(--brand-ink)] data-[state=on]:text-white"
                 >
                   <LayoutGrid size={16} />
                 </ToggleGroupItem>
                 <ToggleGroupItem
                   value="list"
-                  aria-label="List view"
-                  title="List view with details"
+                  aria-label={t("discovery.listView")}
+                  title={t("discovery.listViewTitle")}
                   className="data-[state=on]:bg-[var(--brand-ink)] data-[state=on]:text-white"
                 >
                   <List size={16} />
@@ -98,7 +109,7 @@ export default function ProductDiscoveryControls({
 
           {/* Product count */}
           <div className="text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans">
-            {totalProducts} product{totalProducts !== 1 ? "s" : ""}
+            {t("discovery.products", { count: totalProducts })}
           </div>
         </div>
 
@@ -106,7 +117,7 @@ export default function ProductDiscoveryControls({
         {sortBy === "category" && (
           <div className="flex items-center gap-2 pt-2 border-t border-[var(--brand-border)]">
             <span className="text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans">
-              Categories:
+              {t("discovery.categories")}
             </span>
             <button
               type="button"
@@ -117,7 +128,7 @@ export default function ProductDiscoveryControls({
               className="flex items-center gap-1 text-xs uppercase tracking-[0.15em] text-[var(--brand-ink)] font-sans hover:text-[var(--brand-accent)] transition-colors"
             >
               <ChevronDown size={14} />
-              Expand All
+              {t("discovery.expandAll")}
             </button>
             <button
               type="button"
@@ -128,7 +139,7 @@ export default function ProductDiscoveryControls({
               className="flex items-center gap-1 text-xs uppercase tracking-[0.15em] text-[var(--brand-ink)] font-sans hover:text-[var(--brand-accent)] transition-colors"
             >
               <ChevronUp size={14} />
-              Collapse All
+              {t("discovery.collapseAll")}
             </button>
           </div>
         )}

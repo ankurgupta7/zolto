@@ -20,6 +20,7 @@
     "location": "Location",
     "locationValue": "Zurich, Switzerland",
     "whatsapp": "WhatsApp",
+    "whatsappButton": "Chat with us on WhatsApp",
     "instagram": "Instagram",
     "followCaption": "Follow us for new arrivals",
     "responseTime": "Response Time",
@@ -45,6 +46,18 @@
     "errorRequired": "Please fill in all required fields.",
     "successMessage": "Your message has been sent. We'll be in touch soon."
   },
+  "support": {
+    "title": "Ask us anything",
+    "intro": "Questions about materials, sizing, availability or a specific piece? I'll answer from the shop's own catalog.",
+    "placeholder": "Type your question…",
+    "send": "Send",
+    "openChat": "Open chat",
+    "closeChat": "Close chat"
+  },
+  "aiChat": {
+    "placeholder": "Type your message...",
+    "emptyState": "Start a conversation with AI"
+  },
   "shop": {
     "title": "The Collection",
     "pieces_one": "{{count}} item",
@@ -54,6 +67,22 @@
     "noPiecesCategory": "No items in the {{category}} collection yet.",
     "noPiecesAll": "The collection is being curated. Check back soon."
   },
+  "discovery": {
+    "sortBy": "Sort by:",
+    "sortNewest": "Newest First",
+    "sortCategory": "By Category",
+    "sortName": "By Name (A-Z)",
+    "view": "View:",
+    "gridView": "Grid view",
+    "gridViewTitle": "Grid view with thumbnails",
+    "listView": "List view",
+    "listViewTitle": "List view with details",
+    "categories": "Categories:",
+    "expandAll": "Expand All",
+    "collapseAll": "Collapse All",
+    "products_one": "{{count}} product",
+    "products_other": "{{count}} products"
+  },
   "product": {
     "sold": "Sold",
     "enquireWhatsApp": "Enquire via WhatsApp",
@@ -62,6 +91,23 @@
     "uniqueCaption": "Handpicked with care",
     "enquirySimilar": "Hi, I'm interested in an item similar to \"{{name}}\" — could you let me know if something similar is available? I reached you via the website button: {{link}}",
     "enquiryAvailable": "Hi, I'm interested in \"{{name}}\" — could you tell me more? I reached you via the website button: {{link}}"
+  },
+  "productList": {
+    "qty": "Qty: {{quantity}}",
+    "hideFromShop": "Hide from shop",
+    "showInShop": "Show in shop",
+    "editProduct": "Edit product",
+    "deleteProduct": "Delete product",
+    "categoryCount": "({{n}})"
+  },
+  "lightbox": {
+    "title": "Full image view",
+    "imageAlt": "View {{index}} of {{total}}",
+    "counter": "{{index}} / {{total}}",
+    "close": "Close",
+    "previous": "Previous image",
+    "next": "Next image",
+    "goTo": "Go to image {{index}}"
   },
   "cart": {
     "title": "Your Bag",
@@ -178,10 +224,14 @@
     "include": "Include",
     "fieldNameDe": "Name (DE)",
     "fieldNameEn": "Name (EN)",
+    "fieldNameFr": "Name (FR)",
+    "fieldNameIt": "Name (IT)",
     "fieldCategory": "Category",
     "fieldPrice": "Price (CHF)",
     "fieldDescriptionDe": "Description (DE)",
     "fieldDescriptionEn": "Description (EN)",
+    "fieldDescriptionFr": "Description (FR)",
+    "fieldDescriptionIt": "Description (IT)",
     "pricePlaceholder": "e.g. 185.00",
     "selectedForPublish": "<strong>{{confirmed}}</strong> of {{total}} products selected for publishing",
     "needsPrice_one": "⚠ {{count}} product still needs a price",
@@ -207,5 +257,13 @@
     "body": "Or it never existed — hard to say. Either way, there's nothing here. The good stuff is a click away.",
     "shop": "Browse the shop",
     "home": "Back to the front page"
+  },
+  "errors": {
+    "unexpected": "An unexpected error occurred.",
+    "reload": "Reload Page"
+  },
+  "common": {
+    "close": "Close",
+    "loading": "Loading"
   }
 }

@@ -49,8 +49,12 @@ interface ReviewCard {
   photoIds: string[];
   name: string;
   nameEn: string;
+  nameFr: string;
+  nameIt: string;
   description: string;
   descriptionEn: string;
+  descriptionFr: string;
+  descriptionIt: string;
   category: ProductCategory;
   price: string;
   /** Why the AI proposed this price — shown so the merchant can judge it. */
@@ -356,8 +360,12 @@ export default function BulkUpload() {
           photoIds: rg.photoIds,
           name: aiResult?.name ?? FALLBACK.name,
           nameEn: aiResult?.nameEn ?? FALLBACK.nameEn,
+          nameFr: aiResult?.nameFr ?? "",
+          nameIt: aiResult?.nameIt ?? "",
           description: aiResult?.description ?? FALLBACK.description,
           descriptionEn: aiResult?.descriptionEn ?? FALLBACK.descriptionEn,
+          descriptionFr: aiResult?.descriptionFr ?? "",
+          descriptionIt: aiResult?.descriptionIt ?? "",
           category: (aiResult?.category as ProductCategory) ?? "Other",
           // Pre-filled only when the AI had the merchant's own catalogue to
           // ground it; otherwise left blank on purpose (server returns null).
@@ -432,8 +440,12 @@ export default function BulkUpload() {
           photoIds: rg.photoIds,
           name: FALLBACK.name,
           nameEn: FALLBACK.nameEn,
+          nameFr: "",
+          nameIt: "",
           description: FALLBACK.description,
           descriptionEn: FALLBACK.descriptionEn,
+          descriptionFr: "",
+          descriptionIt: "",
           category: "Other" as ProductCategory,
           priceBasis: null,
           price: "",
@@ -533,7 +545,9 @@ export default function BulkUpload() {
             return { data: photo.dataUrl, mimeType: photo.mimeType };
           }),
           description: card.description,
-          descriptionEn: card.descriptionEn,
+          descriptionEn: card.descriptionEn || undefined,
+          descriptionFr: card.descriptionFr || undefined,
+          descriptionIt: card.descriptionIt || undefined,
           updateDescription: decision.updateDescription,
         }));
 
@@ -559,8 +573,12 @@ export default function BulkUpload() {
         const productsToCreate = toCreate.map((card) => ({
           name: card.name,
           nameEn: card.nameEn || undefined,
+          nameFr: card.nameFr || undefined,
+          nameIt: card.nameIt || undefined,
           description: card.description,
           descriptionEn: card.descriptionEn || undefined,
+          descriptionFr: card.descriptionFr || undefined,
+          descriptionIt: card.descriptionIt || undefined,
           price: parseFloat(card.price),
           category: card.category,
           images: card.photoIds.map((pid) => {
@@ -1255,6 +1273,52 @@ export default function BulkUpload() {
                               />
                             </div>
 
+                            {/* Name FR */}
+                            <div>
+                              <label
+                                htmlFor={`bulk-nameFr-${card.groupId}`}
+                                className="block text-xs uppercase tracking-[0.12em] text-foreground font-sans mb-1.5"
+                              >
+                                {t("bulkUpload.fieldNameFr")}
+                              </label>
+                              <input
+                                id={`bulk-nameFr-${card.groupId}`}
+                                type="text"
+                                value={card.nameFr}
+                                onChange={(e) =>
+                                  updateCard(
+                                    card.groupId,
+                                    "nameFr",
+                                    e.target.value,
+                                  )
+                                }
+                                className="w-full border border-[var(--brand-ink)]/20 px-3 py-2 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] transition-colors bg-transparent"
+                              />
+                            </div>
+
+                            {/* Name IT */}
+                            <div>
+                              <label
+                                htmlFor={`bulk-nameIt-${card.groupId}`}
+                                className="block text-xs uppercase tracking-[0.12em] text-foreground font-sans mb-1.5"
+                              >
+                                {t("bulkUpload.fieldNameIt")}
+                              </label>
+                              <input
+                                id={`bulk-nameIt-${card.groupId}`}
+                                type="text"
+                                value={card.nameIt}
+                                onChange={(e) =>
+                                  updateCard(
+                                    card.groupId,
+                                    "nameIt",
+                                    e.target.value,
+                                  )
+                                }
+                                className="w-full border border-[var(--brand-ink)]/20 px-3 py-2 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] transition-colors bg-transparent"
+                              />
+                            </div>
+
                             <div>
                               <label
                                 htmlFor={`bulk-category-${card.groupId}`}
@@ -1363,6 +1427,52 @@ export default function BulkUpload() {
                                   updateCard(
                                     card.groupId,
                                     "descriptionEn",
+                                    e.target.value,
+                                  )
+                                }
+                                rows={3}
+                                className="w-full border border-[var(--brand-ink)]/20 px-3 py-2 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] transition-colors bg-transparent resize-none"
+                              />
+                            </div>
+
+                            {/* Description FR */}
+                            <div>
+                              <label
+                                htmlFor={`bulk-descriptionFr-${card.groupId}`}
+                                className="block text-xs uppercase tracking-[0.12em] text-foreground font-sans mb-1.5"
+                              >
+                                {t("bulkUpload.fieldDescriptionFr")}
+                              </label>
+                              <textarea
+                                id={`bulk-descriptionFr-${card.groupId}`}
+                                value={card.descriptionFr}
+                                onChange={(e) =>
+                                  updateCard(
+                                    card.groupId,
+                                    "descriptionFr",
+                                    e.target.value,
+                                  )
+                                }
+                                rows={3}
+                                className="w-full border border-[var(--brand-ink)]/20 px-3 py-2 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] transition-colors bg-transparent resize-none"
+                              />
+                            </div>
+
+                            {/* Description IT */}
+                            <div>
+                              <label
+                                htmlFor={`bulk-descriptionIt-${card.groupId}`}
+                                className="block text-xs uppercase tracking-[0.12em] text-foreground font-sans mb-1.5"
+                              >
+                                {t("bulkUpload.fieldDescriptionIt")}
+                              </label>
+                              <textarea
+                                id={`bulk-descriptionIt-${card.groupId}`}
+                                value={card.descriptionIt}
+                                onChange={(e) =>
+                                  updateCard(
+                                    card.groupId,
+                                    "descriptionIt",
                                     e.target.value,
                                   )
                                 }

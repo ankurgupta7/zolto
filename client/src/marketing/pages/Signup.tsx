@@ -17,6 +17,8 @@ import {
   MIGRATE_FROM_PROVIDERS,
   type MigrateFromProvider,
 } from "@shared/const";
+import { useMarketingT } from "../lib/marketingI18n";
+import type { SupportedLanguage } from "@/lib/languages";
 
 /**
  * Signup wizard: details → template → branding.
@@ -29,7 +31,25 @@ import {
  * step 1's fields never half-brands a store.
  */
 
-const STEPS = ["Store details", "Template", "Branding"] as const;
+const STEPS = ["details", "template", "branding"] as const;
+
+/**
+ * The vertical labels already exist in four languages in shared/verticals.ts,
+ * so they are read from there rather than duplicated into the locale files —
+ * the same shape client/src/hooks/useCategories.ts uses for category labels.
+ */
+function verticalLabel(v: Vertical, lang: SupportedLanguage): string {
+  const preset = VERTICAL_PRESETS[v];
+  const localized =
+    lang === "de"
+      ? preset.labelDe
+      : lang === "fr"
+        ? preset.labelFr
+        : lang === "it"
+          ? preset.labelIt
+          : preset.labelEn;
+  return localized || preset.labelEn;
+}
 
 const LOGO_MIME_TYPES = ["image/png", "image/jpeg", "image/webp"] as const;
 type LogoMime = (typeof LOGO_MIME_TYPES)[number];
@@ -42,6 +62,7 @@ interface LogoDraft {
 }
 
 export default function Signup() {
+  const { t, st, lang } = useMarketingT();
   const [, navigate] = useLocation();
   const [step, setStep] = useState(0);
 
@@ -98,7 +119,7 @@ export default function Signup() {
       });
     },
     onError: (err) => {
-      toast.error(err.message || "Couldn't read colors from that logo.");
+      toast.error(err.message || t("signup.toastLogoColorsFailed"));
     },
   });
 
@@ -112,28 +133,29 @@ export default function Signup() {
         /* private-mode / storage disabled — claim can still be re-issued */
       }
       if (logo && !data.logoUrl) {
-        toast.warning(
-          "Your store is ready, but the logo didn't upload — add it again from your admin.",
-        );
+        toast.warning(t("signup.toastLogoNotUploaded"));
       } else {
         // Mention the emailed setup link only when it actually went out
         // (claimEmailSent is false on deployments without mail configured).
         toast.success(
           data.claimEmailSent
-            ? "Store created — we've also emailed you a setup link, in case you need it later."
-            : "Store created — let's set it up.",
+            ? t("signup.toastCreatedWithEmail")
+            : t("signup.toastCreated"),
         );
       }
       navigate(`/onboarding?store=${encodeURIComponent(data.slug)}`);
     },
     onError: (err) => {
-      const message = err.message || "Something went wrong. Please try again.";
+      const message = err.message || t("signup.toastGenericError");
       // An email that's already attached — or mid-signup with an unclaimed
       // store — is recoverable by signing in; hand over the door, not just
       // the wall. (The slug-taken CONFLICT names no email and stays plain.)
       if (err.data?.code === "CONFLICT" && /email/i.test(message)) {
         toast.error(message, {
-          action: { label: "Sign in", onClick: () => navigate("/signin") },
+          action: {
+            label: t("signup.toastSignInAction"),
+            onClick: () => navigate("/signin"),
+          },
         });
       } else {
         toast.error(message);
@@ -143,13 +165,12 @@ export default function Signup() {
 
   const errors = useMemo(() => {
     const e: Record<string, string> = {};
-    if (name.trim().length < 1) e.name = "Store name is required.";
-    if (!isValidSlug(effectiveSlug))
-      e.slug = "Use 3–64 lowercase letters, numbers, or hyphens.";
+    if (name.trim().length < 1) e.name = t("signup.errorName");
+    if (!isValidSlug(effectiveSlug)) e.slug = t("signup.errorSlug");
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))
-      e.email = "Enter a valid email.";
+      e.email = t("signup.errorEmail");
     return e;
-  }, [name, effectiveSlug, email]);
+  }, [name, effectiveSlug, email, t]);
 
   const detailsValid = Object.keys(errors).length === 0;
   const colorValid = /^#[0-9A-Fa-f]{6}$/.test(primaryColor);
@@ -158,11 +179,11 @@ export default function Signup() {
   const handleLogoFile = (file: File | undefined) => {
     if (!file) return;
     if (!(LOGO_MIME_TYPES as readonly string[]).includes(file.type)) {
-      toast.error("Use a PNG, JPEG, or WebP image.");
+      toast.error(t("signup.toastLogoType"));
       return;
     }
     if (file.size > MAX_LOGO_BYTES) {
-      toast.error("Logo must be under 2 MB.");
+      toast.error(t("signup.toastLogoSize"));
       return;
     }
     const reader = new FileReader();
@@ -206,20 +227,20 @@ export default function Signup() {
   return (
     <Container width="2xl" className="py-20">
       <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
-        let&rsquo;s begin
+        {t("signup.eyebrow")}
       </p>
       <h1 className="mt-2 font-serif text-3xl text-[var(--brand-text)]">
-        Create your store
+        {t("signup.heading")}
       </h1>
       <p className="mt-2 text-sm text-[var(--brand-muted-2)]">
-        Free to start. 14-day trial on paid features. No card required.
+        {t("signup.subheading")}
       </p>
 
       {/* Step indicator */}
-      <ol className="mt-8 flex gap-2" aria-label="Signup steps">
-        {STEPS.map((label, i) => (
+      <ol className="mt-8 flex gap-2" aria-label={t("signup.stepsLabel")}>
+        {STEPS.map((stepKey, i) => (
           <li
-            key={label}
+            key={stepKey}
             aria-current={i === step ? "step" : undefined}
             className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium uppercase tracking-[0.1em] ${
               i === step
@@ -230,7 +251,9 @@ export default function Signup() {
             }`}
           >
             <span>{i + 1}</span>
-            <span className="hidden sm:inline">{label}</span>
+            <span className="hidden sm:inline">
+              {t(`signup.steps.${stepKey}`)}
+            </span>
           </li>
         ))}
       </ol>
@@ -238,23 +261,26 @@ export default function Signup() {
       <form onSubmit={handleSubmit} className="mt-10" noValidate>
         {step === 0 && (
           <div className="max-w-md space-y-5">
-            <Field label="Store name" error={name ? errors.name : undefined}>
+            <Field
+              label={t("signup.storeNameLabel")}
+              error={name ? errors.name : undefined}
+            >
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Your store name"
+                placeholder={t("signup.storeNamePlaceholder")}
                 className="w-full rounded-md border border-[var(--brand-border-2)] bg-white px-4 py-2.5 text-[var(--brand-text)] outline-none focus:border-[var(--brand-accent)]"
               />
             </Field>
 
             <Field
-              label="Store URL"
+              label={t("signup.storeUrlLabel")}
               error={slugTouched && slug ? errors.slug : undefined}
               hint={
                 effectiveSlug
                   ? `${effectiveSlug}.zolto.ch`
-                  : "yourstore.zolto.ch"
+                  : t("signup.storeUrlHint")
               }
             >
               <input
@@ -264,28 +290,28 @@ export default function Signup() {
                   setSlugTouched(true);
                   setSlug(slugify(e.target.value));
                 }}
-                placeholder="yourstore"
+                placeholder={t("signup.storeUrlPlaceholder")}
                 className="w-full rounded-md border border-[var(--brand-border-2)] bg-white px-4 py-2.5 text-[var(--brand-text)] outline-none focus:border-[var(--brand-accent)]"
               />
             </Field>
 
             <Field
-              label="Email"
+              label={t("signup.emailLabel")}
               error={email ? errors.email : undefined}
-              hint="You'll finish setup by signing in with this email."
+              hint={t("signup.emailHint")}
             >
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
+                placeholder={t("signup.emailPlaceholder")}
                 className="w-full rounded-md border border-[var(--brand-border-2)] bg-white px-4 py-2.5 text-[var(--brand-text)] outline-none focus:border-[var(--brand-accent)]"
               />
             </Field>
 
             <Field
-              label="What do you sell?"
-              hint="Sets up your starting categories and tunes the AI tools to your kind of store. You can change it later."
+              label={t("signup.verticalLabel")}
+              hint={t("signup.verticalHint")}
             >
               <select
                 value={vertical}
@@ -294,29 +320,26 @@ export default function Signup() {
               >
                 {VERTICALS.map((v) => (
                   <option key={v} value={v}>
-                    {VERTICAL_PRESETS[v].labelEn}
+                    {verticalLabel(v, lang)}
                   </option>
                 ))}
               </select>
             </Field>
 
-            <Field
-              label="Describe your range (optional)"
-              hint="One sentence in your own words — the AI uses it to write better listings."
-            >
+            <Field label={t("signup.rangeLabel")} hint={t("signup.rangeHint")}>
               <input
                 type="text"
                 value={verticalDescription}
                 onChange={(e) => setVerticalDescription(e.target.value)}
                 maxLength={500}
-                placeholder="e.g. Wheel-thrown stoneware tableware in muted glazes"
+                placeholder={t("signup.rangePlaceholder")}
                 className="w-full rounded-md border border-[var(--brand-border-2)] bg-white px-4 py-2.5 text-[var(--brand-text)] outline-none focus:border-[var(--brand-accent)]"
               />
             </Field>
 
             <Field
-              label="Already selling somewhere?"
-              hint="We'll set up your first step to bring that catalogue across instead of re-typing it."
+              label={t("signup.migrateLabel")}
+              hint={t("signup.migrateHint")}
             >
               <select
                 value={migrateFrom}
@@ -325,12 +348,14 @@ export default function Signup() {
                 }
                 className="w-full rounded-md border border-[var(--brand-border-2)] bg-white px-4 py-2.5 text-[var(--brand-text)] outline-none focus:border-[var(--brand-accent)]"
               >
-                <option value="">No — starting fresh</option>
+                <option value="">{t("signup.migrateNone")}</option>
                 {MIGRATE_FROM_PROVIDERS.map((p) => (
                   <option key={p} value={p}>
                     {p === "other"
-                      ? "Somewhere else"
-                      : `Yes — ${MIGRATE_FROM_LABELS[p]}`}
+                      ? t("signup.migrateOther")
+                      : t("signup.migrateYes", {
+                          provider: MIGRATE_FROM_LABELS[p],
+                        })}
                   </option>
                 ))}
               </select>
@@ -339,8 +364,10 @@ export default function Signup() {
             {migrateFrom && migrateFrom !== "other" && (
               <p className="rounded-xl border border-[var(--brand-accent)]/40 bg-[var(--brand-accent)]/8 p-4 text-sm text-[var(--brand-text)]">
                 {migrateFrom === "stripe"
-                  ? "Good news — link the Stripe account you already have and your products import in one click. Your checkout keeps working throughout."
-                  : `Export your items as CSV from ${MIGRATE_FROM_LABELS[migrateFrom]} and we'll read it for you — Swiss price formats and German or French column names included.`}
+                  ? t("signup.migrateStripeNote")
+                  : t("signup.migrateCsvNote", {
+                      provider: MIGRATE_FROM_LABELS[migrateFrom],
+                    })}
               </p>
             )}
 
@@ -350,7 +377,7 @@ export default function Signup() {
               onClick={() => setStep(1)}
               className="w-full rounded-md bg-[var(--brand-ink)] px-4 py-3 text-xs font-medium uppercase tracking-[0.12em] text-white transition-colors hover:bg-[var(--brand-ink-hover)] disabled:cursor-not-allowed disabled:opacity-50"
             >
-              Choose your look →
+              {t("signup.chooseLook")}
             </button>
           </div>
         )}
@@ -358,66 +385,69 @@ export default function Signup() {
         {step === 1 && (
           <div>
             <h2 className="font-serif text-xl text-[var(--brand-text)]">
-              Pick a template
+              {t("signup.templateHeading")}
             </h2>
             <p className="mt-1 text-sm text-[var(--brand-muted-2)]">
-              Five looks made for small shops. You can change it any time — and
-              your own colors come next.
+              {t("signup.templateIntro")}
             </p>
 
             <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {STORE_TEMPLATES.map((t) => {
-                const selected = t.id === templateId;
+              {STORE_TEMPLATES.map((tpl) => {
+                const selected = tpl.id === templateId;
                 return (
                   <button
-                    key={t.id}
+                    key={tpl.id}
                     type="button"
                     aria-pressed={selected}
-                    onClick={() => selectTemplate(t.id)}
+                    onClick={() => selectTemplate(tpl.id)}
                     className={`rounded-xl border p-4 text-left transition-shadow ${
                       selected
                         ? "border-[var(--brand-accent)] shadow-md ring-1 ring-[var(--brand-accent)]"
                         : "border-[var(--brand-border)] hover:shadow-sm"
                     }`}
-                    style={{ backgroundColor: t.cssVars["--brand-surface-2"] }}
+                    style={{
+                      backgroundColor: tpl.cssVars["--brand-surface-2"],
+                    }}
                   >
                     {/* Mini storefront: ink header band over template surfaces */}
                     <div
                       className="overflow-hidden rounded-md border"
-                      style={{ borderColor: t.cssVars["--brand-border"] }}
+                      style={{ borderColor: tpl.cssVars["--brand-border"] }}
                     >
                       <div
                         className="h-6"
-                        style={{ backgroundColor: t.defaultPrimaryColor }}
+                        style={{ backgroundColor: tpl.defaultPrimaryColor }}
                       />
                       <div
                         className="flex gap-1.5 p-2"
-                        style={{ backgroundColor: t.cssVars["--brand-ground"] }}
+                        style={{
+                          backgroundColor: tpl.cssVars["--brand-ground"],
+                        }}
                       >
                         {[0, 1, 2].map((i) => (
                           <div
                             key={i}
                             className="h-8 flex-1 rounded-sm"
                             style={{
-                              backgroundColor: t.cssVars["--brand-surface"],
+                              backgroundColor: tpl.cssVars["--brand-surface"],
                             }}
                           />
                         ))}
                       </div>
                     </div>
                     <p className="mt-3 flex items-center justify-between font-serif text-lg text-[var(--brand-text)]">
-                      {t.name}
+                      {tpl.name}
                       {selected && (
                         <span className="text-xs font-sans uppercase tracking-[0.1em] text-[var(--brand-accent)]">
-                          Selected
+                          {t("signup.templateSelected")}
                         </span>
                       )}
                     </p>
                     <p className="mt-0.5 text-sm text-[var(--brand-muted-2)]">
-                      {t.tagline}
+                      {st(`templates.${tpl.id}.tagline`, tpl.tagline)}
                     </p>
                     <p className="mt-1 text-xs text-[var(--brand-muted)]">
-                      {t.bestFor}
+                      {st(`templates.${tpl.id}.bestFor`, tpl.bestFor)}
                     </p>
                   </button>
                 );
@@ -431,7 +461,7 @@ export default function Signup() {
                 onClick={() => setStep(2)}
                 className="rounded-md bg-[var(--brand-ink)] px-6 py-3 text-xs font-medium uppercase tracking-[0.12em] text-white transition-colors hover:bg-[var(--brand-ink-hover)]"
               >
-                Choose your colors →
+                {t("signup.chooseColors")}
               </button>
             </div>
           </div>
@@ -442,18 +472,14 @@ export default function Signup() {
             <div className="max-w-md space-y-6">
               <div>
                 <h2 className="font-serif text-xl text-[var(--brand-text)]">
-                  Your logo &amp; colors
+                  {t("signup.brandingHeading")}
                 </h2>
                 <p className="mt-1 text-sm text-[var(--brand-muted-2)]">
-                  Upload your logo and we&rsquo;ll brand your store with it —
-                  and, if you like, let AI pick your color scheme from it.
+                  {t("signup.brandingIntro")}
                 </p>
               </div>
 
-              <Field
-                label="Logo (optional)"
-                hint="PNG, JPEG, or WebP, up to 2 MB. Shown in your store's navbar and footer."
-              >
+              <Field label={t("signup.logoLabel")} hint={t("signup.logoHint")}>
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -468,7 +494,7 @@ export default function Signup() {
                   <div className="flex items-center gap-4">
                     <img
                       src={logo.dataUrl}
-                      alt="Your logo"
+                      alt={t("signup.logoAlt")}
                       className="h-14 w-14 rounded-md border border-[var(--brand-border)] object-contain"
                     />
                     <div className="min-w-0 flex-1">
@@ -485,7 +511,7 @@ export default function Signup() {
                         }}
                         className="mt-0.5 text-xs text-[var(--brand-muted)] underline hover:text-[var(--brand-text)]"
                       >
-                        Remove
+                        {t("signup.logoRemove")}
                       </button>
                     </div>
                   </div>
@@ -498,8 +524,8 @@ export default function Signup() {
                     className="w-full rounded-md border border-[var(--brand-accent)] px-3 py-2 text-xs font-medium uppercase tracking-[0.1em] text-[var(--brand-accent)] transition-colors hover:bg-[var(--brand-accent)] hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {brandingFromLogo.isPending
-                      ? "Reading…"
-                      : "✨ Colors from logo"}
+                      ? t("signup.logoReading")
+                      : t("signup.logoColors")}
                   </button>
                 </div>
               )}
@@ -518,24 +544,24 @@ export default function Signup() {
                         }}
                         className="mt-2 text-xs font-medium uppercase tracking-[0.1em] text-[var(--brand-accent)] underline"
                       >
-                        Switch to the{" "}
-                        {getTemplate(aiNote.suggestedTemplateId)?.name} template
+                        {t("signup.switchTemplate", {
+                          template:
+                            getTemplate(aiNote.suggestedTemplateId)?.name ?? "",
+                        })}
                       </button>
                     )}
                 </div>
               )}
 
               <Field
-                label="Brand color"
-                error={
-                  colorValid ? undefined : "Use a 6-digit hex like #2D6B4A."
-                }
-                hint="Drives your storefront's headers, buttons, and accents."
+                label={t("signup.brandColor")}
+                error={colorValid ? undefined : t("signup.errorColor")}
+                hint={t("signup.brandColorHint")}
               >
                 <div className="flex items-center gap-3">
                   <input
                     type="color"
-                    aria-label="Brand color"
+                    aria-label={t("signup.brandColor")}
                     value={
                       colorValid ? primaryColor : template.defaultPrimaryColor
                     }
@@ -547,7 +573,7 @@ export default function Signup() {
                   />
                   <input
                     type="text"
-                    aria-label="Brand color hex"
+                    aria-label={t("signup.brandColorHex")}
                     value={primaryColor}
                     onChange={(e) => {
                       const v = e.target.value.trim();
@@ -566,33 +592,35 @@ export default function Signup() {
                   disabled={!canSubmit}
                   className="flex-1 whitespace-nowrap rounded-md bg-[var(--brand-ink)] px-4 py-3 text-xs font-medium uppercase tracking-[0.12em] text-white transition-colors hover:bg-[var(--brand-ink-hover)] disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {createTenant.isPending ? "Creating…" : "Create store →"}
+                  {createTenant.isPending
+                    ? t("signup.creating")
+                    : t("signup.createStore")}
                 </button>
               </div>
 
               <p className="text-center text-xs text-[var(--brand-muted)]">
-                By creating a store you agree to our{" "}
+                {t("signup.termsLead")}{" "}
                 <a
                   href="/legal/terms"
                   className="text-[var(--brand-accent)] hover:underline"
                 >
-                  Terms
+                  {t("signup.termsLink")}
                 </a>{" "}
-                and{" "}
+                {t("signup.termsAnd")}{" "}
                 <a
                   href="/legal/privacy"
                   className="text-[var(--brand-accent)] hover:underline"
                 >
-                  Privacy Policy
+                  {t("signup.privacyLink")}
                 </a>
                 .
               </p>
             </div>
 
             {/* Live preview: chosen template surfaces + ink derived from the color */}
-            <aside aria-label="Storefront preview">
+            <aside aria-label={t("signup.previewAria")}>
               <p className="text-xs font-medium uppercase tracking-[0.12em] text-[var(--brand-muted)]">
-                Preview
+                {t("signup.previewLabel")}
               </p>
               <div
                 className="mt-2 overflow-hidden rounded-xl border"
@@ -621,7 +649,7 @@ export default function Signup() {
                     />
                   )}
                   <span className="truncate font-serif text-sm text-white">
-                    {name.trim() || "Your store"}
+                    {name.trim() || t("signup.previewStoreName")}
                   </span>
                 </div>
                 <div
@@ -655,12 +683,15 @@ export default function Signup() {
                         previewPalette?.["--brand-ink"] ?? primaryColor,
                     }}
                   >
-                    Add to cart
+                    {t("signup.previewAddToCart")}
                   </div>
                 </div>
               </div>
               <p className="mt-2 text-xs text-[var(--brand-muted)]">
-                {template.name} template · {primaryColor}
+                {t("signup.previewMeta", {
+                  template: template.name,
+                  color: primaryColor,
+                })}
               </p>
             </aside>
           </div>
@@ -671,13 +702,14 @@ export default function Signup() {
 }
 
 function BackButton({ onClick }: { onClick: () => void }) {
+  const { t } = useMarketingT();
   return (
     <button
       type="button"
       onClick={onClick}
       className="whitespace-nowrap rounded-md border border-[var(--brand-ink)]/25 px-5 py-3 text-xs font-medium uppercase tracking-[0.12em] text-[var(--brand-ink)] transition-colors hover:bg-[var(--brand-ink)] hover:text-white"
     >
-      ← Back
+      {t("signup.back")}
     </button>
   );
 }

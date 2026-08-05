@@ -1,9 +1,14 @@
+import { useTranslation } from "react-i18next";
 import { useTenant } from "@/contexts/TenantContext";
-import { genericTermsSections } from "@/lib/storefrontContent";
+import { genericTermsSections, pageChrome } from "@/lib/storefrontContent";
+import { matchSupportedLanguage } from "@/lib/languages";
 
 export default function Policy() {
   const { branding } = useTenant();
-  const sections = genericTermsSections(branding);
+  const { i18n } = useTranslation();
+  const lang = matchSupportedLanguage(i18n.language) ?? "en";
+  const sections = genericTermsSections(branding, lang);
+  const chrome = pageChrome(branding, lang).terms;
 
   return (
     <div className="page-enter pt-20">
@@ -12,7 +17,7 @@ export default function Policy() {
           <p className="text-[var(--brand-accent)] text-xs uppercase tracking-[0.3em] mb-3 font-sans">
             {branding.storeName}
           </p>
-          <h1 className="font-serif text-white">Terms &amp; Conditions</h1>
+          <h1 className="font-serif text-white">{chrome.title}</h1>
           <div className="divider-gold w-16 mx-auto mt-6" />
         </div>
       </section>
@@ -20,8 +25,7 @@ export default function Policy() {
       <section className="py-16 bg-background">
         <div className="container max-w-3xl">
           <p className="text-muted-foreground font-sans leading-relaxed mb-10">
-            These terms govern purchases from {branding.storeName}. By placing
-            an order you agree to them.
+            {chrome.intro}
           </p>
 
           <div className="space-y-10">
@@ -45,9 +49,7 @@ export default function Policy() {
           </div>
 
           <p className="mt-12 rounded border border-[var(--brand-border)] bg-[var(--brand-surface-2)] p-4 text-xs text-muted-foreground font-sans">
-            This is a general template. {branding.storeName} is responsible for
-            ensuring its terms comply with the laws that apply to its business
-            and customers.
+            {chrome.disclaimer}
           </p>
         </div>
       </section>

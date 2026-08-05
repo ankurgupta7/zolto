@@ -1,5 +1,8 @@
 import { Link } from "wouter";
+import { useTranslation } from "react-i18next";
 import type { Article, Block } from "../content/launchContent";
+import { formatArticleDate, getBlogChrome } from "../content/localizedContent";
+import { matchSupportedLanguage } from "@/lib/languages";
 import { useDocumentMeta } from "../lib/useDocumentMeta";
 import { Container } from "./Container";
 import { author, hasNamedAuthor } from "@shared/authors";
@@ -178,6 +181,10 @@ function BlockView({ block }: { block: Block }) {
  * with per-page document metadata and JSON-LD. Shared by BlogPost and Story.
  */
 export function ArticleView({ article }: { article: Article }) {
+  const { i18n } = useTranslation();
+  const lang = matchSupportedLanguage(i18n.language) ?? "en";
+  const chrome = getBlogChrome(lang);
+
   useDocumentMeta({
     title: article.metaTitle,
     description: article.metaDescription,
@@ -187,14 +194,7 @@ export function ArticleView({ article }: { article: Article }) {
         : `/blog/${article.slug}`,
   });
 
-  const published = new Date(article.datePublished).toLocaleDateString(
-    "en-CH",
-    {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    },
-  );
+  const published = formatArticleDate(article.datePublished, lang);
 
   return (
     <Container as="article" width="3xl" className="py-16">
@@ -204,7 +204,7 @@ export function ArticleView({ article }: { article: Article }) {
         href="/blog"
         className="text-sm text-[var(--brand-accent)] hover:underline"
       >
-        ← All Launch Diary posts
+        {chrome.allDiaryPosts}
       </Link>
 
       {article.eyebrow && (
@@ -236,7 +236,7 @@ export function ArticleView({ article }: { article: Article }) {
       {article.next && (
         <div className="mt-14 rounded-xl border border-[var(--brand-border)] bg-white p-6">
           <p className="text-xs uppercase tracking-widest text-[var(--brand-muted)]">
-            Next in the series
+            {chrome.nextInSeries}
           </p>
           <Link
             href={article.next.href}
@@ -248,8 +248,7 @@ export function ArticleView({ article }: { article: Article }) {
       )}
 
       <p className="mt-12 border-t border-[var(--brand-border)] pt-6 text-xs leading-relaxed text-[var(--brand-muted)]">
-        This series documents a real maker's first online-store launch on Zolto.
-        No growth hacks, no cherry-picked metrics — just what happened.
+        {chrome.seriesDisclosure}
       </p>
     </Container>
   );

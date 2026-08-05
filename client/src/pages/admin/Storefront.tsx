@@ -4,6 +4,7 @@
  * same procedure the storefront reads to render itself).
  */
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { ExternalLink } from "lucide-react";
@@ -17,6 +18,7 @@ import {
 import { useTenantSettings } from "@/components/admin/useTenantSettings";
 
 export default function Storefront() {
+  const { t } = useTranslation("admin");
   const { tenant, slug, settings, invalidate } = useTenantSettings();
   const [logoUrl, setLogoUrl] = useState("");
   const [primaryColor, setPrimaryColor] = useState("#000000");
@@ -35,18 +37,18 @@ export default function Storefront() {
   const save = trpc.tenant.updateSettings.useMutation({
     onSuccess: () => {
       invalidate();
-      toast.success("Storefront updated.");
+      toast.success(t("store.storefront.updatedToast"));
     },
-    onError: (e) => toast.error(e.message || "Could not save."),
+    onError: (e) => toast.error(e.message || t("store.storefront.saveError")),
   });
 
   const onSave = () => {
     if (logoUrl && !/^https?:\/\//.test(logoUrl)) {
-      toast.error("Logo must be a full URL (https://…).");
+      toast.error(t("store.storefront.invalidLogo"));
       return;
     }
     if (primaryColor && !/^#[0-9A-Fa-f]{6}$/.test(primaryColor)) {
-      toast.error("Brand colour must be a hex value like #8B6914.");
+      toast.error(t("store.storefront.invalidColor"));
       return;
     }
     save.mutate({
@@ -62,8 +64,8 @@ export default function Storefront() {
   return (
     <div>
       <PageHeader
-        title="Storefront"
-        description="How your public website looks and appears in search."
+        title={t("store.storefront.title")}
+        description={t("store.storefront.description")}
         actions={
           storeUrl && (
             <a
@@ -73,26 +75,26 @@ export default function Storefront() {
               className="inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
             >
               <ExternalLink className="h-4 w-4" />
-              View storefront
+              {t("store.storefront.viewStorefront")}
             </a>
           )
         }
       />
 
       <SettingsCard
-        title="Branding"
-        description="Your logo and brand colour appear across your storefront."
+        title={t("store.storefront.brandingTitle")}
+        description={t("store.storefront.brandingDescription")}
         footer={
           <PrimaryButton onClick={onSave} loading={save.isPending}>
-            Save changes
+            {t("store.storefront.saveChanges")}
           </PrimaryButton>
         }
       >
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
           <Field
-            label="Logo URL"
+            label={t("store.storefront.logoUrl")}
             htmlFor="logo-url"
-            hint="A hosted image URL. Upload elsewhere and paste the link here."
+            hint={t("store.storefront.logoUrlHint")}
           >
             <input
               id="logo-url"
@@ -103,10 +105,13 @@ export default function Storefront() {
               className={inputClass}
             />
           </Field>
-          <Field label="Brand colour" htmlFor="primary-color">
+          <Field
+            label={t("store.storefront.brandColour")}
+            htmlFor="primary-color"
+          >
             <div className="flex items-center gap-3">
               <input
-                aria-label="Brand colour picker"
+                aria-label={t("store.storefront.brandColourPickerAria")}
                 type="color"
                 value={/^#[0-9A-Fa-f]{6}$/.test(primaryColor) ? primaryColor : "#000000"}
                 onChange={(e) => setPrimaryColor(e.target.value)}
@@ -126,11 +131,11 @@ export default function Storefront() {
         {logoUrl && /^https?:\/\//.test(logoUrl) && (
           <div className="mt-5">
             <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Logo preview
+              {t("store.storefront.logoPreview")}
             </p>
             <img
               src={logoUrl}
-              alt="Logo preview"
+              alt={t("store.storefront.logoPreview")}
               className="h-14 max-w-[220px] object-contain"
             />
           </div>
@@ -138,41 +143,41 @@ export default function Storefront() {
       </SettingsCard>
 
       <SettingsCard
-        title="Search & sharing (SEO)"
-        description="What people see when your store appears in Google or is shared as a link."
+        title={t("store.storefront.seoTitle")}
+        description={t("store.storefront.seoDescription")}
         footer={
           <PrimaryButton onClick={onSave} loading={save.isPending}>
-            Save changes
+            {t("store.storefront.saveChanges")}
           </PrimaryButton>
         }
       >
         <div className="space-y-5">
           <Field
-            label="Page title"
+            label={t("store.storefront.pageTitle")}
             htmlFor="meta-title"
-            hint={`Appears in the browser tab and search results.${tenant?.name ? ` Defaults to "${tenant.name}".` : ""}`}
+            hint={`${t("store.storefront.metaTitleHint")}${tenant?.name ? ` ${t("store.storefront.metaTitleHintDefault", { name: tenant.name })}` : ""}`}
           >
             <input
               id="meta-title"
               type="text"
               value={metaTitle}
               onChange={(e) => setMetaTitle(e.target.value)}
-              placeholder="Your store — handcrafted items"
+              placeholder={t("store.storefront.pageTitlePlaceholder")}
               maxLength={255}
               className={inputClass}
             />
           </Field>
           <Field
-            label="Meta description"
+            label={t("store.storefront.metaDescription")}
             htmlFor="meta-description"
-            hint="A one- or two-sentence summary for search engines."
+            hint={t("store.storefront.metaDescriptionHint")}
           >
             <textarea
               id="meta-description"
               value={metaDescription}
               onChange={(e) => setMetaDescription(e.target.value)}
               rows={3}
-              placeholder="Carefully selected items, made with care."
+              placeholder={t("store.storefront.metaDescriptionPlaceholder")}
               className={`${inputClass} resize-none`}
             />
           </Field>

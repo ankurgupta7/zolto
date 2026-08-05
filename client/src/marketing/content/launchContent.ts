@@ -18,6 +18,7 @@ import {
   BLOG_POSTS,
 } from "@shared/marketing";
 import { authorJsonLd } from "@shared/authors";
+import { HTML_LANG, type SupportedLanguage } from "@/lib/languages";
 
 export interface ImageAsset {
   src: string;
@@ -97,18 +98,25 @@ function makerNode(): Record<string, unknown> {
   return node;
 }
 
-function articleSchema(a: {
+/**
+ * JSON-LD for a diary article. Exported so the per-language translations
+ * (launchContent.de.ts / .fr.ts / .it.ts) build byte-identical schemas apart
+ * from headline, description, and `inLanguage`. `lang` defaults to English.
+ */
+export function articleSchema(a: {
   headline: string;
   description: string;
   slug: string;
   datePublished: string;
   dateModified: string;
+  lang?: SupportedLanguage;
 }): Record<string, unknown> {
   return {
     "@context": "https://schema.org",
     "@type": "Article",
     headline: a.headline,
     description: a.description,
+    inLanguage: HTML_LANG[a.lang ?? "en"],
     author: authorJsonLd("https://zolto.com"),
     publisher: {
       "@type": "Organization",
@@ -498,6 +506,37 @@ const diary3: Article = {
 
 const CASE_STUDY_PUBLISHED = "2026-08-01";
 
+/**
+ * JSON-LD for the case study. Exported for the per-language translations,
+ * which differ only in headline, description, and `inLanguage`.
+ */
+export function storySchema(a: {
+  headline: string;
+  description: string;
+  lang?: SupportedLanguage;
+}): Record<string, unknown> {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: a.headline,
+    description: a.description,
+    inLanguage: HTML_LANG[a.lang ?? "en"],
+    author: authorJsonLd("https://zolto.com"),
+    publisher: {
+      "@type": "Organization",
+      name: "Zolto",
+      logo: { "@type": "ImageObject", url: "https://zolto.com/logo.png" },
+    },
+    about: makerNode(),
+    datePublished: CASE_STUDY_PUBLISHED,
+    dateModified: CASE_STUDY_PUBLISHED,
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": `https://zolto.com${STORY_PATH}`,
+    },
+  };
+}
+
 const caseStudy: Article = {
   slug: STORY_SLUG,
   kind: "story",
@@ -625,25 +664,10 @@ const caseStudy: Article = {
       ],
     },
   ],
-  schema: {
-    "@context": "https://schema.org",
-    "@type": "Article",
+  schema: storySchema({
     headline: `${maker.brand} Launch Case Study`,
     description: "From Christmas markets to online sales in 30 days.",
-    author: authorJsonLd("https://zolto.com"),
-    publisher: {
-      "@type": "Organization",
-      name: "Zolto",
-      logo: { "@type": "ImageObject", url: "https://zolto.com/logo.png" },
-    },
-    about: makerNode(),
-    datePublished: CASE_STUDY_PUBLISHED,
-    dateModified: CASE_STUDY_PUBLISHED,
-    mainEntityOfPage: {
-      "@type": "WebPage",
-      "@id": `https://zolto.com${STORY_PATH}`,
-    },
-  },
+  }),
 };
 
 /** All Launch Diary posts, in series order. */

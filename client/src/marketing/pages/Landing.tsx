@@ -25,8 +25,11 @@ import { CardReaderGag } from "../components/CardReaderGag";
 import { DiaryTeaser } from "../components/DiaryTeaser";
 import { ZeroCostPos } from "../components/ZeroCostPos";
 import { SwissMade } from "../components/SwissMade";
+import { useMarketingT } from "../lib/marketingI18n";
 
 export default function Landing() {
+  const { t, st, numberLocale } = useMarketingT();
+
   return (
     <>
       {/* Ambient gold-dust layer — glows over the mahogany hero/CTA bands,
@@ -38,46 +41,49 @@ export default function Landing() {
         <Container className="grid items-center gap-10 pb-20 pt-20 md:grid-cols-2">
           <div>
             <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
-              {AI_NATIVE_PITCH.eyebrow}
+              {st("aiNativePitch.eyebrow", AI_NATIVE_PITCH.eyebrow)}
             </p>
             <h1 className="mt-4 max-w-xl font-serif text-4xl leading-[1.1] text-white sm:text-5xl">
-              {AI_NATIVE_PITCH.headline}{" "}
+              {st("aiNativePitch.headline", AI_NATIVE_PITCH.headline)}{" "}
               {/* Only the punchline is underlined, so the stroke stays tight
                   to the words however the heading wraps. */}
               <span className="relative inline-block">
-                {AI_NATIVE_PITCH.headlineEmphasis}
+                {st(
+                  "aiNativePitch.headlineEmphasis",
+                  AI_NATIVE_PITCH.headlineEmphasis,
+                )}
                 <span className="absolute -bottom-2 left-0 w-full text-[var(--brand-accent)]">
                   <SketchUnderline />
                 </span>
               </span>
             </h1>
             <p className="mt-8 max-w-md text-lg leading-relaxed text-white/70">
-              {AI_NATIVE_PITCH.body}
+              {st("aiNativePitch.body", AI_NATIVE_PITCH.body)}
             </p>
             <div className="mt-10 flex flex-wrap items-center gap-4">
               <Link
                 href="/signup"
                 className="rounded-md bg-[var(--brand-accent)] px-7 py-3 text-xs font-medium uppercase tracking-[0.14em] text-[var(--brand-ink)] transition-colors hover:bg-[var(--brand-accent-light)]"
               >
-                Start free →
+                {t("landing.startFree")}
               </Link>
               <Link
                 href="/pricing"
                 className="rounded-md border border-white/25 px-7 py-3 text-xs font-medium uppercase tracking-[0.14em] text-white/85 transition-colors hover:border-white hover:text-white"
               >
-                See pricing
+                {t("landing.seePricing")}
               </Link>
             </div>
 
             {/* Where we're from, above the fold. Three facts, no sentence —
                 the ledger band further down does the explaining. */}
             <ul className="mt-10 flex flex-wrap items-center gap-x-5 gap-y-2 text-[11px] uppercase tracking-[0.16em] text-white/50">
-              {SOVEREIGNTY.heroBadges.map((badge) => (
+              {SOVEREIGNTY.heroBadges.map((badge, i) => (
                 <li key={badge} className="flex items-center gap-2">
                   <span aria-hidden className="text-[var(--brand-accent)]">
                     ✦
                   </span>
-                  {badge}
+                  {st(`sovereignty.heroBadges.${i}`, badge)}
                 </li>
               ))}
             </ul>
@@ -101,13 +107,13 @@ export default function Landing() {
         >
           <div>
             <p className="text-[11px] uppercase tracking-[0.2em] text-white/45">
-              {COST_COMPARISON.themLabel}
+              {st("costComparison.themLabel", COST_COMPARISON.themLabel)}
             </p>
             <p className="mt-2 font-serif text-5xl font-semibold text-white/55 lining-nums tabular-nums line-through decoration-[var(--brand-accent)]/60">
-              CHF {COST_COMPARISON.themPerYearChf.toLocaleString("en-US")}
+              CHF {COST_COMPARISON.themPerYearChf.toLocaleString(numberLocale)}
             </p>
             <p className="mt-2 text-xs text-white/40">
-              {COST_COMPARISON.themNote}
+              {st("costComparison.themNote", COST_COMPARISON.themNote)}
             </p>
           </div>
           <div
@@ -118,13 +124,13 @@ export default function Landing() {
           </div>
           <div>
             <p className="text-[11px] uppercase tracking-[0.2em] text-white/45">
-              {COST_COMPARISON.usLabel}
+              {st("costComparison.usLabel", COST_COMPARISON.usLabel)}
             </p>
             <p className="mt-2 font-serif text-6xl font-bold text-[var(--brand-accent-light)] lining-nums tabular-nums">
               {formatPrice(COST_COMPARISON.usPerMonthChf)}
             </p>
             <p className="mt-2 text-xs text-white/40">
-              {COST_COMPARISON.usNote}
+              {st("costComparison.usNote", COST_COMPARISON.usNote)}
             </p>
           </div>
         </Container>
@@ -141,13 +147,14 @@ export default function Landing() {
         <Container width="3xl" className="py-20">
           <ScrollReveal className="relative rounded-2xl border border-[var(--brand-border)] bg-white p-9 shadow-[0_20px_50px_-34px_rgba(45,38,32,0.4)] md:p-11">
             <span className="absolute -top-3 left-9 bg-white px-2.5 font-hand text-xl text-[var(--brand-accent)]">
-              our pledge to makers
+              {t("landing.pledgeEyebrow")}
             </span>
             <p className="font-serif text-2xl leading-snug text-[var(--brand-text)] md:text-[26px]">
-              &ldquo;{PRICING_PROMISE.pledge}&rdquo;
+              &ldquo;
+              {st("pricingPromise.pledge", PRICING_PROMISE.pledge)}&rdquo;
             </p>
             <ul className="mt-7 grid gap-3">
-              {PRICING_PROMISE.points.map((point) => (
+              {PRICING_PROMISE.points.map((point, i) => (
                 <li
                   key={point}
                   className="flex gap-3 text-[15px] leading-relaxed text-[var(--brand-muted-2)]"
@@ -155,12 +162,12 @@ export default function Landing() {
                   <span aria-hidden className="text-[var(--brand-accent)]">
                     —
                   </span>
-                  {point}
+                  {st(`pricingPromise.points.${i}`, point)}
                 </li>
               ))}
             </ul>
             <p className="mt-8 font-hand text-2xl text-[var(--brand-text)]">
-              — the Zolto team
+              {t("landing.pledgeSignature")}
             </p>
           </ScrollReveal>
         </Container>
@@ -174,16 +181,13 @@ export default function Landing() {
         <Container width="4xl" className="py-20">
           <div className="mb-10 text-center">
             <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
-              the honest comparison
+              {t("landing.comparisonEyebrow")}
             </p>
             <h2 className="mt-2 font-serif text-3xl text-[var(--brand-text)]">
-              What you&rsquo;re actually paying them for.
+              {t("landing.comparisonHeading")}
             </h2>
             <p className="mx-auto mt-3 max-w-xl text-[var(--brand-muted-2)]">
-              Stripe, SumUp and Worldline were built for a time when websites
-              were hard and a card reader was basically a status symbol. You're
-              still paying for that era — not for anything you actually need
-              today.
+              {t("landing.comparisonBody")}
             </p>
           </div>
 
@@ -193,7 +197,7 @@ export default function Landing() {
                 <tr>
                   <th className="border-b border-[var(--brand-border)] px-4 py-3" />
                   <th className="border-b border-[var(--brand-border)] px-4 py-3 text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--brand-muted)]">
-                    The old guard
+                    {t("landing.colOldGuard")}
                   </th>
                   <th className="border-b border-[var(--brand-border)] px-4 py-3 text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--brand-accent)]">
                     Zolto
@@ -204,16 +208,16 @@ export default function Landing() {
                 {INCUMBENT_COMPARISON.map((row) => (
                   <tr key={row.feature}>
                     <td className="border-b border-[var(--brand-border)] px-4 py-3.5 font-medium text-[var(--brand-text)]">
-                      {row.feature}
+                      {st(`comparison.${row.feature}.feature`, row.feature)}
                     </td>
                     <td className="border-b border-[var(--brand-border)] px-4 py-3.5 text-[var(--brand-muted-2)]">
-                      {row.them}
+                      {st(`comparison.${row.feature}.them`, row.them)}
                     </td>
                     <td className="border-b border-[var(--brand-border)] bg-[var(--brand-accent)]/[0.07] px-4 py-3.5 font-medium text-[var(--brand-text)]">
                       <span aria-hidden className="text-[var(--brand-accent)]">
                         ✓{" "}
                       </span>
-                      {row.us}
+                      {st(`comparison.${row.feature}.us`, row.us)}
                     </td>
                   </tr>
                 ))}
@@ -232,10 +236,10 @@ export default function Landing() {
       <Container as="section" id="product" className="py-20">
         <div className="mb-14 text-center">
           <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
-            here&rsquo;s how it works
+            {t("landing.howEyebrow")}
           </p>
           <h2 className="mt-2 font-serif text-3xl text-[var(--brand-text)]">
-            One shop. Everywhere you sell.
+            {t("landing.howHeading")}
           </h2>
         </div>
 
@@ -243,12 +247,10 @@ export default function Landing() {
         <div className="grid items-center gap-10 md:grid-cols-[0.8fr_1.2fr]">
           <div>
             <h3 className="font-serif text-2xl text-[var(--brand-text)]">
-              One inventory, two channels
+              {t("landing.inventoryTitle")}
             </h3>
             <p className="mt-3 max-w-sm leading-relaxed text-[var(--brand-muted-2)]">
-              Sell at the market and online from the same catalogue. Sell the
-              last one at your stall and it comes off the website in real time —
-              no double entry, no oversells.
+              {t("landing.inventoryBody")}
             </p>
           </div>
           <OneInventoryDiagram />
@@ -258,12 +260,10 @@ export default function Landing() {
         <div className="mt-20 grid items-center gap-10 md:grid-cols-[0.8fr_1.2fr]">
           <div className="md:order-2">
             <h3 className="font-serif text-2xl text-[var(--brand-text)]">
-              Snap a photo, get a listing
+              {t("landing.photoTitle")}
             </h3>
             <p className="mt-3 max-w-sm leading-relaxed text-[var(--brand-muted-2)]">
-              Photograph a piece and the AI drafts the title, description and a
-              suggested price — in every language you sell in. You review and
-              publish; the busywork is done for you.
+              {t("landing.photoBody")}
             </p>
           </div>
           <div className="md:order-1">
@@ -277,16 +277,13 @@ export default function Landing() {
         <Container className="py-20">
           <div className="mb-12 text-center">
             <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
-              AI that&rsquo;s fine with messy
+              {t("landing.messyEyebrow")}
             </p>
             <h2 className="mt-2 font-serif text-3xl text-[var(--brand-text)]">
-              Sell first. Sort it out later.
+              {t("landing.messyHeading")}
             </h2>
             <p className="mx-auto mt-3 max-w-xl text-[var(--brand-muted-2)]">
-              A real market stall is glorious chaos. Don&rsquo;t stop mid-sale
-              to tag every piece — your phone&rsquo;s the card machine, the
-              AI&rsquo;s the back office, and you&rsquo;re just there to sell
-              cool stuff.
+              {t("landing.messyBody")}
             </p>
           </div>
 
@@ -295,24 +292,26 @@ export default function Landing() {
           {/* End-of-day reconciliation email mock */}
           <div className="mx-auto mt-12 max-w-xl overflow-hidden rounded-xl border border-[var(--brand-border)] bg-white shadow-[0_18px_44px_-30px_rgba(45,38,32,0.5)]">
             <div className="border-b border-[var(--brand-border)] px-5 py-3.5 text-[13px] text-[var(--brand-muted)]">
-              From <span className="text-[var(--brand-text)]">Zolto</span> ·
-              Subject:{" "}
+              {t("landing.emailFrom")}{" "}
+              <span className="text-[var(--brand-text)]">Zolto</span> ·{" "}
+              {t("landing.emailSubjectLabel")}{" "}
               <span className="text-[var(--brand-text)]">
-                Your day — 2 sales to confirm
+                {t("landing.emailSubject")}
               </span>
             </div>
             <div className="px-5 py-5">
               <p className="mb-4 text-[15px] leading-relaxed text-[var(--brand-muted-2)]">
-                You took CHF 165 across 2 taps today. Based on what&rsquo;s in
-                stock and what usually sells at this fair, here&rsquo;s our best
-                guess — tap the right piece for each:
+                {t("landing.emailBody")}
               </p>
               {[
                 {
-                  name: "Baroque pearl necklace",
-                  meta: "CHF 120 · 1 in stock",
+                  name: t("landing.emailItem1Name"),
+                  meta: t("landing.emailItem1Meta"),
                 },
-                { name: "Pearl drop earrings", meta: "CHF 45 · 3 in stock" },
+                {
+                  name: t("landing.emailItem2Name"),
+                  meta: t("landing.emailItem2Meta"),
+                },
               ].map((g) => (
                 <div
                   key={g.name}
@@ -331,7 +330,7 @@ export default function Landing() {
                     </span>
                   </span>
                   <span className="ml-auto rounded-md bg-[var(--brand-accent)] px-3.5 py-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--brand-ink)]">
-                    That&rsquo;s it ✓
+                    {t("landing.emailConfirm")}
                   </span>
                 </div>
               ))}
@@ -347,20 +346,17 @@ export default function Landing() {
       <section className="bg-[var(--brand-ink)]">
         <Container width="4xl" className="py-20 text-center">
           <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
-            ready when you are
+            {t("landing.ctaEyebrow")}
           </p>
           <h2 className="mt-3 font-serif text-3xl text-white sm:text-4xl">
-            Your store, live this week.
+            {t("landing.ctaHeading")}
           </h2>
-          <p className="mt-4 text-white/70">
-            Free to sell in person, forever. 14-day trial on Pro, no credit card
-            needed to poke around — and no card reader, ever. Promise.
-          </p>
+          <p className="mt-4 text-white/70">{t("landing.ctaBody")}</p>
           <Link
             href="/signup"
             className="mt-8 inline-block rounded-md bg-[var(--brand-accent)] px-7 py-3 text-xs font-medium uppercase tracking-[0.14em] text-[var(--brand-ink)] transition-colors hover:bg-[var(--brand-accent-light)]"
           >
-            Create your store →
+            {t("landing.ctaButton")}
           </Link>
         </Container>
       </section>

@@ -1,5 +1,9 @@
 import { Store, Smartphone, Sparkles, LineChart } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { useTranslation } from "react-i18next";
+// Ensure the shared i18n instance is initialized even when this block is
+// pulled in isolation (e.g. under test) before main.tsx has run.
+import "@/lib/i18n";
 import { SketchUnderline, SketchDivider } from "./SketchAccents";
 
 /**
@@ -70,38 +74,43 @@ export default function CapabilityBand({
   onConnectStore,
   onViewInsights,
 }: CapabilityBandProps) {
+  const { t } = useTranslation("admin");
   const pillars: Pillar[] = [
     {
       key: "store",
       icon: Store,
-      title: "Online Store",
-      blurb: "Your catalogue, live on the web",
-      status: storeConnected ? "Live" : "Connect",
+      title: t("catalog.components.capabilities.storeTitle"),
+      blurb: t("catalog.components.capabilities.storeBlurb"),
+      status: storeConnected
+        ? t("catalog.components.capabilities.statusLive")
+        : t("catalog.components.capabilities.statusConnect"),
       tone: storeConnected ? "live" : "todo",
       onAction: storeConnected ? undefined : onConnectStore,
     },
     {
       key: "pos",
       icon: Smartphone,
-      title: "Tap to Pay",
-      blurb: "Take card & TWINT at markets",
-      status: "Ready",
+      title: t("catalog.components.capabilities.posTitle"),
+      blurb: t("catalog.components.capabilities.posBlurb"),
+      status: t("catalog.components.capabilities.statusReady"),
       tone: "ready",
     },
     {
       key: "ai",
       icon: Sparkles,
-      title: "AI Studio",
-      blurb: "Photos become products",
-      status: "Active",
+      title: t("catalog.components.capabilities.aiTitle"),
+      blurb: t("catalog.components.capabilities.aiBlurb"),
+      status: t("catalog.components.capabilities.statusActive"),
       tone: "ready",
     },
     {
       key: "insights",
       icon: LineChart,
-      title: "Insights",
-      blurb: "Know what's selling",
-      status: insightsReady ? "Ready" : "Generate",
+      title: t("catalog.components.capabilities.insightsTitle"),
+      blurb: t("catalog.components.capabilities.insightsBlurb"),
+      status: insightsReady
+        ? t("catalog.components.capabilities.statusReady")
+        : t("catalog.components.capabilities.statusGenerate"),
       tone: insightsReady ? "ready" : "todo",
       onAction: insightsReady ? undefined : onViewInsights,
     },
@@ -110,20 +119,20 @@ export default function CapabilityBand({
   return (
     <section
       data-tour="capabilities"
-      aria-label="Your Zolto workshop"
+      aria-label={t("catalog.components.capabilities.ariaLabel")}
       className="mb-8 bg-white border border-[var(--brand-border)]"
     >
       <div className="flex items-baseline justify-between gap-4 px-6 pt-5">
         <div>
           <p className="font-hand text-[var(--brand-accent)] leading-none">
-            Your workshop, at a glance
+            {t("catalog.components.capabilities.eyebrow")}
           </p>
           <div className="mt-1 w-40 text-[var(--brand-accent)]/70">
             <SketchUnderline />
           </div>
         </div>
         <p className="hidden sm:block text-[11px] uppercase tracking-[0.2em] text-muted-foreground font-sans">
-          Sell online &amp; in person
+          {t("catalog.components.capabilities.tagline")}
         </p>
       </div>
 

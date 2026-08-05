@@ -3,12 +3,14 @@
  * Zolto relationship and a pointer to invoices (managed in Plan & billing via
  * Stripe). Static; the invoice archive itself lives on the Stripe customer.
  */
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Link } from "wouter";
 import { FileText, Receipt, Scale, Sparkles } from "lucide-react";
 import { PageHeader, SettingsCard, AdminOnly } from "@/components/admin/ui";
 
 export default function Legal() {
+  const { t } = useTranslation("admin");
   const { user } = useAuth();
   if (user && user.role !== "admin" && user.role !== "superadmin") {
     return <AdminOnly />;
@@ -17,38 +19,38 @@ export default function Legal() {
   return (
     <div>
       <PageHeader
-        title="Legal & invoices"
-        description="The documents that govern your use of Zolto, and where to find your invoices."
+        title={t("store.legal.title")}
+        description={t("store.legal.description")}
       />
 
-      <SettingsCard title="Invoices">
+      <SettingsCard title={t("store.legal.invoicesTitle")}>
         <div className="flex items-start gap-3">
           <Receipt className="mt-0.5 h-5 w-5 text-muted-foreground" />
           <div>
             <p className="text-sm text-foreground">
-              Your subscription invoices are issued and archived by Stripe.
+              {t("store.legal.invoicesNote")}
             </p>
             <Link
               href="/admin/account/plan"
               className="mt-1 inline-block text-sm font-medium text-primary hover:underline"
             >
-              Manage billing & view invoices →
+              {t("store.legal.manageBilling")}
             </Link>
           </div>
         </div>
       </SettingsCard>
 
-      <SettingsCard title="Documents">
+      <SettingsCard title={t("store.legal.documentsTitle")}>
         <ul className="divide-y">
           {[
             {
               icon: FileText,
-              label: "Terms of Service",
+              label: t("store.legal.terms"),
               href: "/legal/terms",
             },
             {
               icon: Scale,
-              label: "Privacy Policy",
+              label: t("store.legal.privacy"),
               href: "/legal/privacy",
             },
           ].map(({ icon: Icon, label, href }) => (
@@ -67,13 +69,11 @@ export default function Legal() {
         </ul>
       </SettingsCard>
 
-      <SettingsCard title="AI-image disclosure">
+      <SettingsCard title={t("store.legal.aiTitle")}>
         <div className="flex items-start gap-3">
           <Sparkles className="mt-0.5 h-5 w-5 text-muted-foreground" />
           <p className="text-sm text-muted-foreground">
-            Product photos styled with Zolto's AI are enhancements of your own
-            images. You're responsible for ensuring listings accurately
-            represent the item a customer receives.
+            {t("store.legal.aiNote")}
           </p>
         </div>
       </SettingsCard>

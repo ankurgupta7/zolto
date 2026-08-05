@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, cleanup, waitFor } from "@testing-library/react";
+import { render, screen, cleanup, waitFor, act } from "@testing-library/react";
 import { Router } from "wouter";
 import { memoryLocation } from "wouter/memory-location";
+import i18n from "@/lib/i18n";
 import SignIn from "./SignIn";
 
 const mocks = vi.hoisted(() => ({
@@ -33,10 +34,11 @@ import { hardRedirect } from "@/lib/navigate";
 // jsdom's origin.
 const ORIGIN = "http://localhost:3000";
 
-beforeEach(() => {
+beforeEach(async () => {
   vi.clearAllMocks();
   mocks.meData = undefined;
   mocks.meLoading = false;
+  await i18n.changeLanguage("en");
 });
 afterEach(() => cleanup());
 
@@ -95,6 +97,30 @@ describe("SignIn (storefront) — offering every method", () => {
     expect(
       screen.queryByRole("link", { name: /continue with google/i }),
     ).toBeNull();
+  });
+});
+
+// The page's own copy is one `admin`-namespace lookup away from a raw key, so
+// pin that the account fragment actually resolves in a non-default language
+// rather than falling back to English (or rendering "catalog.account.…").
+describe("SignIn (storefront) — translated", () => {
+  afterEach(async () => {
+    await act(async () => {
+      await i18n.changeLanguage("en");
+    });
+  });
+
+  it("renders its heading and blurb in German", async () => {
+    await act(async () => {
+      await i18n.changeLanguage("de");
+    });
+    renderSignIn();
+    expect(screen.getByText("Zum Fortfahren anmelden")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Ihre Sitzung ist abgelaufen. Melden Sie sich an, und wir bringen Sie zurück zu dem, was Sie gerade getan haben.",
+      ),
+    ).toBeTruthy();
   });
 });
 

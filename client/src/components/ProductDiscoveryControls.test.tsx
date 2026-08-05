@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
+import i18n from "@/lib/i18n";
 import ProductDiscoveryControls, {
   type SortOption,
   type ViewMode,
@@ -46,8 +47,11 @@ function openSortSelect() {
   fireEvent.keyDown(screen.getByRole("combobox"), { key: "ArrowDown" });
 }
 
-beforeEach(() => {
+// The storefront falls back to German when the browser asks for it; pin
+// English so the label assertions below read the source strings.
+beforeEach(async () => {
   vi.clearAllMocks();
+  await i18n.changeLanguage("en");
 });
 
 afterEach(() => cleanup());
@@ -114,5 +118,26 @@ describe("ProductDiscoveryControls", () => {
     expect(onToggleCategory).toHaveBeenCalledWith("__expand_all__");
     fireEvent.click(screen.getByText("Collapse All"));
     expect(onToggleCategory).toHaveBeenCalledWith("__collapse_all__");
+  });
+
+  it("renders labels, titles and the plural count in French", async () => {
+    await i18n.changeLanguage("fr");
+    try {
+      renderControls({ sortBy: "category", totalProducts: 3 });
+      expect(screen.getByText("Trier par :")).toBeTruthy();
+      expect(screen.getByText("Affichage :")).toBeTruthy();
+      expect(screen.getByText("3 produits")).toBeTruthy();
+      expect(screen.getByText("Tout déplier")).toBeTruthy();
+      expect(screen.getByText("Tout replier")).toBeTruthy();
+      expect(screen.getByLabelText("Vue en grille")).toBeTruthy();
+      expect(screen.getByTitle("Vue en liste avec détails")).toBeTruthy();
+      // French has a `many` plural category English lacks; the singular must
+      // still agree at 1.
+      cleanup();
+      renderControls({ totalProducts: 1 });
+      expect(screen.getByText("1 produit")).toBeTruthy();
+    } finally {
+      await i18n.changeLanguage("en");
+    }
   });
 });

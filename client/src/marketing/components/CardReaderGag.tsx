@@ -1,5 +1,6 @@
 import { CARD_READER_GAG, PRO_PLAN } from "@shared/platform";
 import { ScrollReveal } from "./ScrollReveal";
+import { useMarketingT } from "../lib/marketingI18n";
 
 /**
  * CardReaderGag — the comparison table's punchline, told as a joke.
@@ -15,19 +16,20 @@ import { ScrollReveal } from "./ScrollReveal";
  * about a rival's bill.
  */
 export function CardReaderGag() {
+  const { t, st } = useMarketingT();
   const { anchorChf, items, proMonths } = CARD_READER_GAG;
 
   return (
     <ScrollReveal className="mx-auto max-w-2xl rounded-2xl border border-dashed border-[var(--brand-accent)]/50 bg-[var(--brand-surface-2)] p-8 text-center md:p-10">
       <p className="font-hand text-xl leading-none text-[var(--brand-accent)]">
-        a brief digression
+        {t("cardReaderGag.eyebrow")}
       </p>
       <h3 className="mt-2 font-serif text-2xl text-[var(--brand-text)]">
-        Things that cost about as much as a card reader.
+        {t("cardReaderGag.heading")}
       </h3>
 
       <ul className="mt-6 grid gap-2.5 text-left">
-        {items.map((item) => (
+        {items.map((item, i) => (
           <li
             key={item}
             className="flex gap-3 text-[15px] leading-relaxed text-[var(--brand-muted-2)]"
@@ -35,7 +37,7 @@ export function CardReaderGag() {
             <span aria-hidden className="text-[var(--brand-accent)]">
               —
             </span>
-            {item}
+            {st(`cardReaderGag.items.${i}`, item)}
           </li>
         ))}
         <li className="flex gap-3 text-[15px] leading-relaxed text-[var(--brand-text)]">
@@ -44,16 +46,18 @@ export function CardReaderGag() {
           </span>
           <span>
             <strong className="font-medium">
-              {proMonths} months of Zolto {PRO_PLAN.name}.
+              {t("cardReaderGag.punchlineStrong", {
+                months: proMonths,
+                plan: st("plans.pro.name", PRO_PLAN.name),
+              })}
             </strong>{" "}
-            Which is the one on this list that also runs your shop.
+            {t("cardReaderGag.punchlineRest")}
           </span>
         </li>
       </ul>
 
       <p className="mt-6 text-sm text-[var(--brand-muted)]">
-        Taking CHF {anchorChf} as the top of the range above. Your phone already
-        does the tapping, so you don&rsquo;t have to spend it on any of this.
+        {t("cardReaderGag.footnote", { anchor: anchorChf })}
       </p>
     </ScrollReveal>
   );

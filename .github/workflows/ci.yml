@@ -1,0 +1,62 @@
+name: CI (typecheck, tests, lint)
+
+# The web app's gate. Until this existed the only pipelines were the browser
+# e2e journey and the two native-app builds (which only run on their own
+# paths), so a change that broke the ~2,500-test unit suite, the typecheck, or
+# the locale-structure contract could merge to main entirely unobserved.
+#
+# Deliberately no database: the unit suite mocks ./db, ./stripe and the _core
+# services (see CLAUDE.md), so this job stays fast and portable. Anything that
+# genuinely needs MySQL belongs in e2e.yml.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Typecheck, unit tests, lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # No `version:` — package.json's `packageManager` pins pnpm, and
+      # action-setup@v4 errors when both are given (see e2e.yml's note).
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm run check
+
+      # Runs the whole vitest suite, which includes the marketing locale
+      # contract (client/src/marketing/locales/locales.test.ts): every language
+      # must carry the same keys, and en.json must mirror shared/platform.ts
+      # verbatim. A feature that lands without its de/fr/it strings fails here.
+      - name: Unit tests
+        run: pnpm run test
+
+      # Lint last, and advisory for now. `biome lint` currently exits non-zero
+      # on findings that predate this workflow (unused parameters, a handful of
+      # `any`s, non-null assertions in tests). Gating on them would make this
+      # job red on day one for reasons no PR caused, which teaches everyone to
+      # ignore it. The signal is in the log; drop `continue-on-error` once the
+      # backlog is cleared.
+      - name: Lint (advisory)
+        continue-on-error: true
+        run: pnpm run lint
