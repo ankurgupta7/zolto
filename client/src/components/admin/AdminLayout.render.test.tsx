@@ -90,6 +90,35 @@ describe("AdminLayout", () => {
     ]);
   });
 
+  // App.tsx hands the header the nav manifest's English label, so without the
+  // same lookup the sidebar reads "Kategorien" while the title above it still
+  // says "Categories".
+  it("translates the header title it is handed from the nav manifest", async () => {
+    asViewer("admin", "pro");
+    await i18n.changeLanguage("de");
+    render(
+      <AdminLayout title="Categories">
+        <p>x</p>
+      </AdminLayout>,
+    );
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Kategorien" }),
+    ).toBeTruthy();
+  });
+
+  it("passes through a title that is not a nav manifest label", async () => {
+    asViewer("admin", "pro");
+    await i18n.changeLanguage("de");
+    render(
+      <AdminLayout title="Aurora Atelier">
+        <p>x</p>
+      </AdminLayout>,
+    );
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Aurora Atelier" }),
+    ).toBeTruthy();
+  });
+
   it("ships a language switcher that switches and persists the choice", () => {
     asViewer("admin", "pro");
     render(<AdminLayout><p>x</p></AdminLayout>);

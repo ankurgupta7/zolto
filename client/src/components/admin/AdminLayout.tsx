@@ -185,8 +185,13 @@ export function AdminLayout({
           >
             <icons.Menu className="h-5 w-5" aria-hidden="true" />
           </button>
+          {/* App.tsx passes the nav manifest's English label, so the header
+              runs through the same lookup as the sidebar entry it mirrors and
+              degrades to the given text for any non-manifest title. */}
           <h1 className="text-lg font-semibold tracking-tight">
-            {title ?? t("core.layout.defaultTitle")}
+            {title
+              ? t(navLabelKey(title), { defaultValue: title })
+              : t("core.layout.defaultTitle")}
           </h1>
         </header>
         <main className="flex-1 p-4 md:p-6">{children}</main>
