@@ -391,6 +391,133 @@
         "migrationFound_one": "{{count}} Produkt in Ihren {{source}}-Daten gefunden — bitte vor dem Import prüfen",
         "migrationFound_other": "{{count}} Produkte in Ihren {{source}}-Daten gefunden — bitte vor dem Import prüfen"
       }
+    },
+    "components": {
+      "signIn": {
+        "google": "Weiter mit Google",
+        "apple": "Weiter mit Apple",
+        "orEmail": "Oder mit E-Mail fortfahren",
+        "emailPlaceholder": "name@example.com",
+        "sending": "Wird gesendet…",
+        "sendLink": "Link senden",
+        "linkSentBefore": "Wir haben einen Anmeldelink an",
+        "linkSentAfter": "geschickt. Er ist einmal gültig und läuft in 15 Minuten ab.",
+        "previewNote": "E-Mail ist auf dieser Installation nicht konfiguriert — nutzen Sie den Link direkt:",
+        "error": "Der Link konnte nicht gesendet werden. Bitte versuchen Sie es erneut."
+      },
+      "signOut": {
+        "label": "Abmelden",
+        "busy": "Wird abgemeldet…"
+      },
+      "manus": {
+        "logoAlt": "Dialoggrafik",
+        "description": "Bitte melden Sie sich mit Manus an, um fortzufahren",
+        "login": "Mit Manus anmelden"
+      },
+      "bulkChange": {
+        "selectedNote_one": "{{count}} von {{total}} ausgewählt — es ändert sich nichts, bis Sie bestätigen.",
+        "selectedNote_other": "{{count}} von {{total}} ausgewählt — es ändert sich nichts, bis Sie bestätigen.",
+        "permanentNote": "Diese Aktion ist endgültig und kann nicht rückgängig gemacht werden.",
+        "cancel": "Abbrechen",
+        "confirmDefault_one": "{{count}} Änderung bestätigen",
+        "confirmDefault_other": "{{count}} Änderungen bestätigen",
+        "confirmLabeled_one": "{{count}} {{label}} bestätigen",
+        "confirmLabeled_other": "{{count}} {{label}} bestätigen"
+      },
+      "instagram": {
+        "add": "Hinzufügen",
+        "addedToast": "Beitrag zum Raster hinzugefügt",
+        "addFailed": "Beitrag konnte nicht hinzugefügt werden",
+        "removedToast": "Beitrag entfernt",
+        "removeFailed": "Beitrag konnte nicht entfernt werden",
+        "loading": "Beiträge werden geladen…",
+        "emptyTitle": "Noch keine Beiträge. Fügen Sie oben die URL eines Instagram-Beitrags ein, um zu starten.",
+        "emptyTip": "Tipp: Öffnen Sie einen Beitrag auf Instagram, kopieren Sie die URL aus dem Browser und fügen Sie sie hier ein.",
+        "countInGrid_one": "{{count}} Beitrag im Raster",
+        "countInGrid_other": "{{count}} Beiträge im Raster",
+        "openPost": "Beitrag öffnen",
+        "removeFromGrid": "Aus dem Raster entfernen",
+        "footnote": "Beiträge erscheinen auf der Startseite als eingebettete Instagram-Widgets. Unterstützt werden /p/-Beiträge und /reel/-Reels."
+      },
+      "onboarding": {
+        "ariaLabel": "Setup-Checkliste",
+        "allDoneTitle": "Ihr Shop ist vollständig eingerichtet 🎉",
+        "title": "Ihren Shop live schalten",
+        "hideAria": "Checkliste ausblenden",
+        "goThere": "Öffnen",
+        "showMe": "Zeigen",
+        "blocked": "Blockiert",
+        "hideChecklist": "Diese Checkliste ausblenden"
+      },
+      "capabilities": {
+        "ariaLabel": "Ihre Zolto-Werkstatt",
+        "eyebrow": "Ihre Werkstatt auf einen Blick",
+        "tagline": "Online & vor Ort verkaufen",
+        "storeTitle": "Onlineshop",
+        "storeBlurb": "Ihr Katalog, live im Netz",
+        "statusLive": "Live",
+        "statusConnect": "Verbinden",
+        "posTitle": "Tap to Pay",
+        "posBlurb": "Karte & TWINT am Markt annehmen",
+        "statusReady": "Bereit",
+        "aiTitle": "KI-Studio",
+        "aiBlurb": "Fotos werden zu Produkten",
+        "statusActive": "Aktiv",
+        "insightsTitle": "Statistiken",
+        "insightsBlurb": "Sehen, was sich verkauft",
+        "statusGenerate": "Erstellen"
+      },
+      "productImages": {
+        "toggleHide": "Zusatzbilder ausblenden",
+        "toggleManage": "Zusatzbilder verwalten",
+        "forProductBefore": "Zusatzbilder für",
+        "forProductAfter": "— im Produktfenster durchblätterbar.",
+        "loading": "Wird geladen…",
+        "photoAlt": "Produktfoto",
+        "removeImage": "Bild entfernen",
+        "add": "Hinzufügen",
+        "emptyNote": "Noch keine Zusatzbilder. Klicken Sie auf das +, um hochzuladen.",
+        "restyle": "Hauptfoto mit KI neu gestalten",
+        "shotsLeft_one": "{{count}} Aufnahme diesen Monat übrig",
+        "shotsLeft_other": "{{count}} Aufnahmen diesen Monat übrig",
+        "styleClean": "Klare Katalogaufnahme vor nahtlosem weissem Hintergrund, weiches Studiolicht",
+        "styleLifestyle": "Elegantes Lifestyle-Flatlay auf Naturleinen mit weichem Morgenlicht",
+        "styleMacro": "Luxuriöse Makroaufnahme, die Material und Textur hervorhebt",
+        "allowanceUsedTitle": "Monatliches KI-Fotokontingent aufgebraucht — für unbegrenzte KI auf Pro upgraden",
+        "generateTitle": "Ein KI-gestaltetes Bild erzeugen",
+        "generate": "Erzeugen",
+        "allowanceUsedBefore": "Kontingent für diesen Monat aufgebraucht — upgraden Sie auf Pro unter",
+        "allowanceLink": "Plan & Abrechnung",
+        "allowanceUsedAfter": "für unbegrenzte KI.",
+        "disclosure": "KI-gestaltete Bilder werden als KI-generiert gekennzeichnet.",
+        "toastAiAdded": "KI-Foto hinzugefügt",
+        "toastAiAddedRemaining_one": "KI-Foto hinzugefügt — {{count}} diesen Monat übrig",
+        "toastAiAddedRemaining_other": "KI-Foto hinzugefügt — {{count}} diesen Monat übrig",
+        "toastImageAdded": "Bild hinzugefügt",
+        "toastUploadFailed": "Bild konnte nicht hochgeladen werden",
+        "toastImageRemoved": "Bild entfernt",
+        "toastRemoveFailed": "Bild konnte nicht entfernt werden",
+        "toastTooLarge": "{{name}} ist zu gross (max. 8 MB)"
+      },
+      "dashboard": {
+        "signInTitle": "Anmelden, um fortzufahren",
+        "signInDescription": "Der Zugriff auf dieses Dashboard erfordert eine Anmeldung. Wählen Sie, wie Sie sich anmelden möchten.",
+        "toggleNav": "Navigation umschalten",
+        "navigation": "Navigation",
+        "page1": "Seite 1",
+        "page2": "Seite 2",
+        "signOut": "Abmelden",
+        "menu": "Menü"
+      },
+      "tour": {
+        "skipAria": "Tour überspringen",
+        "stepAria": "Tour-Schritt {{current}} von {{total}}",
+        "stepLabel": "Schritt {{current}} von {{total}}",
+        "skip": "Überspringen",
+        "back": "Zurück",
+        "next": "Weiter",
+        "done": "Fertig"
+      }
     }
   }
 }

@@ -1,5 +1,9 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { trpc } from "@/lib/trpc";
+// Ensure the shared i18n instance is initialized even when this block is
+// pulled in isolation (e.g. under test) before main.tsx has run.
+import "@/lib/i18n";
 import { toast } from "sonner";
 import {
   Plus,
@@ -10,6 +14,7 @@ import {
 } from "lucide-react";
 
 export default function InstagramManager() {
+  const { t } = useTranslation("admin");
   const [newUrl, setNewUrl] = useState("");
   const utils = trpc.useUtils();
 
@@ -19,20 +24,20 @@ export default function InstagramManager() {
     onSuccess: () => {
       utils.instagram.list.invalidate();
       setNewUrl("");
-      toast.success("Post added to grid");
+      toast.success(t("catalog.components.instagram.addedToast"));
     },
     onError: (err) => {
-      toast.error(err.message || "Failed to add post");
+      toast.error(err.message || t("catalog.components.instagram.addFailed"));
     },
   });
 
   const deleteMutation = trpc.instagram.delete.useMutation({
     onSuccess: () => {
       utils.instagram.list.invalidate();
-      toast.success("Post removed");
+      toast.success(t("catalog.components.instagram.removedToast"));
     },
     onError: () => {
-      toast.error("Failed to remove post");
+      toast.error(t("catalog.components.instagram.removeFailed"));
     },
   });
 
@@ -67,7 +72,7 @@ export default function InstagramManager() {
           ) : (
             <Plus size={14} />
           )}
-          Add
+          {t("catalog.components.instagram.add")}
         </button>
       </form>
 
@@ -75,23 +80,25 @@ export default function InstagramManager() {
       {isLoading ? (
         <div className="flex items-center gap-2 text-muted-foreground text-sm py-4">
           <Loader2 size={16} className="animate-spin" />
-          <span className="font-sans">Loading posts…</span>
+          <span className="font-sans">
+            {t("catalog.components.instagram.loading")}
+          </span>
         </div>
       ) : !posts || posts.length === 0 ? (
         <div className="text-center py-8 border border-dashed border-[var(--brand-ink)]/20">
           <p className="text-muted-foreground text-sm font-sans">
-            No posts added yet. Paste an Instagram post URL above to get
-            started.
+            {t("catalog.components.instagram.emptyTitle")}
           </p>
           <p className="text-muted-foreground text-xs font-sans mt-1 opacity-60">
-            Tip: Open a post on Instagram, copy the URL from your browser, and
-            paste it here.
+            {t("catalog.components.instagram.emptyTip")}
           </p>
         </div>
       ) : (
         <div className="space-y-2">
           <p className="text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans mb-3">
-            {posts.length} post{posts.length !== 1 ? "s" : ""} in grid
+            {t("catalog.components.instagram.countInGrid", {
+              count: posts.length,
+            })}
           </p>
           {posts.map((post, idx) => (
             <div
@@ -113,7 +120,7 @@ export default function InstagramManager() {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="p-1.5 text-muted-foreground hover:text-[var(--brand-ink)] transition-colors flex-shrink-0"
-                title="Open post"
+                title={t("catalog.components.instagram.openPost")}
               >
                 <ExternalLink size={14} />
               </a>
@@ -122,7 +129,7 @@ export default function InstagramManager() {
                 onClick={() => deleteMutation.mutate({ id: post.id })}
                 disabled={deleteMutation.isPending}
                 className="p-1.5 text-muted-foreground hover:text-red-600 transition-colors flex-shrink-0 disabled:opacity-40"
-                title="Remove from grid"
+                title={t("catalog.components.instagram.removeFromGrid")}
               >
                 {deleteMutation.isPending ? (
                   <Loader2 size={14} className="animate-spin" />
@@ -136,8 +143,7 @@ export default function InstagramManager() {
       )}
 
       <p className="text-xs text-muted-foreground font-sans opacity-60">
-        Posts appear on the home page as embedded Instagram widgets. Supports
-        both /p/ posts and /reel/ reels.
+        {t("catalog.components.instagram.footnote")}
       </p>
     </div>
   );

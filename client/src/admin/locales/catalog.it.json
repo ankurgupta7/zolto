@@ -408,6 +408,139 @@
         "migrationFound_many": "{{count}} prodotti trovati nei Suoi dati {{source}} — verifichi prima di importare",
         "migrationFound_other": "{{count}} prodotti trovati nei Suoi dati {{source}} — verifichi prima di importare"
       }
+    },
+    "components": {
+      "signIn": {
+        "google": "Continua con Google",
+        "apple": "Continua con Apple",
+        "orEmail": "Oppure continua con l’e-mail",
+        "emailPlaceholder": "lei@example.com",
+        "sending": "Invio…",
+        "sendLink": "Invia link",
+        "linkSentBefore": "Abbiamo inviato un link di accesso a",
+        "linkSentAfter": "— è valido una sola volta e scade tra 15 minuti.",
+        "previewNote": "L’e-mail non è configurata su questa installazione — usi direttamente il link:",
+        "error": "Impossibile inviare il link. Riprovi."
+      },
+      "signOut": {
+        "label": "Esci",
+        "busy": "Disconnessione…"
+      },
+      "manus": {
+        "logoAlt": "Immagine della finestra di dialogo",
+        "description": "Per continuare, acceda con Manus",
+        "login": "Accedi con Manus"
+      },
+      "bulkChange": {
+        "selectedNote_one": "{{count}} di {{total}} selezionato — non cambia nulla finché non conferma.",
+        "selectedNote_many": "{{count}} di {{total}} selezionati — non cambia nulla finché non conferma.",
+        "selectedNote_other": "{{count}} di {{total}} selezionati — non cambia nulla finché non conferma.",
+        "permanentNote": "Questa azione è definitiva e non può essere annullata.",
+        "cancel": "Annulla",
+        "confirmDefault_one": "Conferma {{count}} modifica",
+        "confirmDefault_many": "Conferma {{count}} modifiche",
+        "confirmDefault_other": "Conferma {{count}} modifiche",
+        "confirmLabeled_one": "Conferma {{count}} {{label}}",
+        "confirmLabeled_many": "Conferma {{count}} {{label}}",
+        "confirmLabeled_other": "Conferma {{count}} {{label}}"
+      },
+      "instagram": {
+        "add": "Aggiungi",
+        "addedToast": "Post aggiunto alla griglia",
+        "addFailed": "Impossibile aggiungere il post",
+        "removedToast": "Post rimosso",
+        "removeFailed": "Impossibile rimuovere il post",
+        "loading": "Caricamento dei post…",
+        "emptyTitle": "Nessun post finora. Incolli qui sopra l’URL di un post Instagram per iniziare.",
+        "emptyTip": "Suggerimento: apra un post su Instagram, copi l’URL dal browser e lo incolli qui.",
+        "countInGrid_one": "{{count}} post nella griglia",
+        "countInGrid_many": "{{count}} post nella griglia",
+        "countInGrid_other": "{{count}} post nella griglia",
+        "openPost": "Apri il post",
+        "removeFromGrid": "Rimuovi dalla griglia",
+        "footnote": "I post appaiono sulla home page come widget Instagram incorporati. Sono supportati i post /p/ e i reel /reel/."
+      },
+      "onboarding": {
+        "ariaLabel": "Elenco di configurazione",
+        "allDoneTitle": "Il suo negozio è completamente configurato 🎉",
+        "title": "Il suo negozio va online",
+        "hideAria": "Nascondi l’elenco",
+        "goThere": "Vai",
+        "showMe": "Mostra",
+        "blocked": "Bloccato",
+        "hideChecklist": "Nascondi questo elenco"
+      },
+      "capabilities": {
+        "ariaLabel": "Il suo laboratorio Zolto",
+        "eyebrow": "Il suo laboratorio in sintesi",
+        "tagline": "Venda online e di persona",
+        "storeTitle": "Negozio online",
+        "storeBlurb": "Il suo catalogo, online",
+        "statusLive": "Online",
+        "statusConnect": "Collega",
+        "posTitle": "Tap to Pay",
+        "posBlurb": "Accetti carta e TWINT ai mercati",
+        "statusReady": "Pronto",
+        "aiTitle": "Studio IA",
+        "aiBlurb": "Le foto diventano prodotti",
+        "statusActive": "Attivo",
+        "insightsTitle": "Statistiche",
+        "insightsBlurb": "Scopra cosa vende",
+        "statusGenerate": "Genera"
+      },
+      "productImages": {
+        "toggleHide": "Nascondi le immagini extra",
+        "toggleManage": "Gestisci le immagini extra",
+        "forProductBefore": "Immagini extra per",
+        "forProductAfter": "— scorribili nella scheda prodotto.",
+        "loading": "Caricamento…",
+        "photoAlt": "Foto del prodotto",
+        "removeImage": "Rimuovi l’immagine",
+        "add": "Aggiungi",
+        "emptyNote": "Nessuna immagine extra. Clicchi sul + per caricarne una.",
+        "restyle": "Rielabori la foto principale con l’IA",
+        "shotsLeft_one": "{{count}} scatto rimasto questo mese",
+        "shotsLeft_many": "{{count}} scatti rimasti questo mese",
+        "shotsLeft_other": "{{count}} scatti rimasti questo mese",
+        "styleClean": "Scatto da catalogo pulito su fondo bianco uniforme, luce da studio morbida",
+        "styleLifestyle": "Flat-lay lifestyle elegante su lino naturale con luce mattutina morbida",
+        "styleMacro": "Macro di lusso che mette in risalto materiale e texture",
+        "allowanceUsedTitle": "Quota mensile di foto IA esaurita — passi a Pro per un’IA illimitata",
+        "generateTitle": "Genera un’immagine in stile IA",
+        "generate": "Genera",
+        "allowanceUsedBefore": "Quota esaurita per questo mese — passi a Pro in",
+        "allowanceLink": "Piano e fatturazione",
+        "allowanceUsedAfter": "per un’IA illimitata.",
+        "disclosure": "Le immagini in stile IA sono dichiarate come generate dall’IA.",
+        "toastAiAdded": "Foto IA aggiunta",
+        "toastAiAddedRemaining_one": "Foto IA aggiunta — {{count}} rimasto questo mese",
+        "toastAiAddedRemaining_many": "Foto IA aggiunta — {{count}} rimasti questo mese",
+        "toastAiAddedRemaining_other": "Foto IA aggiunta — {{count}} rimasti questo mese",
+        "toastImageAdded": "Immagine aggiunta",
+        "toastUploadFailed": "Impossibile caricare l’immagine",
+        "toastImageRemoved": "Immagine rimossa",
+        "toastRemoveFailed": "Impossibile rimuovere l’immagine",
+        "toastTooLarge": "{{name}} è troppo grande (max 8 MB)"
+      },
+      "dashboard": {
+        "signInTitle": "Acceda per continuare",
+        "signInDescription": "L’accesso a questa dashboard richiede l’autenticazione. Scelga come vuole accedere.",
+        "toggleNav": "Mostra o nascondi la navigazione",
+        "navigation": "Navigazione",
+        "page1": "Pagina 1",
+        "page2": "Pagina 2",
+        "signOut": "Esci",
+        "menu": "Menu"
+      },
+      "tour": {
+        "skipAria": "Salta il tour",
+        "stepAria": "Tour, passo {{current}} di {{total}}",
+        "stepLabel": "Passo {{current}} di {{total}}",
+        "skip": "Salta",
+        "back": "Indietro",
+        "next": "Avanti",
+        "done": "Fine"
+      }
     }
   }
 }

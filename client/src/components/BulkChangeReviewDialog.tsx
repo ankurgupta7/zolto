@@ -1,4 +1,8 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
+// Ensure the shared i18n instance is initialized even when this block is
+// pulled in isolation (e.g. under test) before main.tsx has run.
+import "@/lib/i18n";
 import {
   Dialog,
   DialogContent,
@@ -25,6 +29,8 @@ interface Props {
   /** Use for irreversible writes (e.g. permanent deletion) — swaps the
    * confirm button to a warning colour and labels the action accordingly. */
   destructive?: boolean;
+  /** Noun for the confirm button ("Deletion"); already translated by the
+   * caller. Omitted, the button uses its own translated "Change" wording. */
   confirmLabel?: string;
 }
 
@@ -40,8 +46,9 @@ export default function BulkChangeReviewDialog({
   onCancel,
   onConfirm,
   destructive = false,
-  confirmLabel = "Change",
+  confirmLabel,
 }: Props) {
+  const { t } = useTranslation("admin");
   const [selected, setSelected] = useState<Set<number>>(new Set());
 
   useEffect(() => {
@@ -87,9 +94,12 @@ export default function BulkChangeReviewDialog({
         </div>
 
         <p className="text-xs text-muted-foreground font-sans">
-          {selected.size} of {items.length} selected — nothing changes until you
-          confirm.
-          {destructive && " This action is permanent and cannot be undone."}
+          {t("catalog.components.bulkChange.selectedNote", {
+            count: selected.size,
+            total: items.length,
+          })}
+          {destructive &&
+            ` ${t("catalog.components.bulkChange.permanentNote")}`}
         </p>
 
         <DialogFooter>
@@ -99,7 +109,7 @@ export default function BulkChangeReviewDialog({
             disabled={isApplying}
             className="border border-[var(--brand-ink)]/20 text-muted-foreground px-5 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:border-[var(--brand-ink)] hover:text-foreground transition-colors disabled:opacity-50"
           >
-            Cancel
+            {t("catalog.components.bulkChange.cancel")}
           </button>
           <button
             type="button"
@@ -112,8 +122,14 @@ export default function BulkChangeReviewDialog({
             }`}
           >
             {isApplying && <Loader2 size={14} className="animate-spin" />}
-            Confirm {selected.size} {confirmLabel}
-            {selected.size !== 1 ? "s" : ""}
+            {confirmLabel
+              ? t("catalog.components.bulkChange.confirmLabeled", {
+                  count: selected.size,
+                  label: confirmLabel,
+                })
+              : t("catalog.components.bulkChange.confirmDefault", {
+                  count: selected.size,
+                })}
           </button>
         </DialogFooter>
       </DialogContent>

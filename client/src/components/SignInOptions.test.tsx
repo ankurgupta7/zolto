@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
+import i18n from "@/lib/i18n";
 import { SignInOptions } from "./SignInOptions";
 
 const mocks = vi.hoisted(() => ({
@@ -58,20 +59,26 @@ describe("SignInOptions", () => {
   it("omits the next param when none is given", () => {
     render(<SignInOptions />);
     expect(
-      screen.getByRole("link", { name: /continue with google/i }).getAttribute("href"),
+      screen
+        .getByRole("link", { name: /continue with google/i })
+        .getAttribute("href"),
     ).toBe("/api/oauth/login");
   });
 
   it("reveals an email form only after 'continue with email' is clicked", () => {
     render(<SignInOptions />);
     expect(screen.queryByPlaceholderText(/you@example.com/i)).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: /continue with email/i }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /continue with email/i }),
+    );
     expect(screen.getByPlaceholderText(/you@example.com/i)).toBeTruthy();
   });
 
   it("keeps the send button disabled until the email looks valid", () => {
     render(<SignInOptions />);
-    fireEvent.click(screen.getByRole("button", { name: /continue with email/i }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /continue with email/i }),
+    );
     const input = screen.getByPlaceholderText(/you@example.com/i);
     const submit = screen.getByRole("button", {
       name: /send link/i,
@@ -85,7 +92,9 @@ describe("SignInOptions", () => {
 
   it("requests a magic link with the email and next path on submit", () => {
     render(<SignInOptions next="/signin?from=oauth" />);
-    fireEvent.click(screen.getByRole("button", { name: /continue with email/i }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /continue with email/i }),
+    );
     fireEvent.change(screen.getByPlaceholderText(/you@example.com/i), {
       target: { value: "merchant@example.com" },
     });
@@ -99,28 +108,35 @@ describe("SignInOptions", () => {
   it("shows a check-your-email confirmation once the request succeeds", () => {
     mocks.responseData = { emailed: true };
     render(<SignInOptions />);
-    fireEvent.click(screen.getByRole("button", { name: /continue with email/i }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /continue with email/i }),
+    );
     fireEvent.change(screen.getByPlaceholderText(/you@example.com/i), {
       target: { value: "merchant@example.com" },
     });
     fireEvent.click(screen.getByRole("button", { name: /send link/i }));
     expect(screen.getByText(/check/i)).toBeTruthy();
     expect(screen.getByText("merchant@example.com")).toBeTruthy();
-    expect(screen.queryByRole("link", { name: /continue with google/i })).toBeNull();
+    expect(
+      screen.queryByRole("link", { name: /continue with google/i }),
+    ).toBeNull();
   });
 
   it("surfaces the raw link when the server reports it couldn't email it", () => {
-    const previewUrl = "http://localhost/api/auth/magic-link/callback?token=abc";
+    const previewUrl =
+      "http://localhost/api/auth/magic-link/callback?token=abc";
     mocks.responseData = { emailed: false, previewUrl };
     render(<SignInOptions />);
-    fireEvent.click(screen.getByRole("button", { name: /continue with email/i }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /continue with email/i }),
+    );
     fireEvent.change(screen.getByPlaceholderText(/you@example.com/i), {
       target: { value: "merchant@example.com" },
     });
     fireEvent.click(screen.getByRole("button", { name: /send link/i }));
-    expect(screen.getByRole("link", { name: previewUrl }).getAttribute("href")).toBe(
-      previewUrl,
-    );
+    expect(
+      screen.getByRole("link", { name: previewUrl }).getAttribute("href"),
+    ).toBe(previewUrl);
   });
 
   it("shows a mutation error message", () => {
@@ -128,5 +144,42 @@ describe("SignInOptions", () => {
     mocks.errorMessage = "Something went wrong.";
     render(<SignInOptions />);
     expect(screen.getByText("Something went wrong.")).toBeTruthy();
+  });
+});
+
+// This component is the signed-out surface of both /signin and every admin
+// page, so it must speak the merchant's language rather than the platform's.
+describe("SignInOptions — multilingual rendering", () => {
+  afterEach(async () => {
+    // jsdom's navigator.language is en-US, so English is the suite's baseline —
+    // restore it so this file leaves no language behind for other tests.
+    await i18n.changeLanguage("en");
+  });
+
+  it("renders German copy after switching to de", async () => {
+    await i18n.changeLanguage("de");
+    render(<SignInOptions />);
+
+    expect(
+      screen.getByRole("link", { name: "Weiter mit Google" }),
+    ).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Weiter mit Apple" })).toBeTruthy();
+    expect(screen.queryByText("Or continue with email")).toBeNull();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Oder mit E-Mail fortfahren" }),
+    );
+    const input = screen.getByPlaceholderText("name@example.com");
+    expect(screen.getByRole("button", { name: "Link senden" })).toBeTruthy();
+
+    // The confirmation wraps the address in markup, so its two halves are
+    // separate keys — check both land around the email.
+    fireEvent.change(input, { target: { value: "haendler@example.ch" } });
+    fireEvent.click(screen.getByRole("button", { name: "Link senden" }));
+    expect(screen.getByText(/Wir haben einen Anmeldelink an/)).toBeTruthy();
+    expect(screen.getByText("haendler@example.ch")).toBeTruthy();
+    expect(
+      screen.getByText(/Er ist einmal gültig und läuft in 15 Minuten ab\./),
+    ).toBeTruthy();
   });
 });

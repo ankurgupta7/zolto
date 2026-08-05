@@ -408,6 +408,139 @@
         "migrationFound_many": "{{count}} produits trouvés dans vos données {{source}} — vérifiez avant d'importer",
         "migrationFound_other": "{{count}} produits trouvés dans vos données {{source}} — vérifiez avant d'importer"
       }
+    },
+    "components": {
+      "signIn": {
+        "google": "Continuer avec Google",
+        "apple": "Continuer avec Apple",
+        "orEmail": "Ou continuer par e-mail",
+        "emailPlaceholder": "vous@example.com",
+        "sending": "Envoi…",
+        "sendLink": "Envoyer le lien",
+        "linkSentBefore": "Nous avons envoyé un lien de connexion à",
+        "linkSentAfter": "— il est valable une seule fois et expire dans 15 minutes.",
+        "previewNote": "L’e-mail n’est pas configuré sur ce déploiement — utilisez directement le lien :",
+        "error": "Impossible d’envoyer le lien. Veuillez réessayer."
+      },
+      "signOut": {
+        "label": "Se déconnecter",
+        "busy": "Déconnexion…"
+      },
+      "manus": {
+        "logoAlt": "Illustration de la boîte de dialogue",
+        "description": "Veuillez vous connecter avec Manus pour continuer",
+        "login": "Se connecter avec Manus"
+      },
+      "bulkChange": {
+        "selectedNote_one": "{{count}} sur {{total}} sélectionné — rien ne change tant que vous n’avez pas confirmé.",
+        "selectedNote_many": "{{count}} sur {{total}} sélectionnés — rien ne change tant que vous n’avez pas confirmé.",
+        "selectedNote_other": "{{count}} sur {{total}} sélectionnés — rien ne change tant que vous n’avez pas confirmé.",
+        "permanentNote": "Cette action est définitive et irréversible.",
+        "cancel": "Annuler",
+        "confirmDefault_one": "Confirmer {{count}} modification",
+        "confirmDefault_many": "Confirmer {{count}} modifications",
+        "confirmDefault_other": "Confirmer {{count}} modifications",
+        "confirmLabeled_one": "Confirmer {{count}} {{label}}",
+        "confirmLabeled_many": "Confirmer {{count}} {{label}}",
+        "confirmLabeled_other": "Confirmer {{count}} {{label}}"
+      },
+      "instagram": {
+        "add": "Ajouter",
+        "addedToast": "Publication ajoutée à la grille",
+        "addFailed": "Impossible d’ajouter la publication",
+        "removedToast": "Publication supprimée",
+        "removeFailed": "Impossible de supprimer la publication",
+        "loading": "Chargement des publications…",
+        "emptyTitle": "Aucune publication pour l’instant. Collez ci-dessus l’URL d’une publication Instagram pour commencer.",
+        "emptyTip": "Astuce : ouvrez une publication sur Instagram, copiez l’URL depuis votre navigateur et collez-la ici.",
+        "countInGrid_one": "{{count}} publication dans la grille",
+        "countInGrid_many": "{{count}} publications dans la grille",
+        "countInGrid_other": "{{count}} publications dans la grille",
+        "openPost": "Ouvrir la publication",
+        "removeFromGrid": "Retirer de la grille",
+        "footnote": "Les publications apparaissent sur la page d’accueil sous forme de widgets Instagram intégrés. Les publications /p/ et les reels /reel/ sont pris en charge."
+      },
+      "onboarding": {
+        "ariaLabel": "Liste de configuration",
+        "allDoneTitle": "Votre boutique est entièrement configurée 🎉",
+        "title": "Mettre votre boutique en ligne",
+        "hideAria": "Masquer la liste",
+        "goThere": "Y aller",
+        "showMe": "Montrer",
+        "blocked": "Bloqué",
+        "hideChecklist": "Masquer cette liste"
+      },
+      "capabilities": {
+        "ariaLabel": "Votre atelier Zolto",
+        "eyebrow": "Votre atelier en un coup d’œil",
+        "tagline": "Vendez en ligne et en personne",
+        "storeTitle": "Boutique en ligne",
+        "storeBlurb": "Votre catalogue, en ligne",
+        "statusLive": "En ligne",
+        "statusConnect": "Connecter",
+        "posTitle": "Tap to Pay",
+        "posBlurb": "Acceptez carte & TWINT sur les marchés",
+        "statusReady": "Prêt",
+        "aiTitle": "Studio IA",
+        "aiBlurb": "Les photos deviennent des produits",
+        "statusActive": "Actif",
+        "insightsTitle": "Statistiques",
+        "insightsBlurb": "Sachez ce qui se vend",
+        "statusGenerate": "Générer"
+      },
+      "productImages": {
+        "toggleHide": "Masquer les images supplémentaires",
+        "toggleManage": "Gérer les images supplémentaires",
+        "forProductBefore": "Images supplémentaires pour",
+        "forProductAfter": "— à faire défiler dans la fiche produit.",
+        "loading": "Chargement…",
+        "photoAlt": "Photo du produit",
+        "removeImage": "Supprimer l’image",
+        "add": "Ajouter",
+        "emptyNote": "Aucune image supplémentaire. Cliquez sur le + pour en téléverser.",
+        "restyle": "Restyler la photo principale avec l’IA",
+        "shotsLeft_one": "{{count}} prise restante ce mois-ci",
+        "shotsLeft_many": "{{count}} prises restantes ce mois-ci",
+        "shotsLeft_other": "{{count}} prises restantes ce mois-ci",
+        "styleClean": "Prise catalogue nette sur fond blanc uni, lumière de studio douce",
+        "styleLifestyle": "Flat-lay lifestyle élégant sur lin naturel, lumière douce du matin",
+        "styleMacro": "Gros plan macro luxueux mettant en valeur la matière et la texture",
+        "allowanceUsedTitle": "Quota mensuel de photos IA épuisé — passez à Pro pour une IA illimitée",
+        "generateTitle": "Générer une image stylisée par l’IA",
+        "generate": "Générer",
+        "allowanceUsedBefore": "Quota épuisé pour ce mois — passez à Pro sous",
+        "allowanceLink": "Forfait & facturation",
+        "allowanceUsedAfter": "pour une IA illimitée.",
+        "disclosure": "Les images stylisées par l’IA sont signalées comme générées par IA.",
+        "toastAiAdded": "Photo IA ajoutée",
+        "toastAiAddedRemaining_one": "Photo IA ajoutée — {{count}} restante ce mois-ci",
+        "toastAiAddedRemaining_many": "Photo IA ajoutée — {{count}} restantes ce mois-ci",
+        "toastAiAddedRemaining_other": "Photo IA ajoutée — {{count}} restantes ce mois-ci",
+        "toastImageAdded": "Image ajoutée",
+        "toastUploadFailed": "Échec du téléversement de l’image",
+        "toastImageRemoved": "Image supprimée",
+        "toastRemoveFailed": "Échec de la suppression de l’image",
+        "toastTooLarge": "{{name}} est trop volumineux (max. 8 Mo)"
+      },
+      "dashboard": {
+        "signInTitle": "Connectez-vous pour continuer",
+        "signInDescription": "L’accès à ce tableau de bord requiert une authentification. Choisissez votre mode de connexion.",
+        "toggleNav": "Afficher ou masquer la navigation",
+        "navigation": "Navigation",
+        "page1": "Page 1",
+        "page2": "Page 2",
+        "signOut": "Se déconnecter",
+        "menu": "Menu"
+      },
+      "tour": {
+        "skipAria": "Passer la visite",
+        "stepAria": "Visite, étape {{current}} sur {{total}}",
+        "stepLabel": "Étape {{current}} sur {{total}}",
+        "skip": "Passer",
+        "back": "Retour",
+        "next": "Suivant",
+        "done": "Terminé"
+      }
     }
   }
 }

@@ -9,7 +9,11 @@
  * greyed with the server's reason. All done → congratulates and offers dismiss.
  */
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { trpc } from "@/lib/trpc";
+// Ensure the shared i18n instance is initialized even when this block is
+// pulled in isolation (e.g. under test) before main.tsx has run.
+import "@/lib/i18n";
 import { Link } from "wouter";
 import { toast } from "sonner";
 import GuidedTour from "@/components/GuidedTour";
@@ -25,6 +29,7 @@ import {
 } from "lucide-react";
 
 export default function OnboardingChecklist() {
+  const { t } = useTranslation("admin");
   const utils = trpc.useUtils();
   const [collapsed, setCollapsed] = useState(false);
   const [activeTour, setActiveTour] = useState<string | null>(null);
@@ -44,7 +49,7 @@ export default function OnboardingChecklist() {
 
   return (
     <section
-      aria-label="Setup checklist"
+      aria-label={t("catalog.components.onboarding.ariaLabel")}
       className="border border-[var(--brand-accent)]/40 bg-[var(--brand-surface)] mb-10"
     >
       <header className="flex items-center justify-between px-5 py-3.5">
@@ -55,8 +60,8 @@ export default function OnboardingChecklist() {
         >
           <h2 className="font-serif text-lg text-[var(--brand-text)]">
             {data.allDone
-              ? "Your store is fully set up 🎉"
-              : "Getting your store live"}
+              ? t("catalog.components.onboarding.allDoneTitle")
+              : t("catalog.components.onboarding.title")}
           </h2>
           <span className="text-xs font-sans text-[var(--brand-muted-2)]">
             {data.doneCount}/{data.totalCount}
@@ -65,7 +70,7 @@ export default function OnboardingChecklist() {
         </button>
         <button
           type="button"
-          aria-label="Hide checklist"
+          aria-label={t("catalog.components.onboarding.hideAria")}
           disabled={dismiss.isPending}
           onClick={() => dismiss.mutate()}
           className="text-[var(--brand-muted-2)] hover:text-[var(--brand-text)] disabled:opacity-50"
@@ -124,7 +129,7 @@ export default function OnboardingChecklist() {
                         href={task.href}
                         className="text-xs font-sans uppercase tracking-[0.1em] text-[var(--brand-accent)] hover:underline"
                       >
-                        Go there
+                        {t("catalog.components.onboarding.goThere")}
                       </Link>
                     )}
                     {hasTour(task.tourId) && (
@@ -133,14 +138,15 @@ export default function OnboardingChecklist() {
                         onClick={() => setActiveTour(task.tourId!)}
                         className="flex items-center gap-1 text-xs font-sans uppercase tracking-[0.1em] text-[var(--brand-muted-2)] hover:text-[var(--brand-text)]"
                       >
-                        <Play size={11} /> Show me
+                        <Play size={11} />{" "}
+                        {t("catalog.components.onboarding.showMe")}
                       </button>
                     )}
                   </div>
                 )}
                 {!task.done && task.blockedReason && (
                   <span className="flex-shrink-0 text-[10px] uppercase tracking-[0.1em] text-[var(--brand-muted)]">
-                    Blocked
+                    {t("catalog.components.onboarding.blocked")}
                   </span>
                 )}
               </li>
@@ -159,7 +165,7 @@ export default function OnboardingChecklist() {
               ) : (
                 <CheckCircle2 size={12} />
               )}
-              Hide this checklist
+              {t("catalog.components.onboarding.hideChecklist")}
             </button>
           )}
         </div>

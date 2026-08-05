@@ -391,6 +391,133 @@
         "migrationFound_one": "Found {{count}} product in your {{source}} data — review before importing",
         "migrationFound_other": "Found {{count}} products in your {{source}} data — review before importing"
       }
+    },
+    "components": {
+      "signIn": {
+        "google": "Continue with Google",
+        "apple": "Continue with Apple",
+        "orEmail": "Or continue with email",
+        "emailPlaceholder": "you@example.com",
+        "sending": "Sending…",
+        "sendLink": "Send link",
+        "linkSentBefore": "Check",
+        "linkSentAfter": "for a sign-in link. It works once and expires in 15 minutes.",
+        "previewNote": "Email isn’t configured on this deployment — use the link directly:",
+        "error": "Couldn't send the link. Please try again."
+      },
+      "signOut": {
+        "label": "Sign out",
+        "busy": "Signing out…"
+      },
+      "manus": {
+        "logoAlt": "Dialog graphic",
+        "description": "Please login with Manus to continue",
+        "login": "Login with Manus"
+      },
+      "bulkChange": {
+        "selectedNote_one": "{{count}} of {{total}} selected — nothing changes until you confirm.",
+        "selectedNote_other": "{{count}} of {{total}} selected — nothing changes until you confirm.",
+        "permanentNote": "This action is permanent and cannot be undone.",
+        "cancel": "Cancel",
+        "confirmDefault_one": "Confirm {{count}} Change",
+        "confirmDefault_other": "Confirm {{count}} Changes",
+        "confirmLabeled_one": "Confirm {{count}} {{label}}",
+        "confirmLabeled_other": "Confirm {{count}} {{label}}s"
+      },
+      "instagram": {
+        "add": "Add",
+        "addedToast": "Post added to grid",
+        "addFailed": "Failed to add post",
+        "removedToast": "Post removed",
+        "removeFailed": "Failed to remove post",
+        "loading": "Loading posts…",
+        "emptyTitle": "No posts added yet. Paste an Instagram post URL above to get started.",
+        "emptyTip": "Tip: Open a post on Instagram, copy the URL from your browser, and paste it here.",
+        "countInGrid_one": "{{count}} post in grid",
+        "countInGrid_other": "{{count}} posts in grid",
+        "openPost": "Open post",
+        "removeFromGrid": "Remove from grid",
+        "footnote": "Posts appear on the home page as embedded Instagram widgets. Supports both /p/ posts and /reel/ reels."
+      },
+      "onboarding": {
+        "ariaLabel": "Setup checklist",
+        "allDoneTitle": "Your store is fully set up 🎉",
+        "title": "Getting your store live",
+        "hideAria": "Hide checklist",
+        "goThere": "Go there",
+        "showMe": "Show me",
+        "blocked": "Blocked",
+        "hideChecklist": "Hide this checklist"
+      },
+      "capabilities": {
+        "ariaLabel": "Your Zolto workshop",
+        "eyebrow": "Your workshop, at a glance",
+        "tagline": "Sell online & in person",
+        "storeTitle": "Online Store",
+        "storeBlurb": "Your catalogue, live on the web",
+        "statusLive": "Live",
+        "statusConnect": "Connect",
+        "posTitle": "Tap to Pay",
+        "posBlurb": "Take card & TWINT at markets",
+        "statusReady": "Ready",
+        "aiTitle": "AI Studio",
+        "aiBlurb": "Photos become products",
+        "statusActive": "Active",
+        "insightsTitle": "Insights",
+        "insightsBlurb": "Know what's selling",
+        "statusGenerate": "Generate"
+      },
+      "productImages": {
+        "toggleHide": "Hide Extra Images",
+        "toggleManage": "Manage Extra Images",
+        "forProductBefore": "Extra images for",
+        "forProductAfter": "— swipeable in the product modal.",
+        "loading": "Loading…",
+        "photoAlt": "Product photo",
+        "removeImage": "Remove image",
+        "add": "Add",
+        "emptyNote": "No extra images yet. Click the + to upload.",
+        "restyle": "Restyle the main photo with AI",
+        "shotsLeft_one": "{{count}} shot left this month",
+        "shotsLeft_other": "{{count}} shots left this month",
+        "styleClean": "Clean catalogue shot on a seamless white background, soft studio light",
+        "styleLifestyle": "Elegant lifestyle flat-lay on natural linen with soft morning light",
+        "styleMacro": "Luxury macro close-up highlighting the material details and texture",
+        "allowanceUsedTitle": "Monthly AI photo allowance used — upgrade to Pro for unmetered AI",
+        "generateTitle": "Generate an AI-styled image",
+        "generate": "Generate",
+        "allowanceUsedBefore": "Allowance used for this month — upgrade to Pro under",
+        "allowanceLink": "Plan & Billing",
+        "allowanceUsedAfter": "for unmetered AI.",
+        "disclosure": "AI-styled images are disclosed as AI-generated.",
+        "toastAiAdded": "AI photo added",
+        "toastAiAddedRemaining_one": "AI photo added — {{count}} left this month",
+        "toastAiAddedRemaining_other": "AI photo added — {{count}} left this month",
+        "toastImageAdded": "Image added",
+        "toastUploadFailed": "Failed to upload image",
+        "toastImageRemoved": "Image removed",
+        "toastRemoveFailed": "Failed to remove image",
+        "toastTooLarge": "{{name}} is too large (max 8 MB)"
+      },
+      "dashboard": {
+        "signInTitle": "Sign in to continue",
+        "signInDescription": "Access to this dashboard requires authentication. Choose how you’d like to sign in.",
+        "toggleNav": "Toggle navigation",
+        "navigation": "Navigation",
+        "page1": "Page 1",
+        "page2": "Page 2",
+        "signOut": "Sign out",
+        "menu": "Menu"
+      },
+      "tour": {
+        "skipAria": "Skip tour",
+        "stepAria": "Tour step {{current}} of {{total}}",
+        "stepLabel": "Step {{current}} of {{total}}",
+        "skip": "Skip",
+        "back": "Back",
+        "next": "Next",
+        "done": "Done"
+      }
     }
   }
 }

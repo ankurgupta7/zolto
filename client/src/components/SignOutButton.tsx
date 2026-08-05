@@ -14,19 +14,25 @@
  */
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { hardRedirect } from "@/lib/navigate";
+// Ensure the shared i18n instance is initialized even when this block is
+// pulled in isolation (e.g. under test) before main.tsx has run.
+import "@/lib/i18n";
 
 export function SignOutButton({
   /** Where to land afterwards. Defaults to the platform's front door. */
   to = "/",
   className,
-  children = "Sign out",
+  /** Defaults to the translated "Sign out" label. */
+  children,
 }: {
   to?: string;
   className?: string;
   children?: React.ReactNode;
 }) {
+  const { t } = useTranslation("admin");
   const { logout } = useAuth();
   const [busy, setBusy] = useState(false);
 
@@ -51,7 +57,9 @@ export function SignOutButton({
       }}
       className={className}
     >
-      {busy ? "Signing out…" : children}
+      {busy
+        ? t("catalog.components.signOut.busy")
+        : (children ?? t("catalog.components.signOut.label"))}
     </button>
   );
 }
