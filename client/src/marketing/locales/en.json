@@ -211,6 +211,195 @@
       ]
     }
   },
+  "notFound": {
+    "metaTitle": "Page not found | Zolto",
+    "metaDescription": "That page isn't here. Try the homepage, pricing, or the FAQ instead.",
+    "eyebrow": "well, this stall’s empty",
+    "heading": "There’s nothing on this page.",
+    "body": "Could be a typo, could be a link we moved and forgot to redirect. If it’s the second one, that’s on us. Here’s where everyone else was going:",
+    "exits": {
+      "home": {
+        "label": "The homepage",
+        "hint": "What Zolto is, in about a minute"
+      },
+      "pricing": {
+        "label": "Pricing",
+        "hint": "Free in person. 1% online."
+      },
+      "faq": {
+        "label": "FAQ",
+        "hint": "The questions makers actually ask"
+      }
+    }
+  },
+  "signin": {
+    "eyebrow": "welcome back",
+    "alreadyTitle": "You’re already signed in.",
+    "alreadyAs": "As <hl>{{email}}</hl>.",
+    "thisAccount": "this account",
+    "continueTo": "Continue to {{store}} →",
+    "finishSetup": "Finish setting up {{store}} →",
+    "createStore": "Create your store →",
+    "differentAccount": "Use a different account",
+    "waitingTitle": "Your store is waiting.",
+    "waitingBody": "You created <hl>{{store}}</hl> at signup but never finished setting it up. Pick up right where you left off.",
+    "signedInTitle": "You're signed in.",
+    "signedInBody": "This account isn’t attached to a store yet. Create one and it’ll be waiting here next time.",
+    "failedTitle": "We couldn’t sign you in.",
+    "failedBody": "The sign-in didn’t complete. This usually means the browser is blocking cookies — private windows and strict tracking protection stop the session from being saved.",
+    "noStorePrompt": "Don’t have a store yet?",
+    "noStoreLink": "Create one",
+    "signInTitle": "Sign in to your store.",
+    "progressTitle": "Signing you in…",
+    "takingYouTo": "Taking you to {{store}}.",
+    "oneMoment": "One moment — we're taking you to your store."
+  },
+  "segment": {
+    "indexMetaTitle": "Who {{name}} is for",
+    "indexMetaDescription": "{{name}} for jewelry makers, ceramics studios, market sellers and small boutiques — what changes for each.",
+    "indexHeading": "Who {{name}} is for",
+    "indexIntro": "The same platform, but the part that matters depends on what you make and where you sell it.",
+    "metaTitle": "{{headline}} | {{name}}",
+    "metaDescription": "{{summary}} {{pricing}}",
+    "painHeading": "What usually gets in the way",
+    "helpHeading": "What {{name}} does about it",
+    "scenarioHeading": "What that looks like",
+    "startFree": "Start free",
+    "readFaq": "Read the FAQ",
+    "alsoFor": "Also for:"
+  },
+  "onboarding": {
+    "welcome": "welcome",
+    "welcomeStore": "welcome — {{store}}",
+    "heading": "Let's get your store live.",
+    "intro": "This list updates itself as you go — finish a step in the admin and it ticks off here, on any device.",
+    "taskDone": "Done",
+    "taskNotDone": "Not done",
+    "goThere": "Go there →",
+    "goToDashboard": "Go to your dashboard →",
+    "continueDashboard": "Continue in your dashboard",
+    "finishing": "Finishing your setup…",
+    "oneMoreStep": "One more step",
+    "signInToClaim": "Sign in to become the admin of your new store.",
+    "signInWithSignupEmail": "Sign in with the email you used at signup to finish setting up your store.",
+    "resumeLeadTokenFailed": "That setup link didn't work — but your store is still waiting.",
+    "resumeLeadWaiting": "Your store is waiting for you.",
+    "resumeBody": "{{store}} is linked to {{email}} — one click finishes the setup.",
+    "thisAccountEmail": "this account's email",
+    "finishSetup": "Finish setting up {{store}} →",
+    "doneTitle": "You're the store admin. 🎉",
+    "doneBody": "Your account now manages this store.",
+    "failedTitle": "We couldn't finish setting you up.",
+    "failedBody": "This claim link is invalid or has already been used. If you already signed in on another device, you're all set."
+  },
+  "research": {
+    "metaTitle": "{{title}} | Zolto research",
+    "metaDescription": "First-party data from one maker's first 30 days selling online: 12 orders, CHF 61 average order value, 2.5% conversion, and where the orders actually came from. Method and limits stated.",
+    "eyebrow": "first-party data",
+    "intro": "What actually happened in the first 30 days after one maker’s storefront went live — including the numbers that don’t flatter us.",
+    "publishedBy": "{{author}} · Published",
+    "methodHeading": "Method",
+    "sampleLabel": "Sample",
+    "collectionLabel": "Collection",
+    "figuresHeading": "Headline figures",
+    "weeklyHeading": "Week by week",
+    "sourcesHeading": "Where the orders came from",
+    "findingsHeading": "What we take from it",
+    "limitsHeading": "What this doesn’t show",
+    "diaryLead": "The month-by-month story behind these numbers is in the",
+    "diaryLink": "Launch Diary",
+    "citation": "Reusing these figures? Please cite “Zolto, {{title}} ({{published}})” and link back to this page."
+  },
+  "compare": {
+    "metaTitle": "{{name}} vs {{competitor}} — which fits a maker better?",
+    "metaTitleIndex": "Compare {{name}}",
+    "metaDescription": "An honest comparison of {{name}} and {{competitor}} for independent makers: hardware, setup effort, where the money lands, and when {{competitor}} is the better choice.",
+    "metaDescriptionIndex": "How {{name}} compares to the payment and store providers makers usually consider.",
+    "indexHeading": "Compare {{name}}",
+    "indexIntro": "How {{name}} stacks up against the providers makers usually consider.",
+    "versus": "{{name}} vs {{competitor}}",
+    "eyebrow": "an honest look",
+    "tableCaption": "{{name}} compared with the traditional store-and-terminal model",
+    "traditionalWay": "The traditional way",
+    "rateNote": "{{competitor}}’s plans and rates vary by country, contract and volume — check their own pricing page for current figures. {{name}}’s side is {{percent}} on {{appliesTo}}, and nothing in person.",
+    "betterWhenHeading": "When {{competitor}} is the better choice",
+    "zoltoWhenHeading": "When {{name}} fits better",
+    "startFree": "Start free",
+    "seePricing": "See pricing",
+    "alsoCompare": "Also compare:"
+  },
+  "signup": {
+    "eyebrow": "let’s begin",
+    "heading": "Create your store",
+    "subheading": "Free to start. 14-day trial on paid features. No card required.",
+    "stepsLabel": "Signup steps",
+    "steps": {
+      "details": "Store details",
+      "template": "Template",
+      "branding": "Branding"
+    },
+    "storeNameLabel": "Store name",
+    "storeNamePlaceholder": "Your store name",
+    "storeUrlLabel": "Store URL",
+    "storeUrlPlaceholder": "yourstore",
+    "storeUrlHint": "yourstore.zolto.ch",
+    "emailLabel": "Email",
+    "emailPlaceholder": "you@example.com",
+    "emailHint": "You'll finish setup by signing in with this email.",
+    "verticalLabel": "What do you sell?",
+    "verticalHint": "Sets up your starting categories and tunes the AI tools to your kind of store. You can change it later.",
+    "rangeLabel": "Describe your range (optional)",
+    "rangeHint": "One sentence in your own words — the AI uses it to write better listings.",
+    "rangePlaceholder": "e.g. Wheel-thrown stoneware tableware in muted glazes",
+    "migrateLabel": "Already selling somewhere?",
+    "migrateHint": "We'll set up your first step to bring that catalogue across instead of re-typing it.",
+    "migrateNone": "No — starting fresh",
+    "migrateOther": "Somewhere else",
+    "migrateYes": "Yes — {{provider}}",
+    "migrateStripeNote": "Good news — link the Stripe account you already have and your products import in one click. Your checkout keeps working throughout.",
+    "migrateCsvNote": "Export your items as CSV from {{provider}} and we'll read it for you — Swiss price formats and German or French column names included.",
+    "errorName": "Store name is required.",
+    "errorSlug": "Use 3–64 lowercase letters, numbers, or hyphens.",
+    "errorEmail": "Enter a valid email.",
+    "errorColor": "Use a 6-digit hex like #2D6B4A.",
+    "chooseLook": "Choose your look →",
+    "chooseColors": "Choose your colors →",
+    "back": "← Back",
+    "createStore": "Create store →",
+    "creating": "Creating…",
+    "templateHeading": "Pick a template",
+    "templateIntro": "Five looks made for small shops. You can change it any time — and your own colors come next.",
+    "templateSelected": "Selected",
+    "brandingHeading": "Your logo & colors",
+    "brandingIntro": "Upload your logo and we’ll brand your store with it — and, if you like, let AI pick your color scheme from it.",
+    "logoLabel": "Logo (optional)",
+    "logoHint": "PNG, JPEG, or WebP, up to 2 MB. Shown in your store's navbar and footer.",
+    "logoAlt": "Your logo",
+    "logoRemove": "Remove",
+    "logoReading": "Reading…",
+    "logoColors": "✨ Colors from logo",
+    "switchTemplate": "Switch to the {{template}} template",
+    "brandColor": "Brand color",
+    "brandColorHex": "Brand color hex",
+    "brandColorHint": "Drives your storefront's headers, buttons, and accents.",
+    "termsLead": "By creating a store you agree to our",
+    "termsLink": "Terms",
+    "termsAnd": "and",
+    "privacyLink": "Privacy Policy",
+    "previewAria": "Storefront preview",
+    "previewLabel": "Preview",
+    "previewStoreName": "Your store",
+    "previewAddToCart": "Add to cart",
+    "previewMeta": "{{template}} template · {{color}}",
+    "toastLogoColorsFailed": "Couldn't read colors from that logo.",
+    "toastLogoNotUploaded": "Your store is ready, but the logo didn't upload — add it again from your admin.",
+    "toastCreatedWithEmail": "Store created — we've also emailed you a setup link, in case you need it later.",
+    "toastCreated": "Store created — let's set it up.",
+    "toastGenericError": "Something went wrong. Please try again.",
+    "toastSignInAction": "Sign in",
+    "toastLogoType": "Use a PNG, JPEG, or WebP image.",
+    "toastLogoSize": "Logo must be under 2 MB."
+  },
   "shared": {
     "platform": {
       "pricingSummary": "Free to sell in person, forever (no card required). Online and AI-agent orders carry a 1% platform fee on the Free plan — a month with no online sales costs CHF 0. Pro is CHF 25/month with a 14-day free trial: 0% platform fee and unmetered AI. Month-to-month, cancel anytime."
@@ -453,6 +642,259 @@
       "Do prices include VAT?": {
         "q": "Do prices include VAT?",
         "a": "There's no VAT to add. Zolto is under the CHF 100,000 Swiss VAT registration threshold, so the price you see is the price you pay. If that ever changes, we'll say so before it does."
+      }
+    },
+    "segments": {
+      "jewelry-makers": {
+        "name": "Jewelry makers",
+        "headline": "For jewelry makers selling one-of-a-kind pieces",
+        "summary": "You make pieces one at a time, often the only one of its kind, and sell them at markets, through Instagram, and to people who find you by word of mouth.",
+        "painPoints": [
+          "Every piece is a stock quantity of one, so the same necklace can be sold twice — once at the stall and once online — before either of you notices.",
+          "Photographing small, shiny things well is genuinely hard, and a bad photo costs you the sale.",
+          "Writing a description for every single piece is the job nobody has time for."
+        ],
+        "scenario": "A piece sells at a Saturday market. Before the customer has walked away, it's marked sold online too — so the person browsing your site from their sofa never adds it to a cart it can't leave."
+      },
+      "ceramics-and-pottery": {
+        "name": "Ceramics studios",
+        "headline": "For ceramics studios with small, irregular batches",
+        "summary": "You fire in batches, quantities vary with what survives the kiln, and no two glazes come out quite the same.",
+        "painPoints": [
+          "Stock changes in lumps after each firing, which rigid inventory grids handle badly.",
+          "Batch variation means a listing photo is never exactly the piece being sold, and customers ask about it constantly.",
+          "Studio time is the scarce resource — admin comes out of making hours."
+        ],
+        "scenario": "You unload a kiln, photograph the shelf, and the catalogue updates from that one photo — names, prices and quantities — instead of you typing rows after hours."
+      },
+      "market-stalls": {
+        "name": "Market and fair sellers",
+        "headline": "For sellers whose shop is a table, a van, or a weekend",
+        "summary": "You sell at craft fairs, Christmas markets and pop-ups, where the queue moves fast and the connection is whatever the venue has.",
+        "painPoints": [
+          "Card terminals cost money up front and are one more thing to charge, carry and lose.",
+          "At a busy stall there is no time to tag each sale to the right item.",
+          "Whatever you sell on Saturday has to be reflected online by Sunday, and usually isn't."
+        ],
+        "scenario": "You take payments all day by amount on the phone in your apron. That evening Zolto emails what it thinks you sold; one tap confirms it and your online stock matches reality again."
+      },
+      "boutiques": {
+        "name": "Small boutiques",
+        "headline": "For small shops with a counter and a website to keep in step",
+        "summary": "You have a physical shop, a modest range of stock, and customers who look online before they visit — or visit before they buy online.",
+        "painPoints": [
+          "The counter and the website are effectively two businesses that disagree about stock.",
+          "Selling to customers in more than one language means writing everything twice.",
+          "Answering the same questions about opening hours, sizing and shipping eats the day."
+        ],
+        "scenario": "A customer messages in German asking whether something's in stock. The listing is already in German, the answer comes back without you, and the stock figure is the same one your till is using."
+      }
+    },
+    "features": {
+      "pos-online-sync": {
+        "name": "POS + online store, one inventory",
+        "description": "Sell at the market and online from the same catalogue. Stock syncs in real time with short-lived checkout holds, so you never double-sell a one-of-a-kind piece across channels."
+      },
+      "ai-photography": {
+        "name": "AI product photography",
+        "description": "Take one rough phone photo; the AI restyles it into a clean product shot or an on-model lifestyle image — no photographer, model, or studio. Every AI-styled image is disclosed as such."
+      },
+      "ai-descriptions": {
+        "name": "AI product descriptions",
+        "description": "Generate product titles and descriptions from a photo, in multiple languages (e.g. English + German), ready to edit for your voice."
+      },
+      "ai-support": {
+        "name": "AI support assistant",
+        "description": "An AI chatbot answers customer questions (materials, shipping, sizing) and turns recurring requests into product improvements."
+      },
+      "multichannel-intake": {
+        "name": "List products from WhatsApp, Slack, or Discord",
+        "description": "Send a photo and a price to a chat channel; the AI parses it and creates the listing — no admin screen required."
+      },
+      "import": {
+        "name": "Bring your existing catalogue",
+        "description": "Import your products with CSV or bulk photo upload, so switching from another platform takes an afternoon, not a rebuild."
+      },
+      "tap-to-pay": {
+        "name": "Tap to Pay — no card reader to buy",
+        "description": "Take contactless card, phone (Apple Pay / Google Pay) and TWINT QR payments on the phone you already own. Nobody inserts a card anymore — they tap — so there's no reader to buy, rent, or plug in."
+      },
+      "notebook-inventory": {
+        "name": "Turn your notebook into a catalogue",
+        "description": "Keep stock however you already do — even handwritten in a diary. Snap a photo of your list and the AI reads it into a real catalogue: names, prices, and quantities, no rigid data entry."
+      },
+      "day-end-reconciliation": {
+        "name": "Sell by amount, reconcile with AI",
+        "description": "Too busy at the stall to tag each sale? Just enter the amount and take the tap. At the end of the day Zolto emails its best guess at what you sold; one tap confirms it and the piece is marked sold across your store and POS at once."
+      },
+      "multilingual-listings": {
+        "name": "Listings in every language you sell in",
+        "description": "The AI writes and translates your titles and descriptions, so you can sell in German, French, English and more without writing a word in a language you don't speak."
+      },
+      "payments": {
+        "name": "Direct payments with Stripe",
+        "description": "Connect your own Stripe account; your customers pay straight into it. Zolto never holds your money — on the Free plan a 1% platform fee applies to online and agent orders only, and in-person sales are always fee-free."
+      },
+      "storefront": {
+        "name": "Your own branded storefront",
+        "description": "A themed online store on your own subdomain or custom domain, with Swiss and EU shipping built in."
+      },
+      "ai-discovery": {
+        "name": "Discoverable by AI assistants",
+        "description": "Every store ships an llms.txt and a Model Context Protocol (MCP) endpoint, so AI assistants and agents can find and recommend your products."
+      },
+      "insights": {
+        "name": "AI sales & inventory insights",
+        "description": "Plain-language analysis of your catalogue and sales to spot best sellers and restock needs."
+      }
+    },
+    "research": {
+      "title": "First month online: one maker's numbers",
+      "sample": "One pilot store — Kalakosh, a pearl-jewelry maker in Zurich — over the first 30 days after its Zolto storefront went live.",
+      "collection": "Order and traffic figures are taken from the store's own Zolto dashboard over the period; offline sales are the merchant's own count. Nothing is modelled or extrapolated.",
+      "limits": [
+        "A single store in a single category (handmade jewelry) in a single city. These numbers describe what happened to one shop, not what will happen to yours.",
+        "One month is short. Month-one traffic is inflated by a launch announcement and by an existing Instagram following, neither of which repeats.",
+        "The merchant already had in-person customers. A maker starting with no audience should expect a different shape.",
+        "Zolto operates the platform these numbers come from, so treat them as a vendor-published case, and weigh them accordingly."
+      ],
+      "findings": [
+        "An existing audience did the work. 58% of online orders came from the maker's own Instagram following — the storefront converted attention she already had rather than creating new demand.",
+        "Search sent zero orders in month one. A new store has no search authority yet; anyone promising otherwise is selling something.",
+        "Online did not simply add to offline. Some regulars moved online, so 12 online orders produced a net gain of 7 sales, not 12.",
+        "Order value held up online. The CHF 61 online average was in line with in-person selling, so the channel didn't discount the work.",
+        "The AI assistant absorbed most support. 81% of customer questions were resolved without the merchant answering them."
+      ],
+      "metrics": {
+        "Online orders, month one": {
+          "label": "Online orders, month one",
+          "value": "12",
+          "note": "From a standing start — the store had no online sales channel before launch."
+        },
+        "Average online order value": {
+          "label": "Average online order value",
+          "value": "CHF 61",
+          "note": "Ranged from CHF 52 in the quiet second week to CHF 71 in the fourth."
+        },
+        "Online conversion rate": {
+          "label": "Online conversion rate",
+          "value": "2.5%",
+          "note": "12 orders from 481 visitors across the month."
+        },
+        "Total sales, before → after": {
+          "label": "Total sales, before → after",
+          "value": "60 → 67 / month",
+          "note": "Offline dipped slightly (~60 → ~55) as some regulars shifted online, so the net gain is smaller than the online figure alone suggests."
+        },
+        "Channel mix after one month": {
+          "label": "Channel mix after one month",
+          "value": "82% in person / 18% online",
+          "note": "In-person selling remained the larger channel throughout."
+        },
+        "Questions resolved by the AI assistant": {
+          "label": "Questions resolved by the AI assistant",
+          "value": "81%",
+          "note": "Share of customer questions answered without the merchant stepping in."
+        }
+      },
+      "tables": {
+        "weekly": {
+          "caption": "Online orders, order value and traffic by week",
+          "head": ["Week", "Online orders", "Avg order value", "Visitors"],
+          "rowLabels": [
+            "Week 1 (launch)",
+            "Week 2",
+            "Week 3",
+            "Week 4",
+            "Month total"
+          ]
+        },
+        "sources": {
+          "caption": "Where the online orders came from",
+          "head": ["Source", "Orders", "% of online sales"],
+          "rowLabels": [
+            "Instagram (organic)",
+            "Direct / returning",
+            "Word of mouth (shared links)",
+            "Search / Google"
+          ]
+        }
+      }
+    },
+    "competitors": {
+      "stripe": {
+        "summary": "A developer-first payments platform. Stripe powers checkout for a large share of the web, and Zolto itself settles payments through Stripe Connect — your customers pay into your own Stripe account.",
+        "betterWhen": [
+          "You have engineering resources and want to build a bespoke checkout.",
+          "Your business model needs Stripe's full API surface — marketplaces, subscriptions, complex payouts.",
+          "You already run a storefront you're happy with and only need payments."
+        ],
+        "zoltoWhen": [
+          "You want a store and a point-of-sale, not an API to build against.",
+          "You'd rather photograph your notebook than write a product catalogue by hand.",
+          "You sell at markets and online and want one inventory across both."
+        ]
+      },
+      "sumup": {
+        "summary": "A card-reader-first payments company aimed at small merchants and market traders, selling handheld terminals alongside a payments account.",
+        "betterWhen": [
+          "You want a dedicated physical terminal rather than using your phone.",
+          "You take payments in places where handing over a separate device matters.",
+          "You don't need an online store at all."
+        ],
+        "zoltoWhen": [
+          "You'd rather not buy hardware — modern phones take contactless and TWINT QR already.",
+          "You want the same catalogue behind your stall and your website.",
+          "You want AI to do the listing, translating and customer answering."
+        ]
+      },
+      "shopify": {
+        "summary": "The best-known hosted e-commerce platform, with its own point-of-sale app alongside the online store. Built for retail businesses that grow into staff, warehouses and multi-channel fulfilment.",
+        "betterWhen": [
+          "You're running a large catalogue with staff, stock locations and complex fulfilment.",
+          "You want the biggest third-party app ecosystem and someone to assemble it.",
+          "You need established multi-channel retail tooling and have time to administer it."
+        ],
+        "zoltoWhen": [
+          "You're one person, and a platform you have to administer is the problem, not the solution.",
+          "You want the till and the catalogue on the phone in your apron without a monthly bill for it.",
+          "You'd rather photograph your notebook than fill in a product grid by hand."
+        ]
+      },
+      "worldline": {
+        "summary": "A large European payments processor (it acquired SIX Payment Services, long the default for Swiss card terminals), serving merchants from corner shops to enterprises.",
+        "betterWhen": [
+          "You need enterprise payment infrastructure and formal procurement.",
+          "You want an established Swiss acquiring relationship with contract terms.",
+          "Your volume justifies negotiated rates and dedicated account management."
+        ],
+        "zoltoWhen": [
+          "You're one person or a small studio, and contracts and terminals are overkill.",
+          "You want to be selling this weekend, not after an onboarding process.",
+          "You want your online store, POS and AI assistant in one place."
+        ]
+      }
+    },
+    "templates": {
+      "atelier": {
+        "tagline": "Warm cream and deep espresso ink",
+        "bestFor": "Handmade goods, jewellery, and craft studios"
+      },
+      "verdant": {
+        "tagline": "Sage surfaces and garden greens",
+        "bestFor": "Farm stands, florists, and food producers"
+      },
+      "porcelain": {
+        "tagline": "Cool gallery whites, quiet and minimal",
+        "bestFor": "Fashion boutiques, ceramics, and design objects"
+      },
+      "bazaar": {
+        "tagline": "Terracotta warmth with market-day energy",
+        "bestFor": "Market stalls, gifts, and vintage finds"
+      },
+      "azure": {
+        "tagline": "Airy coastal blues, crisp and open",
+        "bestFor": "Wellness, stationery, and modern essentials"
       }
     }
   }

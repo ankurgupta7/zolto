@@ -211,6 +211,195 @@
       ]
     }
   },
+  "notFound": {
+    "metaTitle": "Seite nicht gefunden | Zolto",
+    "metaDescription": "Diese Seite gibt es hier nicht. Versuchen Sie es mit der Startseite, den Preisen oder den FAQ.",
+    "eyebrow": "tja, dieser Stand ist leer",
+    "heading": "Auf dieser Seite ist nichts.",
+    "body": "Kann ein Tippfehler sein, kann ein Link sein, den wir verschoben und dann nicht umgeleitet haben. Wenn es das Zweite ist, liegt das an uns. Hier wollten alle anderen hin:",
+    "exits": {
+      "home": {
+        "label": "Die Startseite",
+        "hint": "Was Zolto ist, in ungefähr einer Minute"
+      },
+      "pricing": {
+        "label": "Preise",
+        "hint": "Vor Ort gratis. 1 % online."
+      },
+      "faq": {
+        "label": "FAQ",
+        "hint": "Die Fragen, die Macherinnen und Macher wirklich stellen"
+      }
+    }
+  },
+  "signin": {
+    "eyebrow": "willkommen zurück",
+    "alreadyTitle": "Sie sind bereits angemeldet.",
+    "alreadyAs": "Als <hl>{{email}}</hl>.",
+    "thisAccount": "dieses Konto",
+    "continueTo": "Weiter zu {{store}} →",
+    "finishSetup": "{{store}} fertig einrichten →",
+    "createStore": "Shop erstellen →",
+    "differentAccount": "Anderes Konto verwenden",
+    "waitingTitle": "Ihr Shop wartet auf Sie.",
+    "waitingBody": "Sie haben <hl>{{store}}</hl> bei der Anmeldung erstellt, die Einrichtung aber nie abgeschlossen. Machen Sie genau dort weiter, wo Sie aufgehört haben.",
+    "signedInTitle": "Sie sind angemeldet.",
+    "signedInBody": "Dieses Konto ist noch mit keinem Shop verknüpft. Erstellen Sie einen, und beim nächsten Mal wartet er hier auf Sie.",
+    "failedTitle": "Wir konnten Sie nicht anmelden.",
+    "failedBody": "Die Anmeldung wurde nicht abgeschlossen. Meist blockiert der Browser Cookies — private Fenster und strenger Tracking-Schutz verhindern, dass die Sitzung gespeichert wird.",
+    "noStorePrompt": "Sie haben noch keinen Shop?",
+    "noStoreLink": "Erstellen Sie einen",
+    "signInTitle": "Melden Sie sich bei Ihrem Shop an.",
+    "progressTitle": "Wir melden Sie an…",
+    "takingYouTo": "Wir bringen Sie zu {{store}}.",
+    "oneMoment": "Einen Moment — wir bringen Sie zu Ihrem Shop."
+  },
+  "segment": {
+    "indexMetaTitle": "Für wen {{name}} gemacht ist",
+    "indexMetaDescription": "{{name}} für Schmuckmacher, Keramikateliers, Marktverkäufer und kleine Boutiquen — was sich für wen ändert.",
+    "indexHeading": "Für wen {{name}} gemacht ist",
+    "indexIntro": "Dieselbe Plattform, aber welcher Teil zählt, hängt davon ab, was Sie machen und wo Sie es verkaufen.",
+    "metaTitle": "{{headline}} | {{name}}",
+    "metaDescription": "{{summary}} {{pricing}}",
+    "painHeading": "Was normalerweise im Weg steht",
+    "helpHeading": "Was {{name}} dagegen tut",
+    "scenarioHeading": "So sieht das aus",
+    "startFree": "Gratis starten",
+    "readFaq": "FAQ lesen",
+    "alsoFor": "Auch für:"
+  },
+  "onboarding": {
+    "welcome": "willkommen",
+    "welcomeStore": "willkommen — {{store}}",
+    "heading": "Bringen wir Ihren Shop live.",
+    "intro": "Diese Liste aktualisiert sich von selbst — schliessen Sie einen Schritt im Admin ab, und er wird hier abgehakt, auf jedem Gerät.",
+    "taskDone": "Erledigt",
+    "taskNotDone": "Nicht erledigt",
+    "goThere": "Dorthin →",
+    "goToDashboard": "Zu Ihrem Dashboard →",
+    "continueDashboard": "Weiter in Ihrem Dashboard",
+    "finishing": "Wir schliessen Ihre Einrichtung ab…",
+    "oneMoreStep": "Noch ein Schritt",
+    "signInToClaim": "Melden Sie sich an, um Administrator Ihres neuen Shops zu werden.",
+    "signInWithSignupEmail": "Melden Sie sich mit der E-Mail-Adresse an, die Sie bei der Anmeldung verwendet haben, um Ihren Shop fertig einzurichten.",
+    "resumeLeadTokenFailed": "Dieser Einrichtungslink hat nicht funktioniert — aber Ihr Shop wartet weiterhin.",
+    "resumeLeadWaiting": "Ihr Shop wartet auf Sie.",
+    "resumeBody": "{{store}} ist mit {{email}} verknüpft — ein Klick schliesst die Einrichtung ab.",
+    "thisAccountEmail": "der E-Mail-Adresse dieses Kontos",
+    "finishSetup": "{{store}} fertig einrichten →",
+    "doneTitle": "Sie sind der Shop-Administrator. 🎉",
+    "doneBody": "Ihr Konto verwaltet diesen Shop nun.",
+    "failedTitle": "Wir konnten Ihre Einrichtung nicht abschliessen.",
+    "failedBody": "Dieser Claim-Link ist ungültig oder wurde bereits verwendet. Wenn Sie sich bereits auf einem anderen Gerät angemeldet haben, ist alles erledigt."
+  },
+  "research": {
+    "metaTitle": "{{title}} | Zolto-Forschung",
+    "metaDescription": "Eigene Daten aus den ersten 30 Tagen, in denen eine Macherin online verkauft hat: 12 Bestellungen, CHF 61 durchschnittlicher Bestellwert, 2.5 % Konversion und woher die Bestellungen tatsächlich kamen. Methode und Grenzen offengelegt.",
+    "eyebrow": "eigene daten",
+    "intro": "Was in den ersten 30 Tagen nach dem Live-Gang des Shops einer Macherin wirklich passiert ist — inklusive der Zahlen, die uns nicht schmeicheln.",
+    "publishedBy": "{{author}} · Veröffentlicht",
+    "methodHeading": "Methode",
+    "sampleLabel": "Stichprobe",
+    "collectionLabel": "Erhebung",
+    "figuresHeading": "Die wichtigsten Zahlen",
+    "weeklyHeading": "Woche für Woche",
+    "sourcesHeading": "Woher die Bestellungen kamen",
+    "findingsHeading": "Was wir daraus mitnehmen",
+    "limitsHeading": "Was das nicht zeigt",
+    "diaryLead": "Die Geschichte hinter diesen Zahlen, Monat für Monat, steht im",
+    "diaryLink": "Launch-Tagebuch",
+    "citation": "Sie verwenden diese Zahlen weiter? Bitte zitieren Sie „Zolto, {{title}} ({{published}})“ und verlinken Sie auf diese Seite."
+  },
+  "compare": {
+    "metaTitle": "{{name}} vs. {{competitor}} — was passt besser zu Machern?",
+    "metaTitleIndex": "{{name}} vergleichen",
+    "metaDescription": "Ein ehrlicher Vergleich von {{name}} und {{competitor}} für unabhängige Macher: Hardware, Einrichtungsaufwand, wo das Geld landet und wann {{competitor}} die bessere Wahl ist.",
+    "metaDescriptionIndex": "Wie sich {{name}} mit den Zahlungs- und Shop-Anbietern vergleicht, die Macher üblicherweise in Betracht ziehen.",
+    "indexHeading": "{{name}} vergleichen",
+    "indexIntro": "Wie {{name}} gegen die Anbieter abschneidet, die Macher üblicherweise in Betracht ziehen.",
+    "versus": "{{name}} vs. {{competitor}}",
+    "eyebrow": "ein ehrlicher blick",
+    "tableCaption": "{{name}} im Vergleich zum klassischen Modell aus Shop und Terminal",
+    "traditionalWay": "Der klassische Weg",
+    "rateNote": "Die Pläne und Sätze von {{competitor}} variieren je nach Land, Vertrag und Volumen — aktuelle Zahlen finden Sie auf deren eigener Preisseite. Auf der Seite von {{name}} sind es {{percent}} auf {{appliesTo}} und nichts vor Ort.",
+    "betterWhenHeading": "Wann {{competitor}} die bessere Wahl ist",
+    "zoltoWhenHeading": "Wann {{name}} besser passt",
+    "startFree": "Gratis starten",
+    "seePricing": "Preise ansehen",
+    "alsoCompare": "Auch vergleichen:"
+  },
+  "signup": {
+    "eyebrow": "los geht’s",
+    "heading": "Erstellen Sie Ihren Shop",
+    "subheading": "Gratis starten. 14 Tage Testphase für kostenpflichtige Funktionen. Keine Karte nötig.",
+    "stepsLabel": "Schritte der Anmeldung",
+    "steps": {
+      "details": "Shop-Angaben",
+      "template": "Vorlage",
+      "branding": "Auftritt"
+    },
+    "storeNameLabel": "Shop-Name",
+    "storeNamePlaceholder": "Ihr Shop-Name",
+    "storeUrlLabel": "Shop-URL",
+    "storeUrlPlaceholder": "ihrshop",
+    "storeUrlHint": "ihrshop.zolto.ch",
+    "emailLabel": "E-Mail",
+    "emailPlaceholder": "sie@beispiel.ch",
+    "emailHint": "Die Einrichtung schliessen Sie ab, indem Sie sich mit dieser E-Mail-Adresse anmelden.",
+    "verticalLabel": "Was verkaufen Sie?",
+    "verticalHint": "Legt Ihre Startkategorien an und stimmt die KI-Werkzeuge auf Ihre Art von Shop ab. Sie können das später ändern.",
+    "rangeLabel": "Beschreiben Sie Ihr Sortiment (optional)",
+    "rangeHint": "Ein Satz in Ihren eigenen Worten — die KI schreibt damit bessere Angebote.",
+    "rangePlaceholder": "z. B. Auf der Scheibe gedrehtes Steinzeug-Geschirr in matten Glasuren",
+    "migrateLabel": "Verkaufen Sie bereits woanders?",
+    "migrateHint": "Wir richten Ihren ersten Schritt so ein, dass der Katalog übernommen wird, statt ihn neu zu tippen.",
+    "migrateNone": "Nein — ich fange neu an",
+    "migrateOther": "Woanders",
+    "migrateYes": "Ja — {{provider}}",
+    "migrateStripeNote": "Gute Nachricht — verbinden Sie das Stripe-Konto, das Sie bereits haben, und Ihre Produkte werden mit einem Klick importiert. Ihr Checkout läuft die ganze Zeit weiter.",
+    "migrateCsvNote": "Exportieren Sie Ihre Artikel bei {{provider}} als CSV, und wir lesen sie für Sie ein — Schweizer Preisformate sowie deutsche oder französische Spaltennamen inklusive.",
+    "errorName": "Der Shop-Name ist erforderlich.",
+    "errorSlug": "Verwenden Sie 3–64 Kleinbuchstaben, Zahlen oder Bindestriche.",
+    "errorEmail": "Geben Sie eine gültige E-Mail-Adresse ein.",
+    "errorColor": "Verwenden Sie einen 6-stelligen Hex-Wert wie #2D6B4A.",
+    "chooseLook": "Look wählen →",
+    "chooseColors": "Farben wählen →",
+    "back": "← Zurück",
+    "createStore": "Shop erstellen →",
+    "creating": "Wird erstellt…",
+    "templateHeading": "Wählen Sie eine Vorlage",
+    "templateIntro": "Fünf Looks für kleine Läden. Sie können jederzeit wechseln — und Ihre eigenen Farben kommen als Nächstes.",
+    "templateSelected": "Ausgewählt",
+    "brandingHeading": "Ihr Logo & Ihre Farben",
+    "brandingIntro": "Laden Sie Ihr Logo hoch, und wir gestalten Ihren Shop damit — und wenn Sie mögen, lässt die KI Ihr Farbschema daraus ableiten.",
+    "logoLabel": "Logo (optional)",
+    "logoHint": "PNG, JPEG oder WebP, bis 2 MB. Erscheint in der Navigation und im Footer Ihres Shops.",
+    "logoAlt": "Ihr Logo",
+    "logoRemove": "Entfernen",
+    "logoReading": "Wird gelesen…",
+    "logoColors": "✨ Farben aus dem Logo",
+    "switchTemplate": "Zur Vorlage {{template}} wechseln",
+    "brandColor": "Markenfarbe",
+    "brandColorHex": "Markenfarbe als Hex-Wert",
+    "brandColorHint": "Bestimmt Kopfzeilen, Schaltflächen und Akzente Ihres Shops.",
+    "termsLead": "Mit dem Erstellen eines Shops akzeptieren Sie unsere",
+    "termsLink": "AGB",
+    "termsAnd": "und die",
+    "privacyLink": "Datenschutzerklärung",
+    "previewAria": "Vorschau des Shops",
+    "previewLabel": "Vorschau",
+    "previewStoreName": "Ihr Shop",
+    "previewAddToCart": "In den Warenkorb",
+    "previewMeta": "Vorlage {{template}} · {{color}}",
+    "toastLogoColorsFailed": "Wir konnten aus diesem Logo keine Farben lesen.",
+    "toastLogoNotUploaded": "Ihr Shop ist bereit, aber das Logo wurde nicht hochgeladen — fügen Sie es im Admin erneut hinzu.",
+    "toastCreatedWithEmail": "Shop erstellt — wir haben Ihnen ausserdem einen Einrichtungslink gemailt, falls Sie ihn später brauchen.",
+    "toastCreated": "Shop erstellt — richten wir ihn ein.",
+    "toastGenericError": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
+    "toastSignInAction": "Anmelden",
+    "toastLogoType": "Verwenden Sie ein PNG-, JPEG- oder WebP-Bild.",
+    "toastLogoSize": "Das Logo muss kleiner als 2 MB sein."
+  },
   "shared": {
     "platform": {
       "pricingSummary": "Vor Ort verkaufen ist gratis, für immer (keine Karte nötig). Online- und KI-Agenten-Bestellungen kosten im Gratis-Plan 1% Plattformgebühr — ein Monat ohne Online-Verkäufe kostet CHF 0. Pro kostet CHF 25/Monat mit 14 Tagen kostenloser Testphase: 0% Plattformgebühr und unlimitierte KI. Monatlich kündbar, jederzeit."
@@ -453,6 +642,259 @@
       "Do prices include VAT?": {
         "q": "Sind die Preise inklusive MWST?",
         "a": "Es kommt keine MWST dazu. Zolto liegt unter der Schweizer MWST-Registrierungsschwelle von CHF 100'000 — der Preis, den Sie sehen, ist der Preis, den Sie bezahlen. Sollte sich das je ändern, sagen wir es, bevor es so weit ist."
+      }
+    },
+    "segments": {
+      "jewelry-makers": {
+        "name": "Schmuckmacher",
+        "headline": "Für Schmuckmacher, die Unikate verkaufen",
+        "summary": "Sie fertigen Stück für Stück, oft ein Unikat, und verkaufen auf Märkten, über Instagram und an Menschen, die über Mundpropaganda zu Ihnen finden.",
+        "painPoints": [
+          "Jedes Stück hat den Bestand eins, also kann dieselbe Kette zweimal verkauft werden — einmal am Stand und einmal online —, bevor es jemandem auffällt.",
+          "Kleine, glänzende Dinge gut zu fotografieren ist wirklich schwierig, und ein schlechtes Foto kostet Sie den Verkauf.",
+          "Für jedes einzelne Stück eine Beschreibung zu schreiben ist die Arbeit, für die niemand Zeit hat."
+        ],
+        "scenario": "Ein Stück verkauft sich am Samstagsmarkt. Noch bevor die Kundin weitergegangen ist, gilt es auch online als verkauft — so legt niemand, der vom Sofa aus Ihre Website durchstöbert, es in einen Warenkorb, den es nie verlassen kann."
+      },
+      "ceramics-and-pottery": {
+        "name": "Keramikateliers",
+        "headline": "Für Keramikateliers mit kleinen, unregelmässigen Chargen",
+        "summary": "Sie brennen in Chargen, die Mengen hängen davon ab, was den Ofen übersteht, und keine zwei Glasuren kommen genau gleich heraus.",
+        "painPoints": [
+          "Der Bestand ändert sich nach jedem Brand sprunghaft, womit starre Inventarraster schlecht zurechtkommen.",
+          "Wegen der Chargenunterschiede zeigt das Angebotsfoto nie genau das verkaufte Stück, und die Kundschaft fragt ständig danach.",
+          "Atelierzeit ist die knappe Ressource — Verwaltung geht von den Stunden am Werk ab."
+        ],
+        "scenario": "Sie räumen den Ofen aus, fotografieren das Regal, und der Katalog aktualisiert sich aus diesem einen Foto — Namen, Preise und Mengen —, statt dass Sie abends Zeilen tippen."
+      },
+      "market-stalls": {
+        "name": "Markt- und Messeverkäufer",
+        "headline": "Für Verkäufer, deren Laden ein Tisch, ein Van oder ein Wochenende ist",
+        "summary": "Sie verkaufen an Handwerksmessen, Weihnachtsmärkten und Pop-ups, wo die Schlange schnell vorrückt und die Verbindung die ist, die der Ort gerade hergibt.",
+        "painPoints": [
+          "Kartenterminals kosten vorab Geld und sind eine weitere Sache, die man laden, mitschleppen und verlieren kann.",
+          "An einem vollen Stand bleibt keine Zeit, jeden Verkauf dem richtigen Artikel zuzuordnen.",
+          "Was Sie am Samstag verkaufen, muss am Sonntag online stimmen — und tut es meistens nicht."
+        ],
+        "scenario": "Sie kassieren den ganzen Tag Beträge auf dem Handy in Ihrer Schürze. Am Abend mailt Zolto, was Sie vermutlich verkauft haben; ein Tippen bestätigt es, und Ihr Onlinebestand stimmt wieder mit der Realität überein."
+      },
+      "boutiques": {
+        "name": "Kleine Boutiquen",
+        "headline": "Für kleine Läden mit einer Theke und einer Website, die im Gleichschritt bleiben müssen",
+        "summary": "Sie haben ein Ladenlokal, ein überschaubares Sortiment und Kundinnen, die online schauen, bevor sie vorbeikommen — oder vorbeikommen, bevor sie online kaufen.",
+        "painPoints": [
+          "Theke und Website sind faktisch zwei Betriebe, die sich beim Bestand nicht einig sind.",
+          "In mehr als einer Sprache zu verkaufen heisst, alles doppelt zu schreiben.",
+          "Immer dieselben Fragen zu Öffnungszeiten, Grössen und Versand zu beantworten frisst den Tag."
+        ],
+        "scenario": "Eine Kundin schreibt auf Deutsch und fragt, ob etwas vorrätig ist. Das Angebot steht bereits auf Deutsch da, die Antwort kommt ohne Ihr Zutun, und der Bestand ist derselbe, mit dem auch Ihre Kasse arbeitet."
+      }
+    },
+    "features": {
+      "pos-online-sync": {
+        "name": "Kasse + Onlineshop, ein Bestand",
+        "description": "Verkaufen Sie auf dem Markt und online aus demselben Katalog. Der Bestand synchronisiert sich in Echtzeit mit kurzlebigen Checkout-Reservierungen, damit Sie ein Unikat nie über zwei Kanäle doppelt verkaufen."
+      },
+      "ai-photography": {
+        "name": "KI-Produktfotografie",
+        "description": "Machen Sie ein grobes Handyfoto; die KI macht daraus ein sauberes Produktbild oder ein Lifestyle-Bild am Modell — ohne Fotograf, Modell oder Studio. Jedes KI-gestaltete Bild wird als solches gekennzeichnet."
+      },
+      "ai-descriptions": {
+        "name": "KI-Produktbeschreibungen",
+        "description": "Erzeugen Sie Produkttitel und -beschreibungen aus einem Foto, in mehreren Sprachen (z. B. Englisch + Deutsch), bereit zum Anpassen an Ihren Ton."
+      },
+      "ai-support": {
+        "name": "KI-Support-Assistent",
+        "description": "Ein KI-Chatbot beantwortet Kundenfragen (Material, Versand, Grössen) und macht aus wiederkehrenden Anfragen Produktverbesserungen."
+      },
+      "multichannel-intake": {
+        "name": "Produkte aus WhatsApp, Slack oder Discord einstellen",
+        "description": "Schicken Sie ein Foto und einen Preis in einen Chatkanal; die KI liest es aus und erstellt das Angebot — ganz ohne Admin-Oberfläche."
+      },
+      "import": {
+        "name": "Bringen Sie Ihren bestehenden Katalog mit",
+        "description": "Importieren Sie Ihre Produkte per CSV oder Massen-Fotoupload, damit der Wechsel von einer anderen Plattform einen Nachmittag dauert und keinen Neuaufbau."
+      },
+      "tap-to-pay": {
+        "name": "Tap to Pay — kein Kartenlesegerät zu kaufen",
+        "description": "Nehmen Sie kontaktlose Karten-, Handy- (Apple Pay / Google Pay) und TWINT-QR-Zahlungen auf dem Handy entgegen, das Sie bereits haben. Niemand steckt mehr eine Karte ein — man tippt sie auf —, also gibt es kein Lesegerät zu kaufen, zu mieten oder einzustecken."
+      },
+      "notebook-inventory": {
+        "name": "Machen Sie aus Ihrem Notizbuch einen Katalog",
+        "description": "Führen Sie den Bestand weiter so, wie Sie es tun — auch handschriftlich im Kalender. Fotografieren Sie Ihre Liste, und die KI liest sie in einen echten Katalog ein: Namen, Preise und Mengen, ganz ohne starre Dateneingabe."
+      },
+      "day-end-reconciliation": {
+        "name": "Nach Betrag verkaufen, mit KI abgleichen",
+        "description": "Zu viel los am Stand, um jeden Verkauf zuzuordnen? Geben Sie einfach den Betrag ein und nehmen Sie die Zahlung entgegen. Am Ende des Tages mailt Ihnen Zolto seine beste Vermutung, was Sie verkauft haben; ein Tippen bestätigt sie, und das Stück gilt in Shop und Kasse zugleich als verkauft."
+      },
+      "multilingual-listings": {
+        "name": "Angebote in jeder Sprache, in der Sie verkaufen",
+        "description": "Die KI schreibt und übersetzt Ihre Titel und Beschreibungen, damit Sie auf Deutsch, Französisch, Englisch und mehr verkaufen können, ohne ein Wort in einer Sprache zu schreiben, die Sie nicht sprechen."
+      },
+      "payments": {
+        "name": "Direktzahlungen mit Stripe",
+        "description": "Verbinden Sie Ihr eigenes Stripe-Konto; Ihre Kundschaft zahlt direkt darauf ein. Zolto hält Ihr Geld nie — im Gratis-Plan fällt eine Plattformgebühr von 1 % nur auf Online- und Agent-Bestellungen an, Verkäufe vor Ort sind immer gebührenfrei."
+      },
+      "storefront": {
+        "name": "Ihr eigener Shop im eigenen Auftritt",
+        "description": "Ein gestalteter Onlineshop auf Ihrer eigenen Subdomain oder Wunschdomain, mit Versand in die Schweiz und die EU von Haus aus."
+      },
+      "ai-discovery": {
+        "name": "Auffindbar für KI-Assistenten",
+        "description": "Jeder Shop bringt eine llms.txt und einen Model-Context-Protocol-Endpunkt (MCP) mit, damit KI-Assistenten und Agenten Ihre Produkte finden und empfehlen können."
+      },
+      "insights": {
+        "name": "KI-Auswertungen zu Verkauf und Bestand",
+        "description": "Auswertung Ihres Katalogs und Ihrer Verkäufe in Klartext, um Bestseller und Nachschubbedarf zu erkennen."
+      }
+    },
+    "research": {
+      "title": "Erster Monat online: die Zahlen einer Macherin",
+      "sample": "Ein Pilotshop — Kalakosh, eine Perlenschmuck-Macherin in Zürich — über die ersten 30 Tage, nachdem ihr Zolto-Shop live ging.",
+      "collection": "Bestell- und Besucherzahlen stammen aus dem Zolto-Dashboard des Shops im betrachteten Zeitraum; die Offline-Verkäufe sind die eigene Zählung der Händlerin. Nichts ist modelliert oder hochgerechnet.",
+      "limits": [
+        "Ein einziger Shop in einer einzigen Kategorie (handgemachter Schmuck) in einer einzigen Stadt. Diese Zahlen beschreiben, was einem Laden passiert ist, nicht was Ihrem passieren wird.",
+        "Ein Monat ist kurz. Der Traffic im ersten Monat wird durch eine Launch-Ankündigung und eine bestehende Instagram-Gefolgschaft aufgebläht — beides wiederholt sich nicht.",
+        "Die Händlerin hatte bereits Kundschaft vor Ort. Wer ohne Publikum startet, sollte mit einem anderen Verlauf rechnen.",
+        "Zolto betreibt die Plattform, aus der diese Zahlen stammen — behandeln Sie sie als vom Anbieter veröffentlichten Fall und gewichten Sie sie entsprechend."
+      ],
+      "findings": [
+        "Ein bestehendes Publikum hat die Arbeit gemacht. 58 % der Online-Bestellungen kamen aus der eigenen Instagram-Gefolgschaft der Macherin — der Shop hat Aufmerksamkeit umgewandelt, die sie bereits hatte, statt neue Nachfrage zu schaffen.",
+        "Die Suche brachte im ersten Monat null Bestellungen. Ein neuer Shop hat noch keine Suchautorität; wer anderes verspricht, verkauft etwas.",
+        "Online kam nicht einfach zu Offline hinzu. Einige Stammkundinnen wechselten online, also ergaben 12 Online-Bestellungen einen Nettozuwachs von 7 Verkäufen, nicht 12.",
+        "Der Bestellwert hielt online stand. Der Online-Durchschnitt von CHF 61 lag im Rahmen des Verkaufs vor Ort — der Kanal hat die Arbeit also nicht verbilligt.",
+        "Der KI-Assistent hat den Grossteil des Supports aufgefangen. 81 % der Kundenfragen wurden gelöst, ohne dass die Händlerin antworten musste."
+      ],
+      "metrics": {
+        "Online orders, month one": {
+          "label": "Online-Bestellungen, erster Monat",
+          "value": "12",
+          "note": "Aus dem Stand — der Shop hatte vor dem Launch keinen Online-Verkaufskanal."
+        },
+        "Average online order value": {
+          "label": "Durchschnittlicher Online-Bestellwert",
+          "value": "CHF 61",
+          "note": "Reichte von CHF 52 in der ruhigen zweiten Woche bis CHF 71 in der vierten."
+        },
+        "Online conversion rate": {
+          "label": "Online-Konversionsrate",
+          "value": "2.5%",
+          "note": "12 Bestellungen von 481 Besucherinnen und Besuchern im Monat."
+        },
+        "Total sales, before → after": {
+          "label": "Verkäufe gesamt, vorher → nachher",
+          "value": "60 → 67 / Monat",
+          "note": "Offline ging leicht zurück (~60 → ~55), weil einige Stammkundinnen online wechselten — der Nettozuwachs ist also kleiner, als die Online-Zahl allein vermuten lässt."
+        },
+        "Channel mix after one month": {
+          "label": "Kanalmix nach einem Monat",
+          "value": "82 % vor Ort / 18 % online",
+          "note": "Der Verkauf vor Ort blieb durchgehend der grössere Kanal."
+        },
+        "Questions resolved by the AI assistant": {
+          "label": "Vom KI-Assistenten gelöste Fragen",
+          "value": "81%",
+          "note": "Anteil der Kundenfragen, die ohne Zutun der Händlerin beantwortet wurden."
+        }
+      },
+      "tables": {
+        "weekly": {
+          "caption": "Online-Bestellungen, Bestellwert und Traffic nach Woche",
+          "head": ["Woche", "Online-Bestellungen", "Ø Bestellwert", "Besucher"],
+          "rowLabels": [
+            "Woche 1 (Launch)",
+            "Woche 2",
+            "Woche 3",
+            "Woche 4",
+            "Monatstotal"
+          ]
+        },
+        "sources": {
+          "caption": "Woher die Online-Bestellungen kamen",
+          "head": ["Quelle", "Bestellungen", "% der Online-Verkäufe"],
+          "rowLabels": [
+            "Instagram (organisch)",
+            "Direkt / wiederkehrend",
+            "Mundpropaganda (geteilte Links)",
+            "Suche / Google"
+          ]
+        }
+      }
+    },
+    "competitors": {
+      "stripe": {
+        "summary": "Eine entwicklerorientierte Zahlungsplattform. Stripe betreibt den Checkout für einen grossen Teil des Webs, und Zolto selbst wickelt Zahlungen über Stripe Connect ab — Ihre Kundschaft zahlt auf Ihr eigenes Stripe-Konto ein.",
+        "betterWhen": [
+          "Sie haben Entwicklungsressourcen und wollen einen massgeschneiderten Checkout bauen.",
+          "Ihr Geschäftsmodell braucht die volle API-Fläche von Stripe — Marktplätze, Abos, komplexe Auszahlungen.",
+          "Sie betreiben bereits einen Shop, mit dem Sie zufrieden sind, und brauchen nur die Zahlungen."
+        ],
+        "zoltoWhen": [
+          "Sie wollen einen Shop und eine Kasse, keine API zum Bauen.",
+          "Sie fotografieren lieber Ihr Notizbuch, als einen Produktkatalog von Hand zu schreiben.",
+          "Sie verkaufen auf Märkten und online und wollen einen Bestand für beides."
+        ]
+      },
+      "sumup": {
+        "summary": "Ein Zahlungsanbieter mit Kartenlesegerät im Zentrum, ausgerichtet auf kleine Händler und Marktfahrer, der Handterminals zusammen mit einem Zahlungskonto verkauft.",
+        "betterWhen": [
+          "Sie wollen ein eigenes physisches Terminal statt Ihr Handy zu nutzen.",
+          "Sie kassieren an Orten, an denen es zählt, ein separates Gerät zu überreichen.",
+          "Sie brauchen überhaupt keinen Onlineshop."
+        ],
+        "zoltoWhen": [
+          "Sie wollen keine Hardware kaufen — moderne Handys nehmen kontaktlose Zahlungen und TWINT-QR bereits an.",
+          "Sie wollen denselben Katalog hinter Ihrem Stand und Ihrer Website.",
+          "Sie wollen, dass die KI das Einstellen, Übersetzen und Beantworten von Kundenfragen übernimmt."
+        ]
+      },
+      "shopify": {
+        "summary": "Die bekannteste gehostete E-Commerce-Plattform, mit eigener Kassen-App neben dem Onlineshop. Gebaut für Handelsbetriebe, die in Personal, Lager und Multichannel-Abwicklung hineinwachsen.",
+        "betterWhen": [
+          "Sie führen einen grossen Katalog mit Personal, Lagerorten und komplexer Abwicklung.",
+          "Sie wollen das grösste Ökosystem an Drittanbieter-Apps und jemanden, der es zusammensetzt.",
+          "Sie brauchen etablierte Multichannel-Handelswerkzeuge und haben Zeit, sie zu verwalten."
+        ],
+        "zoltoWhen": [
+          "Sie sind eine Person, und eine Plattform, die Sie verwalten müssen, ist das Problem, nicht die Lösung.",
+          "Sie wollen Kasse und Katalog auf dem Handy in Ihrer Schürze, ohne monatliche Rechnung dafür.",
+          "Sie fotografieren lieber Ihr Notizbuch, als ein Produktraster von Hand auszufüllen."
+        ]
+      },
+      "worldline": {
+        "summary": "Ein grosser europäischer Zahlungsabwickler (er übernahm SIX Payment Services, lange der Standard für Schweizer Kartenterminals) und bedient Händler vom Quartierladen bis zum Konzern.",
+        "betterWhen": [
+          "Sie brauchen Zahlungsinfrastruktur auf Konzernniveau und ein formelles Beschaffungsverfahren.",
+          "Sie wollen eine etablierte Schweizer Acquiring-Beziehung mit Vertragskonditionen.",
+          "Ihr Volumen rechtfertigt ausgehandelte Sätze und eine eigene Kundenbetreuung."
+        ],
+        "zoltoWhen": [
+          "Sie sind eine Person oder ein kleines Atelier, und Verträge und Terminals sind überdimensioniert.",
+          "Sie wollen dieses Wochenende verkaufen, nicht nach einem Aufnahmeverfahren.",
+          "Sie wollen Onlineshop, Kasse und KI-Assistent an einem Ort."
+        ]
+      }
+    },
+    "templates": {
+      "atelier": {
+        "tagline": "Warmes Creme und tiefe Espresso-Tinte",
+        "bestFor": "Handgemachtes, Schmuck und Handwerksateliers"
+      },
+      "verdant": {
+        "tagline": "Salbeifarbene Flächen und Gartengrün",
+        "bestFor": "Hofläden, Floristik und Lebensmittelproduzenten"
+      },
+      "porcelain": {
+        "tagline": "Kühle Galerieweisstöne, ruhig und minimal",
+        "bestFor": "Modeboutiquen, Keramik und Designobjekte"
+      },
+      "bazaar": {
+        "tagline": "Terrakotta-Wärme mit Markttag-Energie",
+        "bestFor": "Marktstände, Geschenke und Vintage-Fundstücke"
+      },
+      "azure": {
+        "tagline": "Luftige Küstenblautöne, klar und offen",
+        "bestFor": "Wellness, Schreibwaren und moderne Essentials"
       }
     }
   }

@@ -13,7 +13,19 @@ import {
   CARD_READER_GAG,
   INCUMBENT_COMPARISON,
   REVENUE_SHARE,
+  FEATURES,
+  COMPETITORS,
 } from "@shared/platform";
+import { SEGMENTS } from "@shared/segments";
+import {
+  PILOT_METHODOLOGY,
+  PILOT_METRICS,
+  PILOT_WEEKLY,
+  PILOT_SOURCES,
+  PILOT_FINDINGS,
+  type ResearchTable,
+} from "@shared/research";
+import { STORE_TEMPLATES } from "@shared/templates";
 import enLocale from "./en.json";
 import deLocale from "./de.json";
 import frLocale from "./fr.json";
@@ -34,6 +46,15 @@ function keyPaths(node: unknown, prefix = ""): string[] {
     );
   }
   return [prefix];
+}
+
+/** The translatable half of a research table: its caption, head, row labels. */
+function researchTable(table: ResearchTable) {
+  return {
+    caption: table.caption,
+    head: [...table.head],
+    rowLabels: table.rows.map((r) => r[0]),
+  };
 }
 
 const LOCALES = {
@@ -178,6 +199,66 @@ describe("marketing locale files", () => {
       ),
       faqCategories: Object.fromEntries(FAQ_CATEGORIES.map((c) => [c, c])),
       faqs: Object.fromEntries(FAQS.map((f) => [f.q, { q: f.q, a: f.a }])),
+      // Segment.tsx renders SEGMENTS and the FEATURES they resolve to, so both
+      // are translated through `st()` and both belong to the same contract.
+      segments: Object.fromEntries(
+        SEGMENTS.map((s) => [
+          s.id,
+          {
+            name: s.name,
+            headline: s.headline,
+            summary: s.summary,
+            painPoints: [...s.painPoints],
+            scenario: s.scenario,
+          },
+        ]),
+      ),
+      features: Object.fromEntries(
+        FEATURES.map((f) => [
+          f.id,
+          { name: f.name, description: f.description },
+        ]),
+      ),
+      // Signup.tsx renders STORE_TEMPLATES. The template names are left out —
+      // "Atelier" and "Azure" are the same word in every language.
+      templates: Object.fromEntries(
+        STORE_TEMPLATES.map((t) => [
+          t.id,
+          { tagline: t.tagline, bestFor: t.bestFor },
+        ]),
+      ),
+      // Compare.tsx renders COMPETITORS. Brand names are left out on purpose —
+      // "SumUp" is the same word in every language.
+      competitors: Object.fromEntries(
+        COMPETITORS.map((c) => [
+          c.id,
+          {
+            summary: c.summary,
+            betterWhen: [...c.betterWhen],
+            zoltoWhen: [...c.zoltoWhen],
+          },
+        ]),
+      ),
+      // Research.tsx renders shared/research.ts. Only the label column of each
+      // table is prose — the numeric cells are rendered from the shared source
+      // as-is, so they are deliberately absent from the locale files.
+      research: {
+        title: PILOT_METHODOLOGY.title,
+        sample: PILOT_METHODOLOGY.sample,
+        collection: PILOT_METHODOLOGY.collection,
+        limits: [...PILOT_METHODOLOGY.limits],
+        findings: [...PILOT_FINDINGS],
+        metrics: Object.fromEntries(
+          PILOT_METRICS.map((m) => [
+            m.label,
+            { label: m.label, value: m.value, note: m.note },
+          ]),
+        ),
+        tables: {
+          weekly: researchTable(PILOT_WEEKLY),
+          sources: researchTable(PILOT_SOURCES),
+        },
+      },
     };
 
     expect(enLocale.shared).toEqual(expectedShared);
