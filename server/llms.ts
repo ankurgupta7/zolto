@@ -5,7 +5,9 @@ import {
   renderMarketingLlmsTxt,
   renderMarketingLlmsFullTxt,
 } from "@shared/marketing";
-import { getVisibleProducts } from "./db";
+import { featuresForPlan } from "@shared/platform";
+import { VERTICAL_PRESETS, isVertical } from "@shared/verticals";
+import { getTenantSettings, getVisibleProducts } from "./db";
 import { resolveBaseUrl } from "./seo";
 import { resolveTenantFromRequest } from "./tenantResolve";
 
@@ -28,6 +30,12 @@ export function renderStorefrontLlmsTxt(
   tenant: Tenant,
   products: Product[],
   baseUrl: string,
+  opts?: {
+    /** Vertical-specific one-liner (shared/verticals.ts catalogueLine). */
+    catalogueLine?: string;
+    /** The merchant's own "what do you sell" description, if written. */
+    rangeDescription?: string | null;
+  },
 ): string {
   const base = normalizeBaseUrl(baseUrl);
   const inStock = products.filter((p) => !p.sold && p.quantity > 0);
@@ -40,8 +48,18 @@ export function renderStorefrontLlmsTxt(
   const lines: string[] = [];
   lines.push(`# ${tenant.name}`);
   lines.push("");
+  // Pro sells 'Your brand only — no "runs on Zolto"', and this brief is served
+  // to exactly the AI agents that claim is about — so the platform credit only
+  // appears on plans without white-labelling.
+  const platformCredit = featuresForPlan(tenant.plan).whiteLabel
+    ? ""
+    : " This store runs on Zolto.";
+  const catalogueLine =
+    opts?.rangeDescription?.trim() ||
+    opts?.catalogueLine ||
+    "Handcrafted goods, sold online and in person.";
   lines.push(
-    `> Handcrafted jewelry and accessories, sold online and in person. This store runs on Zolto. ${inStock.length} item(s) currently available.`,
+    `> ${catalogueLine}${platformCredit} ${inStock.length} item(s) currently available.`,
   );
   lines.push("");
 
@@ -107,8 +125,21 @@ export function registerLlmsRoutes(app: Express): void {
     const base = resolveBaseUrl(req);
     const tenant = await resolveTenantFromRequest(req);
     if (tenant) {
-      const products = await getVisibleProducts(tenant.id);
-      send(res, renderStorefrontLlmsTxt(tenant, products, base));
+      const [products, settings] = await Promise.all([
+        getVisibleProducts(tenant.id),
+        getTenantSettings(tenant.id),
+      ]);
+      const vertical =
+        settings?.vertical && isVertical(settings.vertical)
+          ? settings.vertical
+          : "jewellery";
+      send(
+        res,
+        renderStorefrontLlmsTxt(tenant, products, base, {
+          catalogueLine: VERTICAL_PRESETS[vertical].catalogueLine,
+          rangeDescription: settings?.verticalDescription ?? null,
+        }),
+      );
     } else {
       send(res, renderMarketingLlmsTxt(base));
     }
@@ -120,8 +151,21 @@ export function registerLlmsRoutes(app: Express): void {
     const base = resolveBaseUrl(req);
     const tenant = await resolveTenantFromRequest(req);
     if (tenant) {
-      const products = await getVisibleProducts(tenant.id);
-      send(res, renderStorefrontLlmsTxt(tenant, products, base));
+      const [products, settings] = await Promise.all([
+        getVisibleProducts(tenant.id),
+        getTenantSettings(tenant.id),
+      ]);
+      const vertical =
+        settings?.vertical && isVertical(settings.vertical)
+          ? settings.vertical
+          : "jewellery";
+      send(
+        res,
+        renderStorefrontLlmsTxt(tenant, products, base, {
+          catalogueLine: VERTICAL_PRESETS[vertical].catalogueLine,
+          rangeDescription: settings?.verticalDescription ?? null,
+        }),
+      );
     } else {
       send(res, renderMarketingLlmsFullTxt(base));
     }

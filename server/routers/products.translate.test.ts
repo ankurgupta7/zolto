@@ -4,6 +4,8 @@ const dbMock = vi.hoisted(() => ({
   getProductById: vi.fn(),
   updateProductTranslations: vi.fn(),
   getProductsMissingTranslation: vi.fn(),
+  getTenantSettings: vi.fn(),
+  getTenantCategories: vi.fn(),
 }));
 
 const llmMock = vi.hoisted(() => ({
@@ -82,6 +84,11 @@ beforeEach(() => {
   dbMock.updateProductTranslations.mockResolvedValue(undefined);
   llmMock.invokeLLM.mockResolvedValue(LLM_OK);
   dbMock.getProductsMissingTranslation.mockResolvedValue([]);
+  dbMock.getTenantSettings.mockResolvedValue({
+    vertical: "jewellery",
+    verticalDescription: null,
+  });
+  dbMock.getTenantCategories.mockResolvedValue([]);
 });
 
 describe("products.previewAutoTranslateAll", () => {

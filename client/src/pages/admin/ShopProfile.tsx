@@ -1,8 +1,9 @@
 /**
  * Shop profile (account plane) — the store's identity within Zolto: name, slug,
- * plan/trial status, and business contact details. Name and slug are the
- * tenant's stable identity (changing them is a support operation), so they're
- * shown read-only; contact email/phone are editable via tenant.updateSettings.
+ * plan/trial status, business contact details, and the currency it sells in.
+ * Name and slug are the tenant's stable identity (changing them is a support
+ * operation), so they're shown read-only; the rest is editable via
+ * tenant.updateSettings.
  */
 import { useEffect, useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -18,18 +19,43 @@ import {
   AdminOnly,
 } from "@/components/admin/ui";
 import { useTenantSettings } from "@/components/admin/useTenantSettings";
+import { DEFAULT_CURRENCY, formatPrice } from "@/lib/money";
+import { VERTICALS, VERTICAL_PRESETS, isVertical } from "@shared/verticals";
+
+/**
+ * The currencies a Swiss-first marketplace plausibly sells in. The server
+ * accepts any 3-letter code (tenant.updateSettings), so this list is a
+ * convenience, not a constraint — it exists because a free-text box invites
+ * typos into every price on the storefront.
+ */
+const CURRENCIES = [
+  { code: "chf", label: "Swiss franc" },
+  { code: "eur", label: "Euro" },
+  { code: "usd", label: "US dollar" },
+  { code: "gbp", label: "Pound sterling" },
+] as const;
 
 export default function ShopProfile() {
   const { user } = useAuth();
   const { tenant, settings, invalidate } = useTenantSettings();
   const [contactEmail, setContactEmail] = useState("");
   const [contactPhone, setContactPhone] = useState("");
+  const [currency, setCurrency] = useState<string>(DEFAULT_CURRENCY);
+  const [vertical, setVertical] = useState<string>("jewellery");
+  const [verticalDescription, setVerticalDescription] = useState("");
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (settings) {
       setContactEmail(settings.contactEmail ?? "");
       setContactPhone(settings.contactPhone ?? "");
+      setCurrency((settings.currency || DEFAULT_CURRENCY).toLowerCase());
+      setVertical(
+        settings.vertical && isVertical(settings.vertical)
+          ? settings.vertical
+          : "jewellery",
+      );
+      setVerticalDescription(settings.verticalDescription ?? "");
     }
   }, [settings]);
 
@@ -55,8 +81,13 @@ export default function ShopProfile() {
     save.mutate({
       contactEmail: contactEmail.trim() || undefined,
       contactPhone: contactPhone.trim() || undefined,
+      currency,
+      ...(isVertical(vertical) ? { vertical } : {}),
+      verticalDescription: verticalDescription.trim() || null,
     });
   };
+
+  const savedCurrency = (settings?.currency || DEFAULT_CURRENCY).toLowerCase();
 
   return (
     <div>
@@ -158,6 +189,80 @@ export default function ShopProfile() {
               className={inputClass}
             />
           </Field>
+
+          <Field
+            label="Currency"
+            htmlFor="currency"
+            hint="Used on your storefront, in the POS, and at checkout."
+          >
+            <select
+              id="currency"
+              value={currency}
+              onChange={(e) => setCurrency(e.target.value)}
+              className={inputClass}
+            >
+              {CURRENCIES.map((c) => (
+                <option key={c.code} value={c.code}>
+                  {c.code.toUpperCase()} — {c.label}
+                </option>
+              ))}
+              {/* A code set outside this list (by support, or before this
+                  selector existed) must not silently reset to CHF on save. */}
+              {!CURRENCIES.some((c) => c.code === currency) && (
+                <option value={currency}>{currency.toUpperCase()}</option>
+              )}
+            </select>
+          </Field>
+
+          <Field
+            label="What do you sell?"
+            htmlFor="vertical"
+            hint="Tunes the AI tools (photo listings, imports, chat) to your kind of store. Your category list is edited separately under Categories."
+          >
+            <select
+              id="vertical"
+              value={vertical}
+              onChange={(e) => setVertical(e.target.value)}
+              className={inputClass}
+            >
+              {VERTICALS.map((v) => (
+                <option key={v} value={v}>
+                  {VERTICAL_PRESETS[v].labelEn}
+                </option>
+              ))}
+            </select>
+          </Field>
+
+          <Field
+            label="Describe your range (optional)"
+            htmlFor="vertical-description"
+            hint="One or two sentences in your own words — the AI uses this to write better listings."
+          >
+            <textarea
+              id="vertical-description"
+              value={verticalDescription}
+              onChange={(e) => setVerticalDescription(e.target.value)}
+              rows={2}
+              maxLength={500}
+              placeholder="e.g. Wheel-thrown stoneware tableware in muted glazes"
+              className={`${inputClass} resize-none`}
+            />
+          </Field>
+
+          <div className="sm:col-span-2">
+            <p className="text-xs text-muted-foreground">
+              Prices are stored as plain numbers, so changing this relabels them
+              — it does not convert them.
+              {currency !== savedCurrency ? (
+                <>
+                  {" "}
+                  A product at {formatPrice(50, savedCurrency)} would become{" "}
+                  {formatPrice(50, currency)}, not its exchange-rate equivalent.
+                  Re-price your catalogue after saving.
+                </>
+              ) : null}
+            </p>
+          </div>
         </div>
       </SettingsCard>
     </div>

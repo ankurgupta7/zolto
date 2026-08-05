@@ -156,7 +156,7 @@ export function getStorefrontSeo(
       const cats = categorySummary(products);
       const desc =
         identity.description?.trim() ||
-        `${store} — handcrafted pieces, available online and in person. ${inStock.length} item(s) currently available.`;
+        `${store} — handcrafted items, available online and in person. ${inStock.length} item(s) currently available.`;
       return {
         path: "/",
         title: store,

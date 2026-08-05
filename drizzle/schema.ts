@@ -8,9 +8,9 @@ import {
   mysqlTable,
   text,
   timestamp,
+  uniqueIndex,
   varchar,
 } from "drizzle-orm/mysql-core";
-import { PRODUCT_CATEGORIES } from "../shared/const";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TENANTS — The root of multi-tenancy
@@ -73,6 +73,10 @@ export const tenantSettings = mysqlTable("tenant_settings", {
   tenantId: int("tenant_id").notNull().unique(),
   logoUrl: varchar("logo_url", { length: 1024 }),
   primaryColor: varchar("primary_color", { length: 7 }).default("#000000"),
+  // Storefront template chosen at signup (shared/templates.ts). Drives the
+  // surface half of the palette; primary_color drives the ink/accent half.
+  // Null = the CSS defaults (equivalent to "atelier").
+  templateId: varchar("template_id", { length: 32 }),
   faviconUrl: varchar("favicon_url", { length: 1024 }),
   whatsappNumber: varchar("whatsapp_number", { length: 32 }),
   instagramHandle: varchar("instagram_handle", { length: 64 }),
@@ -83,6 +87,18 @@ export const tenantSettings = mysqlTable("tenant_settings", {
   // Branding
   whiteLabelName: varchar("white_label_name", { length: 255 }),
   publicDomain: varchar("public_domain", { length: 255 }),
+  // What the merchant sells. `vertical` picks one of shared/verticals.ts
+  // VERTICALS (drives category seeding, AI prompt vocabulary, and copy);
+  // `verticalDescription` is the merchant's own free-text "what do you sell",
+  // interpolated into AI prompts for extra specificity. Defaults to
+  // "jewellery" so every pre-existing store keeps its original behaviour.
+  vertical: varchar("vertical", { length: 32 }).notNull().default("jewellery"),
+  verticalDescription: text("vertical_description"),
+  // Where this merchant sold before Zolto (signup's "already selling
+  // somewhere?"): 'stripe' | 'sumup' | 'worldline' | 'other', null = fresh
+  // start. Drives the onboarding checklist's bring-your-catalogue step
+  // (server/onboarding.ts) toward the matching importer.
+  migrateFrom: varchar("migrate_from", { length: 16 }),
   // External channel IDs (for multi-tenant bot mapping). These are Discord
   // snowflake IDs, not secrets — the platform's single bot token stays in env
   // (DISCORD_BOT_TOKEN); each tenant just tells us which of THEIR channels the
@@ -189,7 +205,9 @@ export const products = mysqlTable("products", {
   nameIt: varchar("nameIt", { length: 255 }),
   descriptionIt: text("descriptionIt"),
   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
-  category: mysqlEnum("category", PRODUCT_CATEGORIES).notNull(),
+  // References tenant_categories.key for this tenant (not enforced by FK so
+  // renames can cascade in one transaction — see renameTenantCategoryKey).
+  category: varchar("category", { length: 64 }).notNull(),
   imageKey: varchar("imageKey", { length: 512 }),
   imageUrl: varchar("imageUrl", { length: 1024 }),
   visible: boolean("visible").default(true).notNull(),
@@ -212,6 +230,36 @@ export const products = mysqlTable("products", {
 
 export type Product = typeof products.$inferSelect;
 export type InsertProduct = typeof products.$inferInsert;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TENANT CATEGORIES — Per-store product category list
+// ═══════════════════════════════════════════════════════════════════════════════
+// Seeded from the tenant's vertical preset (shared/verticals.ts) at signup,
+// then freely editable by the store admin. `key` is the canonical value stored
+// in products.category; the bilingual labels are display-only, so renaming a
+// label never touches products (renaming a KEY cascades — see
+// server/db.ts renameTenantCategoryKey).
+
+export const tenantCategories = mysqlTable(
+  "tenant_categories",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    tenantId: int("tenant_id").notNull(),
+    key: varchar("key", { length: 64 }).notNull(),
+    labelEn: varchar("label_en", { length: 64 }).notNull(),
+    labelDe: varchar("label_de", { length: 64 }),
+    // Sibling keys folded into this category's listing when browsing (e.g.
+    // jewellery "Sets" surface under both Necklaces and Earrings).
+    extraIncludes: json("extra_includes").$type<string[]>(),
+    sortOrder: int("sort_order").notNull().default(0),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (t) => [uniqueIndex("tenant_categories_tenant_key").on(t.tenantId, t.key)],
+);
+
+export type TenantCategory = typeof tenantCategories.$inferSelect;
+export type InsertTenantCategory = typeof tenantCategories.$inferInsert;
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // PRODUCT IMAGES — Scoped to tenant

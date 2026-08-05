@@ -16,6 +16,7 @@ import {
   SELLING_FLOW,
   monthlyCostAt,
   ZERO_COST_POS,
+  AI_NATIVE_PITCH,
   FREE_PLAN,
   COMPETITORS,
   DATA_RESIDENCY,
@@ -333,6 +334,63 @@ describe("ZERO_COST_POS", () => {
     for (const c of COMPETITORS) {
       expect(claimed).not.toContain(c.name);
     }
+  });
+});
+
+describe("AI_NATIVE_PITCH", () => {
+  it("promises only the agent surface the Free plan actually ships", () => {
+    // The hero's whole thesis rests on the Free plan's "Found by AI agents"
+    // line — if that ever leaves the free tier, this pitch becomes a paywall
+    // claim and must be rewritten, not silently kept.
+    const free = FREE_PLAN.features.join(" ").toLowerCase();
+    for (const term of ["llms.txt", "mcp"]) {
+      expect(free).toContain(term);
+    }
+  });
+
+  it("walks the found → asked → bought loop in order", () => {
+    expect(AI_NATIVE_PITCH.steps.map((s) => s.k)).toEqual([
+      "Found",
+      "Asked",
+      "Bought",
+    ]);
+    // Each step names the mechanism it rides on, so the band can't drift
+    // into vague AI-washing: the brief, the protocol, the payout.
+    const [found, asked, bought] = AI_NATIVE_PITCH.steps;
+    expect(found.body).toContain("llms.txt");
+    expect(asked.title + asked.body).toContain("MCP");
+    expect(bought.body.toLowerCase()).toContain("stripe");
+  });
+
+  it("charges what the plan charges — 1% on agent orders, nothing else", () => {
+    // The footnote quotes the fee; keep it pinned to REVENUE_SHARE so a
+    // repriced skim can't leave the hero advertising the old number.
+    expect(AI_NATIVE_PITCH.footnote).toContain(REVENUE_SHARE.percentLabel);
+  });
+
+  it("makes no comparative claim about any competitor in the positioning copy", () => {
+    // Scoped to the thesis surfaces (headline, body, chart), where a
+    // competitor's name could only be a comparison. The proof/steps copy is
+    // allowed to name Stripe — there it's the payout rail Zolto really uses
+    // (FEATURES "Direct payments with Stripe"), not a rival being knocked.
+    const claimed = [
+      AI_NATIVE_PITCH.eyebrow,
+      AI_NATIVE_PITCH.headline,
+      AI_NATIVE_PITCH.headlineEmphasis,
+      AI_NATIVE_PITCH.body,
+      AI_NATIVE_PITCH.chart.caption,
+    ].join(" ");
+    for (const c of COMPETITORS) {
+      expect(claimed).not.toContain(c.name);
+    }
+  });
+
+  it("keeps the discovery chart schematic — labels, not numbers", () => {
+    // A figure here would be an invented market statistic; the chart is a
+    // claim about direction only (see the AI_NATIVE_PITCH doc comment).
+    expect(AI_NATIVE_PITCH.chart.decliningLabel).toBeTruthy();
+    expect(AI_NATIVE_PITCH.chart.risingLabel).toBeTruthy();
+    expect(AI_NATIVE_PITCH.chart.caption).not.toMatch(/\d+\s?%/);
   });
 });
 

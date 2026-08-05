@@ -1,24 +1,36 @@
 import axios from "axios";
 import type { Request, Response } from "express";
-import { PRODUCT_CATEGORIES, type ProductCategory } from "@shared/const";
 import { invokeLLM } from "./_core/llm";
 import { notifyOwner } from "./_core/notification";
-import { createProduct, } from "./db";
+import { createProduct, getTenantByWhatsappNumber } from "./db";
 import { storagePut } from "./storage";
 import type { TenantBranding } from "./_core/email";
-import { tenants, tenantSettings } from "../drizzle/schema";
-import { eq } from "drizzle-orm";
-import { getDb } from "./db";
+import { channelSecret } from "./channelCredentials";
+import {
+  buildIntakeExtractionPrompt,
+  getVerticalContext,
+} from "./verticals";
 
-// These AI extractors describe a single photographed/described piece, so "Sets"
-// is folded into "Other" (see the prompt) and deliberately omitted from the
-// choices offered to the model. Derived from the canonical list so the rest of
-// the categories can never drift.
-const AI_CATEGORIES = PRODUCT_CATEGORIES.filter((c) => c !== "Sets");
-
-const WHATSAPP_TOKEN = process.env.WHATSAPP_TOKEN ?? "";
 const WHATSAPP_VERIFY_TOKEN =
   process.env.WHATSAPP_VERIFY_TOKEN ?? "kalakosh_verify_token";
+
+/**
+ * The WhatsApp business number a webhook payload was delivered for — needed
+ * before anything else, because both the signature check (per-tenant app
+ * secret) and the intake handler key off the tenant it maps to.
+ */
+export function businessPhoneOf(body: unknown): string {
+  const value = (
+    body as {
+      entry?: { changes?: { value?: { metadata?: unknown } }[] }[];
+    } | null
+  )?.entry?.[0]?.changes?.[0]?.value;
+  const metadata = (value as { metadata?: { display_phone_number?: unknown } })
+    ?.metadata;
+  return typeof metadata?.display_phone_number === "string"
+    ? metadata.display_phone_number
+    : "";
+}
 
 // ─── Webhook Verification (GET) ───────────────────────────────────────────────
 
@@ -64,27 +76,18 @@ export async function handleWebhookMessage(req: Request, res: Response) {
     };
 
     if (businessPhone) {
-      const db = await getDb();
-      if (db) {
-        const result = await db
-          .select({ tenant: tenants, settings: tenantSettings })
-          .from(tenants)
-          .leftJoin(tenantSettings, eq(tenants.id, tenantSettings.tenantId))
-          .where(eq(tenantSettings.whatsappNumber, businessPhone))
-          .limit(1);
-        if (result.length > 0) {
-          const row = result[0];
-          tenantId = row.tenant.id;
-          branding = {
-            tenantName: row.settings?.whiteLabelName ?? row.tenant.name,
-            tenantDomain:
-              row.tenant.domain ??
-              row.settings?.publicDomain ??
-              process.env.PUBLIC_BASE_URL ??
-              "https://zolto.ch",
-            contactEmail: row.settings?.contactEmail ?? undefined,
-          };
-        }
+      const row = await getTenantByWhatsappNumber(businessPhone);
+      if (row) {
+        tenantId = row.tenant.id;
+        branding = {
+          tenantName: row.settings?.whiteLabelName ?? row.tenant.name,
+          tenantDomain:
+            row.tenant.domain ??
+            row.settings?.publicDomain ??
+            process.env.PUBLIC_BASE_URL ??
+            "https://zolto.ch",
+          contactEmail: row.settings?.contactEmail ?? undefined,
+        };
       }
     }
 
@@ -124,6 +127,7 @@ export async function handleWebhookMessage(req: Request, res: Response) {
     // Parse product details with tenant-branded LLM prompt
     const parsed = await parseProductFromMessage(
       textContent,
+      tenantId,
       branding.tenantName,
     );
     if (!parsed) {
@@ -162,43 +166,29 @@ export async function handleWebhookMessage(req: Request, res: Response) {
 
 export async function parseProductFromMessage(
   text: string,
+  tenantId: number,
   tenantName?: string,
 ): Promise<{
   name: string;
   description: string;
   price: number;
-  category: Exclude<ProductCategory, "Sets">;
+  category: string;
 } | null> {
   if (!text.trim()) return null;
 
   try {
-    const storeName = tenantName ?? "your store";
+    // The prompt is assembled from the tenant's vertical + their actual
+    // category list (shared with the Discord and Slack intake bots). WhatsApp
+    // intake writes German listing copy, hence germanOutput.
+    const vc = await getVerticalContext(tenantId, tenantName ?? "your store");
+    const { system, jsonSchema } = buildIntakeExtractionPrompt(vc, {
+      germanOutput: true,
+    });
     const response = await invokeLLM({
       messages: [
         {
           role: "system",
-          content: `You are a product data extractor for ${storeName}.
-Extract product information from the owner's message and return a JSON object.
-Write the product name and description in German (Swiss German spelling: use ss instead of ß).
-
-Categories available: ${AI_CATEGORIES.map((c) => `"${c}"`).join(", ")}
-
-Rules:
-- name: short product name (2-6 words, elegant)
-- description: full product description as provided, cleaned up
-- price: numeric value only (no currency symbols)
-- category: must be exactly one of the body-part-based categories above; infer from context if not explicit
-  * Necklaces → necklaces, pendants, chokers
-  * Earrings → studs, drops, hoops, chandeliers
-  * Rings → finger rings
-  * Bracelets → chain bracelets, cuffs
-  * Bangles → rigid bangles
-  * Anklets → ankle chains, payal
-  * Brooches → pins, brooches
-  * Hair Accessories → hair pins, tikka
-  * Other → sets or pieces not fitting the above
-
-Return ONLY valid JSON, no markdown, no explanation.`,
+          content: system,
         },
         {
           role: "user",
@@ -207,31 +197,7 @@ Return ONLY valid JSON, no markdown, no explanation.`,
       ],
       response_format: {
         type: "json_schema",
-        json_schema: {
-          name: "product_info",
-          strict: true,
-          schema: {
-            type: "object",
-            properties: {
-              name: {
-                type: "string",
-                description: "Short elegant product name",
-              },
-              description: {
-                type: "string",
-                description: "Full product description",
-              },
-              price: { type: "number", description: "Numeric price value" },
-              category: {
-                type: "string",
-                enum: AI_CATEGORIES,
-                description: "Product category",
-              },
-            },
-            required: ["name", "description", "price", "category"],
-            additionalProperties: false,
-          },
-        },
+        json_schema: jsonSchema,
       },
     });
 
@@ -259,8 +225,13 @@ async function downloadWhatsAppMedia(
   tenantId: number,
   mediaId: string,
 ): Promise<string | null> {
-  if (!WHATSAPP_TOKEN) {
-    console.warn("[WhatsApp] No WHATSAPP_TOKEN set, cannot download media");
+  // The tenant's own access token when they brought their own Meta app,
+  // else the platform's WHATSAPP_TOKEN env fallback.
+  const token = await channelSecret(tenantId, "whatsapp_token");
+  if (!token) {
+    console.warn(
+      "[WhatsApp] No access token (tenant vault or WHATSAPP_TOKEN env), cannot download media",
+    );
     return null;
   }
 
@@ -268,14 +239,14 @@ async function downloadWhatsAppMedia(
     // Step 1: Get the media URL
     const mediaInfoRes = await axios.get(
       `https://graph.facebook.com/v18.0/${mediaId}`,
-      { headers: { Authorization: `Bearer ${WHATSAPP_TOKEN}` } },
+      { headers: { Authorization: `Bearer ${token}` } },
     );
     const mediaUrl = mediaInfoRes.data?.url;
     if (!mediaUrl) return null;
 
     // Step 2: Download the media bytes
     const mediaRes = await axios.get(mediaUrl, {
-      headers: { Authorization: `Bearer ${WHATSAPP_TOKEN}` },
+      headers: { Authorization: `Bearer ${token}` },
       responseType: "arraybuffer",
     });
 

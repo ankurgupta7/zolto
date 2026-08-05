@@ -548,3 +548,212 @@ migrate_0027_two_tier_pricing() {
     ok "0027 orders.platform_fee_rappen already exists"
   fi
 }
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Migration 0033: German + French product locales.
+#
+# Ships drizzle/0007_product_locales.sql, which update.sh never picked up —
+# only its follow-up, 0009_product_locale_it, was ported (as 0028), so a
+# database built by update.sh had nameEn/descriptionEn and nameIt/descriptionIt
+# but no DE/FR columns at all. drizzle/schema.ts declares all of them, so every
+# storefront product query selected `nameDe` and failed outright:
+#
+#   ER_BAD_FIELD_ERROR: Unknown column 'nameDe' in 'field list'
+#
+# Nullable like the other locales — the storefront falls back to the merchant's
+# primary name/description whenever a locale is empty (client/src/lib/
+# localize.ts), so this is purely additive and needs no backfill. Idempotent.
+# ─────────────────────────────────────────────────────────────────────────────
+migrate_0033_product_locales_de_fr() {
+  if [ "$(col_exists products nameDe)" = "0" ]; then
+    run_sql "0033 add products.nameDe" \
+      "ALTER TABLE \`products\` ADD \`nameDe\` varchar(255) NULL;"
+  else
+    ok "0033 products.nameDe already exists"
+  fi
+
+  if [ "$(col_exists products descriptionDe)" = "0" ]; then
+    run_sql "0033 add products.descriptionDe" \
+      "ALTER TABLE \`products\` ADD \`descriptionDe\` text NULL;"
+  else
+    ok "0033 products.descriptionDe already exists"
+  fi
+
+  if [ "$(col_exists products nameFr)" = "0" ]; then
+    run_sql "0033 add products.nameFr" \
+      "ALTER TABLE \`products\` ADD \`nameFr\` varchar(255) NULL;"
+  else
+    ok "0033 products.nameFr already exists"
+  fi
+
+  if [ "$(col_exists products descriptionFr)" = "0" ]; then
+    run_sql "0033 add products.descriptionFr" \
+      "ALTER TABLE \`products\` ADD \`descriptionFr\` text NULL;"
+  else
+    ok "0033 products.descriptionFr already exists"
+  fi
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Migration 0034: magic-link login tokens.
+#
+# Ships drizzle/0014_magic_link_tokens.sql — the same omission as 0033, one
+# table over: server/db.ts (createMagicLinkToken / consumeMagicLinkToken) has
+# written to `magic_link_tokens` since passwordless sign-in shipped, but
+# update.sh never created it, so requesting a login link failed on a live
+# deployment. Mirrors the drizzle DDL exactly, including the UNIQUE on `token`
+# that consumeMagicLinkToken's single-row lookup relies on. Idempotent.
+# ─────────────────────────────────────────────────────────────────────────────
+migrate_0034_magic_link_tokens() {
+  if [ "$(tbl_exists magic_link_tokens)" = "0" ]; then
+    run_sql "0034 magic_link_tokens table" "
+      CREATE TABLE IF NOT EXISTS \`magic_link_tokens\` (
+        \`id\`         int AUTO_INCREMENT NOT NULL,
+        \`email\`      varchar(320) NOT NULL,
+        \`token\`      varchar(64) NOT NULL,
+        \`next\`       varchar(512),
+        \`expiresAt\`  timestamp NOT NULL,
+        \`consumedAt\` timestamp NULL,
+        \`createdAt\`  timestamp NOT NULL DEFAULT (now()),
+        CONSTRAINT \`magic_link_tokens_id\` PRIMARY KEY(\`id\`),
+        CONSTRAINT \`magic_link_tokens_token_unique\` UNIQUE(\`token\`)
+      );"
+  else
+    ok "0034 magic_link_tokens already exists"
+  fi
+}
+
+migrate_0036_merchant_verticals() {
+  # Per-tenant categories + merchant vertical. Ships
+  # drizzle/0017_merchant_verticals.sql and 0018_seed_jewellery_categories.sql:
+  # converts the global jewellery category enum into a per-tenant list
+  # (products.category enum→varchar keeps the stored strings, so no data step),
+  # records what each merchant sells on tenant_settings, and seeds every
+  # existing tenant with the jewellery preset so nothing changes for them.
+  if [ "$(tbl_exists tenant_categories)" = "0" ]; then
+    run_sql "0036 tenant_categories table" "
+      CREATE TABLE IF NOT EXISTS \`tenant_categories\` (
+        \`id\`         int AUTO_INCREMENT NOT NULL,
+        \`tenant_id\`  int NOT NULL,
+        \`key\`        varchar(64) NOT NULL,
+        \`label_en\`   varchar(64) NOT NULL,
+        \`label_de\`   varchar(64),
+        \`extra_includes\` json,
+        \`sort_order\` int NOT NULL DEFAULT 0,
+        \`createdAt\`  timestamp NOT NULL DEFAULT (now()),
+        \`updatedAt\`  timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+        CONSTRAINT \`tenant_categories_id\` PRIMARY KEY(\`id\`),
+        CONSTRAINT \`tenant_categories_tenant_key\` UNIQUE(\`tenant_id\`,\`key\`)
+      );"
+  else
+    ok "0036 tenant_categories already exists"
+  fi
+
+  local category_type
+  category_type=$($MYSQL -se "${MYSQL_LOCK_TIMEOUT_SQL}SELECT COLUMN_TYPE FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA='${MYSQL_DATABASE}' AND TABLE_NAME='products' AND COLUMN_NAME='category';" 2>/dev/null || echo "")
+  if echo "$category_type" | grep -q "^enum"; then
+    # enum→varchar preserves the stored strings — lossless, no data rewrite.
+    run_sql "0036 products.category enum → varchar(64)" \
+      "ALTER TABLE \`products\` MODIFY COLUMN \`category\` varchar(64) NOT NULL;"
+  else
+    ok "0036 products.category already varchar"
+  fi
+
+  if [ "$(col_exists tenant_settings vertical)" = "0" ]; then
+    run_sql "0036 add tenant_settings.vertical" \
+      "ALTER TABLE \`tenant_settings\` ADD \`vertical\` varchar(32) NOT NULL DEFAULT 'jewellery';"
+  else
+    ok "0036 tenant_settings.vertical already exists"
+  fi
+
+  if [ "$(col_exists tenant_settings vertical_description)" = "0" ]; then
+    run_sql "0036 add tenant_settings.vertical_description" \
+      "ALTER TABLE \`tenant_settings\` ADD \`vertical_description\` text NULL;"
+  else
+    ok "0036 tenant_settings.vertical_description already exists"
+  fi
+
+  # Seed the jewellery preset for tenants with no category rows yet — the
+  # exact keys/order/folding the app hard-coded before verticals existed.
+  run_sql "0036 seed jewellery categories for existing tenants" "
+    INSERT INTO \`tenant_categories\` (\`tenant_id\`, \`key\`, \`label_en\`, \`label_de\`, \`extra_includes\`, \`sort_order\`)
+    SELECT t.\`id\`, c.\`k\`, c.\`k\`, c.\`de\`, c.\`extra\`, c.\`ord\`
+    FROM \`tenants\` t
+    CROSS JOIN (
+      SELECT 'Necklaces' AS \`k\`, 'Halsketten' AS \`de\`, JSON_ARRAY('Sets') AS \`extra\`, 0 AS \`ord\`
+      UNION ALL SELECT 'Earrings', 'Ohrringe', JSON_ARRAY('Sets'), 1
+      UNION ALL SELECT 'Sets', 'Sets', NULL, 2
+      UNION ALL SELECT 'Rings', 'Ringe', NULL, 3
+      UNION ALL SELECT 'Bracelets', 'Armbänder', NULL, 4
+      UNION ALL SELECT 'Bangles', 'Armreifen', NULL, 5
+      UNION ALL SELECT 'Anklets', 'Fussschmuck', NULL, 6
+      UNION ALL SELECT 'Brooches', 'Broschen', NULL, 7
+      UNION ALL SELECT 'Hair Accessories', 'Haarschmuck', NULL, 8
+      UNION ALL SELECT 'Other', 'Sonstiges', NULL, 9
+    ) c
+    WHERE NOT EXISTS (
+      SELECT 1 FROM \`tenant_categories\` tc WHERE tc.\`tenant_id\` = t.\`id\`
+    );"
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Deploy state: skip the whole migration block when nothing about it changed.
+#
+# Every migration above is idempotent, and that is the point — but "idempotent"
+# is not "free". Re-running the set costs ~90 `docker compose exec -T db mysql`
+# round trips (each one a fresh exec plus a fresh client connection), which is
+# tens of seconds of a deploy that, on a no-schema-change pull, applies exactly
+# nothing.
+#
+# So record what was applied. The key is a hash of the files that DEFINE the
+# migration set — update.sh and this file — and it is written only after the
+# whole block has succeeded. Matching hash means the same migrations already ran
+# to completion against this database, so the block can be skipped wholesale.
+# Anything else (first deploy, edited migration, a restored//swapped database
+# with no deploy_state row) falls through to running them all, and `./update.sh
+# --force-migrations` re-runs them on demand.
+#
+# Hashing the two files whole rather than just the migration region is a
+# deliberate over-approximation: an unrelated edit to update.sh costs one slow
+# deploy, whereas a missed edit would skip a migration that needed to run.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Creates the bookkeeping table. Safe to call on every run.
+ensure_deploy_state_table() {
+  $MYSQL -e "${MYSQL_LOCK_TIMEOUT_SQL}
+    CREATE TABLE IF NOT EXISTS \`deploy_state\` (
+      \`k\`          varchar(64)  NOT NULL,
+      \`v\`          varchar(255) NOT NULL,
+      \`updated_at\` timestamp    NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+      CONSTRAINT \`deploy_state_k\` PRIMARY KEY (\`k\`)
+    );" &>/dev/null
+}
+
+# Reads a deploy_state value, printing empty when absent or unreadable.
+deploy_state_get() { # deploy_state_get KEY
+  $MYSQL -se "${MYSQL_LOCK_TIMEOUT_SQL}SELECT \`v\` FROM \`deploy_state\` WHERE \`k\`='$1';" 2>/dev/null \
+    | tr -d '[:space:]'
+}
+
+# Writes a deploy_state value. Non-fatal: losing the bookkeeping costs a slow
+# deploy next time, which is never a reason to fail an otherwise-good one.
+deploy_state_set() { # deploy_state_set KEY VALUE
+  $MYSQL -e "${MYSQL_LOCK_TIMEOUT_SQL}
+    INSERT INTO \`deploy_state\` (\`k\`, \`v\`) VALUES ('$1', '$2')
+    ON DUPLICATE KEY UPDATE \`v\` = VALUES(\`v\`);" &>/dev/null || true
+}
+
+# Hash of the files that define the migration set. Prints empty on failure,
+# which callers must read as "run the migrations".
+migrations_fingerprint() { # migrations_fingerprint FILE...
+  local file
+  for file in "$@"; do
+    [ -r "$file" ] || return 0
+  done
+  if command -v sha256sum &>/dev/null; then
+    cat "$@" | sha256sum | awk '{print $1}'
+  else
+    cat "$@" | shasum -a 256 | awk '{print $1}'
+  fi
+}

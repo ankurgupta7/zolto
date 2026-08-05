@@ -6,6 +6,10 @@ import {
   clearTourCompletion,
   computeTooltipPosition,
   nextStepIndex,
+  positionsEqual,
+  rectsEqual,
+  TOOLTIP_MAX_WIDTH,
+  tooltipWidthFor,
 } from "./tour";
 
 describe("tour completion storage", () => {
@@ -79,5 +83,39 @@ describe("computeTooltipPosition", () => {
     const p = computeTooltipPosition(target, tip, viewport, "bottom");
     expect(p.arrow).toBeGreaterThanOrEqual(12);
     expect(p.arrow).toBeLessThanOrEqual(tip.width - 12);
+  });
+});
+
+describe("tooltipWidthFor", () => {
+  it("uses the design width on a roomy viewport", () => {
+    expect(tooltipWidthFor(1024)).toBe(TOOLTIP_MAX_WIDTH);
+  });
+
+  it("shrinks to fit a narrow phone, leaving the margin on both sides", () => {
+    expect(tooltipWidthFor(320)).toBe(304);
+    expect(tooltipWidthFor(360)).toBe(TOOLTIP_MAX_WIDTH);
+  });
+
+  it("never collapses below a readable minimum", () => {
+    expect(tooltipWidthFor(120)).toBe(200);
+  });
+});
+
+describe("geometry equality helpers", () => {
+  const rect = { top: 1, left: 2, width: 3, height: 4 };
+
+  it("treats identical rects as equal and any difference as not", () => {
+    expect(rectsEqual(rect, { ...rect })).toBe(true);
+    expect(rectsEqual(rect, { ...rect, top: 9 })).toBe(false);
+    expect(rectsEqual(null, null)).toBe(true);
+    expect(rectsEqual(rect, null)).toBe(false);
+  });
+
+  it("compares tooltip positions including placement and arrow", () => {
+    const pos = { top: 10, left: 20, placement: "bottom" as const, arrow: 30 };
+    expect(positionsEqual(pos, { ...pos })).toBe(true);
+    expect(positionsEqual(pos, { ...pos, arrow: 31 })).toBe(false);
+    expect(positionsEqual(pos, { ...pos, placement: "top" })).toBe(false);
+    expect(positionsEqual(null, pos)).toBe(false);
   });
 });

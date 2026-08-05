@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { categoryColor } from "@/lib/categoryColors";
 import {
   Eye,
   EyeOff,
@@ -10,6 +11,7 @@ import {
 import type { ProductItem } from "@shared/types";
 import ProductModal from "./ProductModal";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { isStoreAdminRole } from "@/admin/nav";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
@@ -21,25 +23,12 @@ interface Props {
   onMutated?: () => void;
 }
 
-const CATEGORY_COLORS: Record<string, string> = {
-  Necklaces: "bg-[#F5EFE8] text-[#8B6914]",
-  Earrings: "bg-[#E8E8E8] text-[#555]",
-  Sets: "bg-[#F5E8F0] text-[#8B2D6B]",
-  Rings: "bg-[#E8F4EC] text-[#2D6B4A]",
-  Bracelets: "bg-[#EEE8F5] text-[#5A2D82]",
-  Bangles: "bg-[#F5E8E8] text-[#8B2020]",
-  Anklets: "bg-[#E8F0E8] text-[#2D4A20]",
-  Brooches: "bg-[#FFF0DC] text-[#8B5914]",
-  "Hair Accessories": "bg-[#E8EEF5] text-[#1A3D6B]",
-  Other: "bg-[#EEEEEE] text-[#666]",
-};
-
 export default function ProductCard({ product, onMutated }: Props) {
   const [open, setOpen] = useState(false);
   const [hovered, setHovered] = useState(false);
   const [activeImg, setActiveImg] = useState(0);
   const { user } = useAuth();
-  const isAdmin = user?.role === "admin";
+  const isAdmin = isStoreAdminRole(user?.role);
   const { t, i18n } = useTranslation();
   const currency = useCurrency();
   const utils = trpc.useUtils();
@@ -292,8 +281,7 @@ export default function ProductCard({ product, onMutated }: Props) {
           </div>
           <span
             className={`inline-block text-[10px] uppercase tracking-[0.15em] px-2 py-0.5 mb-2 font-sans ${
-              CATEGORY_COLORS[product.category] ??
-              "bg-muted text-muted-foreground"
+              categoryColor(product.category)
             }`}
           >
             {product.category}

@@ -164,3 +164,60 @@ describe("deriveOnboardingStatus", () => {
     expect(dismissed.dismissed).toBe(true);
   });
 });
+
+describe("deriveOnboardingStatus — switching from another provider", () => {
+  it("keeps the generic first-product step for a merchant starting fresh", async () => {
+    const s = await deriveOnboardingStatus(tenant());
+    const task = s.tasks.find((t) => t.id === "first-product");
+    expect(task?.title).toBe("Add your first product");
+    expect(task?.href).toBe("/admin");
+    // The guided "add a product" tour only makes sense on the manual path.
+    expect(task?.tourId).toBe("add-product");
+  });
+
+  it("points a SumUp switcher at the importer, naming their provider", async () => {
+    dbMock.getTenantSettings.mockResolvedValue({ migrateFrom: "sumup" });
+    const s = await deriveOnboardingStatus(tenant());
+    const task = s.tasks.find((t) => t.id === "first-product");
+    expect(task?.title).toBe("Bring your catalogue from SumUp");
+    expect(task?.body).toContain("SumUp");
+    expect(task?.href).toBe("/admin/products/import");
+    // Same task id and count — the checklist shape doesn't change, only its aim.
+    expect(s.totalCount).toBe(8);
+  });
+
+  it("names Worldline / SIX for a Worldline switcher", async () => {
+    dbMock.getTenantSettings.mockResolvedValue({ migrateFrom: "worldline" });
+    const s = await deriveOnboardingStatus(tenant());
+    const task = s.tasks.find((t) => t.id === "first-product");
+    expect(task?.title).toBe("Bring your catalogue from Worldline / SIX");
+    expect(task?.href).toBe("/admin/products/import");
+  });
+
+  it("ties a Stripe switcher's catalogue import to connecting their account", async () => {
+    dbMock.getTenantSettings.mockResolvedValue({ migrateFrom: "stripe" });
+    const s = await deriveOnboardingStatus(tenant());
+    expect(s.tasks.find((t) => t.id === "first-product")?.title).toBe(
+      "Import your Stripe catalogue",
+    );
+    // The payments step doubles as the import unlock, and says so.
+    expect(s.tasks.find((t) => t.id === "connect-stripe")?.body).toContain(
+      "one-click catalogue import",
+    );
+  });
+
+  it("leaves the generic copy for 'other', which has no importer of its own", async () => {
+    dbMock.getTenantSettings.mockResolvedValue({ migrateFrom: "other" });
+    const s = await deriveOnboardingStatus(tenant());
+    expect(s.tasks.find((t) => t.id === "first-product")?.title).toBe(
+      "Add your first product",
+    );
+  });
+
+  it("completes the catalogue step on a real product row, whatever the source", async () => {
+    dbMock.getTenantSettings.mockResolvedValue({ migrateFrom: "sumup" });
+    dbMock.countTenantProducts.mockResolvedValue(12);
+    const s = await deriveOnboardingStatus(tenant());
+    expect(s.tasks.find((t) => t.id === "first-product")?.done).toBe(true);
+  });
+});

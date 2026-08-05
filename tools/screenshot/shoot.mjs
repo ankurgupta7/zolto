@@ -1,7 +1,6 @@
 /**
  * Screenshot real marketing components for visual review.
  *
- *   ./tools/screenshot/fetch-fonts.sh          # once per clone
  *   npx vite --config tools/screenshot/vite.config.ts &
  *   node tools/screenshot/shoot.mjs out/ "A whole shop in your pocket"
  *
@@ -19,7 +18,21 @@ import { createRequire } from "node:module";
 import path from "node:path";
 
 const require = createRequire(path.join(process.cwd(), "/"));
-const { chromium } = require("playwright");
+// The repo depends on @playwright/test, not the bare `playwright` package —
+// both re-export the same chromium driver, so accept whichever is installed
+// rather than failing with a misleading "module not found".
+const { chromium } = (() => {
+  for (const pkg of ["playwright", "@playwright/test"]) {
+    try {
+      return require(pkg);
+    } catch {
+      /* try the next one */
+    }
+  }
+  throw new Error(
+    "Neither 'playwright' nor '@playwright/test' is installed — run `pnpm install` first.",
+  );
+})();
 
 const [outDir = "screenshots", ...sections] = process.argv.slice(2);
 const URL = process.env.SHOT_URL ?? "http://localhost:5199/";
@@ -58,7 +71,7 @@ const loaded = await page.evaluate(() => [
   ),
 ]);
 // An empty list means the shot is showing fallback faces and cannot be trusted
-// for anything typographic — run fetch-fonts.sh.
+// for anything typographic — check that client/public/fonts is intact.
 console.log("fonts loaded:", loaded.length ? loaded.join(", ") : "NONE ⚠");
 
 if (sections.length === 0) {

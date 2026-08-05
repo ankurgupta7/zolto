@@ -11,24 +11,29 @@
  * standard HTTP server, we run a lightweight Discord Gateway client that connects
  * on startup and forwards MESSAGE_CREATE events to our internal handler.
  *
- * Multi-tenancy model: there is ONE platform bot (DISCORD_BOT_TOKEN env — a
- * Zolto credential, never a tenant one) invited into each tenant's Discord
- * server. Tenants never hand us a token; they only register IDs in their store
- * settings (tenant.updateSettings):
- *   tenant_settings.discord_channel_id    → which channel this bot watches
- *                                            (getTenantByDiscordChannelId)
- *   tenant_settings.discord_owner_user_id → who gets "product added" DMs
- * IDs are not secrets, so no vault/encryption is needed for them.
+ * Multi-tenancy model — two coexisting shapes, one gateway connection each:
+ *   - Platform bot: ONE bot (DISCORD_BOT_TOKEN env) invited into each
+ *     tenant's Discord server; tenants only register IDs in their store
+ *     settings (tenant.updateSettings):
+ *       tenant_settings.discord_channel_id    → which channel to watch
+ *       tenant_settings.discord_owner_user_id → who gets "product added" DMs
+ *     IDs are not secrets, so no vault/encryption is needed for them.
+ *   - Bring-your-own bot: a tenant pastes their own bot token into Channels
+ *     admin; it lands in the encrypted vault (provider "discord_bot_token",
+ *     server/tenantSecrets.ts) and gets its own gateway connection here.
+ * Either way, an incoming message is attributed by channel id
+ * (getTenantByDiscordChannelId), and replies/downloads use the token of the
+ * gateway that received it.
  *
- * Required env vars (platform-level):
- *   DISCORD_BOT_TOKEN    – Bot token from the Discord Developer Portal
+ * Env vars (platform-level):
+ *   DISCORD_BOT_TOKEN    – the platform bot's token (optional if every
+ *                          tenant brings their own)
  *   DISCORD_CHANNEL_ID   – LEGACY fallback channel for single-tenant
  *                          self-hosted deployments with no channel mapping
  */
 
 import WebSocket from "ws";
 import axios from "axios";
-import { PRODUCT_CATEGORIES, type ProductCategory } from "@shared/const";
 import { invokeLLM } from "./_core/llm";
 import { notifyOwner } from "./_core/notification";
 import {
@@ -40,12 +45,12 @@ import {
 import { storagePut } from "./storage";
 import { DEFAULT_TENANT_ID } from "./_core/tenant";
 import type { TenantBranding } from "./_core/email";
-
-// These AI extractors describe a single photographed/described piece, so "Sets"
-// is folded into "Other" (see the prompt) and deliberately omitted from the
-// choices offered to the model. Derived from the canonical list so the rest of
-// the categories can never drift.
-const AI_CATEGORIES = PRODUCT_CATEGORIES.filter((c) => c !== "Sets");
+import { getTenantSecret, listTenantIdsWithSecret } from "./tenantSecrets";
+import {
+  buildIntakeExtractionPrompt,
+  fallbackProduct,
+  getVerticalContext,
+} from "./verticals";
 
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN ?? "";
 const DISCORD_CHANNEL_ID = process.env.DISCORD_CHANNEL_ID ?? "";
@@ -55,44 +60,28 @@ const DISCORD_API = "https://discord.com/api/v10";
 
 export async function parseProductFromMessage(
   text: string,
+  tenantId: number,
   tenantName?: string,
 ): Promise<{
   name: string;
   description: string;
   price: number;
-  category: Exclude<ProductCategory, "Sets">;
+  category: string;
 } | null> {
   if (!text.trim()) return null;
 
   try {
     const model = process.env.LLM_MODEL;
-    const storeName = tenantName ?? "your store";
+    // The prompt is assembled from the tenant's vertical + their actual
+    // category list (shared with the Slack and WhatsApp intake bots).
+    const vc = await getVerticalContext(tenantId, tenantName ?? "your store");
+    const { system, jsonSchema } = buildIntakeExtractionPrompt(vc);
     const response = await invokeLLM({
       ...(model ? { model } : {}),
       messages: [
         {
           role: "system",
-          content: `You are a product data extractor for ${storeName}.
-Extract product information from the owner's Discord message and return a JSON object.
-
-Available categories: ${AI_CATEGORIES.map((c) => `"${c}"`).join(", ")}
-
-Rules:
-- name: short elegant product name (2–6 words)
-- description: full product description as provided, cleaned up for display
-- price: numeric value only (no currency symbols; assume CHF if unspecified)
-- category: must be exactly one of the body-part-based categories; infer from context if not explicit
-  * Necklaces → necklaces, pendants, chokers, lariats
-  * Earrings → studs, drop earrings, hoops, chandeliers
-  * Rings → finger rings of any style
-  * Bracelets → chain bracelets, cuffs, charm bracelets
-  * Bangles → rigid circular bangles worn on the wrist
-  * Anklets → ankle chains, payal
-  * Brooches → pins, brooches, lapel jewellery
-  * Hair Accessories → hair pins, maang tikka, tiaras
-  * Other → body chains, sets, or anything that does not fit the above
-
-Return ONLY valid JSON, no markdown, no explanation.`,
+          content: system,
         },
         {
           role: "user",
@@ -101,34 +90,7 @@ Return ONLY valid JSON, no markdown, no explanation.`,
       ],
       response_format: {
         type: "json_schema",
-        json_schema: {
-          name: "product_info",
-          strict: true,
-          schema: {
-            type: "object",
-            properties: {
-              name: {
-                type: "string",
-                description: "Short elegant product name",
-              },
-              description: {
-                type: "string",
-                description: "Full product description",
-              },
-              price: {
-                type: "number",
-                description: "Numeric price value in CHF",
-              },
-              category: {
-                type: "string",
-                enum: AI_CATEGORIES,
-                description: "Body-part-based product category",
-              },
-            },
-            required: ["name", "description", "price", "category"],
-            additionalProperties: false,
-          },
-        },
+        json_schema: jsonSchema,
       },
     });
 
@@ -163,11 +125,12 @@ interface DiscordAttachment {
 async function downloadDiscordAttachment(
   tenantId: number,
   attachment: DiscordAttachment,
+  botToken: string,
 ): Promise<string | null> {
   try {
     const response = await axios.get(attachment.url, {
       responseType: "arraybuffer",
-      headers: { Authorization: `Bot ${DISCORD_BOT_TOKEN}` },
+      headers: { Authorization: `Bot ${botToken}` },
     });
 
     const contentType = attachment.content_type ?? "image/jpeg";
@@ -205,6 +168,10 @@ export interface DiscordMessage {
 
 export async function handleDiscordMessage(
   message: DiscordMessage,
+  // The token of the gateway that received the event — attachment downloads
+  // and the confirmation reply must go through the same bot, since a tenant's
+  // own bot and the platform bot see different servers.
+  botToken: string = DISCORD_BOT_TOKEN,
 ): Promise<void> {
   // Ignore bot messages
   if (message.author.bot) return;
@@ -261,7 +228,11 @@ export async function handleDiscordMessage(
     // single-channel fallback above, where no tenant maps to the channel; the
     // text of the message is still parsed.
     if (tenant) {
-      imageUrl = await downloadDiscordAttachment(tenant.id, imageAttachment);
+      imageUrl = await downloadDiscordAttachment(
+        tenant.id,
+        imageAttachment,
+        botToken,
+      );
     } else {
       console.warn(
         `[Discord] Attachment on unmapped channel ${message.channel_id} not stored — ` +
@@ -270,9 +241,15 @@ export async function handleDiscordMessage(
     }
   }
 
-  // Parse product details using tenant-branded prompt
+  // Parse product details using tenant-branded prompt. An image-only message
+  // still creates a placeholder listing named after the vertical's fallback
+  // item (previously the hard-coded "New jewelry item").
+  const placeholder = text.trim()
+    ? text
+    : `New ${fallbackProduct(await getVerticalContext(discordTenantId)).nameEn}`;
   const parsed = await parseProductFromMessage(
-    text || "New jewelry item",
+    placeholder,
+    discordTenantId,
     branding.tenantName,
   );
   if (!parsed) {
@@ -305,7 +282,7 @@ export async function handleDiscordMessage(
   );
 
   // Send a confirmation reply to the Discord channel
-  if (DISCORD_BOT_TOKEN && message.channel_id) {
+  if (botToken && message.channel_id) {
     try {
       await axios.post(
         `${DISCORD_API}/channels/${message.channel_id}/messages`,
@@ -313,7 +290,7 @@ export async function handleDiscordMessage(
           content: `✅ **${parsed.name}** (${parsed.category}) — CHF ${parsed.price} has been added to the ${branding.tenantName} catalogue!`,
           message_reference: { message_id: message.id },
         },
-        { headers: { Authorization: `Bot ${DISCORD_BOT_TOKEN}` } },
+        { headers: { Authorization: `Bot ${botToken}` } },
       );
     } catch (err) {
       console.warn("[Discord] Could not send confirmation reply:", err);
@@ -326,63 +303,120 @@ export async function handleDiscordMessage(
 }
 
 // ─── Gateway Client ───────────────────────────────────────────────────────────
-// Discord uses WebSocket Gateway for real-time events. We connect on server start.
+// Discord uses WebSocket Gateway for real-time events. One connection per bot
+// token: the platform bot (env) plus every tenant-supplied token in the vault.
 
-let gatewayWs: WebSocket | null = null;
-let heartbeatInterval: ReturnType<typeof setInterval> | null = null;
-let reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
-let lastSequence: number | null = null;
+interface GatewayConn {
+  token: string;
+  ws: WebSocket | null;
+  heartbeatInterval: ReturnType<typeof setInterval> | null;
+  reconnectTimeout: ReturnType<typeof setTimeout> | null;
+  lastSequence: number | null;
+  stopped: boolean;
+}
 
+const gateways = new Map<string, GatewayConn>();
+
+/**
+ * Start every gateway we know about: the platform bot from env plus each
+ * tenant-supplied token from the vault. Idempotent per token; safe to call
+ * with nothing configured.
+ */
 export async function startDiscordGateway(): Promise<void> {
-  if (!DISCORD_BOT_TOKEN) {
-    console.log("[Discord] No DISCORD_BOT_TOKEN set — gateway not started");
-    return;
-  }
+  const tokens = new Set<string>();
+  if (DISCORD_BOT_TOKEN) tokens.add(DISCORD_BOT_TOKEN);
 
   try {
-    // Get the gateway URL
-    const { data } = await axios.get(`${DISCORD_API}/gateway/bot`, {
-      headers: { Authorization: `Bot ${DISCORD_BOT_TOKEN}` },
-    });
-    const gatewayUrl = `${data.url}?v=10&encoding=json`;
-
-    connectGateway(gatewayUrl);
+    for (const tenantId of await listTenantIdsWithSecret("discord_bot_token")) {
+      const token = await getTenantSecret(tenantId, "discord_bot_token");
+      if (token) tokens.add(token);
+    }
   } catch (err) {
-    console.error("[Discord] Failed to get gateway URL:", err);
-    // Retry after 30s
-    reconnectTimeout = setTimeout(() => startDiscordGateway(), 30_000);
+    // Vault unavailable (no DB / no master key) must not stop the platform
+    // bot from connecting.
+    console.warn(
+      "[Discord] Could not load tenant bot tokens from the vault:",
+      err instanceof Error ? err.message : err,
+    );
+  }
+
+  if (tokens.size === 0) {
+    console.log(
+      "[Discord] No bot tokens configured (env or vault) — gateway not started",
+    );
+    return;
+  }
+  for (const token of Array.from(tokens)) {
+    void startGatewayForToken(token);
   }
 }
 
-function connectGateway(url: string): void {
-  gatewayWs = new WebSocket(url);
-  gatewayWs.on("open", () => {
-    console.log("[Discord] Gateway connected");
+/** Connect one bot token. Idempotent: an already-running token is left alone. */
+export async function startGatewayForToken(token: string): Promise<void> {
+  if (!token || gateways.has(token)) return;
+  const conn: GatewayConn = {
+    token,
+    ws: null,
+    heartbeatInterval: null,
+    reconnectTimeout: null,
+    lastSequence: null,
+    stopped: false,
+  };
+  gateways.set(token, conn);
+
+  try {
+    // Get the gateway URL (also validates the token before we hold a slot).
+    const { data } = await axios.get(`${DISCORD_API}/gateway/bot`, {
+      headers: { Authorization: `Bot ${token}` },
+    });
+    connectGateway(conn, `${data.url}?v=10&encoding=json`);
+  } catch (err) {
+    console.error("[Discord] Failed to get gateway URL:", err);
+    gateways.delete(token);
+    // Retry after 30s
+    setTimeout(() => void startGatewayForToken(token), 30_000);
+  }
+}
+
+function connectGateway(conn: GatewayConn, url: string): void {
+  if (conn.stopped) return;
+  const ws = new WebSocket(url);
+  conn.ws = ws;
+
+  ws.on("open", () => {
+    console.log(`[Discord] Gateway connected (…${conn.token.slice(-4)})`);
   });
 
-  gatewayWs.on("message", (data: import("ws").RawData) => {
+  ws.on("message", (data: import("ws").RawData) => {
     try {
       const payload = JSON.parse(data.toString());
-      handleGatewayPayload(payload, url);
+      handleGatewayPayload(conn, payload, url);
     } catch (err) {
       console.error("[Discord] Failed to parse gateway message:", err);
     }
   });
 
-  gatewayWs.on("close", (code) => {
+  ws.on("close", (code) => {
     console.log(
       `[Discord] Gateway closed (code ${code}), reconnecting in 5s...`,
     );
-    cleanup();
-    reconnectTimeout = setTimeout(() => connectGateway(url), 5_000);
+    stopHeartbeat(conn);
+    conn.ws = null;
+    if (!conn.stopped) {
+      conn.reconnectTimeout = setTimeout(
+        () => connectGateway(conn, url),
+        5_000,
+      );
+    }
   });
 
-  gatewayWs.on("error", (err) => {
+  ws.on("error", (err) => {
     console.error("[Discord] Gateway error:", err);
   });
 }
 
 function handleGatewayPayload(
+  conn: GatewayConn,
   payload: {
     op: number;
     d?: unknown;
@@ -392,15 +426,15 @@ function handleGatewayPayload(
   gatewayUrl: string,
 ): void {
   if (payload.s !== undefined && payload.s !== null) {
-    lastSequence = payload.s;
+    conn.lastSequence = payload.s;
   }
 
   switch (payload.op) {
     // Hello — start heartbeating and identify
     case 10: {
       const hello = payload.d as { heartbeat_interval: number };
-      startHeartbeat(hello.heartbeat_interval);
-      identify();
+      startHeartbeat(conn, hello.heartbeat_interval);
+      identify(conn);
       break;
     }
     // Heartbeat ACK — nothing needed
@@ -408,31 +442,31 @@ function handleGatewayPayload(
       break;
     // Reconnect
     case 7:
-      cleanup();
-      connectGateway(gatewayUrl);
+      stopHeartbeat(conn);
+      connectGateway(conn, gatewayUrl);
       break;
     // Invalid session
     case 9:
-      setTimeout(() => identify(), 2_000);
+      setTimeout(() => identify(conn), 2_000);
       break;
     // Dispatch
     case 0:
       if (payload.t === "MESSAGE_CREATE") {
-        handleDiscordMessage(payload.d as DiscordMessage).catch((err) =>
-          console.error("[Discord] Message handler error:", err),
+        handleDiscordMessage(payload.d as DiscordMessage, conn.token).catch(
+          (err) => console.error("[Discord] Message handler error:", err),
         );
       }
       break;
   }
 }
 
-function identify(): void {
-  if (!gatewayWs) return;
-  gatewayWs.send(
+function identify(conn: GatewayConn): void {
+  if (!conn.ws) return;
+  conn.ws.send(
     JSON.stringify({
       op: 2,
       d: {
-        token: DISCORD_BOT_TOKEN,
+        token: conn.token,
         intents: (1 << 9) | (1 << 15), // GUILD_MESSAGES + MESSAGE_CONTENT
         properties: { os: "linux", browser: "zolto", device: "zolto" },
       },
@@ -440,28 +474,37 @@ function identify(): void {
   );
 }
 
-function startHeartbeat(interval: number): void {
-  if (heartbeatInterval) clearInterval(heartbeatInterval);
-  heartbeatInterval = setInterval(() => {
-    if (gatewayWs?.readyState === 1) {
-      gatewayWs.send(JSON.stringify({ op: 1, d: lastSequence }));
+function startHeartbeat(conn: GatewayConn, interval: number): void {
+  stopHeartbeat(conn);
+  conn.heartbeatInterval = setInterval(() => {
+    if (conn.ws?.readyState === 1) {
+      conn.ws.send(JSON.stringify({ op: 1, d: conn.lastSequence }));
     }
   }, interval);
 }
 
-function cleanup(): void {
-  if (heartbeatInterval) {
-    clearInterval(heartbeatInterval);
-    heartbeatInterval = null;
+/**
+ * Clear the connection's timers only. Detaching conn.ws is the caller's
+ * decision: on Hello this runs to reset the heartbeat while the SAME socket
+ * lives on (identify still needs it) — nulling ws here silently broke that.
+ */
+function stopHeartbeat(conn: GatewayConn): void {
+  if (conn.heartbeatInterval) {
+    clearInterval(conn.heartbeatInterval);
+    conn.heartbeatInterval = null;
   }
-  if (reconnectTimeout) {
-    clearTimeout(reconnectTimeout);
-    reconnectTimeout = null;
+  if (conn.reconnectTimeout) {
+    clearTimeout(conn.reconnectTimeout);
+    conn.reconnectTimeout = null;
   }
-  gatewayWs = null;
 }
 
 export function stopDiscordGateway(): void {
-  cleanup();
-  gatewayWs?.close();
+  for (const conn of Array.from(gateways.values())) {
+    conn.stopped = true;
+    stopHeartbeat(conn);
+    conn.ws?.close();
+    conn.ws = null;
+  }
+  gateways.clear();
 }

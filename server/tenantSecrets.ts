@@ -50,9 +50,17 @@ export function encryptSecret(plaintext: string, keyHex?: string): string {
   const key = masterKey(keyHex);
   const iv = crypto.randomBytes(12);
   const cipher = crypto.createCipheriv("aes-256-gcm", key, iv);
-  const ciphertext = Buffer.concat([cipher.update(plaintext, "utf8"), cipher.final()]);
+  const ciphertext = Buffer.concat([
+    cipher.update(plaintext, "utf8"),
+    cipher.final(),
+  ]);
   const tag = cipher.getAuthTag();
-  return [FORMAT_VERSION, iv.toString("hex"), tag.toString("hex"), ciphertext.toString("hex")].join(":");
+  return [
+    FORMAT_VERSION,
+    iv.toString("hex"),
+    tag.toString("hex"),
+    ciphertext.toString("hex"),
+  ].join(":");
 }
 
 /** Decrypt a payload produced by encryptSecret. Throws on tampering/wrong key. */
@@ -62,7 +70,11 @@ export function decryptSecret(payload: string, keyHex?: string): string {
   if (version !== FORMAT_VERSION || !ivHex || !tagHex || !ciphertextHex) {
     throw new Error("Unrecognized tenant-secret payload format");
   }
-  const decipher = crypto.createDecipheriv("aes-256-gcm", key, Buffer.from(ivHex, "hex"));
+  const decipher = crypto.createDecipheriv(
+    "aes-256-gcm",
+    key,
+    Buffer.from(ivHex, "hex"),
+  );
   decipher.setAuthTag(Buffer.from(tagHex, "hex"));
   return Buffer.concat([
     decipher.update(Buffer.from(ciphertextHex, "hex")),
@@ -101,7 +113,12 @@ export async function setTenantSecret(
   const existing = await db
     .select({ id: tenantSecrets.id })
     .from(tenantSecrets)
-    .where(and(eq(tenantSecrets.tenantId, tenantId), eq(tenantSecrets.provider, provider)))
+    .where(
+      and(
+        eq(tenantSecrets.tenantId, tenantId),
+        eq(tenantSecrets.provider, provider),
+      ),
+    )
     .limit(1);
 
   if (existing.length > 0) {
@@ -118,7 +135,9 @@ export async function setTenantSecret(
       keyVersion: KEY_VERSION,
     });
   }
-  console.log(`[TenantSecrets] stored tenant=${tenantId} provider=${provider} (…${hint})`);
+  console.log(
+    `[TenantSecrets] stored tenant=${tenantId} provider=${provider} (…${hint})`,
+  );
 }
 
 /**
@@ -136,7 +155,12 @@ export async function getTenantSecret(
   const rows = await db
     .select()
     .from(tenantSecrets)
-    .where(and(eq(tenantSecrets.tenantId, tenantId), eq(tenantSecrets.provider, provider)))
+    .where(
+      and(
+        eq(tenantSecrets.tenantId, tenantId),
+        eq(tenantSecrets.provider, provider),
+      ),
+    )
     .limit(1);
   const row = rows[0];
   if (!row) return null;
@@ -147,7 +171,9 @@ export async function getTenantSecret(
     .set({ lastUsedAt: new Date() })
     .where(eq(tenantSecrets.id, row.id));
   // Audit trail: who/what was decrypted — never the value itself.
-  console.log(`[TenantSecrets] decrypt tenant=${tenantId} provider=${provider}`);
+  console.log(
+    `[TenantSecrets] decrypt tenant=${tenantId} provider=${provider}`,
+  );
   return plaintext;
 }
 
@@ -162,7 +188,9 @@ export interface TenantSecretMeta {
 }
 
 /** Metadata for the admin UI — never includes ciphertext or plaintext. */
-export async function listTenantSecrets(tenantId: number): Promise<TenantSecretMeta[]> {
+export async function listTenantSecrets(
+  tenantId: number,
+): Promise<TenantSecretMeta[]> {
   const db = await getDb();
   if (!db) return [];
   const rows = await db
@@ -179,11 +207,38 @@ export async function listTenantSecrets(tenantId: number): Promise<TenantSecretM
   return rows;
 }
 
-export async function deleteTenantSecret(tenantId: number, provider: string): Promise<void> {
+/**
+ * Tenants that have a secret stored for a provider — used at boot to know
+ * which tenants brought their own bot (e.g. one Discord gateway per stored
+ * token). Returns ids only; decryption stays with getTenantSecret.
+ */
+export async function listTenantIdsWithSecret(
+  provider: string,
+): Promise<number[]> {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db
+    .select({ tenantId: tenantSecrets.tenantId })
+    .from(tenantSecrets)
+    .where(eq(tenantSecrets.provider, provider));
+  return rows.map((r) => r.tenantId);
+}
+
+export async function deleteTenantSecret(
+  tenantId: number,
+  provider: string,
+): Promise<void> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db
     .delete(tenantSecrets)
-    .where(and(eq(tenantSecrets.tenantId, tenantId), eq(tenantSecrets.provider, provider)));
-  console.log(`[TenantSecrets] deleted tenant=${tenantId} provider=${provider}`);
+    .where(
+      and(
+        eq(tenantSecrets.tenantId, tenantId),
+        eq(tenantSecrets.provider, provider),
+      ),
+    );
+  console.log(
+    `[TenantSecrets] deleted tenant=${tenantId} provider=${provider}`,
+  );
 }

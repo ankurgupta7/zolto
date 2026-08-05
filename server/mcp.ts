@@ -1,6 +1,5 @@
 import type { Express } from "express";
 import type { Product, Tenant } from "../drizzle/schema";
-import { PRODUCT_CATEGORIES } from "@shared/const";
 import { normalizeBaseUrl, STORY_SLUG, BLOG_POSTS } from "@shared/marketing";
 import {
   PLATFORM,
@@ -111,8 +110,8 @@ export const STOREFRONT_TOOLS = [
         },
         category: {
           type: "string",
-          enum: [...PRODUCT_CATEGORIES],
-          description: "Restrict to a single product category.",
+          description:
+            "Restrict to a single product category. Categories are per-store — get the list from list_categories or the store's llms.txt.",
         },
         min_price: { type: "number", description: "Minimum price in CHF." },
         max_price: { type: "number", description: "Maximum price in CHF." },
@@ -157,7 +156,7 @@ export const STOREFRONT_TOOLS = [
           minItems: 1,
           maxItems: MAX_CHECKOUT_ITEMS,
           description:
-            "Ids of the pieces to buy, from search_products / get_product. Each piece is one-of-a-kind, so ids are not repeatable.",
+            "Ids of the items to buy, from search_products / get_product. Each item is an individual physical piece, so ids are not repeatable.",
         },
       },
       required: ["product_ids"],
@@ -203,7 +202,7 @@ export const PLATFORM_TOOLS = [
   {
     name: "find_stores",
     description:
-      "Find independent maker storefronts hosted on Zolto and get each one's OWN endpoints. Zolto is not a marketplace and does not sit in the middle: this returns each merchant's storefront, llms.txt, and MCP endpoint, and you then search and buy from that merchant directly, paying them directly. Use this when a shopper wants handmade or artisan goods from a small Swiss seller.",
+      "Find independent maker storefronts hosted on Zolto and get each one's OWN endpoints. Zolto is not a marketplace and does not sit in the middle: this returns each merchant's storefront, llms.txt, and MCP endpoint, and you then search and buy from that merchant directly, paying them directly. Use this when a shopper wants goods from a small independent Swiss seller.",
     inputSchema: {
       type: "object",
       properties: {
@@ -557,7 +556,7 @@ async function runStorefrontTool(
       }
       if (rawIds.length > MAX_CHECKOUT_ITEMS) {
         return toolError(
-          `One checkout can hold at most ${MAX_CHECKOUT_ITEMS} pieces.`,
+          `One checkout can hold at most ${MAX_CHECKOUT_ITEMS} items.`,
         );
       }
       const ids = rawIds.map((v) => Number(v));

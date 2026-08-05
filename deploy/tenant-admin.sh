@@ -23,10 +23,22 @@
 #     bash deploy/tenant-admin.sh                      # list stores + their users
 #     bash deploy/tenant-admin.sh <slug>               # show one store's users
 #     bash deploy/tenant-admin.sh <slug> --promote <email>
+#     bash deploy/tenant-admin.sh --superadmin <email> # grant platform ownership
 #
 # --promote sets role='admin' and attaches the user to that tenant. It only ever
 # touches a user that already exists (they must have signed in at least once),
 # and it never creates or deletes anyone.
+#
+# --superadmin grants PLATFORM ownership (role='superadmin'), which is a
+# different thing from being the admin of a store and takes no slug. It exists
+# because nothing else in the codebase ever sets that role: signup grants
+# 'admin' via tenant.claimAdmin, and --promote above grants 'admin'. So the
+# operator console at zolto.ch/platform, the cross-tenant metrics, and the
+# all-stores Stripe sweep were unreachable by every real account — the code
+# shipped, the role to use it did not. This is the one grant that must be made
+# by hand on the server, deliberately: a superadmin reads every merchant's
+# numbers and may act as any store's admin (server/_core/trpc.ts). Keep the
+# list short and check it with the no-argument listing below.
 #
 set -uo pipefail
 
@@ -63,9 +75,108 @@ fi
 # the statement.
 esc() { printf '%s' "$1" | sed "s/'/''/g"; }
 
+# "No user with that email" is a dead end unless it also says which emails DO
+# exist. Almost always the operator signed in through Google or Apple under a
+# different address than the one they typed — so print the candidates instead
+# of making them guess a second and third time.
+# Printed whenever a role write is rejected. The cause is almost always that
+# this database predates the role being written: the baseline shipped
+# enum('user','admin') and the app has since needed 'staff', 'customer', and
+# 'superadmin'. update.sh migration 0032 widens it.
+role_enum_hint() {
+  local col
+  col="$($MYSQL -N -s -e "SELECT COLUMN_TYPE FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA='${MYSQL_DATABASE}' AND TABLE_NAME='users' AND COLUMN_NAME='role';" 2>/dev/null)"
+  echo "       users.role is currently: ${col:-unknown}" >&2
+  case "$col" in
+    *superadmin*) : ;;
+    *)
+      echo "       That column has no 'superadmin' value, so the write was truncated." >&2
+      echo "       Deploy to widen it (update.sh migration 0032), then re-run:" >&2
+      echo "         ./update.sh" >&2
+      ;;
+  esac
+}
+
+suggest_emails() {
+  local total
+  total="$($MYSQL -N -s -e "SELECT COUNT(*) FROM users;" 2>/dev/null)"
+  if [ "${total:-0}" = "0" ]; then
+    echo "       There are NO users in this database at all, so there is nothing to" >&2
+    echo "       promote. Sign up at https://zolto.ch/signup first. (If you expected" >&2
+    echo "       accounts here, check backups/ before writing anything on top.)" >&2
+    return
+  fi
+  echo "       Accounts that DO exist (${total}):" >&2
+  # Order matters: `>&2` first duplicates stdout onto the CURRENT stderr, then
+  # `2>/dev/null` silences only mysql's own chatter. Written the other way
+  # round, stderr goes to /dev/null and stdout follows it there — printing the
+  # header and then nothing at all.
+  $MYSQL -N -s -e \
+    "SELECT CONCAT('         ', COALESCE(email,'(no email)'), '  [', role, ']')
+     FROM users ORDER BY FIELD(role,'superadmin','admin','staff','customer'), id
+     LIMIT 40;" >&2 2>/dev/null
+  if [ "${total:-0}" -gt 40 ]; then
+    echo "         … and $((total - 40)) more." >&2
+  fi
+}
+
 SLUG="${1:-}"
 MODE="${2:-}"
 EMAIL="${3:-}"
+
+# ── Platform ownership ────────────────────────────────────────────────────────
+# Handled before the slug lookup: superadmin is platform-wide and deliberately
+# takes no store. The user keeps whatever tenant_id they already had — being
+# the owner of Zolto and the admin of your own shop are not in conflict, and
+# superadmin outranks admin everywhere the app checks (client/src/admin/nav.ts
+# ROLE_RANK, server/_core/trpc.ts).
+if [ "$SLUG" = "--superadmin" ]; then
+  SA_EMAIL="${2:-}"
+  if [ -z "$SA_EMAIL" ]; then
+    echo "ERROR: --superadmin needs an email. Usage: $0 --superadmin <email>" >&2
+    exit 1
+  fi
+  SA_EMAIL_E="$(esc "$SA_EMAIL")"
+  # Case-insensitive: providers hand back addresses in whatever case the user
+  # typed at signup, and nobody remembers which that was.
+  SA_FOUND="$($MYSQL -N -s -e "SELECT COUNT(*) FROM users WHERE LOWER(email)=LOWER('${SA_EMAIL_E}');" 2>/dev/null)"
+  if [ "${SA_FOUND:-0}" = "0" ]; then
+    echo "ERROR: no user with email '${SA_EMAIL}'." >&2
+    suggest_emails
+    exit 1
+  fi
+  if [ "${SA_FOUND:-0}" != "1" ]; then
+    echo "ERROR: ${SA_FOUND} users share '${SA_EMAIL}'. Refusing to guess." >&2
+    exit 1
+  fi
+
+  echo "Granting PLATFORM ownership (superadmin) to ${SA_EMAIL}…"
+  echo "They will be able to read every store's numbers and act as any store's admin."
+  if ! $MYSQL -e "UPDATE users SET role='superadmin' WHERE LOWER(email)=LOWER('${SA_EMAIL_E}');"; then
+    echo "ERROR: the grant failed — see the mysql error above." >&2
+    role_enum_hint
+    exit 1
+  fi
+
+  # Verify rather than assume. This script previously printed "Done." after a
+  # failed UPDATE: MySQL rejected 'superadmin' with "Data truncated for column
+  # 'role'" because the live enum predates the role, and the script reported
+  # success anyway. Read the row back and let the database be the judge.
+  SA_NOW="$($MYSQL -N -s -e "SELECT COUNT(*) FROM users WHERE LOWER(email)=LOWER('${SA_EMAIL_E}') AND role='superadmin';" 2>/dev/null)"
+  if [ "${SA_NOW:-0}" != "1" ]; then
+    echo "ERROR: ${SA_EMAIL} is still NOT a superadmin — the write did not stick." >&2
+    role_enum_hint
+    exit 1
+  fi
+
+  echo
+  echo "── Everyone who now owns the platform ──────────────────────────"
+  $MYSQL -e "SELECT id, email, tenant_id FROM users WHERE role='superadmin' ORDER BY id;"
+  echo
+  echo "Done. Sign out and back in, then open https://zolto.ch/platform"
+  exit 0
+fi
 
 if [ -z "$SLUG" ]; then
   echo "── Stores ──────────────────────────────────────────────────────"
@@ -103,6 +214,19 @@ WARN
     echo
     echo "A store showing users = 0 means nobody has ever signed in to it."
   fi
+
+  # Who owns the platform itself. Shown unprompted because the usual reason
+  # zolto.ch/platform looks empty is that this list is empty.
+  echo
+  echo "── Platform owners (superadmin) ────────────────────────────────"
+  SA_COUNT="$($MYSQL -N -s -e "SELECT COUNT(*) FROM users WHERE role='superadmin';" 2>/dev/null)"
+  if [ "${SA_COUNT:-0}" = "0" ]; then
+    echo "None. The operator console at zolto.ch/platform will refuse everyone"
+    echo "until somebody holds this role. Grant it with:"
+    echo "  bash deploy/tenant-admin.sh --superadmin <email>"
+  else
+    $MYSQL -e "SELECT id, email, tenant_id FROM users WHERE role='superadmin' ORDER BY id;"
+  fi
   exit 0
 fi
 
@@ -124,11 +248,12 @@ if [ "$MODE" = "--promote" ]; then
   fi
   EMAIL_E="$(esc "$EMAIL")"
   # The user must already exist: role is granted to a real signed-in identity,
-  # never invented here.
-  FOUND="$($MYSQL -N -s -e "SELECT COUNT(*) FROM users WHERE email='${EMAIL_E}';" 2>/dev/null)"
+  # never invented here. Matched case-insensitively — see the superadmin path.
+  FOUND="$($MYSQL -N -s -e "SELECT COUNT(*) FROM users WHERE LOWER(email)=LOWER('${EMAIL_E}');" 2>/dev/null)"
   if [ "${FOUND:-0}" = "0" ]; then
     echo "ERROR: no user with email '${EMAIL}'. They must sign in to Zolto once first," >&2
     echo "       so the account exists, then re-run this." >&2
+    suggest_emails
     exit 1
   fi
   if [ "${FOUND:-0}" != "1" ]; then
@@ -138,10 +263,25 @@ if [ "$MODE" = "--promote" ]; then
   fi
 
   echo "Promoting ${EMAIL} to admin of '${SLUG}' (tenant ${TENANT_ID})…"
-  $MYSQL -e "UPDATE users SET role='admin', tenant_id=${TENANT_ID} WHERE email='${EMAIL_E}';"
+  if ! $MYSQL -e "UPDATE users SET role='admin', tenant_id=${TENANT_ID} WHERE LOWER(email)=LOWER('${EMAIL_E}');"; then
+    echo "ERROR: the promotion failed — see the mysql error above." >&2
+    role_enum_hint
+    exit 1
+  fi
+
+  # Same verification as the superadmin path: read the row back rather than
+  # trusting that the UPDATE did what it was asked.
+  PROMOTED="$($MYSQL -N -s -e "SELECT COUNT(*) FROM users WHERE LOWER(email)=LOWER('${EMAIL_E}') AND role='admin' AND tenant_id=${TENANT_ID};" 2>/dev/null)"
+  if [ "${PROMOTED:-0}" != "1" ]; then
+    echo "ERROR: ${EMAIL} is still NOT an admin of '${SLUG}' — the write did not stick." >&2
+    role_enum_hint
+    exit 1
+  fi
 
   # Burn any still-pending claim row for this tenant so a stale token can't
-  # later re-point ownership at somebody else.
+  # later re-point ownership at somebody else. Only after the promotion is
+  # confirmed — dropping the claim row when the grant failed would destroy the
+  # owner's remaining path in.
   $MYSQL -e "DELETE FROM users WHERE tenant_id=${TENANT_ID} AND openId LIKE 'pending:%';"
 
   echo "Done. Have them sign out and back in, then retry Connect Stripe."

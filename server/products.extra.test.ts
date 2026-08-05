@@ -21,6 +21,31 @@ const db = vi.hoisted(() => ({
   getProductsMissingTranslation: vi.fn(),
   getPaidOrders: vi.fn(),
   getCategoryPriceStats: vi.fn(),
+  getTenantSettings: vi.fn(),
+  getTenantCategories: vi.fn(),
+}));
+
+const JEWELLERY_CATEGORY_ROWS = [
+  { key: "Necklaces", extraIncludes: ["Sets"] },
+  { key: "Earrings", extraIncludes: ["Sets"] },
+  { key: "Sets" },
+  { key: "Rings" },
+  { key: "Bracelets" },
+  { key: "Bangles" },
+  { key: "Anklets" },
+  { key: "Brooches" },
+  { key: "Hair Accessories" },
+  { key: "Other" },
+].map((c, i) => ({
+  id: i + 1,
+  tenantId: 7,
+  key: c.key,
+  labelEn: c.key,
+  labelDe: null,
+  extraIncludes: ("extraIncludes" in c ? c.extraIncludes : null) ?? null,
+  sortOrder: i,
+  createdAt: new Date(),
+  updatedAt: new Date(),
 }));
 
 const storagePut = vi.hoisted(() => vi.fn());
@@ -103,6 +128,11 @@ beforeEach(() => {
   db.getBulkUploadLogs.mockResolvedValue([]);
   db.getProductsMissingTranslation.mockResolvedValue([]);
   db.getPaidOrders.mockResolvedValue([]);
+  db.getTenantSettings.mockResolvedValue({
+    vertical: "jewellery",
+    verticalDescription: null,
+  });
+  db.getTenantCategories.mockResolvedValue(JEWELLERY_CATEGORY_ROWS);
   db.createProduct.mockResolvedValue({ insertId: 99 });
   db.updateProduct.mockResolvedValue(undefined);
   db.insertBulkUploadLog.mockResolvedValue(undefined);

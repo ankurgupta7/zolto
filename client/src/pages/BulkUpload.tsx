@@ -1,9 +1,13 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useMemo } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { isStoreAdminRole } from "@/admin/nav";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { SignInOptions } from "@/components/SignInOptions";
-import { PRODUCT_CATEGORIES, type ProductCategory } from "@shared/types";
+import type { ProductCategory } from "@shared/types";
+import { VERTICAL_PRESETS, isVertical } from "@shared/verticals";
+import { useCategories } from "@/hooks/useCategories";
+import { useTenantSettings } from "@/components/admin/useTenantSettings";
 import { useTranslation } from "react-i18next";
 import {
   Upload,
@@ -67,11 +71,6 @@ interface MatchDecision {
   updateDescription: boolean;
 }
 
-// AI bulk-upload categorises a single piece per card, so "Sets" is folded into
-// "Other" and omitted here — kept in sync with the server-side AI extractors.
-const CATEGORIES: ProductCategory[] = PRODUCT_CATEGORIES.filter(
-  (c) => c !== "Sets",
-);
 const GROUP_LABELS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
 // ─── Step indicator ───────────────────────────────────────────────────────────
@@ -128,6 +127,25 @@ export default function BulkUpload() {
   const { user, isAuthenticated, loading } = useAuth();
   const utils = trpc.useUtils();
   const { t } = useTranslation();
+
+  // The store's own categories (server-driven). AI bulk-upload categorises a
+  // single piece per card, so folded categories (e.g. jewellery "Sets") are
+  // omitted — same rule as the server-side AI extractors.
+  const { categories: storeCategories } = useCategories();
+  const CATEGORIES = useMemo(() => {
+    const folded = new Set(storeCategories.flatMap((c) => c.extraIncludes));
+    return storeCategories.map((c) => c.key).filter((k) => !folded.has(k));
+  }, [storeCategories]);
+
+  // Fallback listing values when AI extraction fails, per the store's vertical.
+  const { settings } = useTenantSettings();
+  const FALLBACK = useMemo(() => {
+    const vertical =
+      settings?.vertical && isVertical(settings.vertical)
+        ? settings.vertical
+        : "jewellery";
+    return VERTICAL_PRESETS[vertical].fallback;
+  }, [settings?.vertical]);
 
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [photos, setPhotos] = useState<PhotoItem[]>([]);
@@ -336,11 +354,10 @@ export default function BulkUpload() {
         return {
           groupId: rg.groupId,
           photoIds: rg.photoIds,
-          name: aiResult?.name ?? "Schmuckstück",
-          nameEn: aiResult?.nameEn ?? "Jewelry Piece",
-          description: aiResult?.description ?? "Handgefertigtes Schmuckstück.",
-          descriptionEn:
-            aiResult?.descriptionEn ?? "Handcrafted jewelry piece.",
+          name: aiResult?.name ?? FALLBACK.name,
+          nameEn: aiResult?.nameEn ?? FALLBACK.nameEn,
+          description: aiResult?.description ?? FALLBACK.description,
+          descriptionEn: aiResult?.descriptionEn ?? FALLBACK.descriptionEn,
           category: (aiResult?.category as ProductCategory) ?? "Other",
           // Pre-filled only when the AI had the merchant's own catalogue to
           // ground it; otherwise left blank on purpose (server returns null).
@@ -413,10 +430,10 @@ export default function BulkUpload() {
         reviewGroups2.map((rg) => ({
           groupId: rg.groupId,
           photoIds: rg.photoIds,
-          name: "Schmuckstück",
-          nameEn: "Jewelry Piece",
-          description: "Handgefertigtes Schmuckstück.",
-          descriptionEn: "Handcrafted jewelry piece.",
+          name: FALLBACK.name,
+          nameEn: FALLBACK.nameEn,
+          description: FALLBACK.description,
+          descriptionEn: FALLBACK.descriptionEn,
           category: "Other" as ProductCategory,
           priceBasis: null,
           price: "",
@@ -618,7 +635,7 @@ export default function BulkUpload() {
     );
   }
 
-  if (user?.role !== "admin") {
+  if (!isStoreAdminRole(user?.role)) {
     return (
       <div className="min-h-screen flex items-center justify-center pt-20 bg-background">
         <div className="text-center max-w-sm">

@@ -1,13 +1,28 @@
 import { describe, expect, it } from "vitest";
 import {
   IMPORT_CHUNK_SIZE,
-  VALID_CATEGORIES,
   mapHandwrittenItems,
+  mapMigrationRows,
   mapRows,
   parseCsv,
   revalidateRow,
   type CsvRow,
 } from "./CsvImport";
+
+// The store's category list is per-tenant now; the mapping helpers take it as
+// a parameter. These tests exercise them with the jewellery-shaped list the
+// old global constant provided (minus the folded "Sets").
+const TEST_CATEGORIES = [
+  "Necklaces",
+  "Earrings",
+  "Rings",
+  "Bracelets",
+  "Bangles",
+  "Anklets",
+  "Brooches",
+  "Hair Accessories",
+  "Other",
+];
 
 describe("parseCsv", () => {
   it("returns an empty array when there's no data row", () => {
@@ -44,7 +59,7 @@ describe("mapRows", () => {
         category: "Rings",
         quantity: "2",
       },
-    ]);
+    ], TEST_CATEGORIES);
     expect(row).toMatchObject({
       name: "Moonstone Ring",
       description: "A lovely ring",
@@ -58,7 +73,7 @@ describe("mapRows", () => {
   });
 
   it("flags missing name, missing description, and invalid price", () => {
-    const [row] = mapRows([{ price: "0", category: "Rings" }]);
+    const [row] = mapRows([{ price: "0", category: "Rings" }], TEST_CATEGORIES);
     expect(row._valid).toBe(false);
     expect(row._errors).toEqual(
       expect.arrayContaining([
@@ -78,7 +93,7 @@ describe("mapRows", () => {
         price: "10",
         category: "Sets",
       },
-    ]);
+    ], TEST_CATEGORIES);
     expect(row.category).toBe("Other");
     expect(row._valid).toBe(false);
     expect(row._errors.some((e) => e.includes("category must be one of"))).toBe(
@@ -89,7 +104,7 @@ describe("mapRows", () => {
   it("defaults quantity to 1 when not provided, and rejects a negative quantity", () => {
     const [noQty] = mapRows([
       { name: "A", description: "d", price: "10", category: "Rings" },
-    ]);
+    ], TEST_CATEGORIES);
     expect(noQty.quantity).toBe(1);
 
     const [negativeQty] = mapRows([
@@ -100,7 +115,7 @@ describe("mapRows", () => {
         category: "Rings",
         quantity: "-3",
       },
-    ]);
+    ], TEST_CATEGORIES);
     expect(negativeQty.quantity).toBe(1);
   });
 
@@ -115,7 +130,7 @@ describe("mapRows", () => {
         descriptionen: "English description",
         imageurl: "https://example.com/a.jpg",
       },
-    ]);
+    ], TEST_CATEGORIES);
     expect(row.nameEn).toBe("English Name");
     expect(row.descriptionEn).toBe("English description");
     expect(row.imageUrl).toBe("https://example.com/a.jpg");
@@ -132,7 +147,7 @@ describe("mapHandwrittenItems", () => {
         category: "Rings",
         quantity: 1,
       },
-    ]);
+    ], TEST_CATEGORIES);
     expect(row).toMatchObject({
       name: "Lemon Quartz",
       price: 50,
@@ -152,7 +167,7 @@ describe("mapHandwrittenItems", () => {
         category: "Rings",
         quantity: 3,
       },
-    ]);
+    ], TEST_CATEGORIES);
     expect(row.quantity).toBe(3);
   });
 
@@ -165,7 +180,7 @@ describe("mapHandwrittenItems", () => {
         category: "Sets",
         quantity: 1,
       },
-    ]);
+    ], TEST_CATEGORIES);
     expect(row.category).toBe("Other");
     expect(row._valid).toBe(false);
     expect(row._errors).toContain("invalid category");
@@ -174,7 +189,7 @@ describe("mapHandwrittenItems", () => {
   it("defaults an unreadable price/name to invalid", () => {
     const [row] = mapHandwrittenItems([
       { name: "", description: "", price: 0, category: "Rings", quantity: 1 },
-    ]);
+    ], TEST_CATEGORIES);
     expect(row._valid).toBe(false);
     expect(row._errors).toEqual(
       expect.arrayContaining([
@@ -232,13 +247,26 @@ describe("revalidateRow", () => {
   });
 });
 
-describe("VALID_CATEGORIES", () => {
-  it("excludes Sets so it is never offered as a pickable import category", () => {
-    expect(VALID_CATEGORIES).not.toContain("Sets");
+describe("category validation", () => {
+  it("rejects a category outside the store's list, listing the valid ones", () => {
+    const [row] = mapRows(
+      [{ name: "Vase", description: "d", price: "40", category: "Necklaces" }],
+      ["Vases", "Bowls", "Other"],
+    );
+    expect(row._valid).toBe(false);
+    expect(row._errors.join(" ")).toContain(
+      "category must be one of: Vases, Bowls, Other",
+    );
+    expect(row.category).toBe("Other");
   });
 
-  it("includes Other as a last-resort category", () => {
-    expect(VALID_CATEGORIES).toContain("Other");
+  it("accepts a custom merchant category case-insensitively", () => {
+    const [row] = mapRows(
+      [{ name: "Vase", description: "d", price: "40", category: "vases" }],
+      ["Vases", "Bowls", "Other"],
+    );
+    expect(row._valid).toBe(true);
+    expect(row.category).toBe("Vases");
   });
 });
 
@@ -246,5 +274,78 @@ describe("IMPORT_CHUNK_SIZE", () => {
   it("is a small positive batch size", () => {
     expect(IMPORT_CHUNK_SIZE).toBeGreaterThan(0);
     expect(IMPORT_CHUNK_SIZE).toBeLessThanOrEqual(20);
+  });
+});
+
+describe("mapMigrationRows", () => {
+  it("maps a provider row onto the store's categories", () => {
+    const [row] = mapMigrationRows(
+      [
+        {
+          name: "Silberring",
+          description: "Handgemacht",
+          price: 89.5,
+          rawCategory: "rings",
+          quantity: 3,
+          imageUrl: "https://example.com/r.jpg",
+        },
+      ],
+      TEST_CATEGORIES,
+    );
+    expect(row).toMatchObject({
+      name: "Silberring",
+      description: "Handgemacht",
+      price: 89.5,
+      category: "Rings",
+      quantity: 3,
+      imageUrl: "https://example.com/r.jpg",
+      _valid: true,
+    });
+  });
+
+  it("falls back to the name when the export has no description", () => {
+    const [row] = mapMigrationRows(
+      [
+        {
+          name: "Espresso",
+          description: "",
+          price: 4.5,
+          rawCategory: "",
+          quantity: 1,
+        },
+      ],
+      TEST_CATEGORIES,
+    );
+    expect(row.description).toBe("Espresso");
+    expect(row.category).toBe("Other");
+    expect(row._valid).toBe(true);
+  });
+
+  it("keeps unpriced rows visible but invalid so the merchant fills them in", () => {
+    const [row] = mapMigrationRows(
+      [
+        {
+          name: "Kette",
+          description: "",
+          price: null,
+          rawCategory: "Unbekannt",
+          quantity: 0,
+        },
+      ],
+      TEST_CATEGORIES,
+    );
+    expect(row.price).toBe(0);
+    expect(row.quantity).toBe(1);
+    expect(row._valid).toBe(false);
+    expect(row._errors).toContain("invalid price");
+  });
+
+  it("flags a nameless row instead of dropping it silently", () => {
+    const [row] = mapMigrationRows(
+      [{ name: "  ", description: "x", price: 5, rawCategory: "", quantity: 1 }],
+      TEST_CATEGORIES,
+    );
+    expect(row.name).toBe("(empty)");
+    expect(row._valid).toBe(false);
   });
 });

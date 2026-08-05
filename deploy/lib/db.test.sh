@@ -138,6 +138,82 @@ FAKE_DOCKER_MODE=fail FAKE_DOCKER_STDERR="connection refused"
 RESULT=$(idx_exists products some_index)
 assert_eq "$RESULT" "0" "idx_exists falls back to 0 (not a crash) when mysql itself fails"
 
+# ── deploy_state: the migration fast path ─────────────────────────────────────
+# update.sh skips its ~90 idempotent migration round trips when the recorded
+# fingerprint matches the current one. The safety property is that every
+# uncertain answer — no table yet, unreadable database, empty fingerprint —
+# must come back as "not applied", so the migrations run rather than being
+# silently skipped against a schema nobody has verified.
+echo "deploy_state helpers"
+
+FAKE_DOCKER_MODE=success
+FAKE_DOCKER_STDOUT=""
+reset_call_log
+ensure_deploy_state_table
+assert_contains "$(cat "${FAKE_CALL_LOG}")" "CREATE TABLE IF NOT EXISTS" \
+  "ensure_deploy_state_table creates the table idempotently"
+assert_contains "$(cat "${FAKE_CALL_LOG}")" "deploy_state" \
+  "…and it is the deploy_state table"
+assert_contains "$(cat "${FAKE_CALL_LOG}")" "lock_wait_timeout=15" \
+  "…bounded by the same lock-wait timeout as every other statement"
+
+FAKE_DOCKER_MODE=success FAKE_DOCKER_STDOUT="abc123def456"
+RESULT=$(deploy_state_get schema_fingerprint)
+assert_eq "$RESULT" "abc123def456" "deploy_state_get returns the stored value"
+
+FAKE_DOCKER_MODE=success FAKE_DOCKER_STDOUT="  abc123  "
+RESULT=$(deploy_state_get schema_fingerprint)
+assert_eq "$RESULT" "abc123" "deploy_state_get strips the whitespace mysql pads output with"
+
+FAKE_DOCKER_MODE=success FAKE_DOCKER_STDOUT=""
+RESULT=$(deploy_state_get schema_fingerprint)
+assert_eq "$RESULT" "" "an absent row reads as empty (so the migrations run)"
+
+FAKE_DOCKER_MODE=fail FAKE_DOCKER_STDERR="ERROR 1146: Table 'deploy_state' doesn't exist"
+RESULT=$(deploy_state_get schema_fingerprint)
+assert_eq "$RESULT" "" "a failed read also reads as empty, never as a match"
+
+FAKE_DOCKER_MODE=success FAKE_DOCKER_STDOUT=""
+reset_call_log
+deploy_state_set schema_fingerprint "deadbeef"
+CALLS="$(cat "${FAKE_CALL_LOG}")"
+assert_contains "$CALLS" "ON DUPLICATE KEY UPDATE" "deploy_state_set upserts rather than failing on re-deploy"
+assert_contains "$CALLS" "deadbeef" "…writing the fingerprint it was given"
+
+FAKE_DOCKER_MODE=fail FAKE_DOCKER_STDERR="disk full"
+deploy_state_set schema_fingerprint "deadbeef"
+assert_eq "$?" "0" "a failed write does not abort the deploy (worst case: a slow next run)"
+
+echo "migrations_fingerprint"
+FP_DIR="$(mktemp -d)"
+printf 'migration one\n' > "${FP_DIR}/update.sh"
+printf 'helper one\n'    > "${FP_DIR}/db.sh"
+
+FP_A="$(migrations_fingerprint "${FP_DIR}/update.sh" "${FP_DIR}/db.sh")"
+assert_eq "${#FP_A}" "64" "migrations_fingerprint is a sha256 digest"
+assert_eq "$(migrations_fingerprint "${FP_DIR}/update.sh" "${FP_DIR}/db.sh")" "$FP_A" \
+  "…stable when neither file changed"
+
+printf 'migration two\n' > "${FP_DIR}/update.sh"
+FP_B="$(migrations_fingerprint "${FP_DIR}/update.sh" "${FP_DIR}/db.sh")"
+if [ "$FP_A" != "$FP_B" ]; then
+  pass "a changed migration file changes the fingerprint (so migrations re-run)"
+else
+  fail "a changed migration file must change the fingerprint"
+fi
+
+printf 'helper two\n' > "${FP_DIR}/db.sh"
+FP_C="$(migrations_fingerprint "${FP_DIR}/update.sh" "${FP_DIR}/db.sh")"
+if [ "$FP_C" != "$FP_B" ]; then
+  pass "a changed db.sh helper changes it too (migrate_* live there)"
+else
+  fail "a changed db.sh must change the fingerprint"
+fi
+
+RESULT="$(migrations_fingerprint "${FP_DIR}/does-not-exist.sh")"
+assert_eq "$RESULT" "" "an unreadable file yields no fingerprint (update.sh then runs the migrations)"
+rm -rf "${FP_DIR}"
+
 echo ""
 echo "${PASSES} passed, ${FAILURES} failed"
 [ "$FAILURES" -eq 0 ]

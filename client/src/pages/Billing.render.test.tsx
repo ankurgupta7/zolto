@@ -232,6 +232,13 @@ describe("Billing page", () => {
     expect(screen.getByText("Admins only.")).toBeTruthy();
   });
 
+  it("admits the platform owner (superadmin)", () => {
+    mocks.authState.user = { role: "superadmin" };
+    render(<Billing />);
+    expect(screen.queryByText("Admins only.")).toBeNull();
+    expect(screen.getByText("Plan & Billing")).toBeTruthy();
+  });
+
   it("offers every sign-in method in place when the session has lapsed", () => {
     mocks.authState.isAuthenticated = false;
     mocks.authState.user = null;

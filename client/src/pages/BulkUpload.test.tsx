@@ -8,16 +8,49 @@ import {
 } from "@testing-library/react";
 import BulkUpload from "./BulkUpload";
 
+const authState = {
+  user: { id: 1, role: "admin" } as { id: number; role: string } | null,
+  isAuthenticated: true,
+  loading: false,
+};
+
 vi.mock("@/_core/hooks/useAuth", () => ({
-  useAuth: () => ({
-    user: { id: 1, role: "admin" },
-    isAuthenticated: true,
-    loading: false,
-  }),
+  useAuth: () => authState,
 }));
 
 vi.mock("@/lib/trpc", () => ({
   trpc: {
+    tenant: {
+      me: { useQuery: () => ({ data: null, isLoading: false }) },
+      getSettings: { useQuery: () => ({ data: null, isLoading: false }) },
+    },
+    categories: {
+      list: {
+        useQuery: () => ({
+          data: [
+            "Necklaces",
+            "Earrings",
+            "Sets",
+            "Rings",
+            "Bracelets",
+            "Bangles",
+            "Anklets",
+            "Brooches",
+            "Hair Accessories",
+            "Other",
+          ].map((key, i) => ({
+            key,
+            labelEn: key,
+            labelDe: null,
+            extraIncludes:
+              key === "Necklaces" || key === "Earrings" ? ["Sets"] : [],
+            sortOrder: i,
+          })),
+          isLoading: false,
+          error: null,
+        }),
+      },
+    },
     useUtils: () => ({}),
     products: {
       bulkAnalyze: {
@@ -38,8 +71,25 @@ vi.mock("@/lib/trpc", () => ({
 
 beforeEach(() => {
   vi.clearAllMocks();
+  authState.user = { id: 1, role: "admin" };
+  authState.isAuthenticated = true;
+  authState.loading = false;
 });
 afterEach(() => cleanup());
+
+describe("BulkUpload page — access gate", () => {
+  it("blocks signed-in non-admins", () => {
+    authState.user = { id: 2, role: "customer" };
+    const { container } = render(<BulkUpload />);
+    expect(container.querySelector('input[type="file"]')).toBeNull();
+  });
+
+  it("admits the platform owner (superadmin)", () => {
+    authState.user = { id: 1, role: "superadmin" };
+    const { container } = render(<BulkUpload />);
+    expect(container.querySelector('input[type="file"]')).toBeTruthy();
+  });
+});
 
 describe("BulkUpload page — Step 1 (select photos)", () => {
   it("leads with a camera-capture button ahead of the plain file picker", () => {

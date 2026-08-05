@@ -22,6 +22,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { PageHeader, SettingsCard, PrimaryButton } from "@/components/admin/ui";
+import PosAppCard from "@/components/admin/PosAppCard";
 
 function StatusPill({
   ok,
@@ -62,6 +63,12 @@ export default function Pos() {
   const connected = connect.data?.connected ?? false;
   const terminalReady = Boolean(me.data?.terminalLocationId);
   const twintQrUrl = settings.data?.twintQrUrl ?? null;
+
+  // The address the register app is pointed at on first launch. The app
+  // resolves which store it belongs to from the POS API key, not the host, so
+  // the admin's own origin is a correct and recognisable answer.
+  const serverUrl =
+    typeof window === "undefined" ? "https://zolto.ch" : window.location.origin;
 
   const qrInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -207,9 +214,19 @@ export default function Pos() {
         )}
       </SettingsCard>
 
-      {/* Step 2 — pair the terminal */}
+      {/* Step 2 — get the register app. Previously absent: the page explained
+          how to connect payments and where the API key lived, but never where
+          to get the app those things are for. */}
       <SettingsCard
-        title="2 · Pair your phone"
+        title="2 · Get the app"
+        description="The register runs as an app on your phone — that's what takes the payment."
+      >
+        <PosAppCard serverUrl={serverUrl} />
+      </SettingsCard>
+
+      {/* Step 3 — pair the terminal */}
+      <SettingsCard
+        title="3 · Pair your phone"
         description="Your POS app authenticates with your store's POS API key."
       >
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -244,7 +261,7 @@ export default function Pos() {
 
       {/* TWINT QR sticker */}
       <SettingsCard
-        title="3 · Your TWINT QR sticker (optional)"
+        title="4 · Your TWINT QR sticker (optional)"
         description="Upload the QR code TWINT gave you and the POS can show it on screen — the customer scans it and pays you directly, at TWINT's own rate."
       >
         <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
@@ -308,7 +325,7 @@ export default function Pos() {
         <ol className="space-y-3">
           {[
             "Open the Zolto POS app on your phone and sign in with your POS API key.",
-            "Add the piece — or enter an amount — and choose Tap to Pay or TWINT.",
+            "Add the item — or enter an amount — and choose Tap to Pay or TWINT.",
             "Have the customer tap their card or phone, or scan the TWINT code.",
             "Inventory syncs back here automatically, so a sold piece leaves your online shop too.",
           ].map((step, i) => (

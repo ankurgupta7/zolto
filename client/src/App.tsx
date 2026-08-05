@@ -44,7 +44,9 @@ import Orders from "./pages/admin/Orders";
 import Reconciliation from "./pages/admin/Reconciliation";
 import AdminInsights from "./pages/admin/Insights";
 import AdminImport from "./pages/admin/Import";
+import AdminCategories from "./pages/admin/Categories";
 import ShopProfile from "./pages/admin/ShopProfile";
+import MyAccount from "./pages/admin/MyAccount";
 import Team from "./pages/admin/Team";
 import Credits from "./pages/admin/Credits";
 import Platform from "./pages/admin/Platform";
@@ -90,6 +92,7 @@ const ADMIN_PAGES: Record<string, ComponentType> = {
   home: Admin,
   products: Admin, // the catalogue manager (monolith) until Home splits into a dashboard
   import: AdminImport,
+  categories: AdminCategories,
   orders: Orders,
   reconciliation: Reconciliation,
   storefront: Storefront,
@@ -99,6 +102,7 @@ const ADMIN_PAGES: Record<string, ComponentType> = {
   insights: AdminInsights,
   // Account plane
   account: ShopProfile,
+  me: MyAccount,
   team: Team,
   plan: Billing,
   credits: Credits,

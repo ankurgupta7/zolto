@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { categoryColor } from "@/lib/categoryColors";
 import { Link, useParams } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useTranslation } from "react-i18next";
@@ -18,19 +19,6 @@ import {
   CarouselNext,
   type CarouselApi,
 } from "@/components/ui/carousel";
-
-const CATEGORY_COLORS: Record<string, string> = {
-  Necklaces: "bg-[#F5EFE8] text-[#8B6914]",
-  Earrings: "bg-[#E8E8E8] text-[#555]",
-  Sets: "bg-[#F5E8F0] text-[#8B2D6B]",
-  Rings: "bg-[#E8F4EC] text-[#2D6B4A]",
-  Bracelets: "bg-[#EEE8F5] text-[#5A2D82]",
-  Bangles: "bg-[#F5E8E8] text-[#8B2020]",
-  Anklets: "bg-[#E8F0E8] text-[#2D4A20]",
-  Brooches: "bg-[#FFF0DC] text-[#8B5914]",
-  "Hair Accessories": "bg-[#E8EEF5] text-[#1A3D6B]",
-  Other: "bg-[#EEEEEE] text-[#666]",
-};
 
 const WhatsAppIcon = () => (
   <svg
@@ -234,8 +222,7 @@ export default function ProductDetail() {
 
           <span
             className={`inline-block text-[10px] uppercase tracking-[0.2em] px-2 py-0.5 mb-4 font-sans ${
-              CATEGORY_COLORS[product.category] ??
-              "bg-muted text-muted-foreground"
+              categoryColor(product.category)
             }`}
           >
             {product.category}

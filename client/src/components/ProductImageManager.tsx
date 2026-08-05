@@ -146,7 +146,7 @@ export default function ProductImageManager({ productId, productName }: Props) {
                 <div key={img.id} className="relative group w-16 h-16">
                   <img
                     src={img.imageUrl}
-                    alt="Product piece"
+                    alt="Product photo"
                     className="w-full h-full object-cover border border-[var(--brand-border)]"
                   />
                   <button

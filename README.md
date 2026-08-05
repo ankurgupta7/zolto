@@ -39,6 +39,13 @@ top of this file reads `main`.
 | `e2e`         | Playwright storefront journey against a freshly-migrated MySQL               |
 | `android`     | ZoltoPOS contract tests, `gradle test`, and a debug APK                      |
 
+The native iOS POS app (`ios/ZoltoPOS/`) is **not** built on CircleCI —
+macOS executors aren't on the free plan. Its pipeline is
+`.github/workflows/ios-pos-build.yml` (simulator build + unit/contract tests on
+PRs, unsigned sideload IPA on merges to `main`), with the `ios-pos-*` Codemagic
+workflows in `codemagic.yaml` covering signed device builds and acting as the
+fallback when GitHub Actions minutes run out.
+
 ### One-time setup
 
 1. **Add the project** in CircleCI (Projects → Set Up Project → it picks up
@@ -150,7 +157,11 @@ client/
     main.tsx           ← Providers
     index.css          ← global style & CSS variables
 android/               ← POS Terminal Android app (Tap to Pay)
-ios/                   ← iOS companion app
+ios/                   ← iOS apps: Kalakosh WebView companion + ZoltoPOS
+  Kalakosh/            ← WebView companion app sources
+  ZoltoPOS/            ← native POS Terminal app (Tap to Pay, TWINT, offline)
+                         — migrated from ankurgupta7/kalakosh-pos-ios; CI in
+                         .github/workflows/ios-pos-build.yml + codemagic.yaml
 drizzle/               ← Schema & migrations
 server/
   db.ts                ← All query helpers (users, products, images, orders, instagram, POS, logs)

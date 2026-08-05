@@ -99,6 +99,41 @@
       "when": 1785686400000,
       "tag": "0014_magic_link_tokens",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "5",
+      "when": 1785686401000,
+      "tag": "0015_user_roles",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "5",
+      "when": 1785686402000,
+      "tag": "0016_store_templates",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "5",
+      "when": 1785690000000,
+      "tag": "0017_merchant_verticals",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "5",
+      "when": 1785690001000,
+      "tag": "0018_seed_jewellery_categories",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "5",
+      "when": 1785858850338,
+      "tag": "0019_migrate_from_provider",
+      "breakpoints": true
     }
   ]
 }

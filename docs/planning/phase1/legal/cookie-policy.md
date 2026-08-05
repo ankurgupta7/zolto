@@ -22,11 +22,15 @@ This is the only cookie the Service sets today. It is **strictly necessary** —
 
 We do not currently set any analytics, advertising, or preference cookies.
 
+**Cookieless analytics.** We measure page views with [Umami](https://umami.is), a privacy-focused analytics tool that operates **without cookies** and without cross-site identifiers or fingerprinting. It provides aggregate usage statistics (pages viewed, referrers, browser type), not profiles of individual visitors, and therefore requires no consent banner. See our [Privacy Policy](./privacy-policy.md) for details.
+
+**Webfonts.** The fonts used by the Service are served from our own infrastructure. Viewing a page does not send any request (or your IP address) to Google Fonts or any other third-party font network.
+
 ---
 
 ## 3. Cookies We May Add
 
-Our [Phase 1 plan](../tracker.md) includes installing Google Analytics 4 (GA4) on the storefront and marketing site to measure traffic and conversions. **GA4 is not installed as of this policy's effective date.** When it is, this policy will be updated first, and — since analytics cookies are not strictly necessary — a consent banner will be added so you can accept or decline before any analytics cookie is set.
+Our [Phase 1 plan](../tracker.md) contemplated installing Google Analytics 4 (GA4); we instead adopted cookieless Umami analytics (see above), so no analytics cookie exists today. **Should we ever add a cookie-based analytics or advertising tool (such as GA4), this policy will be updated first, and — since such cookies are not strictly necessary — a consent banner will be added so you can accept or decline before any such cookie is set.**
 
 ---
 

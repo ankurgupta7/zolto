@@ -97,6 +97,14 @@
     line-height: 1.2;
     letter-spacing: 0.01em;
     color: var(--brand-text);
+    /* Cormorant defaults to OLDSTYLE figures, where 0 sits at x-height and
+       3/5/7/9 drop below the baseline. In a heading that turns step numbers
+       into "1 · 2 · 3 · 4" with wandering baselines, and any year or amount in
+       a heading into mush. Headings are display type — they want lining
+       figures. Set here rather than per-component because the serif is applied
+       here: a component that never writes font-serif still inherits it, so a
+       class-level fix cannot reach every case. */
+    font-variant-numeric: lining-nums;
   }
 
   h1 {
@@ -257,10 +265,20 @@ button:active,
   transition: transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* Page entrance */
+/* Page entrance.
+   Deliberately NOT `forwards`: the final keyframe (opacity 1, no translation) is
+   already the element's resting state, so filling forwards holds nothing — but
+   it does leave a transform on the wrapper for the life of the page, and a
+   transformed element is the containing block for `position: fixed`
+   descendants. That silently re-anchors any fixed overlay rendered inside a
+   page to the page box instead of the viewport: it sits offset from where its
+   coordinates say, and scrolls with the document. Without the fill, the
+   transform is gone once the 500ms entrance ends. Overlays should still portal
+   out (see GuidedTour, ImageLightbox, ParticleField) — that covers the
+   animation window and any future transformed ancestor. */
 @media (prefers-reduced-motion: no-preference) {
   .page-enter {
-    animation: fadeUp 500ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    animation: fadeUp 500ms cubic-bezier(0.22, 1, 0.36, 1);
   }
   @keyframes fadeUp {
     from {

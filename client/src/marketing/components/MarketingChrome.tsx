@@ -5,6 +5,7 @@ import { Menu, Store } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { storeAdminUrl } from "@/lib/surface";
 import { DATA_RESIDENCY, SOVEREIGNTY } from "@shared/platform";
+import { SignOutButton } from "@/components/SignOutButton";
 import {
   Sheet,
   SheetContent,
@@ -131,7 +132,28 @@ function AuthActions({ compact = false }: { compact?: boolean }) {
   const me = trpc.auth.me.useQuery(undefined, { retry: false });
 
   if (me.isLoading) return <AuthSlotSkeleton />;
-  if (me.data) return <StoreShortcut />;
+
+  // Signed in: say WHO, and offer the way out. Showing only "Go to your store"
+  // left a visitor whose browser carried a Google session with no way to tell
+  // which account they were, and no way to leave it.
+  if (me.data) {
+    return (
+      <>
+        {!compact && me.data.email && (
+          <span
+            className="hidden max-w-[16ch] truncate text-sm text-[var(--brand-muted-2)] lg:inline"
+            title={me.data.email}
+          >
+            {me.data.email}
+          </span>
+        )}
+        <StoreShortcut />
+        {!compact && (
+          <SignOutButton className="text-sm text-[var(--brand-muted-2)] transition-colors hover:text-[var(--brand-ink)]" />
+        )}
+      </>
+    );
+  }
 
   return (
     <>
@@ -205,6 +227,18 @@ function MobileMenu({
             >
               Sign in
             </Link>
+          )}
+          {/* The drawer is the only place a phone can reach this — the in-bar
+              mobile rendering is `compact` and shows the CTA alone. */}
+          {!me.isLoading && me.data && (
+            <div className="border-b border-[var(--brand-border)] py-3.5">
+              {me.data.email && (
+                <p className="truncate text-xs text-[var(--brand-muted)]">
+                  Signed in as {me.data.email}
+                </p>
+              )}
+              <SignOutButton className="mt-1 text-sm text-[var(--brand-muted-2)] transition-colors hover:text-[var(--brand-ink)]" />
+            </div>
           )}
         </nav>
       </SheetContent>

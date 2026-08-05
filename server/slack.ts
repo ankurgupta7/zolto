@@ -5,7 +5,9 @@
  * This handler receives the event, parses the product details with an LLM, downloads
  * any attached image, and creates the product in the database.
  *
- * Required env vars:
+ * Credentials are per-tenant first (the encrypted vault, providers
+ * "slack_bot_token" / "slack_signing_secret" — a merchant installing their own
+ * Slack app in their own workspace), falling back to the platform env vars:
  *   SLACK_BOT_TOKEN   – Bot OAuth token (xoxb-...)
  *   SLACK_SIGNING_SECRET – Used to verify request signatures
  */
@@ -13,7 +15,6 @@
 import axios from "axios";
 import crypto from "node:crypto";
 import type { Request, Response } from "express";
-import { PRODUCT_CATEGORIES, type ProductCategory } from "@shared/const";
 import { invokeLLM } from "./_core/llm";
 import { notifyOwner } from "./_core/notification";
 import {
@@ -23,22 +24,22 @@ import {
 } from "./db";
 import { storagePut } from "./storage";
 import type { TenantBranding } from "./_core/email";
-
-// These AI extractors describe a single photographed/described piece, so "Sets"
-// is folded into "Other" (see the prompt) and deliberately omitted from the
-// choices offered to the model. Derived from the canonical list so the rest of
-// the categories can never drift.
-const AI_CATEGORIES = PRODUCT_CATEGORIES.filter((c) => c !== "Sets");
-
-const SLACK_BOT_TOKEN = process.env.SLACK_BOT_TOKEN ?? "";
-const SLACK_SIGNING_SECRET = process.env.SLACK_SIGNING_SECRET ?? "";
+import { channelSecret } from "./channelCredentials";
+import {
+  buildIntakeExtractionPrompt,
+  fallbackProduct,
+  getVerticalContext,
+} from "./verticals";
 
 // ─── Signature Verification ───────────────────────────────────────────────────
 
-function verifySlackSignature(req: Request): boolean {
-  if (!SLACK_SIGNING_SECRET) {
+function verifySlackSignature(
+  req: Request,
+  signingSecret: string | null,
+): boolean {
+  if (!signingSecret) {
     console.warn(
-      "[Slack] No SLACK_SIGNING_SECRET set — skipping signature verification",
+      "[Slack] No signing secret (tenant vault or SLACK_SIGNING_SECRET env) — skipping signature verification",
     );
     return true;
   }
@@ -58,7 +59,7 @@ function verifySlackSignature(req: Request): boolean {
 
   const sigBaseString = `v0:${timestamp}:${rawBody}`;
   const hmac = crypto
-    .createHmac("sha256", SLACK_SIGNING_SECRET)
+    .createHmac("sha256", signingSecret)
     .update(sigBaseString)
     .digest("hex");
   const computedSig = `v0=${hmac}`;
@@ -83,8 +84,19 @@ export async function handleSlackEvent(req: Request, res: Response) {
     return res.json({ challenge: body.challenge });
   }
 
-  // 2. Verify signature
-  if (!verifySlackSignature(req)) {
+  // 2. Verify signature. The channel id is read from the (unverified) payload
+  // only to pick WHICH signing secret applies — the tenant's own (vault) when
+  // they installed their own Slack app, else the platform env secret. The
+  // HMAC over the raw bytes is still what decides.
+  const preEvent = body.event as { channel?: string } | undefined;
+  const preTenant = preEvent?.channel
+    ? await getTenantBySlackChannelId(preEvent.channel)
+    : undefined;
+  const signingSecret = await channelSecret(
+    preTenant?.id,
+    "slack_signing_secret",
+  );
+  if (!verifySlackSignature(req, signingSecret)) {
     console.warn("[Slack] Invalid signature");
     return res.sendStatus(403);
   }
@@ -105,8 +117,8 @@ export async function handleSlackEvent(req: Request, res: Response) {
     const text: string = event.text ?? "";
     const files: SlackFile[] = event.files ?? [];
 
-    // ── Look up tenant by Slack channel ID ──────────────────────────────────
-    const tenant = await getTenantBySlackChannelId(channelId);
+    // ── Tenant already resolved for the signature check above ───────────────
+    const tenant = preTenant;
     if (!tenant) {
       console.log(`[Slack] No tenant mapped to channel ${channelId}, skipping`);
       return;
@@ -140,9 +152,15 @@ export async function handleSlackEvent(req: Request, res: Response) {
       }
     }
 
-    // Parse product details using tenant-branded prompt
+    // Parse product details using tenant-branded prompt. An image-only
+    // message still creates a placeholder listing named after the vertical's
+    // fallback item (previously the hard-coded "New jewelry item").
+    const placeholder = text.trim()
+      ? text
+      : `New ${fallbackProduct(await getVerticalContext(tenant.id)).nameEn}`;
     const parsed = await parseProductFromMessage(
-      text || "New jewelry item",
+      placeholder,
+      tenant.id,
       branding.tenantName,
     );
     if (!parsed) {
@@ -181,42 +199,26 @@ export async function handleSlackEvent(req: Request, res: Response) {
 
 export async function parseProductFromMessage(
   text: string,
+  tenantId: number,
   tenantName?: string,
 ): Promise<{
   name: string;
   description: string;
   price: number;
-  category: Exclude<ProductCategory, "Sets">;
+  category: string;
 } | null> {
   if (!text.trim()) return null;
 
   try {
-    const storeName = tenantName ?? "your store";
+    // The prompt is assembled from the tenant's vertical + their actual
+    // category list (shared with the Discord and WhatsApp intake bots).
+    const vc = await getVerticalContext(tenantId, tenantName ?? "your store");
+    const { system, jsonSchema } = buildIntakeExtractionPrompt(vc);
     const response = await invokeLLM({
       messages: [
         {
           role: "system",
-          content: `You are a product data extractor for ${storeName}.
-Extract product information from the owner's Slack message and return a JSON object.
-
-Available categories: ${AI_CATEGORIES.map((c) => `"${c}"`).join(", ")}
-
-Rules:
-- name: short elegant product name (2–6 words)
-- description: full product description as provided, cleaned up for display
-- price: numeric value only (no currency symbols; assume CHF if unspecified)
-- category: must be exactly one of the body-part-based categories; infer from context if not explicit
-  * Necklaces → necklaces, pendants, chokers, lariats
-  * Earrings → studs, drop earrings, hoops, chandeliers
-  * Rings → finger rings of any style
-  * Bracelets → chain bracelets, cuffs, charm bracelets
-  * Bangles → rigid circular bangles worn on the wrist
-  * Anklets → ankle chains, payal
-  * Brooches → pins, brooches, lapel jewellery
-  * Hair Accessories → hair pins, maang tikka, tiaras
-  * Other → body chains, sets, or anything that does not fit the above
-
-Return ONLY valid JSON, no markdown, no explanation.`,
+          content: system,
         },
         {
           role: "user",
@@ -225,34 +227,7 @@ Return ONLY valid JSON, no markdown, no explanation.`,
       ],
       response_format: {
         type: "json_schema",
-        json_schema: {
-          name: "product_info",
-          strict: true,
-          schema: {
-            type: "object",
-            properties: {
-              name: {
-                type: "string",
-                description: "Short elegant product name",
-              },
-              description: {
-                type: "string",
-                description: "Full product description",
-              },
-              price: {
-                type: "number",
-                description: "Numeric price value in CHF",
-              },
-              category: {
-                type: "string",
-                enum: AI_CATEGORIES,
-                description: "Body-part-based product category",
-              },
-            },
-            required: ["name", "description", "price", "category"],
-            additionalProperties: false,
-          },
-        },
+        json_schema: jsonSchema,
       },
     });
 
@@ -288,14 +263,19 @@ async function downloadSlackFile(
   tenantId: number,
   file: SlackFile,
 ): Promise<string | null> {
-  if (!SLACK_BOT_TOKEN) {
-    console.warn("[Slack] No SLACK_BOT_TOKEN set, cannot download file");
+  // The tenant's own bot token when they installed their own Slack app,
+  // else the platform SLACK_BOT_TOKEN env fallback.
+  const token = await channelSecret(tenantId, "slack_bot_token");
+  if (!token) {
+    console.warn(
+      "[Slack] No bot token (tenant vault or SLACK_BOT_TOKEN env), cannot download file",
+    );
     return null;
   }
 
   try {
     const response = await axios.get(file.url_private, {
-      headers: { Authorization: `Bearer ${SLACK_BOT_TOKEN}` },
+      headers: { Authorization: `Bearer ${token}` },
       responseType: "arraybuffer",
     });
 

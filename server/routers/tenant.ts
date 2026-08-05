@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { NOT_ADMIN_ERR_MSG } from "@shared/const";
+import { MIGRATE_FROM_PROVIDERS, NOT_ADMIN_ERR_MSG } from "@shared/const";
+import { TEMPLATE_IDS, STORE_TEMPLATES } from "@shared/templates";
 import {
   router,
   publicProcedure,
@@ -20,14 +21,33 @@ import {
   setTenantStripeCustomer,
   setTenantReferrer,
   createPendingTenantAdmin,
+  getStoreUserByEmail,
+  getPendingTenantAdminByEmail,
   getUserByOpenId,
   assignUserToTenantAsAdmin,
   deleteUserById,
+  seedTenantCategories,
 } from "../db";
+import { VERTICALS } from "@shared/verticals";
 import { createStripeCustomer } from "../stripe";
 import { storagePut } from "../storage";
+import {
+  isTenantSecretsConfigured,
+  listTenantSecrets,
+  setTenantSecret,
+  deleteTenantSecret,
+} from "../tenantSecrets";
+import {
+  CHANNEL_SECRET_PROVIDERS,
+  type ChannelSecretProvider,
+} from "../channelCredentials";
+import { startGatewayForToken } from "../discord";
+import { buildSlackAuthorizeUrl, buildDiscordInviteUrl } from "../slackOAuth";
+import { getCanonicalOrigin } from "../_core/oauth";
+import { sendClaimLinkEmail } from "../_core/email";
 import { buildConnectAuthorizeUrl } from "../stripeConnect";
 import { deriveOnboardingStatus } from "../onboarding";
+import { createRateLimiter } from "../rateLimit";
 import { generatePosApiKey, hashPosApiKey } from "../posApiKey";
 import { tenants, tenantSettings } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
@@ -41,6 +61,23 @@ function generateReferralCode(): string {
   return crypto.randomBytes(8).toString("hex").toUpperCase();
 }
 
+const HEX_COLOR = /^#[0-9A-Fa-f]{6}$/;
+
+// Signup accepts the merchant's logo inline (same reasoning as setTwintQr: the
+// merchant has a file, not a URL). SVG is deliberately excluded — a stored SVG
+// served from /uploads can carry script, and nothing here sanitizes it.
+const LOGO_MIME_TYPES = ["image/png", "image/jpeg", "image/webp"] as const;
+
+// AI palette extraction is a public, pre-signup endpoint that burns LLM
+// tokens, so it gets the same soft abuse guard as the public MCP checkout: a
+// fixed window per caller IP (shared across instances via the DB store).
+// Generous enough for a merchant trying a few logo files; a hostile loop
+// hits the wall fast.
+const logoPaletteLimiter = createRateLimiter({
+  limit: 10,
+  windowMs: 60 * 60 * 1000,
+});
+
 // The POS API key is a bearer credential — a Tenant row must never leak it
 // (or even its hash) through an API response. Strip it everywhere a tenant
 // object is returned; the plaintext is only ever shown once at
@@ -51,6 +88,65 @@ function stripPosApiKey<T extends { posApiKey: string }>(
   const rest: Partial<T> = { ...tenant };
   delete rest.posApiKey;
   return rest as Omit<T, "posApiKey">;
+}
+
+/**
+ * Does this account RUN a store — as opposed to merely being attached to one?
+ *
+ * The distinction is load-bearing: `users.tenantId` is NOT NULL, and every
+ * fresh sign-in (Google, Apple, magic link) is parked by `upsertUser` on
+ * DEFAULT_TENANT_ID — the platform tenant — with role `customer`. So a truthy
+ * tenantId does NOT mean "this account has a store"; for exactly the person
+ * signup just told to sign in, it means nothing at all. Guards that treated
+ * any tenantId as ownership made claiming a new store impossible in
+ * production: the freshly signed-in owner was "already attached" to the
+ * platform tenant, the claim CONFLICTed, and `myStore` pointed them at
+ * platform.zolto.ch's admin to be refused.
+ *
+ * Ownership is the ROLE: admins and staff manage the store their tenantId
+ * names; a customer row's tenantId is just where they shopped (or the parking
+ * default) and must never block a claim nor advertise an admin.
+ */
+const MANAGING_ROLES = ["superadmin", "admin", "staff"] as const;
+function managesAStore(user: {
+  tenantId: number | null;
+  role: string;
+}): boolean {
+  return (
+    !!user.tenantId && (MANAGING_ROLES as readonly string[]).includes(user.role)
+  );
+}
+
+/**
+ * Shared tail of both claim paths — `claimAdmin` (token from the signup tab)
+ * and `resumeClaim` (provider-verified email match, for when that token is
+ * gone). Attaches the signed-in account to the pending tenant as admin, burns
+ * the single-use pending row, and reports where to go.
+ *
+ * The different-store guard is the account-level twin of signup's
+ * one-email-one-store check (which alone is bypassable by typing a fresh
+ * address at signup and then claiming with an already-attached login).
+ * Without it, the assignment below would silently rip the account off its
+ * first store. It bites only for accounts that MANAGE another store (see
+ * managesAStore above) — a customer row is promoted, not refused.
+ */
+async function finishClaim(
+  user: { openId: string; tenantId: number | null; role: string },
+  pending: { id: number; tenantId: number },
+): Promise<{ tenantId: number; slug: string | null }> {
+  if (user.tenantId !== pending.tenantId && managesAStore(user)) {
+    throw new TRPCError({
+      code: "CONFLICT",
+      message:
+        "This account already manages a store. Sign in with a different account to claim this one.",
+    });
+  }
+
+  await assignUserToTenantAsAdmin(user.openId, pending.tenantId);
+  await deleteUserById(pending.id);
+
+  const tenant = await getTenantById(pending.tenantId);
+  return { tenantId: pending.tenantId, slug: tenant?.slug ?? null };
 }
 
 export const tenantRouter = router({
@@ -108,9 +204,29 @@ export const tenantRouter = router({
           .max(64),
         email: z.string().email(),
         referralCode: z.string().optional(),
+        // Branding chosen in the signup wizard — all optional so the plain
+        // three-field signup keeps working (and so does the mobile app's).
+        templateId: z.enum(TEMPLATE_IDS).optional(),
+        primaryColor: z.string().regex(HEX_COLOR).optional(),
+        logo: z
+          .object({
+            // Base64 image data, with or without a data: prefix. ~3 MB of
+            // base64 ≈ 2.2 MB of image — plenty for a logo.
+            imageData: z.string().min(1).max(3_000_000),
+            mimeType: z.enum(LOGO_MIME_TYPES),
+          })
+          .optional(),
+        // What the merchant sells — picks the category preset and the AI
+        // prompt vocabulary. Defaults to jewellery for older signup clients.
+        vertical: z.enum(VERTICALS).default("jewellery"),
+        verticalDescription: z.string().trim().max(500).optional(),
+        // "Already selling somewhere?" — tailors the onboarding checklist's
+        // catalogue step toward the matching importer. Optional: a fresh
+        // start (and every older signup client) simply omits it.
+        migrateFrom: z.enum(MIGRATE_FROM_PROVIDERS).optional(),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       // 1. Slug must be free.
       if (await getTenantBySlug(input.slug)) {
         throw new TRPCError({
@@ -119,7 +235,26 @@ export const tenantRouter = router({
         });
       }
 
-      // 2. Create the tenant with a 14-day trial. The POS key is stored ONLY
+      // 2. One email, one store. An address already attached to a tenant — as
+      // its admin, staff, or a still-unclaimed pending admin — must not spawn
+      // a second store; an address that exists with no store (signed in,
+      // never created one) is exactly who signup is for and passes.
+      //
+      // The pending case gets its own message: a merchant whose sign-in failed
+      // after signup lands right back here, and "already attached" reads as a
+      // dead end when the actual fix is to sign in with this same email and
+      // let `resumeClaim` (below) attach the waiting store.
+      const existing = await getStoreUserByEmail(input.email);
+      if (existing) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: existing.pendingClaim
+            ? "You already started a signup with this email — your store is created and waiting. Sign in with this same email to finish setting it up."
+            : "This email is already attached to a store. Sign in to manage it, or use a different address.",
+        });
+      }
+
+      // 3. Create the tenant with a 14-day trial. The POS key is stored ONLY
       // as a SHA-256 hash; the plaintext is returned here exactly once (the
       // tenant enters it into their POS app) and is unrecoverable afterwards —
       // a lost key is rotated, not retrieved (see rotatePosApiKey below).
@@ -136,10 +271,53 @@ export const tenantRouter = router({
         referralCode: generateReferralCode(),
       });
 
-      // 3. Default settings.
-      await createTenantSettings({ tenantId, currency: "chf" });
+      // 4. Settings, seeded with the wizard's branding choices and the
+      // vertical's starter category list. The logo is uploaded first so its
+      // URL lands in the same insert; a failed upload must not lose the
+      // signup, so it degrades to "no logo" (the merchant re-uploads from
+      // the admin, and the onboarding checklist keeps the branding task open
+      // to say so).
+      let logoUrl: string | null = null;
+      if (input.logo) {
+        try {
+          const base64 = input.logo.imageData.replace(
+            /^data:[^;]+;base64,/,
+            "",
+          );
+          const buffer = Buffer.from(base64, "base64");
+          if (buffer.byteLength > 0) {
+            const ext = input.logo.mimeType.split("/")[1] ?? "png";
+            // Tenant-scoped so the upload counts against the plan's storage
+            // cap like every other image (server/storage.ts).
+            const { url } = await storagePut(
+              tenantId,
+              `logos/${tenantId}/logo.${ext}`,
+              buffer,
+              input.logo.mimeType,
+            );
+            logoUrl = url;
+          }
+        } catch (err) {
+          console.warn(
+            "[Signup] Logo upload failed; store created without it:",
+            err,
+          );
+        }
+      }
 
-      // 4. Stripe customer for future billing (no-op if Stripe isn't configured).
+      await createTenantSettings({
+        tenantId,
+        currency: "chf",
+        vertical: input.vertical,
+        verticalDescription: input.verticalDescription?.trim() || null,
+        ...(input.templateId ? { templateId: input.templateId } : {}),
+        ...(input.primaryColor ? { primaryColor: input.primaryColor } : {}),
+        ...(logoUrl ? { logoUrl } : {}),
+        ...(input.migrateFrom ? { migrateFrom: input.migrateFrom } : {}),
+      });
+      await seedTenantCategories(tenantId, input.vertical);
+
+      // 5. Stripe customer for future billing (no-op if Stripe isn't configured).
       const stripeCustomerId = await createStripeCustomer({
         name: input.name,
         email: input.email,
@@ -148,27 +326,205 @@ export const tenantRouter = router({
         await setTenantStripeCustomer(tenantId, stripeCustomerId);
       }
 
-      // 5. Referral: credit the referrer if the code is valid.
+      // 6. Referral: credit the referrer if the code is valid.
       if (input.referralCode) {
         const referrer = await getTenantByReferralCode(input.referralCode);
         if (referrer) await setTenantReferrer(tenantId, referrer.id);
       }
 
-      // 6. Pending admin + one-time claim token (see claimAdmin below).
+      // 7. Pending admin + one-time claim token (see claimAdmin below).
       // The token is stored as `pending:<token>` in users.openId, which is
       // varchar(64). "pending:" is 8 chars, so the token must be ≤ 56 chars —
       // 24 bytes of hex is 48 chars (192 bits of entropy) and leaves margin.
       const claimToken = crypto.randomBytes(24).toString("hex");
       await createPendingTenantAdmin(tenantId, input.email, claimToken);
 
+      // 8. Email a durable copy of the claim link. The wizard holds the token
+      // only in its tab's sessionStorage, so this is what survives a failed
+      // sign-in, a closed tab, or switching devices — and it covers the one
+      // gap resumeClaim can't: an owner who signs in with a DIFFERENT address
+      // than they typed here. Best-effort: a mail failure must not lose the
+      // signup (the in-browser token still works, and so does the email-match
+      // resume).
+      let claimEmailSent = false;
+      try {
+        const claimUrl =
+          `${getCanonicalOrigin(ctx.req)}/onboarding` +
+          `?store=${encodeURIComponent(input.slug)}&claim=${claimToken}`;
+        claimEmailSent = await sendClaimLinkEmail({
+          to: input.email,
+          url: claimUrl,
+          storeName: input.name,
+        });
+      } catch (err) {
+        console.warn(
+          "[Signup] Claim-link email failed; signup continues:",
+          err,
+        );
+      }
+
       return {
         tenantId,
         slug: input.slug,
         trialEndsAt: trialEndsAt.toISOString(),
         claimToken,
+        // Whether the durable claim link actually went out (false when mail
+        // isn't configured) — the wizard mentions the email only when true.
+        claimEmailSent,
+        // Null when no logo was sent OR the upload failed — the wizard tells
+        // the merchant to re-upload from the admin in the latter case.
+        logoUrl,
         // Shown ONCE — the UI must present it as such ("copy it now; it can't
         // be shown again"). Not stored anywhere in plaintext.
         posApiKey: posApiKeyPlaintext,
+      };
+    }),
+
+  // ─── Public: AI color scheme from an uploaded logo (signup wizard) ─────────
+  // Pre-signup, so there is no tenant or user to hang this on — the wizard
+  // calls it while the merchant is still choosing branding, before `create`.
+  // Nothing is persisted: it returns a *suggestion* (dominant brand color, an
+  // optional secondary, and which of the five templates fits) that the wizard
+  // shows for the merchant to accept or override. Rate-limited per IP because
+  // it is an unauthenticated endpoint that spends LLM tokens.
+  brandingFromLogo: publicProcedure
+    .input(
+      z.object({
+        // Must be a full data URL so the mime type travels with the pixels.
+        imageData: z
+          .string()
+          .regex(
+            /^data:image\/(png|jpeg|webp);base64,/,
+            "Upload a PNG, JPEG, or WebP logo",
+          )
+          .max(3_000_000),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const gate = await logoPaletteLimiter.check(
+        `logo-palette:${ctx.req.ip ?? "unknown"}`,
+      );
+      if (!gate.allowed) {
+        throw new TRPCError({
+          code: "TOO_MANY_REQUESTS",
+          message: `Too many color extractions — try again in ${gate.retryAfterSeconds} seconds.`,
+        });
+      }
+
+      const { invokeLLM } = await import("../_core/llm");
+      const templateGuide = STORE_TEMPLATES.map(
+        (t) =>
+          `- "${t.id}": ${t.tagline}. Best for ${t.bestFor.toLowerCase()}.`,
+      ).join("\n");
+
+      const response = await invokeLLM({
+        messages: [
+          {
+            role: "system",
+            content: `You are a brand designer for an e-commerce platform. The user uploads their shop's logo. Extract a color scheme for their storefront from it.
+
+Rules for primaryColor:
+- Pick the logo's dominant BRAND color — the color a customer would name if asked "what color is this brand?". Ignore white/near-white backgrounds and incidental anti-aliasing colors.
+- It becomes the store's dark "ink" (headers, footer, buttons), so if the logo's brand color is very light, return a darker shade of the same hue that would stay legible as button/text color on a cream background.
+- Format: 6-digit hex like #2D6B4A.
+
+Rules for secondaryColor:
+- A supporting color actually present in the logo, if there is a clear one; otherwise repeat primaryColor.
+
+Rules for suggestedTemplateId — pick the storefront template whose mood best matches the logo:
+${templateGuide}
+
+rationale: one friendly sentence (max 25 words) telling the merchant what you saw, e.g. "Deep forest green with a warm gold accent — a natural fit for the Verdant look."`,
+          },
+          {
+            role: "user",
+            content: [
+              {
+                type: "image_url" as const,
+                image_url: { url: input.imageData, detail: "auto" as const },
+              },
+              {
+                type: "text" as const,
+                text: "Extract my shop's color scheme from this logo.",
+              },
+            ],
+          },
+        ],
+        response_format: {
+          type: "json_schema",
+          json_schema: {
+            name: "logo_color_scheme",
+            strict: true,
+            schema: {
+              type: "object",
+              properties: {
+                primaryColor: { type: "string" },
+                secondaryColor: { type: "string" },
+                suggestedTemplateId: {
+                  type: "string",
+                  enum: [...TEMPLATE_IDS],
+                },
+                rationale: { type: "string" },
+              },
+              required: [
+                "primaryColor",
+                "secondaryColor",
+                "suggestedTemplateId",
+                "rationale",
+              ],
+              additionalProperties: false,
+            },
+          },
+        },
+      });
+
+      const rawContent = response.choices?.[0]?.message?.content;
+      if (!rawContent) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "The AI couldn't read that logo. Pick a color manually.",
+        });
+      }
+      let parsed: {
+        primaryColor: string;
+        secondaryColor: string;
+        suggestedTemplateId: string;
+        rationale: string;
+      };
+      try {
+        parsed = JSON.parse(
+          typeof rawContent === "string"
+            ? rawContent
+            : JSON.stringify(rawContent),
+        );
+      } catch {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "The AI couldn't read that logo. Pick a color manually.",
+        });
+      }
+
+      // The model is schema-constrained but hex strings still deserve a belt:
+      // a malformed color here would flow into updateSettings' validator later
+      // and confuse the merchant with an error far from its cause.
+      if (!HEX_COLOR.test(parsed.primaryColor)) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "The AI couldn't find a usable color. Pick one manually.",
+        });
+      }
+
+      return {
+        primaryColor: parsed.primaryColor,
+        secondaryColor: HEX_COLOR.test(parsed.secondaryColor)
+          ? parsed.secondaryColor
+          : null,
+        suggestedTemplateId: (TEMPLATE_IDS as readonly string[]).includes(
+          parsed.suggestedTemplateId,
+        )
+          ? (parsed.suggestedTemplateId as (typeof TEMPLATE_IDS)[number])
+          : null,
+        rationale: parsed.rationale ?? null,
       };
     }),
 
@@ -186,15 +542,56 @@ export const tenantRouter = router({
           message: "Invalid or already-claimed invitation",
         });
       }
-
-      // Attach the authenticated user to the tenant as admin, then burn the
-      // single-use pending row so the token can't be replayed.
-      await assignUserToTenantAsAdmin(ctx.user.openId, pending.tenantId);
-      await deleteUserById(pending.id);
-
-      const tenant = await getTenantById(pending.tenantId);
-      return { tenantId: pending.tenantId, slug: tenant?.slug ?? null };
+      return finishClaim(ctx.user, {
+        id: pending.id,
+        tenantId: pending.tenantId,
+      });
     }),
+
+  // ─── Protected: Is a store waiting for this account's email? ───────────────
+  // Read-only companion to resumeClaim below: lets /signin and /onboarding
+  // surface "your store is waiting — finish setting it up" instead of a dead
+  // end. Null for an account that already manages a store (nothing to resume)
+  // or whose email matches no unclaimed signup.
+  pendingClaim: protectedProcedure.query(async ({ ctx }) => {
+    // managesAStore, not a bare tenantId check: a fresh sign-in is parked on
+    // the platform tenant as a customer, and that row is exactly who this
+    // lookup exists for.
+    if (managesAStore(ctx.user) || !ctx.user.email) return null;
+    const pending = await getPendingTenantAdminByEmail(ctx.user.email);
+    if (!pending) return null;
+    const tenant = await getTenantById(pending.tenantId);
+    return tenant ? { slug: tenant.slug, name: tenant.name } : null;
+  }),
+
+  // ─── Protected: Resume a claim whose token is gone ──────────────────────────
+  // The claim token lives only in the signup tab's sessionStorage, so a failed
+  // sign-in, a closed tab, or a second device loses it — and without this
+  // procedure that merchant was wedged: signup refuses their email ("already
+  // attached"), yet signing in attaches them to nothing. Catch-22, fixable
+  // only by an operator.
+  //
+  // Recovery authorizes by EMAIL instead of token: the signed-in account's
+  // email is provider-verified (Google/Apple id token, or a magic link that
+  // proved inbox access), and matching it against the address typed at signup
+  // is exactly the contract the signup screen promised ("You'll finish setup
+  // by signing in with this email"). The pending row still never grants access
+  // by itself, and the token path stays for the owner who signs in with a
+  // DIFFERENT address than they typed. A stranger typing someone else's email
+  // at signup gains nothing here: only the verified owner of the inbox can
+  // ever resume it.
+  resumeClaim: protectedProcedure.mutation(async ({ ctx }) => {
+    const pending = ctx.user.email
+      ? await getPendingTenantAdminByEmail(ctx.user.email)
+      : undefined;
+    if (!pending) {
+      throw new TRPCError({
+        code: "NOT_FOUND",
+        message: "No unclaimed store matches this account's email.",
+      });
+    }
+    return finishClaim(ctx.user, pending);
+  }),
 
   // ─── Protected: Get my tenant ──────────────────────────────────────────────
   me: publicProcedure.use(requireTenant).query(async ({ ctx }) => {
@@ -209,7 +606,12 @@ export const tenantRouter = router({
   // just what a link needs (slug + name), never the POS key; null if the user
   // isn't attached to a store.
   myStore: protectedProcedure.query(async ({ ctx }) => {
-    if (!ctx.user.tenantId) return null;
+    // Role-gated via managesAStore: a customer row's tenantId is where they
+    // shopped — or the DEFAULT_TENANT_ID parking spot every fresh sign-in
+    // gets — not a store they run. Without the gate, any signed-in visitor
+    // grew a "MY STORE" button pointing at the platform tenant's admin,
+    // which then refused them.
+    if (!managesAStore(ctx.user)) return null;
     const tenant = await getTenantById(ctx.user.tenantId);
     if (!tenant) return null;
     return { slug: tenant.slug, name: tenant.name };
@@ -310,6 +712,7 @@ export const tenantRouter = router({
           .string()
           .regex(/^#[0-9A-Fa-f]{6}$/)
           .optional(),
+        templateId: z.enum(TEMPLATE_IDS).optional(),
         whatsappNumber: z.string().optional(),
         instagramHandle: z.string().optional(),
         metaTitle: z.string().optional(),
@@ -337,6 +740,20 @@ export const tenantRouter = router({
           .string()
           .regex(/^\d{17,20}$/, "A Discord user ID is a 17–20 digit number")
           .optional(),
+        // Which Slack channel the intake bot watches (an ID like C0123ABC —
+        // an identifier, not a secret; the bot token lives in the vault).
+        slackChannelId: z
+          .string()
+          .regex(
+            /^[A-Z][A-Z0-9]{4,20}$/i,
+            "A Slack channel ID looks like C0123ABCDEF",
+          )
+          .optional(),
+        // What the merchant sells — drives AI prompt vocabulary and copy.
+        // Changing it does NOT touch the existing category list; the admin
+        // can pull in the new preset via categories.applyPreset.
+        vertical: z.enum(VERTICALS).optional(),
+        verticalDescription: z.string().trim().max(500).nullable().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -377,6 +794,73 @@ export const tenantRouter = router({
       }
 
       return { success: true };
+    }),
+
+  // ─── Admin: "click to connect" URLs for the Channels page ─────────────────
+  // Null values hide the corresponding button: the platform simply hasn't
+  // registered that app yet. The Slack URL embeds a signed, expiring state
+  // naming THIS tenant, so the OAuth callback can't be replayed onto another
+  // store; the Discord URL is a plain bot invite (no token changes hands).
+  channelConnect: tenantAdminProcedure.query(({ ctx }) => {
+    return {
+      slackAuthorizeUrl: buildSlackAuthorizeUrl(ctx.tenant.id),
+      discordInviteUrl: buildDiscordInviteUrl(),
+    };
+  }),
+
+  // ─── Admin: Channel credentials (WhatsApp / Slack / Discord) ──────────────
+  // Write-only vault contract (server/tenantSecrets.ts): set/rotate/delete and
+  // a masked listing. No procedure here — or anywhere — returns the plaintext;
+  // the channels read it server-side via channelCredentials.channelSecret().
+  channelSecrets: tenantAdminProcedure.query(async ({ ctx }) => {
+    const rows = await listTenantSecrets(ctx.tenant.id);
+    const known = rows.filter((r) =>
+      (CHANNEL_SECRET_PROVIDERS as readonly string[]).includes(r.provider),
+    );
+    return {
+      // Whether the vault can store anything on this deploy (master key set).
+      vaultConfigured: isTenantSecretsConfigured(),
+      secrets: known.map((r) => ({
+        provider: r.provider as ChannelSecretProvider,
+        hint: r.hint,
+        rotatedAt: r.rotatedAt ?? r.createdAt,
+      })),
+    };
+  }),
+
+  setChannelSecret: tenantAdminProcedure
+    .input(
+      z.object({
+        provider: z.enum(CHANNEL_SECRET_PROVIDERS),
+        // Provider tokens vary wildly in shape; length bounds are the only
+        // validation that doesn't reject someone's real credential.
+        value: z.string().trim().min(8).max(512),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (!isTenantSecretsConfigured()) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message:
+            "This deployment has no tenant-secrets master key configured — ask the platform operator to set TENANT_SECRETS_KEY.",
+        });
+      }
+      await setTenantSecret(ctx.tenant.id, input.provider, input.value);
+      // A newly pasted Discord token means a new bot to connect — pick it up
+      // now rather than at the next deploy.
+      if (input.provider === "discord_bot_token") {
+        void startGatewayForToken(input.value.trim());
+      }
+      return { provider: input.provider, hint: input.value.trim().slice(-4) };
+    }),
+
+  deleteChannelSecret: tenantAdminProcedure
+    .input(z.object({ provider: z.enum(CHANNEL_SECRET_PROVIDERS) }))
+    .mutation(async ({ ctx, input }) => {
+      await deleteTenantSecret(ctx.tenant.id, input.provider);
+      // A deleted Discord token's gateway stays up until the next restart —
+      // acceptable: it can only read channels its own bot was invited to.
+      return { provider: input.provider };
     }),
 
   // ─── Admin: Upload / clear the TWINT QR code sticker ──────────────────────
@@ -459,10 +943,10 @@ export const tenantRouter = router({
     };
   }),
 
-  // ─── Superadmin: List all tenants (platform admin) ───────────────────────
-  list: publicProcedure.query(async () => {
-    // TODO: Add superadmin guard
-    const all = await db.query.tenants.findMany();
-    return all.map(stripPosApiKey);
-  }),
+  // Listing every tenant used to live here as a `publicProcedure` carrying a
+  // "TODO: Add superadmin guard" — i.e. unauthenticated enumeration of every
+  // store on the platform. It now lives on the platform router as
+  // `platform.tenants`, which is superadminProcedure and selects its columns
+  // explicitly. Cross-tenant reads belong there by construction; nothing on a
+  // tenant-scoped router should ever return another tenant's row.
 });

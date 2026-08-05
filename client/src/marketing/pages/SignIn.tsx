@@ -5,6 +5,8 @@ import { storeAdminUrl } from "@/lib/surface";
 import { hardRedirect } from "@/lib/navigate";
 import { Container } from "../components/Container";
 import { SignInOptions } from "@/components/SignInOptions";
+import { SignOutButton } from "@/components/SignOutButton";
+import { SIGNIN_PATH } from "@/const";
 
 /**
  * /signin — the returning merchant's front door.
@@ -50,15 +52,105 @@ export default function SignIn() {
     enabled: signedIn,
   });
 
+  // A signed-in account with no store may still have an unclaimed signup
+  // waiting for its email (the claim token lives only in the signup tab's
+  // sessionStorage, so a failed sign-in or a new device loses it). Look it up
+  // so this page can offer "finish setting up" instead of a dead end.
+  const pendingEnabled = signedIn && !store.isLoading && !store.data;
+  const pending = trpc.tenant.pendingClaim.useQuery(undefined, {
+    retry: false,
+    enabled: pendingEnabled,
+  });
+  const pendingResolving = pendingEnabled && pending.isLoading;
+  const pendingStore = pendingEnabled ? (pending.data ?? null) : null;
+  const finishSetupHref = (slug: string) =>
+    `/onboarding?store=${encodeURIComponent(slug)}`;
+
   // Leg 2 — signed in and the store is known: straight into its admin.
+  //
+  // ONLY on the return leg of a handshake the visitor just performed. Arriving
+  // here with a session that already existed is a different intent: they
+  // clicked "Sign in" deliberately, and bouncing them onward silently means a
+  // browser carrying somebody's Google session can never be used to sign in as
+  // anyone else. That case falls through to the explicit choice below.
   useEffect(() => {
-    if (!signedIn || !store.data) return;
+    if (!returnedFromOauth || !signedIn || !store.data) return;
     hardRedirect(storeAdminUrl(store.data.slug), { replace: true });
-  }, [signedIn, store.data]);
+  }, [returnedFromOauth, signedIn, store.data]);
+
+  // Already signed in, and they came here on purpose — offer both directions
+  // rather than choosing for them.
+  if (!returnedFromOauth && signedIn && !store.isLoading && !pendingResolving) {
+    return (
+      <SignInFrame title="You&rsquo;re already signed in.">
+        <p className="mt-3 text-[var(--brand-muted-2)]">
+          As{" "}
+          <span className="font-medium text-[var(--brand-text)]">
+            {me.data?.email ?? "this account"}
+          </span>
+          .
+        </p>
+        <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+          {store.data ? (
+            <a
+              href={storeAdminUrl(store.data.slug)}
+              className="rounded-md bg-[var(--brand-accent)] px-7 py-3 text-center text-xs font-medium uppercase tracking-[0.14em] text-[var(--brand-ink)] transition-colors hover:bg-[var(--brand-accent-light)]"
+            >
+              Continue to {store.data.name} →
+            </a>
+          ) : pendingStore ? (
+            // An unclaimed signup matches this account's email — resuming it
+            // beats offering a second signup that would only be refused.
+            <Link
+              href={finishSetupHref(pendingStore.slug)}
+              className="rounded-md bg-[var(--brand-accent)] px-7 py-3 text-center text-xs font-medium uppercase tracking-[0.14em] text-[var(--brand-ink)] transition-colors hover:bg-[var(--brand-accent-light)]"
+            >
+              Finish setting up {pendingStore.name} →
+            </Link>
+          ) : (
+            <Link
+              href="/signup"
+              className="rounded-md bg-[var(--brand-accent)] px-7 py-3 text-center text-xs font-medium uppercase tracking-[0.14em] text-[var(--brand-ink)] transition-colors hover:bg-[var(--brand-accent-light)]"
+            >
+              Create your store →
+            </Link>
+          )}
+          <SignOutButton
+            to={SIGNIN_PATH}
+            className="rounded-md border border-[var(--brand-ink)] px-7 py-3 text-center text-xs font-medium uppercase tracking-[0.14em] text-[var(--brand-ink)] transition-colors hover:bg-[var(--brand-ink)] hover:text-white"
+          >
+            Use a different account
+          </SignOutButton>
+        </div>
+      </SignInFrame>
+    );
+  }
 
   // Signed in, but this account isn't attached to a store. Not an error — it's
-  // how a visitor who signed in before creating anything arrives here.
-  if (signedIn && !store.isLoading && !store.data) {
+  // how a visitor who signed in before creating anything arrives here. If an
+  // unclaimed signup matches this account's email, though, the right door is
+  // "finish setting it up", not a second signup that would only be refused.
+  if (signedIn && !store.isLoading && !store.data && !pendingResolving) {
+    if (pendingStore) {
+      return (
+        <SignInFrame title="Your store is waiting.">
+          <p className="mt-3 text-[var(--brand-muted-2)]">
+            You created{" "}
+            <span className="font-medium text-[var(--brand-text)]">
+              {pendingStore.name}
+            </span>{" "}
+            at signup but never finished setting it up. Pick up right where you
+            left off.
+          </p>
+          <Link
+            href={finishSetupHref(pendingStore.slug)}
+            className="mt-8 inline-block rounded-md bg-[var(--brand-accent)] px-7 py-3 text-xs font-medium uppercase tracking-[0.14em] text-[var(--brand-ink)] transition-colors hover:bg-[var(--brand-accent-light)]"
+          >
+            Finish setting up {pendingStore.name} →
+          </Link>
+        </SignInFrame>
+      );
+    }
     return (
       <SignInFrame title="You're signed in.">
         <p className="mt-3 text-[var(--brand-muted-2)]">

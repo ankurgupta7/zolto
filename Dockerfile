@@ -47,4 +47,16 @@ COPY drizzle.config.ts ./
 # it at zolto.ch — so nothing here collides with the Kalakosh-ch stack.
 EXPOSE 3000
 
+# Stamp the image with a hash of the source it was built from, so update.sh can
+# tell "the running image already IS this source" from "the source moved" and
+# skip the rebuild in the first case — see deploy/lib/build.sh.
+#
+# Deliberately the LAST instruction that touches the image: declared any higher,
+# a changed fingerprint would invalidate every layer below it and make each
+# build cold again, which is precisely the cost this is here to remove. As the
+# final layer, a rebuild whose real inputs are unchanged is a cache hit all the
+# way down. deploy/lib/build.test.sh asserts the ordering.
+ARG SOURCE_FINGERPRINT=unknown
+LABEL ch.zolto.source-fingerprint=$SOURCE_FINGERPRINT
+
 CMD ["node", "dist/index.js"]

@@ -14,6 +14,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import {
   ADMIN_NAV,
+  activeNavId,
   groupNavByPlane,
   resolveNavAccess,
   type AdminPlanId,
@@ -23,7 +24,8 @@ import {
 /** Map a manifest icon name to its lucide component, with a safe fallback. */
 function NavIcon({ name, className }: { name: string; className?: string }) {
   const Component =
-    (icons as unknown as Record<string, icons.LucideIcon>)[name] ?? icons.Circle;
+    (icons as unknown as Record<string, icons.LucideIcon>)[name] ??
+    icons.Circle;
   return <Component className={className} aria-hidden="true" />;
 }
 
@@ -45,6 +47,7 @@ export function AdminLayout({
   const plan = (tenantMe.data?.plan ?? "free") as AdminPlanId;
   const groups = groupNavByPlane(resolveNavAccess(ADMIN_NAV, { role, plan }));
   const [location] = useLocation();
+  const currentId = activeNavId(ADMIN_NAV, location);
 
   // Mobile: the sidebar is an off-canvas drawer (fixed sidebars squash the page
   // on a phone). Closes whenever the route changes so a tap-through doesn't
@@ -81,10 +84,7 @@ export function AdminLayout({
               </p>
               <ul className="flex flex-col gap-0.5">
                 {group.items.map((item) => {
-                  const isActive =
-                    item.path === "/admin"
-                      ? location === "/admin"
-                      : location.startsWith(item.path);
+                  const isActive = item.id === currentId;
                   const locked = item.access === "locked";
                   return (
                     <li key={item.id}>
@@ -97,7 +97,10 @@ export function AdminLayout({
                             : "text-muted-foreground hover:bg-accent/60 hover:text-foreground"
                         }`}
                       >
-                        <NavIcon name={item.icon} className="h-4 w-4 shrink-0" />
+                        <NavIcon
+                          name={item.icon}
+                          className="h-4 w-4 shrink-0"
+                        />
                         <span className="flex-1 truncate">{item.label}</span>
                         {locked && (
                           <icons.Lock

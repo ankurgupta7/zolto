@@ -19,7 +19,7 @@ export const ADMIN_TOUR_STEPS: TourStep[] = [
   {
     target: '[data-tour="add-product"]',
     title: "Add a product",
-    body: "Add a single piece by hand — name, price, category, photo, and description. The AI can draft the description for you.",
+    body: "Add a single item by hand — name, price, category, photo, and description. The AI can draft the description for you.",
     placement: "bottom",
   },
   {

@@ -12,12 +12,165 @@
  */
 
 import { z } from "zod";
+import { TRPCError } from "@trpc/server";
 import { router, superadminProcedure } from "../_core/trpc";
-import { getPlatformMetrics } from "../db";
+import {
+  getPlatformMetrics,
+  listTenantsForOperator,
+  getTenantDetailForOperator,
+  setTenantUserRoleByOperator,
+  setTenantPlanByOperator,
+  getTenantBySlug,
+  createTenant,
+  createTenantSettings,
+  setTenantPosApiKeyHash,
+} from "../db";
 import { runStripeReconciliationForAllTenants } from "../reconciliation";
+import { generatePosApiKey, hashPosApiKey } from "../posApiKey";
 import { PRO_PLAN, REVENUE_SHARE } from "@shared/platform";
 
+/**
+ * The platform's own POS test store. Its POS key is what the POS apps' CI
+ * uses, so no pipeline ever has to skip or soften a test for lack of a key.
+ * It is an entirely ordinary tenant — the key goes through the same
+ * per-tenant auth path as every merchant's (server/pos.ts requirePosKey),
+ * with no special rules, so CI reproduces issues faithfully.
+ */
+export const POS_TEST_TENANT_SLUG = "platform-tests";
+
+/**
+ * Operator actions change another party's account, so every one of them leaves
+ * a line in the server log naming who did what to whom. A persistent audit
+ * table is the right home for this and is not built yet; until it is, the log
+ * is the record, and it is written before the mutation so a failure midway
+ * still shows the attempt.
+ */
+function auditOperatorAction(
+  actorId: number | undefined,
+  action: string,
+  details: Record<string, unknown>,
+): void {
+  console.warn(
+    `[operator-audit] actor=${actorId ?? "unknown"} action=${action} ${JSON.stringify(details)}`,
+  );
+}
+
 export const platformRouter = router({
+  /**
+   * Every store on the platform — the operator's list view.
+   *
+   * This was `tenant.list`, a publicProcedure with a "TODO: Add superadmin
+   * guard" comment on it, which meant anyone at all could enumerate every
+   * store. It is superadmin-only here, and the underlying query names its
+   * columns rather than returning whole tenant rows.
+   */
+  tenants: superadminProcedure.query(async () => {
+    return listTenantsForOperator();
+  }),
+
+  /** One store in full, including who can sign in to it. */
+  tenantDetail: superadminProcedure
+    .input(z.object({ tenantId: z.number().int().positive() }))
+    .query(async ({ input }) => {
+      const detail = await getTenantDetailForOperator(input.tenantId);
+      if (!detail) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "No such store." });
+      }
+      return detail;
+    }),
+
+  /**
+   * Grant or revoke tenant-admin on one of that store's users.
+   *
+   * The support fix for a store that has users but no admin — every
+   * adminProcedure refuses them, which surfaces to the merchant as an
+   * unrelated-looking "Connect Stripe" failure (see deploy/tenant-admin.sh).
+   *
+   * `role` is deliberately narrowed to admin|staff: the operator console can
+   * hand out a store's keys but never the platform's. Granting superadmin
+   * stays a manual act on the server so it cannot be done by a session that
+   * has merely been left signed in.
+   */
+  setTenantUserRole: superadminProcedure
+    .input(
+      z.object({
+        tenantId: z.number().int().positive(),
+        userId: z.number().int().positive(),
+        role: z.enum(["admin", "staff"]),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      auditOperatorAction(ctx.user?.id, "setTenantUserRole", input);
+      const ok = await setTenantUserRoleByOperator(
+        input.tenantId,
+        input.userId,
+        input.role,
+      );
+      if (!ok) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "That user is not on that store.",
+        });
+      }
+      return { success: true };
+    }),
+
+  /**
+   * Move a store between plans without touching Stripe — comps, refunds, and
+   * cases where billing state and entitlement have diverged.
+   */
+  setTenantPlan: superadminProcedure
+    .input(
+      z.object({
+        tenantId: z.number().int().positive(),
+        plan: z.enum(["free", "pro"]),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      auditOperatorAction(ctx.user?.id, "setTenantPlan", input);
+      const ok = await setTenantPlanByOperator(input.tenantId, input.plan);
+      if (!ok) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "No such store." });
+      }
+      return { success: true };
+    }),
+
+  /**
+   * Rotate (provisioning on first use) the platform's POS test key — the
+   * operator's counterpart to the merchant-facing tenant.rotatePosApiKey.
+   *
+   * Returns the plaintext exactly ONCE, like every POS key: the operator
+   * pastes it into the POS apps' CI secrets (POS_API_KEY) and it is
+   * unrecoverable afterwards — a lost key is rotated, not retrieved. The old
+   * key stops working the moment this returns, so CI secrets must be updated
+   * in the same sitting.
+   */
+  rotatePosTestKey: superadminProcedure.mutation(async ({ ctx }) => {
+    const plaintext = generatePosApiKey();
+    const hash = hashPosApiKey(plaintext);
+
+    const existing = await getTenantBySlug(POS_TEST_TENANT_SLUG);
+    let tenantId: number;
+    if (existing) {
+      tenantId = existing.id;
+      await setTenantPosApiKeyHash(tenantId, hash);
+    } else {
+      tenantId = await createTenant({
+        slug: POS_TEST_TENANT_SLUG,
+        name: "Platform Tests",
+        plan: "free",
+        posApiKey: hash,
+      });
+      await createTenantSettings({ tenantId, currency: "chf" });
+    }
+
+    auditOperatorAction(ctx.user?.id, "rotatePosTestKey", {
+      tenantId,
+      slug: POS_TEST_TENANT_SLUG,
+    });
+    return { tenantId, slug: POS_TEST_TENANT_SLUG, posApiKey: plaintext };
+  }),
+
   metrics: superadminProcedure.query(async () => {
     const metrics = await getPlatformMetrics();
     return {

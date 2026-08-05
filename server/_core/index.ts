@@ -3,6 +3,8 @@ import { createServer } from "node:http";
 import net from "node:net";
 import { createApp } from "./app";
 import { serveStatic, setupVite } from "./vite";
+import { startChannelIntake } from "../channels";
+import { ensureDailyPosAttributionJob } from "../scheduled";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise((resolve) => {
@@ -44,6 +46,12 @@ async function startServer() {
   server.listen(port, () => {
     console.log(`Server running on http://localhost:${port}/`);
   });
+
+  // Non-HTTP surfaces, deliberately outside createApp() so in-process app
+  // tests never open live sockets or talk to the heartbeat service:
+  // the Discord intake gateway and the nightly POS-attribution schedule.
+  startChannelIntake();
+  void ensureDailyPosAttributionJob();
 }
 
 startServer().catch(console.error);

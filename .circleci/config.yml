@@ -19,6 +19,11 @@ version: 2.1
 # reasoning, and set FORCE_CIRCLECI_FULL=1 to bypass the check entirely.
 #
 # `unit` and `integration` have no GitHub equivalent, so they always run.
+#
+# The native iOS POS app (ios/ZoltoPOS/) is NOT built here — CircleCI's
+# free plan has no macOS executors. Its pipeline is GitHub Actions
+# (.github/workflows/ios-pos-build.yml) with the ios-pos-* Codemagic
+# workflows (codemagic.yaml) as the signed-build / cost fallback.
 
 orbs:
   android: circleci/android@2.5.0

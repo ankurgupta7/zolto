@@ -21,23 +21,56 @@ const CLAIM_TOKEN_KEY = "zolto_claim_token";
  * link — see SignInOptions) and this redeems the token via tenant.claimAdmin,
  * linking their account to the store as admin. The token — not the email —
  * authorizes the claim, so a signup can't attach itself to someone else's login.
+ *
+ * The token only lives in the signup tab's sessionStorage, though, so a failed
+ * sign-in, a closed tab, or a second device loses it while the store already
+ * exists — and retrying signup then refuses the email. The recovery path is
+ * tenant.pendingClaim/resumeClaim: once the owner signs in with the address
+ * they typed at signup (provider-verified), the waiting store is found by
+ * email match and one click finishes the claim.
  */
-function ClaimStep({ store }: { store: string | null }) {
+function ClaimStep({
+  store,
+  urlToken,
+}: {
+  store: string | null;
+  urlToken: string | null;
+}) {
+  // The same-tab signup flow leaves the token in sessionStorage; the emailed
+  // claim link carries it in the URL (?claim=…) so it survives any browser
+  // state. Either one authorizes the claim.
   const claimToken = useMemo(() => {
+    if (urlToken) return urlToken;
     try {
       return sessionStorage.getItem(CLAIM_TOKEN_KEY);
     } catch {
       return null;
     }
-  }, []);
+  }, [urlToken]);
 
   const me = trpc.auth.me.useQuery(undefined, { retry: false });
   const isAuthed = !!me.data;
   const claim = trpc.tenant.claimAdmin.useMutation();
-  const [state, setState] = useState<"idle" | "claiming" | "done" | "error">(
-    "idle",
-  );
+  const resume = trpc.tenant.resumeClaim.useMutation();
+  // `tokenFailed` keeps the email fallback open; `failed` is the true dead end.
+  const [state, setState] = useState<
+    "idle" | "claiming" | "done" | "tokenFailed" | "failed"
+  >("idle");
   const [claimedSlug, setClaimedSlug] = useState<string | null>(null);
+  // The server's actual refusal, so a CONFLICT ("this account already manages
+  // a store") is never masked by generic invalid-link copy — that masking is
+  // what made the parked-on-the-platform-tenant bug undiagnosable from the UI.
+  const [claimError, setClaimError] = useState<string | null>(null);
+
+  const finishClaim = (slug: string | null) => {
+    try {
+      sessionStorage.removeItem(CLAIM_TOKEN_KEY);
+    } catch {
+      /* storage disabled — token stays, but the claim already succeeded */
+    }
+    setClaimedSlug(slug ?? store);
+    setState("done");
+  };
 
   // Once the owner is signed in and a token is present, redeem it exactly once.
   useEffect(() => {
@@ -46,29 +79,87 @@ function ClaimStep({ store }: { store: string | null }) {
     claim.mutate(
       { token: claimToken },
       {
-        onSuccess: (data) => {
-          try {
-            sessionStorage.removeItem(CLAIM_TOKEN_KEY);
-          } catch {
-            /* storage disabled — token stays, but the claim already succeeded */
-          }
-          setClaimedSlug(data.slug ?? store);
-          setState("done");
+        onSuccess: (data) => finishClaim(data.slug),
+        onError: (err) => {
+          setClaimError(err.message || null);
+          setState("tokenFailed");
         },
-        onError: () => setState("error"),
       },
     );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [claimToken, isAuthed, state, claim, store]);
 
-  // No pending claim (reached onboarding without a fresh signup) — nothing to do.
-  if (!claimToken && state === "idle") return null;
+  // The email-match fallback lookup — only when the token path can't run
+  // (no token in this tab) or was refused (already burned, storage lost).
+  const wantResume =
+    isAuthed && ((state === "idle" && !claimToken) || state === "tokenFailed");
+  const pending = trpc.tenant.pendingClaim.useQuery(undefined, {
+    enabled: wantResume,
+    retry: false,
+  });
+
+  const startResume = () => {
+    setState("claiming");
+    resume.mutate(undefined, {
+      onSuccess: (data) => finishClaim(data.slug),
+      onError: (err) => {
+        setClaimError(err.message || null);
+        setState("failed");
+      },
+    });
+  };
 
   // Cross-surface: a full-page navigation, not a wouter <Link>, so the app
   // re-resolves onto the storefront surface (see lib/surface.storeAdminUrl).
-  const adminHref = (slug: string | null) =>
-    slug ? storeAdminUrl(slug) : "/";
+  const adminHref = (slug: string | null) => (slug ? storeAdminUrl(slug) : "/");
 
-  let inner: React.ReactNode;
+  const finishing = (
+    <p className="text-sm text-[var(--brand-muted-2)]">Finishing your setup…</p>
+  );
+
+  const resumeCard = (lead: string) =>
+    pending.data ? (
+      <div>
+        <p className="font-medium text-[var(--brand-text)]">{lead}</p>
+        <p className="mt-1 text-sm text-[var(--brand-muted-2)]">
+          {pending.data.name} is linked to{" "}
+          {me.data?.email ?? "this account's email"} — one click finishes the
+          setup.
+        </p>
+        <button
+          type="button"
+          onClick={startResume}
+          className="mt-3 inline-block rounded-md bg-[var(--brand-ink)] px-5 py-2.5 text-xs font-medium uppercase tracking-[0.12em] text-white transition-colors hover:bg-[var(--brand-ink-hover)]"
+        >
+          Finish setting up {pending.data.name} →
+        </button>
+      </div>
+    ) : null;
+
+  const signInCard = (
+    <div>
+      <p className="font-medium text-[var(--brand-text)]">One more step</p>
+      <p className="mt-1 text-sm text-[var(--brand-muted-2)]">
+        {claimToken
+          ? "Sign in to become the admin of your new store."
+          : "Sign in with the email you used at signup to finish setting up your store."}
+      </p>
+      <SignInOptions
+        className="mt-3"
+        // Preserve the URL-borne token across the OAuth round-trip; the
+        // sessionStorage one survives in the tab on its own.
+        next={(() => {
+          const qs = new URLSearchParams();
+          if (store) qs.set("store", store);
+          if (urlToken) qs.set("claim", urlToken);
+          const s = qs.toString();
+          return `/onboarding${s ? `?${s}` : ""}`;
+        })()}
+      />
+    </div>
+  );
+
+  let inner: React.ReactNode = null;
   if (state === "done") {
     inner = (
       <div>
@@ -86,39 +177,41 @@ function ClaimStep({ store }: { store: string | null }) {
         </a>
       </div>
     );
-  } else if (state === "error") {
-    inner = (
-      <div>
-        <p className="font-medium text-[var(--brand-text)]">
-          We couldn't finish setting you up.
-        </p>
-        <p className="mt-1 text-sm text-[var(--brand-muted-2)]">
-          This claim link is invalid or has already been used. If you already
-          signed in on another device, you're all set.
-        </p>
-      </div>
-    );
-  } else if (isAuthed || state === "claiming") {
-    inner = (
-      <p className="text-sm text-[var(--brand-muted-2)]">
-        Finishing your setup…
-      </p>
-    );
-  } else {
-    inner = (
-      <div>
-        <p className="font-medium text-[var(--brand-text)]">One more step</p>
-        <p className="mt-1 text-sm text-[var(--brand-muted-2)]">
-          Sign in to become the admin of your new store.
-        </p>
-        <SignInOptions
-          className="mt-3"
-          next={`/onboarding${store ? `?store=${encodeURIComponent(store)}` : ""}`}
-        />
-      </div>
-    );
+  } else if (state === "claiming") {
+    inner = finishing;
+  } else if (state === "tokenFailed" || state === "failed") {
+    if (state === "tokenFailed" && pending.isLoading) {
+      inner = finishing;
+    } else if (state === "tokenFailed" && pending.data) {
+      inner = resumeCard(
+        "That setup link didn't work — but your store is still waiting.",
+      );
+    } else {
+      inner = (
+        <div>
+          <p className="font-medium text-[var(--brand-text)]">
+            We couldn't finish setting you up.
+          </p>
+          <p className="mt-1 text-sm text-[var(--brand-muted-2)]">
+            {claimError ??
+              "This claim link is invalid or has already been used. If you already signed in on another device, you're all set."}
+          </p>
+        </div>
+      );
+    }
+  } else if (claimToken) {
+    // Fresh from signup in this tab: redeem automatically once signed in.
+    inner = isAuthed ? finishing : signInCard;
+  } else if (!isAuthed) {
+    // No token and not signed in: only prompt when this URL names a store —
+    // i.e. someone actually mid-signup — never on a bare /onboarding visit.
+    inner = !me.isLoading && store ? signInCard : null;
+  } else if (pending.data) {
+    // Signed in, no token, and an unclaimed store matches this email.
+    inner = resumeCard("Your store is waiting for you.");
   }
 
+  if (!inner) return null;
   return (
     <div className="mb-8 rounded-xl border border-[var(--brand-accent)]/40 bg-[var(--brand-accent)]/8 p-5">
       {inner}
@@ -128,10 +221,11 @@ function ClaimStep({ store }: { store: string | null }) {
 
 export default function Onboarding() {
   const search = useSearch();
-  const store = useMemo(
-    () => new URLSearchParams(search).get("store"),
-    [search],
-  );
+  const { store, urlToken } = useMemo(() => {
+    const params = new URLSearchParams(search);
+    // `claim` arrives via the emailed claim link (tenant.create step 8).
+    return { store: params.get("store"), urlToken: params.get("claim") };
+  }, [search]);
 
   const status = trpc.tenant.onboardingStatus.useQuery(undefined, {
     // Live: async platform steps (e.g. Stripe Connect return) tick off here.
@@ -169,7 +263,7 @@ export default function Onboarding() {
       </p>
 
       <div className="mt-8">
-        <ClaimStep store={store} />
+        <ClaimStep store={store} urlToken={urlToken} />
       </div>
 
       <div className="mt-6 h-2 w-full overflow-hidden rounded-full bg-[var(--brand-surface)]">

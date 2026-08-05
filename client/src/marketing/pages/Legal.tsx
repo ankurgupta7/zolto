@@ -75,8 +75,8 @@ export function Privacy() {
         },
         {
           // The residency facts come from DATA_RESIDENCY so this page, the
-          // landing band, the FAQ and the llms/MCP briefs can never end up
-          // describing different countries.
+          // landing band, the ledger page, the FAQ and the llms/MCP briefs can
+          // never end up describing different countries.
           heading: "3. Where your data lives",
           body: [
             `${DATA_RESIDENCY.body} ${DATA_RESIDENCY.points[1]}`,
@@ -84,15 +84,25 @@ export function Privacy() {
           ],
         },
         {
-          heading: "4. Your rights",
+          heading: "4. Cookies & analytics",
+          body: [
+            "The platform sets a single cookie, app_session_id, which keeps you signed in. It is strictly necessary — the service cannot authenticate you without it — so it requires no consent banner and cannot be disabled while using the service. We set no advertising, preference, or third-party tracking cookies.",
+            "We measure page views with Umami, a privacy-focused analytics tool that works without cookies and without cross-site identifiers; it gives us aggregate statistics, not profiles of individual visitors. Webfonts are served from our own infrastructure, so viewing a page sends no request to third-party font networks. During checkout you are redirected to Stripe, which may set its own cookies on its own domain under Stripe's privacy policy.",
+          ],
+        },
+        {
+          heading: "5. Your rights",
           body: [
             "You may request access to, correction of, or deletion of your personal data, and you may object to certain processing. Contact us to exercise these rights. EU users additionally have the rights granted under the GDPR, including data portability and the right to lodge a complaint with a supervisory authority.",
           ],
         },
         {
-          heading: "5. Retention & sub-processors",
+          heading: "6. Retention & sub-processors",
           body: [
-            `We keep data for as long as your account is active and as required by law. We use a small set of sub-processors under contract: hosting (${DATA_RESIDENCY.provider}, ${DATA_RESIDENCY.region}), payments (Stripe), transactional email, and the AI model provider behind the assistant features. A current list is available on request.`,
+            // Named rather than categorised: the residency claim on /made-in-switzerland
+            // says which of these are European, so this list has to agree with it.
+            // Analytics (Umami) is on the list because §4 discloses it.
+            `We keep data for as long as your account is active and as required by law. We use a small set of sub-processors under contract: hosting (${DATA_RESIDENCY.provider}, ${DATA_RESIDENCY.region}), payments (Stripe), transactional email, the AI model provider behind the assistant features, and analytics (Umami). A current list is available on request.`,
           ],
         },
       ]}

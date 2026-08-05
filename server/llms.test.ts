@@ -93,6 +93,31 @@ describe("renderStorefrontLlmsTxt", () => {
     expect(txt).toContain("create_checkout");
   });
 
+  it("credits Zolto on the Free plan but not on white-labelled Pro", () => {
+    const freeTxt = renderStorefrontLlmsTxt(
+      { ...tenant, plan: "free" } as Tenant,
+      [makeProduct({ id: 1 })],
+      "https://kalakosh.ch",
+    );
+    expect(freeTxt).toContain("This store runs on Zolto.");
+
+    // Pro's card says 'Your brand only — no "runs on Zolto"', and this brief
+    // is served to the very agents that claim is about.
+    const proTxt = renderStorefrontLlmsTxt(
+      { ...tenant, plan: "pro" } as Tenant,
+      [makeProduct({ id: 1 })],
+      "https://kalakosh.ch",
+    );
+    expect(proTxt).not.toContain("runs on Zolto");
+    // A retired/unknown plan falls back to Free behaviour, not Pro's.
+    const unknownTxt = renderStorefrontLlmsTxt(
+      { ...tenant, plan: "atelier" } as Tenant,
+      [makeProduct({ id: 1 })],
+      "https://kalakosh.ch",
+    );
+    expect(unknownTxt).toContain("This store runs on Zolto.");
+  });
+
   it("summarises the tail when there are many products", () => {
     const products = Array.from({ length: 60 }, (_, i) =>
       makeProduct({ id: 1000 + i }),
@@ -117,6 +142,8 @@ vi.mock("./db", () => ({
   getTenantBySlug: (...a: unknown[]) => mocks.getTenantBySlug(...a),
   getVisibleProducts: (...a: unknown[]) => mocks.getVisibleProducts(...a),
   getVisibleProductById: vi.fn(),
+  // No settings row → jewellery default, matching the pre-verticals brief.
+  getTenantSettings: vi.fn().mockResolvedValue(undefined),
 }));
 
 describe("GET /llms.txt", () => {

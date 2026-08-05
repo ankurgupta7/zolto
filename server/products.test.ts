@@ -37,6 +37,35 @@ vi.mock("./db", () => ({
   deleteProduct: vi.fn().mockResolvedValue(undefined),
   deleteAllProductImages: vi.fn().mockResolvedValue(undefined),
   getProductsMissingTranslation: vi.fn().mockResolvedValue([]),
+  getTenantSettings: vi
+    .fn()
+    .mockResolvedValue({ vertical: "jewellery", verticalDescription: null }),
+  getTenantCategories: vi
+    .fn()
+    .mockResolvedValue(
+      [
+        { key: "Necklaces", extraIncludes: ["Sets"] },
+        { key: "Earrings", extraIncludes: ["Sets"] },
+        { key: "Sets" },
+        { key: "Rings" },
+        { key: "Bracelets" },
+        { key: "Bangles" },
+        { key: "Anklets" },
+        { key: "Brooches" },
+        { key: "Hair Accessories" },
+        { key: "Other" },
+      ].map((c, i) => ({
+        id: i + 1,
+        tenantId: 7,
+        key: c.key,
+        labelEn: c.key,
+        labelDe: null,
+        extraIncludes: c.extraIncludes ?? null,
+        sortOrder: i,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })),
+    ),
 }));
 
 // ─── Mock notification ─────────────────────────────────────────────────────────
@@ -509,13 +538,14 @@ import { parseProductFromMessage } from "./discord";
 
 describe("parseProductFromMessage", () => {
   it("returns null for empty text", async () => {
-    const result = await parseProductFromMessage("");
+    const result = await parseProductFromMessage("", TEST_TENANT_ID);
     expect(result).toBeNull();
   });
 
   it("parses a product message successfully", async () => {
     const result = await parseProductFromMessage(
       "Pearl drop earrings, freshwater pearls on silver hooks. CHF 145",
+      TEST_TENANT_ID,
     );
     expect(result).not.toBeNull();
     expect(result?.name).toBe("Pearl Drop Earrings");

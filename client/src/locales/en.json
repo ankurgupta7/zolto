@@ -9,138 +9,22 @@
     "upload": "+ Upload",
     "bulkUpload": "↑ Bulk Upload"
   },
-  "home": {
-    "badge": "Kalakosh Zurich — Fine Jewellery",
-    "heroTitle": "Jewellery that",
-    "heroTitleItalic": "tells your story",
-    "heroSubtitle": "Handcrafted silver, semi-precious gems, and pearl pieces — each made with intention and quality-curated in Zürich.",
-    "exploreCollection": "Explore Collection",
-    "scroll": "Scroll",
-    "founderBadge": "Our Story",
-    "founderTitle": "From Delhi to Zürich",
-    "founderText": "Kalakosh Zürich is a brand of Atelier by Arora, with roots deeply embedded in India's jewellery heritage. Every piece is the work of master artisans from Rajasthan — silversmiths, stone-setters, and pearl-stringers whose families have practised their craft for centuries — brought to Zürich to be worn and cherished.",
-    "founderLink": "Read our full story",
-    "pillar1Title": "Delhi",
-    "pillar1Desc": "Our roots",
-    "pillar2Title": "Rajasthan",
-    "pillar2Desc": "Our artisans",
-    "pillar3Title": "Zürich",
-    "pillar3Desc": "Our home",
-    "ourCollections": "Our Collections",
-    "threeWorlds": "Three Worlds of Beauty",
-    "viewCollection": "View Collection",
-    "latestArrivals": "Latest Arrivals",
-    "newInCollection": "New in the Collection",
-    "viewAll": "View All →",
-    "brandQuote": "\"Every piece is a conversation between the maker's hands and the wearer's spirit.\"",
-    "stayConnected": "Stay Connected",
-    "findOnInstagram": "Find Us on Instagram",
-    "instagramFollow": "Follow <strong>@kalakoshzurich</strong> for new arrivals, behind-the-scenes moments, and the stories behind each piece.",
-    "followOnInstagram": "Follow on Instagram",
-    "newPiecesCaption": "New pieces, process videos, and jewellery inspiration — updated regularly.",
-    "latestFromInstagram": "Latest from Instagram",
-    "recentPieces": "Our most recent pieces and behind-the-scenes moments.",
-    "seeAllPosts": "See All Posts",
-    "readyTitle": "Ready to find your piece?",
-    "readySubtitle": "Browse our full collection of handcrafted jewellery.",
-    "shopNow": "Shop Now"
-  },
   "categories": {
-    "all": "All",
-    "necklaces": "Necklaces",
-    "earrings": "Earrings",
-    "sets": "Sets",
-    "rings": "Rings",
-    "bracelets": "Bracelets",
-    "bangles": "Bangles",
-    "anklets": "Anklets",
-    "brooches": "Brooches",
-    "hairAccessories": "Hair Accessories",
-    "other": "Other",
-    "necklacesTagline": "Pendants, chains & chokers",
-    "earringsTagline": "Studs, drops, hoops & chandeliers",
-    "setsTagline": "Necklace & earring sets",
-    "ringsTagline": "Finger rings in silver & gemstones",
-    "braceletsTagline": "Chains, cuffs & charm bracelets",
-    "banglesTagline": "Traditional rigid bangles",
-    "ankletsTagline": "Ankle chains & payal",
-    "broochesTagline": "Pins & lapel jewellery",
-    "hairAccessoriesTagline": "Hair pins, tikka & ornaments",
-    "otherTagline": "Unique & one-of-a-kind pieces"
-  },
-  "about": {
-    "badge": "Our Story",
-    "title": "About Kalakosh Zurich",
-    "beginningBadge": "The Story",
-    "beginningTitle": "From Delhi to Zürich",
-    "story1": "Kalakosh Zürich is a brand of <strong>Atelier by Arora</strong>. Born from a love of Indian craft and a desire to share it with the world, Kalakosh takes its name — meaning <em>treasury of art</em> — from a deep respect for the traditions it carries.",
-    "story2": "Every piece in our collection is the work of master artisans from Rajasthan — craftspeople whose families have shaped silver, set precious stones, and strung pearls for centuries. Their knowledge passes from hand to hand across generations, and it shows in every piece.",
-    "story3": "With roots in <em>Kalakosh India</em>, our founding house in Delhi, and a home in Zürich, we are the bridge between ancient craft and a modern life well lived.",
-    "provenance": {
-      "brandLabel": "Brand",
-      "brandValue": "Kalakosh Zürich",
-      "companyLabel": "Company",
-      "companyValue": "Atelier by Arora (Switzerland)",
-      "rootsLabel": "Roots",
-      "rootsValue": "Kalakosh India, Delhi",
-      "artisansLabel": "Our artisans",
-      "artisansValue": "Master craftspeople of Rajasthan"
-    },
-    "teamBadge": "The People Behind the Brand",
-    "teamTitle": "Our Team",
-    "teamCeoName": "Sheena Arora",
-    "teamCeoRole": "CEO & Founder",
-    "teamCeoCompany": "Atelier by Arora",
-    "valuesBadge": "What We Stand For",
-    "valuesTitle": "Our Values",
-    "materialsBadge": "Our Materials",
-    "materialsTitle": "Three Worlds of Beauty",
-    "ctaTitle": "Explore the Collection",
-    "ctaSubtitle": "Discover pieces made to be worn and remembered.",
-    "shopNow": "Shop Now",
-    "values": {
-      "handcrafted": {
-        "title": "Handcrafted",
-        "description": "Every piece is shaped by hand, ensuring no two items are ever exactly alike."
-      },
-      "intentional": {
-        "title": "Intentional",
-        "description": "We select only the finest silver, gems, and pearls — each piece quality-reviewed and curated at our Zürich atelier."
-      },
-      "timeless": {
-        "title": "Timeless",
-        "description": "Designs that transcend trends, made to be worn and cherished for generations."
-      }
-    },
-    "materials": {
-      "silver": {
-        "name": "Silver",
-        "desc": "Sterling and oxidised silver, worked into forms that balance weight and lightness."
-      },
-      "semiPrecious": {
-        "name": "Semi-Precious Gems",
-        "desc": "Amethyst, labradorite, turquoise, garnet — each stone chosen for its individual character."
-      },
-      "pearls": {
-        "name": "Pearls",
-        "desc": "Freshwater and baroque pearls, celebrated for their organic imperfection and luminous depth."
-      }
-    }
+    "all": "All"
   },
   "contact": {
     "badge": "Get in Touch",
     "title": "Contact Us",
-    "subBadge": "Kalakosh Zurich",
     "subtitle": "We'd love to hear from you",
-    "intro": "Whether you have a question about a specific piece, want to know more about our materials, or are interested in a bespoke commission — we're here to help.",
+    "intro": "Whether you have a question about a specific item, want to know more about our materials, or are interested in a custom commission — we're here to help.",
     "location": "Location",
     "locationValue": "Zurich, Switzerland",
     "whatsapp": "WhatsApp",
     "instagram": "Instagram",
-    "followCaption": "Follow us for new pieces",
+    "followCaption": "Follow us for new arrivals",
     "responseTime": "Response Time",
     "responseValue": "We typically respond within 1–2 business days.",
-    "quote": "\"Every enquiry is welcome — no question is too small when it comes to finding the right piece.\"",
+    "quote": "\"Every enquiry is welcome — no question is too small when it comes to finding the right piece for you.\"",
     "thankYou": "Thank you for reaching out",
     "thankYouSub": "We've received your message and will be in touch shortly.",
     "sendAnother": "Send another message",
@@ -162,12 +46,11 @@
     "successMessage": "Your message has been sent. We'll be in touch soon."
   },
   "shop": {
-    "badge": "Kalakosh Zurich",
     "title": "The Collection",
-    "pieces_one": "{{count}} piece",
-    "pieces_other": "{{count}} pieces",
+    "pieces_one": "{{count}} item",
+    "pieces_other": "{{count}} items",
     "inCategory": "in {{category}}",
-    "noPiecesTitle": "No pieces yet",
+    "noPiecesTitle": "Nothing here yet",
     "noPiecesCategory": "No items in the {{category}} collection yet.",
     "noPiecesAll": "The collection is being curated. Check back soon."
   },
@@ -177,7 +60,7 @@
     "addToBag": "Add to Bag",
     "inBag": "In Your Bag",
     "uniqueCaption": "Handpicked with care",
-    "enquirySimilar": "Hi, I'm interested in a piece similar to \"{{name}}\" — could you let me know if something similar is available? I reached you via the website button: {{link}}",
+    "enquirySimilar": "Hi, I'm interested in an item similar to \"{{name}}\" — could you let me know if something similar is available? I reached you via the website button: {{link}}",
     "enquiryAvailable": "Hi, I'm interested in \"{{name}}\" — could you tell me more? I reached you via the website button: {{link}}"
   },
   "cart": {
@@ -193,7 +76,7 @@
   "checkout": {
     "title": "Checkout",
     "emptyTitle": "Your bag is empty",
-    "emptySub": "Add a piece to your bag to continue to checkout.",
+    "emptySub": "Add an item to your bag to continue to checkout.",
     "browseShop": "Browse the Collection",
     "weAccept": "We accept",
     "shippingNote": "Swiss delivery only · Free shipping over CHF 50, otherwise CHF 2 · Ships in 2–3 business days.",
@@ -210,16 +93,16 @@
   },
   "policy": {
     "returnsHeading": "Returns & Refunds",
-    "returnsShort": "14-day returns on unworn, undamaged pieces."
+    "returnsShort": "14-day returns on unused items in original condition."
   },
   "success": {
     "titlePaid": "Thank you for your order",
     "titleProcessing": "Finalising your payment…",
-    "bodyPaid": "Your payment was successful and your order is confirmed. We will prepare your piece with care and be in touch about delivery.",
+    "bodyPaid": "Your payment was successful and your order is confirmed. We will prepare your order with care and be in touch about delivery.",
     "bodyProcessing": "We are confirming your payment. This can take a moment for TWINT and bank transfers — feel free to keep this page open.",
     "confirmationEmail": "A confirmation has been sent to {{email}}.",
     "orderReference": "Order reference: #{{reference}}",
-    "returnsNote": "We want you to love your piece. If something isn't quite right, write to return@kalakosh.ch within 14 days and we will take care of you. Unworn, undamaged pieces qualify for a full refund (tracked return postage at your expense). If your piece arrived damaged, contact us within 48 hours of delivery — we will make it right.",
+    "returnsNote": "We want you to love what you ordered. If something isn't quite right, contact us within 14 days and we will take care of you. Unused items in original condition qualify for a full refund (tracked return postage at your expense). If your order arrived damaged, contact us within 48 hours of delivery — we will make it right.",
     "continueShopping": "Continue Shopping",
     "receipt": {
       "title": "Receipt",
@@ -241,7 +124,7 @@
   "footer": {
     "instagramBanner": "Follow our journey on Instagram",
     "instagramFollow": "Follow",
-    "tagline": "Curated pieces, chosen with care.",
+    "tagline": "Curated items, chosen with care.",
     "navigation": "Navigation",
     "collections": "Collections",
     "followUs": "Follow Us",
@@ -262,14 +145,14 @@
     "selectTitle": "Select your photos",
     "selectSubtitle": "Choose all photos you want to add — you'll group them in the next step. Works great from your phone's camera roll.",
     "takePhoto": "Take Photo",
-    "takePhotoHint": "Point your camera at each piece — tap again for the next one",
+    "takePhotoHint": "Point your camera at each item — tap again for the next one",
     "tapToSelect": "Choose files",
     "fileHint": "JPG, PNG, HEIC · Multiple selection supported · Max 8 MB per photo",
     "photosSelected": "{{count}} photo selected",
     "photosSelected_other": "{{count}} photos selected",
     "nextGroup": "Next: Group Photos",
     "groupTitle": "Group your photos",
-    "groupSubtitle": "By default, each photo becomes its own product. To combine multiple angles of the same piece, tap <strong>Group Mode</strong>, select the photos, then tap <strong>Create Group</strong>.",
+    "groupSubtitle": "By default, each photo becomes its own product. To combine multiple angles of the same item, tap <strong>Group Mode</strong>, select the photos, then tap <strong>Create Group</strong>.",
     "groupModeOn": "Grouping Mode ON",
     "groupMode": "Group Mode",
     "createGroup": "Group {{count}} Photos",
@@ -286,7 +169,7 @@
     "back": "Back",
     "analyseAI": "Analyse with AI",
     "reviewTitle": "Review & edit",
-    "reviewSubtitle": "The AI has suggested names, descriptions, and categories. Edit anything that needs correcting and set the price for each piece. Uncheck any product to skip it.",
+    "reviewSubtitle": "The AI has suggested names, descriptions, and categories. Edit anything that needs correcting and set the price for each item. Uncheck any product to skip it.",
     "analysingPhotos": "Analysing your photos…",
     "analysisSub": "This takes a few seconds per product",
     "product": "Product {{n}}",
@@ -307,7 +190,7 @@
     "publishButton_other": "Publish {{count}} Products",
     "published_one": "{{count}} Product Published",
     "published_other": "{{count}} Products Published",
-    "publishedSub": "Your new pieces are now live in the catalogue.",
+    "publishedSub": "Your new items are now live in the catalogue.",
     "failedProducts": "⚠ {{count}} product(s) could not be saved: {{names}}",
     "extraImageWarning": "ℹ Some extra angles could not be uploaded — products are saved with their main photo. You can add more images from the Admin panel.",
     "uploadMore": "Upload More",

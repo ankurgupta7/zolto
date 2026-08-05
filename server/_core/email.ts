@@ -2,6 +2,9 @@ export interface TenantBranding {
   tenantName: string;
   tenantDomain: string;
   contactEmail?: string;
+  // Returns sentence on the receipt footer. Vertical-dependent ("unworn"
+  // only makes sense for wearables) — see shared/verticals.ts returnsFooter.
+  returnsFooter?: string;
 }
 
 const DEFAULT_BRANDING: TenantBranding = {
@@ -9,6 +12,7 @@ const DEFAULT_BRANDING: TenantBranding = {
   tenantDomain:
     process.env.PUBLIC_BASE_URL?.replace(/\/$/, "") ?? "https://zolto.ch",
   contactEmail: process.env.RESEND_FROM_EMAIL ?? "orders@zolto.ch",
+  returnsFooter: "14-day returns on unused items in original condition",
 };
 
 function resolveBranding(override?: Partial<TenantBranding>): TenantBranding {
@@ -16,6 +20,7 @@ function resolveBranding(override?: Partial<TenantBranding>): TenantBranding {
     tenantName: override?.tenantName ?? DEFAULT_BRANDING.tenantName,
     tenantDomain: override?.tenantDomain ?? DEFAULT_BRANDING.tenantDomain,
     contactEmail: override?.contactEmail ?? DEFAULT_BRANDING.contactEmail,
+    returnsFooter: override?.returnsFooter ?? DEFAULT_BRANDING.returnsFooter,
   };
 }
 // Several fields interpolated into the receipt HTML below (customer name,
@@ -188,7 +193,7 @@ export function buildReceiptHtml(opts: OrderReceiptOptions): string {
     <!-- Footer -->
     <div style="border-top:1px solid ${C.divider};padding:14px 32px;text-align:center">
       <p style="margin:0;font-family:Arial,sans-serif;font-size:11px;color:#A09080;line-height:1.6">
-        ${escapeHtml(branding.contactEmail ?? `support@${branding.tenantDomain.replace(/^https?:\/\//, "")}`)} · 14-day returns on unworn, undamaged pieces
+        ${escapeHtml(branding.contactEmail ?? `support@${branding.tenantDomain.replace(/^https?:\/\//, "")}`)} · ${escapeHtml(branding.returnsFooter ?? DEFAULT_BRANDING.returnsFooter ?? "")}
       </p>
     </div>
 
@@ -245,6 +250,26 @@ export async function sendMagicLinkEmail(opts: {
     html: `<p>Click the link below to sign in to Zolto. It works once and expires in 15 minutes.</p>
 <p><a href="${escapeHtml(opts.url)}">Sign in to Zolto</a></p>
 <p>If you didn't request this, you can ignore this email.</p>`,
+  });
+}
+
+// Signup's claim link (server/routers/tenant.ts `create`): a durable copy of
+// the claim token, which otherwise lives only in the signup tab's
+// sessionStorage — a failed sign-in or a second device would lose it. Same
+// degrade-gracefully contract as sendMagicLinkEmail: returns false (doesn't
+// throw) when Resend isn't configured, and the caller treats any failure as
+// non-fatal since the in-browser token and the email-match resume still work.
+export async function sendClaimLinkEmail(opts: {
+  to: string;
+  url: string;
+  storeName: string;
+}): Promise<boolean> {
+  return sendTransactionalEmail({
+    to: opts.to,
+    subject: `Finish setting up ${opts.storeName}`,
+    html: `<p>Your store <strong>${escapeHtml(opts.storeName)}</strong> is created and waiting for you.</p>
+<p><a href="${escapeHtml(opts.url)}">Finish setting it up</a> — sign in with this email address (or your Google/Apple account) and you'll become the store's admin.</p>
+<p>If you didn't create this store, you can ignore this email.</p>`,
   });
 }
 
@@ -600,12 +625,16 @@ export function buildPosAttributionReviewHtml(
 
 export async function sendPosAttributionReviewEmail(
   items: PosAttributionReviewItem[],
-  branding?: Partial<TenantBranding>,
+  // `to` overrides the recipient — same contract as its Stripe sibling above:
+  // only the merchant who rang up the sale can say which piece it was, so the
+  // day-end sweep addresses each store's own admin. ADMIN_EMAIL remains the
+  // fallback for single-tenant self-hosted deployments.
+  branding?: Partial<TenantBranding> & { to?: string },
 ): Promise<void> {
   if (items.length === 0) return;
 
   const apiKey = process.env.RESEND_API_KEY;
-  const to = process.env.ADMIN_EMAIL;
+  const to = branding?.to ?? process.env.ADMIN_EMAIL;
   if (!apiKey || !to) return;
 
   const b = resolveBranding(branding);

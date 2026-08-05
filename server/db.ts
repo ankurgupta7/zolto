@@ -52,9 +52,12 @@ import {
   users,
   tenants,
   tenantSettings,
+  tenantCategories,
   type Tenant,
+  type TenantCategory,
   type TenantSetting,
 } from "../drizzle/schema";
+import { VERTICAL_PRESETS, isVertical, type Vertical } from "@shared/verticals";
 import { ENV } from "./_core/env";
 import { PLANS } from "@shared/platform";
 import { hashPosApiKey } from "./posApiKey";
@@ -1110,6 +1113,240 @@ export async function getPlatformMetrics(): Promise<PlatformMetrics> {
   }, empty);
 }
 
+/**
+ * Every store on the platform, for the operator console (superadmin only).
+ *
+ * Deliberately NOT a `select *`: the POS API key hash is a bearer credential
+ * and must never leave the server, so the columns are named explicitly rather
+ * than stripped after the fact — a new secret column added to `tenants` then
+ * cannot leak by default. `adminCount` is here because the single most common
+ * support ticket is "I can't press any admin button", whose usual cause is a
+ * store with users but zero admins (see deploy/tenant-admin.sh).
+ */
+export interface OperatorTenantRow {
+  id: number;
+  slug: string;
+  name: string;
+  domain: string | null;
+  plan: "free" | "pro";
+  subscriptionStatus: "trialing" | "active" | "past_due" | "canceled" | null;
+  trialEndsAt: Date | null;
+  createdAt: Date;
+  /** Presence only — the account id itself is not the operator's business. */
+  stripeConnected: boolean;
+  /** Users on this tenant with role admin or superadmin. */
+  adminCount: number;
+  /** Users on this tenant of any role. */
+  userCount: number;
+}
+
+export async function listTenantsForOperator(): Promise<OperatorTenantRow[]> {
+  return withDb(async (db) => {
+    const rows = await db
+      .select({
+        id: tenants.id,
+        slug: tenants.slug,
+        name: tenants.name,
+        domain: tenants.domain,
+        plan: tenants.plan,
+        subscriptionStatus: tenants.subscriptionStatus,
+        trialEndsAt: tenants.trialEndsAt,
+        createdAt: tenants.createdAt,
+        stripeConnectedAccountId: tenants.stripeConnectedAccountId,
+      })
+      .from(tenants)
+      .orderBy(desc(tenants.createdAt));
+
+    // One grouped pass rather than a query per tenant — the operator list is
+    // the one page that reads every store at once.
+    const counts = await db
+      .select({
+        tenantId: users.tenantId,
+        userCount: sql<number>`COUNT(*)`,
+        adminCount: sql<number>`SUM(${users.role} IN ('admin','superadmin'))`,
+      })
+      .from(users)
+      .groupBy(users.tenantId);
+
+    const byTenant = new Map(
+      counts.map((c) => [
+        Number(c.tenantId),
+        { userCount: Number(c.userCount), adminCount: Number(c.adminCount) },
+      ]),
+    );
+
+    return rows.map((r) => ({
+      id: r.id,
+      slug: r.slug,
+      name: r.name,
+      domain: r.domain,
+      plan: r.plan,
+      subscriptionStatus: r.subscriptionStatus,
+      trialEndsAt: r.trialEndsAt,
+      createdAt: r.createdAt,
+      stripeConnected: Boolean(r.stripeConnectedAccountId),
+      adminCount: byTenant.get(r.id)?.adminCount ?? 0,
+      userCount: byTenant.get(r.id)?.userCount ?? 0,
+    }));
+  }, []);
+}
+
+/**
+ * One store, as the operator needs to see it when a merchant is stuck.
+ *
+ * The user list is the point: the most common unfixable-looking ticket is a
+ * store whose owner signed in but never redeemed their claim token, leaving a
+ * tenant with users and no admin. `pendingClaim` marks the placeholder rows
+ * that claim flow leaves behind (openId `pending:…`), because an operator
+ * looking at a list of emails otherwise cannot tell which of them is a real
+ * signed-in account.
+ */
+export interface OperatorTenantUser {
+  id: number;
+  email: string | null;
+  name: string | null;
+  role: "superadmin" | "admin" | "staff" | "customer";
+  loginMethod: string | null;
+  pendingClaim: boolean;
+  lastSignedIn: Date | null;
+}
+
+export interface OperatorTenantDetail {
+  tenant: OperatorTenantRow & {
+    onboardingStep: number | null;
+    referralCode: string | null;
+  };
+  users: OperatorTenantUser[];
+}
+
+export async function getTenantDetailForOperator(
+  tenantId: number,
+): Promise<OperatorTenantDetail | null> {
+  return withDb(async (db) => {
+    const [row] = await db
+      .select({
+        id: tenants.id,
+        slug: tenants.slug,
+        name: tenants.name,
+        domain: tenants.domain,
+        plan: tenants.plan,
+        subscriptionStatus: tenants.subscriptionStatus,
+        trialEndsAt: tenants.trialEndsAt,
+        createdAt: tenants.createdAt,
+        stripeConnectedAccountId: tenants.stripeConnectedAccountId,
+        onboardingStep: tenants.onboardingStep,
+        referralCode: tenants.referralCode,
+      })
+      .from(tenants)
+      .where(eq(tenants.id, tenantId))
+      .limit(1);
+
+    if (!row) return null;
+
+    const staff = await db
+      .select({
+        id: users.id,
+        email: users.email,
+        name: users.name,
+        role: users.role,
+        openId: users.openId,
+        loginMethod: users.loginMethod,
+        lastSignedIn: users.lastSignedIn,
+      })
+      .from(users)
+      .where(eq(users.tenantId, tenantId))
+      .orderBy(asc(users.id));
+
+    const mapped: OperatorTenantUser[] = staff.map((u) => ({
+      id: u.id,
+      email: u.email,
+      name: u.name,
+      role: u.role,
+      loginMethod: u.loginMethod,
+      pendingClaim: u.openId.startsWith("pending:"),
+      lastSignedIn: u.lastSignedIn,
+    }));
+
+    return {
+      tenant: {
+        id: row.id,
+        slug: row.slug,
+        name: row.name,
+        domain: row.domain,
+        plan: row.plan,
+        subscriptionStatus: row.subscriptionStatus,
+        trialEndsAt: row.trialEndsAt,
+        createdAt: row.createdAt,
+        stripeConnected: Boolean(row.stripeConnectedAccountId),
+        adminCount: mapped.filter(
+          (u) => u.role === "admin" || u.role === "superadmin",
+        ).length,
+        userCount: mapped.length,
+        onboardingStep: row.onboardingStep,
+        referralCode: row.referralCode,
+      },
+      users: mapped,
+    };
+  }, null);
+}
+
+/**
+ * Operator fix for the "no admin on this store" ticket — the same repair
+ * deploy/tenant-admin.sh --promote performs, moved into the console so it does
+ * not require SSH.
+ *
+ * Scoped by tenant AND user id together: promoting by email alone (as the shell
+ * script must) can hit the wrong row when an address appears on two tenants,
+ * and this is a privilege grant, so it refuses rather than guesses. Never
+ * grants superadmin — platform ownership stays a deliberate server-side act.
+ */
+export async function setTenantUserRoleByOperator(
+  tenantId: number,
+  userId: number,
+  role: "admin" | "staff",
+): Promise<boolean> {
+  return withDb(async (db) => {
+    const [target] = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(and(eq(users.id, userId), eq(users.tenantId, tenantId)))
+      .limit(1);
+
+    if (!target) return false;
+
+    await db
+      .update(users)
+      .set({ role })
+      .where(and(eq(users.id, userId), eq(users.tenantId, tenantId)));
+    return true;
+  }, false);
+}
+
+/**
+ * Move a store between plans by hand.
+ *
+ * Touches `tenants.plan` only — never the Stripe subscription. A comp'd store,
+ * a refund case, or a merchant Stripe has not caught up with all need the
+ * entitlement changed without inventing billing state the payment processor
+ * disagrees with. Whoever uses this owns reconciling Stripe separately.
+ */
+export async function setTenantPlanByOperator(
+  tenantId: number,
+  plan: "free" | "pro",
+): Promise<boolean> {
+  return withDb(async (db) => {
+    const [target] = await db
+      .select({ id: tenants.id })
+      .from(tenants)
+      .where(eq(tenants.id, tenantId))
+      .limit(1);
+    if (!target) return false;
+
+    await db.update(tenants).set({ plan }).where(eq(tenants.id, tenantId));
+    return true;
+  }, false);
+}
+
 export async function getBulkUploadLogs(
   tenantId: number,
   limit = 100,
@@ -1459,6 +1696,26 @@ export async function getTenantByDiscordChannelId(
   }, undefined);
 }
 
+/**
+ * The tenant whose WhatsApp business number received a message, with its
+ * settings row — one lookup serving both webhook signature verification
+ * (which needs the tenant BEFORE trusting the payload's content) and the
+ * intake handler's branding.
+ */
+export async function getTenantByWhatsappNumber(
+  businessPhone: string,
+): Promise<{ tenant: Tenant; settings: TenantSetting | null } | undefined> {
+  return withDb(async (db) => {
+    const result = await db
+      .select({ tenant: tenants, settings: tenantSettings })
+      .from(tenants)
+      .leftJoin(tenantSettings, eq(tenants.id, tenantSettings.tenantId))
+      .where(eq(tenantSettings.whatsappNumber, businessPhone))
+      .limit(1);
+    return result.length > 0 ? result[0] : undefined;
+  }, undefined);
+}
+
 export async function getTenantBySlackChannelId(
   channelId: string,
 ): Promise<Tenant | undefined> {
@@ -1619,6 +1876,240 @@ export async function createTenantSettings(
   await withDbOrThrow((db) => db.insert(tenantSettings).values(data));
 }
 
+// ─── Tenant categories ────────────────────────────────────────────────────────
+// Per-store product category list, seeded from the tenant's vertical preset
+// at signup and editable by the store admin. products.category stores the
+// `key`; labels are display-only.
+
+function presetCategoryRows(
+  tenantId: number,
+  vertical: Vertical,
+): Array<typeof tenantCategories.$inferInsert> {
+  return VERTICAL_PRESETS[vertical].categories.map((c, i) => ({
+    tenantId,
+    key: c.key,
+    labelEn: c.labelEn,
+    labelDe: c.labelDe,
+    extraIncludes: c.extraIncludes ? [...c.extraIncludes] : null,
+    sortOrder: i,
+  }));
+}
+
+/**
+ * The tenant's categories in display order. Falls back to the tenant's
+ * vertical preset (read-only, no lazy write) when no rows exist yet — a
+ * safety net for tenants created before seeding existed and for tests.
+ */
+export async function getTenantCategories(
+  tenantId: number,
+): Promise<TenantCategory[]> {
+  const rows = await withDb(
+    async (db) =>
+      db
+        .select()
+        .from(tenantCategories)
+        .where(eq(tenantCategories.tenantId, tenantId))
+        .orderBy(asc(tenantCategories.sortOrder), asc(tenantCategories.id)),
+    [] as TenantCategory[],
+  );
+  if (rows.length > 0) return rows;
+
+  const settings = await getTenantSettings(tenantId);
+  const vertical =
+    settings?.vertical && isVertical(settings.vertical)
+      ? settings.vertical
+      : "jewellery";
+  return presetCategoryRows(tenantId, vertical).map((r, i) => ({
+    id: -(i + 1), // sentinel: not persisted
+    tenantId,
+    key: r.key,
+    labelEn: r.labelEn,
+    labelDe: r.labelDe ?? null,
+    extraIncludes: r.extraIncludes ?? null,
+    sortOrder: r.sortOrder ?? i,
+    createdAt: new Date(0),
+    updatedAt: new Date(0),
+  }));
+}
+
+/** Seed the tenant's category list from a vertical preset. Skips existing keys. */
+export async function seedTenantCategories(
+  tenantId: number,
+  vertical: Vertical,
+): Promise<void> {
+  await withDbOrThrow((db) =>
+    db
+      .insert(tenantCategories)
+      .values(presetCategoryRows(tenantId, vertical))
+      .onDuplicateKeyUpdate({ set: { tenantId: sql`tenant_id` } }),
+  );
+}
+
+export async function createTenantCategoryRow(row: {
+  tenantId: number;
+  key: string;
+  labelEn: string;
+  labelDe?: string | null;
+  extraIncludes?: string[] | null;
+  sortOrder?: number;
+}): Promise<void> {
+  await withDbOrThrow(async (db) => {
+    const sortOrder =
+      row.sortOrder ??
+      (await db
+        .select({
+          max: sql<number>`COALESCE(MAX(${tenantCategories.sortOrder}), -1)`,
+        })
+        .from(tenantCategories)
+        .where(eq(tenantCategories.tenantId, row.tenantId))
+        .then((r) => (r[0]?.max ?? -1) + 1));
+    await db.insert(tenantCategories).values({ ...row, sortOrder });
+  });
+}
+
+export async function updateTenantCategoryLabels(
+  tenantId: number,
+  key: string,
+  labels: { labelEn?: string; labelDe?: string | null },
+): Promise<void> {
+  await withDbOrThrow((db) =>
+    db
+      .update(tenantCategories)
+      .set(labels)
+      .where(
+        and(
+          eq(tenantCategories.tenantId, tenantId),
+          eq(tenantCategories.key, key),
+        ),
+      ),
+  );
+}
+
+/**
+ * Rename a category KEY, cascading in one transaction to every product in
+ * that category and to any sibling extraIncludes arrays referencing it.
+ */
+export async function renameTenantCategoryKey(
+  tenantId: number,
+  oldKey: string,
+  newKey: string,
+): Promise<void> {
+  await withDbOrThrow((db) =>
+    db.transaction(async (tx) => {
+      await tx
+        .update(tenantCategories)
+        .set({ key: newKey })
+        .where(
+          and(
+            eq(tenantCategories.tenantId, tenantId),
+            eq(tenantCategories.key, oldKey),
+          ),
+        );
+      await tx
+        .update(products)
+        .set({ category: newKey })
+        .where(
+          and(eq(products.tenantId, tenantId), eq(products.category, oldKey)),
+        );
+      const siblings = await tx
+        .select()
+        .from(tenantCategories)
+        .where(eq(tenantCategories.tenantId, tenantId));
+      for (const sib of siblings) {
+        if (sib.extraIncludes?.includes(oldKey)) {
+          await tx
+            .update(tenantCategories)
+            .set({
+              extraIncludes: sib.extraIncludes.map((k) =>
+                k === oldKey ? newKey : k,
+              ),
+            })
+            .where(eq(tenantCategories.id, sib.id));
+        }
+      }
+    }),
+  );
+}
+
+/**
+ * Delete a category, reassigning its products to `reassignTo` (also cleans
+ * the deleted key out of sibling extraIncludes arrays) in one transaction.
+ */
+export async function deleteTenantCategoryRow(
+  tenantId: number,
+  key: string,
+  reassignTo: string,
+): Promise<void> {
+  await withDbOrThrow((db) =>
+    db.transaction(async (tx) => {
+      await tx
+        .update(products)
+        .set({ category: reassignTo })
+        .where(
+          and(eq(products.tenantId, tenantId), eq(products.category, key)),
+        );
+      await tx
+        .delete(tenantCategories)
+        .where(
+          and(
+            eq(tenantCategories.tenantId, tenantId),
+            eq(tenantCategories.key, key),
+          ),
+        );
+      const siblings = await tx
+        .select()
+        .from(tenantCategories)
+        .where(eq(tenantCategories.tenantId, tenantId));
+      for (const sib of siblings) {
+        if (sib.extraIncludes?.includes(key)) {
+          const cleaned = sib.extraIncludes.filter((k) => k !== key);
+          await tx
+            .update(tenantCategories)
+            .set({ extraIncludes: cleaned.length ? cleaned : null })
+            .where(eq(tenantCategories.id, sib.id));
+        }
+      }
+    }),
+  );
+}
+
+/** Reorder categories: `keys` in the desired order; unlisted keys keep their place after. */
+export async function reorderTenantCategories(
+  tenantId: number,
+  keys: string[],
+): Promise<void> {
+  await withDbOrThrow((db) =>
+    db.transaction(async (tx) => {
+      for (let i = 0; i < keys.length; i++) {
+        await tx
+          .update(tenantCategories)
+          .set({ sortOrder: i })
+          .where(
+            and(
+              eq(tenantCategories.tenantId, tenantId),
+              eq(tenantCategories.key, keys[i]),
+            ),
+          );
+      }
+    }),
+  );
+}
+
+export async function countProductsInCategory(
+  tenantId: number,
+  key: string,
+): Promise<number> {
+  return withDb(
+    async (db) =>
+      db
+        .select({ count: sql<number>`COUNT(*)` })
+        .from(products)
+        .where(and(eq(products.tenantId, tenantId), eq(products.category, key)))
+        .then((r) => Number(r[0]?.count ?? 0)),
+    0,
+  );
+}
+
 export async function setTenantStripeCustomer(
   tenantId: number,
   stripeCustomerId: string,
@@ -1627,6 +2118,19 @@ export async function setTenantStripeCustomer(
     db
       .update(tenants)
       .set({ stripeCustomerId })
+      .where(eq(tenants.id, tenantId)),
+  );
+}
+
+/** Stores a NEW POS key hash — takes the SHA-256, never the plaintext. */
+export async function setTenantPosApiKeyHash(
+  tenantId: number,
+  posApiKeyHash: string,
+): Promise<void> {
+  await withDbOrThrow((db) =>
+    db
+      .update(tenants)
+      .set({ posApiKey: posApiKeyHash })
       .where(eq(tenants.id, tenantId)),
   );
 }
@@ -1658,6 +2162,87 @@ export async function setTenantReferrer(
   );
 }
 
+/**
+ * The user row that already ties this email to a store, if any — signup's
+ * one-email-one-store check. Case-insensitive, because identity providers hand
+ * back the address in whatever case the user typed it (the same reason
+ * deploy/tenant-admin.sh matches with LOWER()).
+ *
+ * "Ties to a store" means MANAGES one — role admin/superadmin/staff. The role
+ * filter is not an optimization: `users.tenantId` is NOT NULL and every fresh
+ * sign-in is parked by upsertUser on DEFAULT_TENANT_ID with role `customer`,
+ * so without it, anyone who ever signed in (or shopped at any store) was
+ * refused at signup as "already attached to a store" — the opposite of who
+ * signup is for.
+ *
+ * Pending claim rows (openId `pending:…`, role admin) count as taken: they
+ * hold a store's admin slot for a signup already in flight, and a second
+ * store on the same address while the first is unclaimed is exactly the
+ * duplicate this refuses.
+ */
+export async function getStoreUserByEmail(
+  email: string,
+): Promise<
+  { id: number; tenantId: number; pendingClaim: boolean } | undefined
+> {
+  return withDb(async (db) => {
+    const result = await db
+      .select({ id: users.id, tenantId: users.tenantId, openId: users.openId })
+      .from(users)
+      .where(
+        and(
+          sql`LOWER(${users.email}) = LOWER(${email})`,
+          isNotNull(users.tenantId),
+          inArray(users.role, ["superadmin", "admin", "staff"]),
+        ),
+      )
+      .limit(1);
+    const row = result[0];
+    return row && row.tenantId != null
+      ? {
+          id: row.id,
+          tenantId: row.tenantId,
+          // Distinguishes "this email runs a store" from "this email started a
+          // signup and never finished claiming it" — signup uses the flag to
+          // point the merchant at the recovery path instead of a dead end.
+          pendingClaim: row.openId.startsWith("pending:"),
+        }
+      : undefined;
+  }, undefined);
+}
+
+/**
+ * The unclaimed pending-admin row (openId `pending:<token>`) whose signup email
+ * matches, if any — the recovery half of the claim flow. The happy path
+ * authorizes the claim with the token from sessionStorage; when that token is
+ * gone (new device, cleared storage, a sign-in that failed halfway), this
+ * lookup lets `tenant.resumeClaim` find the waiting store by the SIGNED-IN
+ * account's provider-verified email instead. Case-insensitive for the same
+ * reason as getStoreUserByEmail above.
+ */
+export async function getPendingTenantAdminByEmail(
+  email: string,
+): Promise<{ id: number; tenantId: number } | undefined> {
+  return withDb(async (db) => {
+    const result = await db
+      .select({ id: users.id, tenantId: users.tenantId })
+      .from(users)
+      .where(
+        and(
+          sql`LOWER(${users.email}) = LOWER(${email})`,
+          sql`${users.openId} LIKE 'pending:%'`,
+          isNotNull(users.tenantId),
+          eq(users.role, "admin"),
+        ),
+      )
+      .limit(1);
+    const row = result[0];
+    return row && row.tenantId != null
+      ? { id: row.id, tenantId: row.tenantId }
+      : undefined;
+  }, undefined);
+}
+
 // A pending admin holds the tenant's admin slot until the owner signs in (via
 // OAuth) and claims it with the token. Keyed by `pending:<token>` so it can't be
 // confused with a real login (`google:<sub>`), and never grants access on its own.
@@ -1686,6 +2271,25 @@ export async function assignUserToTenantAsAdmin(
       .update(users)
       .set({ tenantId, role: "admin" })
       .where(eq(users.openId, openId)),
+  );
+}
+
+/**
+ * A signed-in user editing their OWN display name.
+ *
+ * Name only, deliberately. `email` and `openId` are the identity the session
+ * was minted against (Google, Apple, or a magic link), so letting a user
+ * rewrite their email here would either desync them from their provider or —
+ * worse — let them type in somebody else's address and inherit whatever a
+ * future email-keyed lookup grants. Changing a sign-in address means proving
+ * the new one, which is a verification flow, not a text field.
+ */
+export async function updateOwnDisplayName(
+  userId: number,
+  name: string,
+): Promise<void> {
+  await withDbOrThrow((db) =>
+    db.update(users).set({ name }).where(eq(users.id, userId)),
   );
 }
 
