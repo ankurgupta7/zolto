@@ -7,7 +7,8 @@ import {
   cleanup,
 } from "@testing-library/react";
 import GuidedTour from "./GuidedTour";
-import { isTourCompleted, type TourStep } from "@/lib/tour";
+import { isAnyTourRunning, isTourCompleted, type TourStep } from "@/lib/tour";
+import { useTourActive } from "@/hooks/useTourActive";
 import catalogEn from "@/admin/locales/catalog.en.json";
 
 /** Resolve a dotted i18next key against the English admin catalog fragment. */
@@ -103,6 +104,54 @@ describe("GuidedTour", () => {
     // The missing first step is skipped; the second renders.
     expect(await screen.findByText("Real")).toBeTruthy();
     expect(screen.queryByText("Ghost")).toBeNull();
+  });
+
+  /**
+   * The admin header collapses its tools on a phone and unfolds them *because*
+   * a tour started — which cannot happen until the tour has rendered at least
+   * once. A step whose target is one commit late must still be shown.
+   */
+  it("waits for a target that mounts in response to the tour starting", async () => {
+    function LateTarget() {
+      const running = useTourActive();
+      return (
+        <div>
+          {running && (
+            <button type="button" data-tour="late">
+              Late
+            </button>
+          )}
+          <GuidedTour
+            tourId="test"
+            steps={[
+              { target: '[data-tour="late"]', titleKey: "Late", bodyKey: "b" },
+            ]}
+          />
+        </div>
+      );
+    }
+    render(<LateTarget />);
+    // The step is not skipped: the target appears a commit later and the
+    // tooltip lands on it.
+    expect(await screen.findByText("Late")).toBeTruthy();
+    await waitFor(() => expect(screen.getByRole("group")).toBeTruthy());
+  });
+
+  it("reports that a tour is running only while it is on", async () => {
+    expect(isAnyTourRunning()).toBe(false);
+    renderTour();
+    await screen.findByText("First");
+    expect(isAnyTourRunning()).toBe(true);
+    fireEvent.click(screen.getByText("Skip"));
+    await waitFor(() => expect(isAnyTourRunning()).toBe(false));
+  });
+
+  it("stops reporting a tour as running when it unmounts mid-tour", async () => {
+    const { unmount } = renderTour();
+    await screen.findByText("First");
+    expect(isAnyTourRunning()).toBe(true);
+    unmount();
+    expect(isAnyTourRunning()).toBe(false);
   });
 
   it("closes on Escape", async () => {

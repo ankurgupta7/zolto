@@ -102,13 +102,16 @@ await page.evaluate(async () => {
 await page.waitForTimeout(1500);
 
 // SHOT_CLICK="Add Product" clicks a control first, so a shot can capture what
-// a page looks like *after* an interaction rather than only at rest.
+// a page looks like *after* an interaction rather than only at rest. Comma-
+// separate to click a sequence — SHOT_CLICK="Next,Next" walks a tour along.
 if (process.env.SHOT_CLICK) {
-  await page
-    .getByRole("button", { name: process.env.SHOT_CLICK, exact: true })
-    .first()
-    .click();
-  await page.waitForTimeout(1200);
+  for (const name of process.env.SHOT_CLICK.split(",")) {
+    await page
+      .getByRole("button", { name: name.trim(), exact: true })
+      .first()
+      .click();
+    await page.waitForTimeout(1200);
+  }
 }
 
 const loaded = await page.evaluate(() => [

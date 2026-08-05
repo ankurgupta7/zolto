@@ -24,6 +24,16 @@ vi.stubGlobal(
     disconnect() {}
   },
 );
+// The header asks whether it's on a phone (useIsMobile) to decide whether its
+// tools collapse. jsdom reports innerWidth 1024, so these render as desktop.
+vi.stubGlobal(
+  "matchMedia",
+  vi.fn().mockReturnValue({
+    matches: false,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+  }),
+);
 
 const mocks = vi.hoisted(() => ({
   authState: {
@@ -845,5 +855,76 @@ describe("Admin page — AI insights", () => {
     expect(screen.queryByText("Necklaces are selling fast")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Show" }));
     expect(screen.getByText("Necklaces are selling fast")).toBeTruthy();
+  });
+});
+
+/**
+ * The header carries eleven controls. On a desktop row that's fine; at phone
+ * width it wrapped into a stack taller than the screen, so the catalogue — and
+ * anything a tool produced — started below the fold. Below `md` the secondary
+ * tools collapse behind a Tools button.
+ */
+describe("Admin page — header tools on a phone", () => {
+  const desktopWidth = window.innerWidth;
+
+  function setWidth(width: number) {
+    Object.defineProperty(window, "innerWidth", {
+      configurable: true,
+      writable: true,
+      value: width,
+    });
+  }
+
+  beforeEach(() => setWidth(390));
+  afterEach(() => setWidth(desktopWidth));
+
+  it("keeps both ways to add stock in the open and collapses the rest", () => {
+    render(<Admin />);
+    expect(screen.getByRole("button", { name: "Add Product" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Add by Camera" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /Tools/ })).toBeTruthy();
+
+    expect(screen.queryByRole("link", { name: "CSV Import" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Connect Stripe" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Auto-Translate" })).toBeNull();
+  });
+
+  it("reveals the tools on demand and folds them away again", () => {
+    render(<Admin />);
+    const toggle = screen.getByRole("button", { name: /Tools/ });
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+
+    fireEvent.click(toggle);
+    expect(toggle.getAttribute("aria-expanded")).toBe("true");
+    expect(screen.getByRole("link", { name: "CSV Import" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Connect Stripe" })).toBeTruthy();
+
+    fireEvent.click(toggle);
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    expect(screen.queryByRole("link", { name: "CSV Import" })).toBeNull();
+  });
+
+  it("leaves every tool in the open on a desktop", () => {
+    setWidth(desktopWidth);
+    render(<Admin />);
+    expect(screen.getByRole("link", { name: "CSV Import" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Connect Stripe" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Add Product" })).toBeTruthy();
+  });
+
+  // A tour spotlights elements by selector, so a collapsed menu has to unfold
+  // — three of the six dashboard steps point at controls inside it.
+  it("unfolds the tools while a guided tour is running", async () => {
+    localStorage.removeItem("zolto.tour.admin-v1");
+    render(<Admin />);
+    await waitFor(() =>
+      expect(screen.getByRole("link", { name: "CSV Import" })).toBeTruthy(),
+    );
+    expect(screen.getByRole("button", { name: "Connect Stripe" })).toBeTruthy();
+    // The merchant never opened it, so it folds away when the tour ends.
+    fireEvent.click(screen.getByText("Skip"));
+    await waitFor(() =>
+      expect(screen.queryByRole("link", { name: "CSV Import" })).toBeNull(),
+    );
   });
 });

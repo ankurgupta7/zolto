@@ -24,8 +24,12 @@ import { ADMIN_TOUR_ID } from "@/lib/adminTour";
 import Admin from "@/pages/Admin";
 
 // The coach marks are a first-run overlay and would cover the page; this shot
-// is about the steady state a returning merchant sees.
-markTourCompleted(ADMIN_TOUR_ID);
+// is about the steady state a returning merchant sees. `?tour=1` keeps them,
+// for checking that a step can still spotlight a tool the phone header folds
+// away — the tour has to unfold it, or it would point at nothing.
+if (!new URLSearchParams(location.search).has("tour")) {
+  markTourCompleted(ADMIN_TOUR_ID);
+}
 
 const product = (over: Record<string, unknown> = {}) => ({
   id: 1,

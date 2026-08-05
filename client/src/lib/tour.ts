@@ -74,6 +74,45 @@ export function clearTourCompletion(tourId: string): void {
   }
 }
 
+/**
+ * Is any tour running right now?
+ *
+ * A tour can only spotlight a target that is actually in the DOM, so UI that
+ * hides one behind a disclosure — the admin header collapses its tools on a
+ * phone — has to open up while a tour runs. That's a module-level store rather
+ * than a prop because the component owning the disclosure (Admin) is not the
+ * one mounting the tour: the checklist's "Show me" mounts its own GuidedTour,
+ * and both can be on screen at once, hence a count rather than a boolean.
+ */
+let runningTours = 0;
+const runningListeners = new Set<() => void>();
+
+/** Mark a tour as running; call the returned function when it stops. */
+export function markTourRunning(): () => void {
+  runningTours += 1;
+  emitTourRunning();
+  let released = false;
+  return () => {
+    if (released) return;
+    released = true;
+    runningTours = Math.max(0, runningTours - 1);
+    emitTourRunning();
+  };
+}
+
+function emitTourRunning(): void {
+  runningListeners.forEach((fn) => fn());
+}
+
+export function isAnyTourRunning(): boolean {
+  return runningTours > 0;
+}
+
+export function subscribeTourRunning(fn: () => void): () => void {
+  runningListeners.add(fn);
+  return () => runningListeners.delete(fn);
+}
+
 function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
 }

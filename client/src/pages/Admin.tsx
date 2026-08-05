@@ -32,11 +32,15 @@ import {
   Receipt,
   CheckCircle2,
   Camera,
+  SlidersHorizontal,
+  ChevronDown,
 } from "lucide-react";
 import { SignInOptions } from "@/components/SignInOptions";
 import type { ProductCategory } from "@shared/types";
 import { VERTICAL_PRESETS, isVertical } from "@shared/verticals";
 import { useCategories } from "@/hooks/useCategories";
+import { useIsMobile } from "@/hooks/useMobile";
+import { useTourActive } from "@/hooks/useTourActive";
 import { useTenantSettings } from "@/components/admin/useTenantSettings";
 import ProductImageManager from "@/components/ProductImageManager";
 import OnboardingChecklist from "@/components/OnboardingChecklist";
@@ -608,6 +612,16 @@ export default function Admin() {
     ];
   // Bumping this restarts the guided tour (the "Replay tour" button).
   const [tourSignal, setTourSignal] = useState(0);
+  // The header carries eleven controls. On a desktop row that is fine; at phone
+  // width it wrapped into a stack taller than the screen, burying the catalogue
+  // and every result the tools produce. Below `md` the secondary ones collapse
+  // behind a Tools button, leaving the two ways to add stock in the open. A
+  // running tour force-opens it — several steps spotlight controls in there,
+  // and a tour cannot point at an element that isn't mounted.
+  const isMobile = useIsMobile();
+  const tourActive = useTourActive();
+  const [toolsOpen, setToolsOpen] = useState(false);
+  const showTools = !isMobile || toolsOpen || tourActive;
   const [showAddForm, setShowAddForm] = useState(false);
   const addFormRef = useRef<HTMLDivElement | null>(null);
   const [form, setForm] = useState<AddForm>(EMPTY_FORM);
@@ -1032,6 +1046,8 @@ export default function Admin() {
             </div>
           </div>
           <div className="flex items-center gap-3 flex-wrap">
+            {/* Primary: the two ways to put stock in the catalogue. These stay
+                in the open at every width. */}
             <Link
               href="/admin/bulk-upload"
               data-tour="bulk-upload"
@@ -1040,138 +1056,6 @@ export default function Admin() {
               <Camera size={14} />
               {t("catalog.admin.header.addByCamera")}
             </Link>
-            <Link
-              href="/admin/csv-import"
-              data-tour="csv-import"
-              className="flex items-center gap-2 border border-white/20 text-white/80 px-4 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:border-white hover:text-white transition-colors"
-            >
-              <FileSpreadsheet size={14} />
-              {t("catalog.admin.header.csvImport")}
-            </Link>
-            <Link
-              href="/admin/duplicates"
-              className="flex items-center gap-2 border border-white/20 text-white/80 px-4 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:border-white hover:text-white transition-colors"
-            >
-              <Copy size={14} />
-              {t("catalog.admin.header.duplicateCleanup")}
-            </Link>
-            <Link
-              href="/admin/billing"
-              className="flex items-center gap-2 border border-white/20 text-white/80 px-4 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:border-white hover:text-white transition-colors"
-            >
-              <CreditCard size={14} />
-              {t("catalog.admin.header.planBilling")}
-            </Link>
-            <button
-              type="button"
-              onClick={() => previewRecategoriseMutation.mutate()}
-              disabled={previewRecategoriseMutation.isPending}
-              title={t("catalog.admin.header.recategoriseTitle")}
-              className="flex items-center gap-2 border border-white/20 text-white/80 px-4 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:border-white hover:text-white transition-colors disabled:opacity-50"
-            >
-              {previewRecategoriseMutation.isPending ? (
-                <Loader2 size={14} className="animate-spin" />
-              ) : (
-                <Tag size={14} />
-              )}
-              {t("catalog.admin.header.recategorise")}
-            </button>
-            <button
-              type="button"
-              onClick={() => previewTranslateMutation.mutate()}
-              disabled={previewTranslateMutation.isPending}
-              data-tour="auto-translate"
-              title={t("catalog.admin.header.autoTranslateTitle")}
-              className="flex items-center gap-2 border border-white/20 text-white/80 px-4 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:border-white hover:text-white transition-colors disabled:opacity-50"
-            >
-              {previewTranslateMutation.isPending ? (
-                <Loader2 size={14} className="animate-spin" />
-              ) : (
-                <Languages size={14} />
-              )}
-              {t("catalog.admin.header.autoTranslate")}
-            </button>
-            <button
-              type="button"
-              onClick={handleTranslateLocales}
-              disabled={translatingLocales}
-              title={t("catalog.admin.header.translateLocalesTitle")}
-              className="flex items-center gap-2 border border-white/20 text-white/80 px-4 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:border-white hover:text-white transition-colors disabled:opacity-50"
-            >
-              {translatingLocales ? (
-                <Loader2 size={14} className="animate-spin" />
-              ) : (
-                <Languages size={14} />
-              )}
-              {t("catalog.admin.header.translateLocales")}
-            </button>
-            <button
-              type="button"
-              onClick={() => reconciliationMutation.mutate({})}
-              disabled={reconciliationMutation.isPending}
-              title={t("catalog.admin.header.reconcileStripeTitle")}
-              className="flex items-center gap-2 border border-white/20 text-white/80 px-4 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:border-white hover:text-white transition-colors disabled:opacity-50"
-            >
-              {reconciliationMutation.isPending ? (
-                <Loader2 size={14} className="animate-spin" />
-              ) : (
-                <CreditCard size={14} />
-              )}
-              {t("catalog.admin.header.reconcileStripe")}
-            </button>
-            <button
-              type="button"
-              onClick={() => posAttributionMutation.mutate({})}
-              disabled={posAttributionMutation.isPending}
-              title={t("catalog.admin.header.confirmPosTitle")}
-              className="flex items-center gap-2 border border-white/20 text-white/80 px-4 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:border-white hover:text-white transition-colors disabled:opacity-50"
-            >
-              {posAttributionMutation.isPending ? (
-                <Loader2 size={14} className="animate-spin" />
-              ) : (
-                <Receipt size={14} />
-              )}
-              {t("catalog.admin.header.confirmPos")}
-            </button>
-            {stripeConnectQuery.data?.connected ? (
-              <span
-                data-tour="connect-stripe"
-                title={t("catalog.admin.header.stripeConnectedTitle")}
-                className="flex items-center gap-2 border border-emerald-400/40 text-emerald-300 px-4 py-2.5 text-xs uppercase tracking-[0.15em] font-sans"
-              >
-                <CheckCircle2 size={14} />
-                {t("catalog.admin.header.stripeConnected")}
-              </span>
-            ) : (
-              <button
-                type="button"
-                onClick={handleConnectStripe}
-                disabled={stripeConnectQuery.isLoading}
-                data-tour="connect-stripe"
-                title={t("catalog.admin.header.connectStripeTitle")}
-                className="flex items-center gap-2 border border-white/20 text-white/80 px-4 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:border-white hover:text-white transition-colors disabled:opacity-50"
-              >
-                {stripeConnectQuery.isLoading ? (
-                  <Loader2 size={14} className="animate-spin" />
-                ) : (
-                  <CreditCard size={14} />
-                )}
-                {t("catalog.admin.header.connectStripe")}
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={() => {
-                clearTourCompletion(ADMIN_TOUR_ID);
-                setTourSignal((n) => n + 1);
-              }}
-              title={t("catalog.admin.header.tourTitle")}
-              aria-label={t("catalog.admin.header.tourAria")}
-              className="flex items-center gap-2 border border-white/20 text-white/80 px-3 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:border-white hover:text-white transition-colors"
-            >
-              <HelpCircle size={14} />
-              {t("catalog.admin.header.tour")}
-            </button>
             <button
               type="button"
               onClick={() => setShowAddForm((v) => !v)}
@@ -1181,6 +1065,166 @@ export default function Admin() {
               <Plus size={14} />
               {t("catalog.admin.header.addProduct")}
             </button>
+            <button
+              type="button"
+              onClick={() => setToolsOpen((v) => !v)}
+              aria-expanded={toolsOpen}
+              aria-controls="admin-tools"
+              className="md:hidden flex items-center gap-2 border border-white/20 text-white/80 px-4 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:border-white hover:text-white transition-colors"
+            >
+              <SlidersHorizontal size={14} />
+              {t("catalog.admin.header.tools")}
+              <ChevronDown
+                size={14}
+                className={`transition-transform ${toolsOpen ? "rotate-180" : ""}`}
+              />
+            </button>
+            {/* Secondary tools. Unmounted rather than CSS-hidden when
+                collapsed: the tour spotlights by selector and prefers a
+                rendered match, so a display:none anchor would hand it a
+                zero-size rect and park the highlight in the page corner.
+                `md:contents` dissolves this wrapper from `md` up, so on a
+                desktop the controls sit in the same single wrapping row they
+                always have — the grouping only exists on a phone. */}
+            {showTools && (
+              <div
+                id="admin-tools"
+                className="flex w-full flex-col items-stretch gap-3 md:contents"
+              >
+                <Link
+                  href="/admin/csv-import"
+                  data-tour="csv-import"
+                  className="flex items-center gap-2 border border-white/20 text-white/80 px-4 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:border-white hover:text-white transition-colors"
+                >
+                  <FileSpreadsheet size={14} />
+                  {t("catalog.admin.header.csvImport")}
+                </Link>
+                <Link
+                  href="/admin/duplicates"
+                  className="flex items-center gap-2 border border-white/20 text-white/80 px-4 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:border-white hover:text-white transition-colors"
+                >
+                  <Copy size={14} />
+                  {t("catalog.admin.header.duplicateCleanup")}
+                </Link>
+                <Link
+                  href="/admin/billing"
+                  className="flex items-center gap-2 border border-white/20 text-white/80 px-4 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:border-white hover:text-white transition-colors"
+                >
+                  <CreditCard size={14} />
+                  {t("catalog.admin.header.planBilling")}
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => previewRecategoriseMutation.mutate()}
+                  disabled={previewRecategoriseMutation.isPending}
+                  title={t("catalog.admin.header.recategoriseTitle")}
+                  className="flex items-center gap-2 border border-white/20 text-white/80 px-4 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:border-white hover:text-white transition-colors disabled:opacity-50"
+                >
+                  {previewRecategoriseMutation.isPending ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : (
+                    <Tag size={14} />
+                  )}
+                  {t("catalog.admin.header.recategorise")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => previewTranslateMutation.mutate()}
+                  disabled={previewTranslateMutation.isPending}
+                  data-tour="auto-translate"
+                  title={t("catalog.admin.header.autoTranslateTitle")}
+                  className="flex items-center gap-2 border border-white/20 text-white/80 px-4 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:border-white hover:text-white transition-colors disabled:opacity-50"
+                >
+                  {previewTranslateMutation.isPending ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : (
+                    <Languages size={14} />
+                  )}
+                  {t("catalog.admin.header.autoTranslate")}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleTranslateLocales}
+                  disabled={translatingLocales}
+                  title={t("catalog.admin.header.translateLocalesTitle")}
+                  className="flex items-center gap-2 border border-white/20 text-white/80 px-4 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:border-white hover:text-white transition-colors disabled:opacity-50"
+                >
+                  {translatingLocales ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : (
+                    <Languages size={14} />
+                  )}
+                  {t("catalog.admin.header.translateLocales")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => reconciliationMutation.mutate({})}
+                  disabled={reconciliationMutation.isPending}
+                  title={t("catalog.admin.header.reconcileStripeTitle")}
+                  className="flex items-center gap-2 border border-white/20 text-white/80 px-4 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:border-white hover:text-white transition-colors disabled:opacity-50"
+                >
+                  {reconciliationMutation.isPending ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : (
+                    <CreditCard size={14} />
+                  )}
+                  {t("catalog.admin.header.reconcileStripe")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => posAttributionMutation.mutate({})}
+                  disabled={posAttributionMutation.isPending}
+                  title={t("catalog.admin.header.confirmPosTitle")}
+                  className="flex items-center gap-2 border border-white/20 text-white/80 px-4 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:border-white hover:text-white transition-colors disabled:opacity-50"
+                >
+                  {posAttributionMutation.isPending ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : (
+                    <Receipt size={14} />
+                  )}
+                  {t("catalog.admin.header.confirmPos")}
+                </button>
+                {stripeConnectQuery.data?.connected ? (
+                  <span
+                    data-tour="connect-stripe"
+                    title={t("catalog.admin.header.stripeConnectedTitle")}
+                    className="flex items-center gap-2 border border-emerald-400/40 text-emerald-300 px-4 py-2.5 text-xs uppercase tracking-[0.15em] font-sans"
+                  >
+                    <CheckCircle2 size={14} />
+                    {t("catalog.admin.header.stripeConnected")}
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleConnectStripe}
+                    disabled={stripeConnectQuery.isLoading}
+                    data-tour="connect-stripe"
+                    title={t("catalog.admin.header.connectStripeTitle")}
+                    className="flex items-center gap-2 border border-white/20 text-white/80 px-4 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:border-white hover:text-white transition-colors disabled:opacity-50"
+                  >
+                    {stripeConnectQuery.isLoading ? (
+                      <Loader2 size={14} className="animate-spin" />
+                    ) : (
+                      <CreditCard size={14} />
+                    )}
+                    {t("catalog.admin.header.connectStripe")}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    clearTourCompletion(ADMIN_TOUR_ID);
+                    setTourSignal((n) => n + 1);
+                  }}
+                  title={t("catalog.admin.header.tourTitle")}
+                  aria-label={t("catalog.admin.header.tourAria")}
+                  className="flex items-center gap-2 border border-white/20 text-white/80 px-3 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:border-white hover:text-white transition-colors"
+                >
+                  <HelpCircle size={14} />
+                  {t("catalog.admin.header.tour")}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </section>

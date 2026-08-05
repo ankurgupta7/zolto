@@ -54,13 +54,15 @@ It exists because the full dev server needs a database, which a review sandbox
 usually doesn't have.
 
 Four env vars steer it: `SHOT_URL` picks the entry (`catalog.html` is the
-catalogue admin page, `admin.html?route=…` the settings pages), `SHOT_LANG`
-the language, `SHOT_VIEWPORT=390x844` phone width, and `SHOT_CLICK="Add
-Product"` clicks a control before capturing. With `SHOT_FULLPAGE=0` the shot is
-the viewport only, which is what proves an interaction left its result on
-screen rather than somewhere down the page.
+catalogue admin page — add `?tour=1` to keep the first-run coach marks —
+and `admin.html?route=…` the settings pages), `SHOT_LANG` the language,
+`SHOT_VIEWPORT=390x844` phone width, and `SHOT_CLICK="Add Product"` clicks a
+control before capturing (comma-separate for a sequence: `"Next,Next"` walks a
+tour along). With `SHOT_FULLPAGE=0` the shot is the viewport only, which is
+what proves an interaction left its result on screen rather than somewhere
+down the page.
 
-Four things it has already caught that every test suite passed straight
+Five things it has already caught that every test suite passed straight
 through, and which are worth checking for by eye:
 
 - **Tailwind emitting no utilities at all.** v4 infers content paths from the
@@ -73,10 +75,16 @@ through, and which are worth checking for by eye:
   numerals, which renders `CHF 0` as `CHF o` and `2,000` as `2,ooo`. Serif
   numerals showing money or stock need `lining-nums`, not just `tabular-nums`.
 - **A button whose effect lands off-screen.** The catalogue header's tool row
-  wraps into a full-screen stack on a phone, so anything it reveals further
-  down the page opens where nobody can see it and reads as a dead button.
-  Shoot at `SHOT_VIEWPORT=390x844` with `SHOT_CLICK` and `SHOT_FULLPAGE=0`
-  before trusting that a toggle "works".
+  used to wrap into a full-screen stack on a phone, so anything it revealed
+  further down the page opened where nobody could see it and read as a dead
+  button. Shoot at `SHOT_VIEWPORT=390x844` with `SHOT_CLICK` and
+  `SHOT_FULLPAGE=0` before trusting that a toggle "works".
+- **A tour anchor hidden behind a responsive disclosure.** GuidedTour finds its
+  target by selector and prefers a rendered match, so a control that a
+  breakpoint hides gives it a zero-size rect and parks the spotlight in the
+  page corner. Collapse such a control by _unmounting_ it, not with `hidden`,
+  and let `useTourActive()` unfold it while a tour runs — the admin header does
+  both. Check it with `SHOT_URL=…/catalog.html?tour=1 SHOT_CLICK="Next,Next"`.
 
 `fonts loaded: NONE ⚠` in the output means the shot is showing fallback faces
 and proves nothing about typography — the vendored fonts in

@@ -14,6 +14,7 @@ import {
   computeTooltipPosition,
   isTourCompleted,
   markTourCompleted,
+  markTourRunning,
   nextStepIndex,
   positionsEqual,
   rectsEqual,
@@ -34,6 +35,17 @@ interface GuidedTourProps {
   startSignal?: number;
   onFinish?: () => void;
 }
+
+/**
+ * How many consecutive frames a step's target may be absent before the step is
+ * given up on. A target can legitimately be a frame or two late: query data
+ * arriving, or — the reason this isn't zero — a disclosure that opens *because*
+ * the tour started, which cannot happen until the tour has already rendered.
+ * ~15 frames is a quarter of a second: invisible to a user, ample for a React
+ * commit, and still far short of stranding anyone on a step that will never
+ * exist.
+ */
+const MISSING_TARGET_GRACE_FRAMES = 15;
 
 /**
  * Resolve a step's target, preferring a *rendered* match. Several anchors are
@@ -84,8 +96,19 @@ export default function GuidedTour({
     null,
   );
   const tipRef = useRef<HTMLDivElement | null>(null);
+  // Consecutive frames the current step's target has been missing, and whether
+  // this step has already scrolled its target into view. Both reset per step.
+  const misses = useRef(0);
+  const scrolled = useRef(false);
 
   const step = steps[index];
+
+  // Let the rest of the page know a tour is on — some of it has to unfold to
+  // put a target on screen at all (see markTourRunning).
+  useEffect(() => {
+    if (!active) return;
+    return markTourRunning();
+  }, [active]);
 
   const finish = useCallback(
     (completed: boolean) => {
@@ -135,11 +158,28 @@ export default function GuidedTour({
     if (!step) return;
     const el = findTarget(step.target);
     if (!el) {
-      // Target not on the page — skip this step rather than stranding the user.
+      // Not on the page *yet*: give it a few frames before skipping, so a
+      // target that mounts in response to the tour starting still gets its
+      // step (see MISSING_TARGET_GRACE_FRAMES).
+      misses.current += 1;
+      if (misses.current < MISSING_TARGET_GRACE_FRAMES) return;
+      // Gone for good — skip rather than stranding the user on a blank step.
+      misses.current = 0;
       const next = nextStepIndex(index, steps.length);
       if (next === null) finish(true);
       else setIndex(next);
       return;
+    }
+    misses.current = 0;
+    // Bring the target into view the first time this step sees it — which is
+    // not necessarily the first frame, if the target had to be unfolded first.
+    if (!scrolled.current) {
+      scrolled.current = true;
+      el.scrollIntoView({
+        block: "center",
+        inline: "nearest",
+        behavior: "smooth",
+      });
     }
     const r = el.getBoundingClientRect();
     const { scrollX, scrollY } = window;
@@ -185,19 +225,16 @@ export default function GuidedTour({
 
   useLayoutEffect(() => {
     if (!active || !step) return;
-    // Bring the target into view, then keep re-measuring for as long as the
-    // step is on screen — a rAF loop rather than scroll/resize listeners,
-    // because iOS coalesces scroll events during momentum scrolling and fires
-    // none at all mid-smooth-scroll. Scrolling itself needs no update (the
-    // boxes live in document coordinates); the loop exists to catch layout
-    // changes under the tour: fonts loading, query data arriving, rotation,
-    // the address bar collapsing. `measure` no-ops on unchanged geometry, so a
-    // quiet page re-renders zero times.
-    findTarget(step.target)?.scrollIntoView({
-      block: "center",
-      inline: "nearest",
-      behavior: "smooth",
-    });
+    misses.current = 0;
+    scrolled.current = false;
+    // Re-measure for as long as the step is on screen — a rAF loop rather than
+    // scroll/resize listeners, because iOS coalesces scroll events during
+    // momentum scrolling and fires none at all mid-smooth-scroll. Scrolling
+    // itself needs no update (the boxes live in document coordinates); the loop
+    // exists to catch layout changes under the tour: fonts loading, query data
+    // arriving, rotation, the address bar collapsing. `measure` no-ops on
+    // unchanged geometry, so a quiet page re-renders zero times. It also owns
+    // scrolling the target into view, on the first frame it actually finds it.
     let raf = requestAnimationFrame(function tick() {
       measure();
       raf = requestAnimationFrame(tick);

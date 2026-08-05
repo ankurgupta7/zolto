@@ -109,7 +109,8 @@
         "tour": "Tour",
         "tourTitle": "Die geführte Tour durch dieses Dashboard erneut abspielen",
         "tourAria": "Geführte Tour erneut abspielen",
-        "addProduct": "Produkt hinzufügen"
+        "addProduct": "Produkt hinzufügen",
+        "tools": "Werkzeuge"
       },
       "form": {
         "title": "Neues Produkt hinzufügen",
