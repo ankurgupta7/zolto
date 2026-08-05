@@ -262,5 +262,9 @@
   "errors": {
     "unexpected": "Une erreur inattendue s'est produite.",
     "reload": "Recharger la page"
+  },
+  "common": {
+    "close": "Fermer",
+    "loading": "Chargement"
   }
 }

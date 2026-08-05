@@ -262,5 +262,9 @@
   "errors": {
     "unexpected": "Si è verificato un errore imprevisto.",
     "reload": "Ricarica la pagina"
+  },
+  "common": {
+    "close": "Chiudi",
+    "loading": "Caricamento"
   }
 }
