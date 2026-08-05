@@ -53,7 +53,14 @@ This renders the real components against the real `index.css` — nothing mocked
 It exists because the full dev server needs a database, which a review sandbox
 usually doesn't have.
 
-Three things it has already caught that every test suite passed straight
+Four env vars steer it: `SHOT_URL` picks the entry (`catalog.html` is the
+catalogue admin page, `admin.html?route=…` the settings pages), `SHOT_LANG`
+the language, `SHOT_VIEWPORT=390x844` phone width, and `SHOT_CLICK="Add
+Product"` clicks a control before capturing. With `SHOT_FULLPAGE=0` the shot is
+the viewport only, which is what proves an interaction left its result on
+screen rather than somewhere down the page.
+
+Four things it has already caught that every test suite passed straight
 through, and which are worth checking for by eye:
 
 - **Tailwind emitting no utilities at all.** v4 infers content paths from the
@@ -65,6 +72,11 @@ through, and which are worth checking for by eye:
 - **Oldstyle figures in money.** Cormorant Garamond defaults to oldstyle
   numerals, which renders `CHF 0` as `CHF o` and `2,000` as `2,ooo`. Serif
   numerals showing money or stock need `lining-nums`, not just `tabular-nums`.
+- **A button whose effect lands off-screen.** The catalogue header's tool row
+  wraps into a full-screen stack on a phone, so anything it reveals further
+  down the page opens where nobody can see it and reads as a dead button.
+  Shoot at `SHOT_VIEWPORT=390x844` with `SHOT_CLICK` and `SHOT_FULLPAGE=0`
+  before trusting that a toggle "works".
 
 `fonts loaded: NONE ⚠` in the output means the shot is showing fallback faces
 and proves nothing about typography — the vendored fonts in

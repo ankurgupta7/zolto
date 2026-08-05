@@ -704,6 +704,31 @@ describe("Admin page — add product", () => {
     expect(mocks.checkDuplicateMutate).not.toHaveBeenCalled();
     expect(mocks.createMutate).not.toHaveBeenCalled();
   });
+
+  // The form renders well below the fold on a phone, so opening it without
+  // scrolling reads as a dead button.
+  it("scrolls the form into view and focuses the name field when opened", () => {
+    const scrollIntoView = vi.spyOn(Element.prototype, "scrollIntoView");
+    render(<Admin />);
+    fireEvent.click(screen.getByRole("button", { name: "Add Product" }));
+
+    const panel = document.getElementById("add-product-form");
+    expect(panel).not.toBeNull();
+    expect(scrollIntoView.mock.contexts).toContain(panel);
+    expect(document.activeElement).toBe(screen.getByLabelText(/^Name \*/));
+    scrollIntoView.mockRestore();
+  });
+
+  it("does not scroll when the form is closed again", () => {
+    render(<Admin />);
+    const toggle = screen.getByRole("button", { name: "Add Product" });
+    fireEvent.click(toggle);
+    const scrollIntoView = vi.spyOn(Element.prototype, "scrollIntoView");
+    fireEvent.click(toggle);
+    expect(document.getElementById("add-product-form")).toBeNull();
+    expect(scrollIntoView).not.toHaveBeenCalled();
+    scrollIntoView.mockRestore();
+  });
 });
 
 describe("Admin page — header tools", () => {

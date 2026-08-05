@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { categoryColor } from "@/lib/categoryColors";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -609,6 +609,7 @@ export default function Admin() {
   // Bumping this restarts the guided tour (the "Replay tour" button).
   const [tourSignal, setTourSignal] = useState(0);
   const [showAddForm, setShowAddForm] = useState(false);
+  const addFormRef = useRef<HTMLDivElement | null>(null);
   const [form, setForm] = useState<AddForm>(EMPTY_FORM);
   const [sortBy, setSortBy] = useState<SortOption>("newest");
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
@@ -625,6 +626,19 @@ export default function Admin() {
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [CATEGORIES.join("|")]);
+
+  // The add form renders below the capability band, checklist and insights
+  // card — on a phone that is a screen or two past the header, so opening it
+  // without scrolling looks exactly like the button did nothing.
+  useEffect(() => {
+    if (!showAddForm) return;
+    const node = addFormRef.current;
+    if (!node) return;
+    node.scrollIntoView({ behavior: "smooth", block: "start" });
+    node
+      .querySelector<HTMLInputElement>("#create-name")
+      ?.focus({ preventScroll: true });
+  }, [showAddForm]);
 
   // Duplicate detection state
   const [dupState, setDupState] = useState<"idle" | "checking" | "found">(
@@ -1196,7 +1210,11 @@ export default function Admin() {
 
         {/* Add Product Form */}
         {showAddForm && (
-          <div className="bg-white border border-[var(--brand-border)] p-8 mb-8">
+          <div
+            ref={addFormRef}
+            id="add-product-form"
+            className="bg-white border border-[var(--brand-border)] p-8 mb-8 scroll-mt-24"
+          >
             <h2 className="font-serif text-foreground text-xl mb-6">
               {t("catalog.admin.form.title")}
             </h2>
