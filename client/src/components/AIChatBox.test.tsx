@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
+import i18n from "@/lib/i18n";
 import { AIChatBox, type Message } from "./AIChatBox";
 
 // Streamdown is a streaming-markdown renderer; here we only care that
@@ -10,8 +11,11 @@ vi.mock("streamdown", () => ({
   ),
 }));
 
-beforeEach(() => {
+// The storefront falls back to German when the browser asks for it; pin
+// English so the default placeholder assertions below read the source string.
+beforeEach(async () => {
   vi.clearAllMocks();
+  await i18n.changeLanguage("en");
   // jsdom implements neither smooth scrolling API.
   Element.prototype.scrollTo = vi.fn();
   Element.prototype.scrollIntoView = vi.fn();

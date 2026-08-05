@@ -4,8 +4,10 @@
  * plan); the narrative is insights.narrative, which the server gates to Pro
  * advanced analytics — a FORBIDDEN there renders the upsell rather than an error.
  */
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
+import { DEFAULT_LANGUAGE, matchSupportedLanguage } from "@/lib/languages";
 import { TRPCClientError } from "@trpc/client";
 import {
   BarChart3,
@@ -23,11 +25,17 @@ import {
   PlanGate,
 } from "@/components/admin/ui";
 
-function money(v: number, currency: string): string {
-  return `${currency} ${v.toLocaleString("de-CH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+/** Swiss regional locale for the active UI language ("it" → "it-CH"). */
+function numberLocale(language: string): string {
+  return `${matchSupportedLanguage(language) ?? DEFAULT_LANGUAGE}-CH`;
+}
+
+function money(v: number, currency: string, locale: string): string {
+  return `${currency} ${v.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 export default function Insights() {
+  const { t, i18n } = useTranslation("admin");
   const { user } = useAuth();
   const summary = trpc.insights.summary.useQuery(undefined, { retry: false });
   const narrative = trpc.insights.narrative.useQuery(undefined, {
@@ -41,6 +49,7 @@ export default function Insights() {
 
   const s = summary.data;
   const cur = s?.currency ?? "CHF";
+  const locale = numberLocale(i18n.language);
 
   const narrativeForbidden =
     narrative.error instanceof TRPCClientError &&
@@ -48,26 +57,50 @@ export default function Insights() {
 
   const stats = s
     ? [
-        { label: "Revenue (30d)", value: money(s.last30d.totalRevenue, cur) },
-        { label: "Online orders", value: String(s.last30d.onlineOrders) },
-        { label: "Market sales", value: String(s.last30d.posSales) },
-        { label: "Units sold (30d)", value: String(s.last30d.totalUnits) },
-        { label: "Live products", value: String(s.catalog.live) },
-        { label: "Sold all time", value: String(s.catalog.sold) },
-        { label: "Total products", value: String(s.catalog.total) },
-        { label: "Avg. price", value: money(s.catalog.avgPrice, cur) },
+        {
+          label: t("ops.insights.statRevenue30d"),
+          value: money(s.last30d.totalRevenue, cur, locale),
+        },
+        {
+          label: t("ops.insights.statOnlineOrders"),
+          value: String(s.last30d.onlineOrders),
+        },
+        {
+          label: t("ops.insights.statMarketSales"),
+          value: String(s.last30d.posSales),
+        },
+        {
+          label: t("ops.insights.statUnitsSold30d"),
+          value: String(s.last30d.totalUnits),
+        },
+        {
+          label: t("ops.insights.statLiveProducts"),
+          value: String(s.catalog.live),
+        },
+        {
+          label: t("ops.insights.statSoldAllTime"),
+          value: String(s.catalog.sold),
+        },
+        {
+          label: t("ops.insights.statTotalProducts"),
+          value: String(s.catalog.total),
+        },
+        {
+          label: t("ops.insights.statAvgPrice"),
+          value: money(s.catalog.avgPrice, cur, locale),
+        },
       ]
     : [];
 
   return (
     <div>
       <PageHeader
-        title="Insights"
-        description="How your shop is doing, and what to do next."
+        title={t("ops.insights.title")}
+        description={t("ops.insights.description")}
       />
 
       {summary.isLoading ? (
-        <LoadingState label="Doing the sums…" />
+        <LoadingState label={t("ops.insights.loading")} />
       ) : (
         <>
           <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -84,19 +117,22 @@ export default function Insights() {
           </div>
 
           {s && s.topSellers.length > 0 && (
-            <SettingsCard title="Top sellers (30 days)">
+            <SettingsCard title={t("ops.insights.topSellersTitle")}>
               <ul className="divide-y">
-                {s.topSellers.map((t, i) => (
+                {s.topSellers.map((top, i) => (
                   <li
                     key={i}
                     className="flex items-center justify-between py-2.5 text-sm first:pt-0 last:pb-0"
                   >
                     <span className="flex items-center gap-2 text-foreground">
                       <TrendingUp className="h-4 w-4 text-emerald-500" />
-                      {t.name}
+                      {top.name}
                     </span>
                     <span className="tabular-nums text-muted-foreground">
-                      {t.units} sold · {money(t.revenue, cur)}
+                      {t("ops.insights.soldLine", {
+                        units: top.units,
+                        amount: money(top.revenue, cur, locale),
+                      })}
                     </span>
                   </li>
                 ))}
@@ -106,8 +142,8 @@ export default function Insights() {
 
           {s && s.staleStock.length > 0 && (
             <SettingsCard
-              title="Slow movers"
-              description="Live a while without selling — consider restyling the photo or adjusting the price."
+              title={t("ops.insights.slowMoversTitle")}
+              description={t("ops.insights.slowMoversDescription")}
             >
               <ul className="divide-y">
                 {s.staleStock.map((p, i) => (
@@ -120,7 +156,10 @@ export default function Insights() {
                       {p.name}
                     </span>
                     <span className="tabular-nums text-muted-foreground">
-                      {p.daysLive}d live · {money(p.price, cur)}
+                      {t("ops.insights.staleLine", {
+                        days: p.daysLive,
+                        amount: money(p.price, cur, locale),
+                      })}
                     </span>
                   </li>
                 ))}
@@ -129,11 +168,14 @@ export default function Insights() {
           )}
 
           <SettingsCard
-            title="AI analysis"
-            description="A written read on what's selling and what to change next."
+            title={t("ops.insights.aiTitle")}
+            description={t("ops.insights.aiDescription")}
           >
             {narrativeForbidden ? (
-              <PlanGate requiredPlan="pro" feature="AI insights" />
+              <PlanGate
+                requiredPlan="pro"
+                feature={t("ops.insights.aiFeature")}
+              />
             ) : narrative.data ? (
               <p className="whitespace-pre-line text-sm leading-relaxed text-foreground">
                 {narrative.data.narrative}
@@ -148,7 +190,7 @@ export default function Insights() {
                 ) : (
                   <Sparkles className="h-4 w-4" />
                 )}
-                Generate insights
+                {t("ops.insights.generate")}
               </PrimaryButton>
             )}
           </SettingsCard>

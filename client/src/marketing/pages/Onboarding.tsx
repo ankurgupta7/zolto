@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Link, useSearch } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { storeAdminUrl } from "@/lib/surface";
 import { Container } from "../components/Container";
 import { SignInOptions } from "@/components/SignInOptions";
+import { useMarketingT } from "../lib/marketingI18n";
 
 /**
  * Post-signup onboarding wizard (docs/ARCHITECTURE.md). The checklist is
@@ -36,6 +38,7 @@ function ClaimStep({
   store: string | null;
   urlToken: string | null;
 }) {
+  const { t } = useMarketingT();
   // The same-tab signup flow leaves the token in sessionStorage; the emailed
   // claim link carries it in the URL (?claim=…) so it survives any browser
   // state. Either one authorizes the claim.
@@ -114,7 +117,9 @@ function ClaimStep({
   const adminHref = (slug: string | null) => (slug ? storeAdminUrl(slug) : "/");
 
   const finishing = (
-    <p className="text-sm text-[var(--brand-muted-2)]">Finishing your setup…</p>
+    <p className="text-sm text-[var(--brand-muted-2)]">
+      {t("onboarding.finishing")}
+    </p>
   );
 
   const resumeCard = (lead: string) =>
@@ -122,27 +127,30 @@ function ClaimStep({
       <div>
         <p className="font-medium text-[var(--brand-text)]">{lead}</p>
         <p className="mt-1 text-sm text-[var(--brand-muted-2)]">
-          {pending.data.name} is linked to{" "}
-          {me.data?.email ?? "this account's email"} — one click finishes the
-          setup.
+          {t("onboarding.resumeBody", {
+            store: pending.data.name,
+            email: me.data?.email ?? t("onboarding.thisAccountEmail"),
+          })}
         </p>
         <button
           type="button"
           onClick={startResume}
           className="mt-3 inline-block rounded-md bg-[var(--brand-ink)] px-5 py-2.5 text-xs font-medium uppercase tracking-[0.12em] text-white transition-colors hover:bg-[var(--brand-ink-hover)]"
         >
-          Finish setting up {pending.data.name} →
+          {t("onboarding.finishSetup", { store: pending.data.name })}
         </button>
       </div>
     ) : null;
 
   const signInCard = (
     <div>
-      <p className="font-medium text-[var(--brand-text)]">One more step</p>
+      <p className="font-medium text-[var(--brand-text)]">
+        {t("onboarding.oneMoreStep")}
+      </p>
       <p className="mt-1 text-sm text-[var(--brand-muted-2)]">
         {claimToken
-          ? "Sign in to become the admin of your new store."
-          : "Sign in with the email you used at signup to finish setting up your store."}
+          ? t("onboarding.signInToClaim")
+          : t("onboarding.signInWithSignupEmail")}
       </p>
       <SignInOptions
         className="mt-3"
@@ -164,16 +172,16 @@ function ClaimStep({
     inner = (
       <div>
         <p className="font-medium text-[var(--brand-text)]">
-          You're the store admin. 🎉
+          {t("onboarding.doneTitle")}
         </p>
         <p className="mt-1 text-sm text-[var(--brand-muted-2)]">
-          Your account now manages this store.
+          {t("onboarding.doneBody")}
         </p>
         <a
           href={adminHref(claimedSlug)}
           className="mt-3 inline-block rounded-md bg-[var(--brand-ink)] px-5 py-2.5 text-xs font-medium uppercase tracking-[0.12em] text-white transition-colors hover:bg-[var(--brand-ink-hover)]"
         >
-          Go to your dashboard →
+          {t("onboarding.goToDashboard")}
         </a>
       </div>
     );
@@ -183,18 +191,15 @@ function ClaimStep({
     if (state === "tokenFailed" && pending.isLoading) {
       inner = finishing;
     } else if (state === "tokenFailed" && pending.data) {
-      inner = resumeCard(
-        "That setup link didn't work — but your store is still waiting.",
-      );
+      inner = resumeCard(t("onboarding.resumeLeadTokenFailed"));
     } else {
       inner = (
         <div>
           <p className="font-medium text-[var(--brand-text)]">
-            We couldn't finish setting you up.
+            {t("onboarding.failedTitle")}
           </p>
           <p className="mt-1 text-sm text-[var(--brand-muted-2)]">
-            {claimError ??
-              "This claim link is invalid or has already been used. If you already signed in on another device, you're all set."}
+            {claimError ?? t("onboarding.failedBody")}
           </p>
         </div>
       );
@@ -208,7 +213,7 @@ function ClaimStep({
     inner = !me.isLoading && store ? signInCard : null;
   } else if (pending.data) {
     // Signed in, no token, and an unclaimed store matches this email.
-    inner = resumeCard("Your store is waiting for you.");
+    inner = resumeCard(t("onboarding.resumeLeadWaiting"));
   }
 
   if (!inner) return null;
@@ -220,6 +225,11 @@ function ClaimStep({
 }
 
 export default function Onboarding() {
+  const { t } = useMarketingT();
+  // Checklist copy is server-derived and keyed into the admin namespace
+  // (server/onboarding.ts returns keys, not sentences), so it needs its own
+  // translator alongside this page's marketing one.
+  const { t: tTask } = useTranslation("admin");
   const search = useSearch();
   const { store, urlToken } = useMemo(() => {
     const params = new URLSearchParams(search);
@@ -252,14 +262,15 @@ export default function Onboarding() {
   return (
     <Container width="2xl" className="py-20">
       <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
-        welcome{store ? ` — ${store}` : ""}
+        {store
+          ? t("onboarding.welcomeStore", { store })
+          : t("onboarding.welcome")}
       </p>
       <h1 className="mt-2 font-serif text-3xl text-[var(--brand-text)]">
-        Let's get your store live.
+        {t("onboarding.heading")}
       </h1>
       <p className="mt-3 text-[var(--brand-muted-2)]">
-        This list updates itself as you go — finish a step in the admin and it
-        ticks off here, on any device.
+        {t("onboarding.intro")}
       </p>
 
       <div className="mt-8">
@@ -280,7 +291,11 @@ export default function Onboarding() {
             className="flex gap-4 rounded-xl border border-[var(--brand-border)] bg-white p-5"
           >
             <span
-              aria-label={task.done ? "Done" : "Not done"}
+              aria-label={
+                task.done
+                  ? t("onboarding.taskDone")
+                  : t("onboarding.taskNotDone")
+              }
               className={`mt-0.5 grid h-6 w-6 flex-shrink-0 place-items-center rounded-full border text-xs ${
                 task.done
                   ? "border-[var(--brand-accent)] bg-[var(--brand-accent)] text-[var(--brand-ink)]"
@@ -293,17 +308,19 @@ export default function Onboarding() {
               <h3
                 className={`font-serif text-lg ${task.done ? "text-[var(--brand-muted)] line-through" : "text-[var(--brand-text)]"}`}
               >
-                {task.title}
+                {tTask(task.titleKey, task.params)}
               </h3>
               <p className="mt-1 text-sm text-[var(--brand-muted-2)]">
-                {task.blockedReason ?? task.body}
+                {task.blockedReasonKey
+                  ? tTask(task.blockedReasonKey, task.params)
+                  : tTask(task.bodyKey, task.params)}
               </p>
-              {!task.done && task.href && !task.blockedReason && (
+              {!task.done && task.href && !task.blockedReasonKey && (
                 <Link
                   href={task.href}
                   className="mt-2 inline-block text-xs font-medium uppercase tracking-[0.12em] text-[var(--brand-accent)] hover:underline"
                 >
-                  Go there →
+                  {t("onboarding.goThere")}
                 </Link>
               )}
             </div>
@@ -319,7 +336,9 @@ export default function Onboarding() {
             : "border border-[var(--brand-ink)]/25 text-[var(--brand-ink)] hover:bg-[var(--brand-ink)] hover:text-white"
         }`}
       >
-        {allDone ? "Go to your dashboard →" : "Continue in your dashboard"}
+        {allDone
+          ? t("onboarding.goToDashboard")
+          : t("onboarding.continueDashboard")}
       </a>
     </Container>
   );

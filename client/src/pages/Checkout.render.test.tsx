@@ -136,7 +136,12 @@ describe("Checkout page", () => {
     fireEvent.click(screen.getByRole("checkbox"));
     fireEvent.click(payButton());
 
-    expect(mocks.createSession).toHaveBeenCalledWith({ productIds: [1, 2] });
+    // The storefront language rides along so Stripe Checkout and the receipt
+    // email match the language the customer shopped in.
+    expect(mocks.createSession).toHaveBeenCalledWith({
+      productIds: [1, 2],
+      locale: "en",
+    });
     await waitFor(() =>
       expect(screen.getByText(en.checkout.redirecting)).toBeTruthy(),
     );

@@ -1,5 +1,7 @@
+import { useTranslation } from "react-i18next";
 import { useTenant } from "@/contexts/TenantContext";
-import { genericImprint } from "@/lib/storefrontContent";
+import { genericImprint, pageChrome } from "@/lib/storefrontContent";
+import { matchSupportedLanguage } from "@/lib/languages";
 
 /**
  * Legal Notice (Impressum). Generic, tenant-branded — a merchant is responsible
@@ -8,7 +10,10 @@ import { genericImprint } from "@/lib/storefrontContent";
  */
 export default function Impressum() {
   const { branding } = useTenant();
-  const imprint = genericImprint(branding);
+  const { i18n } = useTranslation();
+  const lang = matchSupportedLanguage(i18n.language) ?? "en";
+  const imprint = genericImprint(branding, lang);
+  const chrome = pageChrome(branding, lang).imprint;
 
   return (
     <div className="page-enter pt-20">
@@ -36,9 +41,7 @@ export default function Impressum() {
           </dl>
 
           <p className="mt-10 rounded border border-[var(--brand-border)] bg-[var(--brand-surface-2)] p-4 text-xs text-muted-foreground font-sans">
-            {branding.storeName} is responsible for adding any legal details its
-            jurisdiction requires (company form, registration or VAT numbers,
-            and a registered address).
+            {chrome.disclaimer}
           </p>
         </div>
       </section>

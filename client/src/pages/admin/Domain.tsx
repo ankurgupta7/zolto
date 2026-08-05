@@ -5,6 +5,7 @@
  * does. Plan-gated: the server rejects publicDomain on Free, so we upsell.
  */
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Globe, CheckCircle2, Clock } from "lucide-react";
@@ -25,6 +26,7 @@ import { useTenantSettings } from "@/components/admin/useTenantSettings";
 import { featuresForPlan } from "@shared/platform";
 
 export default function Domain() {
+  const { t } = useTranslation("admin");
   const { tenant, settings, invalidate } = useTenantSettings();
   const status = trpc.tenant.domainStatus.useQuery(undefined, { retry: false });
   const [domain, setDomain] = useState("");
@@ -37,9 +39,9 @@ export default function Domain() {
     onSuccess: () => {
       invalidate();
       status.refetch();
-      toast.success("Domain saved. DNS can take a little while to propagate.");
+      toast.success(t("store.domain.savedToast"));
     },
-    onError: (e) => toast.error(e.message || "Could not save."),
+    onError: (e) => toast.error(e.message || t("store.domain.saveError")),
   });
 
   const plan = tenant?.plan ?? "free";
@@ -47,10 +49,10 @@ export default function Domain() {
     return (
       <div>
         <PageHeader
-          title="Domain"
-          description="Use your own web address for your storefront."
+          title={t("store.domain.title")}
+          description={t("store.domain.description")}
         />
-        <PlanGate requiredPlan="pro" feature="A custom domain" />
+        <PlanGate requiredPlan="pro" feature={t("store.domain.gateFeature")} />
       </div>
     );
   }
@@ -58,7 +60,7 @@ export default function Domain() {
   const onSave = () => {
     const value = domain.trim().toLowerCase();
     if (!/^[a-z0-9]+(-[a-z0-9]+)*(\.[a-z0-9]+(-[a-z0-9]+)*)+$/.test(value)) {
-      toast.error("Enter a bare domain like shop.example.com (no https://).");
+      toast.error(t("store.domain.invalidDomain"));
       return;
     }
     save.mutate({ publicDomain: value });
@@ -71,22 +73,22 @@ export default function Domain() {
   return (
     <div>
       <PageHeader
-        title="Domain"
-        description="Use your own web address for your storefront."
+        title={t("store.domain.title")}
+        description={t("store.domain.description")}
       />
 
       <SettingsCard
-        title="Custom domain"
+        title={t("store.domain.cardTitle")}
         footer={
           <PrimaryButton onClick={onSave} loading={save.isPending}>
-            Save domain
+            {t("store.domain.saveDomain")}
           </PrimaryButton>
         }
       >
         <Field
-          label="Your domain"
+          label={t("store.domain.yourDomain")}
           htmlFor="public-domain"
-          hint="Enter a bare domain — for example shop.yourbrand.com."
+          hint={t("store.domain.domainHint")}
         >
           <input
             id="public-domain"
@@ -100,18 +102,17 @@ export default function Domain() {
       </SettingsCard>
 
       {savedDomain && (
-        <SettingsCard title="Connection status">
+        <SettingsCard title={t("store.domain.statusTitle")}>
           <div className="flex items-center gap-3">
             {pointsToUs ? (
               <>
                 <CheckCircle2 className="h-5 w-5 text-emerald-500" />
                 <div>
                   <p className="text-sm font-medium text-foreground">
-                    {savedDomain} is connected
+                    {t("store.domain.connected", { domain: savedDomain })}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    DNS points at Zolto and a certificate will be issued
-                    automatically.
+                    {t("store.domain.connectedNote")}
                   </p>
                 </div>
               </>
@@ -120,12 +121,15 @@ export default function Domain() {
                 <Clock className="h-5 w-5 text-amber-500" />
                 <div>
                   <p className="text-sm font-medium text-foreground">
-                    Waiting for DNS
+                    {t("store.domain.waiting")}
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {expected
-                      ? `Point a CNAME record for ${savedDomain} at ${expected}, then this will turn green.`
-                      : "Point your domain's CNAME at the platform and this will turn green."}
+                      ? t("store.domain.waitingNote", {
+                          domain: savedDomain,
+                          expected,
+                        })
+                      : t("store.domain.waitingNoteNoExpected")}
                   </p>
                 </div>
               </>
@@ -135,14 +139,21 @@ export default function Domain() {
             <div className="mt-4 rounded-lg border bg-muted/40 p-4 font-mono text-xs text-foreground">
               <div className="flex flex-wrap gap-x-8 gap-y-1">
                 <span>
-                  <span className="text-muted-foreground">Type:</span> CNAME
+                  <span className="text-muted-foreground">
+                    {t("store.domain.recordType")}
+                  </span>{" "}
+                  CNAME
                 </span>
                 <span>
-                  <span className="text-muted-foreground">Name:</span>{" "}
+                  <span className="text-muted-foreground">
+                    {t("store.domain.recordName")}
+                  </span>{" "}
                   {savedDomain}
                 </span>
                 <span>
-                  <span className="text-muted-foreground">Value:</span>{" "}
+                  <span className="text-muted-foreground">
+                    {t("store.domain.recordValue")}
+                  </span>{" "}
                   {expected}
                 </span>
               </div>
@@ -155,7 +166,7 @@ export default function Domain() {
               className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
             >
               <Globe className="h-4 w-4" />
-              Re-check now
+              {t("store.domain.recheck")}
             </button>
           </div>
         </SettingsCard>

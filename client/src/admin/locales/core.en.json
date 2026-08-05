@@ -1,0 +1,63 @@
+{
+  "core": {
+    "nav": {
+      "groups": {
+        "store": "Shop",
+        "account": "Zolto account"
+      },
+      "home": "Home",
+      "products": "Products",
+      "import": "Import",
+      "categories": "Categories",
+      "orders": "Orders",
+      "reconciliation": "Reconciliation",
+      "storefront": "Storefront",
+      "domain": "Domain",
+      "channels": "Channels",
+      "pos": "POS",
+      "insights": "Insights",
+      "shop-profile": "Shop profile",
+      "my-account": "My account",
+      "team": "Team",
+      "plan-billing": "Plan & billing",
+      "ai-usage": "AI usage",
+      "keys-access": "Keys & access",
+      "data-privacy": "Data & privacy",
+      "support": "Support",
+      "legal-invoices": "Legal & invoices",
+      "platform-metrics": "Platform metrics"
+    },
+    "layout": {
+      "navLabel": "Admin navigation",
+      "openNav": "Open navigation",
+      "closeNav": "Close navigation",
+      "requiresPlan": "Requires the {{plan}} plan",
+      "defaultTitle": "Admin",
+      "switchLanguage": "Switch language"
+    },
+    "placeholder": {
+      "body": "This section is being rebuilt as part of the new admin area and will appear here in an upcoming release."
+    },
+    "ui": {
+      "loading": "Fetching your things…",
+      "planGate": {
+        "title": "{{feature}} is a {{plan}}-plan feature",
+        "description": "Upgrade to {{plan}} or above to unlock {{featureLower}}.",
+        "viewPlans": "View plans"
+      },
+      "adminOnly": {
+        "title": "Admins only",
+        "description": "This part of your Zolto account is managed by the store owner or an admin."
+      }
+    },
+    "pos": {
+      "notPublished": "{{platform}} — not published yet",
+      "getFor": "Get it for {{platform}}",
+      "testingNote": "The register app is still in testing. Ask us for a build and we will send you one — everything else on this page works already.",
+      "firstLaunch": "What the app asks for on first launch",
+      "step1": "1. Server",
+      "copyServer": "Copy server address",
+      "step2": "2. Your POS API key"
+    }
+  }
+}

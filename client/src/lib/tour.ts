@@ -8,8 +8,15 @@ export type TourPlacement = "top" | "bottom" | "left" | "right";
 export interface TourStep {
   /** CSS selector for the element to spotlight, e.g. `[data-tour="add-product"]`. */
   target: string;
-  title: string;
-  body: string;
+  /**
+   * i18next keys (admin namespace) for the step's heading and paragraph, NOT
+   * the copy itself — the step lists are module constants evaluated once at
+   * import time, so a literal would freeze the tour in whatever language the
+   * bundle was authored in. GuidedTour resolves them with `t()` at render, so
+   * a language switch mid-tour re-renders into the new language.
+   */
+  titleKey: string;
+  bodyKey: string;
   /** Preferred side to place the tooltip; may be flipped to stay on-screen. */
   placement?: TourPlacement;
 }

@@ -6,21 +6,30 @@
  * "taste of AI"), unmetered on Pro. Queries are never the meter. The page
  * shows this month's usage and the generation log for transparency.
  */
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
+import { DEFAULT_LANGUAGE, matchSupportedLanguage } from "@/lib/languages";
 import { Sparkles } from "lucide-react";
 import { Link } from "wouter";
 import { PageHeader, SettingsCard, AdminOnly } from "@/components/admin/ui";
 
-const LEDGER_LABELS: Record<string, string> = {
-  monthly_grant: "Plan bucket (pre-pivot)",
-  purchase: "Top-up purchase (pre-pivot)",
-  consumption: "AI photo generated",
-  manual_adjustment: "Adjustment",
-  refund: "Refund (generation failed)",
+/** Ledger `kind` → i18n key under `ops.credits`. */
+const LEDGER_LABEL_KEYS: Record<string, string> = {
+  monthly_grant: "ledgerMonthlyGrant",
+  purchase: "ledgerPurchase",
+  consumption: "ledgerConsumption",
+  manual_adjustment: "ledgerManualAdjustment",
+  refund: "ledgerRefund",
 };
 
+/** Swiss regional locale for the active UI language ("it" → "it-CH"). */
+function dateLocale(language: string): string {
+  return `${matchSupportedLanguage(language) ?? DEFAULT_LANGUAGE}-CH`;
+}
+
 export default function Credits() {
+  const { t, i18n } = useTranslation("admin");
   const { user } = useAuth();
 
   const status = trpc.billing.getStatus.useQuery(undefined, { retry: false });
@@ -34,12 +43,13 @@ export default function Credits() {
 
   const ai = status.data?.ai;
   const unmetered = ai != null && ai.allowancePerMonth === null;
+  const locale = dateLocale(i18n.language);
 
   return (
     <div>
       <PageHeader
-        title="AI usage"
-        description="AI photo generation is included with your plan — a monthly allowance on Free, unmetered on Pro. Queries are never the meter."
+        title={t("ops.credits.title")}
+        description={t("ops.credits.description")}
       />
 
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -47,49 +57,50 @@ export default function Credits() {
           <div className="flex items-center gap-2 text-muted-foreground">
             <Sparkles className="h-4 w-4" />
             <span className="text-xs font-medium uppercase tracking-wide">
-              AI photo shots this month
+              {t("ops.credits.shotsThisMonth")}
             </span>
           </div>
           <p className="mt-2 text-3xl font-semibold tabular-nums text-foreground">
             {ai == null
               ? "—"
               : unmetered
-                ? "Unmetered"
+                ? t("ops.credits.unmetered")
                 : `${ai.usedThisMonth} / ${ai.allowancePerMonth}`}
           </p>
         </div>
         <div className="rounded-xl border bg-card p-5">
           <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Descriptions, translations &amp; chat
+            {t("ops.credits.textAi")}
           </span>
           <p className="mt-2 text-3xl font-semibold text-foreground">
-            Not counted
+            {t("ops.credits.notCounted")}
           </p>
         </div>
       </div>
 
       {ai != null && !unmetered && (
         <SettingsCard
-          title="Want unmetered AI?"
-          description="Pro removes the monthly allowance entirely — and the 1% online fee with it."
+          title={t("ops.credits.upsellTitle")}
+          description={t("ops.credits.upsellDescription")}
         >
           <p className="text-sm text-muted-foreground">
-            Upgrade under{" "}
+            {t("ops.credits.upgradePrefix")}{" "}
             <Link href="/admin/account/plan" className="underline">
-              Plan &amp; billing
+              {t("ops.credits.upgradeLink")}
             </Link>
-            . Your allowance also resets automatically each month.
+            {t("ops.credits.upgradeSuffix")}
           </p>
         </SettingsCard>
       )}
 
-      <SettingsCard title="Generation log">
+      <SettingsCard title={t("ops.credits.logTitle")}>
         {history.data && history.data.length > 0 ? (
           <ul className="divide-y">
             {history.data.map((row) => {
               const delta = (row as { delta: number }).delta;
               const kind = (row as { kind: string }).kind;
               const createdAt = (row as { createdAt: string | Date }).createdAt;
+              const labelKey = LEDGER_LABEL_KEYS[kind];
               return (
                 <li
                   key={(row as { id: number }).id}
@@ -97,10 +108,10 @@ export default function Credits() {
                 >
                   <div>
                     <p className="text-foreground">
-                      {LEDGER_LABELS[kind] ?? kind}
+                      {labelKey ? t(`ops.credits.${labelKey}`) : kind}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {new Date(createdAt).toLocaleDateString()}
+                      {new Date(createdAt).toLocaleDateString(locale)}
                     </p>
                   </div>
                   <span
@@ -113,7 +124,9 @@ export default function Credits() {
             })}
           </ul>
         ) : (
-          <p className="text-sm text-muted-foreground">No AI activity yet.</p>
+          <p className="text-sm text-muted-foreground">
+            {t("ops.credits.noActivity")}
+          </p>
         )}
       </SettingsCard>
     </div>

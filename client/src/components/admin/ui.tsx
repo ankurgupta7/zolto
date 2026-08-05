@@ -10,7 +10,28 @@
 import type { ReactNode } from "react";
 import { Link } from "wouter";
 import { Loader2, Lock } from "lucide-react";
+import { useTranslation } from "react-i18next";
+// Ensure the shared i18n instance is initialized even when a page pulls these
+// blocks in isolation (e.g. under test) before main.tsx has run.
+import "@/lib/i18n";
 import { SketchCircle } from "@/components/SketchAccents";
+
+// ─── Nav label lookup ─────────────────────────────────────────────────────────
+
+/**
+ * i18n key for a manifest nav label, e.g. "Plan & billing" →
+ * "core.nav.plan-billing". The manifest (admin/nav.ts) stays pure data with
+ * English labels; the shell translates them via
+ * `t(navLabelKey(label), { defaultValue: label })`, so an unmapped label
+ * degrades to its English text rather than a raw key.
+ */
+export function navLabelKey(label: string): string {
+  const slug = label
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return `core.nav.${slug}`;
+}
 
 // ─── PageHeader ───────────────────────────────────────────────────────────────
 
@@ -209,11 +230,8 @@ export function EmptyState({
  * nothing at all to a screen reader, so the page simply appeared empty until
  * data arrived. `role="status"` plus a text label means the wait is spoken.
  */
-export function LoadingState({
-  label = "Fetching your things…",
-}: {
-  label?: string;
-}) {
+export function LoadingState({ label }: { label?: string }) {
+  const { t } = useTranslation("admin");
   return (
     <div
       role="status"
@@ -221,7 +239,7 @@ export function LoadingState({
       className="flex flex-col items-center justify-center gap-3 py-20 text-muted-foreground"
     >
       <Loader2 className="h-6 w-6 animate-spin" aria-hidden="true" />
-      <p className="text-sm">{label}</p>
+      <p className="text-sm">{label ?? t("core.ui.loading")}</p>
     </div>
   );
 }
@@ -240,18 +258,25 @@ export function PlanGate({
   requiredPlan: string;
   feature: string;
 }) {
+  const { t } = useTranslation("admin");
   const plan = requiredPlan.charAt(0).toUpperCase() + requiredPlan.slice(1);
   return (
     <EmptyState
       icon={<Lock className="h-8 w-8" aria-hidden="true" />}
-      title={`${feature} is a ${plan}-plan feature`}
-      description={`Upgrade to ${plan} or above to unlock ${feature.toLowerCase()}.`}
+      title={t("core.ui.planGate.title", { feature, plan })}
+      description={t("core.ui.planGate.description", {
+        plan,
+        // Both casings are offered so each language can pick the natural one:
+        // English lowercases mid-sentence, German keeps the noun capitalized.
+        feature,
+        featureLower: feature.toLowerCase(),
+      })}
       action={
         <Link
           href="/admin/account/plan"
           className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
         >
-          View plans
+          {t("core.ui.planGate.viewPlans")}
         </Link>
       }
     />
@@ -266,11 +291,12 @@ export function PlanGate({
  * this is UX so a staff member sees a clear message, not a raw error.
  */
 export function AdminOnly() {
+  const { t } = useTranslation("admin");
   return (
     <EmptyState
       icon={<Lock className="h-8 w-8" aria-hidden="true" />}
-      title="Admins only"
-      description="This part of your Zolto account is managed by the store owner or an admin."
+      title={t("core.ui.adminOnly.title")}
+      description={t("core.ui.adminOnly.description")}
     />
   );
 }

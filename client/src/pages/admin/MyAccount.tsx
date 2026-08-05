@@ -14,6 +14,7 @@
  */
 
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -27,8 +28,15 @@ import {
   SecondaryButton,
 } from "@/components/admin/ui";
 
-/** How the account signed in, phrased for a merchant rather than an engineer. */
-function signInMethodLabel(method: string | null | undefined): string {
+/**
+ * How the account signed in, phrased for a merchant rather than an engineer.
+ * Google and Apple are product names and stay as they are in every language;
+ * the other two are translated.
+ */
+function signInMethodLabel(
+  method: string | null | undefined,
+  t: (key: string) => string,
+): string {
   switch (method) {
     case "google":
       return "Google";
@@ -36,13 +44,14 @@ function signInMethodLabel(method: string | null | undefined): string {
       return "Apple";
     case "magic-link":
     case "magic_link":
-      return "Email link";
+      return t("ops.myAccount.methodEmailLink");
     default:
-      return "Email";
+      return t("ops.myAccount.methodEmail");
   }
 }
 
 export default function MyAccount() {
+  const { t } = useTranslation("admin");
   const { user, logout, refresh } = useAuth();
   const [name, setName] = useState("");
 
@@ -53,20 +62,20 @@ export default function MyAccount() {
   const save = trpc.auth.updateProfile.useMutation({
     onSuccess: async () => {
       await refresh();
-      toast.success("Name saved.");
+      toast.success(t("ops.myAccount.nameSaved"));
     },
-    onError: (e) => toast.error(e.message || "Could not save your name."),
+    onError: (e) => toast.error(e.message || t("ops.myAccount.nameSaveFailed")),
   });
 
   if (!user) {
     return (
       <p className="text-sm text-muted-foreground">
-        You are not signed in.{" "}
+        {t("ops.myAccount.notSignedIn")}{" "}
         <a
           href="/signin?next=/admin/account/me"
           className="text-primary underline underline-offset-4"
         >
-          Sign in
+          {t("ops.myAccount.signIn")}
         </a>
       </p>
     );
@@ -75,7 +84,7 @@ export default function MyAccount() {
   const onSave = () => {
     const trimmed = name.trim();
     if (!trimmed) {
-      toast.error("Your name cannot be empty.");
+      toast.error(t("ops.myAccount.nameEmpty"));
       return;
     }
     save.mutate({ name: trimmed });
@@ -84,27 +93,27 @@ export default function MyAccount() {
   return (
     <div>
       <PageHeader
-        title="My account"
-        description="You, personally — separate from your shop's details."
+        title={t("ops.myAccount.title")}
+        description={t("ops.myAccount.description")}
       />
 
       <SettingsCard
-        title="Your name"
-        description="Shown to your team; never shown to customers."
+        title={t("ops.myAccount.nameTitle")}
+        description={t("ops.myAccount.nameDescription")}
         footer={
           <PrimaryButton onClick={onSave} loading={save.isPending}>
-            Save changes
+            {t("ops.myAccount.saveChanges")}
           </PrimaryButton>
         }
       >
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-          <Field label="Display name" htmlFor="display-name">
+          <Field label={t("ops.myAccount.displayName")} htmlFor="display-name">
             <input
               id="display-name"
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Anna Brunner"
+              placeholder={t("ops.myAccount.namePlaceholder")}
               className={inputClass}
             />
           </Field>
@@ -112,13 +121,13 @@ export default function MyAccount() {
       </SettingsCard>
 
       <SettingsCard
-        title="How you sign in"
-        description="Your login identity. Changing it needs support, because a new address has to be proved before it can open your shop."
+        title={t("ops.myAccount.signInTitle")}
+        description={t("ops.myAccount.signInDescription")}
       >
         <dl className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div>
             <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Email
+              {t("ops.myAccount.email")}
             </dt>
             <dd className="mt-1 text-sm text-foreground">
               {user.email ?? "—"}
@@ -126,34 +135,35 @@ export default function MyAccount() {
           </div>
           <div>
             <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Method
+              {t("ops.myAccount.method")}
             </dt>
             <dd className="mt-1 text-sm text-foreground">
-              {signInMethodLabel(user.loginMethod)}
+              {signInMethodLabel(user.loginMethod, t)}
             </dd>
           </div>
           <div>
             <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Role
+              {t("ops.myAccount.role")}
             </dt>
             <dd className="mt-1 text-sm capitalize text-foreground">
-              {user.role === "superadmin" ? "Platform owner" : user.role}
+              {user.role === "superadmin"
+                ? t("ops.myAccount.platformOwner")
+                : user.role}
             </dd>
           </div>
         </dl>
         <p className="mt-4 text-xs text-muted-foreground">
-          Need a different email on this account? Contact support — orders,
-          receipts, and your team's invitations are tied to it.
+          {t("ops.myAccount.supportNote")}
         </p>
       </SettingsCard>
 
       <SettingsCard
-        title="Session"
-        description="Signing out ends this session on this device only."
+        title={t("ops.myAccount.sessionTitle")}
+        description={t("ops.myAccount.sessionDescription")}
       >
         <SecondaryButton onClick={() => logout()}>
           <LogOut className="h-4 w-4" />
-          Sign out
+          {t("ops.myAccount.signOut")}
         </SecondaryButton>
       </SettingsCard>
     </div>

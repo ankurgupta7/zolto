@@ -1,0 +1,906 @@
+{
+  "nav": {
+    "product": "Prodotto",
+    "whoItsFor": "Per chi è",
+    "pricing": "Prezzi",
+    "compare": "Confronta",
+    "faq": "FAQ",
+    "launchDiary": "Diario di lancio",
+    "menu": "Menu",
+    "openMenu": "Apri il menu",
+    "signIn": "Accedi",
+    "startFree": "Inizia gratis",
+    "goToYourStore": "Vai al Suo negozio",
+    "myStore": "Il mio negozio",
+    "signedInAs": "Accesso effettuato come {{email}}"
+  },
+  "footer": {
+    "copyright": "© {{year}} Zolto — commercio per artigiani, fatto a mano a Zurigo, costruito perché più soldi restino nelle Sue tasche.",
+    "pricing": "Prezzi",
+    "faq": "FAQ",
+    "privacy": "Privacy",
+    "terms": "Condizioni"
+  },
+  "landing": {
+    "startFree": "Inizia gratis →",
+    "seePricing": "Vedi i prezzi",
+    "pledgeEyebrow": "la nostra promessa agli artigiani",
+    "pledgeSignature": "— il team Zolto",
+    "comparisonEyebrow": "il confronto onesto",
+    "comparisonHeading": "Che cosa sta davvero pagando loro.",
+    "comparisonBody": "Stripe, SumUp e Worldline sono nati per un'epoca in cui i siti web erano difficili e un lettore di carte era quasi uno status symbol. Sta ancora pagando per quell'epoca — non per qualcosa di cui ha davvero bisogno oggi.",
+    "colOldGuard": "La vecchia guardia",
+    "howEyebrow": "ecco come funziona",
+    "howHeading": "Un solo negozio. Ovunque Lei venda.",
+    "inventoryTitle": "Un inventario, due canali",
+    "inventoryBody": "Venda al mercato e online dallo stesso catalogo. Venduto l'ultimo pezzo al banco, sparisce dal sito in tempo reale — niente doppi inserimenti, niente vendite oltre la scorta.",
+    "photoTitle": "Scatti una foto, ottenga una scheda prodotto",
+    "photoBody": "Fotografi un pezzo e l'IA prepara titolo, descrizione e un prezzo suggerito — in ogni lingua in cui vende. Lei rivede e pubblica; il lavoro noioso è già fatto.",
+    "messyEyebrow": "un'IA che va d'accordo col disordine",
+    "messyHeading": "Prima venda. Poi sistemi.",
+    "messyBody": "Un vero banco del mercato è un caos meraviglioso. Non si fermi a metà vendita per etichettare ogni pezzo — il Suo telefono è il terminale, l'IA è il back office, e Lei è lì solo per vendere cose belle.",
+    "emailFrom": "Da",
+    "emailSubjectLabel": "Oggetto:",
+    "emailSubject": "La Sua giornata — 2 vendite da confermare",
+    "emailBody": "Oggi ha incassato CHF 165 con 2 tap. In base a ciò che è a magazzino e a ciò che di solito si vende a questa fiera, ecco la nostra ipotesi migliore — tocchi il pezzo giusto per ciascuna:",
+    "emailItem1Name": "Collana di perle barocche",
+    "emailItem1Meta": "CHF 120 · 1 disponibile",
+    "emailItem2Name": "Orecchini a goccia di perla",
+    "emailItem2Meta": "CHF 45 · 3 disponibili",
+    "emailConfirm": "È questo ✓",
+    "ctaEyebrow": "pronti quando lo è Lei",
+    "ctaHeading": "Il Suo negozio, online questa settimana.",
+    "ctaBody": "Vendere di persona è gratis, per sempre. 14 giorni di prova su Pro, nessuna carta di credito per dare un'occhiata — e mai un lettore di carte. Promesso.",
+    "ctaButton": "Crei il Suo negozio →"
+  },
+  "pricing": {
+    "eyebrow": "onesto & semplice",
+    "heading": "Prezzi semplici per artigiani.",
+    "intro": "Vendere di persona è gratis, per sempre. Guadagniamo solo quando La aiutiamo davvero a guadagnare online — {{percent}} sul piano Gratuito, oppure passi alla tariffa fissa con Pro e tenga tutto.",
+    "oldWay": "Il vecchio modo",
+    "perYearShort": "/anno",
+    "perMonthShort": "/mese",
+    "zoltoPlan": "Zolto {{plan}}",
+    "mostPopular": "Il più scelto",
+    "perMonth": "/ mese",
+    "feeEyebrow": "l'unica commissione che applichiamo",
+    "feeHeading": "{{percent}} su {{appliesTo}} — nulla di persona",
+    "onlineOnly": "solo online",
+    "feePoint1": "Al banco del mercato non prendiamo nulla — TWINT QR e Tap to Pay, tutta la stagione, CHF 0. Ogni volta.",
+    "feePoint2": "Gli ordini online e tramite agenti IA sul piano Gratuito hanno una commissione del {{percent}}, trattenuta automaticamente nel pagamento Stripe — nessuna fattura separata, e un mese senza vendite online costa CHF 0.",
+    "feePoint3": "{{plan}} (CHF {{price}}/mese) elimina del tutto la commissione. Oltre circa CHF {{breakEven}}/mese online è l'opzione più conveniente — sarà la Sua dashboard a dirLe quando.",
+    "feePoint4": "L'uso dell'IA non è mai il contatore: descrizioni, traduzioni e chat non vengono conteggiate, e l'IA di Pro è senza limiti. I piani crescono su prodotti, foto e spazio — non su quanto usa l'IA.",
+    "questions": "Domande"
+  },
+  "faqPage": {
+    "metaTitle": "FAQ — {{name}}",
+    "metaDescription": "Risposte alle domande che gli artigiani fanno su {{name}}: quanto costa, come funziona la configurazione, come si viene pagati e come vendere di persona e online.",
+    "eyebrow": "risposte dirette",
+    "heading": "Domande frequenti",
+    "intro1": "Tutto ciò che gli artigiani chiedono prima di aprire un negozio. Ancora dubbi?",
+    "introLink": "Inizi gratis",
+    "intro2": "— dare un'occhiata non costa nulla.",
+    "readyHeading": "Pronto ad aprire il Suo negozio?",
+    "startFree": "Inizia gratis",
+    "seePricing": "Vedi i prezzi"
+  },
+  "feeCalculator": {
+    "eyebrow": "faccia i conti da sé",
+    "heading": "Quanto Le addebiteremmo davvero?",
+    "intro": "Trascini il Suo mese. Le mostriamo il conto — e Le diciamo quando Le converrebbe il piano più economico, anche quando non è quello che preferiremmo vendere.",
+    "sliderLabel": "Le Sue vendite online questo mese",
+    "sliderNote": "Le vendite al banco non sono in questo riquadro di proposito — sono gratuite su ogni piano, quindi non potrebbero mai cambiare la risposta.",
+    "onFree": "Con Gratuito",
+    "onPlan": "Con {{plan}}",
+    "freeMeta": "{{percent}} delle vendite online · nessun abbonamento",
+    "proMeta": "canone mensile fisso · 0% su ogni vendita",
+    "verdictNoSales": "Nessuna vendita online? Allora non guadagniamo nulla. <hl>CHF 0.00.</hl> Venda al banco tutto il mese e saremo felici di non incassare niente.",
+    "verdictFree": "Resti su Gratuito — questo mese Le costa <hl>{{saving}}</hl> in meno. Le diremo il giorno in cui la cosa si ribalta, attorno a CHF {{breakEven}} online.",
+    "verdictPro": "Bel mese. {{plan}} Le farebbe risparmiare <hl>{{saving}}</hl> — e la Sua dashboard La avvisa appena è così, senza che debba continuare a controllare."
+  },
+  "agentPitch": {
+    "assistantLabel": "L'assistente IA del Suo cliente",
+    "chatUser1": "Trovami una tazza in ceramica fatta a mano sotto i CHF 40, consegnata a Zurigo entro venerdì.",
+    "chatAssistant1a": "Bergblume Keramik, un piccolo atelier di Berna, ha la",
+    "chatProductName": "Alpine Glaze Mug",
+    "chatAssistant1b": "— tornita a mano, CHF 38, 3 disponibili, spedizione domani.",
+    "chatProductMeta": "CHF 38 · 3 disponibili · bergblume.zolto.ch",
+    "chatAssistant1c": "Vuole che la ordini?",
+    "chatUser2": "Sì — ordinala.",
+    "orderPlaced": "Ordine effettuato ✓",
+    "orderPlacedRest": "— conferma inviata. Pagato direttamente sullo Stripe dell'artigiana.",
+    "mcpCaption": "scorte live & checkout via bergblume.zolto.ch/mcp",
+    "howEyebrow": "nessuna configurazione, nessun plugin, nessuna agenzia",
+    "howHeading": "Come un'IA compra da Lei."
+  },
+  "zeroCostPos": {
+    "planInPerson": "Piano {{plan}}, di persona",
+    "perMonth": "/mese",
+    "startFree": "Inizia gratis →"
+  },
+  "diaryTeaser": {
+    "eyebrow": "il diario di lancio",
+    "heading": "Qualcuno l'ha già fatto. Ecco la versione senza tagli.",
+    "body": "Una gioielliera di Zurigo è passata dal solo mercatino di Natale alla vendita online, e ci ha lasciato raccontare com'è andata davvero — momenti lenti inclusi. Niente growth hack, niente screenshot a sei cifre.",
+    "readAll": "Legga tutto il diario →"
+  },
+  "cardReaderGag": {
+    "eyebrow": "una breve digressione",
+    "heading": "Cose che costano più o meno quanto un lettore di carte.",
+    "punchlineStrong": "{{months}} mesi di Zolto {{plan}}.",
+    "punchlineRest": "L'unica voce di questa lista che, in più, manda avanti il Suo negozio.",
+    "footnote": "Prendendo CHF {{anchor}} come tetto della forchetta qui sopra. Il Suo telefono sa già incassare con un tap, quindi quei soldi non deve spenderli per nulla di tutto questo."
+  },
+  "legal": {
+    "disclaimer": "Questo è un riassunto in linguaggio semplice delle condizioni della piattaforma Zolto. Non è una consulenza legale. I commercianti restano responsabili delle politiche rivolte ai clienti del proprio negozio.",
+    "privacy": {
+      "title": "Informativa sulla privacy",
+      "updated": "Bozza — in attesa di revisione legale",
+      "intro": "Questa informativa spiega quali dati Zolto tratta quando Lei usa la piattaforma per gestire un negozio. Copre il ruolo di Zolto come fornitore della piattaforma; ogni commerciante è il titolare del trattamento dei dati dei propri clienti.",
+      "sections": [
+        {
+          "heading": "1. Si applicano due regimi di protezione dei dati",
+          "body": [
+            "Zolto serve commercianti in Svizzera e nell'UE, soggetti a leggi diverse. I commercianti svizzeri e i loro clienti sono coperti dalla Legge federale svizzera sulla protezione dei dati riveduta (nLPD). I commercianti e i clienti dell'UE sono coperti dal GDPR. Dove le due normative differiscono, applichiamo la più severa.",
+            "Quando agiamo come responsabili del trattamento per un commerciante (trattando i dati dei suoi clienti per suo conto), tale rapporto è regolato da un accordo sul trattamento dei dati."
+          ]
+        },
+        {
+          "heading": "2. Che cosa raccogliamo",
+          "body": [
+            "Dati dell'account: il Suo nome, la Sua e-mail, il nome del negozio e le credenziali di accesso. Dati del negozio: prodotti, ordini e inventario che inserisce. Dati d'uso: come interagisce con la piattaforma, per migliorarla e fornire assistenza.",
+            "I dati delle carte di pagamento sono gestiti direttamente dal nostro fornitore di pagamenti (Stripe) e non vengono mai salvati sui server di Zolto."
+          ]
+        },
+        {
+          "heading": "3. Cookie & statistiche",
+          "body": [
+            "La piattaforma imposta un solo cookie, app_session_id, che La mantiene connesso. È strettamente necessario — senza di esso il servizio non può autenticarLa — quindi non richiede alcun banner di consenso e non può essere disattivato durante l'uso del servizio. Non impostiamo cookie pubblicitari, di preferenza o di tracciamento di terze parti.",
+            "Misuriamo le pagine viste con Umami, uno strumento di statistica rispettoso della privacy che funziona senza cookie e senza identificatori tra siti; ci fornisce statistiche aggregate, non profili dei singoli visitatori. I webfont sono serviti dalla nostra infrastruttura, quindi visualizzare una pagina non invia alcuna richiesta a reti di font di terze parti. Durante il pagamento viene reindirizzato a Stripe, che può impostare i propri cookie sul proprio dominio secondo l'informativa sulla privacy di Stripe."
+          ]
+        },
+        {
+          "heading": "4. I Suoi diritti",
+          "body": [
+            "Può richiedere l'accesso ai Suoi dati personali, la loro rettifica o cancellazione, e può opporsi a determinati trattamenti. Ci contatti per esercitare questi diritti. Gli utenti dell'UE godono inoltre dei diritti previsti dal GDPR, compresa la portabilità dei dati e il diritto di presentare reclamo a un'autorità di controllo."
+          ]
+        },
+        {
+          "heading": "5. Conservazione & sub-responsabili",
+          "body": [
+            "Conserviamo i dati finché il Suo account è attivo e per il tempo richiesto dalla legge. Ci avvaliamo di un numero ristretto di sub-responsabili (hosting, pagamenti, e-mail, IA, statistiche) sotto contratto; un elenco aggiornato è disponibile su richiesta."
+          ]
+        }
+      ]
+    },
+    "terms": {
+      "title": "Condizioni di servizio",
+      "updated": "Bozza — in attesa di revisione legale",
+      "intro": "Queste condizioni regolano l'uso della piattaforma Zolto per gestire un negozio online e un punto vendita.",
+      "sections": [
+        {
+          "heading": "1. Abbonamenti & prove",
+          "body": [
+            "I piani a pagamento sono fatturati mensilmente, di mese in mese — disdetta in qualsiasi momento, con effetto dal ciclo di fatturazione successivo. Le funzioni a pagamento possono includere una prova gratuita di 14 giorni. Al termine della prova, il piano si rinnova al prezzo allora in vigore, salvo disdetta."
+          ]
+        },
+        {
+          "heading": "2. Prezzi e imposte",
+          "body": [
+            "I prezzi sono espressi in franchi svizzeri (CHF). Il fatturato di Zolto è al di sotto della soglia di CHF 100'000 oltre la quale la registrazione all'IVA svizzera diventa obbligatoria, quindi nessuna IVA viene applicata sugli abbonamenti o sulla commissione di piattaforma — il prezzo indicato è il prezzo che paga. Qualora Zolto superasse tale soglia, o diventasse soggetto a imposta in un'altra giurisdizione, aggiorneremo queste condizioni e informeremo i clienti interessati prima dell'applicazione di qualsiasi imposta."
+          ]
+        },
+        {
+          "heading": "3. Funzioni assistite dall'IA",
+          "body": [
+            "Zolto include funzioni di IA che redigono descrizioni dei prodotti, rispondono a domande di assistenza e accelerano la configurazione. I risultati dell'IA possono essere imprecisi — è Sua responsabilità rivedere i contenuti prima che diventino visibili ai Suoi clienti. Le modifiche che toccano fatturazione, pagamenti o inventario sono sempre applicate da una persona, mai messe in produzione automaticamente dall'assistente."
+          ]
+        },
+        {
+          "heading": "4. Le Sue responsabilità",
+          "body": [
+            "Lei è responsabile della legalità di ciò che vende, delle politiche rivolte ai clienti del Suo negozio (resi, spedizioni, privacy) e dell'accuratezza dei Suoi dati di prodotto e inventario."
+          ]
+        },
+        {
+          "heading": "5. Responsabilità & legge applicabile",
+          "body": [
+            "La piattaforma è fornita così com'è, nella misura consentita dalla legge. Queste condizioni sono regolate dal diritto svizzero; i diritti imperativi a tutela dei consumatori nel Suo Paese di residenza restano impregiudicati."
+          ]
+        }
+      ]
+    }
+  },
+  "notFound": {
+    "metaTitle": "Pagina non trovata | Zolto",
+    "metaDescription": "Questa pagina non è qui. Provi la home page, i prezzi o le FAQ.",
+    "eyebrow": "beh, questo banco è vuoto",
+    "heading": "Su questa pagina non c’è nulla.",
+    "body": "Può essere un errore di battitura, può essere un link che abbiamo spostato dimenticando di reindirizzarlo. Se è la seconda ipotesi, la colpa è nostra. Ecco dove stavano andando tutti gli altri:",
+    "exits": {
+      "home": {
+        "label": "La home page",
+        "hint": "Che cos’è Zolto, in circa un minuto"
+      },
+      "pricing": {
+        "label": "Prezzi",
+        "hint": "Gratis di persona. 1 % online."
+      },
+      "faq": {
+        "label": "FAQ",
+        "hint": "Le domande che gli artigiani fanno davvero"
+      }
+    }
+  },
+  "signin": {
+    "eyebrow": "bentornato",
+    "alreadyTitle": "Ha già effettuato l’accesso.",
+    "alreadyAs": "Come <hl>{{email}}</hl>.",
+    "thisAccount": "questo account",
+    "continueTo": "Continua verso {{store}} →",
+    "finishSetup": "Completa la configurazione di {{store}} →",
+    "createStore": "Crei il suo negozio →",
+    "differentAccount": "Usa un altro account",
+    "waitingTitle": "Il suo negozio la sta aspettando.",
+    "waitingBody": "Ha creato <hl>{{store}}</hl> durante la registrazione, ma non ha mai completato la configurazione. Riprenda esattamente da dove si era fermato.",
+    "signedInTitle": "Ha effettuato l’accesso.",
+    "signedInBody": "Questo account non è ancora collegato a nessun negozio. Ne crei uno e la prossima volta la aspetterà qui.",
+    "failedTitle": "Non siamo riusciti a farla accedere.",
+    "failedBody": "L’accesso non è andato a buon fine. Di solito significa che il browser blocca i cookie — le finestre private e la protezione antitracciamento rigorosa impediscono il salvataggio della sessione.",
+    "noStorePrompt": "Non ha ancora un negozio?",
+    "noStoreLink": "Ne crei uno",
+    "signInTitle": "Acceda al suo negozio.",
+    "progressTitle": "Accesso in corso…",
+    "takingYouTo": "La stiamo portando a {{store}}.",
+    "oneMoment": "Un attimo — la stiamo portando al suo negozio."
+  },
+  "segment": {
+    "indexMetaTitle": "A chi si rivolge {{name}}",
+    "indexMetaDescription": "{{name}} per creatori di gioielli, laboratori di ceramica, venditori ai mercati e piccole boutique — che cosa cambia per ciascuno.",
+    "indexHeading": "A chi si rivolge {{name}}",
+    "indexIntro": "La stessa piattaforma, ma la parte che conta dipende da che cosa produce e da dove lo vende.",
+    "metaTitle": "{{headline}} | {{name}}",
+    "metaDescription": "{{summary}} {{pricing}}",
+    "painHeading": "Che cosa di solito si mette di mezzo",
+    "helpHeading": "Che cosa fa {{name}} al riguardo",
+    "scenarioHeading": "Come si presenta",
+    "startFree": "Inizia gratis",
+    "readFaq": "Leggi le FAQ",
+    "alsoFor": "Anche per:"
+  },
+  "onboarding": {
+    "welcome": "benvenuto",
+    "welcomeStore": "benvenuto — {{store}}",
+    "heading": "Mettiamo online il suo negozio.",
+    "intro": "Questa lista si aggiorna da sola — completi un passaggio nell’admin e qui viene spuntato, su qualsiasi dispositivo.",
+    "taskDone": "Fatto",
+    "taskNotDone": "Non fatto",
+    "goThere": "Vai lì →",
+    "goToDashboard": "Vai alla sua dashboard →",
+    "continueDashboard": "Continua nella sua dashboard",
+    "finishing": "Stiamo completando la sua configurazione…",
+    "oneMoreStep": "Ancora un passaggio",
+    "signInToClaim": "Acceda per diventare l’amministratore del suo nuovo negozio.",
+    "signInWithSignupEmail": "Acceda con l’e-mail usata alla registrazione per completare la configurazione del suo negozio.",
+    "resumeLeadTokenFailed": "Questo link di configurazione non ha funzionato — ma il suo negozio la sta ancora aspettando.",
+    "resumeLeadWaiting": "Il suo negozio la sta aspettando.",
+    "resumeBody": "{{store}} è collegato a {{email}} — un clic completa la configurazione.",
+    "thisAccountEmail": "l’indirizzo e-mail di questo account",
+    "finishSetup": "Completa la configurazione di {{store}} →",
+    "doneTitle": "Lei è l’amministratore del negozio. 🎉",
+    "doneBody": "Il suo account ora gestisce questo negozio.",
+    "failedTitle": "Non siamo riusciti a completare la sua configurazione.",
+    "failedBody": "Questo link di attivazione non è valido o è già stato usato. Se ha già effettuato l’accesso su un altro dispositivo, è tutto a posto."
+  },
+  "research": {
+    "metaTitle": "{{title}} | Ricerca Zolto",
+    "metaDescription": "Dati di prima mano sui primi 30 giorni di vendita online di una creatrice: 12 ordini, CHF 61 di valore medio, 2.5 % di conversione e da dove sono arrivati davvero gli ordini. Metodo e limiti dichiarati.",
+    "eyebrow": "dati di prima mano",
+    "intro": "Che cosa è successo davvero nei primi 30 giorni dopo la messa online della vetrina di una creatrice — compresi i numeri che non ci fanno bella figura.",
+    "publishedBy": "{{author}} · Pubblicato il",
+    "methodHeading": "Metodo",
+    "sampleLabel": "Campione",
+    "collectionLabel": "Raccolta",
+    "figuresHeading": "Numeri principali",
+    "weeklyHeading": "Settimana per settimana",
+    "sourcesHeading": "Da dove sono arrivati gli ordini",
+    "findingsHeading": "Che cosa ne ricaviamo",
+    "limitsHeading": "Che cosa non mostra",
+    "diaryLead": "La storia mese per mese dietro questi numeri è nel",
+    "diaryLink": "Diario di lancio",
+    "citation": "Riutilizza questi dati? La preghiamo di citare «Zolto, {{title}} ({{published}})» e di inserire un link a questa pagina."
+  },
+  "compare": {
+    "metaTitle": "{{name}} vs {{competitor}} — quale si adatta meglio a un artigiano?",
+    "metaTitleIndex": "Confronta {{name}}",
+    "metaDescription": "Un confronto onesto tra {{name}} e {{competitor}} per gli artigiani indipendenti: hardware, impegno di configurazione, dove finisce il denaro e quando {{competitor}} è la scelta migliore.",
+    "metaDescriptionIndex": "Come si confronta {{name}} con i fornitori di pagamenti e di negozi che gli artigiani prendono di solito in considerazione.",
+    "indexHeading": "Confronta {{name}}",
+    "indexIntro": "Come si posiziona {{name}} rispetto ai fornitori che gli artigiani prendono di solito in considerazione.",
+    "versus": "{{name}} vs {{competitor}}",
+    "eyebrow": "uno sguardo onesto",
+    "tableCaption": "{{name}} a confronto con il modello classico negozio-e-terminale",
+    "traditionalWay": "Il modo tradizionale",
+    "rateNote": "I piani e le tariffe di {{competitor}} variano per paese, contratto e volume — consulti la loro pagina dei prezzi per i dati aggiornati. Dal lato di {{name}} sono {{percent}} su {{appliesTo}}, e nulla di persona.",
+    "betterWhenHeading": "Quando {{competitor}} è la scelta migliore",
+    "zoltoWhenHeading": "Quando {{name}} si adatta meglio",
+    "startFree": "Inizia gratis",
+    "seePricing": "Vedi i prezzi",
+    "alsoCompare": "Confronta anche:"
+  },
+  "signup": {
+    "eyebrow": "cominciamo",
+    "heading": "Crei il suo negozio",
+    "subheading": "Gratis per iniziare. 14 giorni di prova sulle funzioni a pagamento. Nessuna carta richiesta.",
+    "stepsLabel": "Passaggi della registrazione",
+    "steps": {
+      "details": "Dati del negozio",
+      "template": "Modello",
+      "branding": "Identità"
+    },
+    "storeNameLabel": "Nome del negozio",
+    "storeNamePlaceholder": "Il nome del suo negozio",
+    "storeUrlLabel": "URL del negozio",
+    "storeUrlPlaceholder": "ilsuonegozio",
+    "storeUrlHint": "ilsuonegozio.zolto.ch",
+    "emailLabel": "E-mail",
+    "emailPlaceholder": "lei@esempio.ch",
+    "emailHint": "Completerà la configurazione accedendo con questo indirizzo e-mail.",
+    "verticalLabel": "Che cosa vende?",
+    "verticalHint": "Imposta le sue categorie iniziali e adatta gli strumenti IA al suo tipo di negozio. Potrà cambiarlo più avanti.",
+    "rangeLabel": "Descriva il suo assortimento (facoltativo)",
+    "rangeHint": "Una frase con parole sue — l’IA la usa per scrivere annunci migliori.",
+    "rangePlaceholder": "per es. Stoviglie in gres tornite a mano con smalti tenui",
+    "migrateLabel": "Vende già da qualche altra parte?",
+    "migrateHint": "Imposteremo il suo primo passaggio per portare qui quel catalogo invece di ridigitarlo.",
+    "migrateNone": "No — parto da zero",
+    "migrateOther": "Da qualche altra parte",
+    "migrateYes": "Sì — {{provider}}",
+    "migrateStripeNote": "Buona notizia — colleghi l’account Stripe che ha già e i suoi prodotti si importano con un clic. Il suo checkout continua a funzionare per tutto il tempo.",
+    "migrateCsvNote": "Esporti i suoi articoli in CSV da {{provider}} e li leggeremo per lei — formati di prezzo svizzeri e nomi di colonna in tedesco o francese compresi.",
+    "errorName": "Il nome del negozio è obbligatorio.",
+    "errorSlug": "Usi da 3 a 64 lettere minuscole, numeri o trattini.",
+    "errorEmail": "Inserisca un indirizzo e-mail valido.",
+    "errorColor": "Usi un esadecimale a 6 cifre come #2D6B4A.",
+    "chooseLook": "Scegli il look →",
+    "chooseColors": "Scegli i colori →",
+    "back": "← Indietro",
+    "createStore": "Crea il negozio →",
+    "creating": "Creazione…",
+    "templateHeading": "Scelga un modello",
+    "templateIntro": "Cinque look pensati per i piccoli negozi. Può cambiarli quando vuole — e i suoi colori arrivano subito dopo.",
+    "templateSelected": "Selezionato",
+    "brandingHeading": "Il suo logo e i suoi colori",
+    "brandingIntro": "Carichi il suo logo e ne vestiremo il suo negozio — e, se lo desidera, l’IA ne ricaverà la sua combinazione di colori.",
+    "logoLabel": "Logo (facoltativo)",
+    "logoHint": "PNG, JPEG o WebP, fino a 2 MB. Compare nella barra di navigazione e nel piè di pagina del suo negozio.",
+    "logoAlt": "Il suo logo",
+    "logoRemove": "Rimuovi",
+    "logoReading": "Lettura…",
+    "logoColors": "✨ Colori dal logo",
+    "switchTemplate": "Passa al modello {{template}}",
+    "brandColor": "Colore del marchio",
+    "brandColorHex": "Colore del marchio in esadecimale",
+    "brandColorHint": "Determina intestazioni, pulsanti e accenti della sua vetrina.",
+    "termsLead": "Creando un negozio accetta i nostri",
+    "termsLink": "Termini",
+    "termsAnd": "e la nostra",
+    "privacyLink": "Informativa sulla privacy",
+    "previewAria": "Anteprima della vetrina",
+    "previewLabel": "Anteprima",
+    "previewStoreName": "Il suo negozio",
+    "previewAddToCart": "Aggiungi al carrello",
+    "previewMeta": "Modello {{template}} · {{color}}",
+    "toastLogoColorsFailed": "Non siamo riusciti a leggere i colori da quel logo.",
+    "toastLogoNotUploaded": "Il suo negozio è pronto, ma il logo non è stato caricato — lo aggiunga di nuovo dall’admin.",
+    "toastCreatedWithEmail": "Negozio creato — le abbiamo anche inviato per e-mail un link di configurazione, nel caso le servisse più avanti.",
+    "toastCreated": "Negozio creato — passiamo alla configurazione.",
+    "toastGenericError": "Qualcosa è andato storto. Riprovi.",
+    "toastSignInAction": "Accedi",
+    "toastLogoType": "Usi un’immagine PNG, JPEG o WebP.",
+    "toastLogoSize": "Il logo deve pesare meno di 2 MB."
+  },
+  "shared": {
+    "platform": {
+      "pricingSummary": "Vendere di persona è gratis, per sempre (nessuna carta richiesta). Gli ordini online e tramite agenti IA hanno una commissione di piattaforma dell'1% sul piano Gratuito — un mese senza vendite online costa CHF 0. Pro costa CHF 25/mese con 14 giorni di prova gratuita: 0% di commissione e IA senza limiti. Di mese in mese, disdetta in qualsiasi momento."
+    },
+    "revenueShare": {
+      "appliesTo": "ordini online e tramite agenti IA"
+    },
+    "plans": {
+      "free": {
+        "name": "Gratuito",
+        "blurb": "Un negozio completo. Gratis di persona, 1% online.",
+        "cta": "Inizi gratis",
+        "features": [
+          "POS completo — Tap to Pay, TWINT QR, contanti — CHF 0 sulle vendite di persona",
+          "Negozio online sul Suo indirizzo zolto.ch",
+          "Sincronizzazione in tempo reale tra cassa e inventario online",
+          "Descrizioni e traduzioni con IA (fair use)",
+          "5 foto IA / mese",
+          "Trovato dagli agenti IA — llms.txt, MCP e chat del negozio",
+          "1% di commissione solo su ordini online e tramite agenti",
+          "Fino a 200 prodotti · 5 GB di spazio foto",
+          "Esportazione completa dei dati con un clic",
+          "Supporto della community"
+        ]
+      },
+      "pro": {
+        "name": "Pro",
+        "blurb": "Per artigiani che vendono online ogni settimana.",
+        "cta": "Inizi la prova gratuita di 14 giorni",
+        "features": [
+          "Tutto il piano Gratuito",
+          "0% di commissione — ogni vendita online resta a Lei",
+          "IA senza limiti — foto, descrizioni, chat",
+          "Il Suo dominio personalizzato + SSL gestito",
+          "Solo il Suo brand — nessun «runs on Zolto»",
+          "Statistiche avanzate e insight IA",
+          "3 postazioni per il team",
+          "Assistenza umana prioritaria",
+          "Fino a 5'000 prodotti · 50 GB di spazio foto"
+        ]
+      }
+    },
+    "pricingPromise": {
+      "headline": "Non ci paga finché Internet non paga Lei.",
+      "pledge": "Vendere di persona è gratis, per sempre — il Suo negozio, la cassa e l'inventario costano CHF 0/mese, e Zolto non aggiunge nulla sui pagamenti di persona. Ecco la versione onesta: di soldi ne abbiamo già abbastanza. Non siamo qui per spillare qualcosa ai piccoli artigiani — siamo qui per aiutarLa a tenersi ciò che guadagna, e questo non cambierà.",
+      "points": [
+        "Venda al mercato e non ci paghi nulla, per sempre: POS completo, sincronizzazione dell'inventario e la Sua vetrina online, tutto incluso a CHF 0/mese.",
+        "Gli ordini online e tramite agenti IA hanno una commissione dell'1% sul piano Gratuito. Nessuna vendita online questo mese? Paga CHF 0. Tutto qui.",
+        "Pro (CHF 25/mese) elimina del tutto l'1% e sblocca l'IA senza limiti. Vende oltre circa CHF 2'500/mese online? Pro è più conveniente — glielo diremo nell'app nel momento in cui vale la pena cambiare.",
+        "Non Le faremo mai pagare l'IA col contagocce. Ci parli quanto vuole — i piani crescono su prodotti, foto e spazio, non su quanto chiacchiera."
+      ]
+    },
+    "costComparison": {
+      "themLabel": "Un anno con la vecchia guardia",
+      "themNote": "hardware del lettore · canoni mensili · vincoli",
+      "usLabel": "Un mese con Zolto",
+      "usNote": "niente hardware · disdetta in qualsiasi momento · il Suo Stripe, i Suoi soldi",
+      "multiplier": "un centesimo del costo"
+    },
+    "zeroCostPos": {
+      "eyebrow": "il punto che la gente rilegge",
+      "headline": "Un intero negozio in tasca.",
+      "headlineEmphasis": "Per niente.",
+      "body": "Foto, nomi, prezzi, scorte — il Suo vero catalogo, nella cassa sul Suo telefono. Un tap per incassare. Lo guardi sincronizzarsi col Suo sito. Poi ci paghi CHF 0.00 a fine mese, e di nuovo il mese dopo.",
+      "includes": [
+        "POS completo — Tap to Pay, TWINT QR e contanti",
+        "Ogni pezzo con la sua foto, il suo nome e il suo prezzo",
+        "Sincronizzazione in tempo reale tra cassa e inventario online",
+        "La Sua vetrina online, sul Suo indirizzo zolto.ch"
+      ],
+      "catch": "Nessun conto alla rovescia di prova. Nessun piano base che scade in silenzio. L'unica cosa che addebitiamo sono le vendite online che Le portiamo — e se non ce ne sono, non c'è nulla da addebitare."
+    },
+    "aiNativePitch": {
+      "eyebrow": "il commercio si sta spostando nella finestra di chat",
+      "headline": "Il Suo prossimo cliente",
+      "headlineEmphasis": "è un'IA.",
+      "body": "La ricerca ha costruito l'ultima era dei negozi. Gli assistenti stanno costruendo questa — e possono consigliare solo i negozi che riescono a leggere. Ogni negozio Zolto include llms.txt, MCP e checkout per agenti dal primo giorno, aggiornati man mano che i protocolli evolvono: il Suo negozio acquista peso nelle risposte, mentre i siti adattati a posteriori ne scompaiono.",
+      "chart": {
+        "title": "dove gli acquirenti iniziano la ricerca",
+        "decliningLabel": "motori di ricerca",
+        "risingLabel": "assistenti IA",
+        "caption": "Gli assistenti consigliano solo i negozi che riescono a leggere. Un negozio per loro invisibile non compare nella risposta — non importa quanto fosse buono il suo SEO."
+      },
+      "proof": {
+        "eyebrow": "non una roadmap — attivo oggi",
+        "headline": "Guardi un'IA comprare da un negozio Zolto.",
+        "body": "Il Suo cliente chiede al suo assistente. L'assistente legge la scheda del negozio, verifica le scorte in tempo reale via MCP e piazza l'ordine — il pagamento arriva sullo Stripe dell'artigiano come qualsiasi altra vendita. Punti la Sua IA su zolto.ch/llms.txt e le chieda di noi."
+      },
+      "steps": [
+        {
+          "k": "Trovato",
+          "title": "L'assistente legge la Sua scheda",
+          "body": "Ogni negozio pubblica ilsuonegozio.zolto.ch/llms.txt — un riassunto in linguaggio semplice di chi è e che cosa vende, scritto per lettori IA."
+        },
+        {
+          "k": "Verificato",
+          "title": "Controlla le scorte in tempo reale via MCP",
+          "body": "Prodotti veri, prezzi veri, quantità vere — direttamente dal Suo inventario, non uno scrape stantio del mese scorso."
+        },
+        {
+          "k": "Comprato",
+          "title": "Completa l'acquisto nella chat",
+          "body": "L'ordine arriva come qualsiasi altra vendita: le scorte si sincronizzano, Lei riceve la notifica e i soldi vanno direttamente sul Suo Stripe."
+        }
+      ],
+      "footnote": "Non deve configurare nulla di tutto questo. Arriva insieme al negozio — anche sul piano Gratuito, e l'1% solo quando un agente vende davvero per Lei."
+    },
+    "sellingFlow": [
+      {
+        "title": "Scansioni il Suo quaderno",
+        "detail": "Fotografi la Sua lista scorte scritta a mano. L'IA la trasforma in un vero catalogo — nomi, prezzi, quantità.",
+        "timeOfDay": "07:40 — si monta il banco"
+      },
+      {
+        "title": "Incassi con un tap",
+        "detail": "Inserisca un importo e lasci che il cliente avvicini telefono o carta. NFC e TWINT QR — niente da comprare né da collegare.",
+        "timeOfDay": "11:15 — prima ressa"
+      },
+      {
+        "title": "Confermi a fine giornata",
+        "detail": "Zolto Le manda per e-mail ciò che pensa Lei abbia venduto. Un tocco per confermare e le scorte si sincronizzano tra cassa e negozio online.",
+        "timeOfDay": "18:30 — si smonta"
+      }
+    ],
+    "cardReaderGag": {
+      "items": [
+        "Circa sessanta flat white.",
+        "Un ottimo tronchesino di precisione, custodia compresa.",
+        "Una stagione di tasse di posteggio, a seconda del mercato."
+      ]
+    },
+    "comparison": {
+      "Your catalogue on your phone": {
+        "feature": "Il Suo catalogo sul Suo telefono",
+        "them": "Parte di un piano a pagamento, o addirittura un prodotto separato",
+        "us": "Foto, nomi e prezzi — CHF 0/mese, senza scadenza"
+      },
+      "Card reader": {
+        "feature": "Lettore di carte",
+        "them": "Venduto a Lei, CHF 50–300+",
+        "us": "Il Suo telefono — tap NFC e TWINT QR"
+      },
+      "Building the store": {
+        "feature": "Costruire il negozio",
+        "them": "Uno sviluppatore, o settimane su Shopify",
+        "us": "L'IA lo prepara in un pomeriggio"
+      },
+      "Inventory": {
+        "feature": "Inventario",
+        "them": "Griglie rigide da mantenere a mano",
+        "us": "Scansioni il quaderno; l'IA lo tiene aggiornato"
+      },
+      "Pricing": {
+        "feature": "Prezzi",
+        "them": "Piani opachi, costi a sorpresa",
+        "us": "Gratis di persona. 1% online, o CHF 25 fissi"
+      },
+      "Your money": {
+        "feature": "I Suoi soldi",
+        "them": "Trattenuti, poi versati",
+        "us": "Direttamente sul Suo Stripe"
+      }
+    },
+    "faqCategories": {
+      "About Zolto": "Informazioni su Zolto",
+      "Getting started": "Primi passi",
+      "Selling": "Vendere",
+      "Pricing & billing": "Prezzi e fatturazione",
+      "AI & discovery": "IA e scoperta"
+    },
+    "faqs": {
+      "What is Zolto?": {
+        "q": "Che cos'è Zolto?",
+        "a": "Zolto è una piattaforma di commercio gestita dall'IA per artigiani indipendenti. Le offre un punto vendita e un negozio online che condividono un solo inventario, più un assistente IA che si occupa di foto dei prodotti, descrizioni e assistenza clienti."
+      },
+      "Who is Zolto for?": {
+        "q": "A chi si rivolge Zolto?",
+        "a": "Ad artigiani, creativi e piccoli negozianti che vendono a fiere artigianali, mercati e pop-up e vogliono vendere anche online — senza assumere uno sviluppatore né imparare software complessi."
+      },
+      "How long does it take to set up a store?": {
+        "q": "Quanto tempo serve per configurare un negozio?",
+        "a": "Circa un pomeriggio. Carichi qualche prodotto (o importi un CSV), lasci che l'IA prepari le descrizioni e sistemi le foto, colleghi i pagamenti, e può essere online il giorno stesso."
+      },
+      "I already sell with Stripe, SumUp or Worldline — how do I switch?": {
+        "q": "Vendo già con Stripe, SumUp o Worldline — come faccio a passare a Zolto?",
+        "a": "Porti con sé il Suo catalogo invece di riscriverlo. Se usa Stripe, colleghi l'account Stripe che ha già — il Suo checkout continua a funzionare e i prodotti si importano con un clic. Da SumUp o Worldline/SIX, carichi l'esportazione CSV dalla loro dashboard e Zolto la legge (comprese le intestazioni in tedesco e francese e i formati di prezzo svizzeri). Lei controlla ogni articolo prima che qualcosa venga scritto nel Suo negozio."
+      },
+      "Do I need to be technical?": {
+        "q": "Devo essere esperto di tecnologia?",
+        "a": "No. Zolto è costruito per artigiani, non per gestori di negozi. L'IA si occupa del lavoro noioso della configurazione, e un tour guidato La accompagna nella dashboard."
+      },
+      "How much does it cost?": {
+        "q": "Quanto costa?",
+        "a": "Vendere di persona è gratis, per sempre — negozio, cassa e sincronizzazione dell'inventario costano CHF 0/mese e Zolto non aggiunge nulla sui pagamenti di persona. Gli ordini online e tramite agenti IA hanno una commissione di piattaforma dell'1% sul piano Gratuito (un mese senza vendite online costa CHF 0). Pro costa CHF 25/mese con 14 giorni di prova gratuita: elimina l'1% e sblocca l'IA senza limiti. Di mese in mese — disdetta in qualsiasi momento."
+      },
+      "Can I sell both in person and online?": {
+        "q": "Posso vendere sia di persona sia online?",
+        "a": "Sì — è proprio il cuore di Zolto. Un solo inventario alimenta il Suo punto vendita e il Suo negozio online, e le scorte restano sincronizzate in tempo reale, così non vende mai oltre la disponibilità."
+      },
+      "How do I get paid?": {
+        "q": "Come vengo pagato?",
+        "a": "Collega il Suo account Stripe e i Suoi clienti pagano direttamente lì — Zolto non trattiene mai i Suoi soldi. Sul piano Gratuito una commissione di piattaforma dell'1% viene applicata automaticamente solo agli ordini online e tramite agenti IA; le vendite di persona sono sempre senza commissioni, e Pro elimina del tutto la commissione."
+      },
+      "Do I need to buy a card reader?": {
+        "q": "Devo comprare un lettore di carte?",
+        "a": "No — i pagamenti avvengono sul telefono che già possiede, tramite l'app POS di Zolto: carta contactless, Apple Pay / Google Pay e TWINT QR. Ormai nessuno inserisce più la carta, si appoggia e basta — quindi non c'è alcun lettore da comprare, noleggiare o collegare."
+      },
+      "How is Zolto cheaper than Stripe, SumUp, or Worldline?": {
+        "q": "Come fa Zolto a costare meno di Stripe, SumUp o Worldline?",
+        "a": "Quegli strumenti sono nati in un'epoca in cui i siti web erano difficili e il lettore di carte era il re, quindi fanno pagare hardware, configurazione e vincoli — facilmente attorno a CHF 2'000 all'anno. L'IA costruisce il Suo negozio in un pomeriggio e il Suo telefono è il terminale, quindi il costo reale è minuscolo. Zolto trasferisce quel risparmio: vendere di persona è gratis, gli ordini online hanno solo l'1% di commissione sul piano Gratuito, e Pro costa CHF 25/mese fissi — circa un centesimo del vecchio modo."
+      },
+      "What if I keep my inventory in a notebook?": {
+        "q": "E se tengo l'inventario su un quaderno?",
+        "a": "Va benissimo — continui come fa già. Fotografi la Sua lista scritta a mano e l'IA la trasforma in un vero catalogo (nomi, prezzi, quantità). L'IA se la cava bene con l'ambiguità, quindi non deve diventare una «persona da inventario»."
+      },
+      "Do I have to tag every sale at a busy market?": {
+        "q": "Devo registrare ogni vendita in un mercato affollato?",
+        "a": "No. Inserisca solo l'importo e incassi il tap. A fine giornata Zolto Le manda per e-mail la sua ipotesi migliore su ciò che ha venduto; Lei tocca per confermare e ogni pezzo viene segnato come venduto nel negozio e nella cassa automaticamente."
+      },
+      "Can I bring products from another platform?": {
+        "q": "Posso portare prodotti da un'altra piattaforma?",
+        "a": "Sì. Importi il Suo catalogo con un CSV o con il caricamento di foto in blocco: passare da Shopify, Square o un foglio di calcolo è questione di poco."
+      },
+      "Will AI assistants be able to find my products?": {
+        "q": "Gli assistenti IA riusciranno a trovare i miei prodotti?",
+        "a": "Sì. Ogni negozio pubblica un llms.txt e un endpoint Model Context Protocol (MCP), così assistenti e agenti IA possono scoprire e consigliare i Suoi prodotti, oltre al normale SEO dei motori di ricerca."
+      },
+      "What about product photos?": {
+        "q": "E le foto dei prodotti?",
+        "a": "Scatti una foto grezza col telefono e l'IA la trasforma in una foto prodotto pulita o in un'immagine indossata — senza fotografo né studio. Le immagini elaborate dall'IA sono sempre dichiarate come tali."
+      },
+      "Can I upgrade or downgrade anytime?": {
+        "q": "Posso cambiare piano in qualsiasi momento?",
+        "a": "Sì. Le modifiche hanno effetto dal Suo prossimo ciclo di fatturazione."
+      },
+      "Is there a contract?": {
+        "q": "C'è un contratto?",
+        "a": "No. Tutti i piani a pagamento sono di mese in mese. Disdetta in qualsiasi momento."
+      },
+      "Do prices include VAT?": {
+        "q": "I prezzi includono l'IVA?",
+        "a": "Non c'è IVA da aggiungere. Zolto è sotto la soglia svizzera di registrazione IVA di CHF 100'000, quindi il prezzo che vede è il prezzo che paga. Se un giorno dovesse cambiare, lo diremo prima che accada."
+      }
+    },
+    "segments": {
+      "jewelry-makers": {
+        "name": "Creatori di gioielli",
+        "headline": "Per i creatori di gioielli che vendono pezzi unici",
+        "summary": "Realizza un pezzo alla volta, spesso in esemplare unico, e vende ai mercati, tramite Instagram e a chi la trova con il passaparola.",
+        "painPoints": [
+          "Ogni pezzo ha una giacenza di uno, quindi la stessa collana può essere venduta due volte — una al banco e una online — prima che qualcuno se ne accorga.",
+          "Fotografare bene oggetti piccoli e lucidi è davvero difficile, e una foto scadente le costa la vendita.",
+          "Scrivere una descrizione per ogni singolo pezzo è il lavoro per cui nessuno ha tempo."
+        ],
+        "scenario": "Un pezzo si vende al mercato del sabato. Prima ancora che la cliente si sia allontanata, risulta venduto anche online — così chi sfoglia il suo sito dal divano non lo mette mai in un carrello da cui non potrebbe uscire."
+      },
+      "ceramics-and-pottery": {
+        "name": "Laboratori di ceramica",
+        "headline": "Per i laboratori di ceramica con serie piccole e irregolari",
+        "summary": "Cuoce in infornate, le quantità dipendono da ciò che sopravvive al forno e non ci sono due smalti identici.",
+        "painPoints": [
+          "Le scorte cambiano a blocchi dopo ogni cottura, e le griglie d’inventario rigide lo gestiscono male.",
+          "Per via delle variazioni di infornata, la foto dell’annuncio non è mai esattamente il pezzo venduto, e i clienti lo chiedono di continuo.",
+          "Il tempo in laboratorio è la risorsa scarsa — l’amministrazione toglie ore alla creazione."
+        ],
+        "scenario": "Svuota il forno, fotografa lo scaffale e il catalogo si aggiorna da quell’unica foto — nomi, prezzi e quantità — invece di farle digitare righe a fine giornata."
+      },
+      "market-stalls": {
+        "name": "Venditori a mercati e fiere",
+        "headline": "Per chi ha come negozio un tavolo, un van o un fine settimana",
+        "summary": "Vende a fiere dell’artigianato, mercatini di Natale e pop-up, dove la fila scorre veloce e la connessione è quella che passa il posto.",
+        "painPoints": [
+          "I terminali per carte costano soldi in anticipo e sono un’altra cosa da caricare, portarsi dietro e perdere.",
+          "A un banco affollato non c’è tempo per associare ogni vendita all’articolo giusto.",
+          "Quello che vende il sabato deve risultare online la domenica, e di solito non è così."
+        ],
+        "scenario": "Incassa tutto il giorno per importo, dal telefono che tiene nel grembiule. La sera Zolto le invia via e-mail ciò che ritiene abbia venduto; un tocco conferma e le sue scorte online tornano a coincidere con la realtà."
+      },
+      "boutiques": {
+        "name": "Piccole boutique",
+        "headline": "Per i piccoli negozi con un bancone e un sito da tenere allineati",
+        "summary": "Ha un negozio fisico, un assortimento contenuto e clienti che guardano online prima di venire — o che vengono prima di comprare online.",
+        "painPoints": [
+          "Il bancone e il sito sono di fatto due attività che non concordano sulle scorte.",
+          "Vendere ai clienti in più di una lingua significa scrivere tutto due volte.",
+          "Rispondere sempre alle stesse domande su orari, taglie e spedizioni si mangia la giornata."
+        ],
+        "scenario": "Una cliente scrive in tedesco per sapere se un articolo è disponibile. L’annuncio è già in tedesco, la risposta parte senza di lei e la giacenza è la stessa che usa la sua cassa."
+      }
+    },
+    "features": {
+      "pos-online-sync": {
+        "name": "Cassa + negozio online, un solo inventario",
+        "description": "Venda al mercato e online dallo stesso catalogo. Le scorte si sincronizzano in tempo reale con brevi blocchi al checkout, così non vende mai due volte un pezzo unico su canali diversi."
+      },
+      "ai-photography": {
+        "name": "Fotografia di prodotto con IA",
+        "description": "Scatti una foto grezza con il telefono; l’IA la trasforma in un’immagine di prodotto pulita o in uno scatto lifestyle indossato — senza fotografo, modella o studio. Ogni immagine creata dall’IA è dichiarata come tale."
+      },
+      "ai-descriptions": {
+        "name": "Descrizioni di prodotto con IA",
+        "description": "Generi titoli e descrizioni dei prodotti da una foto, in più lingue (per es. inglese + tedesco), pronti da adattare al suo tono."
+      },
+      "ai-support": {
+        "name": "Assistente di supporto IA",
+        "description": "Un chatbot IA risponde alle domande dei clienti (materiali, spedizione, taglie) e trasforma le richieste ricorrenti in miglioramenti del prodotto."
+      },
+      "multichannel-intake": {
+        "name": "Pubblichi i prodotti da WhatsApp, Slack o Discord",
+        "description": "Invii una foto e un prezzo a un canale di chat; l’IA li interpreta e crea l’annuncio — senza alcuna schermata di amministrazione."
+      },
+      "import": {
+        "name": "Porti con sé il suo catalogo esistente",
+        "description": "Importi i suoi prodotti con CSV o caricamento massivo di foto, così cambiare piattaforma richiede un pomeriggio, non una ricostruzione."
+      },
+      "tap-to-pay": {
+        "name": "Tap to Pay — nessun lettore di carte da comprare",
+        "description": "Accetti pagamenti contactless con carta, telefono (Apple Pay / Google Pay) e QR TWINT sul telefono che ha già. Nessuno inserisce più una carta — la si appoggia — quindi non c’è alcun lettore da comprare, noleggiare o collegare."
+      },
+      "notebook-inventory": {
+        "name": "Trasformi il suo quaderno in un catalogo",
+        "description": "Tenga le scorte come fa già — anche a mano su un’agenda. Fotografi la sua lista e l’IA la trasforma in un vero catalogo: nomi, prezzi e quantità, senza inserimenti rigidi."
+      },
+      "day-end-reconciliation": {
+        "name": "Venda per importo, riconcili con l’IA",
+        "description": "Troppo lavoro al banco per associare ogni vendita? Inserisca solo l’importo e incassi. A fine giornata Zolto le invia via e-mail la sua ipotesi migliore su ciò che ha venduto; un tocco conferma e il pezzo risulta venduto sia nel negozio sia alla cassa."
+      },
+      "multilingual-listings": {
+        "name": "Annunci in ogni lingua in cui vende",
+        "description": "L’IA scrive e traduce titoli e descrizioni, così può vendere in tedesco, francese, inglese e altro senza scrivere una parola in una lingua che non conosce."
+      },
+      "payments": {
+        "name": "Pagamenti diretti con Stripe",
+        "description": "Colleghi il suo account Stripe; i clienti pagano direttamente lì. Zolto non trattiene mai il suo denaro — nel piano gratuito una commissione di piattaforma dell’1 % si applica solo agli ordini online e via agente, mentre le vendite di persona sono sempre senza commissioni."
+      },
+      "storefront": {
+        "name": "La sua vetrina con il suo marchio",
+        "description": "Un negozio online personalizzato sul suo sottodominio o dominio, con le spedizioni in Svizzera e nell’UE già integrate."
+      },
+      "ai-discovery": {
+        "name": "Trovabile dagli assistenti IA",
+        "description": "Ogni negozio include un llms.txt e un endpoint Model Context Protocol (MCP), così assistenti e agenti IA possono trovare e consigliare i suoi prodotti."
+      },
+      "insights": {
+        "name": "Analisi IA di vendite e scorte",
+        "description": "Un’analisi in linguaggio semplice del suo catalogo e delle vendite per individuare i best seller e le necessità di riassortimento."
+      }
+    },
+    "research": {
+      "title": "Primo mese online: i numeri di una creatrice",
+      "sample": "Un negozio pilota — Kalakosh, creatrice di gioielli di perle a Zurigo — nei primi 30 giorni dopo la messa online della sua vetrina Zolto.",
+      "collection": "I dati su ordini e traffico provengono dalla dashboard Zolto del negozio nel periodo considerato; le vendite offline sono il conteggio della commerciante stessa. Nulla è modellato o estrapolato.",
+      "limits": [
+        "Un solo negozio, in una sola categoria (gioielli fatti a mano), in una sola città. Questi numeri descrivono ciò che è successo a un negozio, non ciò che succederà al suo.",
+        "Un mese è poco. Il traffico del primo mese è gonfiato da un annuncio di lancio e da un seguito Instagram già esistente, e nessuno dei due si ripete.",
+        "La commerciante aveva già clienti di persona. Chi parte senza un pubblico deve aspettarsi un andamento diverso.",
+        "Zolto gestisce la piattaforma da cui provengono questi numeri: li consideri un caso pubblicato dal fornitore e li ponderi di conseguenza."
+      ],
+      "findings": [
+        "È stato un pubblico già esistente a fare il lavoro. Il 58 % degli ordini online è arrivato dal seguito Instagram della creatrice: la vetrina ha convertito un’attenzione che aveva già, invece di creare nuova domanda.",
+        "La ricerca non ha portato alcun ordine nel primo mese. Un negozio nuovo non ha ancora autorevolezza nei motori di ricerca; chi promette il contrario le sta vendendo qualcosa.",
+        "L’online non si è semplicemente aggiunto all’offline. Alcuni clienti abituali sono passati online, quindi 12 ordini online hanno prodotto un guadagno netto di 7 vendite, non 12.",
+        "Il valore degli ordini ha tenuto online. La media online di CHF 61 era in linea con la vendita di persona: il canale non ha svalutato il lavoro.",
+        "L’assistente IA ha assorbito la maggior parte del supporto. L’81 % delle domande dei clienti è stato risolto senza che la commerciante rispondesse."
+      ],
+      "metrics": {
+        "Online orders, month one": {
+          "label": "Ordini online, primo mese",
+          "value": "12",
+          "note": "Partendo da zero — prima del lancio il negozio non aveva alcun canale di vendita online."
+        },
+        "Average online order value": {
+          "label": "Valore medio degli ordini online",
+          "value": "CHF 61",
+          "note": "Da CHF 52 nella seconda settimana, più tranquilla, a CHF 71 nella quarta."
+        },
+        "Online conversion rate": {
+          "label": "Tasso di conversione online",
+          "value": "2.5%",
+          "note": "12 ordini su 481 visitatori nel mese."
+        },
+        "Total sales, before → after": {
+          "label": "Vendite totali, prima → dopo",
+          "value": "60 → 67 / mese",
+          "note": "Le vendite offline sono calate leggermente (~60 → ~55) perché alcuni clienti abituali sono passati online: il guadagno netto è quindi inferiore a quanto suggerisca il solo dato online."
+        },
+        "Channel mix after one month": {
+          "label": "Mix di canali dopo un mese",
+          "value": "82 % di persona / 18 % online",
+          "note": "La vendita di persona è rimasta il canale principale per tutto il periodo."
+        },
+        "Questions resolved by the AI assistant": {
+          "label": "Domande risolte dall’assistente IA",
+          "value": "81%",
+          "note": "Quota di domande dei clienti risolte senza l’intervento della commerciante."
+        }
+      },
+      "tables": {
+        "weekly": {
+          "caption": "Ordini online, valore degli ordini e traffico per settimana",
+          "head": [
+            "Settimana",
+            "Ordini online",
+            "Valore medio ordine",
+            "Visitatori"
+          ],
+          "rowLabels": [
+            "Settimana 1 (lancio)",
+            "Settimana 2",
+            "Settimana 3",
+            "Settimana 4",
+            "Totale del mese"
+          ]
+        },
+        "sources": {
+          "caption": "Da dove sono arrivati gli ordini online",
+          "head": ["Fonte", "Ordini", "% delle vendite online"],
+          "rowLabels": [
+            "Instagram (organico)",
+            "Diretto / di ritorno",
+            "Passaparola (link condivisi)",
+            "Ricerca / Google"
+          ]
+        }
+      }
+    },
+    "competitors": {
+      "stripe": {
+        "summary": "Una piattaforma di pagamento pensata per gli sviluppatori. Stripe gestisce il checkout di gran parte del web, e Zolto stesso regola i pagamenti tramite Stripe Connect — i suoi clienti pagano sul suo account Stripe.",
+        "betterWhen": [
+          "Ha risorse tecniche e vuole costruire un checkout su misura.",
+          "Il suo modello di business richiede l’intera superficie API di Stripe — marketplace, abbonamenti, pagamenti complessi.",
+          "Ha già una vetrina di cui è soddisfatto e le servono solo i pagamenti."
+        ],
+        "zoltoWhen": [
+          "Vuole un negozio e una cassa, non un’API su cui sviluppare.",
+          "Preferisce fotografare il suo quaderno piuttosto che scrivere un catalogo a mano.",
+          "Vende ai mercati e online e vuole un solo inventario per entrambi."
+        ]
+      },
+      "sumup": {
+        "summary": "Una società di pagamenti incentrata sul lettore di carte, rivolta a piccoli commercianti e ambulanti, che vende terminali portatili insieme a un conto di pagamento.",
+        "betterWhen": [
+          "Vuole un terminale fisico dedicato invece di usare il telefono.",
+          "Incassa in luoghi in cui porgere un dispositivo separato fa la differenza.",
+          "Non ha affatto bisogno di un negozio online."
+        ],
+        "zoltoWhen": [
+          "Preferisce non comprare hardware — i telefoni moderni accettano già il contactless e il QR TWINT.",
+          "Vuole lo stesso catalogo dietro il suo banco e il suo sito.",
+          "Vuole che l’IA si occupi degli annunci, delle traduzioni e delle risposte ai clienti."
+        ]
+      },
+      "shopify": {
+        "summary": "La piattaforma e-commerce in hosting più conosciuta, con una propria app di cassa oltre al negozio online. Pensata per attività commerciali che crescono con personale, magazzini e logistica multicanale.",
+        "betterWhen": [
+          "Gestisce un catalogo ampio con personale, punti di stoccaggio e logistica complessa.",
+          "Vuole il più grande ecosistema di app di terze parti e qualcuno che lo metta insieme.",
+          "Le servono strumenti di vendita multicanale consolidati e ha il tempo di amministrarli."
+        ],
+        "zoltoWhen": [
+          "È una persona sola, e una piattaforma da amministrare è il problema, non la soluzione.",
+          "Vuole cassa e catalogo sul telefono che tiene nel grembiule, senza una fattura mensile.",
+          "Preferisce fotografare il suo quaderno piuttosto che riempire a mano una griglia di prodotti."
+        ]
+      },
+      "worldline": {
+        "summary": "Un grande processore di pagamenti europeo (ha acquisito SIX Payment Services, a lungo lo standard per i terminali di carte svizzeri), al servizio di esercenti dal negozio di quartiere alle grandi imprese.",
+        "betterWhen": [
+          "Le serve un’infrastruttura di pagamento aziendale e un processo d’acquisto formale.",
+          "Vuole un rapporto di acquiring svizzero consolidato, con condizioni contrattuali.",
+          "Il suo volume giustifica tariffe negoziate e un account manager dedicato."
+        ],
+        "zoltoWhen": [
+          "È una persona sola o un piccolo laboratorio, e contratti e terminali sono eccessivi.",
+          "Vuole vendere questo fine settimana, non dopo un processo di attivazione.",
+          "Vuole il negozio online, la cassa e l’assistente IA in un unico posto."
+        ]
+      }
+    },
+    "templates": {
+      "atelier": {
+        "tagline": "Crema caldo e inchiostro espresso profondo",
+        "bestFor": "Oggetti fatti a mano, gioielli e laboratori artigianali"
+      },
+      "verdant": {
+        "tagline": "Superfici salvia e verdi da giardino",
+        "bestFor": "Banchi agricoli, fioristi e produttori alimentari"
+      },
+      "porcelain": {
+        "tagline": "Bianchi da galleria freddi, quieti e minimali",
+        "bestFor": "Boutique di moda, ceramiche e oggetti di design"
+      },
+      "bazaar": {
+        "tagline": "Calore terracotta con l’energia del giorno di mercato",
+        "bestFor": "Banchi di mercato, regali e ritrovamenti vintage"
+      },
+      "azure": {
+        "tagline": "Azzurri costieri ariosi, nitidi e aperti",
+        "bestFor": "Benessere, cartoleria ed essenziali moderni"
+      }
+    }
+  }
+}

@@ -6,6 +6,10 @@ import {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
+import { useTranslation } from "react-i18next";
+// Ensure the shared i18n instance is initialized even when this block is
+// pulled in isolation (e.g. under test) before main.tsx has run.
+import "@/lib/i18n";
 import {
   computeTooltipPosition,
   isTourCompleted,
@@ -64,6 +68,10 @@ export default function GuidedTour({
   startSignal,
   onFinish,
 }: GuidedTourProps) {
+  // Steps carry i18next KEYS (client/src/lib/tours.ts, adminTour.ts) rather
+  // than copy, so the step lists stay language-free module constants and both
+  // the overlay chrome and the step copy resolve here, at render time.
+  const { t } = useTranslation("admin");
   const [active, setActive] = useState(false);
   const [index, setIndex] = useState(0);
   const [rect, setRect] = useState<Rect | null>(null);
@@ -300,7 +308,7 @@ export default function GuidedTour({
           // biome-ignore lint/suspicious/noArrayIndexKey: panels are a fixed positional set (top/bottom/left/right)
           key={i}
           type="button"
-          aria-label="Skip tour"
+          aria-label={t("catalog.components.tour.skipAria")}
           tabIndex={-1}
           data-testid="tour-backdrop"
           onClick={() => finish(false)}
@@ -329,7 +337,10 @@ export default function GuidedTour({
       <div
         ref={tipRef}
         role="group"
-        aria-label={`Tour step ${index + 1} of ${steps.length}`}
+        aria-label={t("catalog.components.tour.stepAria", {
+          current: index + 1,
+          total: steps.length,
+        })}
         className="pointer-events-auto absolute rounded-xl border border-slate-700 bg-slate-900 p-5 text-left shadow-2xl"
         style={{ top: pos.top, left: pos.left, width: tipWidth }}
       >
@@ -354,13 +365,16 @@ export default function GuidedTour({
           }
         />
         <p className="text-xs font-medium uppercase tracking-widest text-violet-400">
-          Step {index + 1} of {steps.length}
+          {t("catalog.components.tour.stepLabel", {
+            current: index + 1,
+            total: steps.length,
+          })}
         </p>
         <h3 className="mt-1 text-base font-semibold text-white">
-          {step.title}
+          {t(step.titleKey)}
         </h3>
         <p className="mt-2 text-sm leading-relaxed text-slate-300">
-          {step.body}
+          {t(step.bodyKey)}
         </p>
 
         <div className="mt-4 flex items-center justify-between">
@@ -369,7 +383,7 @@ export default function GuidedTour({
             onClick={() => finish(false)}
             className="text-xs text-slate-400 hover:text-slate-200"
           >
-            Skip
+            {t("catalog.components.tour.skip")}
           </button>
           <div className="flex items-center gap-2">
             {index > 0 && (
@@ -378,7 +392,7 @@ export default function GuidedTour({
                 onClick={goBack}
                 className="rounded-lg border border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-200 hover:border-slate-500"
               >
-                Back
+                {t("catalog.components.tour.back")}
               </button>
             )}
             <button
@@ -386,7 +400,9 @@ export default function GuidedTour({
               onClick={goNext}
               className="rounded-lg bg-violet-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-violet-400"
             >
-              {isLast ? "Done" : "Next"}
+              {isLast
+                ? t("catalog.components.tour.done")
+                : t("catalog.components.tour.next")}
             </button>
           </div>
         </div>

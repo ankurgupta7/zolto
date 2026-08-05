@@ -3,7 +3,12 @@ import { render, screen, cleanup } from "@testing-library/react";
 import { Router } from "wouter";
 import { memoryLocation } from "wouter/memory-location";
 import Pricing from "./Pricing";
-import { PLANS, PRO_PLAN, REVENUE_SHARE } from "@shared/platform";
+import {
+  PLANS,
+  PRO_BREAK_EVEN_ONLINE_CHF,
+  PRO_PLAN,
+  REVENUE_SHARE,
+} from "@shared/platform";
 
 afterEach(cleanup);
 
@@ -47,8 +52,12 @@ describe("Pricing", () => {
       0,
     );
     expect(screen.getAllByText(/CHF 0/).length).toBeGreaterThan(0);
-    // Break-even upsell number is on the page.
-    expect(screen.getAllByText(/2,500/).length).toBeGreaterThan(0);
+    // Break-even upsell number is on the page — in Swiss formatting now
+    // (en renders with the en-CH locale, not en-US).
+    const breakEven = PRO_BREAK_EVEN_ONLINE_CHF.toLocaleString("en-CH");
+    expect(screen.getAllByText(new RegExp(breakEven)).length).toBeGreaterThan(
+      0,
+    );
     // Page copy derives from the same constants checkout charges with.
     expect(REVENUE_SHARE.percentLabel).toBe("1%");
     expect(

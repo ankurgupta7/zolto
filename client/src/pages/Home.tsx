@@ -4,7 +4,9 @@ import ProductCard from "@/components/ProductCard";
 import ParticleField from "@/components/ParticleField";
 import { useTenant } from "@/contexts/TenantContext";
 import { instagramHref } from "@/lib/branding";
-import { heroCopy, valueProps } from "@/lib/storefrontContent";
+import { heroCopy, valueProps, pageChrome } from "@/lib/storefrontContent";
+import { useTranslation } from "react-i18next";
+import { matchSupportedLanguage } from "@/lib/languages";
 import {
   Carousel,
   CarouselContent,
@@ -50,10 +52,13 @@ function fadeInProps(delay = 0) {
 
 export default function Home() {
   const { branding } = useTenant();
+  const { i18n } = useTranslation();
+  const lang = matchSupportedLanguage(i18n.language) ?? "en";
   const { data: products } = trpc.products.list.useQuery({});
   const featured = products?.slice(0, 6) ?? [];
-  const hero = heroCopy(branding);
-  const pillars = valueProps();
+  const hero = heroCopy(branding, lang);
+  const pillars = valueProps(lang);
+  const chrome = pageChrome(branding, lang).home;
   const igHref = instagramHref(branding);
 
   // Categories are derived from the tenant's own catalogue — no hardcoded list,
@@ -132,7 +137,7 @@ export default function Home() {
                   href="/shop"
                   className="inline-flex items-center gap-2 bg-[var(--brand-accent)] text-[var(--brand-ink)] px-8 py-3.5 text-sm uppercase tracking-[0.15em] font-sans font-medium hover:bg-[var(--brand-accent-light)] transition-colors duration-300"
                 >
-                  Explore the shop
+                  {chrome.exploreShop}
                 </Link>
                 {igHref && (
                   <a
@@ -156,7 +161,7 @@ export default function Home() {
             className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-white/30"
           >
             <span className="text-[10px] uppercase tracking-[0.2em] font-sans">
-              Scroll
+              {chrome.scroll}
             </span>
             <motion.div
               animate={{ scaleY: [1, 1.35, 1], opacity: [0.3, 0.7, 0.3] }}
@@ -211,7 +216,7 @@ export default function Home() {
                   {...fadeInProps(0)}
                   className="text-[var(--brand-accent)] text-[10px] uppercase tracking-[0.25em] font-sans whitespace-nowrap shrink-0 mr-1"
                 >
-                  Shop by category
+                  {chrome.shopByCategory}
                 </motion.span>
                 {categories.map((cat, i) => (
                   <motion.div
@@ -256,13 +261,13 @@ export default function Home() {
                     {...fadeUpProps(0.05)}
                     className="text-[var(--brand-accent)] text-xs uppercase tracking-[0.3em] mb-3 font-sans"
                   >
-                    Latest arrivals
+                    {chrome.latestArrivals}
                   </motion.p>
                   <motion.h2
                     {...fadeUpProps(0.15)}
                     className="font-serif text-foreground"
                   >
-                    New in the shop
+                    {chrome.newInShop}
                   </motion.h2>
                 </motion.div>
                 <motion.div {...fadeInProps(0.25)}>
@@ -270,7 +275,7 @@ export default function Home() {
                     href="/shop"
                     className="inline-flex items-center gap-2 text-sm text-[var(--brand-ink)] uppercase tracking-[0.15em] font-sans hover:text-[var(--brand-accent)] transition-colors border-b border-[var(--brand-ink)]/30 hover:border-[var(--brand-accent)] pb-0.5"
                   >
-                    View all
+                    {chrome.viewAll}
                   </Link>
                 </motion.div>
               </div>

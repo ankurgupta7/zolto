@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
+import i18n from "@/lib/i18n";
 import ImageLightbox from "./ImageLightbox";
 
 const IMAGES = ["/img/a.jpg", "/img/b.jpg", "/img/c.jpg"];
@@ -17,8 +18,11 @@ function renderLightbox(images = IMAGES, activeIndex = 0) {
   );
 }
 
-beforeEach(() => {
+// The storefront falls back to German when the browser asks for it; pin
+// English so the label assertions below read the source strings.
+beforeEach(async () => {
   vi.clearAllMocks();
+  await i18n.changeLanguage("en");
 });
 afterEach(() => {
   cleanup();

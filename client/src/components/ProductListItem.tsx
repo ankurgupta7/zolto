@@ -1,6 +1,16 @@
 import { Eye, EyeOff, Trash2, Pencil } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
+// Ensure the shared i18n instance is initialized even when this row is
+// rendered in isolation (e.g. under test) before main.tsx has run.
+import "@/lib/i18n";
+import { DEFAULT_LANGUAGE, matchSupportedLanguage } from "@/lib/languages";
 import { formatPrice, useCurrency } from "@/lib/money";
+
+/** Swiss regional locale for the active UI language ("it" → "it-CH"). */
+function dateLocale(language: string): string {
+  return `${matchSupportedLanguage(language) ?? DEFAULT_LANGUAGE}-CH`;
+}
 
 interface ProductListItemProps {
   product: {
@@ -29,10 +39,11 @@ export default function ProductListItem({
   onToggleSold,
 }: ProductListItemProps) {
   const [isHovering, setIsHovering] = useState(false);
+  const { t, i18n } = useTranslation();
   const currency = useCurrency();
 
   const formattedDate = new Date(product.createdAt).toLocaleDateString(
-    "en-US",
+    dateLocale(i18n.language),
     {
       year: "numeric",
       month: "short",
@@ -79,9 +90,11 @@ export default function ProductListItem({
           {formatPrice(Number(product.price), currency)}
         </div>
         <div className="flex items-center gap-1 text-xs text-muted-foreground font-sans mt-1">
-          <span>Qty: {product.quantity}</span>
+          <span>{t("productList.qty", { quantity: product.quantity })}</span>
           {product.sold && (
-            <span className="text-red-600 font-medium">• Sold</span>
+            <span className="text-red-600 font-medium">
+              • {t("product.sold")}
+            </span>
           )}
         </div>
       </div>
@@ -93,7 +106,11 @@ export default function ProductListItem({
         <button
           type="button"
           onClick={onToggleVisibility}
-          title={product.visible ? "Hide from shop" : "Show in shop"}
+          title={
+            product.visible
+              ? t("productList.hideFromShop")
+              : t("productList.showInShop")
+          }
           className="p-2 hover:bg-[var(--brand-border)] rounded transition-colors"
         >
           {product.visible ? (
@@ -105,7 +122,7 @@ export default function ProductListItem({
         <button
           type="button"
           onClick={onEdit}
-          title="Edit product"
+          title={t("productList.editProduct")}
           className="p-2 hover:bg-[var(--brand-border)] rounded transition-colors"
         >
           <Pencil size={16} className="text-[var(--brand-ink)]" />
@@ -113,7 +130,7 @@ export default function ProductListItem({
         <button
           type="button"
           onClick={onDelete}
-          title="Delete product"
+          title={t("productList.deleteProduct")}
           className="p-2 hover:bg-red-100 rounded transition-colors"
         >
           <Trash2 size={16} className="text-red-600" />

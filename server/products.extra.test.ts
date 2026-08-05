@@ -380,6 +380,11 @@ describe("products.bulkAnalyze", () => {
       groupId: "g1",
       success: false,
       category: "Other",
+      // The fallback covers all four Swiss-relevant languages.
+      nameFr: "Bijou",
+      descriptionFr: "Bijou fait main.",
+      nameIt: "Gioiello",
+      descriptionIt: "Gioiello fatto a mano.",
       // The fallback must never carry a guessed price.
       suggestedPrice: null,
       priceBasis: null,
@@ -737,6 +742,155 @@ describe("products simple admin ops", () => {
     const patch = db.updateProduct.mock.calls[0][2] as Record<string, unknown>;
     expect(patch.price).toBeUndefined();
     expect(patch.category).toBe("Earrings");
+  });
+});
+
+// Every write path must accept and persist all four locale columns —
+// translations used to be silently dropped at the router boundary.
+describe("product locale fields pass through every write path", () => {
+  const LOCALES = {
+    nameEn: "Ring",
+    nameDe: "Ring",
+    nameFr: "Bague",
+    nameIt: "Anello",
+    descriptionEn: "en d",
+    descriptionDe: "de d",
+    descriptionFr: "fr d",
+    descriptionIt: "it d",
+  };
+
+  it("create persists fr/it/de translations", async () => {
+    await admin().products.create({
+      name: "New Ring",
+      description: "d",
+      price: 120,
+      category: "Rings",
+      ...LOCALES,
+    });
+    expect(db.createProduct).toHaveBeenCalledWith(
+      expect.objectContaining(LOCALES),
+    );
+  });
+
+  it("create nulls locale columns that were not provided", async () => {
+    await admin().products.create({
+      name: "New Ring",
+      description: "d",
+      price: 120,
+      category: "Rings",
+      nameEn: "Ring",
+    });
+    expect(db.createProduct).toHaveBeenCalledWith(
+      expect.objectContaining({
+        nameEn: "Ring",
+        nameFr: null,
+        nameIt: null,
+        descriptionFr: null,
+        descriptionIt: null,
+      }),
+    );
+  });
+
+  it("update forwards locale fields including explicit nulls", async () => {
+    await admin().products.update({
+      id: 3,
+      nameFr: "Bague",
+      descriptionIt: null,
+    });
+    expect(db.updateProduct).toHaveBeenCalledWith(
+      TENANT_ID,
+      3,
+      expect.objectContaining({ nameFr: "Bague", descriptionIt: null }),
+    );
+  });
+
+  it("bulkCreate persists fr/it translations", async () => {
+    db.createProduct.mockResolvedValueOnce({ insertId: 11 });
+    await admin().products.bulkCreate({
+      products: [
+        {
+          name: "Ring A",
+          description: "d",
+          price: 100,
+          category: "Rings",
+          nameFr: "Bague A",
+          nameIt: "Anello A",
+          descriptionFr: "fr d",
+          descriptionIt: "it d",
+          images: [{ data: "QQ==", mimeType: "image/jpeg" }],
+        },
+      ],
+    });
+    expect(db.createProduct).toHaveBeenCalledWith(
+      expect.objectContaining({
+        nameFr: "Bague A",
+        nameIt: "Anello A",
+        descriptionFr: "fr d",
+        descriptionIt: "it d",
+      }),
+    );
+  });
+
+  it("csvImport patches fr/it on matched rows and persists them on new rows", async () => {
+    db.getAllProducts.mockResolvedValue([
+      product({ id: 1, name: "Existing Ring" }),
+    ]);
+    await admin().products.csvImport({
+      rows: [
+        {
+          name: "Existing Ring",
+          description: "upd",
+          price: 50,
+          category: "Rings",
+          nameFr: "Bague existante",
+          descriptionIt: "it d",
+        },
+        {
+          name: "Brand New",
+          description: "d",
+          price: 60,
+          category: "Earrings",
+          nameIt: "Nuovo",
+        },
+      ],
+    });
+    expect(db.updateProduct).toHaveBeenCalledWith(
+      TENANT_ID,
+      1,
+      expect.objectContaining({
+        nameFr: "Bague existante",
+        descriptionIt: "it d",
+      }),
+    );
+    expect(db.createProduct).toHaveBeenCalledWith(
+      expect.objectContaining({ name: "Brand New", nameIt: "Nuovo" }),
+    );
+  });
+
+  it("bulkUpsertImages patches fr/it descriptions when updating", async () => {
+    db.getProductById.mockResolvedValue(product({ id: 5 }));
+    db.getProductImages.mockResolvedValue([]);
+    await admin().products.bulkUpsertImages({
+      items: [
+        {
+          productId: 5,
+          images: [{ data: "QQ==", mimeType: "image/jpeg" }],
+          description: "neu",
+          descriptionFr: "fr d",
+          descriptionIt: "it d",
+          updateDescription: true,
+        },
+      ],
+    });
+    expect(db.updateProduct).toHaveBeenCalledWith(
+      TENANT_ID,
+      5,
+      expect.objectContaining({
+        description: "neu",
+        descriptionFr: "fr d",
+        descriptionIt: "it d",
+      }),
+    );
   });
 });
 

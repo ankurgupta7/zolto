@@ -47,6 +47,12 @@ beforeEach(() => {
       nameEn: "Silver ring",
       description: "Handgefertigt",
       descriptionEn: "Handcrafted",
+      nameDe: null,
+      descriptionDe: null,
+      nameFr: "Bague en argent",
+      descriptionFr: "Faite à la main",
+      nameIt: null,
+      descriptionIt: null,
       price: "129.00",
       sold: false,
       quantity: 1,
@@ -83,6 +89,30 @@ describe("chat.ask", () => {
     expect(system).toContain("WhatsApp: +41 79 000 00 00");
     // sold-out items are excluded from the catalog
     expect(system).not.toContain("Sold piece");
+  });
+
+  it("grounds catalog lines in the visitor's locale (fr)", async () => {
+    await caller.ask({ message: "Avez-vous des bagues?", locale: "fr" });
+    const system = llmMock.invokeLLM.mock.calls[0][0].messages[0]
+      .content as string;
+    expect(system).toContain("Bague en argent (129.00 CHF)");
+    expect(system).toContain("Faite à la main");
+    expect(system).not.toContain("Silver ring (129.00 CHF)");
+  });
+
+  it("falls back to the primary text when a locale translation is missing (it)", async () => {
+    await caller.ask({ message: "Avete anelli?", locale: "it" });
+    const system = llmMock.invokeLLM.mock.calls[0][0].messages[0]
+      .content as string;
+    expect(system).toContain("Silberring (129.00 CHF)");
+    expect(system).toContain("Handgefertigt");
+  });
+
+  it("defaults to English catalog lines when no locale is sent", async () => {
+    await caller.ask({ message: "What do you sell?" });
+    const system = llmMock.invokeLLM.mock.calls[0][0].messages[0]
+      .content as string;
+    expect(system).toContain("Silver ring (129.00 CHF)");
   });
 
   it("instructs the model to reply in the customer's language", async () => {

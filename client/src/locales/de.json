@@ -20,6 +20,7 @@
     "location": "Standort",
     "locationValue": "Zürich, Schweiz",
     "whatsapp": "WhatsApp",
+    "whatsappButton": "Schreiben Sie uns auf WhatsApp",
     "instagram": "Instagram",
     "followCaption": "Folgen Sie uns für Neuheiten",
     "responseTime": "Antwortzeit",
@@ -45,6 +46,18 @@
     "errorRequired": "Bitte füllen Sie alle Pflichtfelder aus.",
     "successMessage": "Ihre Nachricht wurde gesendet. Wir melden uns bald."
   },
+  "support": {
+    "title": "Fragen Sie uns alles",
+    "intro": "Fragen zu Materialien, Grössen, Verfügbarkeit oder einem bestimmten Stück? Ich antworte aus dem Katalog des Shops.",
+    "placeholder": "Ihre Frage eingeben…",
+    "send": "Senden",
+    "openChat": "Chat öffnen",
+    "closeChat": "Chat schliessen"
+  },
+  "aiChat": {
+    "placeholder": "Nachricht eingeben...",
+    "emptyState": "Starten Sie ein Gespräch mit der KI"
+  },
   "shop": {
     "title": "Die Kollektion",
     "pieces_one": "{{count}} Artikel",
@@ -54,6 +67,22 @@
     "noPiecesCategory": "Noch keine Artikel in der Kollektion {{category}}.",
     "noPiecesAll": "Die Kollektion wird zusammengestellt. Schauen Sie bald wieder vorbei."
   },
+  "discovery": {
+    "sortBy": "Sortieren nach:",
+    "sortNewest": "Neueste zuerst",
+    "sortCategory": "Nach Kategorie",
+    "sortName": "Nach Name (A-Z)",
+    "view": "Ansicht:",
+    "gridView": "Rasteransicht",
+    "gridViewTitle": "Rasteransicht mit Vorschaubildern",
+    "listView": "Listenansicht",
+    "listViewTitle": "Listenansicht mit Details",
+    "categories": "Kategorien:",
+    "expandAll": "Alle ausklappen",
+    "collapseAll": "Alle einklappen",
+    "products_one": "{{count}} Produkt",
+    "products_other": "{{count}} Produkte"
+  },
   "product": {
     "sold": "Verkauft",
     "enquireWhatsApp": "Per WhatsApp anfragen",
@@ -62,6 +91,23 @@
     "uniqueCaption": "Mit Sorgfalt ausgewählt",
     "enquirySimilar": "Hallo, ich interessiere mich für einen Artikel ähnlich wie \"{{name}}\" — können Sie mir sagen, ob etwas Ähnliches verfügbar ist? Ich habe Sie über den Website-Button erreicht: {{link}}",
     "enquiryAvailable": "Guten Tag, ich interessiere mich für \"{{name}}\" – könnten Sie mir mehr dazu sagen? Ich habe Sie über den Website-Button erreicht: {{link}}"
+  },
+  "productList": {
+    "qty": "Menge: {{quantity}}",
+    "hideFromShop": "Aus dem Shop ausblenden",
+    "showInShop": "Im Shop anzeigen",
+    "editProduct": "Produkt bearbeiten",
+    "deleteProduct": "Produkt löschen",
+    "categoryCount": "({{n}})"
+  },
+  "lightbox": {
+    "title": "Vollbildansicht",
+    "imageAlt": "Ansicht {{index}} von {{total}}",
+    "counter": "{{index}} / {{total}}",
+    "close": "Schliessen",
+    "previous": "Vorheriges Bild",
+    "next": "Nächstes Bild",
+    "goTo": "Zu Bild {{index}} springen"
   },
   "cart": {
     "title": "Warenkorb",
@@ -178,10 +224,14 @@
     "include": "Einbeziehen",
     "fieldNameDe": "Name (DE)",
     "fieldNameEn": "Name (EN)",
+    "fieldNameFr": "Name (FR)",
+    "fieldNameIt": "Name (IT)",
     "fieldCategory": "Kategorie",
     "fieldPrice": "Preis (CHF)",
     "fieldDescriptionDe": "Beschreibung (DE)",
     "fieldDescriptionEn": "Beschreibung (EN)",
+    "fieldDescriptionFr": "Beschreibung (FR)",
+    "fieldDescriptionIt": "Beschreibung (IT)",
     "pricePlaceholder": "z.B. 185.00",
     "selectedForPublish": "<strong>{{confirmed}}</strong> von {{total}} Produkten für die Veröffentlichung ausgewählt",
     "needsPrice_one": "⚠ {{count}} Produkt benötigt noch einen Preis",
@@ -207,5 +257,13 @@
     "body": "Oder es gab sie nie — schwer zu sagen. Jedenfalls ist hier nichts. Das Schöne liegt einen Klick weiter.",
     "shop": "Zum Shop",
     "home": "Zurück zur Startseite"
+  },
+  "errors": {
+    "unexpected": "Ein unerwarteter Fehler ist aufgetreten.",
+    "reload": "Seite neu laden"
+  },
+  "common": {
+    "close": "Schliessen",
+    "loading": "Wird geladen"
   }
 }

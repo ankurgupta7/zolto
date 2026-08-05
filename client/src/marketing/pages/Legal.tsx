@@ -1,10 +1,18 @@
 import { Container } from "../components/Container";
+import { useMarketingT } from "../lib/marketingI18n";
 
 interface Section {
   heading: string;
   body: string[];
 }
 
+/**
+ * The legal pages' copy lives in the marketing locale files
+ * (marketing:legal.privacy / marketing:legal.terms) so the Privacy Policy and
+ * Terms of Service render in the visitor's language like the rest of the
+ * funnel. The section arrays are read with returnObjects — the structural
+ * locale test guarantees every language carries the same sections.
+ */
 function LegalLayout({
   title,
   updated,
@@ -16,6 +24,7 @@ function LegalLayout({
   intro: string;
   sections: Section[];
 }) {
+  const { t } = useMarketingT();
   return (
     <Container width="3xl" className="py-20">
       <h1 className="font-serif text-4xl text-[var(--brand-text)]">{title}</h1>
@@ -43,97 +52,38 @@ function LegalLayout({
         ))}
       </div>
       <p className="mt-12 rounded-xl border border-[var(--brand-border)] bg-white p-4 text-xs text-[var(--brand-muted-2)]">
-        This is a plain-language summary of Zolto's platform terms. It is not
-        legal advice. Merchants remain responsible for their own storefront's
-        customer-facing policies.
+        {t("legal.disclaimer")}
       </p>
     </Container>
   );
 }
 
 export function Privacy() {
+  const { t } = useMarketingT();
+  const sections = t("legal.privacy.sections", {
+    returnObjects: true,
+  }) as unknown as Section[];
   return (
     <LegalLayout
-      title="Privacy Policy"
-      updated="Draft — pending legal review"
-      intro="This policy explains what data Zolto processes when you use the platform to run a store. It covers Zolto's role as the platform provider; each merchant is the controller for their own customers' data."
-      sections={[
-        {
-          heading: "1. Two data-protection regimes apply",
-          body: [
-            "Zolto serves merchants in Switzerland and the EU, and these are governed by different laws. Swiss merchants and their customers are covered by the revised Swiss Federal Act on Data Protection (revFADP/nFADP). EU merchants and customers are covered by the GDPR. We apply the stricter of the two where they differ.",
-            "Where we act as a processor for a merchant (handling their customers' data on their behalf), a Data Processing Agreement governs that relationship.",
-          ],
-        },
-        {
-          heading: "2. What we collect",
-          body: [
-            "Account data: your name, email, store name, and login credentials. Store data: products, orders, and inventory you enter. Usage data: how you interact with the platform, to improve it and provide support.",
-            "Payment card details are handled directly by our payment processor (Stripe) and are never stored on Zolto's servers.",
-          ],
-        },
-        {
-          heading: "3. Cookies & analytics",
-          body: [
-            "The platform sets a single cookie, app_session_id, which keeps you signed in. It is strictly necessary — the service cannot authenticate you without it — so it requires no consent banner and cannot be disabled while using the service. We set no advertising, preference, or third-party tracking cookies.",
-            "We measure page views with Umami, a privacy-focused analytics tool that works without cookies and without cross-site identifiers; it gives us aggregate statistics, not profiles of individual visitors. Webfonts are served from our own infrastructure, so viewing a page sends no request to third-party font networks. During checkout you are redirected to Stripe, which may set its own cookies on its own domain under Stripe's privacy policy.",
-          ],
-        },
-        {
-          heading: "4. Your rights",
-          body: [
-            "You may request access to, correction of, or deletion of your personal data, and you may object to certain processing. Contact us to exercise these rights. EU users additionally have the rights granted under the GDPR, including data portability and the right to lodge a complaint with a supervisory authority.",
-          ],
-        },
-        {
-          heading: "5. Retention & sub-processors",
-          body: [
-            "We keep data for as long as your account is active and as required by law. We use a small set of sub-processors (hosting, payments, email, AI, analytics) under contract; a current list is available on request.",
-          ],
-        },
-      ]}
+      title={t("legal.privacy.title")}
+      updated={t("legal.privacy.updated")}
+      intro={t("legal.privacy.intro")}
+      sections={sections}
     />
   );
 }
 
 export function Terms() {
+  const { t } = useMarketingT();
+  const sections = t("legal.terms.sections", {
+    returnObjects: true,
+  }) as unknown as Section[];
   return (
     <LegalLayout
-      title="Terms of Service"
-      updated="Draft — pending legal review"
-      intro="These terms govern your use of the Zolto platform to operate an online store and point-of-sale."
-      sections={[
-        {
-          heading: "1. Subscriptions & trials",
-          body: [
-            "Paid plans are billed monthly and are month-to-month — cancel anytime, effective at the next billing cycle. Paid features may include a 14-day free trial. After the trial, the plan renews at the then-current price unless cancelled.",
-          ],
-        },
-        {
-          heading: "2. Prices and taxes",
-          body: [
-            "Prices are stated in Swiss francs (CHF). Zolto's turnover is below the CHF 100,000 threshold at which Swiss VAT registration becomes mandatory, so no VAT is charged on subscriptions or on the platform fee — the price shown is the price you pay. Should Zolto cross that threshold, or become liable for tax in another jurisdiction, we will update these terms and notify affected customers before any tax is applied.",
-          ],
-        },
-        {
-          heading: "3. AI-assisted features",
-          body: [
-            "Zolto includes AI features that draft product descriptions, answer support questions, and speed up setup. AI output can be inaccurate — you are responsible for reviewing content before it goes live to your customers. Changes that affect billing, payments, or inventory are always applied by a human, never auto-deployed by the assistant.",
-          ],
-        },
-        {
-          heading: "4. Your responsibilities",
-          body: [
-            "You are responsible for the legality of what you sell, for your storefront's own customer-facing policies (returns, shipping, privacy), and for the accuracy of your product and inventory data.",
-          ],
-        },
-        {
-          heading: "5. Liability & governing law",
-          body: [
-            "The platform is provided on an as-is basis to the extent permitted by law. These terms are governed by Swiss law; mandatory consumer-protection rights in your country of residence are unaffected.",
-          ],
-        },
-      ]}
+      title={t("legal.terms.title")}
+      updated={t("legal.terms.updated")}
+      intro={t("legal.terms.intro")}
+      sections={sections}
     />
   );
 }

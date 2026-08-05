@@ -125,11 +125,13 @@ describe("categoryTaxonomyLines", () => {
     const vc = await getVerticalContext(7);
     const lines = categoryTaxonomyLines(vc);
 
-    expect(lines).toContain("* Rings → finger rings of any style, ring, fingerring");
-    expect(lines).toContain("* Talismans → Talismans, Talismane");
-    expect(lines.trim().endsWith("* Other → anything that does not fit the above")).toBe(
-      true,
+    expect(lines).toContain(
+      "* Rings → finger rings of any style, ring, fingerring",
     );
+    expect(lines).toContain("* Talismans → Talismans, Talismane");
+    expect(
+      lines.trim().endsWith("* Other → anything that does not fit the above"),
+    ).toBe(true);
   });
 });
 
@@ -144,8 +146,12 @@ describe("fallbackProduct", () => {
     expect(fallbackProduct(vc)).toEqual({
       name: "Kunstwerk",
       nameEn: "Artwork",
+      nameFr: "Œuvre d'art",
+      nameIt: "Opera d'arte",
       description: "Handgefertigtes Kunstwerk.",
       descriptionEn: "Original handmade artwork.",
+      descriptionFr: "Œuvre d'art originale faite main.",
+      descriptionIt: "Opera d'arte originale fatta a mano.",
       category: "Other",
     });
   });
@@ -166,7 +172,9 @@ describe("buildIntakeExtractionPrompt", () => {
     const { system, jsonSchema } = buildIntakeExtractionPrompt(vc);
 
     expect(system).toContain('"Kalakosh", a jewellery boutique');
-    expect(system).toContain('Available categories: "Necklaces", "Rings", "Other"');
+    expect(system).toContain(
+      'Available categories: "Necklaces", "Rings", "Other"',
+    );
     expect(system).toContain("* Rings → finger rings");
     const schema = jsonSchema.schema as {
       properties: { category: { enum: string[] } };

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, cleanup, act } from "@testing-library/react";
+import i18n from "@/lib/i18n";
 import ClaimStaff from "./ClaimStaff";
 import { hardRedirect } from "@/lib/navigate";
 
@@ -31,12 +32,13 @@ vi.mock("@/lib/trpc", () => ({
   },
 }));
 
-beforeEach(() => {
+beforeEach(async () => {
   vi.clearAllMocks();
   mocks.authState.isAuthenticated = true;
   mocks.authState.loading = false;
   mocks.claimOpts = null;
   window.history.replaceState({}, "", `/claim-staff?token=${VALID_TOKEN}`);
+  await i18n.changeLanguage("en");
 });
 afterEach(() => cleanup());
 
@@ -86,5 +88,39 @@ describe("ClaimStaff page", () => {
     act(() => mocks.claimOpts!.onError!(new Error("Invite expired")));
     expect(screen.getByText("Invite couldn't be used")).toBeTruthy();
     expect(screen.getByText("Invite expired")).toBeTruthy();
+  });
+});
+
+// Every line on this page is one `admin`-namespace lookup away from a raw key,
+// so pin that the account fragment resolves in a non-default language rather
+// than falling back to English (or rendering "catalog.account.…").
+describe("ClaimStaff page — translated", () => {
+  afterEach(async () => {
+    await act(async () => {
+      await i18n.changeLanguage("en");
+    });
+  });
+
+  it("renders the welcome and the invalid-link error in German", async () => {
+    await act(async () => {
+      await i18n.changeLanguage("de");
+    });
+    render(<ClaimStaff />);
+    expect(screen.getByText("Einladung wird angenommen…")).toBeTruthy();
+    act(() => mocks.claimOpts!.onSuccess!());
+    expect(screen.getByText("Willkommen im Team!")).toBeTruthy();
+    expect(
+      screen.getByText("Sie werden in den Adminbereich weitergeleitet…"),
+    ).toBeTruthy();
+
+    cleanup();
+    window.history.replaceState({}, "", "/claim-staff?token=short");
+    render(<ClaimStaff />);
+    expect(
+      screen.getByText("Einladung konnte nicht verwendet werden"),
+    ).toBeTruthy();
+    expect(
+      screen.getByText("Dieser Einladungslink ist ungültig."),
+    ).toBeTruthy();
   });
 });

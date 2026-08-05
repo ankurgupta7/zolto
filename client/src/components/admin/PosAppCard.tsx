@@ -18,6 +18,10 @@
 import { Link } from "wouter";
 import { Smartphone, Apple, KeyRound, Copy, Check } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
+// Ensure the shared i18n instance is initialized even when this card is
+// rendered in isolation (e.g. under test) before main.tsx has run.
+import "@/lib/i18n";
 
 const ANDROID_URL = import.meta.env.VITE_POS_ANDROID_URL as string | undefined;
 const IOS_URL = import.meta.env.VITE_POS_IOS_URL as string | undefined;
@@ -31,11 +35,12 @@ function StoreLink({
   icon: typeof Smartphone;
   platform: string;
 }) {
+  const { t } = useTranslation("admin");
   if (!href) {
     return (
       <div className="flex items-center gap-2 rounded-md border border-dashed px-4 py-2 text-sm text-muted-foreground">
         <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
-        {platform} — not published yet
+        {t("core.pos.notPublished", { platform })}
       </div>
     );
   }
@@ -47,12 +52,13 @@ function StoreLink({
       className="inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
     >
       <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
-      Get it for {platform}
+      {t("core.pos.getFor", { platform })}
     </a>
   );
 }
 
 export function PosAppCard({ serverUrl }: { serverUrl: string }) {
+  const { t } = useTranslation("admin");
   const [copied, setCopied] = useState(false);
   const unpublished = !ANDROID_URL && !IOS_URL;
 
@@ -65,24 +71,25 @@ export function PosAppCard({ serverUrl }: { serverUrl: string }) {
 
       {unpublished && (
         <p className="mt-3 text-xs text-muted-foreground">
-          The register app is still in testing. Ask us for a build and we will
-          send you one — everything else on this page works already.
+          {t("core.pos.testingNote")}
         </p>
       )}
 
       <div className="mt-5 border-t pt-5">
         <p className="text-sm font-medium text-foreground">
-          What the app asks for on first launch
+          {t("core.pos.firstLaunch")}
         </p>
         <ol className="mt-2 space-y-2 text-sm text-muted-foreground">
           <li className="flex flex-wrap items-center gap-2">
-            <span className="font-medium text-foreground">1. Server</span>
+            <span className="font-medium text-foreground">
+              {t("core.pos.step1")}
+            </span>
             <code className="rounded bg-muted px-2 py-0.5 text-xs text-foreground">
               {serverUrl}
             </code>
             <button
               type="button"
-              aria-label="Copy server address"
+              aria-label={t("core.pos.copyServer")}
               onClick={() => {
                 navigator.clipboard?.writeText(serverUrl);
                 setCopied(true);
@@ -99,14 +106,15 @@ export function PosAppCard({ serverUrl }: { serverUrl: string }) {
           </li>
           <li className="flex flex-wrap items-center gap-2">
             <span className="font-medium text-foreground">
-              2. Your POS API key
+              {t("core.pos.step2")}
             </span>
             <Link
               href="/admin/account/keys"
               className="inline-flex items-center gap-1.5 text-primary underline underline-offset-4"
             >
               <KeyRound className="h-3.5 w-3.5" />
-              Keys &amp; access
+              {/* Reuses the sidebar label — the link names that nav destination. */}
+              {t("core.nav.keys-access")}
             </Link>
           </li>
         </ol>

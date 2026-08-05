@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
+import i18n from "@/lib/i18n";
 import { NEUTRAL_BRANDING, type Branding } from "@/lib/branding";
 import WhatsAppButton from "./WhatsAppButton";
 
@@ -16,8 +17,11 @@ vi.mock("@/contexts/TenantContext", () => ({
   }),
 }));
 
-beforeEach(() => {
+// The storefront falls back to German when the browser asks for it; pin
+// English so the accessible-name assertions below read the source strings.
+beforeEach(async () => {
   vi.clearAllMocks();
+  await i18n.changeLanguage("en");
   mocks.branding = {
     ...NEUTRAL_BRANDING,
     storeName: "Bergblume",

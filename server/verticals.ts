@@ -102,8 +102,12 @@ export function categoryTaxonomyLines(vc: VerticalContext): string {
 export function fallbackProduct(vc: VerticalContext): {
   name: string;
   nameEn: string;
+  nameFr: string;
+  nameIt: string;
   description: string;
   descriptionEn: string;
+  descriptionFr: string;
+  descriptionIt: string;
   category: string;
 } {
   return { ...vc.preset.fallback, category: FALLBACK_CATEGORY_KEY };
@@ -191,9 +195,7 @@ export async function assertTenantCategories(
   const valid = new Set(
     (await getTenantCategories(tenantId)).map((c) => c.key),
   );
-  const unknown = Array.from(
-    new Set(categories.filter((c) => !valid.has(c))),
-  );
+  const unknown = Array.from(new Set(categories.filter((c) => !valid.has(c))));
   if (unknown.length > 0) {
     throw new TRPCError({
       code: "BAD_REQUEST",

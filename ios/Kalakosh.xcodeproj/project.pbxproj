@@ -14,6 +14,7 @@
 		AA00000000000000AA000024 /* ErrorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000000000000AA000014 /* ErrorView.swift */; };
 		AA00000000000000AA000025 /* SplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000000000000AA000015 /* SplashView.swift */; };
 		AA00000000000000AA000026 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AA00000000000000AA000016 /* Assets.xcassets */; };
+		AA00000000000000AA000027 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = AA00000000000000AA000030 /* Localizable.strings */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -26,6 +27,10 @@
 		AA00000000000000AA000015 /* SplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashView.swift; sourceTree = "<group>"; };
 		AA00000000000000AA000016 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		AA00000000000000AA000017 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		AA00000000000000AA000031 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
+		AA00000000000000AA000032 /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/Localizable.strings; sourceTree = "<group>"; };
+		AA00000000000000AA000033 /* fr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = fr; path = fr.lproj/Localizable.strings; sourceTree = "<group>"; };
+		AA00000000000000AA000034 /* it */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = it; path = it.lproj/Localizable.strings; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -66,6 +71,7 @@
 				AA00000000000000AA000015 /* SplashView.swift */,
 				AA00000000000000AA000016 /* Assets.xcassets */,
 				AA00000000000000AA000017 /* Info.plist */,
+				AA00000000000000AA000030 /* Localizable.strings */,
 			);
 			path = Kalakosh;
 			sourceTree = "<group>";
@@ -112,6 +118,9 @@
 			knownRegions = (
 				en,
 				Base,
+				de,
+				fr,
+				it,
 			);
 			mainGroup = AA00000000000000AA000002;
 			productRefGroup = AA00000000000000AA000003 /* Products */;
@@ -129,6 +138,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				AA00000000000000AA000026 /* Assets.xcassets in Resources */,
+				AA00000000000000AA000027 /* Localizable.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -149,6 +159,20 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXVariantGroup section */
+		AA00000000000000AA000030 /* Localizable.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				AA00000000000000AA000031 /* en */,
+				AA00000000000000AA000032 /* de */,
+				AA00000000000000AA000033 /* fr */,
+				AA00000000000000AA000034 /* it */,
+			);
+			name = Localizable.strings;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
 		AA00000000000000AA00000A /* Debug */ = {

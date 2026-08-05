@@ -51,15 +51,18 @@ describe("parseCsv", () => {
 
 describe("mapRows", () => {
   it("marks a fully valid row as valid with no errors", () => {
-    const [row] = mapRows([
-      {
-        name: "Moonstone Ring",
-        description: "A lovely ring",
-        price: "185",
-        category: "Rings",
-        quantity: "2",
-      },
-    ], TEST_CATEGORIES);
+    const [row] = mapRows(
+      [
+        {
+          name: "Moonstone Ring",
+          description: "A lovely ring",
+          price: "185",
+          category: "Rings",
+          quantity: "2",
+        },
+      ],
+      TEST_CATEGORIES,
+    );
     expect(row).toMatchObject({
       name: "Moonstone Ring",
       description: "A lovely ring",
@@ -86,14 +89,17 @@ describe("mapRows", () => {
   });
 
   it("defaults an unrecognized category to Other and flags it invalid", () => {
-    const [row] = mapRows([
-      {
-        name: "Mystery Box",
-        description: "desc",
-        price: "10",
-        category: "Sets",
-      },
-    ], TEST_CATEGORIES);
+    const [row] = mapRows(
+      [
+        {
+          name: "Mystery Box",
+          description: "desc",
+          price: "10",
+          category: "Sets",
+        },
+      ],
+      TEST_CATEGORIES,
+    );
     expect(row.category).toBe("Other");
     expect(row._valid).toBe(false);
     expect(row._errors.some((e) => e.includes("category must be one of"))).toBe(
@@ -102,52 +108,95 @@ describe("mapRows", () => {
   });
 
   it("defaults quantity to 1 when not provided, and rejects a negative quantity", () => {
-    const [noQty] = mapRows([
-      { name: "A", description: "d", price: "10", category: "Rings" },
-    ], TEST_CATEGORIES);
+    const [noQty] = mapRows(
+      [{ name: "A", description: "d", price: "10", category: "Rings" }],
+      TEST_CATEGORIES,
+    );
     expect(noQty.quantity).toBe(1);
 
-    const [negativeQty] = mapRows([
-      {
-        name: "A",
-        description: "d",
-        price: "10",
-        category: "Rings",
-        quantity: "-3",
-      },
-    ], TEST_CATEGORIES);
+    const [negativeQty] = mapRows(
+      [
+        {
+          name: "A",
+          description: "d",
+          price: "10",
+          category: "Rings",
+          quantity: "-3",
+        },
+      ],
+      TEST_CATEGORIES,
+    );
     expect(negativeQty.quantity).toBe(1);
   });
 
   it("reads optional nameEn/descriptionEn/imageUrl (already-normalized header keys, as parseCsv would produce)", () => {
-    const [row] = mapRows([
-      {
-        name: "A",
-        description: "d",
-        price: "10",
-        category: "Rings",
-        nameen: "English Name",
-        descriptionen: "English description",
-        imageurl: "https://example.com/a.jpg",
-      },
-    ], TEST_CATEGORIES);
+    const [row] = mapRows(
+      [
+        {
+          name: "A",
+          description: "d",
+          price: "10",
+          category: "Rings",
+          nameen: "English Name",
+          descriptionen: "English description",
+          imageurl: "https://example.com/a.jpg",
+        },
+      ],
+      TEST_CATEGORIES,
+    );
     expect(row.nameEn).toBe("English Name");
     expect(row.descriptionEn).toBe("English description");
     expect(row.imageUrl).toBe("https://example.com/a.jpg");
+  });
+
+  it("reads optional French and Italian columns (nameFr/nameIt, name_fr-style aliases)", () => {
+    const [row] = mapRows(
+      [
+        {
+          name: "A",
+          description: "d",
+          price: "10",
+          category: "Rings",
+          namefr: "Nom français",
+          descriptionfr: "Description française",
+          nameit: "Nome italiano",
+          descriptionit: "Descrizione italiana",
+        },
+      ],
+      TEST_CATEGORIES,
+    );
+    expect(row.nameFr).toBe("Nom français");
+    expect(row.descriptionFr).toBe("Description française");
+    expect(row.nameIt).toBe("Nome italiano");
+    expect(row.descriptionIt).toBe("Descrizione italiana");
+  });
+
+  it("leaves fr/it fields undefined when the sheet does not carry them", () => {
+    const [row] = mapRows(
+      [{ name: "A", description: "d", price: "10", category: "Rings" }],
+      TEST_CATEGORIES,
+    );
+    expect(row.nameFr).toBeUndefined();
+    expect(row.nameIt).toBeUndefined();
+    expect(row.descriptionFr).toBeUndefined();
+    expect(row.descriptionIt).toBeUndefined();
   });
 });
 
 describe("mapHandwrittenItems", () => {
   it("maps a valid AI-extracted item straight through", () => {
-    const [row] = mapHandwrittenItems([
-      {
-        name: "Lemon Quartz",
-        description: "Lemon Quartz Ring",
-        price: 50,
-        category: "Rings",
-        quantity: 1,
-      },
-    ], TEST_CATEGORIES);
+    const [row] = mapHandwrittenItems(
+      [
+        {
+          name: "Lemon Quartz",
+          description: "Lemon Quartz Ring",
+          price: 50,
+          category: "Rings",
+          quantity: 1,
+        },
+      ],
+      TEST_CATEGORIES,
+    );
     expect(row).toMatchObject({
       name: "Lemon Quartz",
       price: 50,
@@ -159,37 +208,44 @@ describe("mapHandwrittenItems", () => {
   });
 
   it("reads a quantity shorthand already resolved by the AI (e.g. 3 for '3pc')", () => {
-    const [row] = mapHandwrittenItems([
-      {
-        name: "Amethyst",
-        description: "Amethyst Ring Set",
-        price: 95,
-        category: "Rings",
-        quantity: 3,
-      },
-    ], TEST_CATEGORIES);
+    const [row] = mapHandwrittenItems(
+      [
+        {
+          name: "Amethyst",
+          description: "Amethyst Ring Set",
+          price: 95,
+          category: "Rings",
+          quantity: 3,
+        },
+      ],
+      TEST_CATEGORIES,
+    );
     expect(row.quantity).toBe(3);
   });
 
   it("flags an AI category of Sets or Other as needing review", () => {
-    const [row] = mapHandwrittenItems([
-      {
-        name: "Mixed Piece",
-        description: "desc",
-        price: 20,
-        category: "Sets",
-        quantity: 1,
-      },
-    ], TEST_CATEGORIES);
+    const [row] = mapHandwrittenItems(
+      [
+        {
+          name: "Mixed Piece",
+          description: "desc",
+          price: 20,
+          category: "Sets",
+          quantity: 1,
+        },
+      ],
+      TEST_CATEGORIES,
+    );
     expect(row.category).toBe("Other");
     expect(row._valid).toBe(false);
     expect(row._errors).toContain("invalid category");
   });
 
   it("defaults an unreadable price/name to invalid", () => {
-    const [row] = mapHandwrittenItems([
-      { name: "", description: "", price: 0, category: "Rings", quantity: 1 },
-    ], TEST_CATEGORIES);
+    const [row] = mapHandwrittenItems(
+      [{ name: "", description: "", price: 0, category: "Rings", quantity: 1 }],
+      TEST_CATEGORIES,
+    );
     expect(row._valid).toBe(false);
     expect(row._errors).toEqual(
       expect.arrayContaining([

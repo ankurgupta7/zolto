@@ -10,6 +10,7 @@
  * methods and returns them to exactly the page they were on.
  */
 import { useEffect, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { useSearch } from "wouter";
 import { Loader2 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
@@ -18,6 +19,7 @@ import { sanitizeNextUrl } from "@/lib/nextUrl";
 import { SignInOptions } from "@/components/SignInOptions";
 
 export default function SignIn() {
+  const { t } = useTranslation("admin");
   const search = useSearch();
 
   // Absolute, same-origin, and checked — `next` is attacker-controllable and
@@ -47,7 +49,7 @@ export default function SignIn() {
         <Loader2
           className="animate-spin text-[var(--brand-ink)]"
           size={32}
-          aria-label="Signing you in"
+          aria-label={t("catalog.account.signIn.loadingAria")}
         />
       </div>
     );
@@ -60,11 +62,10 @@ export default function SignIn() {
           ◇
         </div>
         <h1 className="mb-3 font-serif text-2xl text-foreground">
-          Sign in to continue
+          {t("catalog.account.signIn.title")}
         </h1>
         <p className="mb-8 font-sans text-sm text-muted-foreground">
-          Your session has ended. Sign in and we&rsquo;ll take you back to what
-          you were doing.
+          {t("catalog.account.signIn.description")}
         </p>
         <SignInOptions className="text-left" next={next} />
       </div>

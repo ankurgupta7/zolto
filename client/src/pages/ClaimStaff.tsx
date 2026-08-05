@@ -4,6 +4,7 @@
  * the tenant as staff and lands on the admin panel.
  */
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { getSignInPath } from "@/const";
@@ -11,6 +12,7 @@ import { hardRedirect } from "@/lib/navigate";
 import { CheckCircle2, Loader2, XCircle } from "lucide-react";
 
 export default function ClaimStaff() {
+  const { t } = useTranslation("admin");
   const { isAuthenticated, loading } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
@@ -39,7 +41,7 @@ export default function ClaimStaff() {
     }
     attempted.current = true;
     if (token.length !== 48) {
-      setError("This invite link is invalid.");
+      setError(t("catalog.account.claimStaff.invalidLink"));
       return;
     }
     claim.mutate({ token });
@@ -51,21 +53,27 @@ export default function ClaimStaff() {
       {error ? (
         <>
           <XCircle className="h-10 w-10 text-red-600 mx-auto mb-4" />
-          <p className="text-lg font-medium mb-1">Invite couldn't be used</p>
+          <p className="text-lg font-medium mb-1">
+            {t("catalog.account.claimStaff.errorTitle")}
+          </p>
           <p className="text-muted-foreground text-sm">{error}</p>
         </>
       ) : done ? (
         <>
           <CheckCircle2 className="h-10 w-10 text-green-700 mx-auto mb-4" />
-          <p className="text-lg font-medium">Welcome to the team!</p>
+          <p className="text-lg font-medium">
+            {t("catalog.account.claimStaff.welcome")}
+          </p>
           <p className="text-muted-foreground text-sm">
-            Taking you to the admin panel…
+            {t("catalog.account.claimStaff.redirecting")}
           </p>
         </>
       ) : (
         <>
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mx-auto mb-4" />
-          <p className="text-muted-foreground text-sm">Accepting invite…</p>
+          <p className="text-muted-foreground text-sm">
+            {t("catalog.account.claimStaff.accepting")}
+          </p>
         </>
       )}
     </div>

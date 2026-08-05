@@ -1,10 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
-import {
-  publicProcedure,
-  router,
-  tenantAdminProcedure,
-} from "../_core/trpc";
+import { publicProcedure, router, tenantAdminProcedure } from "../_core/trpc";
 import {
   countProductsInCategory,
   createTenantCategoryRow,
@@ -26,17 +22,12 @@ import {
 // Keys become LLM json_schema enum values, URL query params, and POS payload
 // entries, so keep them to letters/digits plus a few joiners — no quotes,
 // backslashes, or leading/trailing punctuation.
-const categoryKeySchema = z
-  .string()
-  .trim()
-  .min(1)
-  .max(64)
-  .regex(
-    // Built via the constructor because the tsconfig target predates literal
-    // `u`-flag support; the runtime understands it fine.
-    new RegExp("^[\\p{L}\\p{N}][\\p{L}\\p{N} &'\\-/]*$", "u"),
-    "Category names may only contain letters, digits, spaces, &, ', - and /",
-  );
+const categoryKeySchema = z.string().trim().min(1).max(64).regex(
+  // Built via the constructor because the tsconfig target predates literal
+  // `u`-flag support; the runtime understands it fine.
+  new RegExp("^[\\p{L}\\p{N}][\\p{L}\\p{N} &'\\-/]*$", "u"),
+  "Category names may only contain letters, digits, spaces, &, ', - and /",
+);
 
 const labelSchema = z.string().trim().min(1).max(64);
 
@@ -67,6 +58,8 @@ export const categoriesRouter = router({
       key: c.key,
       labelEn: c.labelEn,
       labelDe: c.labelDe,
+      labelFr: c.labelFr,
+      labelIt: c.labelIt,
       extraIncludes: c.extraIncludes ?? [],
       sortOrder: c.sortOrder,
     }));
@@ -80,6 +73,8 @@ export const categoriesRouter = router({
         key: categoryKeySchema,
         labelEn: labelSchema.optional(),
         labelDe: labelSchema.optional(),
+        labelFr: labelSchema.optional(),
+        labelIt: labelSchema.optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -95,6 +90,8 @@ export const categoriesRouter = router({
         key: input.key,
         labelEn: input.labelEn ?? input.key,
         labelDe: input.labelDe ?? null,
+        labelFr: input.labelFr ?? null,
+        labelIt: input.labelIt ?? null,
       });
       return { success: true } as const;
     }),
@@ -109,6 +106,8 @@ export const categoriesRouter = router({
         newKey: categoryKeySchema.optional(),
         labelEn: labelSchema.optional(),
         labelDe: labelSchema.nullable().optional(),
+        labelFr: labelSchema.nullable().optional(),
+        labelIt: labelSchema.nullable().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -128,13 +127,20 @@ export const categoriesRouter = router({
         }
         await renameTenantCategoryKey(ctx.tenant.id, input.key, input.newKey);
       }
-      if (input.labelEn !== undefined || input.labelDe !== undefined) {
+      if (
+        input.labelEn !== undefined ||
+        input.labelDe !== undefined ||
+        input.labelFr !== undefined ||
+        input.labelIt !== undefined
+      ) {
         await updateTenantCategoryLabels(
           ctx.tenant.id,
           input.newKey ?? input.key,
           {
             ...(input.labelEn !== undefined ? { labelEn: input.labelEn } : {}),
             ...(input.labelDe !== undefined ? { labelDe: input.labelDe } : {}),
+            ...(input.labelFr !== undefined ? { labelFr: input.labelFr } : {}),
+            ...(input.labelIt !== undefined ? { labelIt: input.labelIt } : {}),
           },
         );
       }

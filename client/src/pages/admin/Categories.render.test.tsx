@@ -8,6 +8,8 @@ const mocks = vi.hoisted(() => ({
       key: "Bowls",
       labelEn: "Bowls",
       labelDe: "Schalen",
+      labelFr: "Bols",
+      labelIt: null,
       extraIncludes: [] as string[],
       sortOrder: 0,
     },
@@ -15,6 +17,8 @@ const mocks = vi.hoisted(() => ({
       key: "Vases",
       labelEn: "Vases",
       labelDe: null,
+      labelFr: null,
+      labelIt: null,
       extraIncludes: [] as string[],
       sortOrder: 1,
     },
@@ -22,6 +26,8 @@ const mocks = vi.hoisted(() => ({
       key: "Other",
       labelEn: "Other",
       labelDe: "Sonstiges",
+      labelFr: "Autres",
+      labelIt: "Altro",
       extraIncludes: [] as string[],
       sortOrder: 2,
     },
@@ -64,11 +70,13 @@ beforeEach(() => vi.clearAllMocks());
 afterEach(() => cleanup());
 
 describe("admin Categories page", () => {
-  it("lists the store's categories with their German labels", () => {
+  it("lists the store's categories with their translated labels", () => {
     render(<Categories />);
     expect(screen.getByText("Bowls")).toBeTruthy();
     expect(screen.getByText(/DE: Schalen/)).toBeTruthy();
-    expect(screen.getByText(/No German label/)).toBeTruthy();
+    expect(screen.getByText(/FR: Bols/)).toBeTruthy();
+    expect(screen.getByText(/IT: Altro/)).toBeTruthy();
+    expect(screen.getByText(/No translated labels/)).toBeTruthy();
   });
 
   it("never offers deleting the Other fallback category", () => {
@@ -89,6 +97,25 @@ describe("admin Categories page", () => {
     expect(mocks.create).toHaveBeenCalledWith({
       key: "Planters",
       labelDe: "Übertöpfe",
+    });
+  });
+
+  it("adds a category with French and Italian labels too", () => {
+    render(<Categories />);
+    fireEvent.change(screen.getByPlaceholderText("e.g. Planters"), {
+      target: { value: "Planters" },
+    });
+    fireEvent.change(screen.getByPlaceholderText("p.ex. Cache-pots"), {
+      target: { value: "Cache-pots" },
+    });
+    fireEvent.change(screen.getByPlaceholderText("ad es. Portavasi"), {
+      target: { value: "Portavasi" },
+    });
+    fireEvent.click(screen.getByText("Add category"));
+    expect(mocks.create).toHaveBeenCalledWith({
+      key: "Planters",
+      labelFr: "Cache-pots",
+      labelIt: "Portavasi",
     });
   });
 

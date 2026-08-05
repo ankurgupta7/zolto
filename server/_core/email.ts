@@ -46,11 +46,109 @@ const C = {
   faint: "#F0EAE0",
 };
 
+// ── Receipt localization ──────────────────────────────────────────────────────
+// The customer's storefront language is captured on the order at checkout
+// (orders.locale); the receipt email renders in that language. English is the
+// fallback for pre-capture orders and unknown values.
+
+export type ReceiptLocale = "de" | "en" | "fr" | "it";
+
+const RECEIPT_DATE_LOCALE: Record<ReceiptLocale, string> = {
+  de: "de-CH",
+  en: "en-GB",
+  fr: "fr-CH",
+  it: "it-CH",
+};
+
+const RECEIPT_STRINGS: Record<
+  ReceiptLocale,
+  {
+    tagline: string;
+    receipt: string;
+    billedTo: string;
+    item: string;
+    price: string;
+    shipping: string;
+    total: string;
+    payment: string;
+    subject: (tenantName: string, ref: string) => string;
+  }
+> = {
+  en: {
+    tagline: "Handcrafted with care",
+    receipt: "Receipt",
+    billedTo: "Billed to",
+    item: "Item",
+    price: "Price",
+    shipping: "Shipping",
+    total: "Total",
+    payment: "Payment",
+    subject: (tenantName, ref) => `Your ${tenantName} order #${ref}`,
+  },
+  de: {
+    tagline: "Mit Sorgfalt handgefertigt",
+    receipt: "Quittung",
+    billedTo: "Rechnung an",
+    item: "Artikel",
+    price: "Preis",
+    shipping: "Versand",
+    total: "Total",
+    payment: "Zahlung",
+    subject: (tenantName, ref) => `Ihre Bestellung bei ${tenantName} #${ref}`,
+  },
+  fr: {
+    tagline: "Fait main avec soin",
+    receipt: "Quittance",
+    billedTo: "Facturé à",
+    item: "Article",
+    price: "Prix",
+    shipping: "Livraison",
+    total: "Total",
+    payment: "Paiement",
+    subject: (tenantName, ref) => `Votre commande ${tenantName} n°${ref}`,
+  },
+  it: {
+    tagline: "Fatto a mano con cura",
+    receipt: "Ricevuta",
+    billedTo: "Fatturato a",
+    item: "Articolo",
+    price: "Prezzo",
+    shipping: "Spedizione",
+    total: "Totale",
+    payment: "Pagamento",
+    subject: (tenantName, ref) => `Il Suo ordine ${tenantName} n. ${ref}`,
+  },
+};
+
+export function resolveReceiptLocale(
+  value: string | null | undefined,
+): ReceiptLocale {
+  return value === "de" || value === "en" || value === "fr" || value === "it"
+    ? value
+    : "en";
+}
+
+/** Item label in the receipt's language, falling back to the primary name. */
+function receiptItemLabel(item: ReceiptItem, locale: ReceiptLocale): string {
+  const translated =
+    locale === "de"
+      ? item.nameDe
+      : locale === "fr"
+        ? item.nameFr
+        : locale === "it"
+          ? item.nameIt
+          : item.nameEn;
+  return translated?.trim() || item.name;
+}
+
 // ── Shared receipt data ───────────────────────────────────────────────────────
 export interface ReceiptItem {
   id: number;
   name: string;
   nameEn: string | null;
+  nameDe?: string | null;
+  nameFr?: string | null;
+  nameIt?: string | null;
   price: string;
   imageUrl: string | null;
 }
@@ -65,15 +163,19 @@ export interface OrderReceiptOptions {
   amountTotal: number;
   paymentMethod?: string | null;
   branding?: Partial<TenantBranding>;
+  /** Customer's storefront language (orders.locale); defaults to English. */
+  locale?: string | null;
 }
 
 // ── HTML receipt (email body) ─────────────────────────────────────────────────
 export function buildReceiptHtml(opts: OrderReceiptOptions): string {
   const branding = resolveBranding(opts.branding);
+  const locale = resolveReceiptLocale(opts.locale);
+  const L = RECEIPT_STRINGS[locale];
   const baseUrl = branding.tenantDomain;
   const ref = String(opts.orderRef).padStart(5, "0");
   const date = new Date(opts.createdAt ?? Date.now()).toLocaleDateString(
-    "en-GB",
+    RECEIPT_DATE_LOCALE[locale],
     {
       day: "numeric",
       month: "long",
@@ -96,7 +198,7 @@ export function buildReceiptHtml(opts: OrderReceiptOptions): string {
     .map((p) => {
       const productUrl = `${baseUrl}/product/${p.id}`;
       const imgSrc = resolveUrl(p.imageUrl);
-      const label = escapeHtml(p.nameEn ?? p.name);
+      const label = escapeHtml(receiptItemLabel(p, locale));
 
       const thumbCell = imgSrc
         ? `<td style="padding:10px 14px 10px 0;width:60px;vertical-align:middle">
@@ -122,20 +224,20 @@ export function buildReceiptHtml(opts: OrderReceiptOptions): string {
     shippingRappen > 0
       ? `<tr>
           <td style="width:0;padding:0"></td>
-          <td style="padding:9px 0;border-bottom:1px solid ${C.faint};font-family:Arial,sans-serif;font-size:14px;color:${C.mid}">Shipping</td>
+          <td style="padding:9px 0;border-bottom:1px solid ${C.faint};font-family:Arial,sans-serif;font-size:14px;color:${C.mid}">${L.shipping}</td>
           <td style="padding:9px 0;border-bottom:1px solid ${C.faint};font-family:Arial,sans-serif;font-size:14px;color:${C.mid};text-align:right;white-space:nowrap">CHF ${(shippingRappen / 100).toFixed(2)}</td>
         </tr>`
       : "";
 
   const paymentRow = opts.paymentMethod
     ? `<p style="margin:18px 0 0;padding-top:14px;border-top:1px solid ${C.divider};font-family:Arial,sans-serif;font-size:12px;color:${C.mid}">
-        Payment: <span style="text-transform:uppercase">${escapeHtml(opts.paymentMethod)}</span>
+        ${L.payment}: <span style="text-transform:uppercase">${escapeHtml(opts.paymentMethod)}</span>
       </p>`
     : "";
 
   const billedTo = opts.customerName
     ? `<div style="margin-bottom:24px">
-        <p style="margin:0 0 6px;font-family:Arial,sans-serif;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:${C.mid}">Billed to</p>
+        <p style="margin:0 0 6px;font-family:Arial,sans-serif;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:${C.mid}">${L.billedTo}</p>
         <p style="margin:0;font-family:Georgia,serif;font-size:14px;color:${C.brown}">${escapeHtml(opts.customerName)}</p>
         <p style="margin:2px 0 0;font-family:Arial,sans-serif;font-size:12px;color:${C.mid}">${escapeHtml(opts.to)}</p>
       </div>`
@@ -150,14 +252,14 @@ export function buildReceiptHtml(opts: OrderReceiptOptions): string {
     <!-- Letterhead -->
     <div style="background:${C.brown};padding:32px;text-align:center">
       <p style="margin:0 0 6px;font-family:Georgia,serif;font-size:22px;letter-spacing:0.22em;color:${C.gold};text-transform:uppercase">${escapeHtml(branding.tenantName)}</p>
-      <p style="margin:0;font-family:Arial,sans-serif;font-size:11px;letter-spacing:0.08em;color:${C.light}">Handcrafted with care · ${escapeHtml(branding.tenantDomain.replace(/^https?:\/\//, ""))}</p>
+      <p style="margin:0;font-family:Arial,sans-serif;font-size:11px;letter-spacing:0.08em;color:${C.light}">${L.tagline} · ${escapeHtml(branding.tenantDomain.replace(/^https?:\/\//, ""))}</p>
     </div>
 
     <div style="padding:32px">
 
       <!-- Receipt header -->
       <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1px solid ${C.divider};padding-bottom:20px;margin-bottom:24px">
-        <p style="margin:0;font-family:Arial,sans-serif;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:${C.brown}">Receipt</p>
+        <p style="margin:0;font-family:Arial,sans-serif;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:${C.brown}">${L.receipt}</p>
         <div style="text-align:right">
           <p style="margin:0;font-family:Arial,sans-serif;font-size:13px;color:${C.brown}">#${ref}</p>
           <p style="margin:3px 0 0;font-family:Arial,sans-serif;font-size:11px;color:${C.mid}">${date}</p>
@@ -171,8 +273,8 @@ export function buildReceiptHtml(opts: OrderReceiptOptions): string {
         <thead>
           <tr>
             <th style="width:0;padding:0"></th>
-            <th style="padding-bottom:8px;text-align:left;font-family:Arial,sans-serif;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:${C.mid};font-weight:normal;border-bottom:1px solid ${C.divider}">Item</th>
-            <th style="padding-bottom:8px;text-align:right;font-family:Arial,sans-serif;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:${C.mid};font-weight:normal;border-bottom:1px solid ${C.divider}">Price</th>
+            <th style="padding-bottom:8px;text-align:left;font-family:Arial,sans-serif;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:${C.mid};font-weight:normal;border-bottom:1px solid ${C.divider}">${L.item}</th>
+            <th style="padding-bottom:8px;text-align:right;font-family:Arial,sans-serif;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:${C.mid};font-weight:normal;border-bottom:1px solid ${C.divider}">${L.price}</th>
           </tr>
         </thead>
         <tbody>
@@ -180,7 +282,7 @@ export function buildReceiptHtml(opts: OrderReceiptOptions): string {
           ${shippingRow}
           <tr>
             <td style="width:0;padding:0"></td>
-            <td style="padding-top:14px;font-family:Arial,sans-serif;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:${C.brown}">Total</td>
+            <td style="padding-top:14px;font-family:Arial,sans-serif;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:${C.brown}">${L.total}</td>
             <td style="padding-top:14px;font-family:Arial,sans-serif;font-size:14px;color:${C.brown};text-align:right;font-weight:bold;white-space:nowrap">CHF ${(opts.amountTotal / 100).toFixed(2)}</td>
           </tr>
         </tbody>
@@ -285,6 +387,7 @@ export async function sendOrderReceipt(
     branding.contactEmail ??
     `orders@${branding.tenantDomain.replace(/^https?:\/\//, "")}`;
   const ref = String(opts.orderRef).padStart(5, "0");
+  const locale = resolveReceiptLocale(opts.locale);
 
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
@@ -295,7 +398,7 @@ export async function sendOrderReceipt(
     body: JSON.stringify({
       from,
       to: opts.to,
-      subject: `Your ${branding.tenantName} order #${ref}`,
+      subject: RECEIPT_STRINGS[locale].subject(branding.tenantName, ref),
       html: buildReceiptHtml(opts),
     }),
   });

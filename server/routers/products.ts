@@ -40,6 +40,46 @@ import {
 // assertTenantCategories in the handler.
 const categoryInput = z.string().trim().min(1).max(64);
 
+// Per-locale translation columns (en/de/fr/it) accepted by every product
+// write path. The primary name/description stay whatever language the
+// merchant writes in; these mirror the products table's locale columns so
+// translations survive each intake channel instead of being dropped at the
+// router boundary.
+const LOCALE_FIELDS = [
+  "nameEn",
+  "descriptionEn",
+  "nameDe",
+  "descriptionDe",
+  "nameFr",
+  "descriptionFr",
+  "nameIt",
+  "descriptionIt",
+] as const;
+type LocaleField = (typeof LOCALE_FIELDS)[number];
+type LocaleInput = Partial<Record<LocaleField, string | null | undefined>>;
+
+const localeCreateFields = Object.fromEntries(
+  LOCALE_FIELDS.map((f) => [f, z.string().optional()]),
+) as Record<LocaleField, z.ZodOptional<z.ZodString>>;
+
+const localeUpdateFields = Object.fromEntries(
+  LOCALE_FIELDS.map((f) => [f, z.string().nullable().optional()]),
+) as Record<LocaleField, z.ZodOptional<z.ZodNullable<z.ZodString>>>;
+
+/** Locale columns for an INSERT: absent fields become NULL. */
+function localeColumnsForCreate(item: LocaleInput) {
+  return Object.fromEntries(
+    LOCALE_FIELDS.map((f) => [f, item[f] ?? null]),
+  ) as Record<LocaleField, string | null>;
+}
+
+/** Copies only the locale fields present on `item` into `patch`. */
+function applyLocalePatch(patch: Record<string, unknown>, item: LocaleInput) {
+  for (const f of LOCALE_FIELDS) {
+    if (item[f] !== undefined && item[f] !== "") patch[f] = item[f];
+  }
+}
+
 // ─── Products router ──────────────────────────────────────────────────────────
 
 // Storefront reads are scoped to the tenant resolved from the request (host /
@@ -51,7 +91,6 @@ function storefrontTenantId(ctx: { tenant: { id: number } | null }): number {
   }
   return ctx.tenant.id;
 }
-
 
 /**
  * storagePut, with a quota rejection turned into something the merchant can act
@@ -273,10 +312,7 @@ export const productsRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const { invokeLLM } = await import("../_core/llm");
-      const vc = await getVerticalContext(
-        ctx.user.tenantId,
-        ctx.tenant?.name,
-      );
+      const vc = await getVerticalContext(ctx.user.tenantId, ctx.tenant?.name);
       const keys = categoryKeys(vc, { excludeFolded: true });
 
       // Ground the price suggestion in what THIS merchant already charges.
@@ -316,8 +352,6 @@ Available categories (keep these in English exactly as shown): ${keys.map((c) =>
 
 Rules:
 ${vc.preset.listingRules}
-- name_fr / description_fr: the same name and one-sentence description in French.
-- name_it / description_it: the same name and one-sentence description in Italian. (Switzerland sells in four languages; a Ticino or Romandy customer should not get German.)
 ${priceGuidance}
 - category: must be exactly one of the English values above; infer from what you see:
 ${categoryTaxonomyLines(vc)}
@@ -464,10 +498,10 @@ Return ONLY valid JSON, no markdown, no explanation.`,
               nameEn: fb.nameEn,
               description: fb.description,
               descriptionEn: fb.descriptionEn,
-              nameFr: null,
-              descriptionFr: null,
-              nameIt: null,
-              descriptionIt: null,
+              nameFr: fb.nameFr,
+              descriptionFr: fb.descriptionFr,
+              nameIt: fb.nameIt,
+              descriptionIt: fb.descriptionIt,
               // Never guess a price on the failure path.
               suggestedPrice: null,
               priceBasis: null,
@@ -487,9 +521,8 @@ Return ONLY valid JSON, no markdown, no explanation.`,
           .array(
             z.object({
               name: z.string().min(1),
-              nameEn: z.string().optional(),
               description: z.string().min(1),
-              descriptionEn: z.string().optional(),
+              ...localeCreateFields,
               price: z.number().positive(),
               category: categoryInput,
               images: z
@@ -538,9 +571,8 @@ Return ONLY valid JSON, no markdown, no explanation.`,
           const result = await createProduct({
             tenantId: tid,
             name: item.name,
-            nameEn: item.nameEn ?? null,
             description: item.description,
-            descriptionEn: item.descriptionEn ?? null,
+            ...localeColumnsForCreate(item),
             price: String(item.price),
             category: item.category,
             imageKey: primaryKey,
@@ -683,6 +715,9 @@ Return ONLY valid JSON, no markdown, no explanation.`,
                 .max(8),
               description: z.string().optional(),
               descriptionEn: z.string().optional(),
+              descriptionDe: z.string().optional(),
+              descriptionFr: z.string().optional(),
+              descriptionIt: z.string().optional(),
               updateDescription: z.boolean().default(false),
             }),
           )
@@ -709,7 +744,7 @@ Return ONLY valid JSON, no markdown, no explanation.`,
             const patch: Record<string, unknown> = {
               description: item.description,
             };
-            if (item.descriptionEn) patch.descriptionEn = item.descriptionEn;
+            applyLocalePatch(patch, item);
             await updateProduct(
               tid,
               item.productId,
@@ -727,7 +762,12 @@ Return ONLY valid JSON, no markdown, no explanation.`,
               const ext =
                 img.mimeType.split("/")[1]?.replace("jpeg", "jpg") ?? "jpg";
               const key = `product-images/${item.productId}/${Date.now()}-${i}.${ext}`;
-              const { url } = await putForTenant(tid, key, buffer, img.mimeType);
+              const { url } = await putForTenant(
+                tid,
+                key,
+                buffer,
+                img.mimeType,
+              );
               await addProductImage({
                 tenantId: tid,
                 productId: item.productId,
@@ -1345,9 +1385,7 @@ Return ONLY valid JSON, no markdown.`,
     .input(
       z.object({
         items: z
-          .array(
-            z.object({ id: z.number(), category: categoryInput }),
-          )
+          .array(z.object({ id: z.number(), category: categoryInput }))
           .min(1),
       }),
     )
@@ -1375,9 +1413,8 @@ Return ONLY valid JSON, no markdown.`,
     .input(
       z.object({
         name: z.string().min(1),
-        nameEn: z.string().optional(),
         description: z.string().min(1),
-        descriptionEn: z.string().optional(),
+        ...localeCreateFields,
         price: z.number().positive(),
         category: categoryInput,
         quantity: z.number().int().min(0).default(1),
@@ -1389,9 +1426,8 @@ Return ONLY valid JSON, no markdown.`,
       await createProduct({
         tenantId: ctx.user.tenantId,
         name: input.name,
-        nameEn: input.nameEn ?? null,
         description: input.description,
-        descriptionEn: input.descriptionEn ?? null,
+        ...localeColumnsForCreate(input),
         price: String(input.price),
         category: input.category,
         quantity: input.quantity ?? 1,
@@ -1408,9 +1444,8 @@ Return ONLY valid JSON, no markdown.`,
       z.object({
         id: z.number(),
         name: z.string().min(1).optional(),
-        nameEn: z.string().nullable().optional(),
         description: z.string().min(1).optional(),
-        descriptionEn: z.string().nullable().optional(),
+        ...localeUpdateFields,
         price: z.number().positive().optional(),
         category: categoryInput.optional(),
       }),
@@ -1438,9 +1473,8 @@ Return ONLY valid JSON, no markdown.`,
           .array(
             z.object({
               name: z.string().min(1),
-              nameEn: z.string().optional(),
               description: z.string().min(1),
-              descriptionEn: z.string().optional(),
+              ...localeCreateFields,
               price: z.number().positive(),
               category: categoryInput,
               quantity: z.number().int().min(0).default(1),
@@ -1478,8 +1512,7 @@ Return ONLY valid JSON, no markdown.`,
               category: row.category,
               quantity: row.quantity ?? 1,
             };
-            if (row.nameEn) patch.nameEn = row.nameEn;
-            if (row.descriptionEn) patch.descriptionEn = row.descriptionEn;
+            applyLocalePatch(patch, row);
             if (row.imageUrl) patch.imageUrl = row.imageUrl;
             await updateProduct(
               tid,
@@ -1491,9 +1524,8 @@ Return ONLY valid JSON, no markdown.`,
             await createProduct({
               tenantId: tid,
               name: row.name,
-              nameEn: row.nameEn ?? null,
               description: row.description,
-              descriptionEn: row.descriptionEn ?? null,
+              ...localeColumnsForCreate(row),
               price: String(row.price),
               category: row.category,
               quantity: row.quantity ?? 1,
@@ -1520,10 +1552,7 @@ Return ONLY valid JSON, no markdown.`,
     )
     .mutation(async ({ input, ctx }) => {
       const { invokeLLM } = await import("../_core/llm");
-      const vc = await getVerticalContext(
-        ctx.user.tenantId,
-        ctx.tenant?.name,
-      );
+      const vc = await getVerticalContext(ctx.user.tenantId, ctx.tenant?.name);
       const allKeys = categoryKeys(vc);
       const specificKeys = categoryKeys(vc, { excludeFolded: true }).filter(
         (k) => k !== "Other",
