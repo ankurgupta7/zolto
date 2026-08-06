@@ -12,6 +12,17 @@ const mocks = vi.hoisted(() => ({
   } as Record<string, unknown> | null,
   invalidate: vi.fn(),
   save: vi.fn(),
+  // The "click to connect" URLs; null means the platform hasn't registered
+  // that app, which is what the default below exercises.
+  connect: { slackAuthorizeUrl: null, discordInviteUrl: null } as Record<
+    string,
+    unknown
+  > | null,
+  secrets: { vaultConfigured: false, secrets: [] as Array<
+    Record<string, unknown>
+  > } as Record<string, unknown> | null,
+  setSecret: vi.fn(),
+  deleteSecret: vi.fn(),
 }));
 
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
@@ -39,22 +50,16 @@ vi.mock("@/lib/trpc", () => ({
         useMutation: () => ({ mutate: mocks.save, isPending: false }),
       },
       channelConnect: {
-        useQuery: () => ({
-          data: { slackAuthorizeUrl: null, discordInviteUrl: null },
-          isLoading: false,
-        }),
+        useQuery: () => ({ data: mocks.connect, isLoading: false }),
       },
       channelSecrets: {
-        useQuery: () => ({
-          data: { vaultConfigured: false, secrets: [] },
-          isLoading: false,
-        }),
+        useQuery: () => ({ data: mocks.secrets, isLoading: false }),
       },
       setChannelSecret: {
-        useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+        useMutation: () => ({ mutate: mocks.setSecret, isPending: false }),
       },
       deleteChannelSecret: {
-        useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+        useMutation: () => ({ mutate: mocks.deleteSecret, isPending: false }),
       },
     },
     useUtils: () => ({
@@ -73,8 +78,16 @@ beforeEach(() => {
     discordChannelId: "",
     discordOwnerUserId: "",
   };
+  mocks.connect = { slackAuthorizeUrl: null, discordInviteUrl: null };
+  mocks.secrets = { vaultConfigured: false, secrets: [] };
 });
 afterEach(() => cleanup());
+
+// "Bot token" labels appear once per credential group (Slack and Discord), so
+// label text alone is ambiguous — reach for the specific control by id, the
+// same way the Discord channel field above does.
+const discordBotTokenInput = () =>
+  document.getElementById("cred-discord_bot_token") as HTMLInputElement;
 
 describe("Channels page", () => {
   it("prefills contact fields from saved settings", () => {
@@ -152,5 +165,70 @@ describe("Channels page", () => {
       discordChannelId: "123456789012345678",
       discordOwnerUserId: "876543210987654321",
     });
+  });
+});
+
+describe("Channels page — connect links", () => {
+  it("renders the Slack and Discord connect links the platform supplies", () => {
+    mocks.connect = {
+      slackAuthorizeUrl: "https://slack.com/oauth/v2/authorize?state=signed",
+      discordInviteUrl: "https://discord.com/oauth2/authorize?client_id=stub",
+    };
+    render(<Channels />);
+    expect(
+      screen.getByRole("link", { name: /add to slack/i }).getAttribute("href"),
+    ).toBe("https://slack.com/oauth/v2/authorize?state=signed");
+    expect(
+      screen
+        .getByRole("link", { name: /invite the Zolto bot/i })
+        .getAttribute("href"),
+    ).toBe("https://discord.com/oauth2/authorize?client_id=stub");
+  });
+
+  // Null means the platform hasn't registered that app — the button must be
+  // hidden rather than rendered pointing nowhere.
+  it("hides a connect link the platform hasn't registered", () => {
+    render(<Channels />);
+    expect(screen.queryByRole("link", { name: /add to slack/i })).toBeNull();
+    expect(
+      screen.queryByRole("link", { name: /invite the Zolto bot/i }),
+    ).toBeNull();
+  });
+});
+
+describe("Channels page — own bot credentials", () => {
+  it("stores a pasted credential against its provider", () => {
+    mocks.secrets = { vaultConfigured: true, secrets: [] };
+    render(<Channels />);
+    fireEvent.change(discordBotTokenInput(), {
+      target: { value: "discord-token-abcd" },
+    });
+    // Each credential row has its own Save button, adjacent to its input.
+    const saveButton = discordBotTokenInput()
+      .closest("div")!
+      .querySelector("button")!;
+    fireEvent.click(saveButton);
+    expect(mocks.setSecret).toHaveBeenCalledWith({
+      provider: "discord_bot_token",
+      value: "discord-token-abcd",
+    });
+  });
+
+  it("shows a saved credential as a masked hint, never a value", () => {
+    mocks.secrets = {
+      vaultConfigured: true,
+      secrets: [{ provider: "discord_bot_token", hint: "3f9a" }],
+    };
+    const { container } = render(<Channels />);
+    expect(container.textContent).toContain("Saved (…3f9a)");
+    expect(container.textContent).not.toContain("xoxb");
+  });
+
+  it("warns and disables the inputs when the deployment has no vault", () => {
+    render(<Channels />);
+    expect(
+      screen.getByText(/no secrets vault configured/i),
+    ).toBeTruthy();
+    expect(discordBotTokenInput().disabled).toBe(true);
   });
 });
