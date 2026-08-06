@@ -9,6 +9,7 @@ import {
   ratesFor,
   negotiatedFor,
   sumUpPlusBreakEvenChf,
+  monthlyStack,
 } from "./costOfAcceptance";
 import { REVENUE_SHARE } from "./platform";
 
@@ -179,6 +180,72 @@ describe("honesty invariants", () => {
     const ids = RATES.map((r) => r.id);
     expect(new Set(ids).size).toBe(ids.length);
     for (const r of RATES) expect(r.sourceId).toBeTruthy();
+  });
+});
+
+describe("monthlyStack", () => {
+  it("names every party that takes a cut of a month's online selling", () => {
+    // CHF 2,000 across CHF 50 baskets = 40 orders.
+    // Stripe: 2.9% of 2000 = 58.00, plus 40 × 0.30 = 12.00 → 70.00
+    // Zolto:  1% of 2000 = 20.00.  Subscription: 0.
+    const s = monthlyStack(2000, 50, "free");
+    expect(s.orders).toBe(40);
+    expect(s.processorChf).toBe(70);
+    expect(s.platformChf).toBe(20);
+    expect(s.subscriptionChf).toBe(0);
+    expect(s.totalChf).toBe(90);
+    expect(s.keepChf).toBe(1910);
+    expect(s.effectivePct).toBe(4.5);
+  });
+
+  it("shows Pro trading the platform fee for a subscription", () => {
+    const s = monthlyStack(2000, 50, "pro");
+    expect(s.platformChf).toBe(0);
+    expect(s.subscriptionChf).toBe(25);
+    expect(s.processorChf).toBe(70);
+    expect(s.totalChf).toBe(95);
+  });
+
+  it("makes the processor the larger cut at every volume", () => {
+    // The point of the whole exercise: Zolto's 1% was being read as the cost
+    // of a sale while Stripe was quietly taking three times as much.
+    for (const sales of [200, 1000, 2500, 6000]) {
+      const s = monthlyStack(sales, 45, "free");
+      expect(s.processorChf).toBeGreaterThan(s.platformChf);
+    }
+  });
+
+  it("still bills Pro's subscription in a month with no sales", () => {
+    expect(monthlyStack(0, 45, "pro").totalChf).toBe(25);
+    expect(monthlyStack(0, 45, "free").totalChf).toBe(0);
+  });
+
+  it("requires a basket rather than assuming one, but survives a bad input", () => {
+    // Stripe's fixed CHF 0.30 can't be spread over a month without an order
+    // count. Falling back to the worked example beats dividing by zero.
+    expect(monthlyStack(900, 0, "free").orders).toBe(20); // 900 / 45
+    expect(monthlyStack(900, NaN, "free").orders).toBe(20);
+  });
+
+  it("never reports a fraction of an order", () => {
+    for (const [sales, avg] of [
+      [100, 33],
+      [7, 45],
+      [1234, 56],
+    ]) {
+      expect(Number.isInteger(monthlyStack(sales, avg, "free").orders)).toBe(
+        true,
+      );
+    }
+  });
+
+  it("treats a negative or non-finite month as a zero month", () => {
+    for (const bad of [-100, NaN, Infinity]) {
+      const s = monthlyStack(bad, 45, "free");
+      expect(s.salesChf).toBe(0);
+      expect(s.orders).toBe(0);
+      expect(s.processorChf).toBe(0);
+    }
   });
 });
 

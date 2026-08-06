@@ -93,10 +93,16 @@
     "intro": "Drag your month. We’ll show you the bill — and tell you when you’d be better off on the cheaper plan, even when that’s not the one we’d rather sell you.",
     "sliderLabel": "Your online sales this month",
     "sliderNote": "Market-stall sales aren’t in this box on purpose — they’re free on every plan, so they could never change the answer.",
+    "basketLabel": "And a typical order is about",
+    "basketNote": "Roughly {{orders}} orders this month. It matters: your card processor's fixed fee lands once per order, not once per franc.",
     "onFree": "On Free",
     "onPlan": "On {{plan}}",
     "freeMeta": "{{percent}} of online sales · no subscription",
     "proMeta": "flat monthly · 0% on every sale",
+    "toProcessor": "→ your card processor",
+    "toZolto": "→ Zolto",
+    "youKeep": "→ you keep",
+    "stackNote": "The big number is our invoice. The breakdown is the whole bill: your card processor takes its own cut of every online sale, and that money goes to them, not to us. On card rate alone we are not the cheapest way to get paid in Switzerland — see the comparison for the arithmetic.",
     "verdictNoSales": "No online sales? Then we don’t get paid. <hl>CHF 0.00.</hl> Sell at the stall all month and we’ll happily earn nothing.",
     "verdictFree": "Stay on Free — it’s cheaper for you by <hl>{{saving}}</hl> this month. We’ll tell you the day that flips, around CHF {{breakEven}} online.",
     "verdictPro": "Nice month. {{plan}} would save you <hl>{{saving}}</hl> — and your dashboard nudges you the moment that’s true, so you don’t have to keep checking."
@@ -423,7 +429,7 @@
         "blurb": "A complete store. Free in person, 1% online.",
         "cta": "Get started free",
         "features": [
-          "Full POS — Tap to Pay, TWINT QR, cash — CHF 0 on in-person sales",
+          "Full POS — Tap to Pay, TWINT and cash — CHF 0 from Zolto on in-person sales",
           "Online store on your own zolto.ch address",
           "Real-time POS ↔ online inventory sync",
           "AI descriptions & translation (fair use)",
@@ -459,15 +465,16 @@
         "Sell at the market and pay us nothing, forever: full POS, inventory sync and your online storefront, all included at CHF 0/month.",
         "Online and AI-agent orders carry a 1% fee on the Free plan. No online sales this month? You pay CHF 0. That's it.",
         "Pro (CHF 25/month) kills the 1% fee entirely and unlocks unmetered AI. Selling past roughly CHF 2,500/month online? Pro's cheaper — we'll tell you in-app the moment it's worth switching.",
-        "We'll never nickel-and-dime your AI usage. Talk to it as much as you want — plans scale on products, photos and storage, not on how chatty you get."
+        "We'll never nickel-and-dime your AI usage. Talk to it as much as you want — plans scale on products, photos and storage, not on how chatty you get.",
+        "What we charge is not what a sale costs. Your payment provider takes its own cut and that money goes to them, not to us — and on card rate alone we are not the cheapest way to get paid in Switzerland. We'd rather show you the whole stack and let you do the arithmetic."
       ]
     },
     "costComparison": {
-      "themLabel": "A year with the old guard",
-      "themNote": "reader hardware · monthly fees · lock-in",
+      "themLabel": "A year of fixed costs elsewhere",
+      "themNote": "SumUp Payments Plus at CHF 29/month for a year, plus a CHF 99 Solo reader — which buys a card rate lower than ours",
       "usLabel": "A month with Zolto",
       "usNote": "no hardware · cancel anytime · your Stripe, your money",
-      "multiplier": "one-hundredth the cost"
+      "multiplier": "and CHF 0/month if you stay on Free"
     },
     "zeroCostPos": {
       "eyebrow": "the bit people re-read",
@@ -475,12 +482,12 @@
       "headlineEmphasis": "For nothing.",
       "body": "Photos, names, prices, stock counts — your actual catalogue, in the till on your phone. Tap to take the payment. Watch it sync to your website. Then pay us CHF 0.00 at the end of the month, and again the month after that.",
       "includes": [
-        "Full POS — Tap to Pay, TWINT QR and cash",
+        "Full POS — Tap to Pay, TWINT and cash, on one screen",
         "Every piece with its photo, name and price",
         "Real-time POS ↔ online inventory sync",
         "Your online storefront, on your own zolto.ch address"
       ],
-      "catch": "No trial clock. No starter tier that quietly expires. The only thing we ever charge for is the online sales we bring you — and if there aren't any, there's nothing to charge."
+      "catch": "No trial clock. No starter tier that quietly expires. The only thing we ever charge for is the online sales we bring you — and if there aren't any, there's nothing to charge. Whoever processes your card and TWINT payments still charges their own rate, the same as they would anywhere else; that bill is between you and them, and we don't take a slice of it."
     },
     "aiNativePitch": {
       "eyebrow": "commerce is moving into the chat window",
@@ -494,9 +501,9 @@
         "caption": "Assistants only recommend stores they can read. A store that's invisible to them isn't in the answer — no matter how good its SEO was."
       },
       "proof": {
-        "eyebrow": "not a roadmap — live today",
-        "headline": "Watch an AI buy from a Zolto store.",
-        "body": "Your customer asks their assistant. The assistant reads the store's brief, checks live stock over MCP, and places the order — payment lands in the maker's own Stripe like any other sale. Point your own AI at zolto.ch/llms.txt and ask it about us."
+        "eyebrow": "the rails are live — the traffic is still arriving",
+        "headline": "Watch an AI shop a Zolto store.",
+        "body": "Your customer asks their assistant. The assistant reads the store's brief, checks live stock over MCP, picks the piece and opens a checkout — your customer taps pay, and the money lands in the maker's own Stripe like any other sale. Point your own AI at zolto.ch/llms.txt and ask it about us."
       },
       "steps": [
         {
@@ -511,8 +518,8 @@
         },
         {
           "k": "Bought",
-          "title": "It checks out in the chat",
-          "body": "The order lands like any other sale: stock syncs, you get the notification, and the money goes straight into your Stripe."
+          "title": "It opens the checkout, your customer pays",
+          "body": "The assistant hands over a checkout for the piece it picked. Your customer taps pay, and the order lands like any other sale: stock syncs, you get the notification, and the money goes straight into your Stripe."
         }
       ],
       "footnote": "You don't set any of this up. It ships with the store — on the Free plan too, and 1% only when an agent actually sells for you."
@@ -542,20 +549,20 @@
       ]
     },
     "comparison": {
-      "Your catalogue on your phone": {
-        "feature": "Your catalogue on your phone",
-        "them": "Part of a paid tier, or a separate product entirely",
-        "us": "Photos, names & prices — CHF 0/month, no clock on it"
+      "Your catalogue and TWINT in the same till": {
+        "feature": "Your catalogue and TWINT in the same till",
+        "them": "One or the other: a till app that can't take TWINT, or a TWINT app with no catalogue in it",
+        "us": "Both, on one screen — tap the photo, then choose TWINT, card or cash"
       },
-      "Card reader": {
-        "feature": "Card reader",
-        "them": "Sold to you, CHF 50–300+",
-        "us": "Your phone — NFC tap & TWINT QR"
+      "What a sale costs": {
+        "feature": "What a sale costs",
+        "them": "Their rate, all in — and on cards it is often lower than ours",
+        "us": "Your processor's rate, plus 0% from us in person and 1% online on Free"
       },
       "Building the store": {
         "feature": "Building the store",
-        "them": "A developer, or weeks in Shopify",
-        "us": "AI drafts it in an afternoon"
+        "them": "A developer, weeks in a builder, or no online store at all",
+        "us": "AI drafts, writes and photographs it in an afternoon"
       },
       "Inventory": {
         "feature": "Inventory",
@@ -564,7 +571,7 @@
       },
       "Pricing": {
         "feature": "Pricing",
-        "them": "Opaque tiers, surprise fees",
+        "them": "A monthly fee, a higher per-sale rate, or a negotiated contract",
         "us": "Free in person. 1% online, or flat CHF 25"
       },
       "Your money": {
@@ -773,7 +780,7 @@
       },
       "payments": {
         "name": "Direct payments with Stripe",
-        "description": "Connect your own Stripe account; your customers pay straight into it. Zolto never holds your money — on the Free plan a 1% platform fee applies to online and agent orders only, and in-person sales are always fee-free."
+        "description": "Connect your own Stripe account; your customers pay straight into it. Zolto never holds your money. Stripe charges its own processing fee on every sale and that money goes to Stripe — Zolto's fee is separate and on top of it: 1% on online and agent orders on the Free plan, 0% on Pro, and 0% on in-person sales on every plan."
       },
       "storefront": {
         "name": "Your own branded storefront",
@@ -785,7 +792,7 @@
       },
       "ai-discovery": {
         "name": "Discoverable by AI assistants",
-        "description": "Every store ships an llms.txt and a Model Context Protocol (MCP) endpoint, so AI assistants and agents can find and recommend your products."
+        "description": "Every store ships an llms.txt and a Model Context Protocol (MCP) endpoint, so AI assistants can read your live catalogue, recommend your products and start a checkout the buyer completes. The rails are live from day one; the platform-wide store directory fills up as makers launch, so this is infrastructure ahead of the traffic rather than a channel already sending it."
       },
       "insights": {
         "name": "AI sales & inventory insights",
@@ -844,12 +851,7 @@
       "tables": {
         "weekly": {
           "caption": "Online orders, order value and traffic by week",
-          "head": [
-            "Week",
-            "Online orders",
-            "Avg order value",
-            "Visitors"
-          ],
+          "head": ["Week", "Online orders", "Avg order value", "Visitors"],
           "rowLabels": [
             "Week 1 (launch)",
             "Week 2",
@@ -860,11 +862,7 @@
         },
         "sources": {
           "caption": "Where the online orders came from",
-          "head": [
-            "Source",
-            "Orders",
-            "% of online sales"
-          ],
+          "head": ["Source", "Orders", "% of online sales"],
           "rowLabels": [
             "Instagram (organic)",
             "Direct / returning",
@@ -987,8 +985,13 @@
           "next": "A Swiss data centre, so the machines and the company share a country."
         },
         {
-          "piece": "TWINT at your stall",
-          "today": "Your own TWINT account — Swiss rails, end to end"
+          "piece": "TWINT — your own QR code",
+          "today": "Your own TWINT account at 1.3% — Swiss rails, end to end, and we never see the money"
+        },
+        {
+          "piece": "TWINT — the button in the till",
+          "today": "A Stripe payment, not a direct TWINT one — Stripe's rails, at a rate Stripe doesn't publish",
+          "next": "A direct TWINT integration, so the in-app button runs on the same Swiss rails as the QR code. TWINT certifies integrators before releasing the spec, so this starts as an application rather than a branch."
         },
         {
           "piece": "Card payments and payouts",
@@ -1013,7 +1016,7 @@
         {
           "piece": "Card networks and phone wallets",
           "today": "Visa, Mastercard, Apple Pay, Google Pay",
-          "next": "These are not European and never will be. If you want a sale to stay in Switzerland from end to end, take it over TWINT — which is also the cheapest way for you to get paid."
+          "next": "These are not European and never will be. If you want a sale to stay in Switzerland from end to end, take it over your own TWINT QR — which is also the cheapest way for you to get paid, at 1.3% with no fixed fee."
         }
       ],
       "why": [

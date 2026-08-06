@@ -93,10 +93,16 @@
     "intro": "Ziehen Sie Ihren Monat auf. Wir zeigen Ihnen die Rechnung — und sagen Ihnen, wann Sie mit dem günstigeren Plan besser fahren, selbst wenn es nicht der ist, den wir lieber verkaufen würden.",
     "sliderLabel": "Ihre Online-Verkäufe diesen Monat",
     "sliderNote": "Marktstand-Verkäufe fehlen hier mit Absicht — sie sind in jedem Plan gratis und könnten die Antwort darum nie verändern.",
+    "basketLabel": "Und eine typische Bestellung liegt bei etwa",
+    "basketNote": "Rund {{orders}} Bestellungen in diesem Monat. Das ist relevant: die Fixgebühr Ihres Kartenabwicklers fällt pro Bestellung an, nicht pro Franken.",
     "onFree": "Im Gratis-Plan",
     "onPlan": "Im {{plan}}-Plan",
     "freeMeta": "{{percent}} der Online-Verkäufe · kein Abo",
     "proMeta": "fixe Monatspauschale · 0% auf jeden Verkauf",
+    "toProcessor": "→ an Ihren Kartenabwickler",
+    "toZolto": "→ an Zolto",
+    "youKeep": "→ bleibt bei Ihnen",
+    "stackNote": "Die grosse Zahl ist unsere Rechnung. Die Aufschlüsselung ist die ganze Rechnung: Ihr Kartenabwickler nimmt bei jedem Online-Verkauf seinen eigenen Anteil, und dieses Geld geht an ihn, nicht an uns. Beim reinen Kartensatz sind wir nicht der günstigste Weg, in der Schweiz bezahlt zu werden — den Rechenweg zeigt der Vergleich.",
     "verdictNoSales": "Keine Online-Verkäufe? Dann verdienen wir nichts. <hl>CHF 0.00.</hl> Verkaufen Sie den ganzen Monat am Stand, und wir gehen gerne leer aus.",
     "verdictFree": "Bleiben Sie im Gratis-Plan — er ist für Sie diesen Monat um <hl>{{saving}}</hl> günstiger. Wir melden uns, sobald das kippt, etwa ab CHF {{breakEven}} online.",
     "verdictPro": "Starker Monat. {{plan}} würde Ihnen <hl>{{saving}}</hl> sparen — und Ihr Dashboard stupst Sie an, sobald das zutrifft, damit Sie nicht ständig nachrechnen müssen."
@@ -423,7 +429,7 @@
         "blurb": "Ein kompletter Shop. Gratis vor Ort, 1% online.",
         "cta": "Kostenlos loslegen",
         "features": [
-          "Volles Kassensystem — Tap to Pay, TWINT QR, Bargeld — CHF 0 auf Verkäufe vor Ort",
+          "Volle Kasse — Tap to Pay, TWINT und Bargeld — CHF 0 von Zolto auf Verkäufen vor Ort",
           "Onlineshop auf Ihrer eigenen zolto.ch-Adresse",
           "Echtzeit-Sync zwischen Kasse und Online-Inventar",
           "KI-Beschreibungen & -Übersetzungen (Fair Use)",
@@ -459,15 +465,16 @@
         "Verkaufen Sie am Markt und zahlen Sie uns nichts, für immer: volles Kassensystem, Inventar-Sync und Ihr Online-Storefront, alles inklusive für CHF 0/Monat.",
         "Online- und KI-Agenten-Bestellungen kosten im Gratis-Plan 1% Gebühr. Keine Online-Verkäufe diesen Monat? Sie zahlen CHF 0. Das war's.",
         "Pro (CHF 25/Monat) schafft die 1% komplett ab und schaltet unlimitierte KI frei. Verkaufen Sie online über rund CHF 2'500/Monat? Dann ist Pro günstiger — wir sagen es Ihnen in der App, sobald sich der Wechsel lohnt.",
-        "Wir werden Ihre KI-Nutzung nie kleinlich abrechnen. Reden Sie mit ihr, so viel Sie wollen — Pläne skalieren über Produkte, Fotos und Speicher, nicht darüber, wie gesprächig Sie sind."
+        "Wir werden Ihre KI-Nutzung nie kleinlich abrechnen. Reden Sie mit ihr, so viel Sie wollen — Pläne skalieren über Produkte, Fotos und Speicher, nicht darüber, wie gesprächig Sie sind.",
+        "Was wir verlangen, ist nicht das, was ein Verkauf kostet. Ihr Zahlungsanbieter nimmt seinen eigenen Anteil, und dieses Geld geht an ihn, nicht an uns — und beim reinen Kartensatz sind wir nicht der günstigste Weg, in der Schweiz bezahlt zu werden. Wir zeigen Ihnen lieber den ganzen Stapel und lassen Sie rechnen."
       ]
     },
     "costComparison": {
-      "themLabel": "Ein Jahr mit der alten Garde",
-      "themNote": "Lesegerät-Hardware · Monatsgebühren · Lock-in",
+      "themLabel": "Ein Jahr Fixkosten anderswo",
+      "themNote": "SumUp Payments Plus zu CHF 29/Monat für ein Jahr, plus ein Solo-Lesegerät für CHF 99 — was einen tieferen Kartensatz als unseren mitbringt",
       "usLabel": "Ein Monat mit Zolto",
       "usNote": "keine Hardware · jederzeit kündbar · Ihr Stripe, Ihr Geld",
-      "multiplier": "ein Hundertstel der Kosten"
+      "multiplier": "und CHF 0/Monat, wenn Sie auf Free bleiben"
     },
     "zeroCostPos": {
       "eyebrow": "die Stelle, die alle zweimal lesen",
@@ -475,12 +482,12 @@
       "headlineEmphasis": "Für nichts.",
       "body": "Fotos, Namen, Preise, Lagerbestände — Ihr echter Katalog, in der Kasse auf Ihrem Handy. Tippen, Zahlung entgegennehmen. Zusehen, wie alles mit Ihrer Website synchronisiert. Und uns am Monatsende CHF 0.00 bezahlen — und im Monat darauf wieder.",
       "includes": [
-        "Volles Kassensystem — Tap to Pay, TWINT QR und Bargeld",
+        "Volle Kasse — Tap to Pay, TWINT und Bargeld, auf einem Bildschirm",
         "Jedes Stück mit Foto, Name und Preis",
         "Echtzeit-Sync zwischen Kasse und Online-Inventar",
         "Ihr Online-Storefront auf Ihrer eigenen zolto.ch-Adresse"
       ],
-      "catch": "Keine Testphasen-Uhr. Kein Einsteiger-Tarif, der still ausläuft. Das Einzige, was wir je verrechnen, sind die Online-Verkäufe, die wir Ihnen bringen — und gibt es keine, gibt es nichts zu verrechnen."
+      "catch": "Keine Testfrist. Kein Einstiegstarif, der still ausläuft. Das Einzige, wofür wir je etwas verlangen, sind die Online-Verkäufe, die wir Ihnen bringen — und wenn es keine gibt, gibt es nichts zu verrechnen. Wer Ihre Karten- und TWINT-Zahlungen abwickelt, verlangt weiterhin seinen eigenen Satz, genau wie überall sonst; diese Rechnung liegt zwischen Ihnen und ihm, und wir nehmen davon kein Stück."
     },
     "aiNativePitch": {
       "eyebrow": "der Handel zieht ins Chat-Fenster",
@@ -494,9 +501,9 @@
         "caption": "Assistenten empfehlen nur Shops, die sie lesen können. Ein Shop, der für sie unsichtbar ist, kommt in der Antwort nicht vor — egal, wie gut sein SEO war."
       },
       "proof": {
-        "eyebrow": "keine Roadmap — heute live",
-        "headline": "Sehen Sie zu, wie eine KI in einem Zolto-Shop einkauft.",
-        "body": "Ihre Kundin fragt ihren Assistenten. Der Assistent liest das Kurzprofil des Shops, prüft den Live-Bestand über MCP und gibt die Bestellung auf — die Zahlung landet wie jeder andere Verkauf im eigenen Stripe-Konto. Richten Sie Ihre eigene KI auf zolto.ch/llms.txt und fragen Sie sie nach uns."
+        "eyebrow": "die Schienen liegen — der Verkehr kommt erst noch",
+        "headline": "Sehen Sie einer KI beim Einkaufen in einem Zolto-Shop zu.",
+        "body": "Ihre Kundin fragt ihren Assistenten. Der Assistent liest das Briefing des Shops, prüft den Lagerbestand live über MCP, wählt das Stück aus und öffnet eine Kasse — Ihre Kundin tippt auf Bezahlen, und das Geld landet wie bei jedem anderen Verkauf im eigenen Stripe-Konto der Macherin. Richten Sie Ihre eigene KI auf zolto.ch/llms.txt und fragen Sie sie nach uns."
       },
       "steps": [
         {
@@ -511,8 +518,8 @@
         },
         {
           "k": "Gekauft",
-          "title": "Sie schliesst den Kauf im Chat ab",
-          "body": "Die Bestellung landet wie jeder andere Verkauf: Der Bestand synchronisiert, Sie erhalten die Benachrichtigung, und das Geld geht direkt in Ihr Stripe-Konto."
+          "title": "Sie öffnet die Kasse, Ihre Kundin bezahlt",
+          "body": "Der Assistent übergibt eine Kasse für das ausgewählte Stück. Ihre Kundin tippt auf Bezahlen, und die Bestellung landet wie jeder andere Verkauf: der Bestand synchronisiert sich, Sie bekommen die Benachrichtigung, und das Geld geht direkt auf Ihr Stripe-Konto."
         }
       ],
       "footnote": "Sie richten davon nichts ein. Es kommt mit dem Shop — auch im Gratis-Plan, und 1% nur, wenn ein Agent tatsächlich für Sie verkauft."
@@ -542,40 +549,40 @@
       ]
     },
     "comparison": {
-      "Your catalogue on your phone": {
-        "feature": "Ihr Katalog auf Ihrem Handy",
-        "them": "Teil eines Bezahl-Tarifs oder gleich ein separates Produkt",
-        "us": "Fotos, Namen & Preise — CHF 0/Monat, ohne Ablaufdatum"
+      "Your catalogue and TWINT in the same till": {
+        "feature": "Ihr Katalog und TWINT in derselben Kasse",
+        "them": "Das eine oder das andere: eine Kassen-App, die kein TWINT kann, oder eine TWINT-App ohne Katalog darin",
+        "us": "Beides, auf einem Bildschirm — Foto antippen, dann TWINT, Karte oder Bargeld wählen"
       },
-      "Card reader": {
-        "feature": "Kartenlesegerät",
-        "them": "Wird Ihnen verkauft, CHF 50–300+",
-        "us": "Ihr Handy — NFC-Tap & TWINT QR"
+      "What a sale costs": {
+        "feature": "Was ein Verkauf kostet",
+        "them": "Ihr Satz, alles inklusive — und bei Karten oft tiefer als unserer",
+        "us": "Der Satz Ihres Abwicklers, plus 0% von uns vor Ort und 1% online auf Free"
       },
       "Building the store": {
         "feature": "Den Shop bauen",
-        "them": "Ein Entwickler, oder Wochen in Shopify",
-        "us": "Die KI entwirft ihn an einem Nachmittag"
+        "them": "Eine Entwicklerin, Wochen in einem Baukasten, oder gar kein Online-Shop",
+        "us": "Die KI entwirft, textet und fotografiert ihn an einem Nachmittag"
       },
       "Inventory": {
         "feature": "Inventar",
-        "them": "Starre Tabellen, die Sie von Hand pflegen",
-        "us": "Notizbuch scannen; die KI führt es"
+        "them": "Starre Raster, die Sie von Hand pflegen",
+        "us": "Notizbuch scannen; die KI pflegt es"
       },
       "Pricing": {
         "feature": "Preise",
-        "them": "Undurchsichtige Tarife, Überraschungsgebühren",
-        "us": "Gratis vor Ort. 1% online, oder pauschal CHF 25"
+        "them": "Eine Monatsgebühr, ein höherer Satz pro Verkauf, oder ein ausgehandelter Vertrag",
+        "us": "Vor Ort gratis. 1% online, oder pauschal CHF 25"
       },
       "Your money": {
         "feature": "Ihr Geld",
-        "them": "Einbehalten, dann ausbezahlt",
-        "us": "Direkt in Ihr eigenes Stripe-Konto"
+        "them": "Wird gehalten, dann ausgezahlt",
+        "us": "Direkt in Ihr eigenes Stripe"
       },
       "Where your data lives": {
         "feature": "Wo Ihre Daten liegen",
-        "them": "In den Cloud-Regionen, die sie nutzen — schauen Sie in deren Unterauftragsverarbeiter-Liste",
-        "us": "Europa, meist Deutschland — Server, die wir bei Hetzner mieten"
+        "them": "In welchen Cloud-Regionen auch immer sie arbeiten — prüfen Sie deren Unterauftragsliste",
+        "us": "Europa, meist Deutschland — Server, die wir von Hetzner mieten"
       }
     },
     "faqCategories": {
@@ -773,7 +780,7 @@
       },
       "payments": {
         "name": "Direktzahlungen mit Stripe",
-        "description": "Verbinden Sie Ihr eigenes Stripe-Konto; Ihre Kundschaft zahlt direkt darauf ein. Zolto hält Ihr Geld nie — im Gratis-Plan fällt eine Plattformgebühr von 1 % nur auf Online- und Agent-Bestellungen an, Verkäufe vor Ort sind immer gebührenfrei."
+        "description": "Verbinden Sie Ihr eigenes Stripe-Konto; Ihre Kundinnen zahlen direkt darauf ein. Zolto hält Ihr Geld nie. Stripe verlangt bei jedem Verkauf seine eigene Bearbeitungsgebühr, und dieses Geld geht an Stripe — Zoltos Gebühr ist davon getrennt und kommt obendrauf: 1% auf Online- und Agenten-Bestellungen auf Free, 0% auf Pro, und 0% auf Verkäufe vor Ort in jedem Tarif."
       },
       "storefront": {
         "name": "Ihr eigener Shop im eigenen Auftritt",
@@ -781,7 +788,7 @@
       },
       "ai-discovery": {
         "name": "Auffindbar für KI-Assistenten",
-        "description": "Jeder Shop bringt eine llms.txt und einen Model-Context-Protocol-Endpunkt (MCP) mit, damit KI-Assistenten und Agenten Ihre Produkte finden und empfehlen können."
+        "description": "Jeder Shop bringt eine llms.txt und einen Model-Context-Protocol-Endpunkt (MCP) mit, damit KI-Assistenten Ihren Live-Katalog lesen, Ihre Produkte empfehlen und eine Kasse öffnen können, die die Kundin abschliesst. Die Schienen liegen ab Tag eins; das plattformweite Shop-Verzeichnis füllt sich, während Macherinnen starten — das ist also Infrastruktur vor dem Verkehr und kein Kanal, der schon liefert."
       },
       "insights": {
         "name": "KI-Auswertungen zu Verkauf und Bestand",
@@ -844,12 +851,7 @@
       "tables": {
         "weekly": {
           "caption": "Online-Bestellungen, Bestellwert und Traffic nach Woche",
-          "head": [
-            "Woche",
-            "Online-Bestellungen",
-            "Ø Bestellwert",
-            "Besucher"
-          ],
+          "head": ["Woche", "Online-Bestellungen", "Ø Bestellwert", "Besucher"],
           "rowLabels": [
             "Woche 1 (Launch)",
             "Woche 2",
@@ -860,11 +862,7 @@
         },
         "sources": {
           "caption": "Woher die Online-Bestellungen kamen",
-          "head": [
-            "Quelle",
-            "Bestellungen",
-            "% der Online-Verkäufe"
-          ],
+          "head": ["Quelle", "Bestellungen", "% der Online-Verkäufe"],
           "rowLabels": [
             "Instagram (organisch)",
             "Direkt / wiederkehrend",
@@ -987,8 +985,13 @@
           "next": "Ein Schweizer Rechenzentrum, damit Maschinen und Firma im selben Land sitzen."
         },
         {
-          "piece": "TWINT an Ihrem Stand",
-          "today": "Ihr eigenes TWINT-Konto — Schweizer Schienen, Ende zu Ende"
+          "piece": "TWINT — Ihr eigener QR-Code",
+          "today": "Ihr eigenes TWINT-Konto zu 1,3% — Schweizer Schienen, Ende zu Ende, und wir sehen das Geld nie"
+        },
+        {
+          "piece": "TWINT — der Knopf in der Kasse",
+          "today": "Eine Stripe-Zahlung, keine direkte TWINT-Zahlung — Stripes Schienen, zu einem Satz, den Stripe nicht veröffentlicht",
+          "next": "Eine direkte TWINT-Anbindung, damit der Knopf in der App auf denselben Schweizer Schienen läuft wie der QR-Code. TWINT zertifiziert Integratoren, bevor es die Spezifikation herausgibt — das beginnt also als Antrag, nicht als Branch."
         },
         {
           "piece": "Kartenzahlungen und Auszahlungen",
@@ -1013,7 +1016,7 @@
         {
           "piece": "Kartennetzwerke und Handy-Wallets",
           "today": "Visa, Mastercard, Apple Pay, Google Pay",
-          "next": "Die sind nicht europäisch und werden es nie sein. Wenn ein Verkauf von Anfang bis Ende in der Schweiz bleiben soll, nehmen Sie ihn über TWINT — das ist für Sie ohnehin der günstigste Weg, bezahlt zu werden."
+          "next": "Die sind nicht europäisch und werden es nie sein. Wenn ein Verkauf von Anfang bis Ende in der Schweiz bleiben soll, nehmen Sie ihn über Ihren eigenen TWINT-QR-Code — das ist für Sie ohnehin der günstigste Weg, bezahlt zu werden, zu 1,3% ohne Fixgebühr."
         }
       ],
       "why": [

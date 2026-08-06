@@ -284,7 +284,8 @@ const cents = (n: number) => Math.round(n * 100) / 100;
  */
 export function costOfBasket(chf: number, rate: Rate): BasketCost {
   const basket = Number.isFinite(chf) && chf > 0 ? chf : 0;
-  const acquirer = (basket * rate.percent) / 100 + (basket > 0 ? rate.fixedChf : 0);
+  const acquirer =
+    (basket * rate.percent) / 100 + (basket > 0 ? rate.fixedChf : 0);
   const platform = (basket * rate.platformPercent) / 100;
   const total = acquirer + platform;
   return {
@@ -328,6 +329,71 @@ export function negotiatedFor(
   provider: Rate["provider"],
 ): NegotiatedOffering[] {
   return NEGOTIATED.filter((n) => n.provider === provider);
+}
+
+export interface MonthlyStack {
+  salesChf: number;
+  /** How many orders that volume implies at the given average basket. */
+  orders: number;
+  /** What the payment processor takes across the month. */
+  processorChf: number;
+  /** What Zolto's platform fee takes across the month. */
+  platformChf: number;
+  /** The plan's monthly subscription. */
+  subscriptionChf: number;
+  /** Everything that leaves — processor + platform + subscription. */
+  totalChf: number;
+  /** What's left of the sales after all of it. */
+  keepChf: number;
+  /** Total cost as a percentage of sales. */
+  effectivePct: number;
+}
+
+/**
+ * A whole month of online selling, with every party that takes a cut named.
+ *
+ * `monthlyCostAt` in shared/platform.ts answers "what will Zolto invoice me",
+ * which is a real question and the one the fee calculator used to answer on its
+ * own. This answers the question a maker was actually asking — "of the CHF 2,000
+ * I sold, how much do I keep" — and the difference between the two is the entire
+ * finding of the pricing review.
+ *
+ * An average basket is required rather than assumed because Stripe's fixed
+ * CHF 0.30 per order can't be spread over a month's volume without knowing how
+ * many orders it was. Thirty CHF-20 orders and three CHF-200 ones cost very
+ * different amounts to accept, and picking a default silently would decide that
+ * for the reader.
+ */
+export function monthlyStack(
+  salesChf: number,
+  avgOrderChf: number,
+  plan: "free" | "pro",
+): MonthlyStack {
+  const sales = Number.isFinite(salesChf) && salesChf > 0 ? salesChf : 0;
+  const avg =
+    Number.isFinite(avgOrderChf) && avgOrderChf > 0
+      ? avgOrderChf
+      : BASKET_EXAMPLE_CHF;
+  const r = rate(plan === "pro" ? "zolto-online-pro" : "zolto-online-free");
+
+  const orders = sales > 0 ? Math.max(1, Math.round(sales / avg)) : 0;
+  const processor = (sales * r.percent) / 100 + orders * r.fixedChf;
+  const platform = (sales * r.platformPercent) / 100;
+  // Owed whether or not anything sold — that's what a subscription is, and
+  // it's the reason Pro loses to Free in a quiet month.
+  const subscription = r.monthlyChf;
+  const total = processor + platform + subscription;
+
+  return {
+    salesChf: cents(sales),
+    orders,
+    processorChf: cents(processor),
+    platformChf: cents(platform),
+    subscriptionChf: cents(subscription),
+    totalChf: cents(total),
+    keepChf: cents(sales - total),
+    effectivePct: sales > 0 ? cents((total / sales) * 100) : 0,
+  };
 }
 
 /**

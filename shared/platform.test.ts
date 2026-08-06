@@ -130,10 +130,33 @@ describe("platform facts", () => {
     const highlighted = PLANS.find((p) => p.highlight);
     expect(highlighted).toBeTruthy();
     expect(COST_COMPARISON.usPerMonthChf).toBe(highlighted?.priceChf);
-    // The whole point is that Zolto is dramatically cheaper than the old way.
     expect(COST_COMPARISON.themPerYearChf).toBeGreaterThan(
       COST_COMPARISON.usPerMonthChf * 12,
     );
+  });
+
+  it("sources the 'a year elsewhere' figure and says what it's made of", () => {
+    // This number spent a long time on the landing page traceable to nothing
+    // (G11 in docs/planning/ai-traffic-alignment.md). It is now twelve months
+    // of a published subscription plus a published reader price, and the note
+    // says so. If the source ever disappears, this fails rather than the page
+    // quietly going back to asserting a number.
+    expect(() => source(COST_COMPARISON.themSourceId)).not.toThrow();
+    expect(COST_COMPARISON.themPerYearChf).toBe(29 * 12 + 99);
+    expect(COST_COMPARISON.themNote).toMatch(/29/);
+    expect(COST_COMPARISON.themNote).toMatch(/99/);
+  });
+
+  it("concedes, in the same breath, that the money buys a better card rate", () => {
+    // The figure compares FIXED costs, not the cost of a sale. Presenting it
+    // without that concession would make it the same kind of claim it replaced.
+    expect(COST_COMPARISON.themNote).toMatch(/lower than ours|better/i);
+  });
+
+  it("makes no multiplier claim it can't do the arithmetic for", () => {
+    // "one-hundredth the cost" was a shape, not a calculation, and it survived
+    // three years because nothing checked it.
+    expect(COST_COMPARISON.multiplier).not.toMatch(/hundredth|tenth|times/i);
   });
 
   it("has a complete incumbent comparison table", () => {
@@ -400,16 +423,40 @@ describe("AI_NATIVE_PITCH", () => {
 });
 
 describe("INCUMBENT_COMPARISON headline row", () => {
-  it("leads with the phone-catalogue difference", () => {
-    expect(INCUMBENT_COMPARISON[0].feature).toMatch(/catalogue on your phone/i);
+  it("leads with the squeeze play, not with hardware or with price", () => {
+    // It used to lead with "your catalogue on your phone" over a "card reader,
+    // sold to you, CHF 50–300+" row. Both were retired: every competitor in
+    // this market now runs softPOS on an ordinary phone, and SumUp's catalogue
+    // isn't behind a paywall. What's left is the capability squeeze.
+    expect(INCUMBENT_COMPARISON[0].feature).toMatch(/TWINT/i);
+    expect(INCUMBENT_COMPARISON[0].feature).toMatch(/catalogue|till/i);
   });
 
-  it("states Zolto's side as a price and theirs as a model, not a price", () => {
-    const row = INCUMBENT_COMPARISON[0];
-    expect(row.us).toMatch(/CHF 0/);
-    // Their column must stay free of invented figures — the repo's standing
-    // rule for competitor claims (see the COMPETITORS doc comment).
-    expect(row.them).not.toMatch(/CHF\s?\d/);
+  it("keeps the retired hardware claim out of the table", () => {
+    const text = INCUMBENT_COMPARISON.map(
+      (r) => `${r.feature} ${r.them} ${r.us}`,
+    ).join(" ");
+    expect(text).not.toMatch(/card reader/i);
+    expect(text).not.toMatch(/CHF 50–300|CHF 50-300/);
+  });
+
+  it("admits in the table itself that their card rate is often lower", () => {
+    // The row a comparison table would normally never carry. It's here because
+    // a table that only lists rows we win is discounted on sight — and because
+    // it's the finding the whole pricing review turned on.
+    const costRow = INCUMBENT_COMPARISON.find((r) =>
+      /what a sale costs/i.test(r.feature),
+    );
+    expect(costRow).toBeTruthy();
+    expect(costRow!.them).toMatch(/lower than ours/i);
+  });
+
+  it("states our own side as a stack, not as a single percentage", () => {
+    const costRow = INCUMBENT_COMPARISON.find((r) =>
+      /what a sale costs/i.test(r.feature),
+    )!;
+    // "1% online" alone was the claim that read as the cost of a sale.
+    expect(costRow.us).toMatch(/processor/i);
   });
 });
 
@@ -433,10 +480,14 @@ describe("COMPETITORS", () => {
     // figure must name its sources, and every source must resolve and be dated.
     for (const c of COMPETITORS) {
       const text = [c.summary, ...c.betterWhen, ...c.zoltoWhen].join(" ");
-      const quotesAFigure = /CHF\s?\d|\$\s?\d|€\s?\d|\d+(\.\d+)?\s*%/.test(text);
+      const quotesAFigure = /CHF\s?\d|\$\s?\d|€\s?\d|\d+(\.\d+)?\s*%/.test(
+        text,
+      );
       if (!quotesAFigure) continue;
-      expect(c.sourceIds?.length, `${c.id} quotes a figure but names no source`)
-        .toBeGreaterThan(0);
+      expect(
+        c.sourceIds?.length,
+        `${c.id} quotes a figure but names no source`,
+      ).toBeGreaterThan(0);
       for (const id of c.sourceIds!) {
         expect(() => source(id)).not.toThrow();
         expect(source(id).retrievedOn).toMatch(/^\d{4}-\d{2}-\d{2}$/);
@@ -472,7 +523,100 @@ describe("COMPETITORS", () => {
 
     const worldline = findCompetitor("worldline")!;
     expect(worldline.betterWhen.join(" ")).toMatch(/PostFinance Pay/);
-    expect(worldline.betterWhen.join(" ")).toMatch(/1\.7% flat|no fixed monthly/i);
+    expect(worldline.betterWhen.join(" ")).toMatch(
+      /1\.7% flat|no fixed monthly/i,
+    );
+  });
+});
+
+describe("the fee stack is disclosed, not implied", () => {
+  it("says in the pledge that our fee is not the cost of a sale", () => {
+    // The single most consequential correction from the August 2026 review.
+    // "0% in person / 1% online" is a platform fee charged ON TOP of the
+    // payment processor's own rate; every surface quoted it as though it were
+    // the total, and a reader found out otherwise from their Stripe statement.
+    const points = PRICING_PROMISE.points.join(" ").toLowerCase();
+    expect(points).toContain("not what a sale costs");
+    expect(points).toMatch(/goes to them, not to us/);
+  });
+
+  it("says out loud that we are not the cheapest on card rate", () => {
+    // Sold as "cheapest", the case doesn't survive the arithmetic. Conceding
+    // it is what makes the rest of the pledge worth reading.
+    expect(PRICING_PROMISE.points.join(" ")).toMatch(
+      /not the cheapest way to get paid/i,
+    );
+  });
+
+  it("names the other bill in the free-POS band too", () => {
+    // ZERO_COST_POS makes the boldest free claim on the site, so it's the
+    // cheapest place to stop "CHF 0.00" being read as the cost of acceptance.
+    expect(ZERO_COST_POS.catch).toMatch(/their own rate/i);
+  });
+
+  it("keeps the platform summary free of the two retired claims", () => {
+    // Both fed /llms.txt and the MCP tools, so an AI assistant was repeating
+    // them to prospective merchants verbatim.
+    expect(PLATFORM.summary).not.toMatch(/fraction of what/i);
+    expect(PLATFORM.summary).not.toMatch(/find, recommend, and buy/i);
+    expect(PLATFORM.summary).toMatch(/start a checkout/i);
+    expect(PLATFORM.summary).toMatch(/apply on top and go to them/i);
+  });
+
+  it("states the stack in the payments feature, which agents enumerate", () => {
+    const payments = FEATURES.find((f) => f.id === "payments")!;
+    expect(payments.description).toMatch(/goes to Stripe/i);
+    expect(payments.description).toMatch(/separate and on top/i);
+  });
+});
+
+describe("the two TWINT rails are told apart", () => {
+  const ledgerText = () =>
+    SOVEREIGNTY.ledger.map((e) => `${e.piece} ${e.today}`).join(" ");
+
+  it("gives the QR path and the in-app button their own rows", () => {
+    // server/pos.ts has two TWINT paths and the ledger described only the
+    // flattering one. `twint_qr` is the merchant's own sticker — Swiss end to
+    // end at 1.3%, money we never see. The in-app button is a Stripe
+    // PaymentIntent, so it runs on Stripe's rails at a rate Stripe doesn't
+    // publish. One row claiming "Swiss, end to end" covered both.
+    const qr = SOVEREIGNTY.ledger.find((e) => /own QR/i.test(e.piece));
+    const button = SOVEREIGNTY.ledger.find((e) => /the button/i.test(e.piece));
+    expect(qr?.state).toBe("swiss");
+    expect(button?.state).toBe("moving");
+    expect(button?.next).toBeTruthy();
+  });
+
+  it("does not describe the Stripe-routed button as Swiss end to end", () => {
+    const button = SOVEREIGNTY.ledger.find((e) => /the button/i.test(e.piece))!;
+    expect(button.today).toMatch(/Stripe/);
+    expect(button.today).not.toMatch(/end to end/i);
+  });
+
+  it("still names the QR rate, since it is genuinely the cheapest", () => {
+    expect(ledgerText()).toMatch(/1\.3%/);
+  });
+});
+
+describe("the agent-commerce claim matches what create_checkout does", () => {
+  it("says the assistant opens a checkout rather than completing a purchase", () => {
+    // MCP's create_checkout returns a Stripe payment link a human completes.
+    // "It checks out in the chat" and "watch an AI buy" both overstated it.
+    const bought = AI_NATIVE_PITCH.steps[2];
+    expect(bought.title).toMatch(/opens the checkout|your customer pays/i);
+    expect(`${bought.title} ${bought.body}`).toMatch(/customer (taps )?pays/i);
+  });
+
+  it("scopes the proof band to rails-live rather than traffic-live", () => {
+    // find_stores returns an empty list until storefronts launch. The rails
+    // being real and the channel being populated are different claims.
+    expect(AI_NATIVE_PITCH.proof.eyebrow).not.toMatch(/live today/i);
+    expect(AI_NATIVE_PITCH.proof.headline).not.toMatch(/\bbuy\b/i);
+  });
+
+  it("says the discovery directory is still filling up", () => {
+    const discovery = FEATURES.find((f) => f.id === "ai-discovery")!;
+    expect(discovery.description).toMatch(/fills up|ahead of the traffic/i);
   });
 });
 
