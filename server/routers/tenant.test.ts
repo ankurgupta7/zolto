@@ -348,11 +348,12 @@ describe("tenant.create", () => {
 describe("tenant.create — signup wizard branding", () => {
   const base = { name: "Aurora", slug: "aurora", email: "o@a.example" };
 
-  it("seeds settings with the chosen template and color", async () => {
+  it("seeds settings with the chosen template and BOTH brand colors", async () => {
     await tenantRouter.createCaller(ctx()).create({
       ...base,
       templateId: "verdant",
       primaryColor: "#2F5D3A",
+      secondaryColor: "#C08A2E",
     });
     expect(dbMock.createTenantSettings).toHaveBeenCalledWith({
       tenantId: 42,
@@ -362,7 +363,28 @@ describe("tenant.create — signup wizard branding", () => {
       verticalDescription: null,
       templateId: "verdant",
       primaryColor: "#2F5D3A",
+      secondaryColor: "#C08A2E",
     });
+  });
+
+  it("omits the secondary rather than storing a placeholder when none is sent", async () => {
+    await tenantRouter
+      .createCaller(ctx())
+      .create({ ...base, primaryColor: "#2F5D3A" });
+    // Null/absent means "derive the accent from the primary" — the behaviour
+    // every store predating the second color relies on.
+    expect(dbMock.createTenantSettings).toHaveBeenCalledWith(
+      expect.not.objectContaining({ secondaryColor: expect.anything() }),
+    );
+  });
+
+  it("rejects a malformed secondary color", async () => {
+    await expect(
+      tenantRouter
+        .createCaller(ctx())
+        .create({ ...base, secondaryColor: "gold" }),
+    ).rejects.toThrow();
+    expect(dbMock.createTenant).not.toHaveBeenCalled();
   });
 
   it("uploads the logo tenant-scoped and stores its URL in the same settings row", async () => {
@@ -449,7 +471,7 @@ describe("tenant.brandingFromLogo", () => {
     });
   }
 
-  it("returns the extracted scheme and template suggestion", async () => {
+  it("returns the extracted two-color scheme and template suggestion", async () => {
     aiAnswer({
       primaryColor: "#2F5D3A",
       secondaryColor: "#B8963E",
@@ -468,6 +490,22 @@ describe("tenant.brandingFromLogo", () => {
     // The logo pixels must actually reach the model.
     const call = brandingAiMock.invokeLLM.mock.calls[0][0];
     expect(JSON.stringify(call.messages)).toContain(dataUrl);
+  });
+
+  // An accent identical to the ink is invisible: dividers and labels vanish
+  // into the footer. Null instead, so the client derives a visible tint.
+  it("nulls out a secondary that merely echoes the primary", async () => {
+    aiAnswer({
+      primaryColor: "#2F5D3A",
+      secondaryColor: "#2f5d3a",
+      suggestedTemplateId: "verdant",
+      rationale: "Green.",
+    });
+    const res = await tenantRouter
+      .createCaller(ctx())
+      .brandingFromLogo({ imageData: dataUrl });
+    expect(res.primaryColor).toBe("#2F5D3A");
+    expect(res.secondaryColor).toBeNull();
   });
 
   it("nulls out a non-hex secondary color and an unknown template suggestion", async () => {
@@ -1052,6 +1090,21 @@ describe("tenant.updateSettings plan gates", () => {
     const { caller, set } = tenantCtx("pro");
     await expect(
       caller.updateSettings({ publicDomain: "https://shop.example.com/" }),
+    ).rejects.toThrow();
+    expect(set).not.toHaveBeenCalled();
+  });
+
+  it("accepts a secondary color on every plan and rejects a malformed one", async () => {
+    const { caller, set } = tenantCtx("free");
+    await expect(
+      caller.updateSettings({ secondaryColor: "#B8963E" }),
+    ).resolves.toEqual({ success: true });
+    expect(set).toHaveBeenCalledWith(
+      expect.objectContaining({ secondaryColor: "#B8963E" }),
+    );
+    set.mockClear();
+    await expect(
+      caller.updateSettings({ secondaryColor: "gold" }),
     ).rejects.toThrow();
     expect(set).not.toHaveBeenCalled();
   });

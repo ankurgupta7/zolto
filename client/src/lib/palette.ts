@@ -1,13 +1,26 @@
 /**
  * Storefront palette derivation.
  *
- * A tenant only stores a single dominant brand color (`tenant_settings.primary_color`).
- * From that one hex we derive the whole *dark* half of the storefront palette — the
- * ink family (hero / footer / primary buttons) plus a lighter, more vivid accent of
- * the same hue (dividers, eyebrow labels, hover states). The warm-neutral *surfaces*
- * (the cream grounds and borders) are intentionally left to their CSS defaults, so a
- * store picks its brand color and gets a cohesive "<color> + cream" look without
- * having to specify a second accent.
+ * A tenant stores two brand colors: `primary_color` (the structural dark — hero,
+ * footer, primary buttons) and the optional `secondary_color` (the highlight —
+ * dividers, eyebrow labels, hover states). From those we derive the whole *dark*
+ * half of the storefront palette. The warm-neutral *surfaces* (cream grounds and
+ * borders) are not derived here at all; they come from the store's template
+ * (shared/templates.ts), so the two compose instead of fighting.
+ *
+ * Why two and not one: an accent spun out of the primary's own hue can only ever
+ * be a lighter tint of it, which cannot express the ordinary small-shop identity
+ * of one structural color plus an unrelated highlight — Kalakosh's espresso ink
+ * and gold being the case in this very repo (KALAKOSH_BRANDING has to hardcode
+ * the gold because a one-color derivation cannot reach it). Passing a secondary
+ * moves the accent family onto that hue.
+ *
+ * Why not three: the next colors a storefront needs are semantic — success,
+ * error, low-stock — and those must stay fixed platform-wide, or a merchant
+ * whose brand is green ends up with a "sold out" badge that reads as "in stock".
+ *
+ * Omitting `secondaryColor` reproduces the original single-color behaviour
+ * exactly, so stores that predate the second color keep their look.
  *
  * Everything here is pure and framework-free so it can be unit-tested and reused;
  * `TenantContext` is the only place that writes the result to the document.
@@ -101,17 +114,31 @@ export interface BrandPalette {
 }
 
 /**
- * Derive the ink family + accent from a single dominant brand color.
+ * Derive the ink family + accent from the store's brand colors.
  *
- * The input is treated as the dominant dark (`--brand-ink`). Hover/deep are small
- * lightness steps around it; text is a near-black of the same hue; the accent is a
- * lighter, more saturated tint of the hue (so a navy brand yields a mid-blue accent,
- * not gold). Surfaces/borders are deliberately not returned — they keep their cream
- * defaults.
+ * `primaryColor` is treated as the dominant dark (`--brand-ink`). Hover/deep are
+ * small lightness steps around it; text is a near-black of the same hue.
  *
- * Returns null for an unparseable color so callers can fall back to CSS defaults.
+ * `secondaryColor`, when supplied and parseable, becomes the accent family — its
+ * own hue and saturation, with only its lightness anchored into a band that stays
+ * legible against both the ink and the cream surfaces. That anchoring is why the
+ * merchant's swatch and the rendered accent can differ slightly: a secondary
+ * picked near-black would otherwise vanish against the footer.
+ *
+ * With no secondary, the accent falls back to the original behaviour — a lighter,
+ * more saturated tint of the primary's hue (a navy brand yields a mid-blue accent,
+ * not gold) — so existing single-color stores render identically.
+ *
+ * Surfaces/borders are deliberately not returned; they come from the template.
+ *
+ * Returns null for an unparseable primary so callers can fall back to CSS defaults.
+ * An unparseable *secondary* is ignored rather than fatal — a half-typed hex in the
+ * signup form must not blank the whole preview.
  */
-export function derivePalette(primaryColor: string): BrandPalette | null {
+export function derivePalette(
+  primaryColor: string,
+  secondaryColor?: string | null,
+): BrandPalette | null {
   const hsl = hexToHsl(primaryColor);
   if (!hsl) return null;
 
@@ -121,22 +148,26 @@ export function derivePalette(primaryColor: string): BrandPalette | null {
   const inkL = clamp(hsl.l, 0.14, 0.34);
   const inkS = clamp(s, 0.08, 0.9);
 
+  const accentHsl = secondaryColor ? hexToHsl(secondaryColor) : null;
+  // Two branches rather than one parameterised formula, so the no-secondary case
+  // is bit-identical to what shipped before the second color existed.
+  const accent = accentHsl
+    ? {
+        h: accentHsl.h,
+        s: clamp(accentHsl.s, 0.25, 0.95),
+        l: clamp(accentHsl.l, 0.42, 0.62),
+      }
+    : { h, s: clamp(inkS + 0.12, 0.35, 0.95), l: 0.52 };
+  const accentLight = accentHsl
+    ? { h: accent.h, s: accent.s, l: clamp(accent.l + 0.12, 0, 0.8) }
+    : { h, s: clamp(inkS + 0.1, 0.3, 0.95), l: 0.64 };
+
   return {
     "--brand-ink": hslToHex({ h, s: inkS, l: inkL }),
     "--brand-ink-hover": hslToHex({ h, s: inkS, l: inkL + 0.07 }),
     "--brand-ink-deep": hslToHex({ h, s: inkS, l: inkL - 0.05 }),
     "--brand-text": hslToHex({ h, s: clamp(inkS + 0.04, 0, 0.9), l: 0.12 }),
-    // Accent: same hue, clearly lighter and more vivid so it reads as a highlight
-    // against both the ink and the cream surfaces.
-    "--brand-accent": hslToHex({
-      h,
-      s: clamp(inkS + 0.12, 0.35, 0.95),
-      l: 0.52,
-    }),
-    "--brand-accent-light": hslToHex({
-      h,
-      s: clamp(inkS + 0.1, 0.3, 0.95),
-      l: 0.64,
-    }),
+    "--brand-accent": hslToHex(accent),
+    "--brand-accent-light": hslToHex(accentLight),
   };
 }

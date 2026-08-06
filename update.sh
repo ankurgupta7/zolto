@@ -827,6 +827,17 @@ if [ "$(col_exists orders locale)" = "0" ]; then
     "ALTER TABLE \`orders\` ADD \`locale\` varchar(5) NULL;"
 else
   ok "0039 orders.locale already exists"
+
+# ── 0040: second brand color ──────────────────────────────────────────────────
+# Ships drizzle/0022_secondary_brand_color.sql. Drives the accent family, which
+# a one-color derivation could only render as a tint of the primary. NULL keeps
+# the existing derive-from-primary behaviour, so this is a no-op for stores that
+# never pick one. Idempotent.
+if [ "$(col_exists tenant_settings secondary_color)" = "0" ]; then
+  run_sql "0040 add tenant_settings.secondary_color" \
+    "ALTER TABLE \`tenant_settings\` ADD \`secondary_color\` varchar(7) NULL;"
+else
+  ok "0040 tenant_settings.secondary_color already exists"
 fi
 
 # ── Record the applied migration set ──────────────────────────────────────────

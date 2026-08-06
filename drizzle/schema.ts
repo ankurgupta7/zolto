@@ -73,6 +73,11 @@ export const tenantSettings = mysqlTable("tenant_settings", {
   tenantId: int("tenant_id").notNull().unique(),
   logoUrl: varchar("logo_url", { length: 1024 }),
   primaryColor: varchar("primary_color", { length: 7 }).default("#000000"),
+  // The highlight half of the brand (dividers, eyebrow labels, hover states).
+  // Null = derive the accent from primary_color, which is what every store
+  // predating this column does. See client/src/lib/palette.ts for why two
+  // colors and not one or three.
+  secondaryColor: varchar("secondary_color", { length: 7 }),
   // Storefront template chosen at signup (shared/templates.ts). Drives the
   // surface half of the palette; primary_color drives the ink/accent half.
   // Null = the CSS defaults (equivalent to "atelier").

@@ -33,6 +33,11 @@ export interface Branding {
   currency: string;
   /** Dominant dark brand color (drives --brand-ink), e.g. "#2D2620". */
   primaryColor: string | null;
+  /**
+   * Highlight brand color (drives --brand-accent), e.g. "#B8963E". Null means
+   * "derive the accent from primaryColor" — the pre-two-color behaviour.
+   */
+  secondaryColor: string | null;
 }
 
 /** Kalakosh (tenant #1) fallbacks — only used for the kalakosh tenant. */
@@ -46,6 +51,9 @@ export const KALAKOSH_BRANDING: Branding = {
   logoUrlDark: "/kalakosh-logo-banner-dark.png",
   currency: "chf",
   primaryColor: "#2D2620",
+  // The gold that a one-color derivation off #2D2620 cannot reach — the very
+  // case that motivated the second color (client/src/lib/palette.ts).
+  secondaryColor: "#B8963E",
 };
 
 /** Neutral fallbacks for any non-Kalakosh tenant: no borrowed contact channels. */
@@ -59,6 +67,7 @@ export const NEUTRAL_BRANDING: Branding = {
   logoUrlDark: null,
   currency: "chf",
   primaryColor: "#2D2620",
+  secondaryColor: null,
 };
 
 /** Pick the right fallback set for a given tenant slug. */
@@ -74,6 +83,7 @@ export interface TenantSettingsLike {
   logoUrl?: string | null;
   currency?: string | null;
   primaryColor?: string | null;
+  secondaryColor?: string | null;
 }
 
 const HEX6 = /^#[0-9A-Fa-f]{6}$/;
@@ -98,6 +108,15 @@ export function brandingFrom(
       ? rawColor
       : defaults.primaryColor;
 
+  // The secondary has no "#000000 means unset" problem — the column has no
+  // default and is simply null until a store picks one — so a real black is
+  // honored here, unlike primaryColor above.
+  const rawSecondary = settings?.secondaryColor;
+  const secondaryColor =
+    rawSecondary && HEX6.test(rawSecondary)
+      ? rawSecondary
+      : defaults.secondaryColor;
+
   const logoUrl = settings?.logoUrl || defaults.logoUrl;
 
   return {
@@ -112,6 +131,7 @@ export function brandingFrom(
     logoUrlDark: settings?.logoUrl || defaults.logoUrlDark,
     currency: settings?.currency || defaults.currency,
     primaryColor,
+    secondaryColor,
   };
 }
 

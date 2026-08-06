@@ -57,6 +57,25 @@ describe("brandingFrom", () => {
     ).toBe(NEUTRAL_BRANDING.primaryColor);
   });
 
+  it("honors a valid hex secondaryColor and falls back when absent or malformed", () => {
+    expect(
+      brandingFrom("X", { secondaryColor: "#B8963E" }).secondaryColor,
+    ).toBe("#B8963E");
+    expect(brandingFrom("X", { secondaryColor: "gold" }).secondaryColor).toBe(
+      NEUTRAL_BRANDING.secondaryColor,
+    );
+    // Neutral's fallback is null — "derive the accent from the primary".
+    expect(brandingFrom("X", {}).secondaryColor).toBeNull();
+  });
+
+  it("honors a black secondaryColor, unlike primaryColor's #000000 sentinel", () => {
+    // primary_color defaults to "#000000" in the schema, so that value has to
+    // mean "unset". secondary_color has no default, so black is a real choice.
+    expect(
+      brandingFrom("X", { secondaryColor: "#000000" }).secondaryColor,
+    ).toBe("#000000");
+  });
+
   it("uses a single tenant logo for both light and dark slots", () => {
     const b = brandingFrom("X", { logoUrl: "/logo.png" });
     expect(b.logoUrl).toBe("/logo.png");

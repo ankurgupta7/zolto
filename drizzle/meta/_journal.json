@@ -148,6 +148,13 @@
       "when": 1785858852338,
       "tag": "0021_order_locale",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "5",
+      "when": 1785858853338,
+      "tag": "0022_secondary_brand_color",
+      "breakpoints": true
     }
   ]
 }
