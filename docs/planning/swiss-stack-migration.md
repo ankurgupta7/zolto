@@ -314,6 +314,23 @@ Kill criteria, stated up front so they can be checked rather than argued:
 
 ---
 
+## 5b. A wider version of this question
+
+This note asks whether *Zolto's own* rail should move to Payrexx. The owner
+subsequently asked the broader version: what if **merchants brought their own**
+provider and Zolto sold itself as a front end to the rails?
+[`bring-your-own-payments.md`](./bring-your-own-payments.md) answers that, and
+it reuses §3 here wholesale. Two findings there change how §4's sequence should
+be read:
+
+- The provider interface behind `checkoutSession.ts` (§4 step 3) is needed for
+  **both** plans, so it is worth extracting regardless of which one wins.
+- The own-TWINT-QR path is already provider-independent, which means the
+  in-person argument survives any rail change — including a merchant bringing
+  SumUp, which cannot take TWINT in its own till at all.
+
+---
+
 ## 6. Open questions for Payrexx
 
 Only they can answer these; all of them gate a real decision:

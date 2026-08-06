@@ -50,6 +50,15 @@ nice-to-have.
 sync, pay a fraction" is the migration story that turns the pricing argument
 (below, and in the About page) into an actual signup.
 
+**Update 2026-08-06 — the catalogue half shipped, and the payments half has a
+plan.** `server/providerMigration.ts` imports catalogues from Stripe (API),
+SumUp and Worldline (Swiss-format CSV). What is *not* built is letting a
+merchant keep their existing provider for the payments themselves;
+[`bring-your-own-payments.md`](./bring-your-own-payments.md) works through what
+that takes, and finds the Stripe case already works via Connect. "Keep your
+Worldline contract, get a shop this weekend" is the wedge this item was reaching
+for.
+
 ---
 
 ## 2. Founder "About me" page (casual, personal)
