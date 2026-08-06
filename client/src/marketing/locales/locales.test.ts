@@ -18,7 +18,9 @@ import {
   FEATURES,
   COMPETITORS,
   POSITIONING,
+  CAPABILITIES,
 } from "@shared/platform";
+import { RATES, NEGOTIATED } from "@shared/costOfAcceptance";
 import { SEGMENTS } from "@shared/segments";
 import {
   PILOT_METHODOLOGY,
@@ -282,8 +284,35 @@ describe("marketing locale files", () => {
             summary: c.summary,
             betterWhen: [...c.betterWhen],
             zoltoWhen: [...c.zoltoWhen],
+            ...(c.capabilities
+              ? {
+                  capabilities: Object.fromEntries(
+                    c.capabilities.map((x) => [x.key, x.value]),
+                  ),
+                }
+              : {}),
+            // Only the statement is translated. Its source is a URL and a
+            // date, which read the same in every language.
+            ...(c.risks ? { risks: c.risks.map((r) => r.statement) } : {}),
           },
         ]),
+      ),
+      // CapabilityMatrix.tsx renders the row labels and Zolto's own answers.
+      capabilities: Object.fromEntries(
+        CAPABILITIES.map((c) => [c.key, { label: c.label, zolto: c.zolto }]),
+      ),
+      // CostOfAcceptance.tsx renders each rate's label and caveat. The numbers
+      // themselves are never duplicated into a locale file — they render from
+      // shared/costOfAcceptance.ts so four languages can't disagree about what
+      // a sale costs.
+      rates: Object.fromEntries(
+        RATES.map((r) => [
+          r.id,
+          r.caveat ? { label: r.label, caveat: r.caveat } : { label: r.label },
+        ]),
+      ),
+      negotiated: Object.fromEntries(
+        NEGOTIATED.map((n) => [n.id, { label: n.label, detail: n.detail }]),
       ),
       // Research.tsx renders shared/research.ts. Only the label column of each
       // table is prose — the numeric cells are rendered from the shared source

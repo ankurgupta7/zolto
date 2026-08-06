@@ -342,7 +342,11 @@
     "zoltoWhenHeading": "Quand {{name}} convient mieux",
     "startFree": "Commencer gratuitement",
     "seePricing": "Voir les tarifs",
-    "alsoCompare": "À comparer aussi :"
+    "alsoCompare": "À comparer aussi :",
+    "capabilitiesHeading": "{{name}} et {{competitor}}, ligne par ligne",
+    "risksHeading": "Encore une chose sur {{competitor}}",
+    "risksIntro": "On choisit généralement {{competitor}} parce que l'acteur en place est l'option sûre. C'est précisément cette propriété qui est aujourd'hui en question, et c'est une affaire de dossier public, pas d'opinion.",
+    "risksBalance": "Rien de tout cela n'empêche {{competitor}} de traiter normalement les paiements suisses aujourd'hui, et Tap on Mobile, à taux forfaitaire et sans frais mensuels, reste une offre réellement bonne pour un petit commerce. Le propos est plus étroit : « grand acteur en place » et « risque faible » ont cessé d'être le même mot, et cela mérite d'être su avant de signer un contrat de terminal pluriannuel."
   },
   "signup": {
     "eyebrow": "c’est parti",
@@ -904,7 +908,19 @@
           "Vous vendez des pièces uniques et ne pouvez pas vous permettre de vendre deux fois la même sur deux canaux.",
           "Vous voulez que la boutique soit construite, rédigée et photographiée pour vous, plutôt qu'un gabarit à remplir vous-même.",
           "Vous préférez photographier votre carnet que taper un catalogue à la main."
-        ]
+        ],
+        "capabilities": {
+          "swiss": "Oui",
+          "no-hardware": "Oui — Tap to Pay, iPhone XS et plus récent / Android 11+",
+          "item-grid": "Oui — dispositions de vente, catégories, SKU, variantes et images. Plus abouti que celui de Zolto sur les fonctions de caisse pures.",
+          "stock-in-person": "Oui, avec alertes de stock bas et une étiquette « épuisé »",
+          "stock-shared": "Oui — SumUp indique que la caisse et la boutique en ligne se synchronisent automatiquement. Le stock est mis à jour à la fin d'une vente, pas au début d'un paiement.",
+          "twint": "Non",
+          "postfinance": "Non",
+          "builds-storefront": "Non — un constructeur à gabarits que vous remplissez vous-même",
+          "setup": "Moins d'une heure",
+          "who-holds-money": "SumUp verse sur votre banque en 2–3 jours"
+        }
       },
       "shopify": {
         "summary": "La plateforme e-commerce hébergée la plus connue, avec sa propre application de caisse en plus de la boutique en ligne. Conçue pour des commerces qui grandissent avec du personnel, des entrepôts et une logistique multicanal.",
@@ -932,6 +948,22 @@
           "Vous voulez une boutique en ligne, pas une caisse à greffer sur un site que vous faites réaliser. Saferpay est une passerelle, pas un magasin.",
           "Vous êtes seul ou un petit atelier, et un contrat de terminal pluriannuel est démesuré.",
           "Vous voulez vendre ce week-end, pas à l'issue d'un processus commercial."
+        ],
+        "capabilities": {
+          "swiss": "Oui — l'acteur en place, via SIX Payment Services",
+          "no-hardware": "Oui — Tap on Mobile, iPhone / Android 12+",
+          "item-grid": "Non — paiement uniquement. Il s'intègre d'application à application avec un logiciel de caisse tiers.",
+          "stock-in-person": "Sans objet — il n'y a pas de catalogue sur lequel s'appuyer",
+          "stock-shared": "Pas de boutique en ligne ; Saferpay est une passerelle pour un site que vous construisez",
+          "twint": "Oui",
+          "postfinance": "Oui",
+          "builds-storefront": "Non",
+          "setup": "Devis individuel — l'intégration est un processus commercial",
+          "who-holds-money": "Worldline verse selon le contrat"
+        },
+        "risks": [
+          "S&P a abaissé la note de Worldline à BB — sous la catégorie investissement — en août 2025, en invoquant une performance opérationnelle plus faible que prévu, avec une perspective négative.",
+          "SIX Group, qui avait acquis 27% de Worldline dans le cadre de l'opération SIX Payment Services, a comptabilisé une dépréciation d'environ CHF 550 millions en novembre 2025, n'a pas participé à l'augmentation de capital de Worldline, a renoncé à son siège au conseil et a reclassé la participation d'un investissement stratégique en investissement financier."
         ]
       }
     },
@@ -1057,6 +1089,97 @@
         }
       ],
       "claim": "Des trois façons dont une créatrice suisse peut se faire payer sur un marché aujourd'hui, une seule met le catalogue et TWINT sur le même écran."
+    },
+    "rates": {
+      "zolto-twint-qr": {
+        "label": "TWINT — votre propre code QR, votre propre compte TWINT",
+        "caveat": "C'est le code QR TWINT de la commerçante : l'argent ne passe jamais par Stripe ni par Zolto, et la vente est enregistrée dans la caisse plutôt qu'encaissée par elle."
+      },
+      "sumup-payments-plus": {
+        "label": "Payments Plus (CHF 29/mois)",
+        "caveat": "Taux domestique. Les cartes hors UE sont facturées 1,99%. Les CHF 29/mois sont dus que vous vendiez ou non."
+      },
+      "sumup-debit": {
+        "label": "Carte de débit, sans abonnement"
+      },
+      "worldline-tap-on-mobile": {
+        "label": "Tap on Mobile",
+        "caveat": "Taux forfaitaire sans coût mensuel fixe, et TWINT est accepté. Une offre réellement compétitive pour un petit commerce."
+      },
+      "zolto-card-eea": {
+        "label": "Tap to Pay — carte, si les cartes suisses relèvent du taux EEE de Stripe",
+        "caveat": "Stripe ne dit pas dans quelle catégorie tombent les cartes suisses. Cette ligne suppose l'EEE, celle du dessous suppose le contraire. Vérifiez auprès de Stripe avant de vous fier à l'une ou l'autre."
+      },
+      "sumup-credit": {
+        "label": "Carte de crédit, sans abonnement"
+      },
+      "zolto-card-non-eea": {
+        "label": "Tap to Pay — carte, si les cartes suisses relèvent du taux hors EEE de Stripe",
+        "caveat": "La lecture pessimiste de la même ambiguïté. Entre cette ligne et celle de l'EEE, il y a plus d'un point de pourcentage entier : d'où l'intérêt de demander à Stripe plutôt que de deviner."
+      },
+      "sumup-online": {
+        "label": "Caisse de la boutique en ligne",
+        "caveat": "Forfaitaire, sans frais fixes. Moins cher que Zolto en ligne sur tous les plans."
+      },
+      "zolto-online-pro": {
+        "label": "Caisse de la boutique — Pro"
+      },
+      "zolto-online-free": {
+        "label": "Caisse de la boutique — Free",
+        "caveat": "Le taux domestique en ligne de Stripe plus les frais de plateforme de Zolto. Sur le seul taux, c'est la ligne la plus chère de la page — l'argument en ligne de Zolto, c'est ce que fait la boutique, pas ce que coûte la transaction."
+      }
+    },
+    "negotiated": {
+      "worldline-terminal": {
+        "label": "Terminaux de comptoir et portables",
+        "detail": "Tarification interchange++, négociée par commerçant, avec un terminal acheté ou loué sur un contrat généralement pluriannuel."
+      },
+      "worldline-saferpay": {
+        "label": "Passerelle en ligne Saferpay",
+        "detail": "Des frais de passerelle (Go CHF 9.95 / Easy CHF 19.95 / Flex CHF 39.95 par mois, plus CHF 49–299 en une fois) en plus de l'acquisition, négociée séparément. Saferpay est une caisse pour un site que vous faites construire ; ce n'est pas une boutique."
+      }
+    },
+    "capabilities": {
+      "swiss": {
+        "label": "Disponible en Suisse",
+        "zolto": "Oui — construit à Zurich, tarifé en CHF"
+      },
+      "no-hardware": {
+        "label": "Encaisse sans matériel à acheter",
+        "zolto": "Oui — Tap to Pay sur le téléphone que vous avez déjà"
+      },
+      "item-grid": {
+        "label": "Votre catalogue en grille dans la caisse",
+        "zolto": "Oui — photo, nom et prix pour chaque pièce"
+      },
+      "stock-in-person": {
+        "label": "Stock suivi au fil des ventes en personne",
+        "zolto": "Oui"
+      },
+      "stock-shared": {
+        "label": "Un seul stock pour le stand et la boutique",
+        "zolto": "Oui — avec une réserve brève pendant qu'un client est en caisse"
+      },
+      "twint": {
+        "label": "TWINT",
+        "zolto": "Oui — dans la même caisse que les cartes et les espèces"
+      },
+      "postfinance": {
+        "label": "PostFinance Pay",
+        "zolto": "Non"
+      },
+      "builds-storefront": {
+        "label": "Construit la boutique en ligne pour vous",
+        "zolto": "Oui — thème, textes et photographie produit par l'IA"
+      },
+      "setup": {
+        "label": "Délai avant la première vente",
+        "zolto": "Le jour même"
+      },
+      "who-holds-money": {
+        "label": "Qui détient votre argent",
+        "zolto": "Personne d'autre que vous — directement sur vos propres comptes Stripe et TWINT"
+      }
     }
   },
   "sovereignty": {
@@ -1094,5 +1217,25 @@
   },
   "sources": {
     "read": "consulté le {{date}}"
+  },
+  "costOfAcceptance": {
+    "heading": "Ce que coûte une vente de CHF {{basket}}",
+    "intro": "Du moins cher au plus cher. Zolto n'est pas en tête, et c'est bien là le propos — sur le taux carte, deux des options ci-dessous nous battent. Chaque chiffre renvoie à sa source et à la date de consultation.",
+    "tableCaption": "Coût d'une vente de CHF {{basket}} pour chaque option, du moins cher au plus cher",
+    "colOption": "Comment vous encaissez",
+    "colCost": "Coût de la vente",
+    "colRate": "Taux effectif",
+    "colMonthly": "Mensuel",
+    "noMonthly": "aucun",
+    "unverified": "non confirmé",
+    "note": "Un abonnement mensuel n'est délibérément pas réparti sur la colonne par vente : le diviser par un nombre de ventes qu'il faudrait inventer déciderait du gagnant. SumUp Payments Plus est la ligne la moins chère ici et la plus chère dans un mois calme. Confrontez ces chiffres à votre propre volume.",
+    "negotiatedHeading": "Tarif négocié : il n'y a aucun chiffre à montrer"
+  },
+  "capabilities": {
+    "yes": "oui",
+    "no": "non",
+    "partial": "en partie",
+    "notApplicable": "sans objet",
+    "tableCaption": "{{name}} et {{competitor}} comparés fonction par fonction"
   }
 }

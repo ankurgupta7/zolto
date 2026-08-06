@@ -9,6 +9,9 @@ import {
   PRICING_PROMISE,
   REVENUE_SHARE,
 } from "@shared/platform";
+import { source } from "@shared/sources";
+import { CapabilityMatrix } from "../components/CapabilityMatrix";
+import { CostOfAcceptance } from "../components/CostOfAcceptance";
 import { useMarketingT } from "../lib/marketingI18n";
 
 /**
@@ -150,6 +153,80 @@ export default function Compare() {
           })}
         </p>
       </div>
+
+      {/* What each product actually does, row by row — including the row
+          Zolto loses. Only rendered for competitors we researched to that
+          depth; a blank column would read as "no" rather than "we didn't
+          check". */}
+      {competitor.capabilities && (
+        <div className="mx-auto mt-16 max-w-3xl">
+          <h2 className="font-serif text-2xl text-[var(--brand-text)]">
+            {t("compare.capabilitiesHeading", {
+              name: PLATFORM.name,
+              competitor: competitor.name,
+            })}
+          </h2>
+          <div className="mt-6">
+            <CapabilityMatrix competitor={competitor} />
+          </div>
+        </div>
+      )}
+
+      {/* The rates, sourced and dated. This section is the reason the old
+          no-competitor-pricing rule was retired — see the COMPETITORS doc
+          comment in shared/platform.ts. */}
+      {competitor.rateIds && competitor.rateIds.length > 0 && (
+        <div className="mx-auto mt-16 max-w-3xl">
+          <CostOfAcceptance provider={competitor.id as "sumup" | "worldline"} />
+        </div>
+      )}
+
+      {/* Published, primary-sourced facts about the company itself — carried
+          only where "the incumbent is the safe choice" is the argument being
+          weighed, which in practice means Worldline. */}
+      {competitor.risks && competitor.risks.length > 0 && (
+        <div
+          data-testid="competitor-risks"
+          className="mx-auto mt-16 max-w-3xl rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-surface-2)] p-8"
+        >
+          <h2 className="font-serif text-2xl text-[var(--brand-text)]">
+            {t("compare.risksHeading", { competitor: competitor.name })}
+          </h2>
+          <p className="mt-3 text-sm leading-relaxed text-[var(--brand-muted-2)]">
+            {t("compare.risksIntro", { competitor: competitor.name })}
+          </p>
+          <ul className="mt-6 grid gap-4">
+            {competitor.risks.map((risk, i) => (
+              <li
+                key={risk.sourceId}
+                className="text-sm leading-relaxed text-[var(--brand-muted-2)]"
+              >
+                {st(`competitors.${competitor.id}.risks.${i}`, risk.statement)}
+                <span className="mt-1 block text-xs text-[var(--brand-muted)]">
+                  <a
+                    href={source(risk.sourceId).url}
+                    target="_blank"
+                    rel="noreferrer nofollow"
+                    className="underline decoration-dotted underline-offset-2 hover:text-[var(--brand-accent)]"
+                  >
+                    {source(risk.sourceId).label}
+                  </a>{" "}
+                  ·{" "}
+                  {t("sources.read", {
+                    date: source(risk.sourceId).retrievedOn,
+                  })}
+                </span>
+              </li>
+            ))}
+          </ul>
+          {/* The concession that keeps this a risk note rather than a hit
+              piece. Without it, the section reads as motivated and gets
+              discounted along with everything above it. */}
+          <p className="mt-6 rounded-lg bg-white px-4 py-3 text-sm leading-relaxed text-[var(--brand-muted-2)]">
+            {t("compare.risksBalance", { competitor: competitor.name })}
+          </p>
+        </div>
+      )}
 
       {/* Concede first — it's what makes the other column credible. */}
       <div className="mx-auto mt-16 grid max-w-3xl gap-6 md:grid-cols-2">
