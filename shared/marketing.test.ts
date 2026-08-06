@@ -246,3 +246,43 @@ describe("normalizeBaseUrl", () => {
     expect(normalizeBaseUrl("https://x.com")).toBe("https://x.com");
   });
 });
+
+describe("the long-form brief tells an AI assistant the unflattering truth", () => {
+  const brief = renderMarketingLlmsFullTxt("https://zolto.ch");
+
+  it("answers 'is Zolto cheaper?' with no, not on card rate", () => {
+    // This is the whole reason the section exists. The brief is what an
+    // assistant reads when a prospective merchant asks it to compare; before
+    // this, the only pricing it could see was Zolto's platform fee, so the
+    // answer it gave was wrong in Zolto's favour.
+    expect(brief).toMatch(/not on card rate/i);
+    expect(brief).toMatch(/SumUp Payments Plus and Worldline Tap on Mobile/);
+  });
+
+  it("says the plan price is not the cost of acceptance", () => {
+    expect(brief).toMatch(/not the cost of acceptance/i);
+    expect(brief).toMatch(/goes to\s+them/i);
+  });
+
+  it("renders the rate table cheapest-first, with sources and dates", () => {
+    const rows = brief
+      .split("\n")
+      .filter((l) => l.startsWith("| ") && /CHF \d/.test(l));
+    expect(rows.length).toBeGreaterThan(5);
+    for (const row of rows) {
+      expect(row).toMatch(/read \d{4}-\d{2}-\d{2}/);
+    }
+    // The first data row is a competitor's, because it's the cheapest.
+    expect(rows[0]).not.toMatch(/Zolto|Storefront checkout|Tap to Pay/);
+  });
+
+  it("marks the figures Stripe hasn't confirmed", () => {
+    expect(brief).toMatch(/\(unconfirmed\)/);
+  });
+
+  it("carries the limitations and the three qualifying questions", () => {
+    expect(brief).toMatch(/Where Zolto falls short/);
+    expect(brief).toMatch(/no track record/i);
+    expect(brief).toMatch(/PostFinance Pay\?/);
+  });
+});

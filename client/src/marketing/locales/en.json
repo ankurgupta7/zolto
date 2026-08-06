@@ -346,7 +346,10 @@
     "capabilitiesHeading": "{{name}} and {{competitor}}, row by row",
     "risksHeading": "One more thing about {{competitor}}",
     "risksIntro": "{{competitor}} is usually chosen because the incumbent is the safe option. That specific property is the one currently in question, and it is a matter of public record rather than opinion.",
-    "risksBalance": "None of this stops {{competitor}} processing Swiss payments normally today, and Tap on Mobile at a flat rate with no monthly fee remains a genuinely good small-merchant offer. The point is narrower: “large incumbent” and “low risk” have stopped being the same word, and that is worth knowing before signing a multi-year terminal contract."
+    "risksBalance": "None of this stops {{competitor}} processing Swiss payments normally today, and Tap on Mobile at a flat rate with no monthly fee remains a genuinely good small-merchant offer. The point is narrower: “large incumbent” and “low risk” have stopped being the same word, and that is worth knowing before signing a multi-year terminal contract.",
+    "buyerFitHeading": "Three questions that settle this",
+    "buyerFitIntro": "Answer these before you read another comparison. Two of the three can rule us out, and it is better that you find that out here than after you have moved your catalogue.",
+    "limitationsHeading": "Where {{name}} falls short"
   },
   "signup": {
     "eyebrow": "let’s begin",
@@ -1175,7 +1178,74 @@
         "label": "Who holds your money",
         "zolto": "Nobody but you — straight into your own Stripe and TWINT accounts"
       }
-    }
+    },
+    "limitations": [
+      {
+        "title": "We have no track record",
+        "detail": "SumUp and Worldline have a decade or more each. Zolto is new, and a new company is a risk on its own terms however good the product is. What we can offer against that: no contract, no hardware to buy, and one-click export of everything you've put in — on the Free plan too. Leaving costs you an afternoon, not a termination fee."
+      },
+      {
+        "title": "We are not the cheapest way to take a card",
+        "detail": "SumUp Payments Plus and Worldline Tap on Mobile both beat the Stripe-plus-Zolto stack on card rate, and SumUp's online rate beats ours on every plan. The reason to choose Zolto is that it removes the work, not that it removes the fee. If cost per card sale is your deciding number, the comparison pages will tell you so."
+      },
+      {
+        "title": "Everything runs on Stripe, and Stripe sets the real price",
+        "detail": "Stripe holds the funds until payout, runs the identity checks, owns the chargeback process, and sets the rate that dominates what a sale costs you. Zolto never touches your money, which is the good half of that arrangement; the other half is that our own sovereignty ledger lists card payments as still moving, and until it stops moving, a hard dependency is what it is."
+      },
+      {
+        "title": "Parts of our stack are still outside Europe",
+        "detail": "Four rows of the Made in Switzerland ledger say so by name: card payments, the AI model provider, product-photo storage and account email. The ledger is published with those rows in it rather than without them, and each one carries the next step we've committed to."
+      },
+      {
+        "title": "The AI discovery channel has no shoppers in it yet",
+        "detail": "Every store ships llms.txt and an MCP endpoint, and the platform directory that lets an assistant find a Swiss maker is live — and currently empty, because storefronts are only now launching. The infrastructure is real; the traffic is a bet. Treat it as a reason to be early, not as a channel already selling for you."
+      },
+      {
+        "title": "We are below the Swiss VAT threshold",
+        "detail": "Swiss VAT registration is mandatory only above CHF 100,000 of annual turnover, and Zolto is under it, so the prices you see are simply the prices. It also tells you how small we are. If that changes, prices will say which way they're quoted, and we'll say so before it happens."
+      }
+    ],
+    "buyerFit": [
+      {
+        "question": "Do your customers pay by TWINT?",
+        "answers": [
+          {
+            "when": "Yes, most of them",
+            "then": "SumUp is out, whatever it costs — its till cannot take TWINT at all. That leaves Zolto and Worldline, and the question becomes whether you want your catalogue in the till."
+          },
+          {
+            "when": "No, they mostly tap a card",
+            "then": "SumUp is hard to beat on rate and its till app is more mature than ours. Choose Zolto for the shop, the listings and the one inventory — not for the fee."
+          }
+        ]
+      },
+      {
+        "question": "Do you need PostFinance Pay?",
+        "answers": [
+          {
+            "when": "Yes",
+            "then": "Only Worldline supports it. Nothing else on this page qualifies, and no amount of the rest of our argument changes that."
+          },
+          {
+            "when": "No",
+            "then": "All three are still in play."
+          }
+        ]
+      },
+      {
+        "question": "How much do you sell on cards each month?",
+        "answers": [
+          {
+            "when": "Above roughly CHF 1,900 on credit cards, or CHF 5,700 on debit",
+            "then": "SumUp's Payments Plus subscription pays for itself and beats our card rate outright. Our case has to be made on the shop and the inventory, not the arithmetic."
+          },
+          {
+            "when": "Below that, or wildly seasonal",
+            "then": "A subscription you owe in a quiet month is the wrong shape. Zolto's Free plan costs nothing in a month you don't sell online, and nothing ever on in-person sales."
+          }
+        ]
+      }
+    ]
   },
   "sovereignty": {
     "state": {

@@ -28,9 +28,11 @@ import {
   CAPABILITIES,
   capability,
   findCompetitor,
+  ZOLTO_LIMITATIONS,
+  BUYER_FIT,
 } from "./platform";
 import { source } from "./sources";
-import { rate } from "./costOfAcceptance";
+import { rate, sumUpPlusBreakEvenChf } from "./costOfAcceptance";
 
 describe("platform facts", () => {
   it("has a name, tagline, and summary", () => {
@@ -788,5 +790,89 @@ describe("SOVEREIGNTY", () => {
       .map((f) => f.a)
       .join(" ");
     expect(answers).toContain(SOVEREIGNTY.href);
+  });
+});
+
+describe("ZOLTO_LIMITATIONS", () => {
+  it("names the things a merchant would be annoyed to discover later", () => {
+    const text = ZOLTO_LIMITATIONS.map((l) => `${l.title} ${l.detail}`).join(
+      " ",
+    );
+    // Each of these is either checkable against this codebase or was already
+    // disclosed in a planning doc nobody outside the repo reads.
+    expect(text).toMatch(/track record/i);
+    expect(text).toMatch(/Stripe/);
+    expect(text).toMatch(/100,000|100'000/);
+    expect(text).toMatch(/empty|no shoppers/i);
+  });
+
+  it("concedes the card rate in our own words, not only in the table", () => {
+    expect(
+      ZOLTO_LIMITATIONS.some((l) =>
+        /not the cheapest way to take a card/i.test(l.title),
+      ),
+    ).toBe(true);
+  });
+
+  it("agrees with the sovereignty ledger about what is still foreign", () => {
+    // If a row ever lands, this stops the limitation claiming otherwise.
+    const stillMoving = SOVEREIGNTY.ledger.filter((e) => e.state === "moving");
+    const claim = ZOLTO_LIMITATIONS.find((l) =>
+      /outside Europe/i.test(l.title),
+    )!;
+    expect(claim.detail).toMatch(
+      new RegExp(`${stillMoving.length}\\b|four`, "i"),
+    );
+    expect(stillMoving.length).toBeGreaterThan(0);
+  });
+
+  it("gives every limitation a reason it isn't fixed, not just a confession", () => {
+    for (const l of ZOLTO_LIMITATIONS) {
+      expect(l.title.length).toBeGreaterThan(0);
+      // A bare admission with no context is theatre; each one has to say what
+      // we do about it or why we can't.
+      expect(l.detail.length).toBeGreaterThan(120);
+    }
+  });
+});
+
+describe("BUYER_FIT", () => {
+  it("asks the three questions that actually decide this purchase", () => {
+    const qs = BUYER_FIT.map((q) => q.question).join(" ");
+    expect(qs).toMatch(/TWINT/);
+    expect(qs).toMatch(/PostFinance Pay/);
+    expect(qs).toMatch(/cards each month/i);
+  });
+
+  it("routes the reader to a competitor when that's the honest answer", () => {
+    // The whole reason this belongs on the page. If every branch led back to
+    // us it would be a funnel wearing a decision guide's clothes.
+    const outcomes = BUYER_FIT.flatMap((q) => q.answers.map((a) => a.then));
+    expect(outcomes.some((o) => /only Worldline/i.test(o))).toBe(true);
+    expect(outcomes.some((o) => /SumUp is hard to beat/i.test(o))).toBe(true);
+  });
+
+  it("gives every question at least two answers with consequences", () => {
+    for (const q of BUYER_FIT) {
+      expect(q.answers.length).toBeGreaterThanOrEqual(2);
+      for (const a of q.answers) {
+        expect(a.when.length).toBeGreaterThan(0);
+        expect(a.then.length).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it("quotes the SumUp break-even the cost model computes", () => {
+    // Rather than a number typed into copy that drifts when a rate moves.
+    const text = BUYER_FIT.flatMap((q) =>
+      q.answers.map((a) => `${a.when} ${a.then}`),
+    ).join(" ");
+    // Both figures come out of costOfAcceptance rather than being typed into
+    // copy, so a rate change fails here instead of quietly leaving four
+    // languages quoting a break-even that no longer holds.
+    expect(text).toMatch(/1,900/);
+    expect(text).toMatch(/5,700/);
+    expect(sumUpPlusBreakEvenChf("sumup-credit")).toBe(1900);
+    expect(sumUpPlusBreakEvenChf("sumup-debit")).toBe(5700);
   });
 });

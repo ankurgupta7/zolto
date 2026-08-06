@@ -346,7 +346,10 @@
     "capabilitiesHeading": "{{name}} e {{competitor}}, riga per riga",
     "risksHeading": "Un'altra cosa su {{competitor}}",
     "risksIntro": "{{competitor}} viene scelto di solito perché l'operatore storico è l'opzione sicura. È proprio quella caratteristica a essere oggi in discussione, ed è materia di documenti pubblici, non di opinione.",
-    "risksBalance": "Nulla di tutto questo impedisce a {{competitor}} di elaborare normalmente i pagamenti svizzeri oggi, e Tap on Mobile, a tariffa forfettaria e senza canone mensile, resta un'offerta davvero buona per un piccolo esercente. Il punto è più stretto: «grande operatore storico» e «basso rischio» hanno smesso di essere la stessa parola, e vale la pena saperlo prima di firmare un contratto pluriennale per un terminale."
+    "risksBalance": "Nulla di tutto questo impedisce a {{competitor}} di elaborare normalmente i pagamenti svizzeri oggi, e Tap on Mobile, a tariffa forfettaria e senza canone mensile, resta un'offerta davvero buona per un piccolo esercente. Il punto è più stretto: «grande operatore storico» e «basso rischio» hanno smesso di essere la stessa parola, e vale la pena saperlo prima di firmare un contratto pluriennale per un terminale.",
+    "buyerFitHeading": "Tre domande che decidono",
+    "buyerFitIntro": "Rispondi prima di leggere un altro confronto. Due delle tre possono escluderci, ed è meglio scoprirlo qui che dopo aver spostato il tuo catalogo.",
+    "limitationsHeading": "Dove {{name}} non arriva"
   },
   "signup": {
     "eyebrow": "cominciamo",
@@ -1176,7 +1179,74 @@
         "label": "Chi tiene i tuoi soldi",
         "zolto": "Nessuno tranne te — dritti sui tuoi conti Stripe e TWINT"
       }
-    }
+    },
+    "limitations": [
+      {
+        "title": "Non abbiamo uno storico",
+        "detail": "SumUp e Worldline hanno dieci anni o più ciascuna. Zolto è nuova, e un'azienda nuova è un rischio di per sé per quanto buono sia il prodotto. Quello che possiamo mettere sull'altro piatto: nessun contratto, nessun hardware da comprare, ed esportazione in un clic di tutto quello che hai inserito — anche sul piano Free. Andarsene ti costa un pomeriggio, non una penale."
+      },
+      {
+        "title": "Non siamo il modo più economico per accettare una carta",
+        "detail": "SumUp Payments Plus e Worldline Tap on Mobile battono entrambi la pila Stripe-più-Zolto sulla tariffa carta, e la tariffa online di SumUp batte la nostra su ogni piano. Il motivo per scegliere Zolto è che toglie il lavoro, non la commissione. Se il costo per vendita con carta è il tuo numero decisivo, le pagine di confronto te lo dicono."
+      },
+      {
+        "title": "Tutto gira su Stripe, ed è Stripe a fissare il prezzo vero",
+        "detail": "Stripe trattiene i fondi fino al versamento, esegue le verifiche d'identità, gestisce i chargeback e fissa la tariffa che domina quanto ti costa una vendita. Zolto non tocca mai i tuoi soldi, ed è la metà buona di questo accordo; l'altra è che il nostro registro di sovranità elenca ancora i pagamenti con carta come «in movimento», e finché resta così una dipendenza forte è quello che è."
+      },
+      {
+        "title": "Parti della nostra pila sono ancora fuori dall'Europa",
+        "detail": "Quattro righe del registro Made in Switzerland lo dicono per nome: pagamenti con carta, il fornitore del modello IA, l'archiviazione delle foto prodotto e le email di account. Il registro viene pubblicato con quelle righe invece che senza, e ognuna porta il passo successivo a cui ci siamo impegnati."
+      },
+      {
+        "title": "Nel canale di scoperta IA non ci sono ancora acquirenti",
+        "detail": "Ogni negozio include llms.txt e un endpoint MCP, e l'elenco di piattaforma che permette a un assistente di trovare una creatrice svizzera è attivo — e al momento vuoto, perché i negozi stanno appena aprendo. L'infrastruttura è reale; il traffico è una scommessa. Consideralo un motivo per arrivare presto, non un canale che sta già vendendo per te."
+      },
+      {
+        "title": "Siamo sotto la soglia IVA svizzera",
+        "detail": "La registrazione IVA è obbligatoria solo sopra CHF 100'000 di fatturato annuo, e Zolto è sotto: i prezzi che vedi sono semplicemente i prezzi. Ti dice anche quanto siamo piccoli. Se cambia, i prezzi indicheranno come sono espressi, e lo diremo prima."
+      }
+    ],
+    "buyerFit": [
+      {
+        "question": "La tua clientela paga con TWINT?",
+        "answers": [
+          {
+            "when": "Sì, in gran parte",
+            "then": "SumUp è fuori, a qualunque prezzo — la sua cassa non può accettare TWINT. Restano Zolto e Worldline, e la domanda diventa se vuoi il catalogo dentro la cassa."
+          },
+          {
+            "when": "No, di solito appoggia una carta",
+            "then": "SumUp è difficile da battere sulla tariffa e la sua app di cassa è più matura della nostra. Scegli Zolto per il negozio, le schede e l'inventario unico — non per la commissione."
+          }
+        ]
+      },
+      {
+        "question": "Ti serve PostFinance Pay?",
+        "answers": [
+          {
+            "when": "Sì",
+            "then": "Solo Worldline lo supporta. Nient'altro in questa pagina è idoneo, e il resto del nostro ragionamento non cambia la cosa."
+          },
+          {
+            "when": "No",
+            "then": "Restano tutti e tre in gioco."
+          }
+        ]
+      },
+      {
+        "question": "Quanto vendi con le carte ogni mese?",
+        "answers": [
+          {
+            "when": "Sopra circa CHF 1'900 con carte di credito, o CHF 5'700 con debito",
+            "then": "L'abbonamento Payments Plus di SumUp si ripaga e batte nettamente la nostra tariffa carta. Il nostro caso va fatto sul negozio e sull'inventario, non sui conti."
+          },
+          {
+            "when": "Sotto, oppure molto stagionale",
+            "then": "Un abbonamento che devi in un mese tranquillo ha la forma sbagliata. Il piano Free di Zolto non costa nulla in un mese senza vendite online, e mai nulla sulle vendite di persona."
+          }
+        ]
+      }
+    ]
   },
   "sovereignty": {
     "state": {

@@ -19,6 +19,8 @@ import {
   COMPETITORS,
   POSITIONING,
   CAPABILITIES,
+  ZOLTO_LIMITATIONS,
+  BUYER_FIT,
 } from "@shared/platform";
 import { RATES, NEGOTIATED } from "@shared/costOfAcceptance";
 import { SEGMENTS } from "@shared/segments";
@@ -314,6 +316,17 @@ describe("marketing locale files", () => {
       negotiated: Object.fromEntries(
         NEGOTIATED.map((n) => [n.id, { label: n.label, detail: n.detail }]),
       ),
+      // Compare.tsx's index renders both. They're the two places the site
+      // argues against itself, so they matter most in the languages a reader
+      // actually reads.
+      limitations: ZOLTO_LIMITATIONS.map((l) => ({
+        title: l.title,
+        detail: l.detail,
+      })),
+      buyerFit: BUYER_FIT.map((q) => ({
+        question: q.question,
+        answers: q.answers.map((a) => ({ when: a.when, then: a.then })),
+      })),
       // Research.tsx renders shared/research.ts. Only the label column of each
       // table is prose — the numeric cells are rendered from the shared source
       // as-is, so they are deliberately absent from the locale files.

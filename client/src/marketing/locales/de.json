@@ -346,7 +346,10 @@
     "capabilitiesHeading": "{{name}} und {{competitor}}, Zeile für Zeile",
     "risksHeading": "Noch etwas zu {{competitor}}",
     "risksIntro": "{{competitor}} wird meist gewählt, weil der Platzhirsch die sichere Wahl ist. Genau diese Eigenschaft steht derzeit in Frage, und das ist öffentlich belegt, nicht Meinung.",
-    "risksBalance": "Nichts davon hindert {{competitor}} daran, Schweizer Zahlungen heute normal abzuwickeln, und Tap on Mobile bleibt mit Pauschalsatz und ohne Monatsgebühr ein wirklich gutes Angebot für kleine Betriebe. Der Punkt ist enger: „grosser Platzhirsch“ und „geringes Risiko“ sind nicht mehr dasselbe Wort — und das sollte man wissen, bevor man einen mehrjährigen Terminalvertrag unterschreibt."
+    "risksBalance": "Nichts davon hindert {{competitor}} daran, Schweizer Zahlungen heute normal abzuwickeln, und Tap on Mobile bleibt mit Pauschalsatz und ohne Monatsgebühr ein wirklich gutes Angebot für kleine Betriebe. Der Punkt ist enger: „grosser Platzhirsch“ und „geringes Risiko“ sind nicht mehr dasselbe Wort — und das sollte man wissen, bevor man einen mehrjährigen Terminalvertrag unterschreibt.",
+    "buyerFitHeading": "Drei Fragen, die das entscheiden",
+    "buyerFitIntro": "Beantworten Sie diese, bevor Sie einen weiteren Vergleich lesen. Zwei der drei können uns ausschliessen, und das erfahren Sie besser hier als nachdem Sie Ihren Katalog umgezogen haben.",
+    "limitationsHeading": "Wo {{name}} zu kurz kommt"
   },
   "signup": {
     "eyebrow": "los geht’s",
@@ -1175,7 +1178,74 @@
         "label": "Wer Ihr Geld hält",
         "zolto": "Niemand ausser Ihnen — direkt auf Ihre eigenen Stripe- und TWINT-Konten"
       }
-    }
+    },
+    "limitations": [
+      {
+        "title": "Wir haben keine Erfolgsbilanz",
+        "detail": "SumUp und Worldline haben je ein Jahrzehnt oder mehr. Zolto ist neu, und ein neues Unternehmen ist für sich genommen ein Risiko, so gut das Produkt auch ist. Was wir dagegensetzen können: kein Vertrag, keine Hardware zu kaufen, und ein Klick-Export von allem, was Sie eingegeben haben — auch im Free-Tarif. Zu gehen kostet Sie einen Nachmittag, keine Kündigungsgebühr."
+      },
+      {
+        "title": "Wir sind nicht der günstigste Weg, eine Karte zu nehmen",
+        "detail": "SumUp Payments Plus und Worldline Tap on Mobile schlagen den Stripe-plus-Zolto-Stapel beim Kartensatz, und SumUps Online-Satz schlägt unseren in jedem Tarif. Der Grund für Zolto ist, dass es die Arbeit abnimmt, nicht die Gebühr. Wenn die Kosten pro Kartenverkauf Ihre entscheidende Zahl sind, sagen Ihnen das die Vergleichsseiten."
+      },
+      {
+        "title": "Alles läuft über Stripe, und Stripe setzt den echten Preis",
+        "detail": "Stripe hält das Geld bis zur Auszahlung, führt die Identitätsprüfungen durch, verantwortet den Rückbuchungsprozess und setzt den Satz, der dominiert, was ein Verkauf Sie kostet. Zolto berührt Ihr Geld nie — das ist die gute Hälfte dieser Abmachung; die andere ist, dass unser eigenes Souveränitätsverzeichnis Kartenzahlungen weiterhin als „in Bewegung“ führt, und solange das so bleibt, ist eine harte Abhängigkeit eben eine."
+      },
+      {
+        "title": "Teile unseres Stapels liegen noch ausserhalb Europas",
+        "detail": "Vier Zeilen des Made-in-Switzerland-Verzeichnisses sagen es beim Namen: Kartenzahlungen, der KI-Modellanbieter, die Speicherung der Produktfotos und Konto-E-Mails. Das Verzeichnis wird mit diesen Zeilen veröffentlicht statt ohne sie, und jede trägt den nächsten Schritt, zu dem wir uns verpflichtet haben."
+      },
+      {
+        "title": "Im KI-Entdeckungskanal sind noch keine Käufer",
+        "detail": "Jeder Shop bringt llms.txt und einen MCP-Endpunkt mit, und das Plattform-Verzeichnis, über das ein Assistent eine Schweizer Macherin findet, ist live — und derzeit leer, weil die Shops gerade erst starten. Die Infrastruktur ist echt; der Verkehr ist eine Wette. Sehen Sie es als Grund, früh dabei zu sein, nicht als Kanal, der schon für Sie verkauft."
+      },
+      {
+        "title": "Wir liegen unter der Schweizer MWST-Schwelle",
+        "detail": "Die MWST-Registrierung ist erst ab CHF 100'000 Jahresumsatz obligatorisch, und Zolto liegt darunter — die Preise, die Sie sehen, sind also einfach die Preise. Es sagt Ihnen auch, wie klein wir sind. Wenn sich das ändert, werden die Preise angeben, wie sie zu verstehen sind, und wir sagen es vorher."
+      }
+    ],
+    "buyerFit": [
+      {
+        "question": "Zahlt Ihre Kundschaft mit TWINT?",
+        "answers": [
+          {
+            "when": "Ja, die meisten",
+            "then": "SumUp fällt weg, egal was es kostet — seine Kasse kann TWINT überhaupt nicht. Bleiben Zolto und Worldline, und die Frage wird, ob Sie Ihren Katalog in der Kasse haben wollen."
+          },
+          {
+            "when": "Nein, sie tippen meist eine Karte auf",
+            "then": "SumUp ist beim Satz schwer zu schlagen und seine Kassen-App ist reifer als unsere. Wählen Sie Zolto für den Shop, die Listings und das eine Inventar — nicht für die Gebühr."
+          }
+        ]
+      },
+      {
+        "question": "Brauchen Sie PostFinance Pay?",
+        "answers": [
+          {
+            "when": "Ja",
+            "then": "Nur Worldline unterstützt es. Nichts anderes auf dieser Seite kommt infrage, und der Rest unseres Arguments ändert daran nichts."
+          },
+          {
+            "when": "Nein",
+            "then": "Alle drei sind weiter im Rennen."
+          }
+        ]
+      },
+      {
+        "question": "Wie viel verkaufen Sie monatlich über Karten?",
+        "answers": [
+          {
+            "when": "Über rund CHF 1'900 mit Kreditkarten oder CHF 5'700 mit Debitkarten",
+            "then": "SumUps Payments-Plus-Abo rechnet sich und schlägt unseren Kartensatz klar. Unser Fall muss über Shop und Inventar laufen, nicht über die Rechnung."
+          },
+          {
+            "when": "Darunter, oder stark saisonal",
+            "then": "Ein Abo, das Sie in einem ruhigen Monat schulden, hat die falsche Form. Zoltos Free-Tarif kostet nichts in einem Monat ohne Online-Verkäufe, und nie etwas auf Verkäufe vor Ort."
+          }
+        ]
+      }
+    ]
   },
   "sovereignty": {
     "state": {

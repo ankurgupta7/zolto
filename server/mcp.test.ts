@@ -365,6 +365,68 @@ describe("Platform MCP (no tenant / marketing surface)", () => {
     }
   });
 
+  it("get_cost_comparison answers the cheaper question honestly", async () => {
+    // An assistant asked "is Zolto cheaper than SumUp?" could previously only
+    // read get_pricing, which reports Zolto's platform fee, and would have
+    // answered yes. Zolto's own brief now says no.
+    const r = await call("get_cost_comparison");
+    const sc = r.structuredContent as {
+      basketChf: number;
+      options: {
+        provider: string;
+        costOfSaleChf: number;
+        toPaymentCompanyChf: number;
+        toZoltoChf: number;
+        confidence: string;
+        source: { url: string; retrievedOn: string };
+      }[];
+      honestSummary: string;
+      limitations: { title: string }[];
+      questionsToSettleFirst: { question: string }[];
+    };
+    expect(sc.basketChf).toBe(45);
+    // Cheapest first, and a competitor is at the top.
+    const costs = sc.options.map((o) => o.costOfSaleChf);
+    expect([...costs].sort((a, b) => a - b)).toEqual(costs);
+    expect(sc.options[0].provider).not.toBe("zolto");
+    // Every figure carries provenance.
+    for (const o of sc.options) {
+      expect(o.source.url).toMatch(/^https?:\/\//);
+      expect(o.source.retrievedOn).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    }
+    // The stack is split, so nobody can read our fee as the total.
+    const free = sc.options.find((o) => o.toZoltoChf > 0)!;
+    expect(free.toPaymentCompanyChf).toBeGreaterThan(free.toZoltoChf);
+    expect(sc.honestSummary).toMatch(/not the cheapest/i);
+    expect(sc.limitations.length).toBeGreaterThan(0);
+    expect(sc.questionsToSettleFirst.length).toBe(3);
+  });
+
+  it("get_cost_comparison filters by channel and basket", async () => {
+    const r = await call("get_cost_comparison", {
+      basketChf: 100,
+      channel: "online",
+    });
+    const sc = r.structuredContent as {
+      basketChf: number;
+      options: { channel: string; costOfSaleChf: number }[];
+    };
+    expect(sc.basketChf).toBe(100);
+    expect(sc.options.every((o) => o.channel === "online")).toBe(true);
+    // SumUp online: 2.5% of 100, flat, no fixed fee.
+    expect(sc.options[0].costOfSaleChf).toBe(2.5);
+  });
+
+  it("get_pricing points at the comparison rather than implying it's the total", async () => {
+    const res = await handleMcpMessage(req("tools/list"), ctx);
+    const tools = (
+      res?.result as { tools: { name: string; description: string }[] }
+    ).tools;
+    expect(tools.map((t) => t.name)).toContain("get_cost_comparison");
+    const pricing = tools.find((t) => t.name === "get_pricing")!;
+    expect(pricing.description).toMatch(/get_cost_comparison/);
+  });
+
   it("get_pricing returns the two CHF plans and the online platform fee", async () => {
     const r = await call("get_pricing");
     const sc = r.structuredContent as {

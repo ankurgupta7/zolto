@@ -235,7 +235,17 @@ and the per-source order counts reconcile with the headline figure. One test
 asserts the *unflattering* finding stays published — search sent zero orders in
 month one — because that disclosure is what makes the rest credible.
 
-#### G11 (citations) — still open
+#### G11 (citations) — **closed, August 2026**
+
+Closed by the pricing revision — see
+[`positioning-pricing-revision.md`](./positioning-pricing-revision.md).
+`shared/sources.ts` is now a citation registry where every entry carries a URL
+and a retrieval date, and every third-party figure on the marketing surface
+names one. The `themPerYearChf` figure below is computed from published rates
+with its basis stated on the page, rather than asserted. Option (a) of the three
+listed below is what shipped.
+
+<details><summary>The original note, kept for the reasoning</summary>
 
 The research page is now itself a citable primary source, and the comparison
 pages point readers at each incumbent's own pricing. What remains is the
@@ -248,6 +258,8 @@ Deliberately not "fixed" here: inventing a citation is worse than the current
 state. The options are (a) source it to real published rates and cite them,
 (b) reframe it as a first-party estimate with its basis stated, the way the
 research page does, or (c) drop the number. That's an operator decision.
+
+</details>
 
 ### Phase 4 — Segment coverage  *(closes G8; G7 and G9 are content work)* ✅ **Done**
 

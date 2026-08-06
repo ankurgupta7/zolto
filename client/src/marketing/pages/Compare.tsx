@@ -8,6 +8,8 @@ import {
   PLATFORM,
   PRICING_PROMISE,
   REVENUE_SHARE,
+  BUYER_FIT,
+  ZOLTO_LIMITATIONS,
 } from "@shared/platform";
 import { source } from "@shared/sources";
 import { CapabilityMatrix } from "../components/CapabilityMatrix";
@@ -76,6 +78,68 @@ export default function Compare() {
             </li>
           ))}
         </ul>
+
+        {/* Three questions that settle this purchase. Two of the three route
+            the reader away from us when that's the honest answer — which is
+            the reason it's worth putting on the page at all. A buyer who finds
+            out on day three that their customers all pay by TWINT is a refund;
+            a buyer we sent to SumUp on day zero isn't. */}
+        <div
+          data-testid="buyer-fit"
+          className="mx-auto mt-20 max-w-2xl rounded-2xl border border-[var(--brand-border)] bg-white p-8"
+        >
+          <h2 className="font-serif text-2xl text-[var(--brand-text)]">
+            {t("compare.buyerFitHeading")}
+          </h2>
+          <p className="mt-3 text-sm leading-relaxed text-[var(--brand-muted-2)]">
+            {t("compare.buyerFitIntro")}
+          </p>
+          <ol className="mt-8 grid gap-8">
+            {BUYER_FIT.map((q, qi) => (
+              <li key={q.question}>
+                <h3 className="font-serif text-lg text-[var(--brand-text)]">
+                  {st(`buyerFit.${qi}.question`, q.question)}
+                </h3>
+                <dl className="mt-3 grid gap-3">
+                  {q.answers.map((a, ai) => (
+                    <div key={a.when} className="text-sm leading-relaxed">
+                      <dt className="font-medium text-[var(--brand-ink)]">
+                        {st(`buyerFit.${qi}.answers.${ai}.when`, a.when)}
+                      </dt>
+                      <dd className="text-[var(--brand-muted-2)]">
+                        {st(`buyerFit.${qi}.answers.${ai}.then`, a.then)}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              </li>
+            ))}
+          </ol>
+        </div>
+
+        {/* Our own column of the concession. Every competitor page carries a
+            "when they're the better choice" panel; this is the same courtesy
+            turned on us, and it's checkable against the codebase. */}
+        <div
+          data-testid="zolto-limitations"
+          className="mx-auto mt-12 max-w-2xl rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-surface-2)] p-8"
+        >
+          <h2 className="font-serif text-2xl text-[var(--brand-text)]">
+            {t("compare.limitationsHeading", { name: PLATFORM.name })}
+          </h2>
+          <ul className="mt-6 grid gap-5">
+            {ZOLTO_LIMITATIONS.map((l, i) => (
+              <li key={l.title}>
+                <h3 className="text-sm font-medium text-[var(--brand-ink)]">
+                  {st(`limitations.${i}.title`, l.title)}
+                </h3>
+                <p className="mt-1 text-sm leading-relaxed text-[var(--brand-muted-2)]">
+                  {st(`limitations.${i}.detail`, l.detail)}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </div>
       </Container>
     );
   }

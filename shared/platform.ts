@@ -1461,3 +1461,113 @@ export const HOW_TO_START: string[] = [
   "Connect your Stripe account so customers pay directly into it.",
   "Share your storefront link — you're live, online and in person, from one inventory.",
 ];
+
+/**
+ * What Zolto is bad at, published rather than left to be discovered.
+ *
+ * The August 2026 pricing review ended its case for Zolto with a list of
+ * Zolto's own risks, on the grounds that a comparison which concedes nothing
+ * about itself gets discounted along with everything else on the page. That
+ * reasoning is already the repo's own — it's why `Competitor.betterWhen`
+ * exists, and why the research page keeps its unflattering finding — but it
+ * had never been turned on us.
+ *
+ * Every entry here is either checkable against this codebase or already
+ * disclosed in a planning document nobody reads. That's the test for adding
+ * one: if a merchant would be annoyed to learn it three months in, it belongs
+ * on the page rather than in a doc.
+ */
+export interface Limitation {
+  /** The short form, for a heading. */
+  title: string;
+  /** The honest version, including why it isn't fixed yet. */
+  detail: string;
+}
+
+export const ZOLTO_LIMITATIONS: Limitation[] = [
+  {
+    title: "We have no track record",
+    detail:
+      "SumUp and Worldline have a decade or more each. Zolto is new, and a new company is a risk on its own terms however good the product is. What we can offer against that: no contract, no hardware to buy, and one-click export of everything you've put in — on the Free plan too. Leaving costs you an afternoon, not a termination fee.",
+  },
+  {
+    title: "We are not the cheapest way to take a card",
+    detail:
+      "SumUp Payments Plus and Worldline Tap on Mobile both beat the Stripe-plus-Zolto stack on card rate, and SumUp's online rate beats ours on every plan. The reason to choose Zolto is that it removes the work, not that it removes the fee. If cost per card sale is your deciding number, the comparison pages will tell you so.",
+  },
+  {
+    title: "Everything runs on Stripe, and Stripe sets the real price",
+    detail:
+      "Stripe holds the funds until payout, runs the identity checks, owns the chargeback process, and sets the rate that dominates what a sale costs you. Zolto never touches your money, which is the good half of that arrangement; the other half is that our own sovereignty ledger lists card payments as still moving, and until it stops moving, a hard dependency is what it is.",
+  },
+  {
+    title: "Parts of our stack are still outside Europe",
+    detail:
+      "Four rows of the Made in Switzerland ledger say so by name: card payments, the AI model provider, product-photo storage and account email. The ledger is published with those rows in it rather than without them, and each one carries the next step we've committed to.",
+  },
+  {
+    title: "The AI discovery channel has no shoppers in it yet",
+    detail:
+      "Every store ships llms.txt and an MCP endpoint, and the platform directory that lets an assistant find a Swiss maker is live — and currently empty, because storefronts are only now launching. The infrastructure is real; the traffic is a bet. Treat it as a reason to be early, not as a channel already selling for you.",
+  },
+  {
+    title: "We are below the Swiss VAT threshold",
+    detail:
+      "Swiss VAT registration is mandatory only above CHF 100,000 of annual turnover, and Zolto is under it, so the prices you see are simply the prices. It also tells you how small we are. If that changes, prices will say which way they're quoted, and we'll say so before it happens.",
+  },
+];
+
+/**
+ * The three questions that decide this purchase, answered honestly — including
+ * when the answer is "not us".
+ *
+ * Taken from the review's closing section. It is a routing tool rather than a
+ * pitch: two of the three outcomes send the reader to a competitor, and that is
+ * the point. A buyer who discovers on day three that their customers all pay by
+ * TWINT, or that they needed PostFinance Pay, is a refund and a bad review; a
+ * buyer we sent to SumUp on day zero is neither.
+ */
+export interface BuyerQuestion {
+  question: string;
+  /** What follows from each answer, stated without hedging. */
+  answers: { when: string; then: string }[];
+}
+
+export const BUYER_FIT: BuyerQuestion[] = [
+  {
+    question: "Do your customers pay by TWINT?",
+    answers: [
+      {
+        when: "Yes, most of them",
+        then: "SumUp is out, whatever it costs — its till cannot take TWINT at all. That leaves Zolto and Worldline, and the question becomes whether you want your catalogue in the till.",
+      },
+      {
+        when: "No, they mostly tap a card",
+        then: "SumUp is hard to beat on rate and its till app is more mature than ours. Choose Zolto for the shop, the listings and the one inventory — not for the fee.",
+      },
+    ],
+  },
+  {
+    question: "Do you need PostFinance Pay?",
+    answers: [
+      {
+        when: "Yes",
+        then: "Only Worldline supports it. Nothing else on this page qualifies, and no amount of the rest of our argument changes that.",
+      },
+      { when: "No", then: "All three are still in play." },
+    ],
+  },
+  {
+    question: "How much do you sell on cards each month?",
+    answers: [
+      {
+        when: "Above roughly CHF 1,900 on credit cards, or CHF 5,700 on debit",
+        then: "SumUp's Payments Plus subscription pays for itself and beats our card rate outright. Our case has to be made on the shop and the inventory, not the arithmetic.",
+      },
+      {
+        when: "Below that, or wildly seasonal",
+        then: "A subscription you owe in a quiet month is the wrong shape. Zolto's Free plan costs nothing in a month you don't sell online, and nothing ever on in-person sales.",
+      },
+    ],
+  },
+];

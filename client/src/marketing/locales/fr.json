@@ -346,7 +346,10 @@
     "capabilitiesHeading": "{{name}} et {{competitor}}, ligne par ligne",
     "risksHeading": "Encore une chose sur {{competitor}}",
     "risksIntro": "On choisit généralement {{competitor}} parce que l'acteur en place est l'option sûre. C'est précisément cette propriété qui est aujourd'hui en question, et c'est une affaire de dossier public, pas d'opinion.",
-    "risksBalance": "Rien de tout cela n'empêche {{competitor}} de traiter normalement les paiements suisses aujourd'hui, et Tap on Mobile, à taux forfaitaire et sans frais mensuels, reste une offre réellement bonne pour un petit commerce. Le propos est plus étroit : « grand acteur en place » et « risque faible » ont cessé d'être le même mot, et cela mérite d'être su avant de signer un contrat de terminal pluriannuel."
+    "risksBalance": "Rien de tout cela n'empêche {{competitor}} de traiter normalement les paiements suisses aujourd'hui, et Tap on Mobile, à taux forfaitaire et sans frais mensuels, reste une offre réellement bonne pour un petit commerce. Le propos est plus étroit : « grand acteur en place » et « risque faible » ont cessé d'être le même mot, et cela mérite d'être su avant de signer un contrat de terminal pluriannuel.",
+    "buyerFitHeading": "Trois questions qui tranchent",
+    "buyerFitIntro": "Répondez-y avant de lire une comparaison de plus. Deux des trois peuvent nous écarter, et il vaut mieux l'apprendre ici qu'après avoir déplacé votre catalogue.",
+    "limitationsHeading": "Là où {{name}} pèche"
   },
   "signup": {
     "eyebrow": "c’est parti",
@@ -1180,7 +1183,74 @@
         "label": "Qui détient votre argent",
         "zolto": "Personne d'autre que vous — directement sur vos propres comptes Stripe et TWINT"
       }
-    }
+    },
+    "limitations": [
+      {
+        "title": "Nous n'avons aucun historique",
+        "detail": "SumUp et Worldline ont chacun dix ans ou plus. Zolto est nouveau, et une entreprise nouvelle est un risque en soi, aussi bon soit le produit. Ce que nous pouvons opposer à cela : aucun contrat, aucun matériel à acheter, et un export en un clic de tout ce que vous avez saisi — y compris sur le plan Free. Partir vous coûte un après-midi, pas des frais de résiliation."
+      },
+      {
+        "title": "Nous ne sommes pas le moyen le moins cher d'encaisser une carte",
+        "detail": "SumUp Payments Plus et Worldline Tap on Mobile battent tous deux la pile Stripe-plus-Zolto sur le taux carte, et le taux en ligne de SumUp bat le nôtre sur tous les plans. La raison de choisir Zolto, c'est qu'il supprime le travail, pas les frais. Si le coût par vente par carte est votre chiffre décisif, les pages de comparaison vous le diront."
+      },
+      {
+        "title": "Tout passe par Stripe, et c'est Stripe qui fixe le vrai prix",
+        "detail": "Stripe détient les fonds jusqu'au versement, effectue les vérifications d'identité, gère les rétrofacturations et fixe le taux qui domine ce que vous coûte une vente. Zolto ne touche jamais votre argent : c'est la bonne moitié de cet arrangement ; l'autre, c'est que notre propre registre de souveraineté classe encore les paiements par carte comme « en cours de déplacement », et tant que cela dure, une dépendance forte reste une dépendance forte."
+      },
+      {
+        "title": "Une partie de notre pile est encore hors d'Europe",
+        "detail": "Quatre lignes du registre Made in Switzerland le disent nommément : les paiements par carte, le fournisseur du modèle d'IA, le stockage des photos produit et les e-mails de compte. Le registre est publié avec ces lignes plutôt que sans elles, et chacune porte l'étape suivante à laquelle nous nous sommes engagés."
+      },
+      {
+        "title": "Le canal de découverte par l'IA n'a encore aucun acheteur",
+        "detail": "Chaque boutique embarque un llms.txt et un point d'accès MCP, et l'annuaire de plateforme qui permet à un assistant de trouver une créatrice suisse est en ligne — et actuellement vide, parce que les boutiques commencent tout juste à ouvrir. L'infrastructure est réelle ; le trafic est un pari. Voyez-y une raison d'être tôt, pas un canal qui vend déjà pour vous."
+      },
+      {
+        "title": "Nous sommes sous le seuil de TVA suisse",
+        "detail": "L'assujettissement à la TVA n'est obligatoire qu'au-delà de CHF 100 000 de chiffre d'affaires annuel, et Zolto est en dessous : les prix que vous voyez sont donc simplement les prix. Cela vous dit aussi à quel point nous sommes petits. Si cela change, les prix préciseront dans quel sens ils sont indiqués, et nous le dirons avant."
+      }
+    ],
+    "buyerFit": [
+      {
+        "question": "Votre clientèle paie-t-elle avec TWINT ?",
+        "answers": [
+          {
+            "when": "Oui, en majorité",
+            "then": "SumUp est écarté, quel qu'en soit le prix — sa caisse ne peut absolument pas prendre TWINT. Restent Zolto et Worldline, et la question devient : voulez-vous votre catalogue dans la caisse ?"
+          },
+          {
+            "when": "Non, elle tape surtout une carte",
+            "then": "SumUp est difficile à battre sur le taux et son application de caisse est plus mature que la nôtre. Choisissez Zolto pour la boutique, les fiches produits et l'inventaire unique — pas pour les frais."
+          }
+        ]
+      },
+      {
+        "question": "Avez-vous besoin de PostFinance Pay ?",
+        "answers": [
+          {
+            "when": "Oui",
+            "then": "Seul Worldline le propose. Rien d'autre sur cette page ne qualifie, et le reste de notre argumentaire n'y change rien."
+          },
+          {
+            "when": "Non",
+            "then": "Les trois restent en lice."
+          }
+        ]
+      },
+      {
+        "question": "Combien vendez-vous par carte chaque mois ?",
+        "answers": [
+          {
+            "when": "Au-dessus d'environ CHF 1 900 en cartes de crédit, ou CHF 5 700 en débit",
+            "then": "L'abonnement Payments Plus de SumUp se rentabilise et bat nettement notre taux carte. Notre argumentaire doit tenir sur la boutique et l'inventaire, pas sur l'arithmétique."
+          },
+          {
+            "when": "En dessous, ou très saisonnier",
+            "then": "Un abonnement dû dans un mois calme a la mauvaise forme. Le plan Free de Zolto ne coûte rien un mois sans vente en ligne, et jamais rien sur les ventes en personne."
+          }
+        ]
+      }
+    ]
   },
   "sovereignty": {
     "state": {

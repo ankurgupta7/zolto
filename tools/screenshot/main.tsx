@@ -22,6 +22,9 @@ const PAGES = {
   landing: { path: "/", Component: Landing },
   sovereignty: { path: "/made-in-switzerland", Component: Sovereignty },
   pricing: { path: "/pricing", Component: Pricing },
+  // The index carries the buyer-fit guide and Zolto's own limitations — the
+  // two places the site argues against itself, so worth looking at by eye.
+  compare: { path: "/compare", route: "/compare", Component: Compare },
   // Worldline is the one carrying the risk section and the negotiated-pricing
   // list, so it's the compare page most worth looking at by eye.
   "compare-worldline": {

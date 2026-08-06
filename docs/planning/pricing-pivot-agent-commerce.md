@@ -110,6 +110,13 @@ AI is now a plan allowance, never a per-query purchase.
   only stops mattering at the ~CHF 50 basket, and we're not competing on the
   in-person rail anyway.
 
+> **Marketing correction, August 2026.** `SOVEREIGNTY.ledger` used to describe
+> both TWINT paths with one row reading "your own TWINT account — Swiss rails,
+> end to end", which is true only of the QR sticker. The in-app button is a
+> Stripe PaymentIntent and now has its own row, marked `moving`. See
+> [`positioning-pricing-revision.md`](./positioning-pricing-revision.md) §4.
+> The gap below is therefore now disclosed on the site, not only in this doc.
+
 **As shipped today**, in-person POS sales already go through Stripe (Tap to
 Pay and a Stripe-issued `twint` PaymentIntent — see `server/pos.ts:970`,
 `/api/pos/twint-intent`), on the tenant's own connected account, with no
