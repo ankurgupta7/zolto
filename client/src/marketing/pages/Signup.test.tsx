@@ -23,9 +23,9 @@ const mocks = vi.hoisted(() => ({
   aiVars: undefined as unknown,
   aiResult: {
     primaryColor: "#A34A24",
-    secondaryColor: null as string | null,
+    secondaryColor: "#3AA79F" as string | null,
     suggestedTemplateId: "bazaar" as string | null,
-    rationale: "Warm terracotta with market energy.",
+    rationale: "Warm terracotta with a teal highlight — market energy.",
   },
 }));
 
@@ -72,9 +72,9 @@ beforeEach(() => {
   mocks.aiVars = undefined;
   mocks.aiResult = {
     primaryColor: "#A34A24",
-    secondaryColor: null,
+    secondaryColor: "#3AA79F",
     suggestedTemplateId: "bazaar",
-    rationale: "Warm terracotta with market energy.",
+    rationale: "Warm terracotta with a teal highlight — market energy.",
   };
 });
 
@@ -106,7 +106,9 @@ function fillDetailsAndContinue() {
 }
 
 const hexField = () =>
-  screen.getByLabelText("Brand color hex") as HTMLInputElement;
+  screen.getByLabelText("Primary color hex") as HTMLInputElement;
+const secondaryField = () =>
+  screen.getByLabelText("Secondary color hex") as HTMLInputElement;
 
 /** Upload a logo and run the (mocked) AI extraction. */
 async function uploadLogoAndExtract() {
@@ -115,7 +117,7 @@ async function uploadLogoAndExtract() {
     target: { files: [file] },
   });
   await waitFor(() => screen.getByText("logo.png"));
-  fireEvent.click(screen.getByRole("button", { name: /colors from logo/i }));
+  fireEvent.click(screen.getByRole("button", { name: /read my colors from this logo/i }));
 }
 
 describe("Signup wizard", () => {
@@ -129,6 +131,7 @@ describe("Signup wizard", () => {
     // choice appear to mutate between screens.
     expect(screen.getByLabelText(/logo \(optional\)/i)).toBeTruthy();
     expect(hexField()).toBeTruthy();
+    expect(secondaryField()).toBeTruthy();
     expect(screen.getAllByRole("button", { pressed: false }).length).toBe(4);
     expect(screen.getAllByRole("button", { pressed: true }).length).toBe(1);
     expect(screen.getByText("Atelier")).toBeTruthy();
@@ -226,30 +229,36 @@ describe("Signup wizard", () => {
     expect(container.textContent).not.toContain("one click");
   });
 
-  it("seeds the color from a template while the merchant hasn't set one", () => {
+  it("seeds BOTH colors from a template while the merchant hasn't set them", () => {
     renderSignup();
     fillDetailsAndContinue();
     fireEvent.click(screen.getByText("Verdant").closest("button")!);
     expect(hexField().value).toBe("#2F5D3A");
+    expect(secondaryField().value).toBe("#C08A2E");
     fireEvent.click(screen.getByText("Azure").closest("button")!);
     expect(hexField().value).toBe("#1E4E79");
+    expect(secondaryField().value).toBe("#D9A441");
   });
 
   // The bug that motivated merging the steps: a color the merchant (or the AI)
   // settled must survive every later template change, because a template only
   // owns the SURFACE variables — it must never silently re-take the ink.
-  it("never overwrites a chosen color when the template changes", () => {
+  it("never overwrites chosen colors when the template changes", () => {
     renderSignup();
     fillDetailsAndContinue();
     fireEvent.change(hexField(), { target: { value: "#123ABC" } });
+    fireEvent.change(secondaryField(), { target: { value: "#FFAA00" } });
     fireEvent.click(screen.getByText("Verdant").closest("button")!);
     expect(hexField().value).toBe("#123ABC");
+    expect(secondaryField().value).toBe("#FFAA00");
     fireEvent.click(screen.getByText("Porcelain").closest("button")!);
     expect(hexField().value).toBe("#123ABC");
+    expect(secondaryField().value).toBe("#FFAA00");
     fireEvent.click(screen.getByRole("button", { name: /create store/i }));
     expect(mocks.createVars).toMatchObject({
       templateId: "porcelain",
       primaryColor: "#123ABC",
+      secondaryColor: "#FFAA00",
     });
   });
 
@@ -264,6 +273,7 @@ describe("Signup wizard", () => {
       email: "owner@aurora.example",
       templateId: "azure",
       primaryColor: "#1E4E79",
+      secondaryColor: "#D9A441",
       logo: undefined,
     });
   });
@@ -278,7 +288,13 @@ describe("Signup wizard", () => {
 
     mocks.createVars = undefined;
     fireEvent.change(hex, { target: { value: "teal" } });
-    expect(screen.getByText(/6-digit hex/i)).toBeTruthy();
+    expect(screen.getAllByText(/6-digit hex/i).length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByRole("button", { name: /create store/i }));
+    expect(mocks.createVars).toBeUndefined();
+
+    // Primary fixed, secondary now broken — still refused.
+    fireEvent.change(hex, { target: { value: "#123ABC" } });
+    fireEvent.change(secondaryField(), { target: { value: "#12" } });
     fireEvent.click(screen.getByRole("button", { name: /create store/i }));
     expect(mocks.createVars).toBeUndefined();
   });
@@ -294,14 +310,15 @@ describe("Signup wizard", () => {
     // FileReader is async — the preview card appears once the data URL lands.
     await waitFor(() => screen.getByText("logo.png"));
 
-    fireEvent.click(screen.getByRole("button", { name: /colors from logo/i }));
+    fireEvent.click(screen.getByRole("button", { name: /read my colors from this logo/i }));
     // The logo's data URL is what travels to the AI…
     expect(String((mocks.aiVars as { imageData: string }).imageData)).toMatch(
       /^data:image\/png;base64,/,
     );
     // …and the suggestion is applied on the spot — no "switch template?" prompt.
     expect(hexField().value).toBe("#A34A24");
-    expect(screen.getByText(/terracotta with market energy/i)).toBeTruthy();
+    expect(secondaryField().value).toBe("#3AA79F");
+    expect(screen.getByText(/teal highlight/i)).toBeTruthy();
     const bazaar = screen.getByText("Bazaar").closest("button")!;
     expect(bazaar.getAttribute("aria-pressed")).toBe("true");
     expect(screen.getByText(/suggested from your logo/i)).toBeTruthy();
@@ -311,24 +328,46 @@ describe("Signup wizard", () => {
     expect(mocks.createVars).toMatchObject({
       templateId: "bazaar",
       primaryColor: "#A34A24",
+      secondaryColor: "#3AA79F",
       logo: {
         mimeType: "image/png",
         imageData: expect.stringMatching(/^data:image\/png;base64,/),
       },
     });
   });
-  it("lets the merchant overrule the AI's template while keeping its color", async () => {
+  it("lets the merchant overrule the AI's template while keeping its colors", async () => {
     renderSignup();
     fillDetailsAndContinue();
     await uploadLogoAndExtract();
     fireEvent.click(screen.getByText("Porcelain").closest("button")!);
 
     expect(hexField().value).toBe("#A34A24");
+    expect(secondaryField().value).toBe("#3AA79F");
     fireEvent.click(screen.getByRole("button", { name: /create store/i }));
     expect(mocks.createVars).toMatchObject({
       templateId: "porcelain",
       primaryColor: "#A34A24",
+      secondaryColor: "#3AA79F",
     });
+  });
+
+  // A monochrome logo yields no honest second color; the seed must survive
+  // rather than be overwritten with an echo of the primary, which would render
+  // an accent indistinguishable from the ink.
+  it("leaves the highlight alone when the logo yields only one color", async () => {
+    mocks.aiResult = {
+      primaryColor: "#1F2933",
+      secondaryColor: null,
+      suggestedTemplateId: null,
+      rationale: "Cool charcoal.",
+    };
+    renderSignup();
+    fillDetailsAndContinue();
+    fireEvent.click(screen.getByText("Bazaar").closest("button")!);
+    await uploadLogoAndExtract();
+
+    expect(hexField().value).toBe("#1F2933");
+    expect(secondaryField().value).toBe("#3AA79F");
   });
 
   it("keeps the merchant's template when the AI has no usable suggestion", async () => {

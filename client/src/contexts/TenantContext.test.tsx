@@ -85,3 +85,62 @@ describe("TenantProvider template theming", () => {
     expect(rootStyle().getPropertyValue("--brand-ink")).not.toBe("");
   });
 });
+
+/** Hue of a rendered `#rrggbb`, for asserting which color a swatch came from. */
+function hueOf(hex: string): number {
+  const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
+  const max = Math.max(r, g, b);
+  const d = max - Math.min(r, g, b);
+  if (d === 0) return 0;
+  if (max === r) return (((g - b) / d + (g < b ? 6 : 0)) * 60) % 360;
+  if (max === g) return ((b - r) / d + 2) * 60;
+  return ((r - g) / d + 4) * 60;
+}
+
+describe("TenantProvider two-color branding", () => {
+  it("drives the ink from the primary and the accent from the secondary", () => {
+    // Espresso + gold: two hues a single-color derivation cannot produce.
+    mocks.settingsData = {
+      primaryColor: "#3B2F1E",
+      secondaryColor: "#2E7DD1",
+    };
+    renderProvider();
+
+    const ink = rootStyle().getPropertyValue("--brand-ink");
+    const accent = rootStyle().getPropertyValue("--brand-accent");
+    expect(Math.abs(hueOf(ink) - hueOf("#3B2F1E"))).toBeLessThan(8);
+    expect(Math.abs(hueOf(accent) - hueOf("#2E7DD1"))).toBeLessThan(8);
+    // The two families genuinely diverge rather than being tints of each other.
+    expect(Math.abs(hueOf(ink) - hueOf(accent))).toBeGreaterThan(20);
+  });
+
+  it("applies a store's own highlight even when it keeps the default ink", () => {
+    // The early-return has to check BOTH halves, or a store that only picks a
+    // secondary silently gets no palette written at all.
+    mocks.settingsData = {
+      primaryColor: "#2D2620",
+      secondaryColor: "#2E7DD1",
+    };
+    renderProvider();
+    const accent = rootStyle().getPropertyValue("--brand-accent");
+    expect(accent).not.toBe("");
+    expect(Math.abs(hueOf(accent) - hueOf("#2E7DD1"))).toBeLessThan(8);
+  });
+
+  it("leaves the default palette alone for a store that picked neither", () => {
+    mocks.settingsData = { primaryColor: "#2D2620" };
+    renderProvider();
+    expect(rootStyle().getPropertyValue("--brand-ink")).toBe("");
+    expect(rootStyle().getPropertyValue("--brand-accent")).toBe("");
+  });
+
+  it("falls back to deriving the accent from the primary when there is no secondary", () => {
+    mocks.settingsData = { primaryColor: "#1E4E79" };
+    renderProvider();
+    const ink = rootStyle().getPropertyValue("--brand-ink");
+    const accent = rootStyle().getPropertyValue("--brand-accent");
+    expect(accent).not.toBe("");
+    // Same hue family as the ink — the pre-two-color behaviour, preserved.
+    expect(Math.abs(hueOf(ink) - hueOf(accent))).toBeLessThan(12);
+  });
+});

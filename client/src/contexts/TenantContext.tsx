@@ -35,14 +35,24 @@ const TenantContext = createContext<TenantContextValue | null>(null);
  * the whole storefront re-themes to "<color> + cream". The cream surfaces keep
  * their CSS defaults; we only touch the swatches `derivePalette` returns.
  */
-function useApplyBrandColor(primaryColor: string | null) {
+function useApplyBrandColor(
+  primaryColor: string | null,
+  secondaryColor: string | null,
+) {
   useEffect(() => {
     if (typeof document === "undefined") return;
     const root = document.documentElement;
-    // The CSS default ink is Kalakosh's #2D2620; only override when a tenant
-    // supplies a different, parseable color.
-    if (!primaryColor || primaryColor.toLowerCase() === "#2d2620") return;
-    const palette = derivePalette(primaryColor);
+    // The CSS defaults are Kalakosh's ink #2D2620 + gold accent; only override
+    // when a tenant supplies a different, parseable pair. A store that keeps
+    // the default ink but picks its OWN highlight still needs the write, so
+    // the early return checks both halves.
+    if (
+      (!primaryColor || primaryColor.toLowerCase() === "#2d2620") &&
+      (!secondaryColor || secondaryColor.toLowerCase() === "#b8963e")
+    ) {
+      return;
+    }
+    const palette = derivePalette(primaryColor ?? "#2d2620", secondaryColor);
     if (!palette) return;
     for (const [prop, value] of Object.entries(palette)) {
       root.style.setProperty(prop, value);
@@ -52,7 +62,7 @@ function useApplyBrandColor(primaryColor: string | null) {
         root.style.removeProperty(prop);
       }
     };
-  }, [primaryColor]);
+  }, [primaryColor, secondaryColor]);
 }
 
 /**
@@ -108,7 +118,7 @@ export function TenantProvider({
     [tenantQuery.data?.name, settingsQuery.data, slug],
   );
 
-  useApplyBrandColor(branding.primaryColor);
+  useApplyBrandColor(branding.primaryColor, branding.secondaryColor);
   useApplyTemplate(settingsQuery.data?.templateId);
 
   const value = useMemo<TenantContextValue>(

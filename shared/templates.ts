@@ -3,10 +3,11 @@
  *
  * A template is deliberately small: it names the *surface* half of the
  * storefront palette (the grounds, surfaces, borders, and muted text that
- * `derivePalette` intentionally leaves alone) plus a default primary color.
- * The merchant's own `primary_color` (chosen manually or extracted from their
- * logo) still drives the ink/accent half via `client/src/lib/palette.ts`, so
- * template × brand color compose instead of fighting.
+ * `derivePalette` intentionally leaves alone) plus a default color pair.
+ * The merchant's own `primary_color` / `secondary_color` (picked, or extracted
+ * from their logo) still drive the ink and accent families via
+ * `client/src/lib/palette.ts`, so template × brand colors compose instead of
+ * fighting: the template is the mood of the surfaces, the pair is the brand.
  *
  * Every template ships the FULL set of surface variables (even `atelier`,
  * whose values equal the index.css defaults) so applying one is idempotent
@@ -51,6 +52,13 @@ export interface StoreTemplate {
   bestFor: string;
   /** Seed for `primary_color` when the merchant doesn't pick their own. */
   defaultPrimaryColor: string;
+  /**
+   * Seed for `secondary_color` — the highlight paired with the primary above.
+   * A deliberately different hue, not a tint: the whole point of the second
+   * color is to reach accents a one-color derivation cannot (see
+   * client/src/lib/palette.ts).
+   */
+  defaultSecondaryColor: string;
   cssVars: Record<TemplateCssVar, string>;
 }
 
@@ -61,6 +69,7 @@ export const STORE_TEMPLATES: readonly StoreTemplate[] = [
     tagline: "Warm cream and deep espresso ink",
     bestFor: "Handmade goods, jewellery, and craft studios",
     defaultPrimaryColor: "#2D2620",
+    defaultSecondaryColor: "#B8963E",
     cssVars: {
       "--brand-ground": "#f7f3ee",
       "--brand-surface": "#ede7df",
@@ -78,6 +87,7 @@ export const STORE_TEMPLATES: readonly StoreTemplate[] = [
     tagline: "Sage surfaces and garden greens",
     bestFor: "Farm stands, florists, and food producers",
     defaultPrimaryColor: "#2F5D3A",
+    defaultSecondaryColor: "#C08A2E",
     cssVars: {
       "--brand-ground": "#f4f7f0",
       "--brand-surface": "#e7ede1",
@@ -95,6 +105,7 @@ export const STORE_TEMPLATES: readonly StoreTemplate[] = [
     tagline: "Cool gallery whites, quiet and minimal",
     bestFor: "Fashion boutiques, ceramics, and design objects",
     defaultPrimaryColor: "#1F2933",
+    defaultSecondaryColor: "#B08968",
     cssVars: {
       "--brand-ground": "#f6f7f8",
       "--brand-surface": "#eceef0",
@@ -112,6 +123,7 @@ export const STORE_TEMPLATES: readonly StoreTemplate[] = [
     tagline: "Terracotta warmth with market-day energy",
     bestFor: "Market stalls, gifts, and vintage finds",
     defaultPrimaryColor: "#A34A24",
+    defaultSecondaryColor: "#3AA79F",
     cssVars: {
       "--brand-ground": "#faf3ee",
       "--brand-surface": "#f3e6dc",
@@ -129,6 +141,7 @@ export const STORE_TEMPLATES: readonly StoreTemplate[] = [
     tagline: "Airy coastal blues, crisp and open",
     bestFor: "Wellness, stationery, and modern essentials",
     defaultPrimaryColor: "#1E4E79",
+    defaultSecondaryColor: "#D9A441",
     cssVars: {
       "--brand-ground": "#f3f6f9",
       "--brand-surface": "#e5ebf2",

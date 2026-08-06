@@ -208,6 +208,7 @@ export const tenantRouter = router({
         // three-field signup keeps working (and so does the mobile app's).
         templateId: z.enum(TEMPLATE_IDS).optional(),
         primaryColor: z.string().regex(HEX_COLOR).optional(),
+        secondaryColor: z.string().regex(HEX_COLOR).optional(),
         logo: z
           .object({
             // Base64 image data, with or without a data: prefix. ~3 MB of
@@ -312,6 +313,9 @@ export const tenantRouter = router({
         verticalDescription: input.verticalDescription?.trim() || null,
         ...(input.templateId ? { templateId: input.templateId } : {}),
         ...(input.primaryColor ? { primaryColor: input.primaryColor } : {}),
+        ...(input.secondaryColor
+          ? { secondaryColor: input.secondaryColor }
+          : {}),
         ...(logoUrl ? { logoUrl } : {}),
         ...(input.migrateFrom ? { migrateFrom: input.migrateFrom } : {}),
       });
@@ -421,20 +425,25 @@ export const tenantRouter = router({
         messages: [
           {
             role: "system",
-            content: `You are a brand designer for an e-commerce platform. The user uploads their shop's logo. Extract a color scheme for their storefront from it.
+            content: `You are a brand designer for an e-commerce platform. The user uploads their shop's logo. Extract a TWO-COLOR scheme for their storefront from it.
 
-Rules for primaryColor:
-- Pick the logo's dominant BRAND color — the color a customer would name if asked "what color is this brand?". Ignore white/near-white backgrounds and incidental anti-aliasing colors.
-- It becomes the store's dark "ink" (headers, footer, buttons), so if the logo's brand color is very light, return a darker shade of the same hue that would stay legible as button/text color on a cream background.
+The storefront uses exactly two brand colors, and they play different roles. Return both.
+
+primaryColor — the STRUCTURAL dark: page header, footer, and primary buttons.
+- Pick the logo's dominant brand color: the color a customer would name if asked "what color is this brand?". Ignore white/near-white backgrounds and incidental anti-aliasing colors.
+- White text sits on it, so if the logo's brand color is light, return a darker shade of the SAME hue that stays legible as a button color.
 - Format: 6-digit hex like #2D6B4A.
 
-Rules for secondaryColor:
-- A supporting color actually present in the logo, if there is a clear one; otherwise repeat primaryColor.
+secondaryColor — the HIGHLIGHT: dividers, small labels, hover states, price accents.
+- Prefer a second color genuinely present in the logo (the gold in a green-and-gold mark, the rust in a navy-and-rust one).
+- If the logo is essentially monochrome, choose a harmonious highlight that suits it — an analogous or complementary hue — rather than a tint of the primary.
+- It must be clearly DISTINGUISHABLE from primaryColor: never return the same value, and never a color that differs only in lightness. If the only honest answer is "there is no second color", that is what an empty string is for.
+- It sits on cream and on the primary, so mid-lightness reads best. Format: 6-digit hex, or "" if genuinely none.
 
-Rules for suggestedTemplateId — pick the storefront template whose mood best matches the logo:
+suggestedTemplateId — the storefront template whose mood best matches the logo:
 ${templateGuide}
 
-rationale: one friendly sentence (max 25 words) telling the merchant what you saw, e.g. "Deep forest green with a warm gold accent — a natural fit for the Verdant look."`,
+rationale: one friendly sentence (max 25 words) naming BOTH colors, e.g. "Deep forest green with a warm gold highlight — a natural fit for the Verdant look."`,
           },
           {
             role: "user",
@@ -514,11 +523,17 @@ rationale: one friendly sentence (max 25 words) telling the merchant what you sa
         });
       }
 
+      // A secondary equal to the primary would render an accent indistinguishable
+      // from the ink — dividers and labels vanishing into the footer. Null means
+      // "derive a tint from the primary", which is at least visible.
+      const secondaryUsable =
+        HEX_COLOR.test(parsed.secondaryColor) &&
+        parsed.secondaryColor.toLowerCase() !==
+          parsed.primaryColor.toLowerCase();
+
       return {
         primaryColor: parsed.primaryColor,
-        secondaryColor: HEX_COLOR.test(parsed.secondaryColor)
-          ? parsed.secondaryColor
-          : null,
+        secondaryColor: secondaryUsable ? parsed.secondaryColor : null,
         suggestedTemplateId: (TEMPLATE_IDS as readonly string[]).includes(
           parsed.suggestedTemplateId,
         )
@@ -709,6 +724,10 @@ rationale: one friendly sentence (max 25 words) telling the merchant what you sa
       z.object({
         logoUrl: z.string().url().optional(),
         primaryColor: z
+          .string()
+          .regex(/^#[0-9A-Fa-f]{6}$/)
+          .optional(),
+        secondaryColor: z
           .string()
           .regex(/^#[0-9A-Fa-f]{6}$/)
           .optional(),

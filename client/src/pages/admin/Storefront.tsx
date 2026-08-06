@@ -22,6 +22,7 @@ export default function Storefront() {
   const { tenant, slug, settings, invalidate } = useTenantSettings();
   const [logoUrl, setLogoUrl] = useState("");
   const [primaryColor, setPrimaryColor] = useState("#000000");
+  const [secondaryColor, setSecondaryColor] = useState("");
   const [metaTitle, setMetaTitle] = useState("");
   const [metaDescription, setMetaDescription] = useState("");
 
@@ -29,6 +30,9 @@ export default function Storefront() {
     if (settings) {
       setLogoUrl(settings.logoUrl ?? "");
       setPrimaryColor(settings.primaryColor ?? "#000000");
+      // Empty means "derive the accent from the primary" — the pre-two-color
+      // behaviour, and what a store that never picked a highlight still wants.
+      setSecondaryColor(settings.secondaryColor ?? "");
       setMetaTitle(settings.metaTitle ?? "");
       setMetaDescription(settings.metaDescription ?? "");
     }
@@ -51,9 +55,14 @@ export default function Storefront() {
       toast.error(t("store.storefront.invalidColor"));
       return;
     }
+    if (secondaryColor && !/^#[0-9A-Fa-f]{6}$/.test(secondaryColor)) {
+      toast.error(t("store.storefront.invalidSecondaryColor"));
+      return;
+    }
     save.mutate({
       logoUrl: logoUrl.trim() || undefined,
       primaryColor: primaryColor || undefined,
+      secondaryColor: secondaryColor || undefined,
       metaTitle: metaTitle.trim() || undefined,
       metaDescription: metaDescription.trim() || undefined,
     });
@@ -106,12 +115,13 @@ export default function Storefront() {
             />
           </Field>
           <Field
-            label={t("store.storefront.brandColour")}
+            label={t("store.storefront.primaryColour")}
             htmlFor="primary-color"
+            hint={t("store.storefront.primaryColourHint")}
           >
             <div className="flex items-center gap-3">
               <input
-                aria-label={t("store.storefront.brandColourPickerAria")}
+                aria-label={t("store.storefront.primaryColourPickerAria")}
                 type="color"
                 value={/^#[0-9A-Fa-f]{6}$/.test(primaryColor) ? primaryColor : "#000000"}
                 onChange={(e) => setPrimaryColor(e.target.value)}
@@ -123,6 +133,33 @@ export default function Storefront() {
                 value={primaryColor}
                 onChange={(e) => setPrimaryColor(e.target.value)}
                 placeholder="#8B6914"
+                className={inputClass}
+              />
+            </div>
+          </Field>
+          <Field
+            label={t("store.storefront.secondaryColour")}
+            htmlFor="secondary-color"
+            hint={t("store.storefront.secondaryColourHint")}
+          >
+            <div className="flex items-center gap-3">
+              <input
+                aria-label={t("store.storefront.secondaryColourPickerAria")}
+                type="color"
+                value={
+                  /^#[0-9A-Fa-f]{6}$/.test(secondaryColor)
+                    ? secondaryColor
+                    : "#B8963E"
+                }
+                onChange={(e) => setSecondaryColor(e.target.value)}
+                className="h-10 w-14 shrink-0 cursor-pointer rounded-md border bg-background"
+              />
+              <input
+                id="secondary-color"
+                type="text"
+                value={secondaryColor}
+                onChange={(e) => setSecondaryColor(e.target.value)}
+                placeholder="#B8963E"
                 className={inputClass}
               />
             </div>

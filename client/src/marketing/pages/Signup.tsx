@@ -43,6 +43,8 @@ import type { SupportedLanguage } from "@/lib/languages";
 
 const STEPS = ["details", "look"] as const;
 
+const HEX6 = /^#[0-9A-Fa-f]{6}$/;
+
 /**
  * The vertical labels already exist in four languages in shared/verticals.ts,
  * so they are read from there rather than duplicated into the locale files —
@@ -104,6 +106,9 @@ export default function Signup() {
   const [primaryColor, setPrimaryColor] = useState(
     getTemplate(DEFAULT_TEMPLATE_ID)?.defaultPrimaryColor ?? "#2D2620",
   );
+  const [secondaryColor, setSecondaryColor] = useState(
+    getTemplate(DEFAULT_TEMPLATE_ID)?.defaultSecondaryColor ?? "#B8963E",
+  );
   const [logo, setLogo] = useState<LogoDraft | null>(null);
   const [aiNote, setAiNote] = useState<string | null>(null);
   const [aiTemplateId, setAiTemplateId] = useState<TemplateId | null>(null);
@@ -112,14 +117,20 @@ export default function Signup() {
   const selectTemplate = (id: TemplateId) => {
     setTemplateId(id);
     if (!colorTouched) {
-      const t = getTemplate(id);
-      if (t) setPrimaryColor(t.defaultPrimaryColor);
+      const tpl = getTemplate(id);
+      if (tpl) {
+        setPrimaryColor(tpl.defaultPrimaryColor);
+        setSecondaryColor(tpl.defaultSecondaryColor);
+      }
     }
   };
 
   const brandingFromLogo = trpc.tenant.brandingFromLogo.useMutation({
     onSuccess: (data) => {
       setPrimaryColor(data.primaryColor);
+      // A logo with only one usable color leaves the highlight alone rather
+      // than echoing the primary, which would render an invisible accent.
+      if (data.secondaryColor) setSecondaryColor(data.secondaryColor);
       setColorTouched(true);
       setAiNote(data.rationale);
       const suggested = data.suggestedTemplateId as TemplateId | null;
@@ -185,8 +196,10 @@ export default function Signup() {
   }, [name, effectiveSlug, email, t]);
 
   const detailsValid = Object.keys(errors).length === 0;
-  const colorValid = /^#[0-9A-Fa-f]{6}$/.test(primaryColor);
-  const canSubmit = detailsValid && colorValid && !createTenant.isPending;
+  const colorValid = HEX6.test(primaryColor);
+  const secondaryValid = HEX6.test(secondaryColor);
+  const canSubmit =
+    detailsValid && colorValid && secondaryValid && !createTenant.isPending;
 
   const handleLogoFile = (file: File | undefined) => {
     if (!file) return;
@@ -228,6 +241,7 @@ export default function Signup() {
       migrateFrom: migrateFrom || undefined,
       templateId,
       primaryColor,
+      secondaryColor,
       logo: logo
         ? { imageData: logo.dataUrl, mimeType: logo.mimeType }
         : undefined,
@@ -235,7 +249,7 @@ export default function Signup() {
   };
 
   const template = getTemplate(templateId) ?? STORE_TEMPLATES[0];
-  const previewPalette = derivePalette(primaryColor);
+  const previewPalette = derivePalette(primaryColor, secondaryColor);
   // The merchant's own color, resolved to the ink the storefront would render.
   // Falls back per-card while the hex field is mid-edit and unparseable.
   const previewInk = previewPalette?.["--brand-ink"] ?? null;
@@ -472,36 +486,36 @@ export default function Signup() {
                   </p>
                 )}
 
-                <Field
-                  label={t("signup.brandColor")}
-                  error={colorValid ? undefined : t("signup.errorColor")}
-                  hint={t("signup.brandColorHint")}
-                >
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="color"
-                      aria-label={t("signup.brandColor")}
-                      value={
-                        colorValid ? primaryColor : template.defaultPrimaryColor
-                      }
-                      onChange={(e) => {
-                        setPrimaryColor(e.target.value);
-                        setColorTouched(true);
-                      }}
-                      className="h-11 w-14 cursor-pointer rounded-md border border-[var(--brand-border-2)] bg-white p-1"
-                    />
-                    <input
-                      type="text"
-                      aria-label={t("signup.brandColorHex")}
-                      value={primaryColor}
-                      onChange={(e) => {
-                        setPrimaryColor(e.target.value.trim());
-                        setColorTouched(true);
-                      }}
-                      className="w-32 rounded-md border border-[var(--brand-border-2)] bg-white px-3 py-2.5 font-mono text-sm text-[var(--brand-text)] outline-none focus:border-[var(--brand-accent)]"
-                    />
-                  </div>
-                </Field>
+                {/* The two colors the whole storefront is built from. Always
+                    visible and always editable, whether the merchant typed
+                    them or the AI read them off the logo — so an extracted
+                    scheme is a starting point, never a black box. */}
+                <div className="space-y-4">
+                  <ColorField
+                    label={t("signup.primaryColor")}
+                    hexLabel={t("signup.primaryColorHex")}
+                    hint={t("signup.primaryColorHint")}
+                    error={t("signup.errorColor")}
+                    value={primaryColor}
+                    fallback={template.defaultPrimaryColor}
+                    onChange={(v) => {
+                      setPrimaryColor(v);
+                      setColorTouched(true);
+                    }}
+                  />
+                  <ColorField
+                    label={t("signup.secondaryColor")}
+                    hexLabel={t("signup.secondaryColorHex")}
+                    hint={t("signup.secondaryColorHint")}
+                    error={t("signup.errorColor")}
+                    value={secondaryColor}
+                    fallback={template.defaultSecondaryColor}
+                    onChange={(v) => {
+                      setSecondaryColor(v);
+                      setColorTouched(true);
+                    }}
+                  />
+                </div>
               </div>
 
               {/* Live preview: chosen template surfaces + ink derived from the color */}
@@ -572,6 +586,7 @@ export default function Signup() {
                   {t("signup.previewMeta", {
                     template: template.name,
                     color: primaryColor,
+                    secondary: secondaryColor,
                   })}
                 </p>
               </aside>
@@ -594,6 +609,7 @@ export default function Signup() {
                   // template's surfaces — the templates differ in the
                   // surfaces, never in the brand color.
                   const cardInk = previewInk ?? tpl.defaultPrimaryColor;
+                  const cardAccent = previewAccent ?? tpl.defaultSecondaryColor;
                   return (
                     <button
                       key={tpl.id}
@@ -619,20 +635,28 @@ export default function Signup() {
                           style={{ backgroundColor: cardInk }}
                         />
                         <div
-                          className="flex gap-1.5 p-2"
+                          className="space-y-1.5 p-2"
                           style={{
                             backgroundColor: tpl.cssVars["--brand-ground"],
                           }}
                         >
-                          {[0, 1, 2].map((i) => (
-                            <div
-                              key={i}
-                              className="h-8 flex-1 rounded-sm"
-                              style={{
-                                backgroundColor: tpl.cssVars["--brand-surface"],
-                              }}
-                            />
-                          ))}
+                          {/* Both brand colors on every card: the ink band
+                              above, the highlight here. */}
+                          <div
+                            className="h-1 w-10 rounded-full"
+                            style={{ backgroundColor: cardAccent }}
+                          />
+                          <div className="flex gap-1.5">
+                            {[0, 1, 2].map((i) => (
+                              <div
+                                key={i}
+                                className="h-8 flex-1 rounded-sm"
+                                style={{
+                                  backgroundColor: tpl.cssVars["--brand-surface"],
+                                }}
+                              />
+                            ))}
+                          </div>
                         </div>
                       </div>
                       <p className="mt-3 flex items-center justify-between font-serif text-lg text-[var(--brand-text)]">
@@ -696,6 +720,52 @@ export default function Signup() {
         )}
       </form>
     </Container>
+  );
+}
+
+/**
+ * One brand color: a swatch, an editable hex, and the role it plays. The native
+ * picker needs a valid hex or it silently shows black, so it falls back to the
+ * template's seed while the text field is mid-edit — the text field itself
+ * keeps whatever was typed, and the error surfaces below.
+ */
+function ColorField({
+  label,
+  hexLabel,
+  hint,
+  error,
+  value,
+  fallback,
+  onChange,
+}: {
+  label: string;
+  hexLabel: string;
+  hint: string;
+  error: string;
+  value: string;
+  fallback: string;
+  onChange: (value: string) => void;
+}) {
+  const valid = HEX6.test(value);
+  return (
+    <Field label={label} error={valid ? undefined : error} hint={hint}>
+      <div className="flex items-center gap-3">
+        <input
+          type="color"
+          aria-label={label}
+          value={valid ? value : fallback}
+          onChange={(e) => onChange(e.target.value)}
+          className="h-11 w-14 cursor-pointer rounded-md border border-[var(--brand-border-2)] bg-white p-1"
+        />
+        <input
+          type="text"
+          aria-label={hexLabel}
+          value={value}
+          onChange={(e) => onChange(e.target.value.trim())}
+          className="w-32 rounded-md border border-[var(--brand-border-2)] bg-white px-3 py-2.5 font-mono text-sm text-[var(--brand-text)] outline-none focus:border-[var(--brand-accent)]"
+        />
+      </div>
+    </Field>
   );
 }
 

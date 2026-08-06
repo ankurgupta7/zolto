@@ -40,6 +40,14 @@ vi.mock("@/lib/trpc", () => ({
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // Restore the shared fixture: the colour tests below reassign it, and a
+  // leaked value would silently change what the later tests are asserting.
+  mocks.settingsData = {
+    logoUrl: null,
+    primaryColor: "#8B6914",
+    metaTitle: "Kalakosh",
+    metaDescription: "Handmade",
+  };
 });
 afterEach(() => cleanup());
 
@@ -50,6 +58,58 @@ describe("Storefront page", () => {
     expect(screen.getByDisplayValue("#8B6914")).toBeTruthy();
     expect(screen.getByDisplayValue("Kalakosh")).toBeTruthy();
     expect(screen.getByText("View storefront")).toBeTruthy();
+  });
+
+  it("prefills the secondary colour and saves both halves of the brand", () => {
+    mocks.settingsData = {
+      logoUrl: null,
+      primaryColor: "#8B6914",
+      secondaryColor: "#2E7DD1",
+      metaTitle: "Kalakosh",
+      metaDescription: "Handmade",
+    };
+    render(<Storefront />);
+    expect(screen.getByDisplayValue("#2E7DD1")).toBeTruthy();
+    fireEvent.click(screen.getAllByText("Save changes")[0]);
+    expect(mocks.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        primaryColor: "#8B6914",
+        secondaryColor: "#2E7DD1",
+      }),
+    );
+  });
+
+  // Blank means "derive the accent from the primary" — a store that never
+  // picked a highlight must not have one invented and persisted for it.
+  it("sends no secondary colour when the field is left blank", () => {
+    mocks.settingsData = {
+      logoUrl: null,
+      primaryColor: "#8B6914",
+      secondaryColor: null,
+      metaTitle: "Kalakosh",
+      metaDescription: "Handmade",
+    };
+    render(<Storefront />);
+    fireEvent.click(screen.getAllByText("Save changes")[0]);
+    expect(mocks.save).toHaveBeenCalledWith(
+      expect.objectContaining({ secondaryColor: undefined }),
+    );
+  });
+
+  it("refuses to save a malformed secondary colour", () => {
+    mocks.settingsData = {
+      logoUrl: null,
+      primaryColor: "#8B6914",
+      secondaryColor: null,
+      metaTitle: "Kalakosh",
+      metaDescription: "Handmade",
+    };
+    render(<Storefront />);
+    fireEvent.change(screen.getByPlaceholderText("#B8963E"), {
+      target: { value: "gold" },
+    });
+    fireEvent.click(screen.getAllByText("Save changes")[0]);
+    expect(mocks.save).not.toHaveBeenCalled();
   });
 
   it("saves changed settings", () => {
