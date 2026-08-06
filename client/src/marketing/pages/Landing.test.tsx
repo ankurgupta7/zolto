@@ -50,8 +50,13 @@ describe("Landing", () => {
     // The comparison intro used to open on "a card reader was basically a
     // status symbol — you're still paying for that era", which stopped being
     // true when SumUp and Worldline both shipped softPOS. It now concedes the
-    // card rate in its first breath, because the table underneath does too.
-    expect(screen.getByText(/two of them beat us/i)).toBeTruthy();
+    // card rate in its first breath, because the table underneath does too —
+    // and it has to concede the SAME amount. It said "two of them beat us"
+    // while the row beneath it said "every one of them", which is the kind of
+    // gap a reader closes by trusting neither.
+    expect(
+      screen.getByText(/every one of them beats us on card rate/i),
+    ).toBeTruthy();
     // …and the pricing pledge (free in person; fee only online).
     expect(
       screen.getAllByText(/selling in person is free/i).length,
