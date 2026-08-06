@@ -394,6 +394,65 @@ export const POSITIONING = {
     "With AI, a maker's whole store can be built in an afternoon, not weeks.",
     "Phones carry NFC chips and QR payments (TWINT) are everywhere — nobody inserts a card, they tap — so there's no reader to sell and server costs are tiny.",
   ] as const,
+
+  /**
+   * The squeeze play — the one in-person argument that survives contact with
+   * the competition, and the replacement for the retired "no card reader" lead.
+   *
+   * The shape of it: the two incumbents have opposite gaps. SumUp's till has a
+   * genuinely good item catalogue and cannot take TWINT at all. Worldline's Tap
+   * on Mobile takes TWINT at a competitive flat rate and has no catalogue to put
+   * in front of it. Zolto is the only one of the three where a maker taps a
+   * photo of the actual object and then picks TWINT, card or cash on the same
+   * screen.
+   *
+   * **On the wording of `claim`.** ZERO_COST_POS (below) already reasons that a
+   * blanket "nobody else does this" is a claim about every competitor's current
+   * tier in every country — unverifiable the day it's written, stale the week
+   * after — and platform.test.ts pins that. So this claim is scoped to the named,
+   * sourced field rather than to the world. It says the same thing to a reader
+   * and, unlike the broader version, it can be checked: each half of it cites the
+   * vendor's own documentation via `panels[].sourceId`.
+   */
+  squeezePlay: {
+    eyebrow: "the one that isn't a tie",
+    /** Split for the hand-drawn underline — see ZERO_COST_POS on why. */
+    headline: "Your catalogue and TWINT,",
+    headlineEmphasis: "in the same till.",
+    body: "Every till in this market now runs on an ordinary phone, so that stopped being the argument. Here's the one that's left: the two big options have opposite holes in them, and a Swiss maker falls straight down whichever one they pick.",
+    /**
+     * Three tills, side by side. Order matters — concede twice, then land it.
+     * `has` drives which illustration variant renders, so the drawing and the
+     * claim cannot disagree about which panel is missing what.
+     */
+    panels: [
+      {
+        id: "grid-no-twint",
+        has: ["grid"] as const,
+        label: "A till with your things in it",
+        detail:
+          "Photos, prices, stock counts — and no way to take the payment method half your customers reach for first. The workaround is a second, separate TWINT setup and a manual reconciliation at the end of the day.",
+        sourceId: "sumup-item-catalogue",
+      },
+      {
+        id: "twint-no-grid",
+        has: ["twint"] as const,
+        label: "A till that takes TWINT",
+        detail:
+          "TWINT, cards, a good flat rate — and nothing in it. It's a payment app: you type in an amount every time, or you buy and integrate separate till software to sit on top of it.",
+        sourceId: "worldline-tap-on-mobile",
+      },
+      {
+        id: "both",
+        has: ["grid", "twint"] as const,
+        label: "Zolto",
+        detail:
+          "Tap the photo of the actual object, then choose TWINT, card or cash on the same screen. One tap updates the stock behind your stall and on your website at once.",
+      },
+    ],
+    claim:
+      "Of the three ways a Swiss maker can take a payment at a stall today, only one puts the catalogue and TWINT on the same screen.",
+  },
 } as const;
 
 /** The written pricing pledge — the emotional core of the positioning. */

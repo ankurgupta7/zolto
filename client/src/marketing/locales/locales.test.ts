@@ -17,6 +17,7 @@ import {
   SOVEREIGNTY,
   FEATURES,
   COMPETITORS,
+  POSITIONING,
 } from "@shared/platform";
 import { SEGMENTS } from "@shared/segments";
 import {
@@ -193,6 +194,20 @@ describe("marketing locale files", () => {
         timeOfDay: s.timeOfDay,
       })),
       cardReaderGag: { items: [...CARD_READER_GAG.items] },
+      // SqueezePlay.tsx renders POSITIONING.squeezePlay. The panels' `sourceId`
+      // is absent on purpose: a citation is a URL and a date, not prose, and it
+      // renders from shared/sources.ts identically in every language.
+      squeezePlay: {
+        eyebrow: POSITIONING.squeezePlay.eyebrow,
+        headline: POSITIONING.squeezePlay.headline,
+        headlineEmphasis: POSITIONING.squeezePlay.headlineEmphasis,
+        body: POSITIONING.squeezePlay.body,
+        panels: POSITIONING.squeezePlay.panels.map((p) => ({
+          label: p.label,
+          detail: p.detail,
+        })),
+        claim: POSITIONING.squeezePlay.claim,
+      },
       comparison: Object.fromEntries(
         INCUMBENT_COMPARISON.map((r) => [
           r.feature,

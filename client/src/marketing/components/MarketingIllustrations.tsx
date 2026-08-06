@@ -244,6 +244,120 @@ export function PhotoToListing() {
  * carries the meaning, so nothing is lost when the drawing isn't seen.
  */
 
+/**
+ * A phone-shaped till, drawn in the same pen as the scenes below it.
+ *
+ * `has` decides what's on the screen and in the payment row, so the drawing is
+ * generated from the same data as the claim beside it (POSITIONING.squeezePlay)
+ * rather than hand-drawn per panel. A panel cannot end up showing a capability
+ * the copy doesn't grant it, which is the whole reason this argument is worth
+ * making as a picture: three phones side by side make "one of these has both"
+ * a thing you see before you read it.
+ *
+ * Four constraints, each from a trap this repo has already fallen into:
+ *
+ *  - **No `<text>` anywhere.** Labels render as HTML beneath each panel so they
+ *    go through `st()` like every other string. Text baked into an SVG is
+ *    invisible to the four-language key-parity check in locales.test.ts.
+ *  - **No numerals.** Prices are suggested with a short rule, the way
+ *    TapToPayScene suggests an amount — which also sidesteps Cormorant's
+ *    oldstyle figures rendering money as letters.
+ *  - **No TWINT logo.** The mark is trademarked, and a QR glyph is the honest
+ *    depiction anyway: TWINT at a stall *is* a QR scan.
+ *  - **`role="img"` with a real title**, not `aria-hidden`. Unlike the
+ *    decorative scenes, this one carries the argument.
+ */
+export function SqueezePlayTill({
+  has,
+  title,
+  className,
+}: {
+  has: readonly string[];
+  title: string;
+  className?: string;
+}) {
+  const hasGrid = has.includes("grid");
+  const hasTwint = has.includes("twint");
+
+  // Two columns × three rows of wares, on the screen of a phone held upright.
+  const cells = [15, 43].flatMap((x) =>
+    [19, 46, 73].map((y) => ({ x, y, key: `${x}-${y}` })),
+  );
+
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 80 140"
+      fill="none"
+      role="img"
+      focusable="false"
+    >
+      <title>{title}</title>
+      <g
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+      >
+        {/* The handset */}
+        <rect x="4" y="2" width="72" height="136" rx="9" />
+        <path d="M32 9 L48 9" />
+
+        {hasGrid ? (
+          // Your actual objects, each with the suggestion of a price under it.
+          cells.map(({ x, y, key }) => (
+            <g key={key}>
+              <rect x={x} y={y} width="22" height="17" rx="2" />
+              <path d={`M${x} ${y + 21} L${x + 13} ${y + 21}`} />
+            </g>
+          ))
+        ) : (
+          // No catalogue: an amount field and a keypad, typed in every time.
+          <>
+            <rect x="15" y="19" width="50" height="16" rx="2" />
+            <path d="M21 27 L37 27" />
+            {[48, 64, 80].map((cy) =>
+              [23, 40, 57].map((cx) => (
+                <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r="2.5" />
+              )),
+            )}
+          </>
+        )}
+
+        {/* The payment row along the bottom of the screen. Deliberately large
+            relative to the wares above it: at the size these panels render on
+            a phone, the first draft's 16-unit glyphs collapsed into specks and
+            the strike over the QR read as a smudge rather than as an absence. */}
+        {/* QR — a finder pattern, not the TWINT mark, which is trademarked. */}
+        <rect x="10" y="103" width="20" height="20" rx="2" />
+        <rect x="14" y="107" width="4.5" height="4.5" />
+        <rect x="21.5" y="107" width="4.5" height="4.5" />
+        <rect x="14" y="114.5" width="4.5" height="4.5" />
+        {!hasTwint && (
+          // Struck through: this till cannot take it. Overshoots the glyph at
+          // both ends and is drawn heavier than it, so the cancel reads even
+          // when the panel is a third of its desktop width.
+          <path d="M5 128 L35 98" strokeWidth="2.8" />
+        )}
+
+        {/* Contactless — every till in this market has this now. */}
+        <path d="M38 106 q 4.5 7 0 14" />
+        <path d="M44 102 q 7 11 0 22" />
+
+        {/* Cash — a note, not coins. Two small circles at this scale read as
+            an ampersand, which is not a payment method. */}
+        {hasGrid && hasTwint && (
+          <>
+            <rect x="53" y="105" width="19" height="14" rx="1.5" />
+            <circle cx="62.5" cy="112" r="3" />
+          </>
+        )}
+      </g>
+    </svg>
+  );
+}
+
 /** Shared frame + pen settings, so the three scenes can't drift apart. */
 function SceneFrame({
   children,

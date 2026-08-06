@@ -31,7 +31,7 @@
     "pledgeSignature": "— il team Zolto",
     "comparisonEyebrow": "il confronto onesto",
     "comparisonHeading": "Che cosa sta davvero pagando loro.",
-    "comparisonBody": "Stripe, SumUp e Worldline sono nati per un'epoca in cui i siti web erano difficili e un lettore di carte era quasi uno status symbol. Sta ancora pagando per quell'epoca — non per qualcosa di cui ha davvero bisogno oggi.",
+    "comparisonBody": "Sono prodotti veri con punti di forza veri, e sulla tariffa carta due di loro ci battono. Quello che segue è il punto in cui i modelli differiscono davvero — cosa c'è nella cassa, chi costruisce il negozio, e dove finiscono i soldi e i dati.",
     "colOldGuard": "La vecchia guardia",
     "howEyebrow": "ecco come funziona",
     "howHeading": "Un solo negozio. Ovunque Lei venda.",
@@ -1032,6 +1032,27 @@
       ],
       "promise": "Questo è l'elenco completo. Quando una riga si sposta la cambiamo qui e diciamo che cosa si è mosso — una vecchia promessa ridipinta in silenzio come risultato vale meno della bandiera su cui la stamperemmo.",
       "heroBadges": ["Fatto in Svizzera", "Server in Europa", "TWINT integrato"]
+    },
+    "squeezePlay": {
+      "eyebrow": "quello che non è un pareggio",
+      "headline": "Il tuo catalogo e TWINT,",
+      "headlineEmphasis": "nella stessa cassa.",
+      "body": "Ogni cassa di questo mercato gira ormai su un telefono qualsiasi, quindi quello ha smesso di essere l'argomento. Ecco quello che resta: le due grandi opzioni hanno buchi opposti, e una creatrice svizzera ci cade dentro qualunque scelga.",
+      "panels": [
+        {
+          "label": "Una cassa con le tue cose dentro",
+          "detail": "Foto, prezzi, scorte — e nessun modo di accettare il metodo di pagamento che metà della tua clientela cerca per prima. L'alternativa è un secondo dispositivo TWINT separato e una riconciliazione manuale a fine giornata."
+        },
+        {
+          "label": "Una cassa che accetta TWINT",
+          "detail": "TWINT, carte, una buona tariffa forfettaria — e niente dentro. È un'app di pagamento: digiti un importo ogni volta, oppure acquisti e integri un software di cassa separato sopra."
+        },
+        {
+          "label": "Zolto",
+          "detail": "Tocca la foto dell'oggetto vero, poi scegli TWINT, carta o contanti sullo stesso schermo. Un tocco aggiorna le scorte dietro il tuo banco e sul tuo sito nello stesso momento."
+        }
+      ],
+      "claim": "Dei tre modi in cui una creatrice svizzera può farsi pagare a un mercato oggi, solo uno mette il catalogo e TWINT sullo stesso schermo."
     }
   },
   "sovereignty": {
@@ -1066,5 +1087,8 @@
       "lawLabel": "Diritto applicabile",
       "lawValue": "GDPR + LPD svizzera riveduta"
     }
+  },
+  "sources": {
+    "read": "letto il {{date}}"
   }
 }

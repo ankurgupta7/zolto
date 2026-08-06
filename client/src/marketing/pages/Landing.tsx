@@ -21,9 +21,9 @@ import {
 import { Container } from "../components/Container";
 import { DayInTheLife } from "../components/DayInTheLife";
 import { ScrollReveal } from "../components/ScrollReveal";
-import { CardReaderGag } from "../components/CardReaderGag";
 import { DiaryTeaser } from "../components/DiaryTeaser";
 import { ZeroCostPos } from "../components/ZeroCostPos";
+import { SqueezePlay } from "../components/SqueezePlay";
 import { SwissMade } from "../components/SwissMade";
 import { useMarketingT } from "../lib/marketingI18n";
 
@@ -224,13 +224,17 @@ export default function Landing() {
               </tbody>
             </table>
           </div>
-
-          {/* The table's punchline, told as a joke rather than restated. */}
-          <div className="mt-12">
-            <CardReaderGag />
-          </div>
         </Container>
       </section>
+
+      {/* ── The squeeze play — the in-person argument that isn't a tie ──
+           This slot used to hold CardReaderGag, whose premise ("nobody should
+           sell you a CHF 300 reader") every competitor in this market now
+           shares: SumUp Tap to Pay and Worldline Tap on Mobile both run on an
+           ordinary phone. The constant and its tests are kept — the joke is
+           still good and still true — but the section it anchored was arguing
+           a point nobody is contesting. */}
+      <SqueezePlay />
 
       {/* ── How it works — one inventory + photo→listing (kept illustrations) ── */}
       <Container as="section" id="product" className="py-20">

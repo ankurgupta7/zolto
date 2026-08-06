@@ -31,7 +31,7 @@
     "pledgeSignature": "— the Zolto team",
     "comparisonEyebrow": "the honest comparison",
     "comparisonHeading": "What you’re actually paying them for.",
-    "comparisonBody": "Stripe, SumUp and Worldline were built for a time when websites were hard and a card reader was basically a status symbol. You're still paying for that era — not for anything you actually need today.",
+    "comparisonBody": "These are real products with real strengths, and on card rate two of them beat us. What follows is where the models genuinely differ — what's in the till, who builds the shop, and where the money and the data end up.",
     "colOldGuard": "The old guard",
     "howEyebrow": "here’s how it works",
     "howHeading": "One shop. Everywhere you sell.",
@@ -1031,6 +1031,27 @@
         "Servers in Europe",
         "TWINT built in"
       ]
+    },
+    "squeezePlay": {
+      "eyebrow": "the one that isn't a tie",
+      "headline": "Your catalogue and TWINT,",
+      "headlineEmphasis": "in the same till.",
+      "body": "Every till in this market now runs on an ordinary phone, so that stopped being the argument. Here's the one that's left: the two big options have opposite holes in them, and a Swiss maker falls straight down whichever one they pick.",
+      "panels": [
+        {
+          "label": "A till with your things in it",
+          "detail": "Photos, prices, stock counts — and no way to take the payment method half your customers reach for first. The workaround is a second, separate TWINT setup and a manual reconciliation at the end of the day."
+        },
+        {
+          "label": "A till that takes TWINT",
+          "detail": "TWINT, cards, a good flat rate — and nothing in it. It's a payment app: you type in an amount every time, or you buy and integrate separate till software to sit on top of it."
+        },
+        {
+          "label": "Zolto",
+          "detail": "Tap the photo of the actual object, then choose TWINT, card or cash on the same screen. One tap updates the stock behind your stall and on your website at once."
+        }
+      ],
+      "claim": "Of the three ways a Swiss maker can take a payment at a stall today, only one puts the catalogue and TWINT on the same screen."
     }
   },
   "sovereignty": {
@@ -1065,5 +1086,8 @@
       "lawLabel": "Law that applies",
       "lawValue": "GDPR + revised Swiss FADP"
     }
+  },
+  "sources": {
+    "read": "read {{date}}"
   }
 }

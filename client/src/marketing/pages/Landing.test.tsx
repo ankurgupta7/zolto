@@ -45,15 +45,23 @@ describe("Landing", () => {
     expect(screen.getByText("Moonstone Pendant Necklace")).toBeTruthy();
   });
 
-  it("makes the disruption case: names an incumbent and the pledge", () => {
+  it("makes the disruption case without claiming to be the cheapest", () => {
     renderLanding();
-    // The comparison section calls out the legacy players by name…
-    expect(screen.getByText(/Stripe, SumUp and Worldline/i)).toBeTruthy();
+    // The comparison intro used to open on "a card reader was basically a
+    // status symbol — you're still paying for that era", which stopped being
+    // true when SumUp and Worldline both shipped softPOS. It now concedes the
+    // card rate in its first breath, because the table underneath does too.
+    expect(screen.getByText(/two of them beat us/i)).toBeTruthy();
     // …and the pricing pledge (free in person; fee only online).
-    // Appears in both the pledge card and the comparison table row.
     expect(
       screen.getAllByText(/selling in person is free/i).length,
     ).toBeGreaterThan(0);
+  });
+
+  it("leads the in-person argument with the squeeze play", () => {
+    renderLanding();
+    expect(screen.getByTestId("squeeze-play")).toBeTruthy();
+    expect(screen.getAllByTestId(/^squeeze-panel-/).length).toBe(3);
   });
 
   it("shows the scan → tap → reconcile selling loop", () => {

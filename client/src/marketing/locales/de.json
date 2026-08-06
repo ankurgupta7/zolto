@@ -31,7 +31,7 @@
     "pledgeSignature": "— das Zolto-Team",
     "comparisonEyebrow": "der ehrliche Vergleich",
     "comparisonHeading": "Wofür Sie dort eigentlich bezahlen.",
-    "comparisonBody": "Stripe, SumUp und Worldline wurden für eine Zeit gebaut, in der Websites schwierig waren und ein Kartenlesegerät praktisch ein Statussymbol. Für diese Ära zahlen Sie noch heute — nicht für etwas, das Sie tatsächlich brauchen.",
+    "comparisonBody": "Das sind echte Produkte mit echten Stärken, und beim Kartensatz schlagen uns zwei davon. Was folgt, ist der Punkt, an dem sich die Modelle wirklich unterscheiden — was in der Kasse liegt, wer den Shop baut, und wo Geld und Daten am Ende landen.",
     "colOldGuard": "Die alte Garde",
     "howEyebrow": "so funktioniert es",
     "howHeading": "Ein Laden. Überall, wo Sie verkaufen.",
@@ -1031,6 +1031,27 @@
         "Server in Europa",
         "TWINT eingebaut"
       ]
+    },
+    "squeezePlay": {
+      "eyebrow": "das eine, das kein Unentschieden ist",
+      "headline": "Ihr Katalog und TWINT,",
+      "headlineEmphasis": "in derselben Kasse.",
+      "body": "Jede Kasse in diesem Markt läuft inzwischen auf einem gewöhnlichen Handy — das ist also kein Argument mehr. Hier ist das, was bleibt: die beiden grossen Optionen haben gegenteilige Löcher, und eine Schweizer Macherin fällt in genau eines davon, egal welche sie wählt.",
+      "panels": [
+        {
+          "label": "Eine Kasse mit Ihren Sachen darin",
+          "detail": "Fotos, Preise, Lagerbestände — und keine Möglichkeit, das Zahlungsmittel anzunehmen, zu dem die Hälfte Ihrer Kundschaft zuerst greift. Der Umweg ist ein zweites, separates TWINT-Setup und ein manueller Abgleich am Abend."
+        },
+        {
+          "label": "Eine Kasse, die TWINT nimmt",
+          "detail": "TWINT, Karten, ein guter Pauschalsatz — und nichts darin. Es ist eine Zahlungs-App: Sie tippen jedes Mal einen Betrag ein, oder Sie kaufen und integrieren eine separate Kassensoftware obendrauf."
+        },
+        {
+          "label": "Zolto",
+          "detail": "Tippen Sie auf das Foto des echten Objekts, dann wählen Sie TWINT, Karte oder Bargeld auf demselben Bildschirm. Ein Tippen aktualisiert den Bestand hinter Ihrem Stand und auf Ihrer Website zugleich."
+        }
+      ],
+      "claim": "Von den drei Wegen, auf denen eine Schweizer Macherin heute an einem Stand bezahlt werden kann, bringt nur einer den Katalog und TWINT auf denselben Bildschirm."
     }
   },
   "sovereignty": {
@@ -1065,5 +1086,8 @@
       "lawLabel": "Geltendes Recht",
       "lawValue": "DSGVO + revidiertes Schweizer DSG"
     }
+  },
+  "sources": {
+    "read": "gelesen am {{date}}"
   }
 }

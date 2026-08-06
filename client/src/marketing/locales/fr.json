@@ -31,7 +31,7 @@
     "pledgeSignature": "— l'équipe Zolto",
     "comparisonEyebrow": "la comparaison honnête",
     "comparisonHeading": "Ce que vous leur payez vraiment.",
-    "comparisonBody": "Stripe, SumUp et Worldline ont été construits pour une époque où les sites web étaient compliqués et où un terminal de paiement était presque un symbole de statut. Vous payez encore pour cette époque — pas pour quelque chose dont vous avez réellement besoin aujourd'hui.",
+    "comparisonBody": "Ce sont de vrais produits avec de vraies forces, et sur le taux carte, deux d'entre eux nous battent. Ce qui suit, c'est là où les modèles diffèrent réellement — ce qu'il y a dans la caisse, qui construit la boutique, et où finissent l'argent et les données.",
     "colOldGuard": "La vieille garde",
     "howEyebrow": "voici comment ça marche",
     "howHeading": "Une seule boutique. Partout où vous vendez.",
@@ -1036,6 +1036,27 @@
         "Serveurs en Europe",
         "TWINT intégré"
       ]
+    },
+    "squeezePlay": {
+      "eyebrow": "celui qui n'est pas un match nul",
+      "headline": "Votre catalogue et TWINT,",
+      "headlineEmphasis": "dans la même caisse.",
+      "body": "Toutes les caisses de ce marché tournent désormais sur un téléphone ordinaire : ce n'est donc plus l'argument. Voici celui qui reste : les deux grandes options ont des trous opposés, et une créatrice suisse tombe droit dedans quelle que soit celle qu'elle choisit.",
+      "panels": [
+        {
+          "label": "Une caisse avec vos pièces dedans",
+          "detail": "Photos, prix, niveaux de stock — et aucun moyen d'accepter le moyen de paiement que la moitié de votre clientèle sort en premier. Le contournement, c'est un second dispositif TWINT séparé et un rapprochement manuel en fin de journée."
+        },
+        {
+          "label": "Une caisse qui prend TWINT",
+          "detail": "TWINT, cartes, un bon taux forfaitaire — et rien dedans. C'est une application de paiement : vous saisissez un montant à chaque fois, ou vous achetez et intégrez un logiciel de caisse séparé par-dessus."
+        },
+        {
+          "label": "Zolto",
+          "detail": "Touchez la photo de l'objet réel, puis choisissez TWINT, carte ou espèces sur le même écran. Une pression met à jour le stock derrière votre stand et sur votre site en même temps."
+        }
+      ],
+      "claim": "Des trois façons dont une créatrice suisse peut se faire payer sur un marché aujourd'hui, une seule met le catalogue et TWINT sur le même écran."
     }
   },
   "sovereignty": {
@@ -1070,5 +1091,8 @@
       "lawLabel": "Droit applicable",
       "lawValue": "RGPD + nLPD suisse révisée"
     }
+  },
+  "sources": {
+    "read": "consulté le {{date}}"
   }
 }
