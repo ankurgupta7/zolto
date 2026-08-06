@@ -16,7 +16,7 @@ struct SaleReviewView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                Color.zoltoWarmWhite.ignoresSafeArea()
+                Color.zoltoBackground.ignoresSafeArea()
 
                 VStack(spacing: 0) {
                     List {
@@ -41,13 +41,13 @@ struct SaleReviewView: View {
                                 showingAddCustomItem = true
                             }) {
                                 Label("Add Custom Item", systemImage: "plus.circle")
-                                    .foregroundColor(.zoltoForestGreen)
+                                    .foregroundColor(.zoltoInk)
                             }
                         }
-                        .listRowBackground(Color.zoltoSoftIvory)
+                        .listRowBackground(Color.zoltoSurface)
                     }
                     .listStyle(.plain)
-                    .background(Color.zoltoWarmWhite)
+                    .background(Color.zoltoBackground)
 
                     Divider()
                         .background(Color.zoltoBorder)
@@ -56,12 +56,12 @@ struct SaleReviewView: View {
                         HStack {
                             Text("Total")
                                 .font(.title3.weight(.bold))
-                                .foregroundColor(.zoltoDeepText)
+                                .foregroundColor(.zoltoInk)
                                 .tracking(0.5)
                             Spacer()
-                            Text("CHF \(viewModel.totalChf)")
+                            Text(Money.label(viewModel.totalRappen()))
                                 .font(.title2.weight(.bold))
-                                .foregroundColor(.zoltoNearBlack)
+                                .foregroundColor(.zoltoInk)
                         }
                         .padding(.horizontal)
                         .padding(.top, 16)
@@ -85,16 +85,16 @@ struct SaleReviewView: View {
                         .padding(.horizontal, 16)
                         .padding(.bottom, 16)
                     }
-                    .background(Color.zoltoWarmWhite)
+                    .background(Color.zoltoBackground)
                 }
             }
             .navigationTitle("Sale Review")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(Color.zoltoWarmWhite, for: .navigationBar)
+            .toolbarBackground(Color.zoltoBackground, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
             .toolbarColorScheme(.light, for: .navigationBar)
             .navigationBarItems(leading: Button("Cancel") { dismiss() }
-                .foregroundColor(.zoltoNearBlack))
+                .foregroundColor(.zoltoInk))
             .alert(
                 "Override Price",
                 isPresented: Binding(
@@ -103,7 +103,7 @@ struct SaleReviewView: View {
                 ),
                 presenting: overridingProduct
             ) { product in
-                TextField("Price (CHF)", text: $overridePriceText)
+                TextField("Price (\(Money.displayCurrency))", text: $overridePriceText)
                     .keyboardType(.decimalPad)
                 Button("Reset to List Price", role: .destructive) {
                     viewModel.setPriceOverride(productId: product.id, priceRappen: nil)
@@ -115,11 +115,11 @@ struct SaleReviewView: View {
                 }
                 Button("Cancel", role: .cancel) {}
             } message: { product in
-                Text("Enter the bargained final price for \(product.displayName). List price is CHF \(product.priceChf).")
+                Text("Enter the bargained final price for \(product.displayName). List price is \(Money.label(product.priceRappen)).")
             }
             .alert("Add Custom Item", isPresented: $showingAddCustomItem) {
                 TextField("Item name", text: $customItemName)
-                TextField("Price (CHF)", text: $customItemPriceText)
+                TextField("Price (\(Money.displayCurrency))", text: $customItemPriceText)
                     .keyboardType(.decimalPad)
                 Button("Add") {
                     let trimmedName = customItemName.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -147,7 +147,7 @@ struct SaleReviewView: View {
                     .environmentObject(viewModel)
             }
         }
-        .accentColor(Color.zoltoForestGreen)
+        .accentColor(Color.zoltoInk)
     }
 
     // "card" drives the existing Stripe Terminal Tap to Pay flow. "cash" and
@@ -168,21 +168,21 @@ struct SaleReviewView: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text(product.displayName)
                     .font(.system(.subheadline, design: .default).weight(.semibold))
-                    .foregroundColor(.zoltoDeepText)
+                    .foregroundColor(.zoltoInk)
                 if isOverridden {
                     HStack(spacing: 6) {
-                        Text("CHF \(product.priceChf)")
+                        Text(Money.label(product.priceRappen))
                             .font(.footnote)
                             .strikethrough()
-                            .foregroundColor(.zoltoMutedText)
-                        Text("CHF \(Money.chfString(chargedRappen))")
+                            .foregroundColor(.zoltoMuted)
+                        Text(Money.label(chargedRappen))
                             .font(.subheadline.weight(.semibold))
-                            .foregroundColor(.zoltoGold)
+                            .foregroundColor(.zoltoAccent)
                     }
                 } else {
-                    Text("CHF \(product.priceChf)")
+                    Text(Money.label(product.priceRappen))
                         .font(.subheadline)
-                        .foregroundColor(.zoltoGold)
+                        .foregroundColor(.zoltoAccent)
                 }
             }
             Spacer()
@@ -192,12 +192,12 @@ struct SaleReviewView: View {
             }) {
                 Text("Bargain")
                     .font(.footnote.weight(.medium))
-                    .foregroundColor(.zoltoNearBlack)
+                    .foregroundColor(.zoltoInk)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
                     .overlay(
                         RoundedRectangle(cornerRadius: 4)
-                            .stroke(Color.zoltoNearBlack, lineWidth: 1)
+                            .stroke(Color.zoltoInk, lineWidth: 1)
                     )
             }
             .buttonStyle(.plain)
@@ -207,18 +207,18 @@ struct SaleReviewView: View {
             }) {
                 Text("Remove")
                     .font(.footnote.weight(.medium))
-                    .foregroundColor(.zoltoNearBlack)
+                    .foregroundColor(.zoltoInk)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
                     .overlay(
                         RoundedRectangle(cornerRadius: 4)
-                            .stroke(Color.zoltoNearBlack, lineWidth: 1)
+                            .stroke(Color.zoltoInk, lineWidth: 1)
                     )
             }
             .buttonStyle(.plain)
         }
         .padding(.vertical, 6)
-        .listRowBackground(Color.zoltoSoftWhite)
+        .listRowBackground(Color.zoltoSurface)
     }
 
     @ViewBuilder
@@ -227,10 +227,10 @@ struct SaleReviewView: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text(item.name)
                     .font(.system(.subheadline, design: .default).weight(.semibold))
-                    .foregroundColor(.zoltoDeepText)
-                Text("CHF \(Money.chfString(item.priceRappen))")
+                    .foregroundColor(.zoltoInk)
+                Text(Money.label(item.priceRappen))
                     .font(.subheadline)
-                    .foregroundColor(.zoltoGold)
+                    .foregroundColor(.zoltoAccent)
             }
             Spacer()
             Button(action: {
@@ -239,18 +239,18 @@ struct SaleReviewView: View {
             }) {
                 Text("Remove")
                     .font(.footnote.weight(.medium))
-                    .foregroundColor(.zoltoNearBlack)
+                    .foregroundColor(.zoltoInk)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
                     .overlay(
                         RoundedRectangle(cornerRadius: 4)
-                            .stroke(Color.zoltoNearBlack, lineWidth: 1)
+                            .stroke(Color.zoltoInk, lineWidth: 1)
                     )
             }
             .buttonStyle(.plain)
         }
         .padding(.vertical, 6)
-        .listRowBackground(Color.zoltoSoftWhite)
+        .listRowBackground(Color.zoltoSurface)
     }
 }
 

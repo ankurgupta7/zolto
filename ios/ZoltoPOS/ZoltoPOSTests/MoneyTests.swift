@@ -49,4 +49,26 @@ final class MoneyTests: XCTestCase {
         XCTAssertEqual(Money.chfString(3550), "35.50")
         XCTAssertEqual(Money.chfString(0), "0.00")
     }
+
+    // Price labels follow the paired store's currency (multi-tenant): the
+    // code comes from /api/pos/config lowercase and is shown uppercased.
+
+    func testLabelUsesStoreCurrency() {
+        let old = Money.currencyCode
+        defer { Money.currencyCode = old }
+
+        Money.currencyCode = "chf"
+        XCTAssertEqual(Money.label(3550), "CHF 35.50")
+
+        Money.currencyCode = "eur"
+        XCTAssertEqual(Money.label(100), "EUR 1.00")
+    }
+
+    func testDisplayCurrencyFallsBackToDefaultWhenBlank() {
+        let old = Money.currencyCode
+        defer { Money.currencyCode = old }
+
+        Money.currencyCode = "  "
+        XCTAssertEqual(Money.displayCurrency, "CHF")
+    }
 }

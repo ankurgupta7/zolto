@@ -30,44 +30,44 @@ struct ProductListRow: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(product.displayName)
                         .font(.subheadline.weight(.medium))
-                        .foregroundColor(.zoltoNearBlack)
+                        .foregroundColor(.zoltoInk)
                         .lineLimit(1)
                     
                     Text(product.category ?? "Other")
                         .font(.caption2)
-                        .foregroundColor(.zoltoMutedText)
+                        .foregroundColor(.zoltoMuted)
                 }
                 
                 Spacer()
                 
                 VStack(alignment: .trailing, spacing: 2) {
-                    Text("CHF \(product.priceChf)")
+                    Text(Money.label(product.priceRappen))
                         .font(.subheadline.weight(.semibold))
-                        .foregroundColor(.zoltoForestGreen)
+                        .foregroundColor(.zoltoInk)
                     
                     if product.quantity > 1 {
                         Text("\(product.quantity) left")
                             .font(.system(size: 10, weight: .bold))
                             .padding(.horizontal, 4)
                             .padding(.vertical, 2)
-                            .background(Color.zoltoNearBlack.opacity(0.05))
+                            .background(Color.zoltoInk.opacity(0.05))
                             .cornerRadius(4)
                     }
                 }
                 
                 if isSelected {
                     Image(systemName: "checkmark.circle.fill")
-                        .foregroundColor(.zoltoForestGreen)
+                        .foregroundColor(.zoltoInk)
                         .font(.title3)
                 } else {
                     Image(systemName: "circle")
-                        .foregroundColor(.zoltoNearBlack.opacity(0.1))
+                        .foregroundColor(.zoltoInk.opacity(0.1))
                         .font(.title3)
                 }
             }
             .padding(.vertical, 8)
             .padding(.horizontal, 16)
-            .background(isSelected ? Color.zoltoForestGreen.opacity(0.05) : Color.clear)
+            .background(isSelected ? Color.zoltoInk.opacity(0.05) : Color.clear)
         }
         .buttonStyle(PlainButtonStyle())
     }

@@ -101,3 +101,9 @@ Stripe Terminal's Tap to Pay requires:
    screen shows a "Card payments not set up yet" guide instead of failing.
 
 Until approved, the app builds and runs fine — the Tap to Pay button just won't work.
+
+> **Bundle id**: the app identifier is `ch.zolto.pos`. If your signing assets
+> were created for the old `ch.kalakosh.pos` identifier, the App ID,
+> provisioning profiles, App Store Connect record, and the Tap to Pay
+> entitlement approval all need re-creating for `ch.zolto.pos` — they are tied
+> to the bundle id and do not carry over.
