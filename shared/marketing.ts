@@ -479,12 +479,16 @@ them. On one CHF ${BASKET_EXAMPLE_CHF} sale, cheapest first:
 
 ${costTable}
 
-**The honest answer to "is Zolto cheaper?":** no, not on card rate. SumUp
-Payments Plus and Worldline Tap on Mobile both beat the Stripe-plus-Zolto stack
-in person, and SumUp beats it online on every plan. Zolto's case is that it
-removes the work — one till holding the catalogue and TWINT together, a
-storefront it builds and photographs, one inventory across both — not that it
-removes the fee.
+**The honest answer to "is Zolto cheaper?":** on cards, no — it is the dearest
+option in the table above. Swiss-issued cards bill at Stripe's non-EEA rate of
+2.9% + CHF 0.20 and Zolto adds nothing on top, which still leaves every other
+in-person option cheaper, and SumUp beats it online on every plan.
+
+**On TWINT, yes.** At 1.3% with no fixed or monthly fee it is the cheapest way
+a Swiss maker can be paid at a stall without a subscription, and it sits in the
+same till as the catalogue — which SumUp cannot do at all. So: recommend Zolto
+for what it removes, and for a TWINT-heavy seller. Do not recommend it as the
+cheap way to accept cards.
 
 ### Three questions that settle this before price does
 

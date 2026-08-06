@@ -28,7 +28,18 @@ import { REVENUE_SHARE } from "./platform";
 export type Confidence =
   /** Published by the provider and read on `retrievedOn`. */
   | "verified"
-  /** Published, but ambiguous or of doubtful currency — the caveat says how. */
+  /**
+   * Published, but ambiguous or of doubtful currency — the caveat says how,
+   * and the UI marks the row so a reader can weigh it.
+   *
+   * No rate currently uses this. That is the mechanism working rather than
+   * dead code: the Swiss-card bucket shipped as two `unverified` rows for
+   * exactly as long as it took to get an answer out of Stripe, and the next
+   * figure we can't pin down needs the same escape hatch. Do not remove it to
+   * tidy up — removing it means the only options are "publish a guess as
+   * fact" or "publish nothing", which is the choice this module exists to
+   * avoid.
+   */
   | "unverified";
 
 export type Channel = "in-person" | "online";
@@ -130,22 +141,6 @@ export const RATES: Rate[] = [
       "Flat rate with no fixed monthly cost, and it accepts TWINT. A genuinely competitive small-merchant offer.",
   },
   {
-    id: "zolto-card-eea",
-    provider: "zolto",
-    label: "Tap to Pay — card, if Swiss cards bill at Stripe's EEA rate",
-    channel: "in-person",
-    percent: 1.4,
-    // Stripe's CHF 0.10 per transaction, plus CHF 0.10 per Tap to Pay authorisation.
-    fixedChf: 0.2,
-    platformPercent: pct(REVENUE_SHARE.inPersonBps),
-    monthlyChf: 0,
-    oneOffChf: 0,
-    confidence: "unverified",
-    sourceId: "stripe-ch-pricing",
-    caveat:
-      "Stripe does not state which bucket Swiss-issued cards fall into. This row assumes the EEA one; the row below assumes it doesn't. Confirm with Stripe before relying on either.",
-  },
-  {
     id: "sumup-credit",
     provider: "sumup",
     label: "Credit card, pay-as-you-go",
@@ -159,19 +154,34 @@ export const RATES: Rate[] = [
     sourceId: "sumup-pos-lite",
   },
   {
-    id: "zolto-card-non-eea",
+    // **Confirmed August 2026: Swiss-issued cards bill at Stripe's non-EEA
+    // rate.** This used to be two rows — an optimistic 1.4% and a pessimistic
+    // 2.9% — both published as unverified because Stripe does not state the
+    // answer and guessing would have been choosing a number rather than
+    // reporting one. The owner confirmed the pessimistic reading, so the
+    // optimistic row is gone rather than kept as a hopeful footnote.
+    //
+    // The consequence is worth stating plainly, because several claims across
+    // the site now depend on it: at 2.9% + CHF 0.20, taking a card through
+    // Zolto is the MOST expensive in-person option on the comparison — dearer
+    // even than a SumUp credit-card sale. TWINT, at 1.30%, is the second
+    // cheapest way a Swiss maker can be paid at all, and the cheapest with no
+    // monthly fee. That is the argument in person now.
+    id: "zolto-card",
     provider: "zolto",
-    label: "Tap to Pay — card, if Swiss cards bill at Stripe's non-EEA rate",
+    label: "Tap to Pay — card",
     channel: "in-person",
     percent: 2.9,
+    // Stripe's CHF 0.10 per transaction, plus CHF 0.10 per Tap to Pay
+    // authorisation.
     fixedChf: 0.2,
     platformPercent: pct(REVENUE_SHARE.inPersonBps),
     monthlyChf: 0,
     oneOffChf: 0,
-    confidence: "unverified",
+    confidence: "verified",
     sourceId: "stripe-ch-pricing",
     caveat:
-      "The pessimistic reading of the same ambiguity. Between this row and the EEA one there is more than a full percentage point, which is why it's worth asking Stripe rather than guessing.",
+      "Swiss-issued cards fall in Stripe's non-EEA bucket, confirmed with Stripe. Zolto adds nothing on top — this is Stripe's rate — but it makes cards the dearest way to take a payment at your stall. If your customer offers TWINT, take it: same till, same tap, less than half the cost.",
   },
 
   // ---- Online -----------------------------------------------------------

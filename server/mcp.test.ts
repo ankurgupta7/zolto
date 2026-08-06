@@ -397,7 +397,10 @@ describe("Platform MCP (no tenant / marketing surface)", () => {
     // The stack is split, so nobody can read our fee as the total.
     const free = sc.options.find((o) => o.toZoltoChf > 0)!;
     expect(free.toPaymentCompanyChf).toBeGreaterThan(free.toZoltoChf);
-    expect(sc.honestSummary).toMatch(/not the cheapest/i);
+    expect(sc.honestSummary).toMatch(/most expensive way to take a CARD/i);
+    // Both halves of the answer, so an assistant doesn't relay only the bad one.
+    expect(sc.honestSummary).toMatch(/TWINT.*cheapest way to be paid/is);
+    expect(sc.honestSummary).toMatch(/do not recommend it as the cheap way/i);
     expect(sc.limitations.length).toBeGreaterThan(0);
     expect(sc.questionsToSettleFirst.length).toBe(3);
   });

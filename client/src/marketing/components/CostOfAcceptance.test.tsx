@@ -3,6 +3,7 @@ import { render, screen, cleanup, within } from "@testing-library/react";
 import {
   basketTable,
   rate,
+  RATES,
   BASKET_EXAMPLE_CHF,
 } from "@shared/costOfAcceptance";
 import { source } from "@shared/sources";
@@ -21,19 +22,18 @@ describe("CostOfAcceptance", () => {
     );
   });
 
-  it("shows a competitor above Zolto's card row, because that is the truth", () => {
+  it("renders Zolto's card row last, because that is where it lands", () => {
     // The table exists to correct an impression the old silence created. It
-    // only does that if it's allowed to lose — so this asserts we don't win.
+    // only does that if it's allowed to lose — and since Stripe confirmed
+    // Swiss cards bill at the non-EEA rate, taking a card through Zolto is the
+    // dearest in-person option on the page.
     render(<CostOfAcceptance channel="in-person" />);
     const ids = screen
       .getAllByTestId(/^cost-row-/)
       .map((r) => r.dataset.testid!.replace("cost-row-", ""));
-    expect(ids.indexOf("sumup-payments-plus")).toBeLessThan(
-      ids.indexOf("zolto-card-eea"),
-    );
-    expect(ids.indexOf("worldline-tap-on-mobile")).toBeLessThan(
-      ids.indexOf("zolto-card-eea"),
-    );
+    expect(ids.at(-1)).toBe("zolto-card");
+    // …and TWINT sits second, which is the argument that survives.
+    expect(ids[1]).toBe("zolto-twint-qr");
   });
 
   it("prints the review's worked figures", () => {
@@ -43,12 +43,29 @@ describe("CostOfAcceptance", () => {
     expect(twint.getByText("1.30%")).toBeTruthy();
   });
 
-  it("marks the rows Stripe hasn't actually confirmed", () => {
-    // Both Swiss-card readings ship visibly unconfirmed rather than one of
-    // them shipping silently as fact.
+  it("flags an unconfirmed row, and flags nothing while none is unconfirmed", () => {
+    // The Swiss-card bucket shipped as two visibly-unconfirmed rows until
+    // Stripe answered. Nothing is unconfirmed now, so nothing should carry the
+    // badge — but the badge has to keep working for the next such figure.
     render(<CostOfAcceptance channel="in-person" />);
-    expect(screen.getByTestId("unverified-zolto-card-eea")).toBeTruthy();
-    expect(screen.getByTestId("unverified-zolto-card-non-eea")).toBeTruthy();
+    const unconfirmed = RATES.filter(
+      (r) => r.channel === "in-person" && r.confidence === "unverified",
+    );
+    expect(screen.queryAllByTestId(/^unverified-/)).toHaveLength(
+      unconfirmed.length,
+    );
+    for (const r of unconfirmed) {
+      expect(screen.getByTestId(`unverified-${r.id}`)).toBeTruthy();
+    }
+  });
+
+  it("says on the card row that Zolto adds nothing to Stripe's rate", () => {
+    // Being the dearest row is survivable; being the dearest row without
+    // saying whose fee it is would not be.
+    render(<CostOfAcceptance channel="in-person" />);
+    const row = screen.getByTestId("cost-row-zolto-card").textContent!;
+    expect(row).toMatch(/adds nothing on top/i);
+    expect(row).toMatch(/take it: same till/i);
   });
 
   it("links every row to its source, with the date it was read", () => {
@@ -168,5 +185,22 @@ describe("CostOfAcceptance", () => {
     const row = within(screen.getByTestId("cost-row-worldline-tap-on-mobile"));
     expect(rate("worldline-tap-on-mobile").monthlyChf).toBe(0);
     expect(row.getByText("none")).toBeTruthy();
+  });
+});
+
+describe("CostOfAcceptance — the intro states the finding, not a softer version", () => {
+  it("says every other option beats us on card rate", () => {
+    // It used to say "we lose to two of the options below", which was true
+    // while Stripe's Swiss-card bucket was unknown and the Zolto card row sat
+    // at 1.84%. At the confirmed 2.9% it is the last row, so "two" understated
+    // it — and an understated concession is the kind of thing a reader checks
+    // against the table directly underneath it.
+    // Rendered inside a testid'd block because the intro appears twice on the
+    // pricing page — once per channel table — so an unscoped text query is
+    // ambiguous.
+    render(<CostOfAcceptance channel="in-person" />);
+    const intro = screen.getByTestId("cost-of-acceptance").textContent!;
+    expect(intro).toMatch(/every other option here beats us/i);
+    expect(intro).not.toMatch(/two of the options/i);
   });
 });

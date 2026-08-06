@@ -563,8 +563,8 @@
       },
       "What a sale costs": {
         "feature": "Was ein Verkauf kostet",
-        "them": "Ihr Satz, alles inklusive — und bei Karten oft tiefer als unserer",
-        "us": "Der Satz Ihres Abwicklers, plus 0% von uns vor Ort und 1% online auf Free"
+        "them": "Ihr Satz, alles inklusive — und am Stand schlägt uns jeder einzelne von ihnen bei Karten",
+        "us": "Der Satz Ihres Abwicklers, plus 0% von uns vor Ort und 1% online auf Free — nehmen Sie also TWINT, das in derselben Kasse liegt"
       },
       "Building the store": {
         "feature": "Den Shop bauen",
@@ -1051,7 +1051,7 @@
         {
           "piece": "Kartennetzwerke und Handy-Wallets",
           "today": "Visa, Mastercard, Apple Pay, Google Pay",
-          "next": "Die sind nicht europäisch und werden es nie sein. Wenn ein Verkauf von Anfang bis Ende in der Schweiz bleiben soll, nehmen Sie ihn über Ihren eigenen TWINT-QR-Code — das ist für Sie ohnehin der günstigste Weg, bezahlt zu werden, zu 1,3% ohne Fixgebühr."
+          "next": "Die sind nicht europäisch und werden es nie sein. Wenn ein Verkauf von Anfang bis Ende in der Schweiz bleiben soll, nehmen Sie ihn über Ihren eigenen TWINT-QR-Code — mit 1,3% ohne Fixgebühr ist er auch der günstigste Weg, bezahlt zu werden, der keine Monatskosten trägt, und weniger als die Hälfte dessen, was derselbe Verkauf auf einer Karte kostet."
         }
       ],
       "why": [
@@ -1104,16 +1104,12 @@
         "label": "Tap on Mobile",
         "caveat": "Pauschalsatz ohne fixe Monatskosten, und TWINT wird akzeptiert. Ein wirklich konkurrenzfähiges Angebot für kleine Betriebe."
       },
-      "zolto-card-eea": {
-        "label": "Tap to Pay — Karte, falls Schweizer Karten zum EWR-Satz von Stripe laufen",
-        "caveat": "Stripe sagt nicht, in welchen Korb Schweizer Karten fallen. Diese Zeile nimmt den EWR-Korb an, die Zeile darunter das Gegenteil. Klären Sie es mit Stripe, bevor Sie sich auf eine der beiden verlassen."
+      "zolto-card": {
+        "label": "Tap to Pay — Karte",
+        "caveat": "Schweizer Karten fallen in Stripes Nicht-EWR-Korb, mit Stripe bestätigt. Zolto legt nichts obendrauf — das ist Stripes Satz — aber damit ist die Karte der teuerste Weg, an Ihrem Stand bezahlt zu werden. Wenn Ihre Kundin TWINT anbietet, nehmen Sie es: gleiche Kasse, gleicher Tipp, weniger als die Hälfte der Kosten."
       },
       "sumup-credit": {
         "label": "Kreditkarte, ohne Abo"
-      },
-      "zolto-card-non-eea": {
-        "label": "Tap to Pay — Karte, falls Schweizer Karten zum Nicht-EWR-Satz von Stripe laufen",
-        "caveat": "Die pessimistische Lesart derselben Unklarheit. Zwischen dieser und der EWR-Zeile liegt mehr als ein voller Prozentpunkt — deshalb lohnt es sich, Stripe zu fragen statt zu raten."
       },
       "sumup-online": {
         "label": "Kasse im Online-Shop",
@@ -1185,8 +1181,8 @@
         "detail": "SumUp und Worldline haben je ein Jahrzehnt oder mehr. Zolto ist neu, und ein neues Unternehmen ist für sich genommen ein Risiko, so gut das Produkt auch ist. Was wir dagegensetzen können: kein Vertrag, keine Hardware zu kaufen, und ein Klick-Export von allem, was Sie eingegeben haben — auch im Free-Tarif. Zu gehen kostet Sie einen Nachmittag, keine Kündigungsgebühr."
       },
       {
-        "title": "Wir sind nicht der günstigste Weg, eine Karte zu nehmen",
-        "detail": "SumUp Payments Plus und Worldline Tap on Mobile schlagen den Stripe-plus-Zolto-Stapel beim Kartensatz, und SumUps Online-Satz schlägt unseren in jedem Tarif. Der Grund für Zolto ist, dass es die Arbeit abnimmt, nicht die Gebühr. Wenn die Kosten pro Kartenverkauf Ihre entscheidende Zahl sind, sagen Ihnen das die Vergleichsseiten."
+        "title": "Eine Karte über uns zu nehmen ist die teuerste Option in unserer eigenen Tabelle",
+        "detail": "Schweizer Karten laufen zu Stripes Nicht-EWR-Satz — 2,9% plus CHF 0.20 — und Zolto legt nichts obendrauf, womit trotzdem jede andere Option vor Ort in unserem Vergleich günstiger ist als unsere. SumUps Online-Satz schlägt unseren ebenfalls in jedem Tarif. Zwei ehrliche Antworten: nehmen Sie TWINT, wo Sie können — es liegt in derselben Kasse und kostet weniger als die Hälfte; und wählen Sie Zolto, weil es die Arbeit abnimmt, nicht die Gebühr. Wenn die Kosten pro Kartenverkauf Ihre entscheidende Zahl sind, entscheidet sie gegen uns."
       },
       {
         "title": "Alles läuft über Stripe, und Stripe setzt den echten Preis",
@@ -1211,11 +1207,11 @@
         "answers": [
           {
             "when": "Ja, die meisten",
-            "then": "SumUp fällt weg, egal was es kostet — seine Kasse kann TWINT überhaupt nicht. Bleiben Zolto und Worldline, und die Frage wird, ob Sie Ihren Katalog in der Kasse haben wollen."
+            "then": "SumUp fällt weg, egal was es kostet — seine Kasse kann TWINT überhaupt nicht. Bleiben Zolto und Worldline, und die Frage wird, ob Sie Ihren Katalog in der Kasse haben wollen. Es ist für Sie auch die günstigste Antwort: TWINT zu 1,3% ist das Wenigste, was Sie zahlen können, um an einem Stand Geld entgegenzunehmen, ohne ein Monatsabo."
           },
           {
             "when": "Nein, sie tippen meist eine Karte auf",
-            "then": "SumUp ist beim Satz schwer zu schlagen und seine Kassen-App ist reifer als unsere. Wählen Sie Zolto für den Shop, die Listings und das eine Inventar — nicht für die Gebühr."
+            "then": "Dann ist der Kartensatz Ihre Zahl, und unserer ist der höchste auf dieser Seite — Schweizer Karten laufen zu Stripes Nicht-EWR-Satz, und wir legen nichts drauf. SumUp ist günstiger und seine Kassen-App ist reifer. Wählen Sie Zolto für den Shop, die Listings und das eine Inventar — oder wählen Sie es nicht."
           }
         ]
       },
@@ -1285,7 +1281,7 @@
   },
   "costOfAcceptance": {
     "heading": "Was ein Verkauf von CHF {{basket}} kostet",
-    "intro": "Günstigstes zuerst. Zolto steht nicht an der Spitze, und genau das ist der Punkt — beim Kartensatz verlieren wir gegen zwei der Optionen unten. Jede Zahl verlinkt auf ihre Quelle und das Datum, an dem sie gelesen wurde.",
+    "intro": "Günstigstes zuerst. Zolto steht nicht an der Spitze, und genau das ist der Punkt — beim Kartensatz schlägt uns hier jede andere Option. Jede Zahl verlinkt auf ihre Quelle und das Datum, an dem sie gelesen wurde.",
     "tableCaption": "Kosten eines Verkaufs von CHF {{basket}} je Option, günstigstes zuerst",
     "colOption": "Wie Sie das Geld nehmen",
     "colCost": "Kosten des Verkaufs",

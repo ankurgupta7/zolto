@@ -25,16 +25,27 @@ Compared like for like on a CHF 45 craft-fair sale:
 | | Cost | Effective rate |
 |---|---|---|
 | SumUp Payments Plus (CHF 29/mo) | CHF 0.45 | 0.99% |
-| Zolto — own TWINT QR | CHF 0.59 | 1.30% |
+| **Zolto — own TWINT QR** | **CHF 0.59** | **1.30%** |
 | SumUp — debit | CHF 0.68 | 1.50% |
 | Worldline Tap on Mobile | CHF 0.77 | 1.70% |
-| **Zolto — EEA card via Stripe** | **CHF 0.83** | **1.84%** |
 | SumUp — credit | CHF 1.13 | 2.50% |
+| **Zolto — card via Stripe** | **CHF 1.51** | **3.34%** |
 
-Zolto loses to SumUp Payments Plus and to Worldline Tap on Mobile in person,
-and to SumUp on every plan online. **The reason to choose Zolto is that it
-removes the work, not that it removes the fee.** Sold as "cheapest", the case
-doesn't survive page one.
+*(Updated after the Stripe confirmation in §6. The review worked its Zolto card
+row at 1.4% because Stripe's bucket was unknown; at the confirmed 2.9% the row
+moves from fifth to last.)*
+
+Two things follow, and the whole in-person argument now rests on the second:
+
+1. **On cards, Zolto is the dearest option on its own table** — dearer than a
+   SumUp credit-card sale. Zolto adds nothing to Stripe's rate; Stripe's rate is
+   simply high for Swiss cards.
+2. **On TWINT, Zolto is the cheapest way a maker can be paid at a stall without
+   a subscription** — 1.30%, less than half the card figure, in the same till as
+   the catalogue, which SumUp cannot do at all.
+
+**The reason to choose Zolto is that it removes the work, not that it removes
+the fee.** Sold as "cheapest", the case doesn't survive page one.
 
 ---
 
@@ -148,16 +159,32 @@ elision the ledger exists to refuse. It is now two rows, and the second says
 
 ---
 
-## 6. Two figures to confirm before quoting
+## 6. The figures that needed confirming
 
-Both ship as `confidence: "unverified"` with the question stated on the page,
-rather than being silently resolved in our favour:
+### Swiss-card bucket — **answered: non-EEA (2.9%)**
 
-1. **Does Stripe class Swiss-issued cards in its EEA in-person bucket (1.4% +
-   CHF 0.10) or the non-EEA one (2.9% + CHF 0.10)?** It moves Zolto's in-person
-   row by more than a full percentage point. Both readings are published.
-2. **Is the Saferpay price list, dated 09.2022, still current?** Its source row
-   carries that note.
+This shipped as *two* rows, an optimistic 1.4% and a pessimistic 2.9%, both
+marked `unverified`, because Stripe does not state the answer and guessing
+would have been choosing a number rather than reporting one.
+
+**Confirmed August 2026: Swiss-issued cards bill at Stripe's non-EEA rate.** The
+optimistic row is deleted rather than kept as a hopeful footnote, and the
+surviving `zolto-card` row is `verified`. The consequences rippled further than
+the table — the comparison row, `ZOLTO_LIMITATIONS`, `BUYER_FIT`, the
+sovereignty ledger's card-networks note, the MCP summary and `/llms-full.txt`
+all previously said some version of "not the cheapest" and now say the sharper,
+true thing. The mechanism that made this safe is worth keeping: the site was
+able to publish an honest *range* for as long as the question was open, instead
+of picking a flattering number or saying nothing.
+
+`confidence: "unverified"` now has no users. **Do not delete it** — the doc
+comment on the type explains why, and a test asserts the escape hatch survives.
+
+### Saferpay price list — still open
+
+Dated 09.2022. Its source row carries that note, and its offerings stay on the
+`NEGOTIATED` list with no number attached, so nothing on the site depends on
+whether the figures are current.
 
 When either is answered, edit the row in `shared/costOfAcceptance.ts` and the
 source's `retrievedOn` in `shared/sources.ts`. Nothing else needs touching —

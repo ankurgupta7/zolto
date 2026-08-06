@@ -29,8 +29,8 @@ describe("the CHF 45 basket", () => {
     ["sumup-payments-plus", 0.45, 0.99],
     ["sumup-debit", 0.68, 1.5],
     ["worldline-tap-on-mobile", 0.77, 1.7],
-    ["zolto-card-eea", 0.83, 1.84],
     ["sumup-credit", 1.13, 2.5],
+    ["zolto-card", 1.51, 3.34],
   ])("costs %s CHF %s (%s%%)", (id, chf, pct) => {
     const cost = costOfBasket(BASKET_EXAMPLE_CHF, rate(id));
     expect(cost.totalChf).toBe(chf);
@@ -45,21 +45,33 @@ describe("basketTable", () => {
     expect([...totals].sort((a, b) => a - b)).toEqual(totals);
   });
 
-  it("does NOT put Zolto at the top of the in-person table", () => {
-    // The finding, pinned. On raw card rate Zolto loses to SumUp Payments Plus
-    // and to Worldline Tap on Mobile. A table that reordered itself until Zolto
-    // won would be the exact behaviour the pricing pledge is positioned against,
-    // so this test fails loudly if anyone ever "fixes" the ordering.
+  it("puts Zolto's card row LAST in person, because that is where it belongs", () => {
+    // The finding, pinned, and sharper since Stripe confirmed Swiss cards bill
+    // at the non-EEA rate: taking a card through Zolto is the most expensive
+    // in-person option on our own comparison. A table that reordered itself
+    // until Zolto won would be the exact behaviour the pricing pledge is
+    // positioned against, so this fails loudly if anyone ever "fixes" it.
     const rows = basketTable(BASKET_EXAMPLE_CHF, "in-person");
-    const zoltoCard = rows.findIndex((r) => r.rate.id === "zolto-card-eea");
-    const sumUpPlus = rows.findIndex(
-      (r) => r.rate.id === "sumup-payments-plus",
-    );
-    const worldline = rows.findIndex(
-      (r) => r.rate.id === "worldline-tap-on-mobile",
-    );
-    expect(sumUpPlus).toBeLessThan(zoltoCard);
-    expect(worldline).toBeLessThan(zoltoCard);
+    expect(rows.at(-1)!.rate.id).toBe("zolto-card");
+  });
+
+  it("puts TWINT second overall, and first among options with no monthly fee", () => {
+    // The other half of the same fact, and the reason the in-person argument
+    // survives: the cheapest row (SumUp Payments Plus) costs CHF 29/month to
+    // stand on. TWINT costs nothing to stand on and is next.
+    const rows = basketTable(BASKET_EXAMPLE_CHF, "in-person");
+    expect(rows[1].rate.id).toBe("zolto-twint-qr");
+    const noSubscription = rows.filter((r) => r.rate.monthlyChf === 0);
+    expect(noSubscription[0].rate.id).toBe("zolto-twint-qr");
+  });
+
+  it("keeps TWINT under half the cost of a card, which the copy claims", () => {
+    // SOVEREIGNTY and BUYER_FIT both say "less than half what the same sale
+    // costs on a card". That is arithmetic, so it gets checked here rather
+    // than trusted in four languages.
+    const twint = costOfBasket(BASKET_EXAMPLE_CHF, rate("zolto-twint-qr"));
+    const card = costOfBasket(BASKET_EXAMPLE_CHF, rate("zolto-card"));
+    expect(twint.totalChf).toBeLessThan(card.totalChf / 2);
   });
 
   it("keeps SumUp cheaper than Zolto online on every plan", () => {
@@ -129,7 +141,7 @@ describe("costOfBasket", () => {
   });
 
   it("does not charge a fixed fee on a sale that didn't happen", () => {
-    expect(costOfBasket(0, rate("zolto-card-eea")).totalChf).toBe(0);
+    expect(costOfBasket(0, rate("zolto-card")).totalChf).toBe(0);
   });
 
   it("rounds to whole cents rather than leaking float noise", () => {
@@ -146,15 +158,29 @@ describe("honesty invariants", () => {
     }
   });
 
-  it("marks both Swiss-card readings unverified rather than picking one", () => {
-    // The single biggest uncertainty in the whole comparison: it moves Zolto's
-    // in-person row by more than a percentage point. Publishing one silently
-    // would be choosing a number rather than reporting one.
-    expect(rate("zolto-card-eea").confidence).toBe("unverified");
-    expect(rate("zolto-card-non-eea").confidence).toBe("unverified");
-    expect(rate("zolto-card-non-eea").percent).toBeGreaterThan(
-      rate("zolto-card-eea").percent + 1,
-    );
+  it("publishes one confirmed Swiss card rate, not two hopeful ones", () => {
+    // This shipped as two `unverified` rows — an optimistic 1.4% and a
+    // pessimistic 2.9% — for exactly as long as it took to get an answer out
+    // of Stripe, because guessing would have been choosing a number rather
+    // than reporting one. Stripe confirmed the pessimistic reading in August
+    // 2026, so the optimistic row is gone rather than kept as a hopeful
+    // footnote, and the surviving row is marked verified.
+    const card = rate("zolto-card");
+    expect(card.confidence).toBe("verified");
+    expect(card.percent).toBe(2.9);
+    expect(RATES.filter((r) => /zolto-card/.test(r.id))).toHaveLength(1);
+    // The row still explains itself: Zolto adds nothing, and TWINT is cheaper.
+    expect(card.caveat).toMatch(/non-EEA/);
+    expect(card.caveat).toMatch(/TWINT/);
+  });
+
+  it("keeps the unverified escape hatch even with nothing using it", () => {
+    // No rate is currently unverified, which is the mechanism working rather
+    // than dead code. Removing it would leave only "publish a guess as fact"
+    // or "publish nothing" — the choice this module exists to avoid.
+    const unverified = RATES.filter((r) => r.confidence === "unverified");
+    expect(unverified).toHaveLength(0);
+    for (const r of unverified) expect(r.caveat).toBeTruthy();
   });
 
   it("keeps negotiated pricing out of the quantified table", () => {

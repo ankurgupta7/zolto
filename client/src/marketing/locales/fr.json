@@ -563,8 +563,8 @@
       },
       "What a sale costs": {
         "feature": "Ce que coûte une vente",
-        "them": "Leur taux, tout compris — et sur les cartes il est souvent inférieur au nôtre",
-        "us": "Le taux de votre prestataire, plus 0% de notre part en personne et 1% en ligne sur Free"
+        "them": "Leur taux, tout compris — et sur un marché, chacun d'eux nous bat sur les cartes",
+        "us": "Le taux de votre prestataire, plus 0% de notre part en personne et 1% en ligne sur Free — prenez donc TWINT, qui est dans la même caisse"
       },
       "Building the store": {
         "feature": "Construire la boutique",
@@ -1056,7 +1056,7 @@
         {
           "piece": "Réseaux de cartes et portefeuilles mobiles",
           "today": "Visa, Mastercard, Apple Pay, Google Pay",
-          "next": "Ils ne sont pas européens et ne le seront jamais. Si vous voulez qu'une vente reste en Suisse de bout en bout, encaissez-la avec votre propre code QR TWINT — c'est de toute façon le moyen le moins cher d'être payé, à 1,3% sans frais fixes."
+          "next": "Ils ne sont pas européens et ne le seront jamais. Si vous voulez qu'une vente reste en Suisse de bout en bout, encaissez-la avec votre propre code QR TWINT — à 1,3% sans frais fixes, c'est aussi le moyen le moins cher d'être payé qui ne porte aucun coût mensuel, et moins de la moitié de ce que la même vente coûte sur une carte."
         }
       ],
       "why": [
@@ -1109,16 +1109,12 @@
         "label": "Tap on Mobile",
         "caveat": "Taux forfaitaire sans coût mensuel fixe, et TWINT est accepté. Une offre réellement compétitive pour un petit commerce."
       },
-      "zolto-card-eea": {
-        "label": "Tap to Pay — carte, si les cartes suisses relèvent du taux EEE de Stripe",
-        "caveat": "Stripe ne dit pas dans quelle catégorie tombent les cartes suisses. Cette ligne suppose l'EEE, celle du dessous suppose le contraire. Vérifiez auprès de Stripe avant de vous fier à l'une ou l'autre."
+      "zolto-card": {
+        "label": "Tap to Pay — carte",
+        "caveat": "Les cartes suisses relèvent de la catégorie hors EEE de Stripe, confirmé auprès de Stripe. Zolto n'ajoute rien par-dessus — c'est le taux de Stripe — mais cela fait de la carte le moyen le plus cher d'être payé à votre stand. Si votre cliente propose TWINT, prenez-le : même caisse, même geste, moins de la moitié du coût."
       },
       "sumup-credit": {
         "label": "Carte de crédit, sans abonnement"
-      },
-      "zolto-card-non-eea": {
-        "label": "Tap to Pay — carte, si les cartes suisses relèvent du taux hors EEE de Stripe",
-        "caveat": "La lecture pessimiste de la même ambiguïté. Entre cette ligne et celle de l'EEE, il y a plus d'un point de pourcentage entier : d'où l'intérêt de demander à Stripe plutôt que de deviner."
       },
       "sumup-online": {
         "label": "Caisse de la boutique en ligne",
@@ -1190,8 +1186,8 @@
         "detail": "SumUp et Worldline ont chacun dix ans ou plus. Zolto est nouveau, et une entreprise nouvelle est un risque en soi, aussi bon soit le produit. Ce que nous pouvons opposer à cela : aucun contrat, aucun matériel à acheter, et un export en un clic de tout ce que vous avez saisi — y compris sur le plan Free. Partir vous coûte un après-midi, pas des frais de résiliation."
       },
       {
-        "title": "Nous ne sommes pas le moyen le moins cher d'encaisser une carte",
-        "detail": "SumUp Payments Plus et Worldline Tap on Mobile battent tous deux la pile Stripe-plus-Zolto sur le taux carte, et le taux en ligne de SumUp bat le nôtre sur tous les plans. La raison de choisir Zolto, c'est qu'il supprime le travail, pas les frais. Si le coût par vente par carte est votre chiffre décisif, les pages de comparaison vous le diront."
+        "title": "Encaisser une carte chez nous est l'option la plus chère de notre propre tableau",
+        "detail": "Les cartes suisses relèvent du taux hors EEE de Stripe — 2,9% plus CHF 0.20 — et Zolto n'ajoute rien par-dessus, ce qui laisse malgré tout toutes les autres options en personne de notre comparaison moins chères que la nôtre. Le taux en ligne de SumUp bat aussi le nôtre sur tous les plans. Deux réponses honnêtes : prenez TWINT quand vous le pouvez, il est dans la même caisse et coûte moins de la moitié ; et choisissez Zolto parce qu'il supprime le travail, pas les frais. Si le coût par vente par carte est votre chiffre décisif, il tranche contre nous."
       },
       {
         "title": "Tout passe par Stripe, et c'est Stripe qui fixe le vrai prix",
@@ -1216,11 +1212,11 @@
         "answers": [
           {
             "when": "Oui, en majorité",
-            "then": "SumUp est écarté, quel qu'en soit le prix — sa caisse ne peut absolument pas prendre TWINT. Restent Zolto et Worldline, et la question devient : voulez-vous votre catalogue dans la caisse ?"
+            "then": "SumUp est écarté, quel qu'en soit le prix — sa caisse ne peut absolument pas prendre TWINT. Restent Zolto et Worldline, et la question devient : voulez-vous votre catalogue dans la caisse ? C'est aussi la réponse la moins chère pour vous : TWINT à 1,3% est le minimum que vous puissiez payer pour recevoir de l'argent sur un marché, sans abonnement mensuel."
           },
           {
             "when": "Non, elle tape surtout une carte",
-            "then": "SumUp est difficile à battre sur le taux et son application de caisse est plus mature que la nôtre. Choisissez Zolto pour la boutique, les fiches produits et l'inventaire unique — pas pour les frais."
+            "then": "Alors le taux carte est votre chiffre, et le nôtre est le plus élevé de cette page — les cartes suisses relèvent du taux hors EEE de Stripe, et nous n'ajoutons rien. SumUp est moins cher et son application de caisse est plus mature. Choisissez Zolto pour la boutique, les fiches et l'inventaire unique — ou ne le choisissez pas."
           }
         ]
       },
@@ -1290,7 +1286,7 @@
   },
   "costOfAcceptance": {
     "heading": "Ce que coûte une vente de CHF {{basket}}",
-    "intro": "Du moins cher au plus cher. Zolto n'est pas en tête, et c'est bien là le propos — sur le taux carte, deux des options ci-dessous nous battent. Chaque chiffre renvoie à sa source et à la date de consultation.",
+    "intro": "Du moins cher au plus cher. Zolto n'est pas en tête, et c'est bien là le propos — sur le taux carte, toutes les autres options ici nous battent. Chaque chiffre renvoie à sa source et à la date de consultation.",
     "tableCaption": "Coût d'une vente de CHF {{basket}} pour chaque option, du moins cher au plus cher",
     "colOption": "Comment vous encaissez",
     "colCost": "Coût de la vente",

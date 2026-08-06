@@ -442,15 +442,19 @@ describe("INCUMBENT_COMPARISON headline row", () => {
     expect(text).not.toMatch(/CHF 50–300|CHF 50-300/);
   });
 
-  it("admits in the table itself that their card rate is often lower", () => {
+  it("admits in the table itself that they all beat us on cards at a stall", () => {
     // The row a comparison table would normally never carry. It's here because
     // a table that only lists rows we win is discounted on sight — and because
-    // it's the finding the whole pricing review turned on.
+    // it's the finding the whole pricing review turned on. Sharpened once
+    // Stripe confirmed Swiss cards bill at the non-EEA rate: it isn't "often
+    // lower than ours" any more, it's every one of them.
     const costRow = INCUMBENT_COMPARISON.find((r) =>
       /what a sale costs/i.test(r.feature),
     );
     expect(costRow).toBeTruthy();
-    expect(costRow!.them).toMatch(/lower than ours/i);
+    expect(costRow!.them).toMatch(/every one of them beats ours/i);
+    // …and the same row points at the answer rather than just conceding.
+    expect(costRow!.us).toMatch(/TWINT/);
   });
 
   it("states our own side as a stack, not as a single percentage", () => {
@@ -809,9 +813,21 @@ describe("ZOLTO_LIMITATIONS", () => {
   it("concedes the card rate in our own words, not only in the table", () => {
     expect(
       ZOLTO_LIMITATIONS.some((l) =>
-        /not the cheapest way to take a card/i.test(l.title),
+        /dearest option on our own table/i.test(l.title),
       ),
     ).toBe(true);
+  });
+
+  it("names Stripe's confirmed non-EEA rate rather than hedging it", () => {
+    // While the bucket was unknown the copy could only say "not the cheapest".
+    // It's known now, so the limitation states the figure and the consequence.
+    const card = ZOLTO_LIMITATIONS.find((l) =>
+      /dearest option/i.test(l.title),
+    )!;
+    expect(card.detail).toMatch(/non-EEA/);
+    expect(card.detail).toMatch(/2\.9%/);
+    // And still offers the reader the way out rather than only the bad news.
+    expect(card.detail).toMatch(/take TWINT/i);
   });
 
   it("agrees with the sovereignty ledger about what is still foreign", () => {
@@ -849,7 +865,9 @@ describe("BUYER_FIT", () => {
     // us it would be a funnel wearing a decision guide's clothes.
     const outcomes = BUYER_FIT.flatMap((q) => q.answers.map((a) => a.then));
     expect(outcomes.some((o) => /only Worldline/i.test(o))).toBe(true);
-    expect(outcomes.some((o) => /SumUp is hard to beat/i.test(o))).toBe(true);
+    // The bluntest line on the marketing surface, and it stays.
+    expect(outcomes.some((o) => /or don't choose it/i.test(o))).toBe(true);
+    expect(outcomes.some((o) => /SumUp is cheaper/i.test(o))).toBe(true);
   });
 
   it("gives every question at least two answers with consequences", () => {

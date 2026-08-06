@@ -563,8 +563,8 @@
       },
       "What a sale costs": {
         "feature": "Quanto costa una vendita",
-        "them": "La loro tariffa, tutto compreso — e sulle carte è spesso più bassa della nostra",
-        "us": "La tariffa del tuo processore, più 0% da noi di persona e 1% online su Free"
+        "them": "La loro tariffa, tutto compreso — e a un banco ognuno di loro ci batte sulle carte",
+        "us": "La tariffa del tuo processore, più 0% da noi di persona e 1% online su Free — quindi accetta TWINT, che è nella stessa cassa"
       },
       "Building the store": {
         "feature": "Costruire il negozio",
@@ -1056,7 +1056,7 @@
         {
           "piece": "Circuiti di carte e portafogli sul telefono",
           "today": "Visa, Mastercard, Apple Pay, Google Pay",
-          "next": "Non sono europei e non lo saranno mai. Se vuoi che una vendita resti in Svizzera dall'inizio alla fine, incassala con il tuo codice QR TWINT — che è comunque il modo più economico per farti pagare, all'1,3% senza commissione fissa."
+          "next": "Non sono europei e non lo saranno mai. Se vuoi che una vendita resti in Svizzera dall'inizio alla fine, incassala con il tuo codice QR TWINT — all'1,3% senza commissione fissa è anche il modo più economico per farsi pagare che non porta costi mensili, e meno della metà di quanto la stessa vendita costa su una carta."
         }
       ],
       "why": [
@@ -1105,16 +1105,12 @@
         "label": "Tap on Mobile",
         "caveat": "Tariffa forfettaria senza costi mensili fissi, e accetta TWINT. Un'offerta davvero competitiva per un piccolo esercente."
       },
-      "zolto-card-eea": {
-        "label": "Tap to Pay — carta, se le carte svizzere rientrano nella tariffa SEE di Stripe",
-        "caveat": "Stripe non dice in quale fascia rientrino le carte svizzere. Questa riga presume quella SEE, quella sotto il contrario. Verifica con Stripe prima di fidarti di una delle due."
+      "zolto-card": {
+        "label": "Tap to Pay — carta",
+        "caveat": "Le carte svizzere rientrano nella fascia extra-SEE di Stripe, confermato con Stripe. Zolto non aggiunge nulla sopra — è la tariffa di Stripe — ma questo rende la carta il modo più caro per farsi pagare al tuo banco. Se la tua cliente propone TWINT, accettalo: stessa cassa, stesso tocco, meno della metà del costo."
       },
       "sumup-credit": {
         "label": "Carta di credito, senza abbonamento"
-      },
-      "zolto-card-non-eea": {
-        "label": "Tap to Pay — carta, se le carte svizzere rientrano nella tariffa extra-SEE di Stripe",
-        "caveat": "La lettura pessimistica della stessa ambiguità. Tra questa riga e quella SEE c'è più di un punto percentuale pieno, ed è per questo che conviene chiedere a Stripe invece di tirare a indovinare."
       },
       "sumup-online": {
         "label": "Cassa del negozio online",
@@ -1186,8 +1182,8 @@
         "detail": "SumUp e Worldline hanno dieci anni o più ciascuna. Zolto è nuova, e un'azienda nuova è un rischio di per sé per quanto buono sia il prodotto. Quello che possiamo mettere sull'altro piatto: nessun contratto, nessun hardware da comprare, ed esportazione in un clic di tutto quello che hai inserito — anche sul piano Free. Andarsene ti costa un pomeriggio, non una penale."
       },
       {
-        "title": "Non siamo il modo più economico per accettare una carta",
-        "detail": "SumUp Payments Plus e Worldline Tap on Mobile battono entrambi la pila Stripe-più-Zolto sulla tariffa carta, e la tariffa online di SumUp batte la nostra su ogni piano. Il motivo per scegliere Zolto è che toglie il lavoro, non la commissione. Se il costo per vendita con carta è il tuo numero decisivo, le pagine di confronto te lo dicono."
+        "title": "Accettare una carta tramite noi è l'opzione più cara della nostra stessa tabella",
+        "detail": "Le carte svizzere rientrano nella tariffa extra-SEE di Stripe — 2,9% più CHF 0.20 — e Zolto non aggiunge nulla sopra, il che lascia comunque ogni altra opzione di persona nel nostro confronto più economica della nostra. Anche la tariffa online di SumUp batte la nostra su ogni piano. Due risposte oneste: accetta TWINT dove puoi, sta nella stessa cassa e costa meno della metà; e scegli Zolto perché toglie il lavoro, non la commissione. Se il costo per vendita con carta è il tuo numero decisivo, decide contro di noi."
       },
       {
         "title": "Tutto gira su Stripe, ed è Stripe a fissare il prezzo vero",
@@ -1212,11 +1208,11 @@
         "answers": [
           {
             "when": "Sì, in gran parte",
-            "then": "SumUp è fuori, a qualunque prezzo — la sua cassa non può accettare TWINT. Restano Zolto e Worldline, e la domanda diventa se vuoi il catalogo dentro la cassa."
+            "then": "SumUp è fuori, a qualunque prezzo — la sua cassa non può accettare TWINT. Restano Zolto e Worldline, e la domanda diventa se vuoi il catalogo dentro la cassa. È anche la risposta più economica per te: TWINT all'1,3% è il minimo che puoi pagare per ricevere denaro a un banco, senza un abbonamento mensile."
           },
           {
             "when": "No, di solito appoggia una carta",
-            "then": "SumUp è difficile da battere sulla tariffa e la sua app di cassa è più matura della nostra. Scegli Zolto per il negozio, le schede e l'inventario unico — non per la commissione."
+            "then": "Allora la tariffa carta è il tuo numero, e la nostra è la più alta di questa pagina — le carte svizzere rientrano nella tariffa extra-SEE di Stripe, e noi non aggiungiamo nulla. SumUp è più economico e la sua app di cassa è più matura. Scegli Zolto per il negozio, le schede e l'inventario unico — oppure non sceglierlo."
           }
         ]
       },
@@ -1286,7 +1282,7 @@
   },
   "costOfAcceptance": {
     "heading": "Quanto costa una vendita da CHF {{basket}}",
-    "intro": "Dal più economico. Zolto non è in cima, ed è proprio questo il punto — sulla tariffa carta perdiamo contro due delle opzioni qui sotto. Ogni cifra rimanda alla sua fonte e alla data in cui è stata letta.",
+    "intro": "Dal più economico. Zolto non è in cima, ed è proprio questo il punto — sulla tariffa carta ogni altra opzione qui ci batte. Ogni cifra rimanda alla sua fonte e alla data in cui è stata letta.",
     "tableCaption": "Costo di una vendita da CHF {{basket}} per ogni opzione, dal più economico",
     "colOption": "Come incassi",
     "colCost": "Costo della vendita",

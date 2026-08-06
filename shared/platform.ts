@@ -718,7 +718,7 @@ export const SOVEREIGNTY = {
       piece: "Card networks and phone wallets",
       today: "Visa, Mastercard, Apple Pay, Google Pay",
       state: "foreign",
-      next: "These are not European and never will be. If you want a sale to stay in Switzerland from end to end, take it over your own TWINT QR — which is also the cheapest way for you to get paid, at 1.3% with no fixed fee.",
+      next: "These are not European and never will be. If you want a sale to stay in Switzerland from end to end, take it over your own TWINT QR — at 1.3% with no fixed fee it is also the cheapest way to be paid that carries no monthly cost, and less than half what the same sale costs on a card.",
     },
   ] as SovereigntyEntry[],
   /** Why we're spending money on this rather than shipping another feature. */
@@ -794,8 +794,8 @@ export const INCUMBENT_COMPARISON: ComparisonRow[] = [
   },
   {
     feature: "What a sale costs",
-    them: "Their rate, all in — and on cards it is often lower than ours",
-    us: "Your processor's rate, plus 0% from us in person and 1% online on Free",
+    them: "Their rate, all in — and at a stall, every one of them beats ours on cards",
+    us: "Your processor's rate, plus 0% from us in person and 1% online on Free — so take TWINT, which is in the same till",
   },
   {
     feature: "Building the store",
@@ -1491,9 +1491,9 @@ export const ZOLTO_LIMITATIONS: Limitation[] = [
       "SumUp and Worldline have a decade or more each. Zolto is new, and a new company is a risk on its own terms however good the product is. What we can offer against that: no contract, no hardware to buy, and one-click export of everything you've put in — on the Free plan too. Leaving costs you an afternoon, not a termination fee.",
   },
   {
-    title: "We are not the cheapest way to take a card",
+    title: "Taking a card through us is the dearest option on our own table",
     detail:
-      "SumUp Payments Plus and Worldline Tap on Mobile both beat the Stripe-plus-Zolto stack on card rate, and SumUp's online rate beats ours on every plan. The reason to choose Zolto is that it removes the work, not that it removes the fee. If cost per card sale is your deciding number, the comparison pages will tell you so.",
+      "Swiss-issued cards bill at Stripe's non-EEA rate — 2.9% plus CHF 0.20 — and Zolto adds nothing on top, which still leaves every other in-person option on our comparison cheaper than ours. SumUp's online rate beats ours on every plan too. Two honest responses: take TWINT where you can, which sits in the same till and costs less than half as much; and choose Zolto because it removes the work, not because it removes the fee. If cost per card sale is your deciding number, it decides against us.",
   },
   {
     title: "Everything runs on Stripe, and Stripe sets the real price",
@@ -1539,11 +1539,11 @@ export const BUYER_FIT: BuyerQuestion[] = [
     answers: [
       {
         when: "Yes, most of them",
-        then: "SumUp is out, whatever it costs — its till cannot take TWINT at all. That leaves Zolto and Worldline, and the question becomes whether you want your catalogue in the till.",
+        then: "SumUp is out, whatever it costs — its till cannot take TWINT at all. That leaves Zolto and Worldline, and the question becomes whether you want your catalogue in the till. It's also the cheapest answer for you: TWINT at 1.3% is the least you can pay to be handed money at a stall without a monthly subscription.",
       },
       {
         when: "No, they mostly tap a card",
-        then: "SumUp is hard to beat on rate and its till app is more mature than ours. Choose Zolto for the shop, the listings and the one inventory — not for the fee.",
+        then: "Then the card rate is your number, and ours is the highest on this page — Swiss cards bill at Stripe's non-EEA rate and we add nothing to it. SumUp is cheaper and its till app is more mature. Choose Zolto for the shop, the listings and the one inventory, or don't choose it.",
       },
     ],
   },

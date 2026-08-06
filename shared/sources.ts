@@ -41,7 +41,7 @@ export const SOURCES: Source[] = [
     label: "Stripe — Pricing & fees (Switzerland)",
     url: "https://stripe.com/ch/pricing",
     retrievedOn: REVIEWED,
-    note: "Stripe publishes an EEA and a non-EEA in-person bucket but does not state which one Swiss-issued cards fall into. We show both; the difference is over a percentage point.",
+    note: "Stripe publishes an EEA and a non-EEA in-person bucket without saying which one Swiss-issued cards fall into. Confirmed with Stripe in August 2026: Swiss cards bill at the non-EEA rate, so that is the only figure we publish.",
   },
   {
     id: "twint-merchant-fees",
