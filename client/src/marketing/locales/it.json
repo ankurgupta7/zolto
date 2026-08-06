@@ -860,7 +860,11 @@
         },
         "sources": {
           "caption": "Da dove sono arrivati gli ordini online",
-          "head": ["Fonte", "Ordini", "% delle vendite online"],
+          "head": [
+            "Fonte",
+            "Ordini",
+            "% delle vendite online"
+          ],
           "rowLabels": [
             "Instagram (organico)",
             "Diretto / di ritorno",
@@ -885,16 +889,18 @@
         ]
       },
       "sumup": {
-        "summary": "Una società di pagamenti incentrata sul lettore di carte, rivolta a piccoli commercianti e ambulanti, che vende terminali portatili insieme a un conto di pagamento.",
+        "summary": "Un'azienda affermata nei pagamenti con carta da mobile, pensata per piccoli commercianti e banchi di mercato. Offre lettori economici, Tap to Pay su iPhone e Android, un'app di cassa davvero valida con catalogo articoli e gestione delle scorte, e un negozio online essenziale. I suoi esercenti europei stipulano il contratto con SumUp Limited a Dublino, un istituto di moneta elettronica regolamentato nell'UE.",
         "betterWhen": [
-          "Vuole un terminale fisico dedicato invece di usare il telefono.",
-          "Incassa in luoghi in cui porgere un dispositivo separato fa la differenza.",
-          "Non ha affatto bisogno di un negozio online."
+          "La tua clientela non paga con TWINT — SumUp è più economico e più semplice sulle carte, e l'attivazione richiede meno di un'ora.",
+          "Vendi abbastanza con le carte perché un abbonamento mensile convenga rispetto a una percentuale per vendita.",
+          "Vuoi un'app di cassa matura: varianti, opzioni, layout di vendita, elenchi fornitori, chiusura di cassa. Sulle pure funzioni di cassa è più avanti di Zolto.",
+          "Vuoi dieci anni di storia alle spalle dell'azienda che incassa i tuoi soldi. Zolto non li ha."
         ],
         "zoltoWhen": [
-          "Preferisce non comprare hardware — i telefoni moderni accettano già il contactless e il QR TWINT.",
-          "Vuole lo stesso catalogo dietro il suo banco e il suo sito.",
-          "Vuole che l’IA si occupi degli annunci, delle traduzioni e delle risposte ai clienti."
+          "La tua clientela cerca prima TWINT. Una cassa SumUp non può accettarlo affatto — l'alternativa è un secondo dispositivo TWINT separato e una riconciliazione manuale a fine giornata.",
+          "Vendi pezzi unici e non puoi permetterti di vendere due volte lo stesso su due canali.",
+          "Vuoi che il negozio venga costruito, scritto e fotografato per te, invece di un modello da compilare da solo.",
+          "Preferisci fotografare il tuo quaderno che digitare un catalogo a mano."
         ]
       },
       "shopify": {
@@ -911,16 +917,18 @@
         ]
       },
       "worldline": {
-        "summary": "Un grande processore di pagamenti europeo (ha acquisito SIX Payment Services, a lungo lo standard per i terminali di carte svizzeri), al servizio di esercenti dal negozio di quartiere alle grandi imprese.",
+        "summary": "Un grande operatore di pagamenti francese che nel 2018 ha assorbito SIX Payment Services diventando il riferimento per i terminali di carta svizzeri. Offre terminali in negozio, Tap on Mobile su un telefono qualsiasi e il gateway online Saferpay — e supporta l'intero mix di pagamenti svizzero, PostFinance Pay incluso.",
         "betterWhen": [
-          "Le serve un’infrastruttura di pagamento aziendale e un processo d’acquisto formale.",
-          "Vuole un rapporto di acquiring svizzero consolidato, con condizioni contrattuali.",
-          "Il suo volume giustifica tariffe negoziate e un account manager dedicato."
+          "Ti serve PostFinance Pay. Worldline è l'unico dei tre a supportarlo, e se ti serve il confronto finisce qui.",
+          "Tap on Mobile fa al caso tuo: 1,7% forfettario, nessun costo mensile fisso, e accetta TWINT. Per un piccolo esercente che non ha bisogno di un catalogo è un'offerta davvero competitiva.",
+          "Hai volumi reali e vuoi tariffe negoziate con una gestione dedicata.",
+          "Vuoi un rapporto di acquiring svizzero consolidato, con condizioni contrattuali formali."
         ],
         "zoltoWhen": [
-          "È una persona sola o un piccolo laboratorio, e contratti e terminali sono eccessivi.",
-          "Vuole vendere questo fine settimana, non dopo un processo di attivazione.",
-          "Vuole il negozio online, la cassa e l’assistente IA in un unico posto."
+          "Vuoi i tuoi prodotti nella cassa. Tap on Mobile è un'app di pagamento — digiti un importo ogni volta, oppure acquisti e integri un software di cassa separato.",
+          "Vuoi un negozio online, non una cassa da innestare su un sito che fai realizzare. Saferpay è un gateway, non un negozio.",
+          "Sei una persona sola o un piccolo atelier, e un contratto pluriennale per un terminale è sproporzionato.",
+          "Vuoi vendere questo fine settimana, non al termine di un processo commerciale."
         ]
       }
     },
@@ -1015,7 +1023,11 @@
         "L'infrastruttura europea continua a esistere solo se le aziende europee la comprano davvero. Preferiamo esserne clienti che discuterne."
       ],
       "promise": "Questo è l'elenco completo. Quando una riga si sposta la cambiamo qui e diciamo che cosa si è mosso — una vecchia promessa ridipinta in silenzio come risultato vale meno della bandiera su cui la stamperemmo.",
-      "heroBadges": ["Fatto in Svizzera", "Server in Europa", "TWINT integrato"]
+      "heroBadges": [
+        "Fatto in Svizzera",
+        "Server in Europa",
+        "TWINT integrato"
+      ]
     }
   },
   "sovereignty": {

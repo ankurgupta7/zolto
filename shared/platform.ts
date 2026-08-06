@@ -948,6 +948,107 @@ export function faqsByCategory(category: FaqCategory): Faq[] {
   return FAQS.filter((f) => f.category === category);
 }
 
+/**
+ * Whether a product does the thing, in the only four states worth having.
+ * `"n/a"` is not a softer `false`: Worldline doesn't track stock in person
+ * because it has no catalogue to track it against, which is a different fact
+ * about the product than choosing not to build the feature.
+ */
+export type Support = boolean | "partial" | "n/a";
+
+/**
+ * A row of the capability matrix, carrying its own Zolto answer.
+ *
+ * The rows live here rather than on each competitor so the columns can't fall
+ * out of alignment, and so Zolto answers every question it asks of anyone else
+ * — including the two it answers badly (no PostFinance Pay, and a slower setup
+ * than SumUp's).
+ */
+export interface Capability {
+  /** Stable id used to align a competitor's answer with this row. */
+  key: string;
+  label: string;
+  zolto: string;
+  zoltoSupported: Support;
+}
+
+export const CAPABILITIES: Capability[] = [
+  {
+    key: "swiss",
+    label: "Available in Switzerland",
+    zolto: "Yes — built in Zürich, priced in CHF",
+    zoltoSupported: true,
+  },
+  {
+    key: "no-hardware",
+    label: "Takes a payment with no hardware to buy",
+    zolto: "Yes — Tap to Pay on the phone you already own",
+    zoltoSupported: true,
+  },
+  {
+    key: "item-grid",
+    label: "Your catalogue as a grid in the till",
+    zolto: "Yes — photo, name and price for every piece",
+    zoltoSupported: true,
+  },
+  {
+    key: "stock-in-person",
+    label: "Stock tracked as you sell in person",
+    zolto: "Yes",
+    zoltoSupported: true,
+  },
+  {
+    key: "stock-shared",
+    label: "One stock count across the stall and the shop",
+    zolto: "Yes — with a short-lived hold while a customer is in checkout",
+    zoltoSupported: true,
+  },
+  {
+    key: "twint",
+    label: "TWINT",
+    zolto: "Yes — in the same till as cards and cash",
+    zoltoSupported: true,
+  },
+  {
+    // Zolto answers this one badly, on purpose. A matrix that only asks
+    // questions we win is a scorecard we wrote for ourselves.
+    key: "postfinance",
+    label: "PostFinance Pay",
+    zolto: "No",
+    zoltoSupported: false,
+  },
+  {
+    key: "builds-storefront",
+    label: "Builds the online shop for you",
+    zolto: "Yes — AI theme, copy and product photography",
+    zoltoSupported: true,
+  },
+  {
+    key: "setup",
+    label: "Time to your first sale",
+    zolto: "Same day",
+    zoltoSupported: true,
+  },
+  {
+    key: "who-holds-money",
+    label: "Who holds your money",
+    zolto: "Nobody but you — straight into your own Stripe and TWINT accounts",
+    zoltoSupported: true,
+  },
+];
+
+export function capability(key: string): Capability {
+  const found = CAPABILITIES.find((c) => c.key === key);
+  if (!found) throw new Error(`Unknown capability key: ${key}`);
+  return found;
+}
+
+export interface CompetitorCapability {
+  key: string;
+  value: string;
+  supported: Support;
+}
+
 export interface Competitor {
   /** URL slug fragment: /compare/zolto-vs-<id>. */
   id: string;
@@ -963,16 +1064,49 @@ export interface Competitor {
   betterWhen: string[];
   /** When Zolto is the better fit. */
   zoltoWhen: string[];
+  /**
+   * Answers to the CAPABILITIES rows. Optional because we only publish a matrix
+   * for the competitors we actually researched to that depth — an empty column
+   * would read as "no" rather than "we didn't check".
+   *
+   * Where present it must answer EVERY row: a silently missing row is a blank
+   * cell the reader fills in themselves, usually in our favour.
+   */
+  capabilities?: CompetitorCapability[];
+  /** Ids into shared/costOfAcceptance.ts RATES — this competitor's own rates. */
+  rateIds?: string[];
+  /** Ids into shared/sources.ts backing everything asserted on this page. */
+  sourceIds?: string[];
+  /**
+   * Publicly-recorded facts about the company that bear on choosing it, where
+   * they exist and are material. Only used where "the incumbent is the safe
+   * choice" is the argument being weighed — see the Worldline entry.
+   */
+  risks?: { statement: string; sourceId: string }[];
 }
 
 /**
  * The named incumbents Zolto positions against, for the /compare/* pages.
  *
- * Deliberately free of competitor pricing: their plans and rates change often
- * and vary by country, contract and volume, so any number hard-coded here would
- * be stale and unverifiable. The pages compare *models* — hardware, setup effort,
- * where the money lands — and point at the incumbent's own pricing page for
- * current figures. Claims about Zolto stay sourced from PLANS / REVENUE_SHARE.
+ * **This used to be a pricing-free zone.** The old rule was that competitors'
+ * rates change by country, contract and volume, so any figure here would be
+ * stale and unverifiable the day it shipped — so the pages compared models and
+ * linked out for numbers.
+ *
+ * The August 2026 pricing review retired that rule, because it was solving the
+ * wrong problem. It kept the pages from saying the most useful thing a buyer
+ * needs to hear, and it did nothing about the figure we *were* publishing with
+ * no basis at all (COST_COMPARISON's "a year with the old guard"). Worse, the
+ * silence flattered us: a reader who can't see the rates assumes the platform
+ * charging "0% in person" is the cheap one, and on cards it isn't.
+ *
+ * What replaced it is a provenance rule, not a free-for-all. Numbers live in
+ * shared/costOfAcceptance.ts, every one names a row in shared/sources.ts, and
+ * every source carries the date it was read. A figure we can't source doesn't
+ * ship — Worldline's negotiated terminal pricing stays on the NEGOTIATED list
+ * with no number rather than getting a plausible one.
+ *
+ * Claims about Zolto still come from PLANS / REVENUE_SHARE, as before.
  */
 export const COMPETITORS: Competitor[] = [
   {
@@ -995,16 +1129,68 @@ export const COMPETITORS: Competitor[] = [
     id: "sumup",
     name: "SumUp",
     summary:
-      "A card-reader-first payments company aimed at small merchants and market traders, selling handheld terminals alongside a payments account.",
+      "A well-established mobile card-payment company for small merchants and market traders. It offers cheap readers, Tap to Pay on iPhone and Android, a genuinely capable till app with an item catalogue and stock tracking, and a basic online store. Its European merchants contract with SumUp Limited in Dublin, an EU-regulated e-money institution.",
     betterWhen: [
-      "You want a dedicated physical terminal rather than using your phone.",
-      "You take payments in places where handing over a separate device matters.",
-      "You don't need an online store at all.",
+      "Your customers don't pay by TWINT — SumUp is cheaper and simpler on cards, and setup takes under an hour.",
+      "You sell enough on cards for a monthly subscription to beat a per-sale percentage.",
+      "You want a mature till app: variants, modifiers, selling layouts, supplier lists, reconciliation. On pure till features it is further along than Zolto.",
+      "You want a decade of track record behind the company taking your money. Zolto does not have one.",
     ],
     zoltoWhen: [
-      "You'd rather not buy hardware — modern phones take contactless and TWINT QR already.",
-      "You want the same catalogue behind your stall and your website.",
-      "You want AI to do the listing, translating and customer answering.",
+      "Your customers reach for TWINT first. A SumUp till cannot take it at all — the workaround is a second, separate TWINT setup and a manual reconciliation at the end of the day.",
+      "You sell one-of-a-kind pieces and can't afford to sell the same one twice across two channels.",
+      "You want the shop built, written and photographed for you rather than a template to fill in yourself.",
+      "You'd rather photograph your notebook than type a catalogue in by hand.",
+    ],
+    capabilities: [
+      { key: "swiss", value: "Yes", supported: true },
+      {
+        key: "no-hardware",
+        value: "Yes — Tap to Pay, iPhone XS and later / Android 11+",
+        supported: true,
+      },
+      {
+        key: "item-grid",
+        value:
+          "Yes — Selling Layouts, categories, SKUs, variants and images. Better developed than Zolto's on pure till features.",
+        supported: true,
+      },
+      {
+        key: "stock-in-person",
+        value: "Yes, including low-stock alerts and a “Sold out” label",
+        supported: true,
+      },
+      {
+        key: "stock-shared",
+        value:
+          "Yes — SumUp states the till and Online Store sync automatically. Stock updates when a sale completes, rather than when a checkout starts.",
+        supported: true,
+      },
+      { key: "twint", value: "No", supported: false },
+      { key: "postfinance", value: "No", supported: false },
+      {
+        key: "builds-storefront",
+        value: "No — a template store builder you fill in yourself",
+        supported: false,
+      },
+      { key: "setup", value: "Under an hour", supported: true },
+      {
+        key: "who-holds-money",
+        value: "SumUp settles to your bank in 2–3 days",
+        supported: "partial",
+      },
+    ],
+    rateIds: [
+      "sumup-payments-plus",
+      "sumup-debit",
+      "sumup-credit",
+      "sumup-online",
+    ],
+    sourceIds: [
+      "sumup-pos-lite",
+      "sumup-item-catalogue",
+      "sumup-inventory",
+      "sumup-cbi-register",
     ],
   },
   {
@@ -1027,16 +1213,85 @@ export const COMPETITORS: Competitor[] = [
     id: "worldline",
     name: "Worldline",
     summary:
-      "A large European payments processor (it acquired SIX Payment Services, long the default for Swiss card terminals), serving merchants from corner shops to enterprises.",
+      "A large French payments processor that absorbed SIX Payment Services in 2018 and became the incumbent for Swiss card terminals. It offers in-store terminals, Tap on Mobile on an ordinary phone, and the Saferpay online gateway — and it supports the full Swiss payment mix, PostFinance Pay included.",
     betterWhen: [
-      "You need enterprise payment infrastructure and formal procurement.",
-      "You want an established Swiss acquiring relationship with contract terms.",
-      "Your volume justifies negotiated rates and dedicated account management.",
+      "You need PostFinance Pay. Worldline is the only one of the three that supports it, and if you need it the comparison ends there.",
+      "Tap on Mobile suits you: 1.7% flat, no fixed monthly cost, and it takes TWINT. For a small merchant who doesn't need a catalogue, that is a genuinely competitive offer.",
+      "You have real volume and want negotiated rates with dedicated account management.",
+      "You want an established Swiss acquiring relationship with formal contract terms.",
     ],
     zoltoWhen: [
-      "You're one person or a small studio, and contracts and terminals are overkill.",
-      "You want to be selling this weekend, not after an onboarding process.",
-      "You want your online store, POS and AI assistant in one place.",
+      "You want your products in the till. Tap on Mobile is a payment app — you type in an amount every time, or buy and integrate separate till software.",
+      "You want an online shop, not a checkout to bolt onto a site you commission. Saferpay is a gateway, not a store.",
+      "You're one person or a small studio, and a multi-year terminal contract is overkill.",
+      "You want to be selling this weekend rather than after a sales process.",
+    ],
+    capabilities: [
+      {
+        key: "swiss",
+        value: "Yes — the incumbent, via SIX Payment Services",
+        supported: true,
+      },
+      {
+        key: "no-hardware",
+        value: "Yes — Tap on Mobile, iPhone / Android 12+",
+        supported: true,
+      },
+      {
+        key: "item-grid",
+        value:
+          "No — payment-only. It integrates app-to-app with third-party till software.",
+        supported: false,
+      },
+      {
+        key: "stock-in-person",
+        value: "Not applicable — there is no catalogue to track against",
+        supported: "n/a",
+      },
+      {
+        key: "stock-shared",
+        value: "No online store; Saferpay is a gateway for a site you build",
+        supported: false,
+      },
+      { key: "twint", value: "Yes", supported: true },
+      { key: "postfinance", value: "Yes", supported: true },
+      { key: "builds-storefront", value: "No", supported: false },
+      {
+        key: "setup",
+        value: "Individual quote — onboarding is a sales process",
+        supported: "partial",
+      },
+      {
+        key: "who-holds-money",
+        value: "Worldline settles per contract",
+        supported: "partial",
+      },
+    ],
+    rateIds: ["worldline-tap-on-mobile"],
+    sourceIds: [
+      "worldline-tap-on-mobile",
+      "worldline-saferpay-prices",
+      "moneyland-merchant-fees",
+    ],
+    /**
+     * Published, primary-sourced, and material to the one argument Worldline is
+     * usually chosen on: that the incumbent is the safe option. Deliberately
+     * limited to the credit rating and SIX's own disclosure — both are matters
+     * of record about Swiss continuity. The fraud reporting and the market-cap
+     * collapse are omitted on purpose: they read as attack rather than
+     * analysis, and this page's credibility rests on conceding fairly.
+     */
+    risks: [
+      {
+        statement:
+          "S&P downgraded Worldline to BB — below investment grade — in August 2025, citing weaker-than-expected operating performance, with a negative outlook.",
+        sourceId: "worldline-sp-downgrade",
+      },
+      {
+        statement:
+          "SIX Group, which bought 27% of Worldline as part of the SIX Payment Services deal, booked an impairment of roughly CHF 550 million in November 2025, declined to take part in Worldline's capital increase, gave up its board seat, and reclassified the holding from a strategic to a financial investment.",
+        sourceId: "six-worldline-participation",
+      },
     ],
   },
 ];

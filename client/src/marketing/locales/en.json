@@ -844,7 +844,12 @@
       "tables": {
         "weekly": {
           "caption": "Online orders, order value and traffic by week",
-          "head": ["Week", "Online orders", "Avg order value", "Visitors"],
+          "head": [
+            "Week",
+            "Online orders",
+            "Avg order value",
+            "Visitors"
+          ],
           "rowLabels": [
             "Week 1 (launch)",
             "Week 2",
@@ -855,7 +860,11 @@
         },
         "sources": {
           "caption": "Where the online orders came from",
-          "head": ["Source", "Orders", "% of online sales"],
+          "head": [
+            "Source",
+            "Orders",
+            "% of online sales"
+          ],
           "rowLabels": [
             "Instagram (organic)",
             "Direct / returning",
@@ -880,16 +889,18 @@
         ]
       },
       "sumup": {
-        "summary": "A card-reader-first payments company aimed at small merchants and market traders, selling handheld terminals alongside a payments account.",
+        "summary": "A well-established mobile card-payment company for small merchants and market traders. It offers cheap readers, Tap to Pay on iPhone and Android, a genuinely capable till app with an item catalogue and stock tracking, and a basic online store. Its European merchants contract with SumUp Limited in Dublin, an EU-regulated e-money institution.",
         "betterWhen": [
-          "You want a dedicated physical terminal rather than using your phone.",
-          "You take payments in places where handing over a separate device matters.",
-          "You don't need an online store at all."
+          "Your customers don't pay by TWINT — SumUp is cheaper and simpler on cards, and setup takes under an hour.",
+          "You sell enough on cards for a monthly subscription to beat a per-sale percentage.",
+          "You want a mature till app: variants, modifiers, selling layouts, supplier lists, reconciliation. On pure till features it is further along than Zolto.",
+          "You want a decade of track record behind the company taking your money. Zolto does not have one."
         ],
         "zoltoWhen": [
-          "You'd rather not buy hardware — modern phones take contactless and TWINT QR already.",
-          "You want the same catalogue behind your stall and your website.",
-          "You want AI to do the listing, translating and customer answering."
+          "Your customers reach for TWINT first. A SumUp till cannot take it at all — the workaround is a second, separate TWINT setup and a manual reconciliation at the end of the day.",
+          "You sell one-of-a-kind pieces and can't afford to sell the same one twice across two channels.",
+          "You want the shop built, written and photographed for you rather than a template to fill in yourself.",
+          "You'd rather photograph your notebook than type a catalogue in by hand."
         ]
       },
       "shopify": {
@@ -906,16 +917,18 @@
         ]
       },
       "worldline": {
-        "summary": "A large European payments processor (it acquired SIX Payment Services, long the default for Swiss card terminals), serving merchants from corner shops to enterprises.",
+        "summary": "A large French payments processor that absorbed SIX Payment Services in 2018 and became the incumbent for Swiss card terminals. It offers in-store terminals, Tap on Mobile on an ordinary phone, and the Saferpay online gateway — and it supports the full Swiss payment mix, PostFinance Pay included.",
         "betterWhen": [
-          "You need enterprise payment infrastructure and formal procurement.",
-          "You want an established Swiss acquiring relationship with contract terms.",
-          "Your volume justifies negotiated rates and dedicated account management."
+          "You need PostFinance Pay. Worldline is the only one of the three that supports it, and if you need it the comparison ends there.",
+          "Tap on Mobile suits you: 1.7% flat, no fixed monthly cost, and it takes TWINT. For a small merchant who doesn't need a catalogue, that is a genuinely competitive offer.",
+          "You have real volume and want negotiated rates with dedicated account management.",
+          "You want an established Swiss acquiring relationship with formal contract terms."
         ],
         "zoltoWhen": [
-          "You're one person or a small studio, and contracts and terminals are overkill.",
-          "You want to be selling this weekend, not after an onboarding process.",
-          "You want your online store, POS and AI assistant in one place."
+          "You want your products in the till. Tap on Mobile is a payment app — you type in an amount every time, or buy and integrate separate till software.",
+          "You want an online shop, not a checkout to bolt onto a site you commission. Saferpay is a gateway, not a store.",
+          "You're one person or a small studio, and a multi-year terminal contract is overkill.",
+          "You want to be selling this weekend rather than after a sales process."
         ]
       }
     },

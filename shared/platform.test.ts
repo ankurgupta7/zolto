@@ -25,7 +25,12 @@ import {
   SOVEREIGNTY,
   SOVEREIGNTY_STATE_LABEL,
   sovereigntyByState,
+  CAPABILITIES,
+  capability,
+  findCompetitor,
 } from "./platform";
+import { source } from "./sources";
+import { rate } from "./costOfAcceptance";
 
 describe("platform facts", () => {
   it("has a name, tagline, and summary", () => {
@@ -417,13 +422,35 @@ describe("COMPETITORS", () => {
     expect(ids).toContain("worldline");
   });
 
-  it("quotes no competitor pricing anywhere", () => {
-    // Standing rule (see the COMPETITORS doc comment): rates vary by country,
-    // contract and volume, so any figure here is stale and unverifiable the
-    // day it ships. The pages compare models and link out for real numbers.
+  it("sources and dates every competitor figure it quotes", () => {
+    // This replaces an older rule that quoted no competitor pricing at all.
+    // That rule was right about the failure mode — an undated figure rots —
+    // and wrong about the remedy: it left the page unable to say the most
+    // useful thing a buyer needs, while our own unsourced "year with the old
+    // guard" number sat on the landing page unchallenged.
+    //
+    // The remedy is provenance, not silence. Any competitor entry carrying a
+    // figure must name its sources, and every source must resolve and be dated.
     for (const c of COMPETITORS) {
       const text = [c.summary, ...c.betterWhen, ...c.zoltoWhen].join(" ");
-      expect(text).not.toMatch(/CHF\s?\d|\$\s?\d|€\s?\d|\d+\s*%/);
+      const quotesAFigure = /CHF\s?\d|\$\s?\d|€\s?\d|\d+(\.\d+)?\s*%/.test(text);
+      if (!quotesAFigure) continue;
+      expect(c.sourceIds?.length, `${c.id} quotes a figure but names no source`)
+        .toBeGreaterThan(0);
+      for (const id of c.sourceIds!) {
+        expect(() => source(id)).not.toThrow();
+        expect(source(id).retrievedOn).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      }
+    }
+  });
+
+  it("resolves every rate id a competitor points at", () => {
+    for (const c of COMPETITORS) {
+      for (const id of c.rateIds ?? []) {
+        expect(() => rate(id)).not.toThrow();
+        // A competitor may only claim its own rates.
+        expect(rate(id).provider).toBe(c.id);
+      }
     }
   });
 
@@ -432,6 +459,99 @@ describe("COMPETITORS", () => {
     for (const c of COMPETITORS) {
       expect(c.betterWhen.length).toBeGreaterThanOrEqual(2);
       expect(c.zoltoWhen.length).toBeGreaterThanOrEqual(2);
+    }
+  });
+
+  it("concedes the two things the review says we must stop pretending away", () => {
+    // Both are the strongest true statement a competitor can make, and a
+    // comparison that omits them is discounted by readers and AI assistants
+    // alike. Pinned so they can't be quietly softened later.
+    const sumup = findCompetitor("sumup")!;
+    expect(sumup.betterWhen.join(" ")).toMatch(/cheaper and simpler on cards/i);
+    expect(sumup.betterWhen.join(" ")).toMatch(/track record/i);
+
+    const worldline = findCompetitor("worldline")!;
+    expect(worldline.betterWhen.join(" ")).toMatch(/PostFinance Pay/);
+    expect(worldline.betterWhen.join(" ")).toMatch(/1\.7% flat|no fixed monthly/i);
+  });
+});
+
+describe("the capability matrix", () => {
+  it("makes Zolto answer every question it asks of anyone else", () => {
+    for (const c of CAPABILITIES) {
+      expect(c.label).toBeTruthy();
+      expect(c.zolto).toBeTruthy();
+    }
+  });
+
+  it("includes at least one row Zolto loses", () => {
+    // A matrix that only asks questions we win is a scorecard we wrote for
+    // ourselves. PostFinance Pay is the honest "no".
+    expect(CAPABILITIES.some((c) => c.zoltoSupported === false)).toBe(true);
+    expect(capability("postfinance").zoltoSupported).toBe(false);
+  });
+
+  it("answers every row for every competitor that publishes a matrix", () => {
+    // A silently missing row renders as a blank cell, which a reader fills in
+    // themselves — usually in our favour. Partial columns are not allowed.
+    const keys = CAPABILITIES.map((c) => c.key).sort();
+    for (const c of COMPETITORS) {
+      if (!c.capabilities) continue;
+      expect(c.capabilities.map((x) => x.key).sort(), `${c.id}`).toEqual(keys);
+      for (const answer of c.capabilities) {
+        expect(() => capability(answer.key)).not.toThrow();
+        expect(answer.value).toBeTruthy();
+      }
+    }
+  });
+
+  it("records the squeeze play as data rather than as a slogan", () => {
+    // The one in-person argument the review says survives contact: SumUp has
+    // the grid but not TWINT; Worldline has TWINT but not the grid.
+    const answer = (id: string, key: string) =>
+      findCompetitor(id)!.capabilities!.find((c) => c.key === key)!;
+    expect(answer("sumup", "item-grid").supported).toBe(true);
+    expect(answer("sumup", "twint").supported).toBe(false);
+    expect(answer("worldline", "twint").supported).toBe(true);
+    expect(answer("worldline", "item-grid").supported).toBe(false);
+    expect(capability("item-grid").zoltoSupported).toBe(true);
+    expect(capability("twint").zoltoSupported).toBe(true);
+  });
+
+  it("throws on an unknown capability key", () => {
+    expect(() => capability("nope")).toThrow(/Unknown capability key/);
+  });
+});
+
+describe("Worldline's disclosed risks", () => {
+  it("sources every statement to a primary record", () => {
+    const worldline = findCompetitor("worldline")!;
+    expect(worldline.risks?.length).toBeGreaterThan(0);
+    for (const r of worldline.risks!) {
+      expect(r.statement).toBeTruthy();
+      expect(() => source(r.sourceId)).not.toThrow();
+    }
+  });
+
+  it("stays on the record and off the attack", () => {
+    // Deliberately limited to the credit rating and SIX's own disclosure.
+    // The fraud reporting and the market-cap collapse are omitted: they read
+    // as attack rather than analysis, and this page's credibility rests on
+    // conceding fairly. If either ever appears here, this test says so.
+    const text = findCompetitor("worldline")!
+      .risks!.map((r) => r.statement)
+      .join(" ");
+    expect(text).toMatch(/S&P|BB/);
+    expect(text).toMatch(/SIX/);
+    expect(text).not.toMatch(/money.?launder|fraud|criminal|probe/i);
+    expect(text).not.toMatch(/97%|market value/i);
+  });
+
+  it("is only carried where 'the incumbent is safe' is the argument", () => {
+    // Not a general licence to publish company gossip about competitors.
+    for (const c of COMPETITORS) {
+      if (c.id === "worldline") continue;
+      expect(c.risks, `${c.id} should not carry risks`).toBeUndefined();
     }
   });
 });

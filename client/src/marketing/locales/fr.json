@@ -860,7 +860,11 @@
         },
         "sources": {
           "caption": "D’où venaient les commandes en ligne",
-          "head": ["Source", "Commandes", "% des ventes en ligne"],
+          "head": [
+            "Source",
+            "Commandes",
+            "% des ventes en ligne"
+          ],
           "rowLabels": [
             "Instagram (organique)",
             "Direct / clients revenus",
@@ -885,16 +889,18 @@
         ]
       },
       "sumup": {
-        "summary": "Une société de paiement centrée sur le lecteur de carte, destinée aux petits commerçants et aux marchands de marché, qui vend des terminaux portables avec un compte de paiement.",
+        "summary": "Une société bien établie de paiement par carte mobile, destinée aux petits commerçants et aux marchés. Elle propose des lecteurs bon marché, Tap to Pay sur iPhone et Android, une application de caisse réellement aboutie avec catalogue d'articles et suivi des stocks, ainsi qu'une boutique en ligne simple. Ses marchands européens contractent avec SumUp Limited à Dublin, un établissement de monnaie électronique agréé dans l'UE.",
         "betterWhen": [
-          "Vous voulez un terminal physique dédié plutôt que d’utiliser votre téléphone.",
-          "Vous encaissez dans des lieux où tendre un appareil séparé compte.",
-          "Vous n’avez pas du tout besoin d’une boutique en ligne."
+          "Votre clientèle ne paie pas avec TWINT — SumUp est moins cher et plus simple sur les cartes, et l'installation prend moins d'une heure.",
+          "Vous vendez assez par carte pour qu'un abonnement mensuel batte un pourcentage par vente.",
+          "Vous voulez une application de caisse mature : variantes, options, dispositions de vente, listes de fournisseurs, clôture de caisse. Sur les fonctions de caisse pures, elle va plus loin que Zolto.",
+          "Vous voulez dix ans d'antécédents derrière l'entreprise qui encaisse votre argent. Zolto n'en a pas."
         ],
         "zoltoWhen": [
-          "Vous préférez ne pas acheter de matériel — les téléphones modernes acceptent déjà le sans contact et le QR TWINT.",
-          "Vous voulez le même catalogue derrière votre stand et votre site.",
-          "Vous voulez que l’IA se charge des annonces, des traductions et des réponses aux clients."
+          "Votre clientèle sort TWINT en premier. Une caisse SumUp ne peut pas l'accepter du tout — le contournement, c'est un second dispositif TWINT séparé et un rapprochement manuel en fin de journée.",
+          "Vous vendez des pièces uniques et ne pouvez pas vous permettre de vendre deux fois la même sur deux canaux.",
+          "Vous voulez que la boutique soit construite, rédigée et photographiée pour vous, plutôt qu'un gabarit à remplir vous-même.",
+          "Vous préférez photographier votre carnet que taper un catalogue à la main."
         ]
       },
       "shopify": {
@@ -911,16 +917,18 @@
         ]
       },
       "worldline": {
-        "summary": "Un grand processeur de paiement européen (il a racheté SIX Payment Services, longtemps la référence des terminaux de carte suisses), au service de commerçants du magasin de quartier à la grande entreprise.",
+        "summary": "Un grand processeur de paiement français qui a absorbé SIX Payment Services en 2018 et est devenu la référence des terminaux de carte suisses. Il propose des terminaux en magasin, Tap on Mobile sur un téléphone ordinaire et la passerelle en ligne Saferpay — et il prend en charge l'ensemble des moyens de paiement suisses, PostFinance Pay compris.",
         "betterWhen": [
-          "Vous avez besoin d’une infrastructure de paiement d’entreprise et d’un appel d’offres formel.",
-          "Vous voulez une relation d’acquisition suisse établie, avec des conditions contractuelles.",
-          "Votre volume justifie des taux négociés et un gestionnaire de compte dédié."
+          "Vous avez besoin de PostFinance Pay. Worldline est le seul des trois à le proposer, et si vous en avez besoin, la comparaison s'arrête là.",
+          "Tap on Mobile vous convient : 1,7% forfaitaire, aucun coût mensuel fixe, et TWINT est accepté. Pour un petit commerce sans besoin de catalogue, c'est une offre réellement compétitive.",
+          "Vous avez un vrai volume et voulez des taux négociés avec un suivi dédié.",
+          "Vous voulez une relation d'acquisition suisse établie, avec des conditions contractuelles formelles."
         ],
         "zoltoWhen": [
-          "Vous êtes seul ou un petit atelier, et les contrats et terminaux sont démesurés.",
-          "Vous voulez vendre ce week-end, pas après un processus d’intégration.",
-          "Vous voulez votre boutique en ligne, votre caisse et votre assistant IA au même endroit."
+          "Vous voulez vos produits dans la caisse. Tap on Mobile est une application de paiement — vous saisissez un montant à chaque fois, ou vous achetez et intégrez un logiciel de caisse séparé.",
+          "Vous voulez une boutique en ligne, pas une caisse à greffer sur un site que vous faites réaliser. Saferpay est une passerelle, pas un magasin.",
+          "Vous êtes seul ou un petit atelier, et un contrat de terminal pluriannuel est démesuré.",
+          "Vous voulez vendre ce week-end, pas à l'issue d'un processus commercial."
         ]
       }
     },

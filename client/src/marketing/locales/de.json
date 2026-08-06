@@ -844,7 +844,12 @@
       "tables": {
         "weekly": {
           "caption": "Online-Bestellungen, Bestellwert und Traffic nach Woche",
-          "head": ["Woche", "Online-Bestellungen", "Ø Bestellwert", "Besucher"],
+          "head": [
+            "Woche",
+            "Online-Bestellungen",
+            "Ø Bestellwert",
+            "Besucher"
+          ],
           "rowLabels": [
             "Woche 1 (Launch)",
             "Woche 2",
@@ -855,7 +860,11 @@
         },
         "sources": {
           "caption": "Woher die Online-Bestellungen kamen",
-          "head": ["Quelle", "Bestellungen", "% der Online-Verkäufe"],
+          "head": [
+            "Quelle",
+            "Bestellungen",
+            "% der Online-Verkäufe"
+          ],
           "rowLabels": [
             "Instagram (organisch)",
             "Direkt / wiederkehrend",
@@ -880,16 +889,18 @@
         ]
       },
       "sumup": {
-        "summary": "Ein Zahlungsanbieter mit Kartenlesegerät im Zentrum, ausgerichtet auf kleine Händler und Marktfahrer, der Handterminals zusammen mit einem Zahlungskonto verkauft.",
+        "summary": "Ein etabliertes Unternehmen für mobile Kartenzahlungen, ausgerichtet auf kleine Händlerinnen und Marktstände. Es bietet günstige Lesegeräte, Tap to Pay auf iPhone und Android, eine wirklich gute Kassen-App mit Artikelkatalog und Bestandsführung sowie einen einfachen Online-Shop. Europäische Händler schliessen den Vertrag mit der SumUp Limited in Dublin, einem in der EU regulierten E-Geld-Institut.",
         "betterWhen": [
-          "Sie wollen ein eigenes physisches Terminal statt Ihr Handy zu nutzen.",
-          "Sie kassieren an Orten, an denen es zählt, ein separates Gerät zu überreichen.",
-          "Sie brauchen überhaupt keinen Onlineshop."
+          "Ihre Kundschaft zahlt nicht mit TWINT — SumUp ist bei Karten günstiger und einfacher, und die Einrichtung dauert unter einer Stunde.",
+          "Sie verkaufen genug über Karten, dass sich ein Monatsabo gegenüber einem Prozentsatz pro Verkauf lohnt.",
+          "Sie wollen eine ausgereifte Kassen-App: Varianten, Zusatzoptionen, Verkaufslayouts, Lieferantenlisten, Tagesabschluss. Bei reinen Kassenfunktionen ist SumUp weiter als Zolto.",
+          "Sie wollen ein Jahrzehnt Erfahrung hinter dem Unternehmen, das Ihr Geld entgegennimmt. Zolto hat das nicht."
         ],
         "zoltoWhen": [
-          "Sie wollen keine Hardware kaufen — moderne Handys nehmen kontaktlose Zahlungen und TWINT-QR bereits an.",
-          "Sie wollen denselben Katalog hinter Ihrem Stand und Ihrer Website.",
-          "Sie wollen, dass die KI das Einstellen, Übersetzen und Beantworten von Kundenfragen übernimmt."
+          "Ihre Kundschaft greift zuerst zu TWINT. Eine SumUp-Kasse kann das überhaupt nicht — der Umweg ist ein zweites, separates TWINT-Setup und ein manueller Abgleich am Abend.",
+          "Sie verkaufen Unikate und können es sich nicht leisten, dasselbe Stück über zwei Kanäle doppelt zu verkaufen.",
+          "Sie wollen, dass der Shop für Sie gebaut, getextet und fotografiert wird — statt einer Vorlage, die Sie selbst ausfüllen.",
+          "Sie fotografieren lieber Ihr Notizbuch, als einen Katalog von Hand einzutippen."
         ]
       },
       "shopify": {
@@ -906,16 +917,18 @@
         ]
       },
       "worldline": {
-        "summary": "Ein grosser europäischer Zahlungsabwickler (er übernahm SIX Payment Services, lange der Standard für Schweizer Kartenterminals) und bedient Händler vom Quartierladen bis zum Konzern.",
+        "summary": "Ein grosser französischer Zahlungsdienstleister, der 2018 SIX Payment Services übernommen hat und damit zum Platzhirsch bei Schweizer Kartenterminals wurde. Er bietet Terminals im Laden, Tap on Mobile auf einem gewöhnlichen Handy und das Online-Gateway Saferpay — und er unterstützt den vollständigen Schweizer Zahlungsmix, PostFinance Pay inklusive.",
         "betterWhen": [
-          "Sie brauchen Zahlungsinfrastruktur auf Konzernniveau und ein formelles Beschaffungsverfahren.",
-          "Sie wollen eine etablierte Schweizer Acquiring-Beziehung mit Vertragskonditionen.",
-          "Ihr Volumen rechtfertigt ausgehandelte Sätze und eine eigene Kundenbetreuung."
+          "Sie brauchen PostFinance Pay. Worldline ist der Einzige der drei, der das unterstützt — wenn Sie es brauchen, endet der Vergleich hier.",
+          "Tap on Mobile passt zu Ihnen: 1,7% pauschal, keine fixen Monatskosten, und TWINT wird akzeptiert. Für einen kleinen Betrieb ohne Katalogbedarf ist das ein wirklich konkurrenzfähiges Angebot.",
+          "Sie haben echtes Volumen und wollen ausgehandelte Konditionen mit fester Betreuung.",
+          "Sie wollen eine etablierte Schweizer Acquiring-Beziehung mit formellen Vertragsbedingungen."
         ],
         "zoltoWhen": [
-          "Sie sind eine Person oder ein kleines Atelier, und Verträge und Terminals sind überdimensioniert.",
-          "Sie wollen dieses Wochenende verkaufen, nicht nach einem Aufnahmeverfahren.",
-          "Sie wollen Onlineshop, Kasse und KI-Assistent an einem Ort."
+          "Sie wollen Ihre Produkte in der Kasse haben. Tap on Mobile ist eine Zahlungs-App — Sie tippen jedes Mal einen Betrag ein oder kaufen und integrieren eine separate Kassensoftware.",
+          "Sie wollen einen Online-Shop, keine Kasse zum Anschrauben an eine Website, die Sie in Auftrag geben. Saferpay ist ein Gateway, kein Laden.",
+          "Sie sind eine Person oder ein kleines Atelier, und ein mehrjähriger Terminalvertrag ist überdimensioniert.",
+          "Sie wollen dieses Wochenende verkaufen, nicht nach einem Vertriebsprozess."
         ]
       }
     },
