@@ -19,15 +19,15 @@ struct PaymentView: View {
     // Shown when the backend has no Stripe Terminal Location configured. Mirrors
     // the Android "card payments not set up yet" setup guidance.
     private static let setupInstructions = """
-    Tap to Pay needs a Stripe Terminal Location before it can accept cards on this phone.
+    Tap to Pay needs your store's Stripe account and a Terminal Location before it can accept cards on this phone.
 
     To fix this:
 
-    1. Install the Stripe Dashboard app and confirm “Tap to Pay on this phone” works there first. This enables Tap to Pay on your account and completes the one-time setup on this device.
+    1. In your store admin, connect your Stripe account (Admin → Payments) so card payments land in your own account.
 
-    2. In the Stripe Dashboard, create a Terminal Location and copy its ID (it starts with “tml_”).
+    2. Install the Stripe Dashboard app and confirm “Tap to Pay on this phone” works there first. This enables Tap to Pay on your account and completes the one-time setup on this device.
 
-    3. Set STRIPE_LOCATION_ID on the POS API server, then reopen this screen.
+    3. Reopen this screen — the Terminal Location is provisioned automatically once Stripe is connected.
     """
 
     @StateObject private var paymentViewModel = PaymentViewModel()
@@ -42,7 +42,7 @@ struct PaymentView: View {
 
     var body: some View {
         ZStack {
-            Color.zoltoWarmWhite.ignoresSafeArea()
+            Color.zoltoBackground.ignoresSafeArea()
 
             VStack(spacing: 32) {
                 Spacer()
@@ -119,7 +119,7 @@ struct PaymentView: View {
                 productViewModel.clearSelection()
                 dismiss()
             }
-            .buttonStyle(ZoltoGoldButtonStyle())
+            .buttonStyle(ZoltoAccentButtonStyle())
             .padding(.horizontal, 32)
         case .notConfigured:
             Button("Done") { dismiss() }
@@ -151,10 +151,10 @@ struct PaymentView: View {
             ProgressView()
                 .progressViewStyle(.circular)
                 .scaleEffect(1.4)
-                .tint(.zoltoNearBlack)
+                .tint(.zoltoInk)
             Text("Tap card or phone")
                 .font(.title2.weight(.medium))
-                .foregroundColor(.zoltoDeepText)
+                .foregroundColor(.zoltoInk)
                 .tracking(0.5)
         }
     }
@@ -163,9 +163,9 @@ struct PaymentView: View {
         VStack(spacing: 32) {
             ProgressView()
                 .progressViewStyle(.circular)
-                .tint(.zoltoNearBlack)
+                .tint(.zoltoInk)
             Text("Preparing…")
-                .foregroundColor(.zoltoMutedText)
+                .foregroundColor(.zoltoMuted)
         }
     }
 
@@ -173,9 +173,9 @@ struct PaymentView: View {
         VStack(spacing: 32) {
             ProgressView()
                 .progressViewStyle(.circular)
-                .tint(.zoltoNearBlack)
+                .tint(.zoltoInk)
             Text("Preparing card reader…")
-                .foregroundColor(.zoltoMutedText)
+                .foregroundColor(.zoltoMuted)
         }
     }
 
@@ -183,15 +183,15 @@ struct PaymentView: View {
         VStack(spacing: 32) {
             Image(systemName: "creditcard.trianglebadge.exclamationmark")
                 .font(.system(size: 64))
-                .foregroundColor(.zoltoGold)
+                .foregroundColor(.zoltoAccent)
             Text("Card payments not set up yet")
                 .font(.title2.weight(.bold))
-                .foregroundColor(.zoltoDeepText)
+                .foregroundColor(.zoltoInk)
                 .multilineTextAlignment(.center)
             Text(Self.setupInstructions)
                 .font(.callout)
                 .multilineTextAlignment(.leading)
-                .foregroundColor(.zoltoMutedText)
+                .foregroundColor(.zoltoMuted)
                 .padding(.horizontal, 8)
         }
     }
@@ -200,9 +200,9 @@ struct PaymentView: View {
         VStack(spacing: 32) {
             ProgressView()
                 .progressViewStyle(.circular)
-                .tint(.zoltoNearBlack)
+                .tint(.zoltoInk)
             Text("Processing payment…")
-                .foregroundColor(.zoltoMutedText)
+                .foregroundColor(.zoltoMuted)
         }
     }
 
@@ -210,9 +210,9 @@ struct PaymentView: View {
         VStack(spacing: 32) {
             ProgressView()
                 .progressViewStyle(.circular)
-                .tint(.zoltoNearBlack)
+                .tint(.zoltoInk)
             Text("Recording cash sale…")
-                .foregroundColor(.zoltoMutedText)
+                .foregroundColor(.zoltoMuted)
         }
     }
 
@@ -226,14 +226,14 @@ struct PaymentView: View {
             ProgressView()
                 .progressViewStyle(.circular)
                 .scaleEffect(1.4)
-                .tint(.zoltoNearBlack)
+                .tint(.zoltoInk)
             Text("TWINT payment")
                 .font(.title2.weight(.medium))
-                .foregroundColor(.zoltoDeepText)
+                .foregroundColor(.zoltoInk)
                 .tracking(0.5)
             Text("Waiting for the customer to confirm…")
                 .font(.callout)
-                .foregroundColor(.zoltoMutedText)
+                .foregroundColor(.zoltoMuted)
                 .multilineTextAlignment(.center)
         }
     }
@@ -242,18 +242,18 @@ struct PaymentView: View {
         VStack(spacing: 32) {
             Image(systemName: "checkmark.circle.fill")
                 .font(.system(size: 80))
-                .foregroundColor(.zoltoGold)
+                .foregroundColor(.zoltoAccent)
             Text("Payment Successful")
                 .font(.title.weight(.bold))
-                .foregroundColor(.zoltoDeepText)
+                .foregroundColor(.zoltoInk)
                 .tracking(0.5)
             VStack(spacing: 6) {
                 Text("Order #\(orderId)")
-                    .foregroundColor(.zoltoMutedText)
+                    .foregroundColor(.zoltoMuted)
                     .font(.subheadline)
-                Text("CHF \(String(format: "%.2f", Double(total) / 100.0))")
+                Text(Money.label(total))
                     .font(.title2.weight(.bold))
-                    .foregroundColor(.zoltoGold)
+                    .foregroundColor(.zoltoAccent)
             }
         }
     }
@@ -265,10 +265,10 @@ struct PaymentView: View {
                 .foregroundColor(.red)
             Text("Payment Failed")
                 .font(.title.weight(.bold))
-                .foregroundColor(.zoltoDeepText)
+                .foregroundColor(.zoltoInk)
             Text(message)
                 .multilineTextAlignment(.center)
-                .foregroundColor(.zoltoMutedText)
+                .foregroundColor(.zoltoMuted)
                 .padding()
         }
     }
@@ -276,7 +276,7 @@ struct PaymentView: View {
     private var cancelledView: some View {
         Text("Payment Cancelled")
             .font(.title)
-            .foregroundColor(.zoltoDeepText)
+            .foregroundColor(.zoltoInk)
     }
 
     private func startPayment() {

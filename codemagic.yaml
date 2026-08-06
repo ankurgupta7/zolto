@@ -250,18 +250,32 @@ workflows:
             CODE_SIGNING_ALLOWED=NO \
             POS_API_KEY="$POS_API_KEY"
 
-      # Smoke-test the live POS backend: the endpoint requires a valid
-      # POS_API_KEY and returns 200 only when Stripe secrets are configured.
-      # Runs only when POS_API_BASE_URL is set — Zolto is multi-tenant with
-      # no hardcoded backend, so there is no default host to ping.
+      # Smoke-test the live POS backend with the platform's own POS test key.
+      # The key is REQUIRED and this check never skips: the superadmin mints
+      # it in the operator console (Platform → POS test key) and stores it as
+      # the POS_API_KEY env var. It is a normal per-tenant key with no special
+      # rules, so this exercises the same auth path a merchant's register does.
+      # POS_API_BASE_URL overrides the host for a staging or self-hosted run.
       - name: Verify POS server health
         script: |
-          if [ -z "${POS_API_BASE_URL}" ]; then
-            echo "POS_API_BASE_URL not set — skipping the live health check."
-            exit 0
+          POS_API_BASE_URL="${POS_API_BASE_URL:-https://zolto.ch}"
+          if [ -z "${POS_API_KEY}" ]; then
+            echo "ERROR: POS_API_KEY is not set. Mint the platform POS test key (operator console -> Platform -> POS test key) and store it in Codemagic env vars."
+            exit 1
           fi
           echo "Checking POS health at ${POS_API_BASE_URL}/api/pos/health ..."
-          curl -fsS -H "x-pos-key: ${POS_API_KEY}" "${POS_API_BASE_URL}/api/pos/health"
+          status=$(curl -sS -o /tmp/pos-health.out -w "%{http_code}" \
+            -H "x-pos-key: ${POS_API_KEY}" "${POS_API_BASE_URL}/api/pos/health" || echo "000")
+          echo "HTTP ${status}"; cat /tmp/pos-health.out 2>/dev/null || true; echo
+          if [ "$status" = "200" ]; then
+            echo "POS server healthy."
+          elif [ "$status" = "401" ]; then
+            echo "ERROR: POS server rejected POS_API_KEY. Rotate the platform POS test key and update the env var."
+            exit 1
+          else
+            echo "POS health check failed with status ${status}"
+            exit 1
+          fi
 
     publishing:
       email:

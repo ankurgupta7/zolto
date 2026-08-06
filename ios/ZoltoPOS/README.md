@@ -9,30 +9,54 @@ directory. CI: `.github/workflows/ios-pos-build.yml` (simulator + tests) and
 the `ios-pos-*` workflows in the repo-root `codemagic.yaml` (signed IPAs).
 See `SETUP.md` here for device-install options.
 
+It is generic and multi-tenant: any Zolto merchant pairs the app with their
+own store using their per-tenant POS API key. Nothing store-specific is baked
+into the build.
+
 ## Features
 
-- **Product Grid**: Browse available products with images and stock levels.
-- **Sale Review**: Review selected items before charging.
-- **Stripe Terminal Integration**: Support for card-present payments using Stripe local mobile discovery (Tap to Pay on iPhone).
+- **Store pairing**: First-run pairing by scanning the QR on the merchant's
+  Keys & access page, or by typing the POS API key. Credentials live in the
+  iOS Keychain; a rotated or revoked key routes back to the pairing screen.
+- **Runtime branding**: The paired store's name, logo, and currency come from
+  `GET /api/pos/config` — the app chrome itself stays neutral Zolto.
+- **Product Grid**: Browse the store's products with images and stock levels.
+- **Sale Review**: Review selected items, bargain prices, add custom items.
+- **Payments**: Stripe Terminal Tap to Pay on iPhone (connection tokens minted
+  on the tenant's own connected Stripe account), TWINT via Stripe redirect,
+  and cash (works offline, syncs later).
 - **Sales History**: View past transactions.
 
 ## Technical Details
 
 - **Language**: Swift 5.9+
 - **UI Framework**: SwiftUI
-- **Networking**: URLSession with async/await
+- **Networking**: URLSession with async/await, tenant-scoped by the POS key
 - **Payment**: Stripe Terminal iOS SDK
 
 ## Setup
 
-1. Open `ZoltoPOS.xcodeproj` in Xcode.
-2. Ensure you have the Stripe Terminal SDK added via Swift Package Manager.
-3. Configure the `ApiService` with your backend URL and API Key.
-4. Set up the necessary permissions in `Info.plist` for Bluetooth and Location (required by Stripe Terminal).
+1. Generate the project: `xcodegen generate --spec project.yml`, then open
+   `ZoltoPOS.xcodeproj` in Xcode.
+2. Build and run — on first launch the app asks to pair with a store.
+3. Pair with the POS API key from the store admin (Account → Keys & access).
+   The server URL defaults to `https://zolto.ch`; self-hosted stores enter
+   their own.
+
+> **Apple-side note**: the bundle id is `ch.zolto.pos`. Provisioning profiles
+> and the Tap to Pay entitlement are tied to the bundle id and must be granted
+> for this identifier in the Apple Developer portal.
+
+CI authenticates against a live server with the **platform POS test key** —
+minted by the superadmin in the operator console (Platform → POS test key),
+an ordinary `platform-tests` tenant key with no special rules — stored as the
+`POS_API_KEY` secret. The health check never skips: a missing or rejected key
+fails the build.
 
 ## Project Structure
 
 - `Models/`: Data structures for Products, Sales, and API responses.
-- `Views/`: SwiftUI views for all screens.
+- `Views/`: SwiftUI views for all screens (including `PairingView`).
 - `ViewModels/`: Business logic and state management.
-- `Services/`: Networking and external integrations.
+- `Services/`: Networking, Keychain credential store, store session.
+- `Logic/`: Pure, unit-tested logic (money, pairing, filtering).

@@ -8,38 +8,38 @@ struct SalesHistoryView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                Color.zoltoWarmWhite.ignoresSafeArea()
+                Color.zoltoBackground.ignoresSafeArea()
 
                 switch viewModel.salesState {
                 case .idle, .loading:
                     ProgressView()
                         .progressViewStyle(.circular)
-                        .tint(.zoltoNearBlack)
+                        .tint(.zoltoInk)
 
                 case .success(let sales):
                     if sales.isEmpty {
                         Text("No sales recorded yet")
-                            .foregroundColor(.zoltoMutedText)
+                            .foregroundColor(.zoltoMuted)
                     } else {
                         List(sales) { sale in
                             VStack(alignment: .leading, spacing: 5) {
                                 HStack {
                                     Text(sale.createdAt)
                                         .font(.caption)
-                                        .foregroundColor(.zoltoMutedText)
+                                        .foregroundColor(.zoltoMuted)
                                         .tracking(0.3)
                                     Spacer()
-                                    Text("CHF \(sale.totalChf) · \(sale.paymentMethodLabel)")
+                                    Text("\(Money.label(sale.totalRappen)) · \(sale.paymentMethodLabel)")
                                         .font(.headline)
-                                        .foregroundColor(.zoltoGold)
+                                        .foregroundColor(.zoltoAccent)
                                 }
                                 Text(sale.itemsSummary)
                                     .font(.subheadline)
-                                    .foregroundColor(.zoltoDeepText)
+                                    .foregroundColor(.zoltoInk)
                                     .lineLimit(2)
                             }
                             .padding(.vertical, 6)
-                            .listRowBackground(Color.zoltoSoftWhite)
+                            .listRowBackground(Color.zoltoSurface)
                         }
                         .listStyle(.plain)
                         .refreshable { await viewModel.loadSales() }
@@ -60,7 +60,7 @@ struct SalesHistoryView: View {
             }
             .navigationTitle("Sales History")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(Color.zoltoWarmWhite, for: .navigationBar)
+            .toolbarBackground(Color.zoltoBackground, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
             .toolbarColorScheme(.light, for: .navigationBar)
             .toolbar {
@@ -69,12 +69,12 @@ struct SalesHistoryView: View {
                     if viewModel.isSyncing {
                         ProgressView()
                             .controlSize(.small)
-                            .tint(.zoltoGold)
+                            .tint(.zoltoAccent)
                     }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Done") { dismiss() }
-                        .foregroundColor(.zoltoNearBlack)
+                        .foregroundColor(.zoltoInk)
                 }
             }
             .task {
@@ -82,6 +82,6 @@ struct SalesHistoryView: View {
                 await viewModel.loadSales()
             }
         }
-        .accentColor(Color.zoltoForestGreen)
+        .accentColor(Color.zoltoInk)
     }
 }

@@ -269,7 +269,7 @@ class PaymentViewModel: NSObject, ObservableObject {
                     customItems: customItems
                 )
                 guard response.totalRappen > 0 else {
-                    status = .failed("Cart total came back as CHF 0.00 — refusing to charge. Please refresh the product list and try again.")
+                    status = .failed("Cart total came back as \(Money.label(0)) — refusing to charge. Please refresh the product list and try again.")
                     return
                 }
                 currentPosOrderId = response.posOrderId

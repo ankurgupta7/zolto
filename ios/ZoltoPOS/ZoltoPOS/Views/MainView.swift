@@ -5,6 +5,7 @@ struct MainView: View {
     @EnvironmentObject var viewModel: ProductViewModel
     @Environment(\.modelContext) private var modelContext
     @StateObject private var offlineManager = OfflinePaymentManager.shared
+    @ObservedObject private var session = StoreSession.shared
     @State private var showingSalesHistory = false
     @State private var showingReview = false
     @State private var showingSettings = false
@@ -18,7 +19,7 @@ struct MainView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                Color.zoltoWarmWhite.ignoresSafeArea()
+                Color.zoltoBackground.ignoresSafeArea()
 
                 VStack(spacing: 0) {
                     // Offline status banner — shown when offline or pending syncs exist
@@ -35,10 +36,10 @@ struct MainView: View {
                         Spacer()
                         ProgressView()
                             .progressViewStyle(.circular)
-                            .tint(.zoltoNearBlack)
+                            .tint(.zoltoInk)
                         Text("Loading products…")
                             .font(.subheadline)
-                            .foregroundColor(.zoltoMutedText)
+                            .foregroundColor(.zoltoMuted)
                             .padding(.top, 12)
                         Spacer()
 
@@ -46,7 +47,7 @@ struct MainView: View {
                         if products.isEmpty {
                             Spacer()
                             Text("No products available")
-                                .foregroundColor(.zoltoMutedText)
+                                .foregroundColor(.zoltoMuted)
                             Spacer()
                         } else {
                             // Category filter bar — shown only when there is more
@@ -66,7 +67,7 @@ struct MainView: View {
                             if viewModel.filteredProducts.isEmpty {
                                 Spacer()
                                 Text("No pieces match your search")
-                                    .foregroundColor(.zoltoMutedText)
+                                    .foregroundColor(.zoltoMuted)
                                 Spacer()
                             } else {
                                 ScrollView {
@@ -93,11 +94,11 @@ struct MainView: View {
                                                         HStack {
                                                             Text(category)
                                                                 .font(.headline)
-                                                                .foregroundColor(.zoltoNearBlack)
+                                                                .foregroundColor(.zoltoInk)
                                                             Spacer()
                                                             Text("\(categoryProducts.count)")
                                                                 .font(.subheadline)
-                                                                .foregroundColor(.zoltoMutedText)
+                                                                .foregroundColor(.zoltoMuted)
                                                         }
                                                         .padding(.vertical, 12)
                                                     }
@@ -127,7 +128,7 @@ struct MainView: View {
                         }
                         .buttonStyle(ZoltoOutlinedButtonStyle())
                         .padding(.horizontal, 40)
-                        Button("Configure Backend") {
+                        Button("Pairing & settings") {
                             showingSettings = true
                         }
                         .buttonStyle(ZoltoOutlinedButtonStyle())
@@ -142,7 +143,7 @@ struct MainView: View {
                     if !viewModel.selectedIds.isEmpty || !viewModel.customItems.isEmpty {
                         Button(action: { showingReview = true }) {
                             HStack {
-                                Text("\(viewModel.selectedIds.count + viewModel.customItems.count) item(s) — CHF \(viewModel.totalChf)")
+                                Text("\(viewModel.selectedIds.count + viewModel.customItems.count) item(s) — \(Money.label(viewModel.totalRappen()))")
                                     .fontWeight(.semibold)
                                 Spacer()
                                 Text("Review Sale")
@@ -166,27 +167,36 @@ struct MainView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .principal) {
-                    // Static wordmark, deliberately not a fetched logo: Zolto
-                    // is multi-tenant, so no single store's branding belongs
-                    // hardcoded here (the old Kalakosh logo URL was exactly
-                    // that). Per-tenant logos should come from /api/pos/config
-                    // if they're ever shown in the chrome.
-                    Text("ZOLTO")
-                        .font(.system(.headline, design: .default).weight(.bold))
-                        .tracking(3)
-                        .foregroundColor(.zoltoNearBlack)
+                    // The paired store's own branding, fetched at runtime —
+                    // logo when the merchant uploaded one, name otherwise,
+                    // neutral app name until a store is paired.
+                    if let logoUrl = session.identity?.logoUrl, let url = URL(string: logoUrl) {
+                        AsyncImage(url: url) { phase in
+                            switch phase {
+                            case .success(let image):
+                                image
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(height: 28)
+                            default:
+                                storeNameTitle
+                            }
+                        }
+                    } else {
+                        storeNameTitle
+                    }
                 }
                 ToolbarItem(placement: .navigationBarLeading) {
                     HStack(spacing: 8) {
                         Button(action: { showingSettings = true }) {
                             Image(systemName: "gear")
-                                .foregroundColor(.zoltoNearBlack)
+                                .foregroundColor(.zoltoInk)
                         }
                         // Small, visible indicator that a DB/network sync runs.
                         if viewModel.isSyncing {
                             ProgressView()
                                 .controlSize(.small)
-                                .tint(.zoltoGold)
+                                .tint(.zoltoAccent)
                         }
                     }
                 }
@@ -206,11 +216,11 @@ struct MainView: View {
                             ))
                         } label: {
                             Image(systemName: viewModel.showHiddenItems ? "eye.fill" : "eye")
-                                .foregroundColor(.zoltoNearBlack)
+                                .foregroundColor(.zoltoInk)
                         }
                         Button(action: { showingSalesHistory = true }) {
                             Image(systemName: "clock.arrow.circlepath")
-                                .foregroundColor(.zoltoNearBlack)
+                                .foregroundColor(.zoltoInk)
                         }
                         // Sells something outside the catalogue entirely — the only
                         // entry point that doesn't require selecting a product first.
@@ -220,7 +230,7 @@ struct MainView: View {
                             showingAddCustomItem = true
                         }) {
                             Image(systemName: "plus.circle")
-                                .foregroundColor(.zoltoNearBlack)
+                                .foregroundColor(.zoltoInk)
                         }
                     }
                 }
@@ -230,7 +240,7 @@ struct MainView: View {
                 placement: .navigationBarDrawer(displayMode: .always),
                 prompt: "Search name, category, price…"
             )
-            .toolbarBackground(Color.zoltoWarmWhite, for: .navigationBar)
+            .toolbarBackground(Color.zoltoBackground, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
             .toolbarColorScheme(.light, for: .navigationBar)
             .sheet(isPresented: $showingSalesHistory) {
@@ -251,7 +261,7 @@ struct MainView: View {
             }
             .alert("Add Custom Item", isPresented: $showingAddCustomItem) {
                 TextField("Item name", text: $customItemName)
-                TextField("Price (CHF)", text: $customItemPriceText)
+                TextField("Price (\(Money.displayCurrency))", text: $customItemPriceText)
                     .keyboardType(.decimalPad)
                 Button("Add") {
                     let trimmedName = customItemName.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -266,14 +276,32 @@ struct MainView: View {
             .task {
                 viewModel.modelContext = modelContext
                 OfflinePaymentManager.shared.configure(with: modelContext)
-                if !ApiService.shared.isConfigured {
-                    showingSettings = true
-                } else {
+                if session.isPaired {
+                    await session.refreshIdentity()
                     await viewModel.loadProducts()
                 }
             }
         }
-        .accentColor(Color.zoltoForestGreen)
+        .accentColor(Color.zoltoInk)
+        // Pairing is a hard gate, not a sheet the cashier can swipe away:
+        // covers first run, explicit unpair, and a rotated/revoked key (401).
+        .fullScreenCover(isPresented: Binding(
+            get: { !session.isPaired },
+            set: { _ in }
+        )) {
+            PairingView {
+                Task { await viewModel.loadProducts() }
+            }
+        }
+    }
+
+    private var storeNameTitle: some View {
+        let name = session.identity?.storeName ?? ""
+        return Text((name.isEmpty ? "Zolto POS" : name).uppercased())
+            .font(.system(.headline, design: .default).weight(.bold))
+            .tracking(3)
+            .foregroundColor(.zoltoInk)
+            .lineLimit(1)
     }
 }
 
@@ -306,7 +334,7 @@ struct OfflineStatusBar: View {
             .padding(.horizontal, 16)
             .padding(.vertical, 8)
             .foregroundColor(isOnline ? .white : .white)
-            .background(isOnline ? Color.zoltoForestGreen : Color.orange)
+            .background(isOnline ? Color.zoltoInk : Color.orange)
         }
         .buttonStyle(PlainButtonStyle())
     }
@@ -363,7 +391,7 @@ struct OfflineDetailsView: View {
                                 Text(tx.displayLabel)
                                     .font(.subheadline.weight(.medium))
                                 HStack {
-                                    Text("CHF \(String(format: "%.2f", Double(tx.totalRappen) / 100.0))")
+                                    Text(Money.label(tx.totalRappen))
                                         .font(.caption)
                                         .foregroundColor(.secondary)
                                     Spacer()
@@ -425,7 +453,7 @@ struct StatusBadge: View {
         case "pending": return .orange
         case "syncing": return .blue
         case "failed": return .red
-        case "synced": return Color.zoltoForestGreen
+        case "synced": return Color.zoltoInk
         default: return .gray
         }
     }
@@ -451,7 +479,7 @@ struct CategoryFilterBar: View {
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
         }
-        .background(Color.zoltoWarmWhite)
+        .background(Color.zoltoBackground)
     }
 }
 
@@ -466,13 +494,13 @@ struct CategoryChip: View {
                 .font(.system(.caption, design: .default).weight(.semibold))
                 .tracking(0.5)
                 .textCase(.uppercase)
-                .foregroundColor(isSelected ? .zoltoGold : .zoltoDeepText)
+                .foregroundColor(isSelected ? .zoltoAccent : .zoltoInk)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
-                .background(isSelected ? Color.zoltoNearBlack : Color.zoltoSoftWhite)
+                .background(isSelected ? Color.zoltoInk : Color.zoltoSurface)
                 .overlay(
                     RoundedRectangle(cornerRadius: 4)
-                        .stroke(isSelected ? Color.zoltoGold : Color.zoltoBorder, lineWidth: 1)
+                        .stroke(isSelected ? Color.zoltoAccent : Color.zoltoBorder, lineWidth: 1)
                 )
                 .cornerRadius(4)
         }
@@ -494,20 +522,20 @@ struct ProductCard: View {
                             image.resizable().scaledToFill()
                         } placeholder: {
                             Color.zoltoBorder
-                                .overlay(Image(systemName: "photo").foregroundColor(.zoltoMutedText))
+                                .overlay(Image(systemName: "photo").foregroundColor(.zoltoMuted))
                         }
                         .frame(height: 140)
                         .clipped()
                     } else {
                         Color.zoltoBorder
-                            .overlay(Image(systemName: "photo").foregroundColor(.zoltoMutedText))
+                            .overlay(Image(systemName: "photo").foregroundColor(.zoltoMuted))
                             .frame(height: 140)
                     }
 
                     if isSelected {
                         Image(systemName: "checkmark.circle.fill")
                             .font(.system(size: 22))
-                            .foregroundColor(.zoltoGold)
+                            .foregroundColor(.zoltoAccent)
                             .shadow(color: .black.opacity(0.25), radius: 2)
                             .padding(8)
                     }
@@ -529,10 +557,10 @@ struct ProductCard: View {
                         Text("\(product.quantity)")
                             .font(.system(size: 10, weight: .bold))
                             .tracking(0.5)
-                            .foregroundColor(.zoltoNearBlack)
+                            .foregroundColor(.zoltoInk)
                             .padding(.horizontal, 6)
                             .padding(.vertical, 3)
-                            .background(Color.zoltoGold)
+                            .background(Color.zoltoAccent)
                             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
                             .padding(6)
                     }
@@ -541,20 +569,20 @@ struct ProductCard: View {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(product.displayName)
                         .font(.system(.footnote, design: .default).weight(.semibold))
-                        .foregroundColor(.zoltoDeepText)
+                        .foregroundColor(.zoltoInk)
                         .lineLimit(2)
 
-                    Text("CHF \(product.priceChf)")
+                    Text(Money.label(product.priceRappen))
                         .font(.footnote)
-                        .foregroundColor(.zoltoGold)
+                        .foregroundColor(.zoltoAccent)
                 }
                 .padding(10)
             }
-            .background(Color.zoltoSoftWhite)
+            .background(Color.zoltoSurface)
             .cornerRadius(4)
             .overlay(
                 RoundedRectangle(cornerRadius: 4)
-                    .stroke(isSelected ? Color.zoltoGold : Color.zoltoBorder, lineWidth: isSelected ? 2 : 1)
+                    .stroke(isSelected ? Color.zoltoAccent : Color.zoltoBorder, lineWidth: isSelected ? 2 : 1)
             )
         }
         .buttonStyle(PlainButtonStyle())

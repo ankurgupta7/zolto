@@ -18,15 +18,42 @@ struct ConnectionTokenResponse: Codable {
 }
 
 /// Response of `GET /api/pos/config` — non-secret client configuration served by
-/// the backend so no Stripe config is baked into the app build. `locationId` is
-/// the Stripe Terminal Location the Tap to Pay reader registers against; it is an
-/// empty string until `STRIPE_LOCATION_ID` is set on the server, which the app
-/// treats as "card payments not set up yet".
+/// the backend so nothing store-specific is baked into the app build.
+///
+/// `locationId` is the Stripe Terminal Location the Tap to Pay reader registers
+/// against; it is an empty string until the tenant's Terminal Location is
+/// provisioned, which the app treats as "card payments not set up yet".
+///
+/// `storeName` / `logoUrl` / `currency` are the paired store's identity —
+/// optional so the app still decodes older server responses that predate them.
 struct PosConfigResponse: Codable {
     let locationId: String
+    let tenantSlug: String?
+    let storeName: String?
+    let logoUrl: String?
+    let currency: String?
 
-    init(locationId: String = "") {
+    init(
+        locationId: String = "",
+        tenantSlug: String? = nil,
+        storeName: String? = nil,
+        logoUrl: String? = nil,
+        currency: String? = nil
+    ) {
         self.locationId = locationId
+        self.tenantSlug = tenantSlug
+        self.storeName = storeName
+        self.logoUrl = logoUrl
+        self.currency = currency
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        locationId = try container.decodeIfPresent(String.self, forKey: .locationId) ?? ""
+        tenantSlug = try container.decodeIfPresent(String.self, forKey: .tenantSlug)
+        storeName = try container.decodeIfPresent(String.self, forKey: .storeName)
+        logoUrl = try container.decodeIfPresent(String.self, forKey: .logoUrl)
+        currency = try container.decodeIfPresent(String.self, forKey: .currency)
     }
 }
 

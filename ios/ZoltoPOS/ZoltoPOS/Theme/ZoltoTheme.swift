@@ -1,38 +1,25 @@
 import SwiftUI
 
-// MARK: - Zolto Zürich — Pearl Jeweller Warm Palette
-// Inspired by Zürich semi-precious boutiques: warm oyster ground,
-// mahogany darks, refined gold. Every neutral has a warm (brown/amber)
-// undertone — never cold grey.
+// MARK: - Zolto POS — Neutral Platform Palette
+// The app chrome is deliberately brand-neutral: the paired store's own
+// identity (name, logo) comes from the server at runtime (StoreSession),
+// while these tokens style the surrounding POS UI the same for every
+// merchant. Cool near-blacks and off-whites, one calm indigo accent.
 extension Color {
-    // Core warm neutrals
-    static let zoltoOysterCream   = Color(red: 247/255, green: 243/255, blue: 238/255)  // #F7F3EE
-    static let zoltoWarmNearBlack = Color(red: 28/255,  green: 23/255,  blue: 20/255)   // #1C1714
-    static let zoltoMahogany      = Color(red: 45/255,  green: 38/255,  blue: 32/255)   // #2D2620
-    static let zoltoWarmDarkMid   = Color(red: 58/255,  green: 48/255,  blue: 40/255)   // #3A3028
-    static let zoltoWarmIvory     = Color(red: 237/255, green: 231/255, blue: 223/255)  // #EDE7DF
-    static let zoltoWarmMuted     = Color(red: 122/255, green: 109/255, blue: 101/255)  // #7A6D65
-    static let zoltoWarmBorder    = Color(red: 221/255, green: 212/255, blue: 201/255)  // #DDD4C9
+    // Grounds
+    static let zoltoBackground = Color(red: 247/255, green: 247/255, blue: 245/255)  // #F7F7F5
+    static let zoltoSurface    = Color(red: 239/255, green: 239/255, blue: 236/255)  // #EFEFEC
+    static let zoltoBorder     = Color(red: 220/255, green: 221/255, blue: 218/255)  // #DCDDDA
 
-    // Gold accent — refined, precious
-    static let zoltoGold          = Color(red: 184/255, green: 150/255, blue: 62/255)   // #B8963E
-    static let zoltoGoldLight     = Color(red: 212/255, green: 176/255, blue: 96/255)   // #D4B060
+    // Ink
+    static let zoltoInk        = Color(red: 26/255,  green: 28/255,  blue: 30/255)   // #1A1C1E
+    static let zoltoInkPressed = Color(red: 43/255,  green: 46/255,  blue: 49/255)   // #2B2E31
+    static let zoltoInkLight   = Color(red: 60/255,  green: 64/255,  blue: 67/255)   // #3C4043
+    static let zoltoMuted      = Color(red: 110/255, green: 114/255, blue: 118/255)  // #6E7276
 
-    // Semantic aliases — views reference these; updating here cascades everywhere
-    static let zoltoNearBlack        = zoltoWarmNearBlack
-    static let zoltoCharcoal         = zoltoMahogany
-    static let zoltoDarkGrey         = zoltoWarmDarkMid
-    static let zoltoWarmWhite        = zoltoOysterCream
-    static let zoltoSoftWhite        = zoltoWarmIvory
-    static let zoltoSoftIvory        = zoltoWarmIvory
-    static let zoltoWarmCream        = zoltoOysterCream
-    static let zoltoMutedText        = zoltoWarmMuted
-    static let zoltoBorder           = zoltoWarmBorder
-    static let zoltoDeepText         = zoltoWarmNearBlack
-    // Legacy forest names kept so older view references compile
-    static let zoltoForestGreen      = zoltoWarmNearBlack
-    static let zoltoForestGreenDark  = zoltoMahogany
-    static let zoltoForestGreenLight = zoltoWarmDarkMid
+    // Accent — used for prices, selection highlights, and success accents.
+    static let zoltoAccent      = Color(red: 66/255,  green: 99/255,  blue: 235/255) // #4263EB
+    static let zoltoAccentLight = Color(red: 92/255,  green: 124/255, blue: 250/255) // #5C7CFA
 }
 
 // MARK: - Button styles
@@ -44,8 +31,8 @@ struct ZoltoPrimaryButtonStyle: ButtonStyle {
             .tracking(1.2)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 16)
-            .background(configuration.isPressed ? Color.zoltoMahogany : Color.zoltoWarmNearBlack)
-            .foregroundColor(.zoltoOysterCream)
+            .background(configuration.isPressed ? Color.zoltoInkPressed : Color.zoltoInk)
+            .foregroundColor(.zoltoBackground)
             .cornerRadius(4)
             .animation(.easeOut(duration: 0.1), value: configuration.isPressed)
     }
@@ -58,24 +45,24 @@ struct ZoltoOutlinedButtonStyle: ButtonStyle {
             .tracking(0.8)
             .padding(.horizontal, 20)
             .padding(.vertical, 10)
-            .foregroundColor(configuration.isPressed ? .zoltoMahogany : .zoltoWarmNearBlack)
+            .foregroundColor(configuration.isPressed ? .zoltoInkPressed : .zoltoInk)
             .overlay(
                 RoundedRectangle(cornerRadius: 4)
-                    .stroke(Color.zoltoWarmNearBlack, lineWidth: 1)
+                    .stroke(Color.zoltoInk, lineWidth: 1)
             )
             .animation(.easeOut(duration: 0.1), value: configuration.isPressed)
     }
 }
 
-struct ZoltoGoldButtonStyle: ButtonStyle {
+struct ZoltoAccentButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.system(.headline, design: .default).weight(.semibold))
             .tracking(1.2)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 16)
-            .background(configuration.isPressed ? Color.zoltoGoldLight : Color.zoltoGold)
-            .foregroundColor(.zoltoWarmNearBlack)
+            .background(configuration.isPressed ? Color.zoltoAccentLight : Color.zoltoAccent)
+            .foregroundColor(.white)
             .cornerRadius(4)
             .animation(.easeOut(duration: 0.1), value: configuration.isPressed)
     }
