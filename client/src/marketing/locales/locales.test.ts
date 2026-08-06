@@ -17,7 +17,12 @@ import {
   SOVEREIGNTY,
   FEATURES,
   COMPETITORS,
+  POSITIONING,
+  CAPABILITIES,
+  ZOLTO_LIMITATIONS,
+  BUYER_FIT,
 } from "@shared/platform";
+import { RATES, NEGOTIATED } from "@shared/costOfAcceptance";
 import { SEGMENTS } from "@shared/segments";
 import {
   PILOT_METHODOLOGY,
@@ -193,6 +198,20 @@ describe("marketing locale files", () => {
         timeOfDay: s.timeOfDay,
       })),
       cardReaderGag: { items: [...CARD_READER_GAG.items] },
+      // SqueezePlay.tsx renders POSITIONING.squeezePlay. The panels' `sourceId`
+      // is absent on purpose: a citation is a URL and a date, not prose, and it
+      // renders from shared/sources.ts identically in every language.
+      squeezePlay: {
+        eyebrow: POSITIONING.squeezePlay.eyebrow,
+        headline: POSITIONING.squeezePlay.headline,
+        headlineEmphasis: POSITIONING.squeezePlay.headlineEmphasis,
+        body: POSITIONING.squeezePlay.body,
+        panels: POSITIONING.squeezePlay.panels.map((p) => ({
+          label: p.label,
+          detail: p.detail,
+        })),
+        claim: POSITIONING.squeezePlay.claim,
+      },
       comparison: Object.fromEntries(
         INCUMBENT_COMPARISON.map((r) => [
           r.feature,
@@ -267,9 +286,47 @@ describe("marketing locale files", () => {
             summary: c.summary,
             betterWhen: [...c.betterWhen],
             zoltoWhen: [...c.zoltoWhen],
+            ...(c.capabilities
+              ? {
+                  capabilities: Object.fromEntries(
+                    c.capabilities.map((x) => [x.key, x.value]),
+                  ),
+                }
+              : {}),
+            // Only the statement is translated. Its source is a URL and a
+            // date, which read the same in every language.
+            ...(c.risks ? { risks: c.risks.map((r) => r.statement) } : {}),
           },
         ]),
       ),
+      // CapabilityMatrix.tsx renders the row labels and Zolto's own answers.
+      capabilities: Object.fromEntries(
+        CAPABILITIES.map((c) => [c.key, { label: c.label, zolto: c.zolto }]),
+      ),
+      // CostOfAcceptance.tsx renders each rate's label and caveat. The numbers
+      // themselves are never duplicated into a locale file — they render from
+      // shared/costOfAcceptance.ts so four languages can't disagree about what
+      // a sale costs.
+      rates: Object.fromEntries(
+        RATES.map((r) => [
+          r.id,
+          r.caveat ? { label: r.label, caveat: r.caveat } : { label: r.label },
+        ]),
+      ),
+      negotiated: Object.fromEntries(
+        NEGOTIATED.map((n) => [n.id, { label: n.label, detail: n.detail }]),
+      ),
+      // Compare.tsx's index renders both. They're the two places the site
+      // argues against itself, so they matter most in the languages a reader
+      // actually reads.
+      limitations: ZOLTO_LIMITATIONS.map((l) => ({
+        title: l.title,
+        detail: l.detail,
+      })),
+      buyerFit: BUYER_FIT.map((q) => ({
+        question: q.question,
+        answers: q.answers.map((a) => ({ when: a.when, then: a.then })),
+      })),
       // Research.tsx renders shared/research.ts. Only the label column of each
       // table is prose — the numeric cells are rendered from the shared source
       // as-is, so they are deliberately absent from the locale files.

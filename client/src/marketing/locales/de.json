@@ -31,7 +31,7 @@
     "pledgeSignature": "— das Zolto-Team",
     "comparisonEyebrow": "der ehrliche Vergleich",
     "comparisonHeading": "Wofür Sie dort eigentlich bezahlen.",
-    "comparisonBody": "Stripe, SumUp und Worldline wurden für eine Zeit gebaut, in der Websites schwierig waren und ein Kartenlesegerät praktisch ein Statussymbol. Für diese Ära zahlen Sie noch heute — nicht für etwas, das Sie tatsächlich brauchen.",
+    "comparisonBody": "Das sind echte Produkte mit echten Stärken, und am Stand schlägt uns jedes einzelne davon beim Kartensatz. Was folgt, ist der Punkt, an dem sich die Modelle wirklich unterscheiden — was in der Kasse liegt, wer den Shop baut, und wo Geld und Daten am Ende landen.",
     "colOldGuard": "Die alte Garde",
     "howEyebrow": "so funktioniert es",
     "howHeading": "Ein Laden. Überall, wo Sie verkaufen.",
@@ -93,10 +93,16 @@
     "intro": "Ziehen Sie Ihren Monat auf. Wir zeigen Ihnen die Rechnung — und sagen Ihnen, wann Sie mit dem günstigeren Plan besser fahren, selbst wenn es nicht der ist, den wir lieber verkaufen würden.",
     "sliderLabel": "Ihre Online-Verkäufe diesen Monat",
     "sliderNote": "Marktstand-Verkäufe fehlen hier mit Absicht — sie sind in jedem Plan gratis und könnten die Antwort darum nie verändern.",
+    "basketLabel": "Und eine typische Bestellung liegt bei etwa",
+    "basketNote": "Rund {{orders}} Bestellungen in diesem Monat. Das ist relevant: die Fixgebühr Ihres Kartenabwicklers fällt pro Bestellung an, nicht pro Franken.",
     "onFree": "Im Gratis-Plan",
     "onPlan": "Im {{plan}}-Plan",
     "freeMeta": "{{percent}} der Online-Verkäufe · kein Abo",
     "proMeta": "fixe Monatspauschale · 0% auf jeden Verkauf",
+    "toProcessor": "→ an Ihren Kartenabwickler",
+    "toZolto": "→ an Zolto",
+    "youKeep": "→ bleibt bei Ihnen",
+    "stackNote": "Die grosse Zahl ist unsere Rechnung. Die Aufschlüsselung ist die ganze Rechnung: Ihr Kartenabwickler nimmt bei jedem Online-Verkauf seinen eigenen Anteil, und dieses Geld geht an ihn, nicht an uns. Beim reinen Kartensatz sind wir nicht der günstigste Weg, in der Schweiz bezahlt zu werden — den Rechenweg zeigt der Vergleich.",
     "verdictNoSales": "Keine Online-Verkäufe? Dann verdienen wir nichts. <hl>CHF 0.00.</hl> Verkaufen Sie den ganzen Monat am Stand, und wir gehen gerne leer aus.",
     "verdictFree": "Bleiben Sie im Gratis-Plan — er ist für Sie diesen Monat um <hl>{{saving}}</hl> günstiger. Wir melden uns, sobald das kippt, etwa ab CHF {{breakEven}} online.",
     "verdictPro": "Starker Monat. {{plan}} würde Ihnen <hl>{{saving}}</hl> sparen — und Ihr Dashboard stupst Sie an, sobald das zutrifft, damit Sie nicht ständig nachrechnen müssen."
@@ -336,7 +342,14 @@
     "zoltoWhenHeading": "Wann {{name}} besser passt",
     "startFree": "Gratis starten",
     "seePricing": "Preise ansehen",
-    "alsoCompare": "Auch vergleichen:"
+    "alsoCompare": "Auch vergleichen:",
+    "capabilitiesHeading": "{{name}} und {{competitor}}, Zeile für Zeile",
+    "risksHeading": "Noch etwas zu {{competitor}}",
+    "risksIntro": "{{competitor}} wird meist gewählt, weil der Platzhirsch die sichere Wahl ist. Genau diese Eigenschaft steht derzeit in Frage, und das ist öffentlich belegt, nicht Meinung.",
+    "risksBalance": "Nichts davon hindert {{competitor}} daran, Schweizer Zahlungen heute normal abzuwickeln, und Tap on Mobile bleibt mit Pauschalsatz und ohne Monatsgebühr ein wirklich gutes Angebot für kleine Betriebe. Der Punkt ist enger: „grosser Platzhirsch“ und „geringes Risiko“ sind nicht mehr dasselbe Wort — und das sollte man wissen, bevor man einen mehrjährigen Terminalvertrag unterschreibt.",
+    "buyerFitHeading": "Drei Fragen, die das entscheiden",
+    "buyerFitIntro": "Beantworten Sie diese, bevor Sie einen weiteren Vergleich lesen. Zwei der drei können uns ausschliessen, und das erfahren Sie besser hier als nachdem Sie Ihren Katalog umgezogen haben.",
+    "limitationsHeading": "Wo {{name}} zu kurz kommt"
   },
   "signup": {
     "eyebrow": "los geht’s",
@@ -425,7 +438,7 @@
         "blurb": "Ein kompletter Shop. Gratis vor Ort, 1% online.",
         "cta": "Kostenlos loslegen",
         "features": [
-          "Volles Kassensystem — Tap to Pay, TWINT QR, Bargeld — CHF 0 auf Verkäufe vor Ort",
+          "Volle Kasse — Tap to Pay, TWINT und Bargeld — CHF 0 von Zolto auf Verkäufen vor Ort",
           "Onlineshop auf Ihrer eigenen zolto.ch-Adresse",
           "Echtzeit-Sync zwischen Kasse und Online-Inventar",
           "KI-Beschreibungen & -Übersetzungen (Fair Use)",
@@ -461,15 +474,16 @@
         "Verkaufen Sie am Markt und zahlen Sie uns nichts, für immer: volles Kassensystem, Inventar-Sync und Ihr Online-Storefront, alles inklusive für CHF 0/Monat.",
         "Online- und KI-Agenten-Bestellungen kosten im Gratis-Plan 1% Gebühr. Keine Online-Verkäufe diesen Monat? Sie zahlen CHF 0. Das war's.",
         "Pro (CHF 25/Monat) schafft die 1% komplett ab und schaltet unlimitierte KI frei. Verkaufen Sie online über rund CHF 2'500/Monat? Dann ist Pro günstiger — wir sagen es Ihnen in der App, sobald sich der Wechsel lohnt.",
-        "Wir werden Ihre KI-Nutzung nie kleinlich abrechnen. Reden Sie mit ihr, so viel Sie wollen — Pläne skalieren über Produkte, Fotos und Speicher, nicht darüber, wie gesprächig Sie sind."
+        "Wir werden Ihre KI-Nutzung nie kleinlich abrechnen. Reden Sie mit ihr, so viel Sie wollen — Pläne skalieren über Produkte, Fotos und Speicher, nicht darüber, wie gesprächig Sie sind.",
+        "Was wir verlangen, ist nicht das, was ein Verkauf kostet. Ihr Zahlungsanbieter nimmt seinen eigenen Anteil, und dieses Geld geht an ihn, nicht an uns — und beim reinen Kartensatz sind wir nicht der günstigste Weg, in der Schweiz bezahlt zu werden. Wir zeigen Ihnen lieber den ganzen Stapel und lassen Sie rechnen."
       ]
     },
     "costComparison": {
-      "themLabel": "Ein Jahr mit der alten Garde",
-      "themNote": "Lesegerät-Hardware · Monatsgebühren · Lock-in",
+      "themLabel": "Ein Jahr Fixkosten anderswo",
+      "themNote": "SumUp Payments Plus zu CHF 29/Monat für ein Jahr, plus ein Solo-Lesegerät für CHF 99 — was einen tieferen Kartensatz als unseren mitbringt",
       "usLabel": "Ein Monat mit Zolto",
       "usNote": "keine Hardware · jederzeit kündbar · Ihr Stripe, Ihr Geld",
-      "multiplier": "ein Hundertstel der Kosten"
+      "multiplier": "und CHF 0/Monat, wenn Sie auf Free bleiben"
     },
     "zeroCostPos": {
       "eyebrow": "die Stelle, die alle zweimal lesen",
@@ -477,12 +491,12 @@
       "headlineEmphasis": "Für nichts.",
       "body": "Fotos, Namen, Preise, Lagerbestände — Ihr echter Katalog, in der Kasse auf Ihrem Handy. Tippen, Zahlung entgegennehmen. Zusehen, wie alles mit Ihrer Website synchronisiert. Und uns am Monatsende CHF 0.00 bezahlen — und im Monat darauf wieder.",
       "includes": [
-        "Volles Kassensystem — Tap to Pay, TWINT QR und Bargeld",
+        "Volle Kasse — Tap to Pay, TWINT und Bargeld, auf einem Bildschirm",
         "Jedes Stück mit Foto, Name und Preis",
         "Echtzeit-Sync zwischen Kasse und Online-Inventar",
         "Ihr Online-Storefront auf Ihrer eigenen zolto.ch-Adresse"
       ],
-      "catch": "Keine Testphasen-Uhr. Kein Einsteiger-Tarif, der still ausläuft. Das Einzige, was wir je verrechnen, sind die Online-Verkäufe, die wir Ihnen bringen — und gibt es keine, gibt es nichts zu verrechnen."
+      "catch": "Keine Testfrist. Kein Einstiegstarif, der still ausläuft. Das Einzige, wofür wir je etwas verlangen, sind die Online-Verkäufe, die wir Ihnen bringen — und wenn es keine gibt, gibt es nichts zu verrechnen. Wer Ihre Karten- und TWINT-Zahlungen abwickelt, verlangt weiterhin seinen eigenen Satz, genau wie überall sonst; diese Rechnung liegt zwischen Ihnen und ihm, und wir nehmen davon kein Stück."
     },
     "aiNativePitch": {
       "eyebrow": "der Handel zieht ins Chat-Fenster",
@@ -496,9 +510,9 @@
         "caption": "Assistenten empfehlen nur Shops, die sie lesen können. Ein Shop, der für sie unsichtbar ist, kommt in der Antwort nicht vor — egal, wie gut sein SEO war."
       },
       "proof": {
-        "eyebrow": "keine Roadmap — heute live",
-        "headline": "Sehen Sie zu, wie eine KI in einem Zolto-Shop einkauft.",
-        "body": "Ihre Kundin fragt ihren Assistenten. Der Assistent liest das Kurzprofil des Shops, prüft den Live-Bestand über MCP und gibt die Bestellung auf — die Zahlung landet wie jeder andere Verkauf im eigenen Stripe-Konto. Richten Sie Ihre eigene KI auf zolto.ch/llms.txt und fragen Sie sie nach uns."
+        "eyebrow": "die Schienen liegen — der Verkehr kommt erst noch",
+        "headline": "Sehen Sie einer KI beim Einkaufen in einem Zolto-Shop zu.",
+        "body": "Ihre Kundin fragt ihren Assistenten. Der Assistent liest das Briefing des Shops, prüft den Lagerbestand live über MCP, wählt das Stück aus und öffnet eine Kasse — Ihre Kundin tippt auf Bezahlen, und das Geld landet wie bei jedem anderen Verkauf im eigenen Stripe-Konto der Macherin. Richten Sie Ihre eigene KI auf zolto.ch/llms.txt und fragen Sie sie nach uns."
       },
       "steps": [
         {
@@ -513,8 +527,8 @@
         },
         {
           "k": "Gekauft",
-          "title": "Sie schliesst den Kauf im Chat ab",
-          "body": "Die Bestellung landet wie jeder andere Verkauf: Der Bestand synchronisiert, Sie erhalten die Benachrichtigung, und das Geld geht direkt in Ihr Stripe-Konto."
+          "title": "Sie öffnet die Kasse, Ihre Kundin bezahlt",
+          "body": "Der Assistent übergibt eine Kasse für das ausgewählte Stück. Ihre Kundin tippt auf Bezahlen, und die Bestellung landet wie jeder andere Verkauf: der Bestand synchronisiert sich, Sie bekommen die Benachrichtigung, und das Geld geht direkt auf Ihr Stripe-Konto."
         }
       ],
       "footnote": "Sie richten davon nichts ein. Es kommt mit dem Shop — auch im Gratis-Plan, und 1% nur, wenn ein Agent tatsächlich für Sie verkauft."
@@ -544,40 +558,40 @@
       ]
     },
     "comparison": {
-      "Your catalogue on your phone": {
-        "feature": "Ihr Katalog auf Ihrem Handy",
-        "them": "Teil eines Bezahl-Tarifs oder gleich ein separates Produkt",
-        "us": "Fotos, Namen & Preise — CHF 0/Monat, ohne Ablaufdatum"
+      "Your catalogue and TWINT in the same till": {
+        "feature": "Ihr Katalog und TWINT in derselben Kasse",
+        "them": "Das eine oder das andere: eine Kassen-App, die kein TWINT kann, oder eine TWINT-App ohne Katalog darin",
+        "us": "Beides, auf einem Bildschirm — Foto antippen, dann TWINT, Karte oder Bargeld wählen"
       },
-      "Card reader": {
-        "feature": "Kartenlesegerät",
-        "them": "Wird Ihnen verkauft, CHF 50–300+",
-        "us": "Ihr Handy — NFC-Tap & TWINT QR"
+      "What a sale costs": {
+        "feature": "Was ein Verkauf kostet",
+        "them": "Ihr Satz, alles inklusive — und am Stand schlägt uns jeder einzelne von ihnen bei Karten",
+        "us": "Der Satz Ihres Abwicklers, plus 0% von uns vor Ort und 1% online auf Free — nehmen Sie also TWINT, das in derselben Kasse liegt"
       },
       "Building the store": {
         "feature": "Den Shop bauen",
-        "them": "Ein Entwickler, oder Wochen in Shopify",
-        "us": "Die KI entwirft ihn an einem Nachmittag"
+        "them": "Eine Entwicklerin, Wochen in einem Baukasten, oder gar kein Online-Shop",
+        "us": "Die KI entwirft, textet und fotografiert ihn an einem Nachmittag"
       },
       "Inventory": {
         "feature": "Inventar",
-        "them": "Starre Tabellen, die Sie von Hand pflegen",
-        "us": "Notizbuch scannen; die KI führt es"
+        "them": "Starre Raster, die Sie von Hand pflegen",
+        "us": "Notizbuch scannen; die KI pflegt es"
       },
       "Pricing": {
         "feature": "Preise",
-        "them": "Undurchsichtige Tarife, Überraschungsgebühren",
-        "us": "Gratis vor Ort. 1% online, oder pauschal CHF 25"
+        "them": "Eine Monatsgebühr, ein höherer Satz pro Verkauf, oder ein ausgehandelter Vertrag",
+        "us": "Vor Ort gratis. 1% online, oder pauschal CHF 25"
       },
       "Your money": {
         "feature": "Ihr Geld",
-        "them": "Einbehalten, dann ausbezahlt",
-        "us": "Direkt in Ihr eigenes Stripe-Konto"
+        "them": "Wird gehalten, dann ausgezahlt",
+        "us": "Direkt in Ihr eigenes Stripe"
       },
       "Where your data lives": {
         "feature": "Wo Ihre Daten liegen",
-        "them": "In den Cloud-Regionen, die sie nutzen — schauen Sie in deren Unterauftragsverarbeiter-Liste",
-        "us": "Europa, meist Deutschland — Server, die wir bei Hetzner mieten"
+        "them": "In welchen Cloud-Regionen auch immer sie arbeiten — prüfen Sie deren Unterauftragsliste",
+        "us": "Europa, meist Deutschland — Server, die wir von Hetzner mieten"
       }
     },
     "faqCategories": {
@@ -775,7 +789,7 @@
       },
       "payments": {
         "name": "Direktzahlungen mit Stripe",
-        "description": "Verbinden Sie Ihr eigenes Stripe-Konto; Ihre Kundschaft zahlt direkt darauf ein. Zolto hält Ihr Geld nie — im Gratis-Plan fällt eine Plattformgebühr von 1 % nur auf Online- und Agent-Bestellungen an, Verkäufe vor Ort sind immer gebührenfrei."
+        "description": "Verbinden Sie Ihr eigenes Stripe-Konto; Ihre Kundinnen zahlen direkt darauf ein. Zolto hält Ihr Geld nie. Stripe verlangt bei jedem Verkauf seine eigene Bearbeitungsgebühr, und dieses Geld geht an Stripe — Zoltos Gebühr ist davon getrennt und kommt obendrauf: 1% auf Online- und Agenten-Bestellungen auf Free, 0% auf Pro, und 0% auf Verkäufe vor Ort in jedem Tarif."
       },
       "storefront": {
         "name": "Ihr eigener Shop im eigenen Auftritt",
@@ -783,7 +797,7 @@
       },
       "ai-discovery": {
         "name": "Auffindbar für KI-Assistenten",
-        "description": "Jeder Shop bringt eine llms.txt und einen Model-Context-Protocol-Endpunkt (MCP) mit, damit KI-Assistenten und Agenten Ihre Produkte finden und empfehlen können."
+        "description": "Jeder Shop bringt eine llms.txt und einen Model-Context-Protocol-Endpunkt (MCP) mit, damit KI-Assistenten Ihren Live-Katalog lesen, Ihre Produkte empfehlen und eine Kasse öffnen können, die die Kundin abschliesst. Die Schienen liegen ab Tag eins; das plattformweite Shop-Verzeichnis füllt sich, während Macherinnen starten — das ist also Infrastruktur vor dem Verkehr und kein Kanal, der schon liefert."
       },
       "insights": {
         "name": "KI-Auswertungen zu Verkauf und Bestand",
@@ -882,17 +896,31 @@
         ]
       },
       "sumup": {
-        "summary": "Ein Zahlungsanbieter mit Kartenlesegerät im Zentrum, ausgerichtet auf kleine Händler und Marktfahrer, der Handterminals zusammen mit einem Zahlungskonto verkauft.",
+        "summary": "Ein etabliertes Unternehmen für mobile Kartenzahlungen, ausgerichtet auf kleine Händlerinnen und Marktstände. Es bietet günstige Lesegeräte, Tap to Pay auf iPhone und Android, eine wirklich gute Kassen-App mit Artikelkatalog und Bestandsführung sowie einen einfachen Online-Shop. Europäische Händler schliessen den Vertrag mit der SumUp Limited in Dublin, einem in der EU regulierten E-Geld-Institut.",
         "betterWhen": [
-          "Sie wollen ein eigenes physisches Terminal statt Ihr Handy zu nutzen.",
-          "Sie kassieren an Orten, an denen es zählt, ein separates Gerät zu überreichen.",
-          "Sie brauchen überhaupt keinen Onlineshop."
+          "Ihre Kundschaft zahlt nicht mit TWINT — SumUp ist bei Karten günstiger und einfacher, und die Einrichtung dauert unter einer Stunde.",
+          "Sie verkaufen genug über Karten, dass sich ein Monatsabo gegenüber einem Prozentsatz pro Verkauf lohnt.",
+          "Sie wollen eine ausgereifte Kassen-App: Varianten, Zusatzoptionen, Verkaufslayouts, Lieferantenlisten, Tagesabschluss. Bei reinen Kassenfunktionen ist SumUp weiter als Zolto.",
+          "Sie wollen ein Jahrzehnt Erfahrung hinter dem Unternehmen, das Ihr Geld entgegennimmt. Zolto hat das nicht."
         ],
         "zoltoWhen": [
-          "Sie wollen keine Hardware kaufen — moderne Handys nehmen kontaktlose Zahlungen und TWINT-QR bereits an.",
-          "Sie wollen denselben Katalog hinter Ihrem Stand und Ihrer Website.",
-          "Sie wollen, dass die KI das Einstellen, Übersetzen und Beantworten von Kundenfragen übernimmt."
-        ]
+          "Ihre Kundschaft greift zuerst zu TWINT. Eine SumUp-Kasse kann das überhaupt nicht — der Umweg ist ein zweites, separates TWINT-Setup und ein manueller Abgleich am Abend.",
+          "Sie verkaufen Unikate und können es sich nicht leisten, dasselbe Stück über zwei Kanäle doppelt zu verkaufen.",
+          "Sie wollen, dass der Shop für Sie gebaut, getextet und fotografiert wird — statt einer Vorlage, die Sie selbst ausfüllen.",
+          "Sie fotografieren lieber Ihr Notizbuch, als einen Katalog von Hand einzutippen."
+        ],
+        "capabilities": {
+          "swiss": "Ja",
+          "no-hardware": "Ja — Tap to Pay, iPhone XS und neuer / Android 11+",
+          "item-grid": "Ja — Verkaufslayouts, Kategorien, SKUs, Varianten und Bilder. Bei reinen Kassenfunktionen weiter entwickelt als Zoltos.",
+          "stock-in-person": "Ja, inklusive Warnungen bei knappem Bestand und einem „Ausverkauft“-Label",
+          "stock-shared": "Ja — SumUp gibt an, dass Kasse und Online-Shop automatisch synchronisieren. Der Bestand wird aktualisiert, wenn ein Verkauf abgeschlossen ist, nicht wenn eine Kasse startet.",
+          "twint": "Nein",
+          "postfinance": "Nein",
+          "builds-storefront": "Nein — ein Vorlagen-Baukasten, den Sie selbst ausfüllen",
+          "setup": "Unter einer Stunde",
+          "who-holds-money": "SumUp zahlt in 2–3 Tagen auf Ihre Bank aus"
+        }
       },
       "shopify": {
         "summary": "Die bekannteste gehostete E-Commerce-Plattform, mit eigener Kassen-App neben dem Onlineshop. Gebaut für Handelsbetriebe, die in Personal, Lager und Multichannel-Abwicklung hineinwachsen.",
@@ -908,16 +936,34 @@
         ]
       },
       "worldline": {
-        "summary": "Ein grosser europäischer Zahlungsabwickler (er übernahm SIX Payment Services, lange der Standard für Schweizer Kartenterminals) und bedient Händler vom Quartierladen bis zum Konzern.",
+        "summary": "Ein grosser französischer Zahlungsdienstleister, der 2018 SIX Payment Services übernommen hat und damit zum Platzhirsch bei Schweizer Kartenterminals wurde. Er bietet Terminals im Laden, Tap on Mobile auf einem gewöhnlichen Handy und das Online-Gateway Saferpay — und er unterstützt den vollständigen Schweizer Zahlungsmix, PostFinance Pay inklusive.",
         "betterWhen": [
-          "Sie brauchen Zahlungsinfrastruktur auf Konzernniveau und ein formelles Beschaffungsverfahren.",
-          "Sie wollen eine etablierte Schweizer Acquiring-Beziehung mit Vertragskonditionen.",
-          "Ihr Volumen rechtfertigt ausgehandelte Sätze und eine eigene Kundenbetreuung."
+          "Sie brauchen PostFinance Pay. Worldline ist der Einzige der drei, der das unterstützt — wenn Sie es brauchen, endet der Vergleich hier.",
+          "Tap on Mobile passt zu Ihnen: 1,7% pauschal, keine fixen Monatskosten, und TWINT wird akzeptiert. Für einen kleinen Betrieb ohne Katalogbedarf ist das ein wirklich konkurrenzfähiges Angebot.",
+          "Sie haben echtes Volumen und wollen ausgehandelte Konditionen mit fester Betreuung.",
+          "Sie wollen eine etablierte Schweizer Acquiring-Beziehung mit formellen Vertragsbedingungen."
         ],
         "zoltoWhen": [
-          "Sie sind eine Person oder ein kleines Atelier, und Verträge und Terminals sind überdimensioniert.",
-          "Sie wollen dieses Wochenende verkaufen, nicht nach einem Aufnahmeverfahren.",
-          "Sie wollen Onlineshop, Kasse und KI-Assistent an einem Ort."
+          "Sie wollen Ihre Produkte in der Kasse haben. Tap on Mobile ist eine Zahlungs-App — Sie tippen jedes Mal einen Betrag ein oder kaufen und integrieren eine separate Kassensoftware.",
+          "Sie wollen einen Online-Shop, keine Kasse zum Anschrauben an eine Website, die Sie in Auftrag geben. Saferpay ist ein Gateway, kein Laden.",
+          "Sie sind eine Person oder ein kleines Atelier, und ein mehrjähriger Terminalvertrag ist überdimensioniert.",
+          "Sie wollen dieses Wochenende verkaufen, nicht nach einem Vertriebsprozess."
+        ],
+        "capabilities": {
+          "swiss": "Ja — der Platzhirsch, über SIX Payment Services",
+          "no-hardware": "Ja — Tap on Mobile, iPhone / Android 12+",
+          "item-grid": "Nein — nur Zahlung. Es koppelt sich App-zu-App an Kassensoftware von Dritten.",
+          "stock-in-person": "Nicht zutreffend — es gibt keinen Katalog, gegen den man zählen könnte",
+          "stock-shared": "Kein Online-Shop; Saferpay ist ein Gateway für eine Website, die Sie bauen",
+          "twint": "Ja",
+          "postfinance": "Ja",
+          "builds-storefront": "Nein",
+          "setup": "Individuelles Angebot — das Onboarding ist ein Vertriebsprozess",
+          "who-holds-money": "Worldline zahlt gemäss Vertrag aus"
+        },
+        "risks": [
+          "S&P hat Worldline im August 2025 auf BB — unterhalb von Investment Grade — herabgestuft, mit Verweis auf schwächer als erwartete operative Leistung und negativem Ausblick.",
+          "Die SIX Group, die im Rahmen des SIX-Payment-Services-Deals 27% von Worldline gekauft hatte, verbuchte im November 2025 eine Wertberichtigung von rund CHF 550 Millionen, beteiligte sich nicht an Worldlines Kapitalerhöhung, gab ihren Verwaltungsratssitz auf und stufte die Beteiligung von einer strategischen zu einer Finanzanlage um."
         ]
       }
     },
@@ -976,8 +1022,13 @@
           "next": "Ein Schweizer Rechenzentrum, damit Maschinen und Firma im selben Land sitzen."
         },
         {
-          "piece": "TWINT an Ihrem Stand",
-          "today": "Ihr eigenes TWINT-Konto — Schweizer Schienen, Ende zu Ende"
+          "piece": "TWINT — Ihr eigener QR-Code",
+          "today": "Ihr eigenes TWINT-Konto zu 1,3% — Schweizer Schienen, Ende zu Ende, und wir sehen das Geld nie"
+        },
+        {
+          "piece": "TWINT — der Knopf in der Kasse",
+          "today": "Eine Stripe-Zahlung, keine direkte TWINT-Zahlung — Stripes Schienen, zu einem Satz, den Stripe nicht veröffentlicht",
+          "next": "Eine direkte TWINT-Anbindung, damit der Knopf in der App auf denselben Schweizer Schienen läuft wie der QR-Code. TWINT zertifiziert Integratoren, bevor es die Spezifikation herausgibt — das beginnt also als Antrag, nicht als Branch."
         },
         {
           "piece": "Kartenzahlungen und Auszahlungen",
@@ -1002,7 +1053,7 @@
         {
           "piece": "Kartennetzwerke und Handy-Wallets",
           "today": "Visa, Mastercard, Apple Pay, Google Pay",
-          "next": "Die sind nicht europäisch und werden es nie sein. Wenn ein Verkauf von Anfang bis Ende in der Schweiz bleiben soll, nehmen Sie ihn über TWINT — das ist für Sie ohnehin der günstigste Weg, bezahlt zu werden."
+          "next": "Die sind nicht europäisch und werden es nie sein. Wenn ein Verkauf von Anfang bis Ende in der Schweiz bleiben soll, nehmen Sie ihn über Ihren eigenen TWINT-QR-Code — mit 1,3% ohne Fixgebühr ist er auch der günstigste Weg, bezahlt zu werden, der keine Monatskosten trägt, und weniger als die Hälfte dessen, was derselbe Verkauf auf einer Karte kostet."
         }
       ],
       "why": [
@@ -1017,7 +1068,182 @@
         "Server in Europa",
         "TWINT eingebaut"
       ]
-    }
+    },
+    "squeezePlay": {
+      "eyebrow": "das eine, das kein Unentschieden ist",
+      "headline": "Ihr Katalog und TWINT,",
+      "headlineEmphasis": "in derselben Kasse.",
+      "body": "Jede Kasse in diesem Markt läuft inzwischen auf einem gewöhnlichen Handy — das ist also kein Argument mehr. Hier ist das, was bleibt: die beiden grossen Optionen haben gegenteilige Löcher, und eine Schweizer Macherin fällt in genau eines davon, egal welche sie wählt.",
+      "panels": [
+        {
+          "label": "Eine Kasse mit Ihren Sachen darin",
+          "detail": "Fotos, Preise, Lagerbestände — und keine Möglichkeit, das Zahlungsmittel anzunehmen, zu dem die Hälfte Ihrer Kundschaft zuerst greift. Der Umweg ist ein zweites, separates TWINT-Setup und ein manueller Abgleich am Abend."
+        },
+        {
+          "label": "Eine Kasse, die TWINT nimmt",
+          "detail": "TWINT, Karten, ein guter Pauschalsatz — und nichts darin. Es ist eine Zahlungs-App: Sie tippen jedes Mal einen Betrag ein, oder Sie kaufen und integrieren eine separate Kassensoftware obendrauf."
+        },
+        {
+          "label": "Zolto",
+          "detail": "Tippen Sie auf das Foto des echten Objekts, dann wählen Sie TWINT, Karte oder Bargeld auf demselben Bildschirm. Ein Tippen aktualisiert den Bestand hinter Ihrem Stand und auf Ihrer Website zugleich."
+        }
+      ],
+      "claim": "Von den drei Wegen, auf denen eine Schweizer Macherin heute an einem Stand bezahlt werden kann, bringt nur einer den Katalog und TWINT auf denselben Bildschirm."
+    },
+    "rates": {
+      "zolto-twint-qr": {
+        "label": "TWINT — Ihr eigener QR-Code, Ihr eigenes TWINT-Konto",
+        "caveat": "Das ist der eigene TWINT-QR-Code der Händlerin: das Geld läuft nie über Stripe oder Zolto, und der Verkauf wird in der Kasse erfasst statt von ihr eingezogen."
+      },
+      "sumup-payments-plus": {
+        "label": "Payments Plus (CHF 29/Monat)",
+        "caveat": "Inlandsatz. Nicht-EU-Karten kosten 1,99%. Die CHF 29/Monat sind fällig, ob Sie verkaufen oder nicht."
+      },
+      "sumup-debit": {
+        "label": "Debitkarte, ohne Abo"
+      },
+      "worldline-tap-on-mobile": {
+        "label": "Tap on Mobile",
+        "caveat": "Pauschalsatz ohne fixe Monatskosten, und TWINT wird akzeptiert. Ein wirklich konkurrenzfähiges Angebot für kleine Betriebe."
+      },
+      "zolto-card": {
+        "label": "Tap to Pay — Karte",
+        "caveat": "Schweizer Karten fallen in Stripes Nicht-EWR-Korb, mit Stripe bestätigt. Zolto legt nichts obendrauf — das ist Stripes Satz — aber damit ist die Karte der teuerste Weg, an Ihrem Stand bezahlt zu werden. Wenn Ihre Kundin TWINT anbietet, nehmen Sie es: gleiche Kasse, gleicher Tipp, weniger als die Hälfte der Kosten."
+      },
+      "sumup-credit": {
+        "label": "Kreditkarte, ohne Abo"
+      },
+      "sumup-online": {
+        "label": "Kasse im Online-Shop",
+        "caveat": "Pauschal, ohne Fixgebühr. Günstiger als Zolto online in jedem Tarif."
+      },
+      "zolto-online-pro": {
+        "label": "Kasse im Storefront — Pro"
+      },
+      "zolto-online-free": {
+        "label": "Kasse im Storefront — Free",
+        "caveat": "Stripes Inlandsatz online plus Zoltos Plattformgebühr. Beim reinen Satz ist das die teuerste Zeile auf dieser Seite — Zoltos Online-Argument ist, was der Shop tut, nicht was die Transaktion kostet."
+      }
+    },
+    "negotiated": {
+      "worldline-terminal": {
+        "label": "Terminals für Theke und mobil",
+        "detail": "Interchange++-Preise, pro Händler ausgehandelt, mit gekauftem oder gemietetem Terminal auf einem meist mehrjährigen Vertrag."
+      },
+      "worldline-saferpay": {
+        "label": "Saferpay Online-Gateway",
+        "detail": "Eine Gateway-Gebühr (Go CHF 9.95 / Easy CHF 19.95 / Flex CHF 39.95 pro Monat, plus einmalig CHF 49–299) zusätzlich zum Acquiring, das separat ausgehandelt wird. Saferpay ist eine Kasse für eine Website, die Sie bauen; es ist kein Shop."
+      }
+    },
+    "capabilities": {
+      "swiss": {
+        "label": "In der Schweiz verfügbar",
+        "zolto": "Ja — in Zürich gebaut, in CHF bepreist"
+      },
+      "no-hardware": {
+        "label": "Nimmt eine Zahlung ohne gekaufte Hardware",
+        "zolto": "Ja — Tap to Pay auf dem Handy, das Sie schon haben"
+      },
+      "item-grid": {
+        "label": "Ihr Katalog als Raster in der Kasse",
+        "zolto": "Ja — Foto, Name und Preis für jedes Stück"
+      },
+      "stock-in-person": {
+        "label": "Bestand wird beim Verkauf vor Ort mitgeführt",
+        "zolto": "Ja"
+      },
+      "stock-shared": {
+        "label": "Ein Bestand für Stand und Shop",
+        "zolto": "Ja — mit kurzer Reservierung, solange jemand an der Kasse ist"
+      },
+      "twint": {
+        "label": "TWINT",
+        "zolto": "Ja — in derselben Kasse wie Karten und Bargeld"
+      },
+      "postfinance": {
+        "label": "PostFinance Pay",
+        "zolto": "Nein"
+      },
+      "builds-storefront": {
+        "label": "Baut den Online-Shop für Sie",
+        "zolto": "Ja — KI-Theme, Texte und Produktfotografie"
+      },
+      "setup": {
+        "label": "Zeit bis zum ersten Verkauf",
+        "zolto": "Gleicher Tag"
+      },
+      "who-holds-money": {
+        "label": "Wer Ihr Geld hält",
+        "zolto": "Niemand ausser Ihnen — direkt auf Ihre eigenen Stripe- und TWINT-Konten"
+      }
+    },
+    "limitations": [
+      {
+        "title": "Wir haben keine Erfolgsbilanz",
+        "detail": "SumUp und Worldline haben je ein Jahrzehnt oder mehr. Zolto ist neu, und ein neues Unternehmen ist für sich genommen ein Risiko, so gut das Produkt auch ist. Was wir dagegensetzen können: kein Vertrag, keine Hardware zu kaufen, und ein Klick-Export von allem, was Sie eingegeben haben — auch im Free-Tarif. Zu gehen kostet Sie einen Nachmittag, keine Kündigungsgebühr."
+      },
+      {
+        "title": "Eine Karte über uns zu nehmen ist die teuerste Option in unserer eigenen Tabelle",
+        "detail": "Schweizer Karten laufen zu Stripes Nicht-EWR-Satz — 2,9% plus CHF 0.20 — und Zolto legt nichts obendrauf, womit trotzdem jede andere Option vor Ort in unserem Vergleich günstiger ist als unsere. SumUps Online-Satz schlägt unseren ebenfalls in jedem Tarif. Zwei ehrliche Antworten: nehmen Sie TWINT, wo Sie können — es liegt in derselben Kasse und kostet weniger als die Hälfte; und wählen Sie Zolto, weil es die Arbeit abnimmt, nicht die Gebühr. Wenn die Kosten pro Kartenverkauf Ihre entscheidende Zahl sind, entscheidet sie gegen uns."
+      },
+      {
+        "title": "Alles läuft über Stripe, und Stripe setzt den echten Preis",
+        "detail": "Stripe hält das Geld bis zur Auszahlung, führt die Identitätsprüfungen durch, verantwortet den Rückbuchungsprozess und setzt den Satz, der dominiert, was ein Verkauf Sie kostet. Zolto berührt Ihr Geld nie — das ist die gute Hälfte dieser Abmachung; die andere ist, dass unser eigenes Souveränitätsverzeichnis Kartenzahlungen weiterhin als „in Bewegung“ führt, und solange das so bleibt, ist eine harte Abhängigkeit eben eine."
+      },
+      {
+        "title": "Teile unseres Stapels liegen noch ausserhalb Europas",
+        "detail": "Vier Zeilen des Made-in-Switzerland-Verzeichnisses sagen es beim Namen: Kartenzahlungen, der KI-Modellanbieter, die Speicherung der Produktfotos und Konto-E-Mails. Das Verzeichnis wird mit diesen Zeilen veröffentlicht statt ohne sie, und jede trägt den nächsten Schritt, zu dem wir uns verpflichtet haben."
+      },
+      {
+        "title": "Im KI-Entdeckungskanal sind noch keine Käufer",
+        "detail": "Jeder Shop bringt llms.txt und einen MCP-Endpunkt mit, und das Plattform-Verzeichnis, über das ein Assistent eine Schweizer Macherin findet, ist live — und derzeit leer, weil die Shops gerade erst starten. Die Infrastruktur ist echt; der Verkehr ist eine Wette. Sehen Sie es als Grund, früh dabei zu sein, nicht als Kanal, der schon für Sie verkauft."
+      },
+      {
+        "title": "Wir liegen unter der Schweizer MWST-Schwelle",
+        "detail": "Die MWST-Registrierung ist erst ab CHF 100'000 Jahresumsatz obligatorisch, und Zolto liegt darunter — die Preise, die Sie sehen, sind also einfach die Preise. Es sagt Ihnen auch, wie klein wir sind. Wenn sich das ändert, werden die Preise angeben, wie sie zu verstehen sind, und wir sagen es vorher."
+      }
+    ],
+    "buyerFit": [
+      {
+        "question": "Zahlt Ihre Kundschaft mit TWINT?",
+        "answers": [
+          {
+            "when": "Ja, die meisten",
+            "then": "SumUp fällt weg, egal was es kostet — seine Kasse kann TWINT überhaupt nicht. Bleiben Zolto und Worldline, und die Frage wird, ob Sie Ihren Katalog in der Kasse haben wollen. Es ist für Sie auch die günstigste Antwort: TWINT zu 1,3% ist das Wenigste, was Sie zahlen können, um an einem Stand Geld entgegenzunehmen, ohne ein Monatsabo."
+          },
+          {
+            "when": "Nein, sie tippen meist eine Karte auf",
+            "then": "Dann ist der Kartensatz Ihre Zahl, und unserer ist der höchste auf dieser Seite — Schweizer Karten laufen zu Stripes Nicht-EWR-Satz, und wir legen nichts drauf. SumUp ist günstiger und seine Kassen-App ist reifer. Wählen Sie Zolto für den Shop, die Listings und das eine Inventar — oder wählen Sie es nicht."
+          }
+        ]
+      },
+      {
+        "question": "Brauchen Sie PostFinance Pay?",
+        "answers": [
+          {
+            "when": "Ja",
+            "then": "Nur Worldline unterstützt es. Nichts anderes auf dieser Seite kommt infrage, und der Rest unseres Arguments ändert daran nichts."
+          },
+          {
+            "when": "Nein",
+            "then": "Alle drei sind weiter im Rennen."
+          }
+        ]
+      },
+      {
+        "question": "Wie viel verkaufen Sie monatlich über Karten?",
+        "answers": [
+          {
+            "when": "Über rund CHF 1'900 mit Kreditkarten oder CHF 5'700 mit Debitkarten",
+            "then": "SumUps Payments-Plus-Abo rechnet sich und schlägt unseren Kartensatz klar. Unser Fall muss über Shop und Inventar laufen, nicht über die Rechnung."
+          },
+          {
+            "when": "Darunter, oder stark saisonal",
+            "then": "Ein Abo, das Sie in einem ruhigen Monat schulden, hat die falsche Form. Zoltos Free-Tarif kostet nichts in einem Monat ohne Online-Verkäufe, und nie etwas auf Verkäufe vor Ort."
+          }
+        ]
+      }
+    ]
   },
   "sovereignty": {
     "state": {
@@ -1051,5 +1277,28 @@
       "lawLabel": "Geltendes Recht",
       "lawValue": "DSGVO + revidiertes Schweizer DSG"
     }
+  },
+  "sources": {
+    "read": "gelesen am {{date}}"
+  },
+  "costOfAcceptance": {
+    "heading": "Was ein Verkauf von CHF {{basket}} kostet",
+    "intro": "Günstigstes zuerst. Zolto steht nicht an der Spitze, und genau das ist der Punkt — beim Kartensatz schlägt uns hier jede andere Option. Jede Zahl verlinkt auf ihre Quelle und das Datum, an dem sie gelesen wurde.",
+    "tableCaption": "Kosten eines Verkaufs von CHF {{basket}} je Option, günstigstes zuerst",
+    "colOption": "Wie Sie das Geld nehmen",
+    "colCost": "Kosten des Verkaufs",
+    "colRate": "Effektiver Satz",
+    "colMonthly": "Monatlich",
+    "noMonthly": "keine",
+    "unverified": "unbestätigt",
+    "note": "Eine Monatsgebühr wird bewusst nicht auf die Spalte pro Verkauf umgelegt: sie durch eine erfundene Anzahl Verkäufe zu teilen, würde den Sieger bestimmen. SumUp Payments Plus ist hier die günstigste Zeile und in einem ruhigen Monat die teuerste. Halten Sie diese Zahlen gegen Ihr eigenes Volumen.",
+    "negotiatedHeading": "Preis auf Verhandlungsbasis — es gibt keine Zahl zu zeigen"
+  },
+  "capabilities": {
+    "yes": "ja",
+    "no": "nein",
+    "partial": "teilweise",
+    "notApplicable": "nicht zutreffend",
+    "tableCaption": "{{name}} und {{competitor}} Funktion für Funktion verglichen"
   }
 }

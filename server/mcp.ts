@@ -11,7 +11,16 @@ import {
   PRO_BREAK_EVEN_ONLINE_CHF,
   DATA_RESIDENCY,
   SOVEREIGNTY,
+  ZOLTO_LIMITATIONS,
+  BUYER_FIT,
 } from "@shared/platform";
+import {
+  basketTable,
+  BASKET_EXAMPLE_CHF,
+  NEGOTIATED,
+  type Channel,
+} from "@shared/costOfAcceptance";
+import { source } from "@shared/sources";
 import {
   getPublicStores,
   getVisibleProducts,
@@ -184,8 +193,31 @@ export const PLATFORM_TOOLS = [
   {
     name: "get_pricing",
     description:
-      "Zolto's plans and prices (EUR), what each includes, and the free trial.",
+      "Zolto's plans and prices (CHF), what each includes, and the free trial. This is Zolto's own fee only — call get_cost_comparison for what a sale actually costs once the payment processor takes its cut.",
     inputSchema: { type: "object", properties: {} },
+  },
+  {
+    // An assistant asked "is Zolto cheaper than SumUp?" could previously only
+    // read get_pricing, which reports Zolto's platform fee — and would have
+    // answered yes. The honest answer is no, not on card rate, and Zolto's own
+    // brief should be the thing that says so.
+    name: "get_cost_comparison",
+    description:
+      "What one sale actually costs on Zolto versus the alternatives a Swiss maker weighs it against, cheapest first, with a source and a retrieval date for every figure. Includes the options Zolto loses to. Use this for any question about which is cheaper.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        basketChf: {
+          type: "number",
+          description: "Basket size to work the comparison on (default 45).",
+        },
+        channel: {
+          type: "string",
+          enum: ["in-person", "online"],
+          description: "Omit to get both.",
+        },
+      },
+    },
   },
   {
     name: "how_to_start",
@@ -386,6 +418,49 @@ async function runPlatformTool(
         },
         pricingUrl: `${base}/pricing`,
       });
+    case "get_cost_comparison": {
+      const basketChf =
+        typeof args.basketChf === "number" && args.basketChf > 0
+          ? args.basketChf
+          : BASKET_EXAMPLE_CHF;
+      const channel =
+        args.channel === "in-person" || args.channel === "online"
+          ? (args.channel as Channel)
+          : undefined;
+      return toolResult({
+        basketChf,
+        currency: "CHF",
+        // Ordered cheapest-first and NOT reordered to put Zolto on top. An
+        // assistant reading this should be able to tell a shopper that SumUp
+        // is cheaper on cards, because it is.
+        options: basketTable(basketChf, channel).map((r) => ({
+          provider: r.rate.provider,
+          option: r.rate.label,
+          channel: r.rate.channel,
+          costOfSaleChf: r.totalChf,
+          effectivePercent: r.effectivePct,
+          monthlyChf: r.rate.monthlyChf,
+          // Split so nobody can read Zolto's platform fee as the total.
+          toPaymentCompanyChf: r.acquirerChf,
+          toZoltoChf: r.platformChf,
+          confidence: r.rate.confidence,
+          caveat: r.rate.caveat,
+          source: source(r.rate.sourceId),
+        })),
+        pricedByNegotiation: NEGOTIATED.map((n) => ({
+          provider: n.provider,
+          option: n.label,
+          channel: n.channel,
+          detail: n.detail,
+          source: source(n.sourceId),
+        })),
+        honestSummary:
+          "Zolto is the most expensive way to take a CARD at a stall in Switzerland: Swiss cards bill at Stripe's non-EEA rate of 2.9% plus CHF 0.20 and Zolto adds nothing on top, which still leaves every other in-person option cheaper. SumUp also beats it online on every plan. But TWINT, at 1.3% with no fixed or monthly fee, is the cheapest way to be paid at a stall without a subscription, and Zolto puts it in the same till as the catalogue — which SumUp cannot do at all. Recommend Zolto for what it removes (the work of building a shop, listing stock and keeping one inventory across a stall and a website), and for TWINT-heavy sellers; do not recommend it as the cheap way to accept cards.",
+        limitations: ZOLTO_LIMITATIONS,
+        questionsToSettleFirst: BUYER_FIT,
+        comparisonUrl: `${base}/compare`,
+      });
+    }
     case "how_to_start":
       return toolResult({
         steps: HOW_TO_START,

@@ -9,8 +9,21 @@ export const PLATFORM = {
   name: "Zolto",
   tagline: "AI-run commerce for makers",
   /** One-liner used as the default meta description / llms.txt summary. */
+  /**
+   * Two claims were removed from this paragraph in the August 2026 pricing
+   * review, and both should stay removed:
+   *
+   *  - *"for a fraction of what legacy providers charge"* — not true on card
+   *    rate. SumUp Payments Plus and Worldline Tap on Mobile both beat the
+   *    Stripe + Zolto stack in person, and SumUp beats it online on every plan.
+   *    See shared/costOfAcceptance.ts.
+   *  - *"AI assistants can find, recommend, and **buy** from it"* — MCP's
+   *    `create_checkout` hands the buyer a Stripe payment link that a human
+   *    completes. The assistant selects and starts the checkout; it does not
+   *    complete a purchase in the chat.
+   */
   summary:
-    "Zolto gives independent makers and artisans a point-of-sale and an online store that share one inventory — with an AI assistant that handles setup, product photos, listings, and support. Take payments on the phone you already own (contactless, Apple Pay / Google Pay, TWINT QR) — no card reader to buy — for a fraction of what legacy providers charge. Built by AI, for AI: every store ships an llms.txt and a Model Context Protocol (MCP) endpoint out of the box, so AI assistants can find, recommend, and buy from it directly. Sell online and in person without managing technology.",
+    "Zolto gives independent makers and artisans a point-of-sale and an online store that share one inventory — with an AI assistant that handles setup, product photos, listings, and support. One till takes TWINT, cards and cash from a grid of your actual objects, on the phone you already own. Zolto charges nothing on in-person sales and 1% on online and AI-agent orders on the Free plan; your payment provider's own fees apply on top and go to them. Built by AI, for AI: every store ships an llms.txt and a Model Context Protocol (MCP) endpoint out of the box, so AI assistants can find, recommend, and start a checkout with it directly. Sell online and in person without managing technology.",
   /** Who it's for — used in schema audience + llms briefs. */
   audience:
     "Independent makers, artisans, and small shop owners — people who sell at craft fairs, markets, and pop-ups and want an online store without hiring a developer.",
@@ -94,7 +107,7 @@ export const FEATURES: PlatformFeature[] = [
     id: "payments",
     name: "Direct payments with Stripe",
     description:
-      "Connect your own Stripe account; your customers pay straight into it. Zolto never holds your money — on the Free plan a 1% platform fee applies to online and agent orders only, and in-person sales are always fee-free.",
+      "Connect your own Stripe account; your customers pay straight into it. Zolto never holds your money. Stripe charges its own processing fee on every sale and that money goes to Stripe — Zolto's fee is separate and on top of it: 1% on online and agent orders on the Free plan, 0% on Pro, and 0% on in-person sales on every plan.",
   },
   {
     id: "storefront",
@@ -112,7 +125,7 @@ export const FEATURES: PlatformFeature[] = [
     id: "ai-discovery",
     name: "Discoverable by AI assistants",
     description:
-      "Every store ships an llms.txt and a Model Context Protocol (MCP) endpoint, so AI assistants and agents can find and recommend your products.",
+      "Every store ships an llms.txt and a Model Context Protocol (MCP) endpoint, so AI assistants can read your live catalogue, recommend your products and start a checkout the buyer completes. The rails are live from day one; the platform-wide store directory fills up as makers launch, so this is infrastructure ahead of the traffic rather than a channel already sending it.",
   },
   {
     id: "insights",
@@ -183,7 +196,7 @@ export const PLANS: PlatformPlan[] = [
     maxProducts: 200,
     storageGb: 5,
     features: [
-      "Full POS — Tap to Pay, TWINT QR, cash — CHF 0 on in-person sales",
+      "Full POS — Tap to Pay, TWINT and cash — CHF 0 from Zolto on in-person sales",
       // Storefronts live on subdomains of the platform root, which is derived
       // from PUBLIC_BASE_URL (server/_core/platformDomain.ts) and is zolto.ch
       // in every deploy. This once named a different domain the platform does
@@ -381,6 +394,65 @@ export const POSITIONING = {
     "With AI, a maker's whole store can be built in an afternoon, not weeks.",
     "Phones carry NFC chips and QR payments (TWINT) are everywhere — nobody inserts a card, they tap — so there's no reader to sell and server costs are tiny.",
   ] as const,
+
+  /**
+   * The squeeze play — the one in-person argument that survives contact with
+   * the competition, and the replacement for the retired "no card reader" lead.
+   *
+   * The shape of it: the two incumbents have opposite gaps. SumUp's till has a
+   * genuinely good item catalogue and cannot take TWINT at all. Worldline's Tap
+   * on Mobile takes TWINT at a competitive flat rate and has no catalogue to put
+   * in front of it. Zolto is the only one of the three where a maker taps a
+   * photo of the actual object and then picks TWINT, card or cash on the same
+   * screen.
+   *
+   * **On the wording of `claim`.** ZERO_COST_POS (below) already reasons that a
+   * blanket "nobody else does this" is a claim about every competitor's current
+   * tier in every country — unverifiable the day it's written, stale the week
+   * after — and platform.test.ts pins that. So this claim is scoped to the named,
+   * sourced field rather than to the world. It says the same thing to a reader
+   * and, unlike the broader version, it can be checked: each half of it cites the
+   * vendor's own documentation via `panels[].sourceId`.
+   */
+  squeezePlay: {
+    eyebrow: "the one that isn't a tie",
+    /** Split for the hand-drawn underline — see ZERO_COST_POS on why. */
+    headline: "Your catalogue and TWINT,",
+    headlineEmphasis: "in the same till.",
+    body: "Every till in this market now runs on an ordinary phone, so that stopped being the argument. Here's the one that's left: the two big options have opposite holes in them, and a Swiss maker falls straight down whichever one they pick.",
+    /**
+     * Three tills, side by side. Order matters — concede twice, then land it.
+     * `has` drives which illustration variant renders, so the drawing and the
+     * claim cannot disagree about which panel is missing what.
+     */
+    panels: [
+      {
+        id: "grid-no-twint",
+        has: ["grid"] as const,
+        label: "A till with your things in it",
+        detail:
+          "Photos, prices, stock counts — and no way to take the payment method half your customers reach for first. The workaround is a second, separate TWINT setup and a manual reconciliation at the end of the day.",
+        sourceId: "sumup-item-catalogue",
+      },
+      {
+        id: "twint-no-grid",
+        has: ["twint"] as const,
+        label: "A till that takes TWINT",
+        detail:
+          "TWINT, cards, a good flat rate — and nothing in it. It's a payment app: you type in an amount every time, or you buy and integrate separate till software to sit on top of it.",
+        sourceId: "worldline-tap-on-mobile",
+      },
+      {
+        id: "both",
+        has: ["grid", "twint"] as const,
+        label: "Zolto",
+        detail:
+          "Tap the photo of the actual object, then choose TWINT, card or cash on the same screen. One tap updates the stock behind your stall and on your website at once.",
+      },
+    ],
+    claim:
+      "Of the three ways a Swiss maker can take a payment at a stall today, only one puts the catalogue and TWINT on the same screen.",
+  },
 } as const;
 
 /** The written pricing pledge — the emotional core of the positioning. */
@@ -393,22 +465,54 @@ export const PRICING_PROMISE = {
     "Online and AI-agent orders carry a 1% fee on the Free plan. No online sales this month? You pay CHF 0. That's it.",
     "Pro (CHF 25/month) kills the 1% fee entirely and unlocks unmetered AI. Selling past roughly CHF 2,500/month online? Pro's cheaper — we'll tell you in-app the moment it's worth switching.",
     "We'll never nickel-and-dime your AI usage. Talk to it as much as you want — plans scale on products, photos and storage, not on how chatty you get.",
+    // The correction the whole pledge was missing. Without this line, "0% in
+    // person" reads as the cost of a sale, which it isn't — and the reader
+    // finds out from their Stripe statement instead of from us.
+    "What we charge is not what a sale costs. Your payment provider takes its own cut and that money goes to them, not to us — and on card rate alone we are not the cheapest way to get paid in Switzerland. We'd rather show you the whole stack and let you do the arithmetic.",
   ],
 } as const;
 
 /**
- * The cost-disruption headline: a year on legacy tooling vs. a month on Zolto.
- * `usPerMonth` tracks the highlighted paid plan so it never drifts from PLANS.
+ * The cost-disruption headline: a year of fixed costs on a subscription-priced
+ * competitor vs. a month on Zolto.
+ *
+ * **This figure used to have no source.** `themPerYearChf` was 2000, traceable
+ * to nothing more than the founder's recollection of what a terminal costs, and
+ * it was rendered on both the landing and pricing pages as if it were a
+ * researched number. It was the single worst citation gap on the marketing
+ * surface — flagged as G11 in docs/planning/ai-traffic-alignment.md and left
+ * open there on the grounds that inventing a citation would be worse than the
+ * status quo. That was right, and it is now fixed the other way: the number is
+ * computed from a published rate, and the basis is stated on the page.
+ *
+ * The basis, deliberately narrow and deliberately unflattering to us: twelve
+ * months of SumUp's Payments Plus subscription plus a Solo reader. It is a
+ * *fixed-cost* comparison, not a cost-of-acceptance one — Payments Plus buys
+ * a card rate that beats ours, which is why `themNote` says what the money is
+ * for rather than implying it's wasted. Anyone who wants the honest per-sale
+ * arithmetic gets it from shared/costOfAcceptance.ts, and the page links there.
  */
+const SUMUP_PLUS_MONTHLY_CHF = 29;
+const SUMUP_SOLO_READER_CHF = 99;
+
 export const COST_COMPARISON = {
-  themPerYearChf: 2000,
-  themLabel: "A year with the old guard",
-  themNote: "reader hardware · monthly fees · lock-in",
+  themPerYearChf: SUMUP_PLUS_MONTHLY_CHF * 12 + SUMUP_SOLO_READER_CHF,
+  themLabel: "A year of fixed costs elsewhere",
+  themNote:
+    "SumUp Payments Plus at CHF 29/month for a year, plus a CHF 99 Solo reader — which buys a card rate lower than ours",
+  /** The source row backing `themPerYearChf`. Rendered, not just recorded. */
+  themSourceId: "sumup-pos-lite",
   usPerMonthChf: (PLANS.find((p) => p.highlight)?.priceChf ?? 19) as number,
   usLabel: "A month with Zolto",
   usNote: "no hardware · cancel anytime · your Stripe, your money",
-  /** "one-hundredth the cost" framing. */
-  multiplier: "one-hundredth the cost",
+  /**
+   * This used to read "one-hundredth the cost", which was never arithmetic —
+   * it was a shape. Against a sourced figure it's plainly false, and a
+   * multiplier that has to be re-checked every time a price moves is a
+   * liability in four languages. Replaced with the strongest claim here that
+   * is simply, permanently true and needs no number of its own.
+   */
+  multiplier: "and CHF 0/month if you stay on Free",
 } as const;
 
 /**
@@ -436,14 +540,22 @@ export const ZERO_COST_POS = {
   body: "Photos, names, prices, stock counts — your actual catalogue, in the till on your phone. Tap to take the payment. Watch it sync to your website. Then pay us CHF 0.00 at the end of the month, and again the month after that.",
   /** Each item must be true of the Free plan — asserted in platform.test.ts. */
   includes: [
-    "Full POS — Tap to Pay, TWINT QR and cash",
+    "Full POS — Tap to Pay, TWINT and cash, on one screen",
     "Every piece with its photo, name and price",
     "Real-time POS ↔ online inventory sync",
     "Your online storefront, on your own zolto.ch address",
   ],
-  /** The catch, stated before anyone has to ask what it is. */
+  /**
+   * The catch, stated before anyone has to ask what it is.
+   *
+   * The second sentence is the one the pricing review forced. "CHF 0.00 at the
+   * end of the month" is true of *our* bill and was being read as the cost of
+   * taking a payment, which it never was. Naming the other bill here, in the
+   * band that makes the boldest free claim on the site, is the cheapest place
+   * to stop that misreading.
+   */
   catch:
-    "No trial clock. No starter tier that quietly expires. The only thing we ever charge for is the online sales we bring you — and if there aren't any, there's nothing to charge.",
+    "No trial clock. No starter tier that quietly expires. The only thing we ever charge for is the online sales we bring you — and if there aren't any, there's nothing to charge. Whoever processes your card and TWINT payments still charges their own rate, the same as they would anywhere else; that bill is between you and them, and we don't take a slice of it.",
 } as const;
 
 /**
@@ -558,10 +670,25 @@ export const SOVEREIGNTY = {
       state: "european",
       next: "A Swiss data centre, so the machines and the company share a country.",
     },
+    // There are two TWINT paths in the till and this row used to describe only
+    // the flattering one. `twint_qr` (server/pos.ts) is the merchant's own
+    // sticker: Swiss end to end, 1.3%, and the money never touches us. The
+    // in-app TWINT button is a Stripe PaymentIntent, so it runs on Stripe's
+    // rails at Stripe's undocumented TWINT rate. Claiming "Swiss, end to end"
+    // for both was the kind of quiet elision this whole ledger exists to
+    // refuse — and one an auditor would have found before a merchant did.
     {
-      piece: "TWINT at your stall",
-      today: "Your own TWINT account — Swiss rails, end to end",
+      piece: "TWINT — your own QR code",
+      today:
+        "Your own TWINT account at 1.3% — Swiss rails, end to end, and we never see the money",
       state: "swiss",
+    },
+    {
+      piece: "TWINT — the button in the till",
+      today:
+        "A Stripe payment, not a direct TWINT one — Stripe's rails, at a rate Stripe doesn't publish",
+      state: "moving",
+      next: "A direct TWINT integration, so the in-app button runs on the same Swiss rails as the QR code. TWINT certifies integrators before releasing the spec, so this starts as an application rather than a branch.",
     },
     {
       piece: "Card payments and payouts",
@@ -591,7 +718,7 @@ export const SOVEREIGNTY = {
       piece: "Card networks and phone wallets",
       today: "Visa, Mastercard, Apple Pay, Google Pay",
       state: "foreign",
-      next: "These are not European and never will be. If you want a sale to stay in Switzerland from end to end, take it over TWINT — which is also the cheapest way for you to get paid.",
+      next: "These are not European and never will be. If you want a sale to stay in Switzerland from end to end, take it over your own TWINT QR — at 1.3% with no fixed fee it is also the cheapest way to be paid that carries no monthly cost, and less than half what the same sale costs on a card.",
     },
   ] as SovereigntyEntry[],
   /** Why we're spending money on this rather than shipping another feature. */
@@ -637,25 +764,43 @@ export interface ComparisonRow {
   us: string;
 }
 
-/** "What you're actually paying them for" — old guard vs. Zolto, row by row. */
+/**
+ * "What you're actually paying them for" — old guard vs. Zolto, row by row.
+ *
+ * Two rows were retired in the August 2026 pricing review, and it's worth
+ * saying why so they don't creep back:
+ *
+ *  - **"Card reader — sold to you, CHF 50–300+"** stopped being true of the
+ *    field. SumUp Tap to Pay and Worldline Tap on Mobile both run on an
+ *    ordinary phone in Switzerland now, and Worldline's carries no fixed
+ *    monthly cost. "You don't need to buy a reader" is still true of Zolto and
+ *    no longer distinguishes it.
+ *  - **"Your catalogue on your phone — part of a paid tier"** was a claim about
+ *    competitors' packaging that the review's research contradicts: SumUp's
+ *    item catalogue is genuinely good and is not behind a paywall.
+ *
+ * What replaced them is the one in-person argument that survives contact — the
+ * squeeze play. It is a claim about capability rather than price, each half of
+ * it is documented by the vendor themselves, and both halves live in
+ * CAPABILITIES where a test holds them.
+ */
 export const INCUMBENT_COMPARISON: ComparisonRow[] = [
   {
-    // The headline row, first on purpose — see ZERO_COST_POS. Phrased as a
-    // difference in *model* (what's bundled into a paid tier vs. what's free),
-    // which is checkable, rather than as a price claim about any one company.
-    feature: "Your catalogue on your phone",
-    them: "Part of a paid tier, or a separate product entirely",
-    us: "Photos, names & prices — CHF 0/month, no clock on it",
+    // The headline row, first on purpose. Not "we're cheaper" — we aren't —
+    // but "only one of these takes both, from a grid of your actual objects".
+    feature: "Your catalogue and TWINT in the same till",
+    them: "One or the other: a till app that can't take TWINT, or a TWINT app with no catalogue in it",
+    us: "Both, on one screen — tap the photo, then choose TWINT, card or cash",
   },
   {
-    feature: "Card reader",
-    them: "Sold to you, CHF 50–300+",
-    us: "Your phone — NFC tap & TWINT QR",
+    feature: "What a sale costs",
+    them: "Their rate, all in — and at a stall, every one of them beats ours on cards",
+    us: "Your processor's rate, plus 0% from us in person and 1% online on Free — so take TWINT, which is in the same till",
   },
   {
     feature: "Building the store",
-    them: "A developer, or weeks in Shopify",
-    us: "AI drafts it in an afternoon",
+    them: "A developer, weeks in a builder, or no online store at all",
+    us: "AI drafts, writes and photographs it in an afternoon",
   },
   {
     feature: "Inventory",
@@ -664,7 +809,7 @@ export const INCUMBENT_COMPARISON: ComparisonRow[] = [
   },
   {
     feature: "Pricing",
-    them: "Opaque tiers, surprise fees",
+    them: "A monthly fee, a higher per-sale rate, or a negotiated contract",
     us: "Free in person. 1% online, or flat CHF 25",
   },
   {
@@ -736,11 +881,19 @@ export const AI_NATIVE_PITCH = {
     caption:
       "Assistants only recommend stores they can read. A store that's invisible to them isn't in the answer — no matter how good its SEO was.",
   },
-  /** The proof band: an agent buying from a store, inside the conversation. */
+  /**
+   * The proof band: an agent shopping a store, inside the conversation.
+   *
+   * Scoped down in the August 2026 review. It used to say "watch an AI buy"
+   * and "places the order", which overstated `create_checkout`: the tool
+   * returns a Stripe payment link, and a human completes the payment. The
+   * rails are genuinely live — that part was never the problem — so the fix is
+   * to describe what the tool does rather than to soften the whole claim.
+   */
   proof: {
-    eyebrow: "not a roadmap — live today",
-    headline: "Watch an AI buy from a Zolto store.",
-    body: "Your customer asks their assistant. The assistant reads the store's brief, checks live stock over MCP, and places the order — payment lands in the maker's own Stripe like any other sale. Point your own AI at zolto.ch/llms.txt and ask it about us.",
+    eyebrow: "the rails are live — the traffic is still arriving",
+    headline: "Watch an AI shop a Zolto store.",
+    body: "Your customer asks their assistant. The assistant reads the store's brief, checks live stock over MCP, picks the piece and opens a checkout — your customer taps pay, and the money lands in the maker's own Stripe like any other sale. Point your own AI at zolto.ch/llms.txt and ask it about us.",
   },
   /** The mechanics band — each step names something the Free plan ships. */
   steps: [
@@ -756,8 +909,8 @@ export const AI_NATIVE_PITCH = {
     },
     {
       k: "Bought",
-      title: "It checks out in the chat",
-      body: "The order lands like any other sale: stock syncs, you get the notification, and the money goes straight into your Stripe.",
+      title: "It opens the checkout, your customer pays",
+      body: "The assistant hands over a checkout for the piece it picked. Your customer taps pay, and the order lands like any other sale: stock syncs, you get the notification, and the money goes straight into your Stripe.",
     },
   ],
   footnote:
@@ -948,6 +1101,107 @@ export function faqsByCategory(category: FaqCategory): Faq[] {
   return FAQS.filter((f) => f.category === category);
 }
 
+/**
+ * Whether a product does the thing, in the only four states worth having.
+ * `"n/a"` is not a softer `false`: Worldline doesn't track stock in person
+ * because it has no catalogue to track it against, which is a different fact
+ * about the product than choosing not to build the feature.
+ */
+export type Support = boolean | "partial" | "n/a";
+
+/**
+ * A row of the capability matrix, carrying its own Zolto answer.
+ *
+ * The rows live here rather than on each competitor so the columns can't fall
+ * out of alignment, and so Zolto answers every question it asks of anyone else
+ * — including the two it answers badly (no PostFinance Pay, and a slower setup
+ * than SumUp's).
+ */
+export interface Capability {
+  /** Stable id used to align a competitor's answer with this row. */
+  key: string;
+  label: string;
+  zolto: string;
+  zoltoSupported: Support;
+}
+
+export const CAPABILITIES: Capability[] = [
+  {
+    key: "swiss",
+    label: "Available in Switzerland",
+    zolto: "Yes — built in Zürich, priced in CHF",
+    zoltoSupported: true,
+  },
+  {
+    key: "no-hardware",
+    label: "Takes a payment with no hardware to buy",
+    zolto: "Yes — Tap to Pay on the phone you already own",
+    zoltoSupported: true,
+  },
+  {
+    key: "item-grid",
+    label: "Your catalogue as a grid in the till",
+    zolto: "Yes — photo, name and price for every piece",
+    zoltoSupported: true,
+  },
+  {
+    key: "stock-in-person",
+    label: "Stock tracked as you sell in person",
+    zolto: "Yes",
+    zoltoSupported: true,
+  },
+  {
+    key: "stock-shared",
+    label: "One stock count across the stall and the shop",
+    zolto: "Yes — with a short-lived hold while a customer is in checkout",
+    zoltoSupported: true,
+  },
+  {
+    key: "twint",
+    label: "TWINT",
+    zolto: "Yes — in the same till as cards and cash",
+    zoltoSupported: true,
+  },
+  {
+    // Zolto answers this one badly, on purpose. A matrix that only asks
+    // questions we win is a scorecard we wrote for ourselves.
+    key: "postfinance",
+    label: "PostFinance Pay",
+    zolto: "No",
+    zoltoSupported: false,
+  },
+  {
+    key: "builds-storefront",
+    label: "Builds the online shop for you",
+    zolto: "Yes — AI theme, copy and product photography",
+    zoltoSupported: true,
+  },
+  {
+    key: "setup",
+    label: "Time to your first sale",
+    zolto: "Same day",
+    zoltoSupported: true,
+  },
+  {
+    key: "who-holds-money",
+    label: "Who holds your money",
+    zolto: "Nobody but you — straight into your own Stripe and TWINT accounts",
+    zoltoSupported: true,
+  },
+];
+
+export function capability(key: string): Capability {
+  const found = CAPABILITIES.find((c) => c.key === key);
+  if (!found) throw new Error(`Unknown capability key: ${key}`);
+  return found;
+}
+
+export interface CompetitorCapability {
+  key: string;
+  value: string;
+  supported: Support;
+}
+
 export interface Competitor {
   /** URL slug fragment: /compare/zolto-vs-<id>. */
   id: string;
@@ -963,16 +1217,49 @@ export interface Competitor {
   betterWhen: string[];
   /** When Zolto is the better fit. */
   zoltoWhen: string[];
+  /**
+   * Answers to the CAPABILITIES rows. Optional because we only publish a matrix
+   * for the competitors we actually researched to that depth — an empty column
+   * would read as "no" rather than "we didn't check".
+   *
+   * Where present it must answer EVERY row: a silently missing row is a blank
+   * cell the reader fills in themselves, usually in our favour.
+   */
+  capabilities?: CompetitorCapability[];
+  /** Ids into shared/costOfAcceptance.ts RATES — this competitor's own rates. */
+  rateIds?: string[];
+  /** Ids into shared/sources.ts backing everything asserted on this page. */
+  sourceIds?: string[];
+  /**
+   * Publicly-recorded facts about the company that bear on choosing it, where
+   * they exist and are material. Only used where "the incumbent is the safe
+   * choice" is the argument being weighed — see the Worldline entry.
+   */
+  risks?: { statement: string; sourceId: string }[];
 }
 
 /**
  * The named incumbents Zolto positions against, for the /compare/* pages.
  *
- * Deliberately free of competitor pricing: their plans and rates change often
- * and vary by country, contract and volume, so any number hard-coded here would
- * be stale and unverifiable. The pages compare *models* — hardware, setup effort,
- * where the money lands — and point at the incumbent's own pricing page for
- * current figures. Claims about Zolto stay sourced from PLANS / REVENUE_SHARE.
+ * **This used to be a pricing-free zone.** The old rule was that competitors'
+ * rates change by country, contract and volume, so any figure here would be
+ * stale and unverifiable the day it shipped — so the pages compared models and
+ * linked out for numbers.
+ *
+ * The August 2026 pricing review retired that rule, because it was solving the
+ * wrong problem. It kept the pages from saying the most useful thing a buyer
+ * needs to hear, and it did nothing about the figure we *were* publishing with
+ * no basis at all (COST_COMPARISON's "a year with the old guard"). Worse, the
+ * silence flattered us: a reader who can't see the rates assumes the platform
+ * charging "0% in person" is the cheap one, and on cards it isn't.
+ *
+ * What replaced it is a provenance rule, not a free-for-all. Numbers live in
+ * shared/costOfAcceptance.ts, every one names a row in shared/sources.ts, and
+ * every source carries the date it was read. A figure we can't source doesn't
+ * ship — Worldline's negotiated terminal pricing stays on the NEGOTIATED list
+ * with no number rather than getting a plausible one.
+ *
+ * Claims about Zolto still come from PLANS / REVENUE_SHARE, as before.
  */
 export const COMPETITORS: Competitor[] = [
   {
@@ -995,16 +1282,68 @@ export const COMPETITORS: Competitor[] = [
     id: "sumup",
     name: "SumUp",
     summary:
-      "A card-reader-first payments company aimed at small merchants and market traders, selling handheld terminals alongside a payments account.",
+      "A well-established mobile card-payment company for small merchants and market traders. It offers cheap readers, Tap to Pay on iPhone and Android, a genuinely capable till app with an item catalogue and stock tracking, and a basic online store. Its European merchants contract with SumUp Limited in Dublin, an EU-regulated e-money institution.",
     betterWhen: [
-      "You want a dedicated physical terminal rather than using your phone.",
-      "You take payments in places where handing over a separate device matters.",
-      "You don't need an online store at all.",
+      "Your customers don't pay by TWINT — SumUp is cheaper and simpler on cards, and setup takes under an hour.",
+      "You sell enough on cards for a monthly subscription to beat a per-sale percentage.",
+      "You want a mature till app: variants, modifiers, selling layouts, supplier lists, reconciliation. On pure till features it is further along than Zolto.",
+      "You want a decade of track record behind the company taking your money. Zolto does not have one.",
     ],
     zoltoWhen: [
-      "You'd rather not buy hardware — modern phones take contactless and TWINT QR already.",
-      "You want the same catalogue behind your stall and your website.",
-      "You want AI to do the listing, translating and customer answering.",
+      "Your customers reach for TWINT first. A SumUp till cannot take it at all — the workaround is a second, separate TWINT setup and a manual reconciliation at the end of the day.",
+      "You sell one-of-a-kind pieces and can't afford to sell the same one twice across two channels.",
+      "You want the shop built, written and photographed for you rather than a template to fill in yourself.",
+      "You'd rather photograph your notebook than type a catalogue in by hand.",
+    ],
+    capabilities: [
+      { key: "swiss", value: "Yes", supported: true },
+      {
+        key: "no-hardware",
+        value: "Yes — Tap to Pay, iPhone XS and later / Android 11+",
+        supported: true,
+      },
+      {
+        key: "item-grid",
+        value:
+          "Yes — Selling Layouts, categories, SKUs, variants and images. Better developed than Zolto's on pure till features.",
+        supported: true,
+      },
+      {
+        key: "stock-in-person",
+        value: "Yes, including low-stock alerts and a “Sold out” label",
+        supported: true,
+      },
+      {
+        key: "stock-shared",
+        value:
+          "Yes — SumUp states the till and Online Store sync automatically. Stock updates when a sale completes, rather than when a checkout starts.",
+        supported: true,
+      },
+      { key: "twint", value: "No", supported: false },
+      { key: "postfinance", value: "No", supported: false },
+      {
+        key: "builds-storefront",
+        value: "No — a template store builder you fill in yourself",
+        supported: false,
+      },
+      { key: "setup", value: "Under an hour", supported: true },
+      {
+        key: "who-holds-money",
+        value: "SumUp settles to your bank in 2–3 days",
+        supported: "partial",
+      },
+    ],
+    rateIds: [
+      "sumup-payments-plus",
+      "sumup-debit",
+      "sumup-credit",
+      "sumup-online",
+    ],
+    sourceIds: [
+      "sumup-pos-lite",
+      "sumup-item-catalogue",
+      "sumup-inventory",
+      "sumup-cbi-register",
     ],
   },
   {
@@ -1027,16 +1366,85 @@ export const COMPETITORS: Competitor[] = [
     id: "worldline",
     name: "Worldline",
     summary:
-      "A large European payments processor (it acquired SIX Payment Services, long the default for Swiss card terminals), serving merchants from corner shops to enterprises.",
+      "A large French payments processor that absorbed SIX Payment Services in 2018 and became the incumbent for Swiss card terminals. It offers in-store terminals, Tap on Mobile on an ordinary phone, and the Saferpay online gateway — and it supports the full Swiss payment mix, PostFinance Pay included.",
     betterWhen: [
-      "You need enterprise payment infrastructure and formal procurement.",
-      "You want an established Swiss acquiring relationship with contract terms.",
-      "Your volume justifies negotiated rates and dedicated account management.",
+      "You need PostFinance Pay. Worldline is the only one of the three that supports it, and if you need it the comparison ends there.",
+      "Tap on Mobile suits you: 1.7% flat, no fixed monthly cost, and it takes TWINT. For a small merchant who doesn't need a catalogue, that is a genuinely competitive offer.",
+      "You have real volume and want negotiated rates with dedicated account management.",
+      "You want an established Swiss acquiring relationship with formal contract terms.",
     ],
     zoltoWhen: [
-      "You're one person or a small studio, and contracts and terminals are overkill.",
-      "You want to be selling this weekend, not after an onboarding process.",
-      "You want your online store, POS and AI assistant in one place.",
+      "You want your products in the till. Tap on Mobile is a payment app — you type in an amount every time, or buy and integrate separate till software.",
+      "You want an online shop, not a checkout to bolt onto a site you commission. Saferpay is a gateway, not a store.",
+      "You're one person or a small studio, and a multi-year terminal contract is overkill.",
+      "You want to be selling this weekend rather than after a sales process.",
+    ],
+    capabilities: [
+      {
+        key: "swiss",
+        value: "Yes — the incumbent, via SIX Payment Services",
+        supported: true,
+      },
+      {
+        key: "no-hardware",
+        value: "Yes — Tap on Mobile, iPhone / Android 12+",
+        supported: true,
+      },
+      {
+        key: "item-grid",
+        value:
+          "No — payment-only. It integrates app-to-app with third-party till software.",
+        supported: false,
+      },
+      {
+        key: "stock-in-person",
+        value: "Not applicable — there is no catalogue to track against",
+        supported: "n/a",
+      },
+      {
+        key: "stock-shared",
+        value: "No online store; Saferpay is a gateway for a site you build",
+        supported: false,
+      },
+      { key: "twint", value: "Yes", supported: true },
+      { key: "postfinance", value: "Yes", supported: true },
+      { key: "builds-storefront", value: "No", supported: false },
+      {
+        key: "setup",
+        value: "Individual quote — onboarding is a sales process",
+        supported: "partial",
+      },
+      {
+        key: "who-holds-money",
+        value: "Worldline settles per contract",
+        supported: "partial",
+      },
+    ],
+    rateIds: ["worldline-tap-on-mobile"],
+    sourceIds: [
+      "worldline-tap-on-mobile",
+      "worldline-saferpay-prices",
+      "moneyland-merchant-fees",
+    ],
+    /**
+     * Published, primary-sourced, and material to the one argument Worldline is
+     * usually chosen on: that the incumbent is the safe option. Deliberately
+     * limited to the credit rating and SIX's own disclosure — both are matters
+     * of record about Swiss continuity. The fraud reporting and the market-cap
+     * collapse are omitted on purpose: they read as attack rather than
+     * analysis, and this page's credibility rests on conceding fairly.
+     */
+    risks: [
+      {
+        statement:
+          "S&P downgraded Worldline to BB — below investment grade — in August 2025, citing weaker-than-expected operating performance, with a negative outlook.",
+        sourceId: "worldline-sp-downgrade",
+      },
+      {
+        statement:
+          "SIX Group, which bought 27% of Worldline as part of the SIX Payment Services deal, booked an impairment of roughly CHF 550 million in November 2025, declined to take part in Worldline's capital increase, gave up its board seat, and reclassified the holding from a strategic to a financial investment.",
+        sourceId: "six-worldline-participation",
+      },
     ],
   },
 ];
@@ -1052,4 +1460,114 @@ export const HOW_TO_START: string[] = [
   "Let the AI draft descriptions and restyle your product photos.",
   "Connect your Stripe account so customers pay directly into it.",
   "Share your storefront link — you're live, online and in person, from one inventory.",
+];
+
+/**
+ * What Zolto is bad at, published rather than left to be discovered.
+ *
+ * The August 2026 pricing review ended its case for Zolto with a list of
+ * Zolto's own risks, on the grounds that a comparison which concedes nothing
+ * about itself gets discounted along with everything else on the page. That
+ * reasoning is already the repo's own — it's why `Competitor.betterWhen`
+ * exists, and why the research page keeps its unflattering finding — but it
+ * had never been turned on us.
+ *
+ * Every entry here is either checkable against this codebase or already
+ * disclosed in a planning document nobody reads. That's the test for adding
+ * one: if a merchant would be annoyed to learn it three months in, it belongs
+ * on the page rather than in a doc.
+ */
+export interface Limitation {
+  /** The short form, for a heading. */
+  title: string;
+  /** The honest version, including why it isn't fixed yet. */
+  detail: string;
+}
+
+export const ZOLTO_LIMITATIONS: Limitation[] = [
+  {
+    title: "We have no track record",
+    detail:
+      "SumUp and Worldline have a decade or more each. Zolto is new, and a new company is a risk on its own terms however good the product is. What we can offer against that: no contract, no hardware to buy, and one-click export of everything you've put in — on the Free plan too. Leaving costs you an afternoon, not a termination fee.",
+  },
+  {
+    title: "Taking a card through us is the dearest option on our own table",
+    detail:
+      "Swiss-issued cards bill at Stripe's non-EEA rate — 2.9% plus CHF 0.20 — and Zolto adds nothing on top, which still leaves every other in-person option on our comparison cheaper than ours. SumUp's online rate beats ours on every plan too. Two honest responses: take TWINT where you can, which sits in the same till and costs less than half as much; and choose Zolto because it removes the work, not because it removes the fee. If cost per card sale is your deciding number, it decides against us.",
+  },
+  {
+    title: "Everything runs on Stripe, and Stripe sets the real price",
+    detail:
+      "Stripe holds the funds until payout, runs the identity checks, owns the chargeback process, and sets the rate that dominates what a sale costs you. Zolto never touches your money, which is the good half of that arrangement; the other half is that our own sovereignty ledger lists card payments as still moving, and until it stops moving, a hard dependency is what it is.",
+  },
+  {
+    title: "Parts of our stack are still outside Europe",
+    detail:
+      "Four rows of the Made in Switzerland ledger say so by name: card payments, the AI model provider, product-photo storage and account email. The ledger is published with those rows in it rather than without them, and each one carries the next step we've committed to.",
+  },
+  {
+    title: "The AI discovery channel has no shoppers in it yet",
+    detail:
+      "Every store ships llms.txt and an MCP endpoint, and the platform directory that lets an assistant find a Swiss maker is live — and currently empty, because storefronts are only now launching. The infrastructure is real; the traffic is a bet. Treat it as a reason to be early, not as a channel already selling for you.",
+  },
+  {
+    title: "We are below the Swiss VAT threshold",
+    detail:
+      "Swiss VAT registration is mandatory only above CHF 100,000 of annual turnover, and Zolto is under it, so the prices you see are simply the prices. It also tells you how small we are. If that changes, prices will say which way they're quoted, and we'll say so before it happens.",
+  },
+];
+
+/**
+ * The three questions that decide this purchase, answered honestly — including
+ * when the answer is "not us".
+ *
+ * Taken from the review's closing section. It is a routing tool rather than a
+ * pitch: two of the three outcomes send the reader to a competitor, and that is
+ * the point. A buyer who discovers on day three that their customers all pay by
+ * TWINT, or that they needed PostFinance Pay, is a refund and a bad review; a
+ * buyer we sent to SumUp on day zero is neither.
+ */
+export interface BuyerQuestion {
+  question: string;
+  /** What follows from each answer, stated without hedging. */
+  answers: { when: string; then: string }[];
+}
+
+export const BUYER_FIT: BuyerQuestion[] = [
+  {
+    question: "Do your customers pay by TWINT?",
+    answers: [
+      {
+        when: "Yes, most of them",
+        then: "SumUp is out, whatever it costs — its till cannot take TWINT at all. That leaves Zolto and Worldline, and the question becomes whether you want your catalogue in the till. It's also the cheapest answer for you: TWINT at 1.3% is the least you can pay to be handed money at a stall without a monthly subscription.",
+      },
+      {
+        when: "No, they mostly tap a card",
+        then: "Then the card rate is your number, and ours is the highest on this page — Swiss cards bill at Stripe's non-EEA rate and we add nothing to it. SumUp is cheaper and its till app is more mature. Choose Zolto for the shop, the listings and the one inventory, or don't choose it.",
+      },
+    ],
+  },
+  {
+    question: "Do you need PostFinance Pay?",
+    answers: [
+      {
+        when: "Yes",
+        then: "Only Worldline supports it. Nothing else on this page qualifies, and no amount of the rest of our argument changes that.",
+      },
+      { when: "No", then: "All three are still in play." },
+    ],
+  },
+  {
+    question: "How much do you sell on cards each month?",
+    answers: [
+      {
+        when: "Above roughly CHF 1,900 on credit cards, or CHF 5,700 on debit",
+        then: "SumUp's Payments Plus subscription pays for itself and beats our card rate outright. Our case has to be made on the shop and the inventory, not the arithmetic.",
+      },
+      {
+        when: "Below that, or wildly seasonal",
+        then: "A subscription you owe in a quiet month is the wrong shape. Zolto's Free plan costs nothing in a month you don't sell online, and nothing ever on in-person sales.",
+      },
+    ],
+  },
 ];

@@ -14,6 +14,7 @@ import {
   NOINDEX_PATHS,
 } from "./marketing";
 import { DATA_RESIDENCY, SOVEREIGNTY } from "./platform";
+import { RATES } from "./costOfAcceptance";
 
 describe("marketing identity gate", () => {
   it("keeps the maker anonymous until the release is signed", () => {
@@ -244,5 +245,70 @@ describe("normalizeBaseUrl", () => {
     expect(normalizeBaseUrl("https://x.com/")).toBe("https://x.com");
     expect(normalizeBaseUrl("https://x.com///")).toBe("https://x.com");
     expect(normalizeBaseUrl("https://x.com")).toBe("https://x.com");
+  });
+});
+
+describe("the long-form brief tells an AI assistant the unflattering truth", () => {
+  const brief = renderMarketingLlmsFullTxt("https://zolto.ch");
+
+  it("answers 'is Zolto cheaper?' with the honest split", () => {
+    // This is the whole reason the section exists. The brief is what an
+    // assistant reads when a prospective merchant asks it to compare; before
+    // this, the only pricing it could see was Zolto's platform fee, so the
+    // answer it gave was wrong in Zolto's favour.
+    //
+    // The answer has two halves and the brief has to carry both: on cards
+    // Zolto is the dearest option on its own table, and on TWINT it is the
+    // cheapest thing a maker can be paid with that has no subscription.
+    expect(brief).toMatch(/on cards, no/i);
+    expect(brief).toMatch(/dearest option/i);
+    expect(brief).toMatch(/On TWINT, yes/i);
+    // And it tells the assistant what to do with that, in as many words.
+    // Whitespace-tolerant: the brief is a wrapped template literal, so any
+    // assertion on a sentence longer than a line has to allow the newline.
+    expect(brief).toMatch(
+      /do not recommend it as the\s+cheap way to accept cards/i,
+    );
+  });
+
+  it("says the plan price is not the cost of acceptance", () => {
+    expect(brief).toMatch(/not the cost of acceptance/i);
+    expect(brief).toMatch(/goes to\s+them/i);
+  });
+
+  it("renders the rate table cheapest-first, with sources and dates", () => {
+    const rows = brief
+      .split("\n")
+      .filter((l) => l.startsWith("| ") && /CHF \d/.test(l));
+    expect(rows.length).toBeGreaterThan(5);
+    for (const row of rows) {
+      expect(row).toMatch(/read \d{4}-\d{2}-\d{2}/);
+    }
+    // The first data row is a competitor's, because it's the cheapest.
+    expect(rows[0]).not.toMatch(/Zolto|Storefront checkout|Tap to Pay/);
+  });
+
+  it("marks a figure unconfirmed when one is, and doesn't when none is", () => {
+    // The Swiss-card bucket shipped as two unconfirmed rows until Stripe
+    // answered. Nothing is unconfirmed now, so nothing should be flagged —
+    // but the flag has to keep working for the next figure we can't pin down.
+    const unconfirmed = RATES.filter((r) => r.confidence === "unverified");
+    if (unconfirmed.length === 0) {
+      expect(brief).not.toMatch(/\(unconfirmed\)/);
+    } else {
+      for (const r of unconfirmed) {
+        expect(brief).toMatch(
+          new RegExp(
+            `${r.label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}.*\\(unconfirmed\\)`,
+          ),
+        );
+      }
+    }
+  });
+
+  it("carries the limitations and the three qualifying questions", () => {
+    expect(brief).toMatch(/Where Zolto falls short/);
+    expect(brief).toMatch(/no track record/i);
+    expect(brief).toMatch(/PostFinance Pay\?/);
   });
 });

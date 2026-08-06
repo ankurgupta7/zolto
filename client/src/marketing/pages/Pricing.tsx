@@ -1,5 +1,6 @@
 import { Link } from "wouter";
 import { Container } from "../components/Container";
+import { CostOfAcceptance } from "../components/CostOfAcceptance";
 import { FeeCalculator } from "../components/FeeCalculator";
 import { PLANS, formatPrice } from "../plans";
 import {
@@ -89,6 +90,18 @@ export default function Pricing() {
             </p>
           </div>
         </div>
+      </div>
+
+      {/* What a sale actually costs, on every option we can source — including
+          the ones that beat us. The plan cards above quote Zolto's fee, which
+          is not the cost of acceptance; this is the correction, and it belongs
+          on the pricing page rather than only on /compare, because this is the
+          page a reader arrives at asking "what will this cost me". */}
+      <div className="mx-auto mt-16 max-w-3xl">
+        <CostOfAcceptance channel="in-person" />
+      </div>
+      <div className="mx-auto mt-14 max-w-3xl">
+        <CostOfAcceptance channel="online" />
       </div>
 
       {/* Plan cards — two boxes only */}
