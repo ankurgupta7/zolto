@@ -827,6 +827,7 @@ if [ "$(col_exists orders locale)" = "0" ]; then
     "ALTER TABLE \`orders\` ADD \`locale\` varchar(5) NULL;"
 else
   ok "0039 orders.locale already exists"
+fi
 
 # ── 0040: second brand color ──────────────────────────────────────────────────
 # Ships drizzle/0022_secondary_brand_color.sql. Drives the accent family, which
