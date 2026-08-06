@@ -43,6 +43,19 @@ describe("useIsMobile", () => {
     expect(result.current).toBe(true);
   });
 
+  // Layout that keys off this (the admin header collapsing its tools) would
+  // otherwise paint its desktop shape once on a phone before snapping over.
+  it("knows the width on the very first render, before any effect runs", () => {
+    setViewport(390);
+    let firstRender: boolean | undefined;
+    renderHook(() => {
+      const value = useIsMobile();
+      firstRender ??= value;
+      return value;
+    });
+    expect(firstRender).toBe(true);
+  });
+
   it("reports non-mobile at or above the breakpoint", () => {
     setViewport(1024);
     const { result } = renderHook(() => useIsMobile());

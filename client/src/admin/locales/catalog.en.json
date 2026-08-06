@@ -109,7 +109,8 @@
         "tour": "Tour",
         "tourTitle": "Replay the guided tour of this dashboard",
         "tourAria": "Replay guided tour",
-        "addProduct": "Add Product"
+        "addProduct": "Add Product",
+        "tools": "Tools"
       },
       "form": {
         "title": "Add New Product",

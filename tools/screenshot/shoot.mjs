@@ -54,10 +54,24 @@ if (shotLang && !HTML_LANG[shotLang]) {
   );
 }
 
+// Desktop by default. SHOT_VIEWPORT=390x844 takes the shot at phone width,
+// which is the only way to see layout that only breaks once the header stops
+// fitting on one line.
+const viewport = (() => {
+  const raw = process.env.SHOT_VIEWPORT;
+  if (!raw) return { width: 1280, height: 900 };
+  const m = /^(\d+)x(\d+)$/.exec(raw.trim());
+  if (!m)
+    throw new Error(`SHOT_VIEWPORT must look like 390x844 — got "${raw}"`);
+  return { width: Number(m[1]), height: Number(m[2]) };
+})();
+
 const browser = await chromium.launch({ executablePath });
 const page = await browser.newPage({
-  viewport: { width: 1280, height: 900 },
+  viewport,
   deviceScaleFactor: 2,
+  isMobile: viewport.width < 768,
+  hasTouch: viewport.width < 768,
   ...(shotLang ? { locale: HTML_LANG[shotLang] } : {}),
 });
 
@@ -87,9 +101,24 @@ await page.evaluate(async () => {
 });
 await page.waitForTimeout(1500);
 
+// SHOT_CLICK="Add Product" clicks a control first, so a shot can capture what
+// a page looks like *after* an interaction rather than only at rest. Comma-
+// separate to click a sequence — SHOT_CLICK="Next,Next" walks a tour along.
+if (process.env.SHOT_CLICK) {
+  for (const name of process.env.SHOT_CLICK.split(",")) {
+    await page
+      .getByRole("button", { name: name.trim(), exact: true })
+      .first()
+      .click();
+    await page.waitForTimeout(1200);
+  }
+}
+
 const loaded = await page.evaluate(() => [
   ...new Set(
-    [...document.fonts].filter((f) => f.status === "loaded").map((f) => f.family),
+    [...document.fonts]
+      .filter((f) => f.status === "loaded")
+      .map((f) => f.family),
   ),
 ]);
 // An empty list means the shot is showing fallback faces and cannot be trusted
@@ -97,8 +126,11 @@ const loaded = await page.evaluate(() => [
 console.log("fonts loaded:", loaded.length ? loaded.join(", ") : "NONE ⚠");
 
 if (sections.length === 0) {
-  await page.screenshot({ path: `${outDir}/page.png`, fullPage: true });
-  console.log(`wrote ${outDir}/page.png`);
+  // SHOT_FULLPAGE=0 captures only what is actually on screen — the way to
+  // check whether an interaction left the thing it opened within view.
+  const fullPage = process.env.SHOT_FULLPAGE !== "0";
+  await page.screenshot({ path: `${outDir}/page.png`, fullPage });
+  console.log(`wrote ${outDir}/page.png${fullPage ? "" : " (viewport only)"}`);
 } else {
   for (const [i, text] of sections.entries()) {
     const el = page.locator("section").filter({ hasText: text }).first();

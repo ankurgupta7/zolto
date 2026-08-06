@@ -23,6 +23,15 @@ vi.stubGlobal(
     disconnect() {}
   },
 );
+// The header's useIsMobile call; jsdom's 1024px innerWidth renders desktop.
+vi.stubGlobal(
+  "matchMedia",
+  vi.fn().mockReturnValue({
+    matches: false,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+  }),
+);
 
 const mocks = vi.hoisted(() => ({
   authState: {
@@ -349,9 +358,7 @@ describe("Admin page — re-categorise review dialog", () => {
     expect(mocks.applyRecatMutate).toHaveBeenCalledWith({
       items: [{ id: 3, category: "Brooches" }],
     });
-    expect(toast.success).toHaveBeenCalledWith(
-      "1 product re-categorised.",
-    );
+    expect(toast.success).toHaveBeenCalledWith("1 product re-categorised.");
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 });

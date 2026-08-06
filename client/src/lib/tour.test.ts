@@ -1,13 +1,16 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import {
   tourStorageKey,
   isTourCompleted,
   markTourCompleted,
   clearTourCompletion,
   computeTooltipPosition,
+  isAnyTourRunning,
+  markTourRunning,
   nextStepIndex,
   positionsEqual,
   rectsEqual,
+  subscribeTourRunning,
   TOOLTIP_MAX_WIDTH,
   tooltipWidthFor,
 } from "./tour";
@@ -34,6 +37,54 @@ describe("tour completion storage", () => {
   it("scopes completion per tour id", () => {
     markTourCompleted("admin-v1");
     expect(isTourCompleted("storefront-v1")).toBe(false);
+  });
+});
+
+/**
+ * UI that hides a tour anchor behind a disclosure has to unfold while a tour
+ * runs, or the step would find no target. Two tours can be mounted at once
+ * (the dashboard tour and the checklist's "Show me"), so this counts rather
+ * than toggles — the first one finishing must not fold the menu away under the
+ * second.
+ */
+describe("tour running registry", () => {
+  it("is idle until a tour marks itself running", () => {
+    expect(isAnyTourRunning()).toBe(false);
+    const stop = markTourRunning();
+    expect(isAnyTourRunning()).toBe(true);
+    stop();
+    expect(isAnyTourRunning()).toBe(false);
+  });
+
+  it("stays running until the last of several tours stops", () => {
+    const stopA = markTourRunning();
+    const stopB = markTourRunning();
+    stopA();
+    expect(isAnyTourRunning()).toBe(true);
+    stopB();
+    expect(isAnyTourRunning()).toBe(false);
+  });
+
+  it("ignores a repeated stop rather than under-counting", () => {
+    const stopA = markTourRunning();
+    const stopB = markTourRunning();
+    stopA();
+    stopA();
+    expect(isAnyTourRunning()).toBe(true);
+    stopB();
+    expect(isAnyTourRunning()).toBe(false);
+  });
+
+  it("notifies subscribers on start and stop, and not after unsubscribing", () => {
+    const seen = vi.fn();
+    const unsubscribe = subscribeTourRunning(seen);
+    const stop = markTourRunning();
+    expect(seen).toHaveBeenCalledTimes(1);
+    stop();
+    expect(seen).toHaveBeenCalledTimes(2);
+    unsubscribe();
+    markTourRunning()();
+    expect(seen).toHaveBeenCalledTimes(2);
   });
 });
 

@@ -111,7 +111,8 @@
         "tour": "Visite",
         "tourTitle": "Rejouer la visite guidée de ce tableau de bord",
         "tourAria": "Rejouer la visite guidée",
-        "addProduct": "Ajouter un produit"
+        "addProduct": "Ajouter un produit",
+        "tools": "Outils"
       },
       "form": {
         "title": "Ajouter un nouveau produit",

@@ -111,7 +111,8 @@
         "tour": "Tour",
         "tourTitle": "Riproduci di nuovo il tour guidato di questa dashboard",
         "tourAria": "Riproduci di nuovo il tour guidato",
-        "addProduct": "Aggiungi prodotto"
+        "addProduct": "Aggiungi prodotto",
+        "tools": "Strumenti"
       },
       "form": {
         "title": "Aggiungi nuovo prodotto",
