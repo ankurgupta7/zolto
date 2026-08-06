@@ -21,17 +21,27 @@ import { useMarketingT } from "../lib/marketingI18n";
 import type { SupportedLanguage } from "@/lib/languages";
 
 /**
- * Signup wizard: details → template → branding.
+ * Signup wizard: details → look.
  *
- * Step 2 picks one of the five storefront templates (shared/templates.ts);
- * step 3 settles the color scheme — manually, or extracted from an uploaded
- * logo by AI (tenant.brandingFromLogo) — and the logo itself, which becomes
- * the store's navbar/footer branding the moment the store exists. Everything
- * from steps 2–3 rides along on tenant.create, so a merchant who bails after
- * step 1's fields never half-brands a store.
+ * The "look" step settles logo, color, and template TOGETHER, on one screen,
+ * because those three decisions inform each other and can't be ordered: the
+ * logo's colors drive the palette, and the palette suggests a template.
+ * Splitting them made the merchant's choice appear to mutate on the next
+ * screen (pick Verdant's green, then watch the AI replace it with the logo's
+ * terracotta) and forced an awkward "switch template?" prompt after the fact.
+ *
+ * The halves compose rather than override — a template owns the SURFACE
+ * variables (grounds, borders, muted text) and `primary_color` owns the
+ * ink/accent family via derivePalette — so the template cards render in the
+ * merchant's live color and differ only in the surfaces that are actually
+ * theirs to choose. A template's `defaultPrimaryColor` is only ever a SEED,
+ * applied while the merchant has neither uploaded a logo nor picked a color.
+ *
+ * Everything here rides along on tenant.create, so a merchant who bails after
+ * the details step never half-brands a store.
  */
 
-const STEPS = ["details", "template", "branding"] as const;
+const STEPS = ["details", "look"] as const;
 
 /**
  * The vertical labels already exist in four languages in shared/verticals.ts,
@@ -95,10 +105,8 @@ export default function Signup() {
     getTemplate(DEFAULT_TEMPLATE_ID)?.defaultPrimaryColor ?? "#2D2620",
   );
   const [logo, setLogo] = useState<LogoDraft | null>(null);
-  const [aiNote, setAiNote] = useState<{
-    rationale: string | null;
-    suggestedTemplateId: TemplateId | null;
-  } | null>(null);
+  const [aiNote, setAiNote] = useState<string | null>(null);
+  const [aiTemplateId, setAiTemplateId] = useState<TemplateId | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const selectTemplate = (id: TemplateId) => {
@@ -113,10 +121,14 @@ export default function Signup() {
     onSuccess: (data) => {
       setPrimaryColor(data.primaryColor);
       setColorTouched(true);
-      setAiNote({
-        rationale: data.rationale,
-        suggestedTemplateId: data.suggestedTemplateId as TemplateId | null,
-      });
+      setAiNote(data.rationale);
+      const suggested = data.suggestedTemplateId as TemplateId | null;
+      setAiTemplateId(suggested);
+      // Everything is on one screen, so the suggestion is applied and marked
+      // rather than offered as a separate "switch?" prompt — the merchant sees
+      // the card highlight and the preview change in the same glance, and can
+      // click any other card to overrule it.
+      if (suggested) setTemplateId(suggested);
     },
     onError: (err) => {
       toast.error(err.message || t("signup.toastLogoColorsFailed"));
@@ -194,6 +206,7 @@ export default function Signup() {
         fileName: file.name,
       });
       setAiNote(null);
+      setAiTemplateId(null);
     };
     reader.readAsDataURL(file);
   };
@@ -201,8 +214,8 @@ export default function Signup() {
   const handleSubmit = (ev: React.FormEvent) => {
     ev.preventDefault();
     // Enter in a step-1/2 field advances the wizard; only step 3 creates.
-    if (step < 2) {
-      if (detailsValid) setStep(step + 1);
+    if (step === 0) {
+      if (detailsValid) setStep(1);
       return;
     }
     if (!canSubmit) return;
@@ -223,6 +236,10 @@ export default function Signup() {
 
   const template = getTemplate(templateId) ?? STORE_TEMPLATES[0];
   const previewPalette = derivePalette(primaryColor);
+  // The merchant's own color, resolved to the ink the storefront would render.
+  // Falls back per-card while the hex field is mid-edit and unparseable.
+  const previewInk = previewPalette?.["--brand-ink"] ?? null;
+  const previewAccent = previewPalette?.["--brand-accent"] ?? null;
 
   return (
     <Container width="2xl" className="py-20">
@@ -384,209 +401,268 @@ export default function Signup() {
 
         {step === 1 && (
           <div>
-            <h2 className="font-serif text-xl text-[var(--brand-text)]">
-              {t("signup.templateHeading")}
-            </h2>
-            <p className="mt-1 text-sm text-[var(--brand-muted-2)]">
-              {t("signup.templateIntro")}
-            </p>
+            <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_320px]">
+              {/* Brand inputs: the logo first, because everything else can be
+                  derived from it. */}
+              <div className="max-w-md space-y-6">
+                <div>
+                  <h2 className="font-serif text-xl text-[var(--brand-text)]">
+                    {t("signup.brandingHeading")}
+                  </h2>
+                  <p className="mt-1 text-sm text-[var(--brand-muted-2)]">
+                    {t("signup.brandingIntro")}
+                  </p>
+                </div>
 
-            <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {STORE_TEMPLATES.map((tpl) => {
-                const selected = tpl.id === templateId;
-                return (
-                  <button
-                    key={tpl.id}
-                    type="button"
-                    aria-pressed={selected}
-                    onClick={() => selectTemplate(tpl.id)}
-                    className={`rounded-xl border p-4 text-left transition-shadow ${
-                      selected
-                        ? "border-[var(--brand-accent)] shadow-md ring-1 ring-[var(--brand-accent)]"
-                        : "border-[var(--brand-border)] hover:shadow-sm"
-                    }`}
-                    style={{
-                      backgroundColor: tpl.cssVars["--brand-surface-2"],
-                    }}
-                  >
-                    {/* Mini storefront: ink header band over template surfaces */}
-                    <div
-                      className="overflow-hidden rounded-md border"
-                      style={{ borderColor: tpl.cssVars["--brand-border"] }}
-                    >
-                      <div
-                        className="h-6"
-                        style={{ backgroundColor: tpl.defaultPrimaryColor }}
+                <Field label={t("signup.logoLabel")} hint={t("signup.logoHint")}>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept={LOGO_MIME_TYPES.join(",")}
+                    onChange={(e) => handleLogoFile(e.target.files?.[0])}
+                    className="w-full rounded-md border border-[var(--brand-border-2)] bg-white px-4 py-2.5 text-sm text-[var(--brand-text)] file:mr-3 file:rounded file:border-0 file:bg-[var(--brand-surface)] file:px-3 file:py-1.5 file:text-xs file:uppercase file:tracking-[0.1em]"
+                  />
+                </Field>
+
+                {logo && (
+                  <div className="space-y-3 rounded-xl border border-[var(--brand-border)] bg-white p-4">
+                    <div className="flex items-center gap-4">
+                      <img
+                        src={logo.dataUrl}
+                        alt={t("signup.logoAlt")}
+                        className="h-14 w-14 rounded-md border border-[var(--brand-border)] object-contain"
                       />
-                      <div
-                        className="flex gap-1.5 p-2"
-                        style={{
-                          backgroundColor: tpl.cssVars["--brand-ground"],
-                        }}
-                      >
-                        {[0, 1, 2].map((i) => (
-                          <div
-                            key={i}
-                            className="h-8 flex-1 rounded-sm"
-                            style={{
-                              backgroundColor: tpl.cssVars["--brand-surface"],
-                            }}
-                          />
-                        ))}
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm text-[var(--brand-text)]">
+                          {logo.fileName}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setLogo(null);
+                            setAiNote(null);
+                            setAiTemplateId(null);
+                            if (fileInputRef.current)
+                              fileInputRef.current.value = "";
+                          }}
+                          className="mt-0.5 text-xs text-[var(--brand-muted)] underline hover:text-[var(--brand-text)]"
+                        >
+                          {t("signup.logoRemove")}
+                        </button>
                       </div>
                     </div>
-                    <p className="mt-3 flex items-center justify-between font-serif text-lg text-[var(--brand-text)]">
-                      {tpl.name}
-                      {selected && (
-                        <span className="text-xs font-sans uppercase tracking-[0.1em] text-[var(--brand-accent)]">
-                          {t("signup.templateSelected")}
-                        </span>
-                      )}
-                    </p>
-                    <p className="mt-0.5 text-sm text-[var(--brand-muted-2)]">
-                      {st(`templates.${tpl.id}.tagline`, tpl.tagline)}
-                    </p>
-                    <p className="mt-1 text-xs text-[var(--brand-muted)]">
-                      {st(`templates.${tpl.id}.bestFor`, tpl.bestFor)}
-                    </p>
-                  </button>
-                );
-              })}
-            </div>
+                    <button
+                      type="button"
+                      disabled={brandingFromLogo.isPending}
+                      onClick={() =>
+                        brandingFromLogo.mutate({ imageData: logo.dataUrl })
+                      }
+                      className="w-full rounded-md border border-[var(--brand-accent)] px-3 py-2 text-xs font-medium uppercase tracking-[0.1em] text-[var(--brand-accent)] transition-colors hover:bg-[var(--brand-accent)] hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {brandingFromLogo.isPending
+                        ? t("signup.logoReading")
+                        : t("signup.logoColors")}
+                    </button>
+                  </div>
+                )}
 
-            <div className="mt-8 flex gap-3">
-              <BackButton onClick={() => setStep(0)} />
-              <button
-                type="button"
-                onClick={() => setStep(2)}
-                className="rounded-md bg-[var(--brand-ink)] px-6 py-3 text-xs font-medium uppercase tracking-[0.12em] text-white transition-colors hover:bg-[var(--brand-ink-hover)]"
-              >
-                {t("signup.chooseColors")}
-              </button>
-            </div>
-          </div>
-        )}
+                {aiNote && (
+                  <p className="rounded-xl border border-[var(--brand-accent)]/40 bg-[var(--brand-accent)]/8 p-4 text-sm text-[var(--brand-text)]">
+                    {aiNote}
+                  </p>
+                )}
 
-        {step === 2 && (
-          <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_320px]">
-            <div className="max-w-md space-y-6">
-              <div>
-                <h2 className="font-serif text-xl text-[var(--brand-text)]">
-                  {t("signup.brandingHeading")}
-                </h2>
-                <p className="mt-1 text-sm text-[var(--brand-muted-2)]">
-                  {t("signup.brandingIntro")}
-                </p>
+                <Field
+                  label={t("signup.brandColor")}
+                  error={colorValid ? undefined : t("signup.errorColor")}
+                  hint={t("signup.brandColorHint")}
+                >
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="color"
+                      aria-label={t("signup.brandColor")}
+                      value={
+                        colorValid ? primaryColor : template.defaultPrimaryColor
+                      }
+                      onChange={(e) => {
+                        setPrimaryColor(e.target.value);
+                        setColorTouched(true);
+                      }}
+                      className="h-11 w-14 cursor-pointer rounded-md border border-[var(--brand-border-2)] bg-white p-1"
+                    />
+                    <input
+                      type="text"
+                      aria-label={t("signup.brandColorHex")}
+                      value={primaryColor}
+                      onChange={(e) => {
+                        setPrimaryColor(e.target.value.trim());
+                        setColorTouched(true);
+                      }}
+                      className="w-32 rounded-md border border-[var(--brand-border-2)] bg-white px-3 py-2.5 font-mono text-sm text-[var(--brand-text)] outline-none focus:border-[var(--brand-accent)]"
+                    />
+                  </div>
+                </Field>
               </div>
 
-              <Field label={t("signup.logoLabel")} hint={t("signup.logoHint")}>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept={LOGO_MIME_TYPES.join(",")}
-                  onChange={(e) => handleLogoFile(e.target.files?.[0])}
-                  className="w-full rounded-md border border-[var(--brand-border-2)] bg-white px-4 py-2.5 text-sm text-[var(--brand-text)] file:mr-3 file:rounded file:border-0 file:bg-[var(--brand-surface)] file:px-3 file:py-1.5 file:text-xs file:uppercase file:tracking-[0.1em]"
-                />
-              </Field>
-
-              {logo && (
-                <div className="space-y-3 rounded-xl border border-[var(--brand-border)] bg-white p-4">
-                  <div className="flex items-center gap-4">
-                    <img
-                      src={logo.dataUrl}
-                      alt={t("signup.logoAlt")}
-                      className="h-14 w-14 rounded-md border border-[var(--brand-border)] object-contain"
+              {/* Live preview: chosen template surfaces + ink derived from the color */}
+              <aside aria-label={t("signup.previewAria")}>
+                <p className="text-xs font-medium uppercase tracking-[0.12em] text-[var(--brand-muted)]">
+                  {t("signup.previewLabel")}
+                </p>
+                <div
+                  className="mt-2 overflow-hidden rounded-xl border"
+                  style={{ borderColor: template.cssVars["--brand-border"] }}
+                >
+                  <div
+                    className="flex items-center gap-2 px-4 py-3"
+                    style={{
+                      backgroundColor:
+                        previewInk ?? template.defaultPrimaryColor,
+                    }}
+                  >
+                    {logo ? (
+                      <img
+                        src={logo.dataUrl}
+                        alt=""
+                        className="h-6 w-6 rounded-sm bg-white/90 object-contain p-0.5"
+                      />
+                    ) : (
+                      <span
+                        className="h-3 w-3 rounded-full"
+                        style={{ backgroundColor: previewAccent ?? "#b8963e" }}
+                      />
+                    )}
+                    <span className="truncate font-serif text-sm text-white">
+                      {name.trim() || t("signup.previewStoreName")}
+                    </span>
+                  </div>
+                  <div
+                    className="space-y-3 p-4"
+                    style={{
+                      backgroundColor: template.cssVars["--brand-ground"],
+                    }}
+                  >
+                    <div
+                      className="h-2 w-24 rounded-full"
+                      style={{ backgroundColor: previewAccent ?? "#b8963e" }}
                     />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm text-[var(--brand-text)]">
-                        {logo.fileName}
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setLogo(null);
-                          setAiNote(null);
-                          if (fileInputRef.current)
-                            fileInputRef.current.value = "";
-                        }}
-                        className="mt-0.5 text-xs text-[var(--brand-muted)] underline hover:text-[var(--brand-text)]"
-                      >
-                        {t("signup.logoRemove")}
-                      </button>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[0, 1, 2].map((i) => (
+                        <div
+                          key={i}
+                          className="h-16 rounded-md"
+                          style={{
+                            backgroundColor: template.cssVars["--brand-surface"],
+                          }}
+                        />
+                      ))}
+                    </div>
+                    <div
+                      className="inline-block rounded px-3 py-1.5 text-[10px] font-medium uppercase tracking-[0.1em] text-white"
+                      style={{
+                        backgroundColor:
+                          previewInk ?? template.defaultPrimaryColor,
+                      }}
+                    >
+                      {t("signup.previewAddToCart")}
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    disabled={brandingFromLogo.isPending}
-                    onClick={() =>
-                      brandingFromLogo.mutate({ imageData: logo.dataUrl })
-                    }
-                    className="w-full rounded-md border border-[var(--brand-accent)] px-3 py-2 text-xs font-medium uppercase tracking-[0.1em] text-[var(--brand-accent)] transition-colors hover:bg-[var(--brand-accent)] hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {brandingFromLogo.isPending
-                      ? t("signup.logoReading")
-                      : t("signup.logoColors")}
-                  </button>
                 </div>
-              )}
+                <p className="mt-2 text-xs text-[var(--brand-muted)]">
+                  {t("signup.previewMeta", {
+                    template: template.name,
+                    color: primaryColor,
+                  })}
+                </p>
+              </aside>
+            </div>
 
-              {aiNote && (
-                <div className="rounded-xl border border-[var(--brand-accent)]/40 bg-[var(--brand-accent)]/8 p-4 text-sm text-[var(--brand-text)]">
-                  {aiNote.rationale && <p>{aiNote.rationale}</p>}
-                  {aiNote.suggestedTemplateId &&
-                    aiNote.suggestedTemplateId !== templateId && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setTemplateId(
-                            aiNote.suggestedTemplateId as TemplateId,
-                          );
-                        }}
-                        className="mt-2 text-xs font-medium uppercase tracking-[0.1em] text-[var(--brand-accent)] underline"
+            {/* Templates last: they only change the surfaces around the color
+                above, so every card renders in the merchant's own color. */}
+            <div className="mt-12">
+              <h2 className="font-serif text-xl text-[var(--brand-text)]">
+                {t("signup.templateHeading")}
+              </h2>
+              <p className="mt-1 text-sm text-[var(--brand-muted-2)]">
+                {t("signup.templateIntro")}
+              </p>
+
+              <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {STORE_TEMPLATES.map((tpl) => {
+                  const selected = tpl.id === templateId;
+                  // A card previews the merchant's live color on that
+                  // template's surfaces — the templates differ in the
+                  // surfaces, never in the brand color.
+                  const cardInk = previewInk ?? tpl.defaultPrimaryColor;
+                  return (
+                    <button
+                      key={tpl.id}
+                      type="button"
+                      aria-pressed={selected}
+                      onClick={() => selectTemplate(tpl.id)}
+                      className={`rounded-xl border p-4 text-left transition-shadow ${
+                        selected
+                          ? "border-[var(--brand-accent)] shadow-md ring-1 ring-[var(--brand-accent)]"
+                          : "border-[var(--brand-border)] hover:shadow-sm"
+                      }`}
+                      style={{
+                        backgroundColor: tpl.cssVars["--brand-surface-2"],
+                      }}
+                    >
+                      {/* Mini storefront: the live ink over template surfaces */}
+                      <div
+                        className="overflow-hidden rounded-md border"
+                        style={{ borderColor: tpl.cssVars["--brand-border"] }}
                       >
-                        {t("signup.switchTemplate", {
-                          template:
-                            getTemplate(aiNote.suggestedTemplateId)?.name ?? "",
-                        })}
-                      </button>
-                    )}
-                </div>
-              )}
+                        <div
+                          className="h-6"
+                          style={{ backgroundColor: cardInk }}
+                        />
+                        <div
+                          className="flex gap-1.5 p-2"
+                          style={{
+                            backgroundColor: tpl.cssVars["--brand-ground"],
+                          }}
+                        >
+                          {[0, 1, 2].map((i) => (
+                            <div
+                              key={i}
+                              className="h-8 flex-1 rounded-sm"
+                              style={{
+                                backgroundColor: tpl.cssVars["--brand-surface"],
+                              }}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      <p className="mt-3 flex items-center justify-between font-serif text-lg text-[var(--brand-text)]">
+                        {tpl.name}
+                        {selected && (
+                          <span className="font-sans text-xs uppercase tracking-[0.1em] text-[var(--brand-accent)]">
+                            {t("signup.templateSelected")}
+                          </span>
+                        )}
+                      </p>
+                      <p className="mt-0.5 text-sm text-[var(--brand-muted-2)]">
+                        {st(`templates.${tpl.id}.tagline`, tpl.tagline)}
+                      </p>
+                      <p className="mt-1 text-xs text-[var(--brand-muted)]">
+                        {st(`templates.${tpl.id}.bestFor`, tpl.bestFor)}
+                      </p>
+                      {aiTemplateId === tpl.id && (
+                        <p className="mt-2 text-xs text-[var(--brand-accent)]">
+                          {t("signup.templateFromLogo")}
+                        </p>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
 
-              <Field
-                label={t("signup.brandColor")}
-                error={colorValid ? undefined : t("signup.errorColor")}
-                hint={t("signup.brandColorHint")}
-              >
-                <div className="flex items-center gap-3">
-                  <input
-                    type="color"
-                    aria-label={t("signup.brandColor")}
-                    value={
-                      colorValid ? primaryColor : template.defaultPrimaryColor
-                    }
-                    onChange={(e) => {
-                      setPrimaryColor(e.target.value);
-                      setColorTouched(true);
-                    }}
-                    className="h-11 w-14 cursor-pointer rounded-md border border-[var(--brand-border-2)] bg-white p-1"
-                  />
-                  <input
-                    type="text"
-                    aria-label={t("signup.brandColorHex")}
-                    value={primaryColor}
-                    onChange={(e) => {
-                      const v = e.target.value.trim();
-                      setPrimaryColor(v);
-                      setColorTouched(true);
-                    }}
-                    className="w-32 rounded-md border border-[var(--brand-border-2)] bg-white px-3 py-2.5 font-mono text-sm text-[var(--brand-text)] outline-none focus:border-[var(--brand-accent)]"
-                  />
-                </div>
-              </Field>
-
+            <div className="mt-10 max-w-md">
               <div className="flex gap-3">
-                <BackButton onClick={() => setStep(1)} />
+                <BackButton onClick={() => setStep(0)} />
                 <button
                   type="submit"
                   disabled={!canSubmit}
@@ -598,7 +674,7 @@ export default function Signup() {
                 </button>
               </div>
 
-              <p className="text-center text-xs text-[var(--brand-muted)]">
+              <p className="mt-5 text-center text-xs text-[var(--brand-muted)]">
                 {t("signup.termsLead")}{" "}
                 <a
                   href="/legal/terms"
@@ -616,84 +692,6 @@ export default function Signup() {
                 .
               </p>
             </div>
-
-            {/* Live preview: chosen template surfaces + ink derived from the color */}
-            <aside aria-label={t("signup.previewAria")}>
-              <p className="text-xs font-medium uppercase tracking-[0.12em] text-[var(--brand-muted)]">
-                {t("signup.previewLabel")}
-              </p>
-              <div
-                className="mt-2 overflow-hidden rounded-xl border"
-                style={{ borderColor: template.cssVars["--brand-border"] }}
-              >
-                <div
-                  className="flex items-center gap-2 px-4 py-3"
-                  style={{
-                    backgroundColor:
-                      previewPalette?.["--brand-ink"] ?? primaryColor,
-                  }}
-                >
-                  {logo ? (
-                    <img
-                      src={logo.dataUrl}
-                      alt=""
-                      className="h-6 w-6 rounded-sm bg-white/90 object-contain p-0.5"
-                    />
-                  ) : (
-                    <span
-                      className="h-3 w-3 rounded-full"
-                      style={{
-                        backgroundColor:
-                          previewPalette?.["--brand-accent"] ?? "#b8963e",
-                      }}
-                    />
-                  )}
-                  <span className="truncate font-serif text-sm text-white">
-                    {name.trim() || t("signup.previewStoreName")}
-                  </span>
-                </div>
-                <div
-                  className="space-y-3 p-4"
-                  style={{
-                    backgroundColor: template.cssVars["--brand-ground"],
-                  }}
-                >
-                  <div
-                    className="h-2 w-24 rounded-full"
-                    style={{
-                      backgroundColor:
-                        previewPalette?.["--brand-accent"] ?? "#b8963e",
-                    }}
-                  />
-                  <div className="grid grid-cols-3 gap-2">
-                    {[0, 1, 2].map((i) => (
-                      <div
-                        key={i}
-                        className="h-16 rounded-md"
-                        style={{
-                          backgroundColor: template.cssVars["--brand-surface"],
-                        }}
-                      />
-                    ))}
-                  </div>
-                  <div
-                    className="inline-block rounded px-3 py-1.5 text-[10px] font-medium uppercase tracking-[0.1em] text-white"
-                    style={{
-                      backgroundColor:
-                        previewPalette?.["--brand-ink"] ?? primaryColor,
-                    }}
-                  >
-                    {t("signup.previewAddToCart")}
-                  </div>
-                </div>
-              </div>
-              <p className="mt-2 text-xs text-[var(--brand-muted)]">
-                {t("signup.previewMeta", {
-                  template: template.name,
-                  color: primaryColor,
-                })}
-              </p>
-            </aside>
           </div>
         )}
       </form>

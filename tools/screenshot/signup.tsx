@@ -2,9 +2,11 @@
  * Screenshot entry for the marketing signup wizard.
  *
  * Mounts the REAL Signup page behind the real trpc client with only the
- * transport stubbed (same approach as admin.tsx), so the template cards,
- * branding step, and live preview are captured exactly as they ship. Drive
- * the wizard by clicking through in the shot (steps are plain buttons).
+ * transport stubbed (same approach as admin.tsx), so the "Your look" step —
+ * logo, color, template cards rendered in that color, and the live preview —
+ * is captured exactly as it ships. Drive the wizard by clicking through in
+ * the shot (steps are plain buttons); the stubbed brandingFromLogo response
+ * below is what the "Colors from logo" button returns.
  *
  *   npx vite --config tools/screenshot/vite.config.ts &
  *   SHOT_URL="http://localhost:5199/signup.html" node tools/screenshot/shoot.mjs out/

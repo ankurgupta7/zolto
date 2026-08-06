@@ -345,8 +345,7 @@
     "stepsLabel": "Passaggi della registrazione",
     "steps": {
       "details": "Dati del negozio",
-      "template": "Modello",
-      "branding": "Identità"
+      "look": "Il tuo look"
     },
     "storeNameLabel": "Nome del negozio",
     "storeNamePlaceholder": "Il nome del suo negozio",
@@ -378,8 +377,9 @@
     "createStore": "Crea il negozio →",
     "creating": "Creazione…",
     "templateHeading": "Scelga un modello",
-    "templateIntro": "Cinque look pensati per i piccoli negozi. Può cambiarli quando vuole — e i suoi colori arrivano subito dopo.",
+    "templateIntro": "Cinque look pensati per i piccoli negozi, ognuno mostrato nei suoi colori. Può cambiarli quando vuole.",
     "templateSelected": "Selezionato",
+    "templateFromLogo": "✨ Suggerito dal suo logo",
     "brandingHeading": "Il suo logo e i suoi colori",
     "brandingIntro": "Carichi il suo logo e ne vestiremo il suo negozio — e, se lo desidera, l’IA ne ricaverà la sua combinazione di colori.",
     "logoLabel": "Logo (facoltativo)",
@@ -388,7 +388,6 @@
     "logoRemove": "Rimuovi",
     "logoReading": "Lettura…",
     "logoColors": "✨ Colori dal logo",
-    "switchTemplate": "Passa al modello {{template}}",
     "brandColor": "Colore del marchio",
     "brandColorHex": "Colore del marchio in esadecimale",
     "brandColorHint": "Determina intestazioni, pulsanti e accenti della sua vetrina.",

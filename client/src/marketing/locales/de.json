@@ -345,8 +345,7 @@
     "stepsLabel": "Schritte der Anmeldung",
     "steps": {
       "details": "Shop-Angaben",
-      "template": "Vorlage",
-      "branding": "Auftritt"
+      "look": "Ihr Look"
     },
     "storeNameLabel": "Shop-Name",
     "storeNamePlaceholder": "Ihr Shop-Name",
@@ -378,8 +377,9 @@
     "createStore": "Shop erstellen →",
     "creating": "Wird erstellt…",
     "templateHeading": "Wählen Sie eine Vorlage",
-    "templateIntro": "Fünf Looks für kleine Läden. Sie können jederzeit wechseln — und Ihre eigenen Farben kommen als Nächstes.",
+    "templateIntro": "Fünf Looks für kleine Läden, jeder in Ihren Farben dargestellt. Sie können jederzeit wechseln.",
     "templateSelected": "Ausgewählt",
+    "templateFromLogo": "✨ Aus Ihrem Logo vorgeschlagen",
     "brandingHeading": "Ihr Logo & Ihre Farben",
     "brandingIntro": "Laden Sie Ihr Logo hoch, und wir gestalten Ihren Shop damit — und wenn Sie mögen, lässt die KI Ihr Farbschema daraus ableiten.",
     "logoLabel": "Logo (optional)",
@@ -388,7 +388,6 @@
     "logoRemove": "Entfernen",
     "logoReading": "Wird gelesen…",
     "logoColors": "✨ Farben aus dem Logo",
-    "switchTemplate": "Zur Vorlage {{template}} wechseln",
     "brandColor": "Markenfarbe",
     "brandColorHex": "Markenfarbe als Hex-Wert",
     "brandColorHint": "Bestimmt Kopfzeilen, Schaltflächen und Akzente Ihres Shops.",

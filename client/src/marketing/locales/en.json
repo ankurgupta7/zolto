@@ -345,8 +345,7 @@
     "stepsLabel": "Signup steps",
     "steps": {
       "details": "Store details",
-      "template": "Template",
-      "branding": "Branding"
+      "look": "Your look"
     },
     "storeNameLabel": "Store name",
     "storeNamePlaceholder": "Your store name",
@@ -378,8 +377,9 @@
     "createStore": "Create store →",
     "creating": "Creating…",
     "templateHeading": "Pick a template",
-    "templateIntro": "Five looks made for small shops. You can change it any time — and your own colors come next.",
+    "templateIntro": "Five looks made for small shops, each shown in your colors. You can change it any time.",
     "templateSelected": "Selected",
+    "templateFromLogo": "✨ Suggested from your logo",
     "brandingHeading": "Your logo & colors",
     "brandingIntro": "Upload your logo and we’ll brand your store with it — and, if you like, let AI pick your color scheme from it.",
     "logoLabel": "Logo (optional)",
@@ -388,7 +388,6 @@
     "logoRemove": "Remove",
     "logoReading": "Reading…",
     "logoColors": "✨ Colors from logo",
-    "switchTemplate": "Switch to the {{template}} template",
     "brandColor": "Brand color",
     "brandColorHex": "Brand color hex",
     "brandColorHint": "Drives your storefront's headers, buttons, and accents.",

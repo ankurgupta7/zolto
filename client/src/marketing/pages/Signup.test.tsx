@@ -70,6 +70,12 @@ beforeEach(() => {
   mocks.createVars = undefined;
   mocks.createOpts = undefined;
   mocks.aiVars = undefined;
+  mocks.aiResult = {
+    primaryColor: "#A34A24",
+    secondaryColor: null,
+    suggestedTemplateId: "bazaar",
+    rationale: "Warm terracotta with market energy.",
+  };
 });
 
 afterEach(() => {
@@ -88,6 +94,7 @@ function renderSignup() {
   );
 }
 
+/** Fill the details step and land on the single "Your look" step. */
 function fillDetailsAndContinue() {
   fireEvent.change(screen.getByPlaceholderText("Your store name"), {
     target: { value: "Aurora Atelier" },
@@ -98,13 +105,30 @@ function fillDetailsAndContinue() {
   fireEvent.click(screen.getByRole("button", { name: /choose your look/i }));
 }
 
+const hexField = () =>
+  screen.getByLabelText("Brand color hex") as HTMLInputElement;
+
+/** Upload a logo and run the (mocked) AI extraction. */
+async function uploadLogoAndExtract() {
+  const file = new File(["png-bytes"], "logo.png", { type: "image/png" });
+  fireEvent.change(screen.getByLabelText(/logo \(optional\)/i), {
+    target: { files: [file] },
+  });
+  await waitFor(() => screen.getByText("logo.png"));
+  fireEvent.click(screen.getByRole("button", { name: /colors from logo/i }));
+}
+
 describe("Signup wizard", () => {
-  it("gates the template step behind valid store details", () => {
+  it("gates the look step behind valid store details", () => {
     renderSignup();
     const next = screen.getByRole("button", { name: /choose your look/i });
     expect((next as HTMLButtonElement).disabled).toBe(true);
     fillDetailsAndContinue();
-    // Now on step 2: all five templates render as selectable cards.
+    // Logo, color, and all five templates now live on ONE screen — the
+    // decisions inform each other, so splitting them made the merchant's
+    // choice appear to mutate between screens.
+    expect(screen.getByLabelText(/logo \(optional\)/i)).toBeTruthy();
+    expect(hexField()).toBeTruthy();
     expect(screen.getAllByRole("button", { pressed: false }).length).toBe(4);
     expect(screen.getAllByRole("button", { pressed: true }).length).toBe(1);
     expect(screen.getByText("Atelier")).toBeTruthy();
@@ -118,9 +142,6 @@ describe("Signup wizard", () => {
     renderSignup();
     // Default rides along even when the merchant never touches the field.
     fillDetailsAndContinue();
-    fireEvent.click(
-      screen.getByRole("button", { name: /choose your colors/i }),
-    );
     fireEvent.click(screen.getByRole("button", { name: /create store/i }));
     expect(mocks.createVars).toMatchObject({
       vertical: "other",
@@ -148,9 +169,6 @@ describe("Signup wizard", () => {
       { target: { value: "Wheel-thrown stoneware from Bern" } },
     );
     fireEvent.click(screen.getByRole("button", { name: /choose your look/i }));
-    fireEvent.click(
-      screen.getByRole("button", { name: /choose your colors/i }),
-    );
     fireEvent.click(screen.getByRole("button", { name: /create store/i }));
     expect(mocks.createVars).toMatchObject({
       vertical: "ceramics",
@@ -161,9 +179,6 @@ describe("Signup wizard", () => {
   it("sends no migration source when the merchant is starting fresh", () => {
     renderSignup();
     fillDetailsAndContinue();
-    fireEvent.click(
-      screen.getByRole("button", { name: /choose your colors/i }),
-    );
     fireEvent.click(screen.getByRole("button", { name: /create store/i }));
     expect(mocks.createVars).toMatchObject({ migrateFrom: undefined });
   });
@@ -181,9 +196,6 @@ describe("Signup wizard", () => {
       target: { value: "sumup" },
     });
     fireEvent.click(screen.getByRole("button", { name: /choose your look/i }));
-    fireEvent.click(
-      screen.getByRole("button", { name: /choose your colors/i }),
-    );
     fireEvent.click(screen.getByRole("button", { name: /create store/i }));
     expect(mocks.createVars).toMatchObject({ migrateFrom: "sumup" });
   });
@@ -214,24 +226,37 @@ describe("Signup wizard", () => {
     expect(container.textContent).not.toContain("one click");
   });
 
-  it("selecting a template carries its default color into the branding step", () => {
+  it("seeds the color from a template while the merchant hasn't set one", () => {
     renderSignup();
     fillDetailsAndContinue();
     fireEvent.click(screen.getByText("Verdant").closest("button")!);
-    fireEvent.click(
-      screen.getByRole("button", { name: /choose your colors/i }),
-    );
-    const hex = screen.getByLabelText("Brand color hex") as HTMLInputElement;
-    expect(hex.value).toBe("#2F5D3A");
+    expect(hexField().value).toBe("#2F5D3A");
+    fireEvent.click(screen.getByText("Azure").closest("button")!);
+    expect(hexField().value).toBe("#1E4E79");
+  });
+
+  // The bug that motivated merging the steps: a color the merchant (or the AI)
+  // settled must survive every later template change, because a template only
+  // owns the SURFACE variables — it must never silently re-take the ink.
+  it("never overwrites a chosen color when the template changes", () => {
+    renderSignup();
+    fillDetailsAndContinue();
+    fireEvent.change(hexField(), { target: { value: "#123ABC" } });
+    fireEvent.click(screen.getByText("Verdant").closest("button")!);
+    expect(hexField().value).toBe("#123ABC");
+    fireEvent.click(screen.getByText("Porcelain").closest("button")!);
+    expect(hexField().value).toBe("#123ABC");
+    fireEvent.click(screen.getByRole("button", { name: /create store/i }));
+    expect(mocks.createVars).toMatchObject({
+      templateId: "porcelain",
+      primaryColor: "#123ABC",
+    });
   });
 
   it("creates the store with the chosen template and color", () => {
     renderSignup();
     fillDetailsAndContinue();
     fireEvent.click(screen.getByText("Azure").closest("button")!);
-    fireEvent.click(
-      screen.getByRole("button", { name: /choose your colors/i }),
-    );
     fireEvent.click(screen.getByRole("button", { name: /create store/i }));
     expect(mocks.createVars).toMatchObject({
       name: "Aurora Atelier",
@@ -246,10 +271,7 @@ describe("Signup wizard", () => {
   it("respects a manually chosen color and refuses a malformed one", () => {
     renderSignup();
     fillDetailsAndContinue();
-    fireEvent.click(
-      screen.getByRole("button", { name: /choose your colors/i }),
-    );
-    const hex = screen.getByLabelText("Brand color hex") as HTMLInputElement;
+    const hex = hexField();
     fireEvent.change(hex, { target: { value: "#123ABC" } });
     fireEvent.click(screen.getByRole("button", { name: /create store/i }));
     expect(mocks.createVars).toMatchObject({ primaryColor: "#123ABC" });
@@ -261,12 +283,9 @@ describe("Signup wizard", () => {
     expect(mocks.createVars).toBeUndefined();
   });
 
-  it("extracts colors from an uploaded logo via AI and offers the suggested template", async () => {
+  it("applies the AI's color and template suggestion in place, and marks the card", async () => {
     renderSignup();
     fillDetailsAndContinue();
-    fireEvent.click(
-      screen.getByRole("button", { name: /choose your colors/i }),
-    );
 
     const file = new File(["png-bytes"], "logo.png", { type: "image/png" });
     fireEvent.change(screen.getByLabelText(/logo \(optional\)/i), {
@@ -280,13 +299,12 @@ describe("Signup wizard", () => {
     expect(String((mocks.aiVars as { imageData: string }).imageData)).toMatch(
       /^data:image\/png;base64,/,
     );
-    // …and the suggestion lands in the color field + a template hint.
-    const hex = screen.getByLabelText("Brand color hex") as HTMLInputElement;
-    expect(hex.value).toBe("#A34A24");
+    // …and the suggestion is applied on the spot — no "switch template?" prompt.
+    expect(hexField().value).toBe("#A34A24");
     expect(screen.getByText(/terracotta with market energy/i)).toBeTruthy();
-    fireEvent.click(
-      screen.getByRole("button", { name: /switch to the bazaar template/i }),
-    );
+    const bazaar = screen.getByText("Bazaar").closest("button")!;
+    expect(bazaar.getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByText(/suggested from your logo/i)).toBeTruthy();
 
     // The final payload carries logo + AI color + accepted template.
     fireEvent.click(screen.getByRole("button", { name: /create store/i }));
@@ -298,6 +316,38 @@ describe("Signup wizard", () => {
         imageData: expect.stringMatching(/^data:image\/png;base64,/),
       },
     });
+  });
+  it("lets the merchant overrule the AI's template while keeping its color", async () => {
+    renderSignup();
+    fillDetailsAndContinue();
+    await uploadLogoAndExtract();
+    fireEvent.click(screen.getByText("Porcelain").closest("button")!);
+
+    expect(hexField().value).toBe("#A34A24");
+    fireEvent.click(screen.getByRole("button", { name: /create store/i }));
+    expect(mocks.createVars).toMatchObject({
+      templateId: "porcelain",
+      primaryColor: "#A34A24",
+    });
+  });
+
+  it("keeps the merchant's template when the AI has no usable suggestion", async () => {
+    mocks.aiResult = {
+      primaryColor: "#1F2933",
+      secondaryColor: null,
+      suggestedTemplateId: null,
+      rationale: "Cool charcoal.",
+    };
+    renderSignup();
+    fillDetailsAndContinue();
+    fireEvent.click(screen.getByText("Verdant").closest("button")!);
+    await uploadLogoAndExtract();
+
+    expect(hexField().value).toBe("#1F2933");
+    expect(
+      screen.getByText("Verdant").closest("button")!.getAttribute("aria-pressed"),
+    ).toBe("true");
+    expect(screen.queryByText(/suggested from your logo/i)).toBeNull();
   });
 });
 

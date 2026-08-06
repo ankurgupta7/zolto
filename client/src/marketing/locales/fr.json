@@ -345,8 +345,7 @@
     "stepsLabel": "Étapes de l’inscription",
     "steps": {
       "details": "Infos boutique",
-      "template": "Modèle",
-      "branding": "Identité"
+      "look": "Votre look"
     },
     "storeNameLabel": "Nom de la boutique",
     "storeNamePlaceholder": "Le nom de votre boutique",
@@ -378,8 +377,9 @@
     "createStore": "Créer la boutique →",
     "creating": "Création…",
     "templateHeading": "Choisissez un modèle",
-    "templateIntro": "Cinq looks pensés pour les petites boutiques. Vous pouvez en changer à tout moment — et vos propres couleurs viennent juste après.",
+    "templateIntro": "Cinq looks pensés pour les petites boutiques, chacun affiché dans vos couleurs. Vous pouvez en changer à tout moment.",
     "templateSelected": "Sélectionné",
+    "templateFromLogo": "✨ Suggéré d’après votre logo",
     "brandingHeading": "Votre logo et vos couleurs",
     "brandingIntro": "Téléversez votre logo et nous en habillerons votre boutique — et si vous le souhaitez, l’IA en tirera votre palette de couleurs.",
     "logoLabel": "Logo (facultatif)",
@@ -388,7 +388,6 @@
     "logoRemove": "Retirer",
     "logoReading": "Lecture…",
     "logoColors": "✨ Couleurs depuis le logo",
-    "switchTemplate": "Passer au modèle {{template}}",
     "brandColor": "Couleur de marque",
     "brandColorHex": "Couleur de marque en hexadécimal",
     "brandColorHint": "Détermine les en-têtes, les boutons et les accents de votre vitrine.",
