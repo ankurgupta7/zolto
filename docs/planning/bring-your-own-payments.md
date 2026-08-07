@@ -34,10 +34,11 @@ Three things decide how far it goes, and only one of them is hard:
 1. **BYO-Stripe already works.** ✅ `providerMigration.ts` links the Stripe
    account a merchant already owns via Connect, and their checkout keeps
    working. Roughly a third of the idea is shipped.
-2. **The 1% breaks on the others.** The platform fee is a Stripe Connect
-   `application_fee_amount` (`checkoutSession.ts:340`). Payrexx has an
-   equivalent; SumUp and Worldline, on current research, do not ❓. That is a
-   pricing-model consequence, not an integration detail.
+2. **Every provider can pay us a commission — but Worldline can't do it in
+   Switzerland yet.** The platform fee is a Stripe Connect
+   `application_fee_amount` (`checkoutSession.ts:340`). Payrexx and SumUp both
+   have equivalents; Worldline's exists in the EU and is stated as planned for
+   Switzerland ❓ (§5). So the plan-gate question is per-provider, not global.
 3. **In person is four SDKs in two native apps**, and is not worth it. The
    TWINT half of the argument survives BYO for free — see §4.
 
@@ -153,19 +154,53 @@ the entire Free-tier business model
 |---|---|---|
 | **Stripe** | ✅ yes — `application_fee_amount`, shipped | No change. BYO-Stripe works today. |
 | **Payrexx** | ✅ yes — Platform API split rules / commission | Works; confirm the basis excludes shipping ❓ (`swiss-stack-migration.md` §6.4) |
-| **SumUp** | ❓ no partner-commission mechanism found | Invoice-only |
-| **Worldline** | ❓ negotiated, per contract | Invoice-only, probably per-merchant |
+| **SumUp** | ✅ yes — Partner program + Affiliate Key | Works. Rate is a negotiated partner term, not published ❓ |
+| **Worldline** | ✅ yes — "Worldline for Platforms" (powered by OPP) | Mechanism exists, **but EU-only; Switzerland is stated as planned** ❓ |
 
-**Invoicing the 1% is a different and worse business.** Zolto becomes a biller:
+**Researched 2026-08-06, and it changed this section's conclusion.** The first
+draft of this note assumed SumUp and Worldline were invoice-only. Both are not:
+
+- **SumUp** runs a Partner program in which an **Affiliate Key** "associate[s]
+  all merchant account users with the partner, allowing SumUp to enforce agreed
+  terms such as **revenue share** and transaction fees." SumUp collects and
+  remits — the same shape as Stripe's application fee. What differs is that the
+  rate is a negotiated partnership term rather than a number we set per
+  transaction. ⚠️ Not to be confused with SumUp's *affiliate* programme, which
+  is a one-off referral bounty and irrelevant here.
+- **Worldline** offers "Worldline for Platforms", powered by Online Payment
+  Platform (Worldline holds a stake in OPP). Multi-split payments, escrow, and
+  explicitly: *"Platforms can set the payment transaction fees for their users
+  and earn a commission on the fees for their platform."* The catch is
+  geography — it launched in **October 2024 for the EU**, with Switzerland and
+  the UK named as planned expansion, and Worldline's Swiss page still reads that
+  way. ❓ Whether it has since landed in Switzerland could not be verified:
+  worldline.com returns 403 to automated fetching on every page. **Ask them.**
+
+**So the Pro gate is narrower than first thought.** BYO-SumUp could stay on the
+Free plan, because the fee can be taken at source. Worldline is gated by
+availability rather than by mechanism — and if OPP reaches Switzerland, by
+nothing at all.
+
+**Where invoice-only still applies, it is a different and worse business.**
+Zolto becomes a biller:
 it has to compute what it is owed from data it does not hold authoritatively,
 raise an invoice, reconcile payment, and chase non-payment — against merchants
 whose defining characteristic is that they are very small. The failure mode is
 not lost revenue, it is a collections process attached to a product whose pitch
 is that it removes admin.
 
-### The resolution: BYO requires Pro
+### The resolution: Pro only where the fee can't be taken at source
 
-If the fee can't be taken at source, sell a subscription instead.
+Not a blanket rule — it depends on the provider:
+
+| Provider | Plan gate |
+|---|---|
+| Stripe | none — works today |
+| Payrexx | none — commission API |
+| SumUp | none, **if** the negotiated revenue share covers ~1% |
+| Worldline | Pro, or unsupported, until OPP reaches Switzerland |
+
+Where a subscription *is* the answer, this is why it works:
 
 - It is Shopify's structure (BYO costs something) without the punitive framing.
 - It **self-selects honestly**: merchants who already have a payment provider
@@ -243,17 +278,23 @@ to *"we are a payments front end"*.
 
 ## 8. Open questions
 
-### 8.1 The one that decides everything
+### 8.1 ~~The one that decides everything~~ — answered 2026-08-06
 
-**Do SumUp and Worldline offer any partner/platform commission mechanism** that
-lets an integrator take a percentage of a sub-merchant's transaction at source?
-Every other question here is downstream of this one.
+*Do SumUp and Worldline offer a partner commission mechanism?* **Both do** —
+see §5. What replaced it as the deciding question is narrower and specific:
+
+1. **What revenue share will SumUp actually agree** for a platform of Zolto's
+   size? The mechanism is real; the number is a negotiation, and if it lands
+   materially under 1% the economics of BYO-SumUp change.
+2. **Is "Worldline for Platforms" live in Switzerland yet?** Announced EU-only
+   in October 2024 with Switzerland planned. Their site blocks automated
+   checking, so this needs a human asking a salesperson.
 
 ### 8.2 Per provider
 
 | # | Question | Provider |
 |---|---|---|
-| 1 | Partner-commission API, or invoice-only? | SumUp, Worldline |
+| 1 | What revenue-share percentage, and is it per-merchant negotiable? | SumUp |
 | 2 | Can commission be computed on the product subtotal **excluding shipping**, as `checkoutSession.ts` does today? | Payrexx, SumUp, Worldline |
 | 3 | Is there a read API for settled transactions, for `reconciliation.ts`? | SumUp, Worldline, Payrexx |
 | 4 | Who bears the commission on a refund or partial refund? | all |
@@ -274,8 +315,10 @@ Every other question here is downstream of this one.
 
 ## 9. What would make this a bad idea
 
-- **Step 1 comes back "invoice-only" for both**, and the Pro gate turns out to
-  suppress adoption among exactly the merchants BYO was meant to attract.
+- **SumUp's negotiated revenue share comes in well under 1%**, so BYO-SumUp
+  either loses money against the house rail or needs the Pro gate after all —
+  which may suppress adoption among exactly the merchants BYO was meant to
+  attract.
 - **The support surface quadruples before there are merchants to support it.**
   Four providers × onboarding × webhooks × refunds × payouts × chargebacks, for
   a company whose own comparison page concedes it has no track record. Sequence
@@ -301,3 +344,11 @@ Every other question here is downstream of this one.
 - [`roadmap-backlog.md`](./roadmap-backlog.md) §1 — migrate-in, already captured
 - [Shopify — Payment provider fees](https://help.shopify.com/en/manual/payments/third-party-providers)
   (third-party gateway fees on top of the gateway's own charge)
+- [SumUp — Affiliate Keys (developer docs)](https://developer.sumup.com/tools/authorization/affiliate-keys)
+  — revenue share as an enforced partner term
+- [SumUp — Become a partner](https://www.sumup.com/en-mt/partner/)
+- [Worldline — Payments for platforms](https://worldline.com/en/home/main-navigation/solutions/merchants/payments-for-platforms)
+- [Worldline + OPP — Embedded Payments launch, October 2024](https://onlinepaymentplatform.com/about-us/press/worldline-and-opp-unveil-groundbreaking-embedded-payments-solution-for-platforms-and-marketplaces-in-europe)
+  — EU first, Switzerland and the UK named as planned
+- [Worldline — Marketplace integration guide](https://support.legacy.worldline-solutions.com/en/integration-solutions/marketplace/marketplace-guide)
+  — legacy split-to-commission-account API
