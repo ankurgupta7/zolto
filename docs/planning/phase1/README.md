@@ -85,3 +85,12 @@ This folder contains everything needed to execute Phase 1 of the Zolto business 
 > **"Don't worry. Even if the world forgets, I'll remember for you."**
 >
 > Everything is in this folder. Start with `tracker.md`. 🖤
+
+## Instagram short (added 2026-08-06)
+
+[`marketing/instagram-short-brief.md`](./marketing/instagram-short-brief.md) is
+the shareable brief for an outside artist: the pitch in three lengths, a
+30-second shot list, the brand palette and type, and — most importantly — the
+list of claims we may **not** make. Hand it over whole; §5 exists because a
+copywriter's instinct is to reach for "cheapest", and on card rate we are the
+most expensive option on our own comparison table.

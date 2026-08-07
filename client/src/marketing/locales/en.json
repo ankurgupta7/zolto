@@ -910,16 +910,32 @@
           "You'd rather photograph your notebook than type a catalogue in by hand."
         ],
         "capabilities": {
-          "swiss": "Yes",
           "no-hardware": "Yes — Tap to Pay, iPhone XS and later / Android 11+",
-          "item-grid": "Yes — Selling Layouts, categories, SKUs, variants and images. Better developed than Zolto's on pure till features.",
-          "stock-in-person": "Yes, including low-stock alerts and a “Sold out” label",
-          "stock-shared": "Yes — SumUp states the till and Online Store sync automatically. Stock updates when a sale completes, rather than when a checkout starts.",
+          "item-grid": "Yes — Selling Layouts, categories, SKUs, variants and images, in the free app. More developed than Zolto's.",
           "twint": "No",
           "postfinance": "No",
-          "builds-storefront": "No — a template store builder you fill in yourself",
-          "setup": "Under an hour",
-          "who-holds-money": "SumUp settles to your bank in 2–3 days"
+          "stock-in-person": "Yes, including low-stock alerts and a “Sold out” label",
+          "sell-by-amount": "You can charge an amount, but nothing reconciles it afterwards",
+          "online-store": "Yes — a basic online store and payment links",
+          "builds-storefront": "No — a template you fill in yourself",
+          "stock-shared": "Yes — SumUp states the till and Online Store sync automatically. Stock updates when a sale completes, not when a checkout starts.",
+          "multilingual": "You write every listing, in every language, yourself",
+          "setup": "Under an hour — faster than ours",
+          "ai-listings": "No",
+          "ai-photography": "No",
+          "ai-intake": "No — you build the catalogue by hand",
+          "ai-support": "No",
+          "ai-insights": "Sales reports and a dashboard — figures, not a read on them",
+          "ai-discovery": "No",
+          "agent-checkout": "No",
+          "who-holds-money": "SumUp settles to your bank in 2–3 days",
+          "card-rate": "0.99% domestic on Payments Plus, or 1.5% debit / 2.5% credit pay-as-you-go — cheaper than ours either way",
+          "commitment": "No contract; a reader is CHF 49–99 if you want one",
+          "swiss": "Available in Switzerland; your contract is with SumUp Limited in Dublin, an EU-regulated e-money institution"
+        },
+        "costs": {
+          "item-grid": "Free — no terminal needed",
+          "card-rate": "0.99% needs Payments Plus at CHF 29/month, owed whether or not you sell"
         }
       },
       "shopify": {
@@ -950,21 +966,39 @@
           "You want to be selling this weekend rather than after a sales process."
         ],
         "capabilities": {
-          "swiss": "Yes — the incumbent, via SIX Payment Services",
           "no-hardware": "Yes — Tap on Mobile, iPhone / Android 12+",
-          "item-grid": "No — payment-only. It integrates app-to-app with third-party till software.",
-          "stock-in-person": "Not applicable — there is no catalogue to track against",
-          "stock-shared": "No online store; Saferpay is a gateway for a site you build",
+          "item-grid": "Not on Tap on Mobile — it is payment-only, so you type an amount each time. It integrates app-to-app with third-party till software.",
           "twint": "Yes",
-          "postfinance": "Yes",
+          "postfinance": "Yes — the only one of the three that supports it",
+          "stock-in-person": "Not applicable — there is no catalogue to count against",
+          "sell-by-amount": "Typing an amount is the only mode",
+          "online-store": "No shop — Saferpay is a checkout gateway you bolt onto a site you commission",
           "builds-storefront": "No",
-          "setup": "Individual quote — onboarding is a sales process",
-          "who-holds-money": "Worldline settles per contract"
+          "stock-shared": "No online store to share stock with",
+          "multilingual": "Whatever your own site does",
+          "setup": "Up to a week to activate the acceptance contract, after a document pack: commercial-register extract, ID, bank details, financial statements",
+          "ai-listings": "No",
+          "ai-photography": "No",
+          "ai-intake": "No",
+          "ai-support": "No",
+          "ai-insights": "Merchant reporting — figures, not a read on them",
+          "ai-discovery": "No",
+          "agent-checkout": "No",
+          "who-holds-money": "Worldline settles per contract",
+          "card-rate": "Tap on Mobile is 1.7% flat with no monthly fee — cheaper than ours, and it takes TWINT. Terminals are interchange++, negotiated.",
+          "commitment": "Negotiated contract; terminal contracts typically multi-year",
+          "swiss": "The Swiss incumbent, via SIX Payment Services — though SIX has since written the holding down and given up its board seat"
         },
         "risks": [
           "S&P downgraded Worldline to BB — below investment grade — in August 2025, citing weaker-than-expected operating performance, with a negative outlook.",
           "SIX Group, which bought 27% of Worldline as part of the SIX Payment Services deal, booked an impairment of roughly CHF 550 million in November 2025, declined to take part in Worldline's capital increase, gave up its board seat, and reclassified the holding from a strategic to a financial investment."
-        ]
+        ],
+        "costs": {
+          "item-grid": "A catalogue means buying and integrating separate till software",
+          "online-store": "Saferpay Go / Easy / Flex at CHF 9.95 / 19.95 / 39.95 per month plus a one-time CHF 49–299, on top of acquiring — and you still pay someone to build the site",
+          "setup": "Sales-led onboarding, not self-serve",
+          "card-rate": "Terminal pricing is a negotiation, and terminal contracts are typically multi-year"
+        }
       }
     },
     "templates": {
@@ -1136,10 +1170,6 @@
       }
     },
     "capabilities": {
-      "swiss": {
-        "label": "Available in Switzerland",
-        "zolto": "Yes — built in Zürich, priced in CHF"
-      },
       "no-hardware": {
         "label": "Takes a payment with no hardware to buy",
         "zolto": "Yes — Tap to Pay on the phone you already own"
@@ -1148,33 +1178,85 @@
         "label": "Your catalogue as a grid in the till",
         "zolto": "Yes — photo, name and price for every piece"
       },
-      "stock-in-person": {
-        "label": "Stock tracked as you sell in person",
-        "zolto": "Yes"
-      },
-      "stock-shared": {
-        "label": "One stock count across the stall and the shop",
-        "zolto": "Yes — with a short-lived hold while a customer is in checkout"
-      },
       "twint": {
-        "label": "TWINT",
-        "zolto": "Yes — in the same till as cards and cash"
+        "label": "TWINT in the same till",
+        "zolto": "Yes — beside cards and cash, on one screen"
       },
       "postfinance": {
         "label": "PostFinance Pay",
         "zolto": "No"
       },
+      "stock-in-person": {
+        "label": "Stock counts down as you sell in person",
+        "zolto": "Yes"
+      },
+      "sell-by-amount": {
+        "label": "Sell by amount when it's busy, tidy it up later",
+        "zolto": "Yes — take the tap without tagging the item; at close of day Zolto emails its best guess and one tap confirms it"
+      },
+      "online-store": {
+        "label": "A real online shop, not a payment link",
+        "zolto": "Yes — themed storefront on your own address, Swiss and EU shipping"
+      },
       "builds-storefront": {
-        "label": "Builds the online shop for you",
-        "zolto": "Yes — AI theme, copy and product photography"
+        "label": "Somebody builds the shop for you",
+        "zolto": "Yes — the AI drafts the theme, the copy and the photography"
+      },
+      "stock-shared": {
+        "label": "One stock count across the stall and the shop",
+        "zolto": "Yes — with a short-lived hold while a customer is in checkout"
+      },
+      "multilingual": {
+        "label": "Listings in German, French, Italian and English",
+        "zolto": "Yes — written and translated for you, not by you"
       },
       "setup": {
         "label": "Time to your first sale",
         "zolto": "Same day"
       },
+      "ai-listings": {
+        "label": "Titles and descriptions written for you",
+        "zolto": "Yes — from a photo, in every language you sell in"
+      },
+      "ai-photography": {
+        "label": "One phone photo becomes a catalogue shot",
+        "zolto": "Yes — restyled into a clean product or on-model image, disclosed as AI-styled"
+      },
+      "ai-intake": {
+        "label": "Get stock in without typing it",
+        "zolto": "Yes — photograph a handwritten list, or send a photo and a price to WhatsApp, Slack or Discord"
+      },
+      "ai-support": {
+        "label": "Something answers customer questions for you",
+        "zolto": "Yes — materials, shipping and sizing, without you at the keyboard"
+      },
+      "ai-insights": {
+        "label": "Plain-language read on what's selling",
+        "zolto": "Yes — best sellers and restock needs, in sentences (Pro)"
+      },
+      "ai-discovery": {
+        "label": "AI assistants can read your shop",
+        "zolto": "Yes — every store ships an llms.txt and an MCP endpoint"
+      },
+      "agent-checkout": {
+        "label": "An assistant can pick a piece and open a checkout",
+        "zolto": "Yes — it checks live stock over MCP and hands your customer a checkout to complete"
+      },
       "who-holds-money": {
         "label": "Who holds your money",
         "zolto": "Nobody but you — straight into your own Stripe and TWINT accounts"
+      },
+      "card-rate": {
+        "label": "What a card costs you",
+        "zolto": "2.9% + CHF 0.20 — Stripe's Swiss rate, and we add nothing to it"
+      },
+      "commitment": {
+        "label": "What you sign",
+        "zolto": "Nothing — month to month, and one-click export on every plan"
+      },
+      "swiss": {
+        "label": "Built and run where you are",
+        "zolto": "Built in Zürich; servers in Europe, mostly Germany"
       }
     },
     "limitations": [
@@ -1243,7 +1325,13 @@
           }
         ]
       }
-    ]
+    ],
+    "capabilityGroups": {
+      "The till": "The till",
+      "The shop": "The shop",
+      "The AI": "The AI",
+      "The money": "The money"
+    }
   },
   "sovereignty": {
     "state": {

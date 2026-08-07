@@ -1117,78 +1117,210 @@ export type Support = boolean | "partial" | "n/a";
  * — including the two it answers badly (no PostFinance Pay, and a slower setup
  * than SumUp's).
  */
+/**
+ * The sections of the capability matrix, in reading order.
+ *
+ * The matrix was ten payment-shaped rows, which quietly conceded the frame:
+ * it compared Zolto to payment companies on payment questions, where the best
+ * available outcome is a tie. The product is a till, a shop, one inventory and
+ * an AI that runs all three — so the matrix now asks about all of it, grouped,
+ * and the payment section is one of four rather than the whole thing.
+ */
+export const CAPABILITY_GROUPS = [
+  "The till",
+  "The shop",
+  "The AI",
+  "The money",
+] as const;
+export type CapabilityGroup = (typeof CAPABILITY_GROUPS)[number];
+
 export interface Capability {
   /** Stable id used to align a competitor's answer with this row. */
   key: string;
+  group: CapabilityGroup;
   label: string;
   zolto: string;
   zoltoSupported: Support;
 }
 
 export const CAPABILITIES: Capability[] = [
-  {
-    key: "swiss",
-    label: "Available in Switzerland",
-    zolto: "Yes — built in Zürich, priced in CHF",
-    zoltoSupported: true,
-  },
+  // ── The till ───────────────────────────────────────────────────────────
   {
     key: "no-hardware",
+    group: "The till",
     label: "Takes a payment with no hardware to buy",
     zolto: "Yes — Tap to Pay on the phone you already own",
     zoltoSupported: true,
   },
   {
     key: "item-grid",
+    group: "The till",
     label: "Your catalogue as a grid in the till",
     zolto: "Yes — photo, name and price for every piece",
     zoltoSupported: true,
   },
   {
-    key: "stock-in-person",
-    label: "Stock tracked as you sell in person",
-    zolto: "Yes",
-    zoltoSupported: true,
-  },
-  {
-    key: "stock-shared",
-    label: "One stock count across the stall and the shop",
-    zolto: "Yes — with a short-lived hold while a customer is in checkout",
-    zoltoSupported: true,
-  },
-  {
     key: "twint",
-    label: "TWINT",
-    zolto: "Yes — in the same till as cards and cash",
+    group: "The till",
+    label: "TWINT in the same till",
+    zolto: "Yes — beside cards and cash, on one screen",
     zoltoSupported: true,
   },
   {
     // Zolto answers this one badly, on purpose. A matrix that only asks
     // questions we win is a scorecard we wrote for ourselves.
     key: "postfinance",
+    group: "The till",
     label: "PostFinance Pay",
     zolto: "No",
     zoltoSupported: false,
   },
   {
+    key: "stock-in-person",
+    group: "The till",
+    label: "Stock counts down as you sell in person",
+    zolto: "Yes",
+    zoltoSupported: true,
+  },
+  {
+    key: "sell-by-amount",
+    group: "The till",
+    label: "Sell by amount when it's busy, tidy it up later",
+    zolto:
+      "Yes — take the tap without tagging the item; at close of day Zolto emails its best guess and one tap confirms it",
+    zoltoSupported: true,
+  },
+
+  // ── The shop ───────────────────────────────────────────────────────────
+  {
+    key: "online-store",
+    group: "The shop",
+    label: "A real online shop, not a payment link",
+    zolto: "Yes — themed storefront on your own address, Swiss and EU shipping",
+    zoltoSupported: true,
+  },
+  {
     key: "builds-storefront",
-    label: "Builds the online shop for you",
-    zolto: "Yes — AI theme, copy and product photography",
+    group: "The shop",
+    label: "Somebody builds the shop for you",
+    zolto: "Yes — the AI drafts the theme, the copy and the photography",
+    zoltoSupported: true,
+  },
+  {
+    key: "stock-shared",
+    group: "The shop",
+    label: "One stock count across the stall and the shop",
+    zolto: "Yes — with a short-lived hold while a customer is in checkout",
+    zoltoSupported: true,
+  },
+  {
+    key: "multilingual",
+    group: "The shop",
+    label: "Listings in German, French, Italian and English",
+    zolto: "Yes — written and translated for you, not by you",
     zoltoSupported: true,
   },
   {
     key: "setup",
+    group: "The shop",
     label: "Time to your first sale",
     zolto: "Same day",
     zoltoSupported: true,
   },
+
+  // ── The AI ─────────────────────────────────────────────────────────────
+  {
+    key: "ai-listings",
+    group: "The AI",
+    label: "Titles and descriptions written for you",
+    zolto: "Yes — from a photo, in every language you sell in",
+    zoltoSupported: true,
+  },
+  {
+    key: "ai-photography",
+    group: "The AI",
+    label: "One phone photo becomes a catalogue shot",
+    zolto:
+      "Yes — restyled into a clean product or on-model image, disclosed as AI-styled",
+    zoltoSupported: true,
+  },
+  {
+    key: "ai-intake",
+    group: "The AI",
+    label: "Get stock in without typing it",
+    zolto:
+      "Yes — photograph a handwritten list, or send a photo and a price to WhatsApp, Slack or Discord",
+    zoltoSupported: true,
+  },
+  {
+    key: "ai-support",
+    group: "The AI",
+    label: "Something answers customer questions for you",
+    zolto: "Yes — materials, shipping and sizing, without you at the keyboard",
+    zoltoSupported: true,
+  },
+  {
+    key: "ai-insights",
+    group: "The AI",
+    label: "Plain-language read on what's selling",
+    zolto: "Yes — best sellers and restock needs, in sentences (Pro)",
+    zoltoSupported: true,
+  },
+
+  // ── Found and bought by AI ─────────────────────────────────────────────
+  {
+    key: "ai-discovery",
+    group: "The AI",
+    label: "AI assistants can read your shop",
+    zolto: "Yes — every store ships an llms.txt and an MCP endpoint",
+    zoltoSupported: true,
+  },
+  {
+    key: "agent-checkout",
+    group: "The AI",
+    label: "An assistant can pick a piece and open a checkout",
+    zolto:
+      "Yes — it checks live stock over MCP and hands your customer a checkout to complete",
+    zoltoSupported: true,
+  },
+
+  // ── The money ──────────────────────────────────────────────────────────
   {
     key: "who-holds-money",
+    group: "The money",
     label: "Who holds your money",
     zolto: "Nobody but you — straight into your own Stripe and TWINT accounts",
     zoltoSupported: true,
   },
+  {
+    key: "card-rate",
+    group: "The money",
+    label: "What a card costs you",
+    // The row we lose, stated as a figure rather than a shrug. Sourced from
+    // costOfAcceptance's `zolto-card`, so it can't drift from the rate table.
+    zolto: "2.9% + CHF 0.20 — Stripe's Swiss rate, and we add nothing to it",
+    zoltoSupported: false,
+  },
+  {
+    key: "commitment",
+    group: "The money",
+    label: "What you sign",
+    zolto: "Nothing — month to month, and one-click export on every plan",
+    zoltoSupported: true,
+  },
+  {
+    key: "swiss",
+    group: "The money",
+    label: "Built and run where you are",
+    zolto: "Built in Zürich; servers in Europe, mostly Germany",
+    zoltoSupported: true,
+  },
 ];
+
+/** Rows in one section, in declaration order. */
+export function capabilitiesInGroup(group: CapabilityGroup): Capability[] {
+  return CAPABILITIES.filter((c) => c.group === group);
+}
 
 export function capability(key: string): Capability {
   const found = CAPABILITIES.find((c) => c.key === key);
@@ -1200,6 +1332,19 @@ export interface CompetitorCapability {
   key: string;
   value: string;
   supported: Support;
+  /**
+   * What the tick costs, where a competitor does have the capability but only
+   * behind hardware, a subscription or a contract.
+   *
+   * This is the field that makes the matrix worth publishing. A column of ✕
+   * against a column of ✓ is a scorecard nobody believes; *"yes — but on a
+   * terminal, on a contract, after a week of paperwork"* is both more honest
+   * and more damaging, because the reader can check it. Only ever set it with
+   * a `costSourceId` — an unsourced cost is exactly the kind of claim the
+   * August 2026 review was written to remove.
+   */
+  cost?: string;
+  costSourceId?: string;
 }
 
 export interface Competitor {
@@ -1296,41 +1441,109 @@ export const COMPETITORS: Competitor[] = [
       "You'd rather photograph your notebook than type a catalogue in by hand.",
     ],
     capabilities: [
-      { key: "swiss", value: "Yes", supported: true },
+      // ── The till ──
       {
         key: "no-hardware",
         value: "Yes — Tap to Pay, iPhone XS and later / Android 11+",
         supported: true,
       },
       {
+        // The row SumUp wins, kept in SumUp's own words. Their item catalogue
+        // is in the FREE app — not, as is sometimes assumed, behind a terminal
+        // purchase — and it is more developed than ours. Checked before
+        // publishing precisely because the opposite claim would be disproved
+        // by one click on their pricing page.
         key: "item-grid",
         value:
-          "Yes — Selling Layouts, categories, SKUs, variants and images. Better developed than Zolto's on pure till features.",
+          "Yes — Selling Layouts, categories, SKUs, variants and images, in the free app. More developed than Zolto's.",
         supported: true,
+        cost: "Free — no terminal needed",
+        costSourceId: "sumup-pos-software",
       },
+      { key: "twint", value: "No", supported: false },
+      { key: "postfinance", value: "No", supported: false },
       {
         key: "stock-in-person",
         value: "Yes, including low-stock alerts and a “Sold out” label",
         supported: true,
       },
       {
-        key: "stock-shared",
-        value:
-          "Yes — SumUp states the till and Online Store sync automatically. Stock updates when a sale completes, rather than when a checkout starts.",
+        key: "sell-by-amount",
+        value: "You can charge an amount, but nothing reconciles it afterwards",
+        supported: "partial",
+      },
+
+      // ── The shop ──
+      {
+        key: "online-store",
+        value: "Yes — a basic online store and payment links",
         supported: true,
       },
-      { key: "twint", value: "No", supported: false },
-      { key: "postfinance", value: "No", supported: false },
       {
         key: "builds-storefront",
-        value: "No — a template store builder you fill in yourself",
+        value: "No — a template you fill in yourself",
         supported: false,
       },
-      { key: "setup", value: "Under an hour", supported: true },
+      {
+        key: "stock-shared",
+        value:
+          "Yes — SumUp states the till and Online Store sync automatically. Stock updates when a sale completes, not when a checkout starts.",
+        supported: true,
+      },
+      {
+        key: "multilingual",
+        value: "You write every listing, in every language, yourself",
+        supported: false,
+      },
+      {
+        key: "setup",
+        value: "Under an hour — faster than ours",
+        supported: true,
+      },
+
+      // ── The AI ──
+      { key: "ai-listings", value: "No", supported: false },
+      { key: "ai-photography", value: "No", supported: false },
+      {
+        key: "ai-intake",
+        value: "No — you build the catalogue by hand",
+        supported: false,
+      },
+      { key: "ai-support", value: "No", supported: false },
+      {
+        key: "ai-insights",
+        value: "Sales reports and a dashboard — figures, not a read on them",
+        supported: "partial",
+      },
+      { key: "ai-discovery", value: "No", supported: false },
+      { key: "agent-checkout", value: "No", supported: false },
+
+      // ── The money ──
       {
         key: "who-holds-money",
         value: "SumUp settles to your bank in 2–3 days",
         supported: "partial",
+      },
+      {
+        key: "card-rate",
+        // The row they beat us on, in their favour, with the catch attached
+        // rather than omitted.
+        value:
+          "0.99% domestic on Payments Plus, or 1.5% debit / 2.5% credit pay-as-you-go — cheaper than ours either way",
+        supported: true,
+        cost: "0.99% needs Payments Plus at CHF 29/month, owed whether or not you sell",
+        costSourceId: "sumup-pos-lite",
+      },
+      {
+        key: "commitment",
+        value: "No contract; a reader is CHF 49–99 if you want one",
+        supported: true,
+      },
+      {
+        key: "swiss",
+        value:
+          "Available in Switzerland; your contract is with SumUp Limited in Dublin, an EU-regulated e-money institution",
+        supported: true,
       },
     ],
     rateIds: [
@@ -1380,11 +1593,7 @@ export const COMPETITORS: Competitor[] = [
       "You want to be selling this weekend rather than after a sales process.",
     ],
     capabilities: [
-      {
-        key: "swiss",
-        value: "Yes — the incumbent, via SIX Payment Services",
-        supported: true,
-      },
+      // ── The till ──
       {
         key: "no-hardware",
         value: "Yes — Tap on Mobile, iPhone / Android 12+",
@@ -1393,31 +1602,94 @@ export const COMPETITORS: Competitor[] = [
       {
         key: "item-grid",
         value:
-          "No — payment-only. It integrates app-to-app with third-party till software.",
+          "Not on Tap on Mobile — it is payment-only, so you type an amount each time. It integrates app-to-app with third-party till software.",
         supported: false,
+        cost: "A catalogue means buying and integrating separate till software",
+        costSourceId: "worldline-tap-on-mobile",
+      },
+      { key: "twint", value: "Yes", supported: true },
+      {
+        key: "postfinance",
+        value: "Yes — the only one of the three that supports it",
+        supported: true,
       },
       {
         key: "stock-in-person",
-        value: "Not applicable — there is no catalogue to track against",
+        value: "Not applicable — there is no catalogue to count against",
         supported: "n/a",
       },
       {
-        key: "stock-shared",
-        value: "No online store; Saferpay is a gateway for a site you build",
-        supported: false,
+        key: "sell-by-amount",
+        value: "Typing an amount is the only mode",
+        supported: "n/a",
       },
-      { key: "twint", value: "Yes", supported: true },
-      { key: "postfinance", value: "Yes", supported: true },
+
+      // ── The shop ──
+      {
+        key: "online-store",
+        value:
+          "No shop — Saferpay is a checkout gateway you bolt onto a site you commission",
+        supported: false,
+        cost: "Saferpay Go / Easy / Flex at CHF 9.95 / 19.95 / 39.95 per month plus a one-time CHF 49–299, on top of acquiring — and you still pay someone to build the site",
+        costSourceId: "worldline-saferpay-prices",
+      },
       { key: "builds-storefront", value: "No", supported: false },
       {
+        key: "stock-shared",
+        value: "No online store to share stock with",
+        supported: false,
+      },
+      {
+        key: "multilingual",
+        value: "Whatever your own site does",
+        supported: "n/a",
+      },
+      {
         key: "setup",
-        value: "Individual quote — onboarding is a sales process",
+        value:
+          "Up to a week to activate the acceptance contract, after a document pack: commercial-register extract, ID, bank details, financial statements",
+        supported: "partial",
+        cost: "Sales-led onboarding, not self-serve",
+        costSourceId: "worldline-ch-selfonboarding",
+      },
+
+      // ── The AI ──
+      { key: "ai-listings", value: "No", supported: false },
+      { key: "ai-photography", value: "No", supported: false },
+      { key: "ai-intake", value: "No", supported: false },
+      { key: "ai-support", value: "No", supported: false },
+      {
+        key: "ai-insights",
+        value: "Merchant reporting — figures, not a read on them",
         supported: "partial",
       },
+      { key: "ai-discovery", value: "No", supported: false },
+      { key: "agent-checkout", value: "No", supported: false },
+
+      // ── The money ──
       {
         key: "who-holds-money",
         value: "Worldline settles per contract",
         supported: "partial",
+      },
+      {
+        key: "card-rate",
+        value:
+          "Tap on Mobile is 1.7% flat with no monthly fee — cheaper than ours, and it takes TWINT. Terminals are interchange++, negotiated.",
+        supported: true,
+        cost: "Terminal pricing is a negotiation, and terminal contracts are typically multi-year",
+        costSourceId: "moneyland-merchant-fees",
+      },
+      {
+        key: "commitment",
+        value: "Negotiated contract; terminal contracts typically multi-year",
+        supported: false,
+      },
+      {
+        key: "swiss",
+        value:
+          "The Swiss incumbent, via SIX Payment Services — though SIX has since written the holding down and given up its board seat",
+        supported: true,
       },
     ],
     rateIds: ["worldline-tap-on-mobile"],

@@ -4,10 +4,8 @@ import { useDocumentMeta } from "../lib/useDocumentMeta";
 import {
   COMPETITORS,
   findCompetitor,
-  INCUMBENT_COMPARISON,
   PLATFORM,
   PRICING_PROMISE,
-  REVENUE_SHARE,
   BUYER_FIT,
   ZOLTO_LIMITATIONS,
 } from "@shared/platform";
@@ -161,62 +159,13 @@ export default function Compare() {
         </p>
       </div>
 
-      {/* The model comparison — shared rows, so it can't drift from the landing page. */}
-      <div className="mx-auto mt-14 max-w-3xl overflow-x-auto">
-        <table className="w-full border-collapse text-left text-sm">
-          <caption className="sr-only">
-            {t("compare.tableCaption", { name: PLATFORM.name })}
-          </caption>
-          <thead>
-            <tr className="border-b border-[var(--brand-border)]">
-              <th scope="col" className="py-3 pr-4 font-medium">
-                &nbsp;
-              </th>
-              <th
-                scope="col"
-                className="py-3 pr-4 font-medium text-[var(--brand-muted-2)]"
-              >
-                {t("compare.traditionalWay")}
-              </th>
-              <th
-                scope="col"
-                className="py-3 font-medium text-[var(--brand-ink)]"
-              >
-                {PLATFORM.name}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {INCUMBENT_COMPARISON.map((row) => (
-              <tr
-                key={row.feature}
-                className="border-b border-[var(--brand-border)]/60"
-              >
-                <th
-                  scope="row"
-                  className="py-4 pr-4 align-top font-medium text-[var(--brand-text)]"
-                >
-                  {st(`comparison.${row.feature}.feature`, row.feature)}
-                </th>
-                <td className="py-4 pr-4 align-top text-[var(--brand-muted-2)]">
-                  {st(`comparison.${row.feature}.them`, row.them)}
-                </td>
-                <td className="py-4 align-top text-[var(--brand-ink)]">
-                  {st(`comparison.${row.feature}.us`, row.us)}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <p className="mt-4 text-xs text-[var(--brand-muted)]">
-          {t("compare.rateNote", {
-            name: PLATFORM.name,
-            competitor: competitor.name,
-            percent: REVENUE_SHARE.percentLabel,
-            appliesTo: st("revenueShare.appliesTo", REVENUE_SHARE.appliesTo),
-          })}
-        </p>
-      </div>
+      {/* The generic "old guard vs Zolto" table used to sit here. It was
+          removed once the capability matrix widened from ten payment rows to
+          the whole product: on a page about ONE named competitor, a generic
+          seven-row table directly above a specific twenty-two-row one is the
+          same argument told twice, the second time better. INCUMBENT_COMPARISON
+          still renders on the landing page, where the reader hasn't picked a
+          competitor yet and the generic version is the right altitude. */}
 
       {/* What each product actually does, row by row — including the row
           Zolto loses. Only rendered for competitors we researched to that

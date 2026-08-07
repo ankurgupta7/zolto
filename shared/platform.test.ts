@@ -26,6 +26,8 @@ import {
   SOVEREIGNTY_STATE_LABEL,
   sovereigntyByState,
   CAPABILITIES,
+  CAPABILITY_GROUPS,
+  capabilitiesInGroup,
   capability,
   findCompetitor,
   ZOLTO_LIMITATIONS,
@@ -634,11 +636,76 @@ describe("the capability matrix", () => {
     }
   });
 
-  it("includes at least one row Zolto loses", () => {
+  it("includes the rows Zolto loses", () => {
     // A matrix that only asks questions we win is a scorecard we wrote for
-    // ourselves. PostFinance Pay is the honest "no".
-    expect(CAPABILITIES.some((c) => c.zoltoSupported === false)).toBe(true);
+    // ourselves. Two rows are honest nos: PostFinance Pay, and the card rate,
+    // which is the dearest on our own comparison table.
     expect(capability("postfinance").zoltoSupported).toBe(false);
+    expect(capability("card-rate").zoltoSupported).toBe(false);
+  });
+
+  it("asks about the whole product, not only about payments", () => {
+    // The matrix was ten payment-shaped rows, which conceded the frame: it
+    // compared Zolto to payment companies on payment questions, where the best
+    // available outcome is a tie. Zolto is a till, a shop, one inventory and an
+    // AI running all three.
+    for (const group of CAPABILITY_GROUPS) {
+      expect(capabilitiesInGroup(group).length).toBeGreaterThan(0);
+    }
+    const money = capabilitiesInGroup("The money").length;
+    expect(CAPABILITIES.length - money).toBeGreaterThan(money * 2);
+    const keys = CAPABILITIES.map((c) => c.key);
+    for (const k of [
+      "online-store",
+      "ai-photography",
+      "ai-intake",
+      "ai-discovery",
+      "agent-checkout",
+    ]) {
+      expect(keys).toContain(k);
+    }
+  });
+
+  it("gives every row a group, and every group a row", () => {
+    for (const c of CAPABILITIES) {
+      expect(CAPABILITY_GROUPS).toContain(c.group);
+    }
+    expect(
+      CAPABILITIES.flatMap((c) => capabilitiesInGroup(c.group)).length,
+    ).toBeGreaterThanOrEqual(CAPABILITIES.length);
+  });
+
+  it("keeps the card-rate row in step with the rate table", () => {
+    // The figure is quoted in copy, so it has to match what costOfAcceptance
+    // actually models — otherwise the matrix and the pricing page disagree.
+    const card = rate("zolto-card");
+    expect(capability("card-rate").zolto).toContain(`${card.percent}%`);
+    expect(capability("card-rate").zolto).toContain(
+      `CHF ${card.fixedChf.toFixed(2)}`,
+    );
+  });
+
+  it("never quotes a cost-of-tick without a source", () => {
+    // The provenance rule, applied to the newest place a figure can hide.
+    for (const c of COMPETITORS) {
+      for (const answer of c.capabilities ?? []) {
+        if (!answer.cost) continue;
+        expect(answer.costSourceId, `${c.id}.${answer.key}`).toBeTruthy();
+        expect(() => source(answer.costSourceId!)).not.toThrow();
+      }
+    }
+  });
+
+  it("concedes SumUp's catalogue is free and better than ours", () => {
+    // The claim most tempting to get wrong: that SumUp's grid needs a paid
+    // terminal. It doesn't — it's in the free app — and saying otherwise would
+    // be disproved by one click on their own page.
+    const grid = findCompetitor("sumup")!.capabilities!.find(
+      (c) => c.key === "item-grid",
+    )!;
+    expect(grid.supported).toBe(true);
+    expect(grid.value).toMatch(/free app/i);
+    expect(grid.value).toMatch(/more developed than Zolto/i);
   });
 
   it("answers every row for every competitor that publishes a matrix", () => {
