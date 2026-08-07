@@ -1,9 +1,10 @@
 import { describe, it, expect, afterEach } from "vitest";
-import { render, screen, cleanup } from "@testing-library/react";
+import { render, screen, within, cleanup } from "@testing-library/react";
 import { Route, Router } from "wouter";
 import { memoryLocation } from "wouter/memory-location";
 import Compare from "./Compare";
 import { COMPETITORS, INCUMBENT_COMPARISON } from "@shared/platform";
+import { source } from "@shared/sources";
 
 afterEach(cleanup);
 
@@ -59,18 +60,45 @@ describe("Compare — per competitor", () => {
     }
   });
 
-  it("renders the shared comparison rows", () => {
-    renderCompare("/compare/zolto-vs-stripe");
+  it("tells the argument once, in its specific form", () => {
+    // The generic seven-row "old guard vs Zolto" table used to sit above the
+    // capability matrix. Once the matrix widened from ten payment rows to the
+    // whole product, that was the same argument told twice on a page about one
+    // named competitor — the second time better. It still renders on the
+    // landing page, where the reader hasn't picked a competitor yet.
+    renderCompare("/compare/zolto-vs-sumup");
+    expect(screen.getByTestId("capability-matrix")).toBeTruthy();
     for (const row of INCUMBENT_COMPARISON) {
-      expect(screen.getByRole("rowheader", { name: row.feature })).toBeTruthy();
+      expect(
+        screen.queryByRole("rowheader", { name: row.feature }),
+        `generic row "${row.feature}" should not be duplicated here`,
+      ).toBeNull();
     }
   });
 
-  it("makes no pricing claim about the competitor, and says why", () => {
+  it("quotes the competitor's pricing, with a source and a date on each figure", () => {
+    // This test used to assert the opposite — that the page made no pricing
+    // claim, "because rates vary by country, contract and volume". The August
+    // 2026 review replaced that silence with a provenance rule: figures may
+    // ship, but only sourced and dated. See positioning-pricing-revision.md §2a.
     renderCompare("/compare/zolto-vs-worldline");
-    expect(
-      screen.getByText(/vary by country, contract and volume/),
-    ).toBeTruthy();
+    const table = screen.getByTestId("cost-of-acceptance");
+    expect(within(table).getByText(/1\.70%/)).toBeTruthy();
+    const worldline = COMPETITORS.find((c) => c.id === "worldline")!;
+    for (const id of worldline.sourceIds ?? []) {
+      const s = source(id);
+      expect(s.url).toMatch(/^https?:\/\//);
+      expect(s.retrievedOn).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    }
+  });
+
+  it("prices the competitor's ticks rather than leaving them unqualified", () => {
+    // The mechanism the widened matrix turns on: where they DO have something,
+    // say what it costs.
+    renderCompare("/compare/zolto-vs-worldline");
+    expect(screen.getByTestId("cost-online-store").textContent).toMatch(
+      /9\.95/,
+    );
   });
 
   it("cross-links the other comparisons", () => {

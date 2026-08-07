@@ -913,16 +913,32 @@
           "Preferisci fotografare il tuo quaderno che digitare un catalogo a mano."
         ],
         "capabilities": {
-          "swiss": "Sì",
           "no-hardware": "Sì — Tap to Pay, iPhone XS e successivi / Android 11+",
-          "item-grid": "Sì — layout di vendita, categorie, SKU, varianti e immagini. Più sviluppato di quello di Zolto sulle pure funzioni di cassa.",
-          "stock-in-person": "Sì, con avvisi di scorte basse e un'etichetta «esaurito»",
-          "stock-shared": "Sì — SumUp dichiara che cassa e negozio online si sincronizzano automaticamente. Le scorte si aggiornano quando una vendita si conclude, non quando inizia un pagamento.",
+          "item-grid": "Sì — layout di vendita, categorie, SKU, varianti e immagini, nell'app gratuita. Più sviluppato di quello di Zolto.",
           "twint": "No",
           "postfinance": "No",
-          "builds-storefront": "No — un costruttore a modelli che compili tu",
-          "setup": "Meno di un'ora",
-          "who-holds-money": "SumUp versa sulla tua banca in 2–3 giorni"
+          "stock-in-person": "Sì, con avvisi di scorte basse e un'etichetta «esaurito»",
+          "sell-by-amount": "Puoi incassare un importo, ma nulla lo riconcilia dopo",
+          "online-store": "Sì — un negozio online essenziale e link di pagamento",
+          "builds-storefront": "No — un modello che compili tu",
+          "stock-shared": "Sì — SumUp dichiara che cassa e negozio si sincronizzano automaticamente. Le scorte si aggiornano alla conclusione della vendita, non all'inizio del pagamento.",
+          "multilingual": "Scrivi ogni scheda, in ogni lingua, da solo",
+          "setup": "Meno di un'ora — più veloce di noi",
+          "ai-listings": "No",
+          "ai-photography": "No",
+          "ai-intake": "No — costruisci il catalogo a mano",
+          "ai-support": "No",
+          "ai-insights": "Report di vendita e una dashboard — cifre, non una lettura",
+          "ai-discovery": "No",
+          "agent-checkout": "No",
+          "who-holds-money": "SumUp versa sulla tua banca in 2–3 giorni",
+          "card-rate": "0,99% domestico su Payments Plus, oppure 1,5% debito / 2,5% credito senza abbonamento — più economico del nostro in entrambi i casi",
+          "commitment": "Nessun contratto; un lettore costa CHF 49–99 se lo vuoi",
+          "swiss": "Disponibile in Svizzera; il contratto è con SumUp Limited a Dublino, istituto di moneta elettronica regolamentato nell'UE"
+        },
+        "costs": {
+          "item-grid": "Gratis — nessun terminale necessario",
+          "card-rate": "0,99% richiede Payments Plus a CHF 29/mese, dovuto che tu venda o no"
         }
       },
       "shopify": {
@@ -953,21 +969,39 @@
           "Vuoi vendere questo fine settimana, non al termine di un processo commerciale."
         ],
         "capabilities": {
-          "swiss": "Sì — l'operatore storico, tramite SIX Payment Services",
           "no-hardware": "Sì — Tap on Mobile, iPhone / Android 12+",
-          "item-grid": "No — solo pagamento. Si integra app-a-app con software di cassa di terze parti.",
-          "stock-in-person": "Non applicabile — non c'è un catalogo su cui contare",
-          "stock-shared": "Nessun negozio online; Saferpay è un gateway per un sito che costruisci tu",
+          "item-grid": "Non su Tap on Mobile — fa solo pagamenti, digiti un importo ogni volta. Si integra app-a-app con software di cassa di terze parti.",
           "twint": "Sì",
-          "postfinance": "Sì",
+          "postfinance": "Sì — l'unico dei tre",
+          "stock-in-person": "Non applicabile — non c'è un catalogo su cui contare",
+          "sell-by-amount": "Digitare un importo è l'unica modalità",
+          "online-store": "Nessun negozio — Saferpay è una cassa da innestare su un sito che fai realizzare",
           "builds-storefront": "No",
-          "setup": "Preventivo individuale — l'onboarding è un processo commerciale",
-          "who-holds-money": "Worldline versa secondo contratto"
+          "stock-shared": "Nessun negozio online con cui condividere le scorte",
+          "multilingual": "Quello che fa il tuo sito",
+          "setup": "Fino a una settimana per attivare il contratto di accettazione, dopo un pacchetto di documenti: estratto del registro di commercio, documento d'identità, coordinate bancarie, bilanci",
+          "ai-listings": "No",
+          "ai-photography": "No",
+          "ai-intake": "No",
+          "ai-support": "No",
+          "ai-insights": "Reportistica esercente — cifre, non una lettura",
+          "ai-discovery": "No",
+          "agent-checkout": "No",
+          "who-holds-money": "Worldline versa secondo contratto",
+          "card-rate": "Tap on Mobile è all'1,7% forfettario senza canone — più economico del nostro, e accetta TWINT. I terminali sono a interchange++, negoziati.",
+          "commitment": "Contratto negoziato; i contratti per terminale sono di norma pluriennali",
+          "swiss": "L'operatore storico svizzero, tramite SIX Payment Services — anche se SIX ha nel frattempo svalutato la partecipazione e rinunciato al seggio in consiglio"
         },
         "risks": [
           "Nell'agosto 2025 S&P ha declassato Worldline a BB — sotto l'investment grade — citando una performance operativa più debole del previsto, con outlook negativo.",
           "SIX Group, che aveva acquisito il 27% di Worldline nell'ambito dell'operazione SIX Payment Services, ha iscritto una svalutazione di circa CHF 550 milioni nel novembre 2025, non ha partecipato all'aumento di capitale di Worldline, ha rinunciato al seggio in consiglio e ha riclassificato la partecipazione da investimento strategico a finanziario."
-        ]
+        ],
+        "costs": {
+          "item-grid": "Un catalogo significa comprare e integrare un software di cassa separato",
+          "online-store": "Saferpay Go / Easy / Flex a CHF 9.95 / 19.95 / 39.95 al mese più CHF 49–299 una tantum, oltre all'acquiring — e paghi comunque qualcuno per il sito",
+          "setup": "Onboarding guidato dalle vendite, non self-service",
+          "card-rate": "I prezzi dei terminali si negoziano, e i contratti sono di norma pluriennali"
+        }
       }
     },
     "templates": {
@@ -1135,10 +1169,6 @@
       }
     },
     "capabilities": {
-      "swiss": {
-        "label": "Disponibile in Svizzera",
-        "zolto": "Sì — costruito a Zurigo, prezzi in CHF"
-      },
       "no-hardware": {
         "label": "Incassa senza hardware da comprare",
         "zolto": "Sì — Tap to Pay sul telefono che hai già"
@@ -1147,33 +1177,85 @@
         "label": "Il tuo catalogo a griglia nella cassa",
         "zolto": "Sì — foto, nome e prezzo per ogni pezzo"
       },
-      "stock-in-person": {
-        "label": "Scorte aggiornate mentre vendi di persona",
-        "zolto": "Sì"
-      },
-      "stock-shared": {
-        "label": "Un'unica scorta tra banco e negozio",
-        "zolto": "Sì — con una breve riserva mentre un cliente è alla cassa"
-      },
       "twint": {
-        "label": "TWINT",
-        "zolto": "Sì — nella stessa cassa di carte e contanti"
+        "label": "TWINT nella stessa cassa",
+        "zolto": "Sì — accanto a carte e contanti, su un solo schermo"
       },
       "postfinance": {
         "label": "PostFinance Pay",
         "zolto": "No"
       },
+      "stock-in-person": {
+        "label": "Le scorte calano mentre vendi di persona",
+        "zolto": "Sì"
+      },
+      "sell-by-amount": {
+        "label": "Vendi a importo quando c'è coda, sistemi dopo",
+        "zolto": "Sì — incassi senza taggare il pezzo; a fine giornata Zolto manda la sua ipotesi e un tocco la conferma"
+      },
+      "online-store": {
+        "label": "Un vero negozio online, non un link di pagamento",
+        "zolto": "Sì — vetrina con tema al tuo indirizzo, spedizione in Svizzera e UE"
+      },
       "builds-storefront": {
-        "label": "Costruisce il negozio online per te",
-        "zolto": "Sì — tema, testi e fotografia prodotto con l'IA"
+        "label": "Qualcuno costruisce il negozio per te",
+        "zolto": "Sì — l'IA progetta il tema, i testi e la fotografia"
+      },
+      "stock-shared": {
+        "label": "Un'unica scorta tra banco e negozio",
+        "zolto": "Sì — con una breve riserva mentre un cliente è alla cassa"
+      },
+      "multilingual": {
+        "label": "Schede in tedesco, francese, italiano e inglese",
+        "zolto": "Sì — scritte e tradotte per te, non da te"
       },
       "setup": {
         "label": "Tempo alla prima vendita",
         "zolto": "Lo stesso giorno"
       },
+      "ai-listings": {
+        "label": "Titoli e descrizioni scritti per te",
+        "zolto": "Sì — da una foto, in ogni lingua in cui vendi"
+      },
+      "ai-photography": {
+        "label": "Una foto dal telefono diventa uno scatto da catalogo",
+        "zolto": "Sì — ristilizzata in un'immagine prodotto o indossata, dichiarata come IA"
+      },
+      "ai-intake": {
+        "label": "Inserire scorte senza digitare",
+        "zolto": "Sì — fotografa una lista scritta a mano, o manda foto e prezzo su WhatsApp, Slack o Discord"
+      },
+      "ai-support": {
+        "label": "Qualcosa risponde alle domande dei clienti per te",
+        "zolto": "Sì — materiali, spedizione e taglie, senza te alla tastiera"
+      },
+      "ai-insights": {
+        "label": "Una lettura in chiaro di cosa vende",
+        "zolto": "Sì — bestseller e riassortimenti, in frasi (Pro)"
+      },
+      "ai-discovery": {
+        "label": "Gli assistenti IA possono leggere il tuo negozio",
+        "zolto": "Sì — ogni negozio include un llms.txt e un endpoint MCP"
+      },
+      "agent-checkout": {
+        "label": "Un assistente può scegliere un pezzo e aprire una cassa",
+        "zolto": "Sì — controlla le scorte dal vivo via MCP e passa una cassa alla tua cliente"
+      },
       "who-holds-money": {
         "label": "Chi tiene i tuoi soldi",
         "zolto": "Nessuno tranne te — dritti sui tuoi conti Stripe e TWINT"
+      },
+      "card-rate": {
+        "label": "Quanto ti costa una carta",
+        "zolto": "2,9% + CHF 0.20 — la tariffa svizzera di Stripe, e noi non aggiungiamo nulla"
+      },
+      "commitment": {
+        "label": "Cosa firmi",
+        "zolto": "Niente — mese per mese, ed esportazione in un clic su ogni piano"
+      },
+      "swiss": {
+        "label": "Costruito e gestito dove sei tu",
+        "zolto": "Costruito a Zurigo; server in Europa, per lo più Germania"
       }
     },
     "limitations": [
@@ -1242,7 +1324,13 @@
           }
         ]
       }
-    ]
+    ],
+    "capabilityGroups": {
+      "The till": "La cassa",
+      "The shop": "Il negozio",
+      "The AI": "L'IA",
+      "The money": "I soldi"
+    }
   },
   "sovereignty": {
     "state": {

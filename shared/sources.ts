@@ -70,6 +70,19 @@ export const SOURCES: Source[] = [
     retrievedOn: REVIEWED,
   },
   {
+    id: "sumup-pos-software",
+    label: "SumUp — Point of sale software",
+    url: "https://www.sumup.com/en-gb/sumup-pos/",
+    retrievedOn: REVIEWED,
+    note: "Confirms the item catalogue is in the FREE app, not behind a terminal purchase. Worth keeping in view: it is the row where SumUp beats us.",
+  },
+  {
+    id: "sumup-partner-programme",
+    label: "SumUp — Become a partner",
+    url: "https://www.sumup.com/en-mt/partner/",
+    retrievedOn: REVIEWED,
+  },
+  {
     id: "sumup-cbi-register",
     label: "Central Bank of Ireland register — SumUp Limited",
     url: "http://registers.centralbank.ie/FirmRegisterDataPage.aspx?firmReferenceNumber=C195030&register=63",
@@ -89,6 +102,19 @@ export const SOURCES: Source[] = [
     url: "https://support.worldline.com/content/dam/support-worldline/local/en-ch/documents/flyers/110023002-ds-saferpay-price-list-che-en-opt.pdf",
     retrievedOn: REVIEWED,
     note: "The PDF itself is dated 09.2022. Treat the figures as indicative until Worldline confirms they are current.",
+  },
+  {
+    id: "worldline-ch-selfonboarding",
+    label: "Worldline Switzerland — Self-onboarding FAQ",
+    url: "https://support.worldline.com/en-ch/home/merchants/faq-selfonboarding",
+    retrievedOn: REVIEWED,
+  },
+  {
+    id: "worldline-platforms",
+    label: "Worldline — Payments for platforms (powered by OPP)",
+    url: "https://worldline.com/en/home/main-navigation/solutions/merchants/payments-for-platforms",
+    retrievedOn: REVIEWED,
+    note: "Embedded Payments launched for the EU in October 2024 with Switzerland named as planned expansion. Swiss availability unconfirmed — worldline.com blocks automated checking.",
   },
   {
     id: "worldline-sp-downgrade",

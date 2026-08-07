@@ -19,6 +19,7 @@ import {
   COMPETITORS,
   POSITIONING,
   CAPABILITIES,
+  CAPABILITY_GROUPS,
   ZOLTO_LIMITATIONS,
   BUYER_FIT,
 } from "@shared/platform";
@@ -293,6 +294,18 @@ describe("marketing locale files", () => {
                   ),
                 }
               : {}),
+            // The "yes, but what it costs" lines. Only rows that carry one
+            // contribute a key, which the structural test then requires every
+            // language to match.
+            ...(c.capabilities?.some((x) => x.cost)
+              ? {
+                  costs: Object.fromEntries(
+                    c.capabilities
+                      .filter((x) => x.cost)
+                      .map((x) => [x.key, x.cost]),
+                  ),
+                }
+              : {}),
             // Only the statement is translated. Its source is a URL and a
             // date, which read the same in every language.
             ...(c.risks ? { risks: c.risks.map((r) => r.statement) } : {}),
@@ -302,6 +315,9 @@ describe("marketing locale files", () => {
       // CapabilityMatrix.tsx renders the row labels and Zolto's own answers.
       capabilities: Object.fromEntries(
         CAPABILITIES.map((c) => [c.key, { label: c.label, zolto: c.zolto }]),
+      ),
+      capabilityGroups: Object.fromEntries(
+        CAPABILITY_GROUPS.map((g) => [g, g]),
       ),
       // CostOfAcceptance.tsx renders each rate's label and caveat. The numbers
       // themselves are never duplicated into a locale file — they render from
