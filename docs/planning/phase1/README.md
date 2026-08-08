@@ -102,3 +102,15 @@ pull off, and which is the most persuasive five seconds in the video.
 Hand it over whole; §5 exists because a copywriter's instinct is to reach for
 "cheapest", and on card rate we are the most expensive option on our own
 comparison table.
+
+[`marketing/instagram-short-ai-prompts.md`](./marketing/instagram-short-ai-prompts.md)
+is the same 45 seconds as generation prompts for a text-to-video model
+(Veo-3-class), for the case where we produce it ourselves rather than casting a
+creator. It is a companion, not a replacement — the brief still holds the pitch
+and §5.
+
+Read its §1 before budgeting for that route: current models cannot render a
+legible interface, and three of the seven beats are screen beats, so the only
+workable shape is an AI-generated person and location with the real product
+screens composited in post. §7 records the other cost: a synthetic presenter
+can describe the product but cannot be a testimonial.
