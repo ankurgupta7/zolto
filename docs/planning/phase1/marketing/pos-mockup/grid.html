@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Zolto POS — grid</title>
+<style>
+  /* Palette lifted verbatim from android/app/src/main/res/values/colors.xml */
+  :root{
+    --oyster:#F7F3EE; --dark:#2D2620; --near-black:#1C1714; --dark-mid:#3A3028;
+    --gold:#B8963E; --gold-light:#D4B060; --ivory:#EDE7DF;
+    --muted:#7A6D65; --border:#DDD4C9;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:390px;height:844px;overflow:hidden}
+  body{
+    background:var(--oyster);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    color:var(--near-black);
+    display:flex;flex-direction:column;
+    -webkit-font-smoothing:antialiased;
+  }
+  /* money and counts must never render as oldstyle figures */
+  .num{font-variant-numeric:lining-nums tabular-nums}
+
+  /* ---- status bar ---- */
+  .status{
+    background:var(--dark);color:#fff;height:28px;flex:0 0 28px;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:0 16px;font-size:12px;font-weight:600;letter-spacing:.02em;
+  }
+  .status .right{display:flex;gap:5px;align-items:center;opacity:.9}
+
+  /* ---- toolbar ---- */
+  .toolbar{
+    background:var(--dark);flex:0 0 52px;
+    display:flex;align-items:center;gap:10px;padding:0 14px;
+  }
+  .toolbar img{width:28px;height:28px;border-radius:6px}
+  .toolbar .name{color:#fff;font-size:15px;font-weight:600;letter-spacing:.01em}
+  .toolbar .spacer{flex:1}
+  .toolbar .hist{
+    color:var(--gold-light);font-size:11px;letter-spacing:.12em;
+    text-transform:uppercase;font-weight:600;
+  }
+
+  /* ---- search ---- */
+  .search{
+    margin:12px 14px 0;background:#fff;border:1px solid var(--border);
+    border-radius:4px;height:40px;display:flex;align-items:center;
+    gap:9px;padding:0 12px;
+  }
+  .search svg{flex:0 0 15px;stroke:var(--muted)}
+  .search span{color:var(--muted);font-size:13.5px}
+
+  /* ---- category chips ---- */
+  .chips{display:flex;gap:7px;padding:11px 14px 9px;overflow:hidden}
+  .chip{
+    border:1px solid var(--border);border-radius:999px;background:#fff;
+    padding:5px 13px;font-size:12.5px;color:var(--muted);white-space:nowrap;
+  }
+  .chip.on{background:var(--gold);border-color:var(--gold);color:var(--near-black);font-weight:600}
+
+  /* ---- product grid: 2 columns, matching GridLayoutManager spanCount ---- */
+  .grid{
+    flex:1;display:grid;grid-template-columns:1fr 1fr;
+    gap:11px;padding:2px 14px 10px;align-content:start;overflow:hidden;
+  }
+  .card{
+    background:var(--ivory);border:1px solid var(--border);border-radius:4px;
+    overflow:hidden;position:relative;
+  }
+  .card .ph{position:relative;height:118px;background:var(--border)}
+  .card .ph img{width:100%;height:100%;object-fit:cover;display:block}
+  .qty{
+    position:absolute;top:0;right:0;background:var(--gold);color:var(--near-black);
+    font-size:10px;letter-spacing:.1em;font-weight:700;padding:3px 6px;
+  }
+  .meta{padding:9px 10px 10px}
+  .meta .n{font-size:12.5px;font-weight:700;letter-spacing:.02em;line-height:1.25}
+  .meta .p{font-size:12.5px;color:var(--gold);margin-top:3px;font-weight:600}
+
+  /* selected state — the tap the video is about */
+  .card.sel{border-color:var(--gold);border-width:2px}
+  .card.sel .tick{
+    position:absolute;right:7px;top:96px;width:26px;height:26px;border-radius:50%;
+    background:var(--gold);display:flex;align-items:center;justify-content:center;
+  }
+
+  /* ---- review bar ---- */
+  .review{
+    flex:0 0 auto;margin:0 14px 16px;background:var(--gold);border-radius:4px;
+    height:52px;display:flex;align-items:center;justify-content:center;gap:10px;
+    color:var(--near-black);font-size:14px;font-weight:700;letter-spacing:.06em;
+    text-transform:uppercase;
+  }
+  .review .tot{font-weight:800}
+</style>
+</head>
+<body>
+
+  <div class="status">
+    <span class="num">18:42</span>
+    <span class="right"><span class="num">5G</span> ▮▮▮ <span class="num">87%</span></span>
+  </div>
+
+  <div class="toolbar">
+    <img src="logo.svg" alt="">
+    <span class="name">Atelier Perle</span>
+    <span class="spacer"></span>
+    <span class="hist">Verkäufe</span>
+  </div>
+
+  <div class="search">
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+    <span>Name, Kategorie, Preis suchen…</span>
+  </div>
+
+  <div class="chips">
+    <span class="chip on">Alle</span>
+    <span class="chip">Ketten</span>
+    <span class="chip">Ohrringe</span>
+    <span class="chip">Armreifen</span>
+  </div>
+
+  <div class="grid">
+    <div class="card sel">
+      <div class="ph"><img src="../../assets/necklaces/necklace-pearl-bib-collar-with-tag.jpg" alt=""><span class="qty num">1</span>
+        <div class="tick"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1C1714" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5.5 5.5L20 7"/></svg></div>
+      </div>
+      <div class="meta"><div class="n">Perlenkragen</div><div class="p num">CHF 340</div></div>
+    </div>
+    <div class="card">
+      <div class="ph"><img src="../../assets/earrings/earrings-baroque-pearl-silver-chain-fringe.jpg" alt=""><span class="qty num">2</span></div>
+      <div class="meta"><div class="n">Barockperlen-Ohrringe</div><div class="p num">CHF 180</div></div>
+    </div>
+    <div class="card">
+      <div class="ph"><img src="../../assets/necklaces/necklace-single-strand-marble-01.jpg" alt=""><span class="qty num">1</span></div>
+      <div class="meta"><div class="n">Perlenstrang klassisch</div><div class="p num">CHF 260</div></div>
+    </div>
+    <div class="card sel">
+      <div class="ph"><img src="../../assets/bracelets-and-mixed/flatlay-silver-bangle-and-pearl-hoop-earrings.jpg" alt=""><span class="qty num">3</span>
+        <div class="tick"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1C1714" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5.5 5.5L20 7"/></svg></div>
+      </div>
+      <div class="meta"><div class="n">Silberreif</div><div class="p num">CHF 120</div></div>
+    </div>
+    <div class="card">
+      <div class="ph"><img src="../../assets/necklaces/necklace-gold-bead-single-pearl-accent.jpg" alt=""><span class="qty num">1</span></div>
+      <div class="meta"><div class="n">Goldkette mit Perle</div><div class="p num">CHF 290</div></div>
+    </div>
+    <div class="card">
+      <div class="ph"><img src="../../assets/necklaces/necklace-pearl-station-silver-marble.jpg" alt=""><span class="qty num">2</span></div>
+      <div class="meta"><div class="n">Perlenkette Silber</div><div class="p num">CHF 230</div></div>
+    </div>
+  </div>
+
+  <div class="review">Verkauf prüfen · <span class="tot num">CHF 460</span></div>
+
+</body>
+</html>
