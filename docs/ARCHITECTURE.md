@@ -192,7 +192,7 @@ merchant input):
 | Stripe Connect account     | Merchant clicks "Connect payments"              | `stripeConnect.ts` onboarding link → return URL → `stripeConnectedAccountId` saved            |
 | POS Terminal Location      | First card sale in the POS app                  | `POST /api/pos/terminal/location` collects store address once, creates Location **on the Connect account**, saves `terminalLocationId` |
 | Photo-credit bucket        | Plan upgrade / renewal invoice                  | `billing.ts` webhook writes `photo_credit_ledger` `monthly_grant`                             |
-| Custom domain + TLS        | Merchant saves domain (Maker+) + DNS propagates | `tenant.updateSettings` gate → `domainStatus` polls DNS → Caddy on-demand-TLS via `/api/domain-ask` |
+| Custom domain + TLS        | Merchant saves domain (Pro) + DNS propagates    | `tenant.updateSettings` gate → `domainStatus` polls DNS → Caddy on-demand-TLS via `/api/domain-ask` → the host resolves to the tenant in `tenantResolve.ts` |
 | Staff seats                | Owner invites from Plan & Billing               | `staff.invite` → claim flow                                                                   |
 
 Each lazy step flips its checklist task to done **by the same derivation

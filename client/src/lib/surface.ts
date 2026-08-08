@@ -7,6 +7,11 @@
  *   - Apex / www of the platform domain  → "marketing"  (zolto.ch, www.zolto.ch)
  *   - Any other host                     → "storefront" (kalakosh.zolto.ch, kalakosh.ch)
  *
+ * A platform subdomain carries its store's slug in the hostname; a custom
+ * domain doesn't, so the server stamps the resolved slug into the shell as
+ * `<meta name="zolto-tenant-slug">` (server/storefrontHead.ts) and this module
+ * reads it.
+ *
  * Dev override (localhost / 127.0.0.1, or any host when explicitly set):
  *   - ?surface=marketing|storefront   forces the surface
  *   - ?tenant=<slug>                  forces the storefront tenant slug
@@ -59,6 +64,26 @@ export interface ResolveOptions {
   search?: string;
   /** Fallback slug (from VITE_DEFAULT_TENANT_SLUG) for dev / custom domains. */
   defaultTenantSlug?: string;
+  /**
+   * The slug the server stamped into the shell for this host
+   * (`<meta name="zolto-tenant-slug">`) — the only way to know which store a
+   * custom domain belongs to, since the hostname carries no slug. Defaults to
+   * reading the document; pass explicitly in tests.
+   */
+  hostTenantSlug?: string | null;
+}
+
+/**
+ * The slug the server resolved for this host, read from the injected meta tag
+ * (server/storefrontHead.ts). Null on the marketing shell, in tests, and in the
+ * dev server before any tenant is resolved.
+ */
+export function tenantSlugFromDocument(): string | null {
+  if (typeof document === "undefined") return null;
+  const meta = document.querySelector<HTMLMetaElement>(
+    'meta[name="zolto-tenant-slug"]',
+  );
+  return meta?.content?.trim() || null;
 }
 
 /**
@@ -76,7 +101,10 @@ export function storefrontOrigin(
 ): { origin: string; needsSurfaceParam: boolean } {
   const host = hostname.split(":")[0].toLowerCase();
   if (host === PLATFORM_APEX || host === `www.${PLATFORM_APEX}`) {
-    return { origin: `https://${slug}.${PLATFORM_APEX}`, needsSurfaceParam: false };
+    return {
+      origin: `https://${slug}.${PLATFORM_APEX}`,
+      needsSurfaceParam: false,
+    };
   }
   // Dev / preview / custom host: same origin, force the storefront surface.
   return { origin: "", needsSurfaceParam: true };
@@ -112,6 +140,7 @@ export function resolveSurface({
   hostname,
   search = "",
   defaultTenantSlug = "demo",
+  hostTenantSlug = tenantSlugFromDocument(),
 }: ResolveOptions): SurfaceResolution {
   const params = new URLSearchParams(search);
   const forcedSurface = params.get("surface");
@@ -147,9 +176,16 @@ export function resolveSurface({
   }
 
   // Any other production host is a tenant storefront (subdomain or custom domain).
+  // On a custom domain the hostname yields no slug, so the server-stamped one is
+  // what keeps the SPA pointed at the right store — ahead of the configured
+  // default, which used to win and made every custom domain render (and query
+  // the API for) VITE_DEFAULT_TENANT_SLUG's store instead of the merchant's.
   return {
     surface: "storefront",
     tenantSlug:
-      tenantSlugFromHost(hostname) || forcedTenant || defaultTenantSlug,
+      tenantSlugFromHost(hostname) ||
+      forcedTenant ||
+      hostTenantSlug ||
+      defaultTenantSlug,
   };
 }

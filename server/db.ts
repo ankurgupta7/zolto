@@ -2401,7 +2401,7 @@ export async function setTenantTerminalLocation(
 // ─── Custom domains ───────────────────────────────────────────────────────────
 /**
  * Find the settings row for a registered custom domain. Used by the Caddy
- * on-demand-TLS "ask" endpoint: only domains a Maker+ tenant actually saved
+ * on-demand-TLS "ask" endpoint: only domains a Pro tenant actually saved
  * may get a certificate, so strangers can't mint certs through our Caddy.
  */
 export async function getTenantSettingsByDomain(
@@ -2414,6 +2414,35 @@ export async function getTenantSettingsByDomain(
       .where(eq(tenantSettings.publicDomain, domain.toLowerCase()))
       .limit(1);
     return rows[0];
+  }, undefined);
+}
+
+/**
+ * The tenant serving a request that arrived on a custom domain (shop.example.com).
+ *
+ * The counterpart to getTenantBySlug for hostnames that are NOT platform
+ * subdomains. Without it the custom-domain feature stopped at the certificate:
+ * Caddy would issue TLS for the domain, the request would reach the app, and
+ * tenant resolution — which only ever looked up the host's left-most label
+ * against `tenants.slug` — would find nothing, or worse, find an unrelated
+ * store whose slug happened to match that label (`shop.example.com` served the
+ * store with slug "shop").
+ *
+ * No plan gate here on purpose: /api/domain-ask already refuses certificates
+ * for a downgraded tenant, and a live storefront going blank the moment a
+ * subscription lapses is a worse failure than serving it until the cert expires.
+ */
+export async function getTenantByCustomDomain(
+  domain: string,
+): Promise<Tenant | undefined> {
+  return withDb(async (db) => {
+    const rows = await db
+      .select({ tenant: tenants })
+      .from(tenantSettings)
+      .innerJoin(tenants, eq(tenants.id, tenantSettings.tenantId))
+      .where(eq(tenantSettings.publicDomain, domain.toLowerCase()))
+      .limit(1);
+    return rows[0]?.tenant;
   }, undefined);
 }
 

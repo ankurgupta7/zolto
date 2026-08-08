@@ -841,6 +841,31 @@ else
   ok "0040 tenant_settings.secondary_color already exists"
 fi
 
+# ── 0041: one custom domain, one store ────────────────────────────────────────
+# Ships drizzle/0023_custom_domain_unique.sql. `public_domain` now decides which
+# tenant a request arriving on that hostname is served as (server/tenantResolve.ts)
+# and whose plan gates its TLS certificate (server/domainAsk.ts) — both take the
+# first matching row, so two stores claiming one hostname is a tenant mix-up.
+# MySQL exempts NULL from unique indexes, so stores without a custom domain are
+# untouched. Idempotent.
+#
+# Pre-existing duplicates would make CREATE UNIQUE INDEX fail, and a failed
+# run_sql aborts the whole deploy — a schema tidy-up is not worth taking the
+# store offline for, so duplicates are reported and the index is left for the
+# next run. The application-level check in tenant.updateSettings refuses new
+# duplicates meanwhile.
+if [ "$(idx_exists tenant_settings tenant_settings_public_domain_unique)" = "0" ]; then
+  DUP_DOMAIN_ROWS="$(row_count tenant_settings "public_domain IS NOT NULL AND public_domain IN (SELECT public_domain FROM (SELECT public_domain FROM tenant_settings WHERE public_domain IS NOT NULL GROUP BY public_domain HAVING COUNT(*) > 1) dupes)")"
+  if [ "${DUP_DOMAIN_ROWS:-0}" = "0" ]; then
+    run_sql "0041 unique tenant_settings.public_domain" \
+      "CREATE UNIQUE INDEX \`tenant_settings_public_domain_unique\` ON \`tenant_settings\` (\`public_domain\`);"
+  else
+    warn "0041 skipped: ${DUP_DOMAIN_ROWS} tenant_settings rows share a custom domain with another store — clear the duplicates, then re-run ./update.sh"
+  fi
+else
+  ok "0041 tenant_settings.public_domain already unique"
+fi
+
 # ── Record the applied migration set ──────────────────────────────────────────
 # Only reached when every migration above succeeded — `set -e` plus run_sql's
 # die() mean a failure never gets this far, so a half-applied schema is never

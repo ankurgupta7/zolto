@@ -344,6 +344,17 @@ describe("tenant reads", () => {
     selectReturns([{ id: 7 }]);
     expect(await db.getTenantByReferralCode("REF")).toMatchObject({ id: 7 });
   });
+
+  it("getTenantByCustomDomain unwraps the joined tenant", async () => {
+    selectReturns([{ tenant: { id: 7, slug: "aurora" } }]);
+    expect(await db.getTenantByCustomDomain("shop.example.com")).toMatchObject({
+      slug: "aurora",
+    });
+    selectReturns([]);
+    expect(
+      await db.getTenantByCustomDomain("shop.example.com"),
+    ).toBeUndefined();
+  });
 });
 
 describe("tenant writes", () => {

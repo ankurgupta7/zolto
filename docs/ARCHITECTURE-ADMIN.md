@@ -143,9 +143,12 @@ Two orthogonal checks, both enforced **server-side first**:
 1. **Role** (`users.role`): `owner > admin > staff`. Account-plane mutations
    (plan change, credit purchase, invite, key rotation, org profile) require
    owner/admin. Store-plane reads/writes allow staff.
-2. **Plan** (`tenants.plan`): feature gates from `shared/platform.ts` `PLANS`
-   — e.g. custom domain (Maker+), staff seats (3/10/20), insights (Studio+),
-   API access (Atelier).
+2. **Plan** (`tenants.plan`): feature gates from `shared/platform.ts`
+   `PLAN_FEATURES` — on the two-tier model that means custom domain, white
+   label, advanced analytics, multi-currency and 3 staff seats on Pro; Free
+   keeps the whole commerce engine with 1 seat. (This section predates the
+   Free/Pro pivot; the four Maker/Studio/Atelier tiers it used to name are
+   retired.)
 
 Implementation:
 

@@ -162,7 +162,9 @@ export async function deriveOnboardingStatus(
       id: "custom-domain",
       titleKey: "catalog.onboarding.tasks.customDomain.title",
       bodyKey: "catalog.onboarding.tasks.customDomain.body",
-      href: "/admin/billing",
+      // The Domain page, not Plan & Billing — billing sells the feature, but
+      // the field that completes this task (and the CNAME to copy) is here.
+      href: "/admin/domain",
       done: Boolean(settings?.publicDomain),
     });
   }

@@ -27,6 +27,7 @@ import {
   assignUserToTenantAsAdmin,
   deleteUserById,
   seedTenantCategories,
+  getTenantSettingsByDomain,
 } from "../db";
 import { VERTICALS } from "@shared/verticals";
 import { createStripeCustomer } from "../stripe";
@@ -680,10 +681,17 @@ rationale: one friendly sentence (max 25 words) naming BOTH colors, e.g. "Deep f
       return { success: true };
     }),
 
-  // ─── Admin: Custom domain DNS status ──────────────────────────────────────  // Live check whether the saved custom domain's DNS points at the platform
+  // ─── Admin: Custom domain DNS status ──────────────────────────────────────
+  // Live check whether the saved custom domain's DNS points at the platform
   // (PLATFORM_DOMAIN env, e.g. app.zolto.ch). Caddy's on-demand TLS only
   // issues a cert once the domain is both registered here and pointing at us.
-  domainStatus: publicProcedure.use(requireTenant).query(async ({ ctx }) => {
+  //
+  // tenantAdminProcedure, matching the updateSettings mutation that writes this
+  // domain: as `publicProcedure.use(requireTenant)` it told anyone who could
+  // reach a store's host which domain that store had registered and whether it
+  // had been set up yet — an infrastructure detail of someone else's business,
+  // readable without signing in at all.
+  domainStatus: tenantAdminProcedure.query(async ({ ctx }) => {
     const settings = await db.query.tenantSettings.findFirst({
       where: eq(tenantSettings.tenantId, ctx.tenant.id),
     });
@@ -783,6 +791,23 @@ rationale: one friendly sentence (max 25 words) naming BOTH colors, e.g. "Deep f
           code: "FORBIDDEN",
           message: "A custom domain requires the Pro plan. Please upgrade.",
         });
+      }
+      // One domain, one store. The column is unique in the schema, but a bare
+      // constraint violation surfaces as a 500 with a MySQL error string; more
+      // importantly the domain now decides which store a request is served from
+      // (tenantResolve.ts), so two rows claiming it is a tenant mix-up, not a
+      // cosmetic clash. Checked here so the merchant gets a sentence they can
+      // act on, with the unique index behind it as the actual guarantee.
+      if (input.publicDomain !== undefined) {
+        const owner = await getTenantSettingsByDomain(input.publicDomain);
+        if (owner && owner.tenantId !== ctx.tenant.id) {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message:
+              "That domain is already connected to another store. " +
+              "Disconnect it there first, or pick a different subdomain.",
+          });
+        }
       }
       if (
         input.currency !== undefined &&

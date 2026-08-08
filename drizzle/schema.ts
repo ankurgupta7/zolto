@@ -91,7 +91,12 @@ export const tenantSettings = mysqlTable("tenant_settings", {
   metaDescription: text("meta_description"),
   // Branding
   whiteLabelName: varchar("white_label_name", { length: 255 }),
-  publicDomain: varchar("public_domain", { length: 255 }),
+  // The store's custom domain (Pro). Unique because it decides which store a
+  // request is served from (server/tenantResolve.ts) — two rows claiming the
+  // same hostname means the winner is whichever row LIMIT 1 happens to return.
+  // NULL is exempt from a MySQL unique index, so the stores without one (most
+  // of them) are unaffected.
+  publicDomain: varchar("public_domain", { length: 255 }).unique(),
   // What the merchant sells. `vertical` picks one of shared/verticals.ts
   // VERTICALS (drives category seeding, AI prompt vocabulary, and copy);
   // `verticalDescription` is the merchant's own free-text "what do you sell",
