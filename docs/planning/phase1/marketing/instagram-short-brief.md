@@ -199,6 +199,12 @@ more than it earns.
   written. This applies doubly to an AI-generated presenter, who cannot have
   used anything at all — see
   [`instagram-short-ai-prompts.md`](./instagram-short-ai-prompts.md) §7a.
+- ❌ **Second-hand praise: "some people say…", "everyone loves it".** Vaguer is
+  not safer. Zolto has no users yet, so there are no some-people, and putting
+  the opinion in unnamed mouths hides the source rather than supplying one. It
+  is also the weakest sentence in any cut of this script. Beat 4's *"that's the
+  bit the card companies don't do"* is the outside validation you're reaching
+  for, and it has sources behind it — see §7b.
 
 **Safe to say, all shipped and checkable:**
 

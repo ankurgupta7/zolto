@@ -374,3 +374,44 @@ b-roll you couldn't get on the day.
 script as written is already the workaround — she describes what *a maker*
 gets, which is true, checkable, and needs no one to have used anything. That is
 why it was written that way.
+
+### 7b. The hearsay workaround, which is not one
+
+The next instinct after §7a is to soften rather than drop it: *"some people say
+it's really nice"*, *"everyone I've spoken to loves it"*, *"it's got a bit of a
+following"*. This reads as safer because it is vaguer. It isn't safer, for a
+reason specific to where we are: **Zolto has no users yet**
+([`../../positioning-pricing-revision.md`](../../positioning-pricing-revision.md)
+§ on `unverified` confidence). There are no some-people. Attributing an opinion
+to unnamed others who don't exist is the same fabrication as claiming it
+yourself, with the source hidden so it can't be checked — which is a worse
+position to be found in, not a better one.
+
+It is also, straightforwardly, the weakest sentence available. Vague praise is
+the register this entire script is written against; put *"some people say it's
+super nice"* next to *"she taps the photo of the actual piece"* and the second
+line does all the work. Beat 6 is persuasive **because** nothing around it is
+vague.
+
+**What you actually want from that line — outside validation — the script
+already has**, at the end of beat 4:
+
+> "That's the bit the card companies don't do."
+
+That is a claim about the market rather than about her, it is the positioning
+we spent August substantiating, and the compare page carries the sources and
+retrieval dates behind it. A presenter may state a sourced fact freely. What she
+may not do is report an experience she didn't have, at first or second hand.
+
+Three lines that are true today and need no user base:
+
+| Line | Standing behind it |
+|---|---|
+| "That's the bit the card companies don't do." | The capability matrix — one has the grid without TWINT, the other the reverse, both sourced |
+| "It's built in Zürich, and the money lands in your own account." | `SOVEREIGNTY`, shipped |
+| "Is it the cheapest way to take a card? No. It isn't." | Our own published table, where our card rate is the dearest of the three |
+
+And the real answer to wanting social proof: it is **weeks away, not years**.
+Five makers actually using it and *"the people using it say…"* becomes true,
+quotable, and screenshottable — worth waiting for rather than counterfeiting a
+thin version of now.
