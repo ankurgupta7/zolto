@@ -98,6 +98,15 @@ All within ~15 minutes on foot, all with water in frame:
 **15-second cut:** beats 1, 4, 6, 7. Beat 4 is the product; beat 6 is why she's
 believed.
 
+> **These lines are over-written for 45 seconds — read before the shoot day.**
+> Timed at ordinary conversational pace they run **~60 seconds of speech**, and
+> every beat but the last is over its slot (beats 2 and 6 by more than half).
+> Either shoot to ~60s, which Reels allows and which suits this format, or use
+> the trimmed ~48-second version in
+> [`instagram-short-veo-prompts.txt`](./instagram-short-veo-prompts.txt) —
+> where the captions carry what came out. What you must not do is let a
+> performer race the lines to fit; the unhurried delivery is the format.
+
 ### Voice and performance
 
 - **Unpolished on purpose.** One or two natural stumbles left in. No presenter

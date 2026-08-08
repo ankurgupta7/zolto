@@ -255,6 +255,60 @@ Notes that matter:
 
 ---
 
+## 3b. Five setups, not seven — and why the script had to be cut
+
+The seven clips above are the beat-by-beat reference. **The production version
+is five setups**, and lives in
+[`instagram-short-veo-prompts.txt`](./instagram-short-veo-prompts.txt) with the
+character and style blocks already expanded — paste that, read this.
+
+Merging the beats looked impossible at first, and the reason turned out to be a
+problem with the script rather than with the model. Timed at ordinary
+conversational pace, the seven lines run **~60 seconds of speech inside a
+45-second cut**. Every beat but the last is over its slot, beats 2 and 6 by more
+than half:
+
+| Beat | Words | Spoken | Slot |
+|---|---|---|---|
+| 1 | 18 | ~6.4s | 5s |
+| 2 | 27 | ~9.6s | 6s |
+| 3 | 26 | ~9.3s | 8s |
+| 4 | 32 | ~11.4s | 8s |
+| 5 | 28 | ~10.0s | 8s |
+| 6 | 29 | ~10.4s | 6s |
+| 7 | 8 | ~2.9s | 4s |
+
+Beats 1 and 2 together are ~16 seconds of talking, which is why no 8-second
+generation could hold them. Trimming the lines to ~48 seconds is what makes the
+merge possible; the trimmed script is in the prompts file, and **the captions
+carry what came out** — the four language names, and "not the cheapest, that's
+not the point."
+
+The five setups then fall out of the arithmetic:
+
+| Setup | Beats | Runs | Footage of her | Screen recording |
+|---|---|---|---|---|
+| A | 1 + 2 | 14s | 14s — 8s generation **plus one extend** | — |
+| B | 3 | 7s | 3s | S1, 4s |
+| C | 4 | 9s | 4s | S2, 5s |
+| D | 5 | 8s | 4s | S3, 4s |
+| E | 6 + 7 | 11s | 8s | — (end card, 3s) |
+
+Two things make this work. **Beat 7 gets no generation at all** — it's voiced
+over the held final frame of setup E under the end card, so that merge costs
+nothing. And **setup A is one location and one continuous walk**, so its second
+half is an *extend* rather than a fresh generation: the tool carries continuity
+instead of you managing reference frames.
+
+33 seconds of generated footage across 5 setups, down from 7. The floor is
+around 4 — the three screen recordings cover 13 seconds of voice on their own —
+and the last one is not worth chasing.
+
+**Generate setup E first.** If the concession looks performed there, the route
+is dead, and you'll have learned it for the price of one setup instead of five.
+
+---
+
 ## 4. The voice track
 
 Record or synthesise **one continuous take** over the finished cut. Do not
