@@ -114,3 +114,9 @@ legible interface, and three of the seven beats are screen beats, so the only
 workable shape is an AI-generated person and location with the real product
 screens composited in post. §7 records the other cost: a synthetic presenter
 can describe the product but cannot be a testimonial.
+
+[`marketing/pos-mockup/`](./marketing/pos-mockup/) holds stand-in stills of the
+till for that edit — **hand-built HTML mockups, not the product.** The real till
+is the Android app and needs a device to capture, so these exist only to let the
+cut be assembled before someone records the real thing. Its README says what was
+copied from the Android source and what was invented.
