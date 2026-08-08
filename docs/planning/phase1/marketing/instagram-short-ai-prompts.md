@@ -28,13 +28,35 @@ hybrid:
 | Layer | How |
 |---|---|
 | Person, location, lake, motion, atmosphere | **AI-generated** — models are genuinely good at this now |
-| Phone and laptop **screen content** | **Composited in post** — screen-replacement onto a tracked rectangle |
+| Phone and laptop **screen content** | **Real screen recordings, cut to full frame** — see §3a |
 | Captions, logo, end card | **Post** — never generate on-screen text |
 | Voice | **One recorded or TTS track over the whole cut** — not per-clip generated dialogue |
 
-Every prompt below is therefore written to give the compositor a clean, trackable
-screen: device held steady, screen flat to camera, **screen off or a plain solid
-colour**, hand not covering the display.
+### Cut away to the screen; don't composite onto it
+
+There are three ways to get a real interface into an AI-generated clip, and the
+obvious one is the worst one:
+
+| | Route | Tooling | Verdict |
+|---|---|---|---|
+| **A** | **Cut away to a full-frame screen recording** — her hand and the phone in the AI shot, hard cut to the real app filling the frame, cut back | Any editor. Descript, Canva, CapCut | **Do this** |
+| B | Screen recording as a floating card beside her, picture-in-picture | Any editor | Fine for beat 5 (laptop) |
+| C | Tracked screen replacement — corner-pin the recording onto the moving phone | After Effects + Mocha, or CapCut's tracker | Not worth it here |
+
+**Route C is what "screen replacement" normally means, and neither Descript nor
+Canva can do it** — both can overlay a rectangle, neither can motion-track one
+onto a phone moving through frame. Attempting it there gives you a sticker
+sliding around on top of her hand.
+
+Route A is also just better. A phone held at arm's length in a wide shot gives
+the interface maybe 300px of frame height; a full-frame screen recording gives
+it 1920. The legibility problem doesn't get solved, it gets deleted. And
+cutting to a screen recording is native Instagram grammar — creators do it in
+every second video, so it reads as normal rather than as a compositing trick.
+
+Every prompt below is therefore written so the phone is held **naturally, screen
+angled away from or dark to the lens** — we are never asking the model to sell
+the screen, only the person holding one.
 
 Three more constraints worth knowing before you start:
 
@@ -123,49 +145,52 @@ put it in the prompt** unless you are deliberately testing native audio (see §5
 > **[CHARACTER]** stops walking on the Utoquai promenade beside Lake Zürich and
 > turns side-on to the camera. She holds a small open notebook filled with
 > handwritten lines in one hand, and raises a smartphone in the other to
-> photograph the page. She then turns the phone to face the camera, holding it
-> steady and flat, screen fully visible and unobstructed by her fingers. **The
-> phone screen is a plain matte dark grey rectangle with no content on it.**
+> photograph the page, framing it the way people photograph a document. **The
+> phone is seen from behind and from the side; its screen is angled away from
+> the camera and never legible.** She lowers it and looks at it, pleased.
 > Dappled light through plane trees, lake visible behind her shoulder. Camera
 > static at chest height, slight handheld sway. **[STYLE]**
 > Ambient audio: wind in leaves, water, a passing jogger's footsteps.
 
-*Post: track the grey rectangle, composite the real product grid onto it.*
+*Edit: cut away to screen recording **S1** on "and that's the catalogue", then
+back to her for the last sentence.*
 
 ---
 
 ### Clip 4 · 19–27s · The till — **the money shot**
 
 > **[CHARACTER]** walks slowly along the Zürich lakeside promenade holding a
-> smartphone flat in her left hand, screen up and angled toward the camera,
-> tapping the screen twice with her right thumb in a deliberate, unhurried
-> motion. **The phone screen is a plain matte dark grey rectangle with no
-> content on it.** Her fingers stay clear of the display. She glances from the
-> phone to the camera and back with a small satisfied nod. Lake and low golden
-> sun behind her. The camera tracks alongside her at chest height, close enough
-> that the phone fills a third of the frame. **[STYLE]**
+> smartphone in her left hand and tapping it twice with her right thumb in a
+> deliberate, unhurried motion. **The phone is seen from behind and above her
+> hand; its screen is tilted away from the camera and never legible.** She
+> glances from the phone to the camera and back with a small satisfied nod.
+> Lake and low golden sun behind her. The camera tracks alongside her at chest
+> height, close enough that her hand and the phone fill a third of the frame.
+> **[STYLE]**
 > Ambient audio: footsteps, wind, lake water, faint city hum.
 
-*Post: composite the POS grid, then the TWINT / card / cash row, timed to her
-two taps. This is the beat the whole video exists for — spend the most time
-here.*
+*Edit: this beat is mostly **S2** — cut to the full-frame screen recording on
+"this is the till" and stay there through the tap and the payment row, coming
+back to her only for the last sentence. This is the beat the whole video exists
+for; give the screen more time than her.*
 
 ---
 
 ### Clip 5 · 27–35s · One stock count
 
 > **[CHARACTER]** sits on a wooden bench on the Utoquai promenade in Zürich with
-> an open silver laptop on her knees and a smartphone lying flat on the bench
-> beside her, both screens angled up and visible to the camera. **Both screens
-> are plain matte dark grey rectangles with no content on them.** She looks from
-> the laptop to the phone and back, then to the camera, raising her eyebrows
-> slightly. Lake Zürich fills the background behind the bench, low sun on the
-> water. Camera static, slightly above, framing bench, laptop, phone and lake.
-> **[STYLE]**
+> an open silver laptop on her knees and a smartphone lying on the bench beside
+> her. **The camera is behind her right shoulder, so both screens are seen at a
+> steep oblique angle and neither is legible.** She looks from the laptop to the
+> phone and back, then half-turns to the camera, raising her eyebrows slightly.
+> Lake Zürich fills the background beyond the bench, low sun on the water.
+> Camera static, slightly above and behind. **[STYLE]**
 > Ambient audio: water, distant voices, a boat engine far off.
 
-*Post: composite the storefront on the laptop and the POS on the phone, and
-animate the same stock number changing on both at the same instant.*
+*Edit: **S3** — a split screen, storefront above and POS below, with the same
+stock number ticking down on both at the same instant. This is the one beat
+where route B (a picture-in-picture card over her shoulder) also works, and
+looks good.*
 
 ---
 
@@ -195,6 +220,38 @@ variants here and pick the one where the laugh looks involuntary.*
 > Ambient audio: footsteps receding, wind, water, a distant church bell.
 
 *Post: end card over the last second — logo, CHF 0/month, zolto.ch.*
+
+---
+
+## 3a. The three screen recordings
+
+These are the actual subject of the video. Capture them from a real store with
+real stock — not placeholder text — on a phone at 1080×1920 and a laptop at
+1920×1080. Screen-record with the device's own recorder; do not film a screen
+with a camera.
+
+| | What | Device | Length | Cuts into |
+|---|---|---|---|---|
+| **S1** | Notebook page photographed → the catalogue fills in, names and prices and quantities appearing as rows | Phone, 9:16 | 4s | Clip 3 |
+| **S2** | The POS grid of product photographs → thumb taps one → the TWINT / card / cash row → TWINT chosen | Phone, 9:16 | 5s | Clip 4 |
+| **S3** | Storefront listing above, POS below, one stock count dropping on both together | Laptop + phone, composed as a 9:16 split | 4s | Clip 5 |
+
+Notes that matter:
+
+- **S1 and S2 are already 9:16.** A phone screen recording drops into this edit
+  full-frame with no cropping and no letterbox. That is most of why route A is
+  the easy one.
+- **S3 is the awkward one** — a 16:9 browser window in a 9:16 frame. Compose it
+  as a split (storefront top, POS bottom) rather than shrinking the whole
+  browser; a full desktop window scaled to fit is illegible again, which is the
+  problem we started with.
+- **Slow the interactions down.** Record at a deliberate, almost stately pace.
+  Real usage speed is unreadable at Reels length, and speeding a recording up in
+  the edit is easy while slowing one down is not.
+- **Hide the clock and notifications.** Do Not Disturb, full battery, no banner
+  sliding in mid-take.
+- **Match the light.** Golden hour outdoors is warm; a screen recording is not.
+  A slight warm grade on the recordings stops the cutaways feeling pasted in.
 
 ---
 
@@ -243,8 +300,10 @@ If you try it anyway:
 
 1. **Stitch** the seven clips in order. Trim to the timings in §3; AI clips
    usually need 0.5–1s off each end where motion settles.
-2. **Screen-replace** clips 3, 4 and 5. Corner-pin or planar-track the grey
-   rectangles. The product must be legible for **at least 2 seconds** in each.
+2. **Drop in the cutaways** — S1 into clip 3, S2 into clip 4, S3 into clip 5,
+   full frame, hard cuts both ways. The product must be legible for **at least
+   2 seconds** in each. No transitions; a dissolve here reads as a corporate
+   video.
 3. **Voice** over the whole cut, then nudge picture to speech rather than the
    other way round.
 4. **Captions** — bold condensed sans, word-by-word pop-on, white with a hard
@@ -273,6 +332,45 @@ Use Instagram's AI-content label, and keep the on-screen claims to the list in
 **One consequence worth weighing before committing to this route:** a synthetic
 presenter cannot be a *testimonial*. She can describe the product, which is what
 this script has her do. She cannot say she uses it, and no caption on the post
-should imply a real person's experience. If the goal is a genuine creator
-endorsement, the live-action brief is the route — this one is a product film
-with a presenter in it.
+should imply a real person's experience.
+
+### 7a. "But I want her to say she used it"
+
+This is the natural instinct, because first person is more persuasive than
+third. It is also the one thing this route cannot give you, and no amount of
+production quality changes that: a person who does not exist cannot have used
+anything. A generated woman saying *"I've been using this at markets all
+summer"* is a fabricated endorsement — the same category as a written review
+from a customer who isn't real, and not a category that gets rescued by the
+video looking good.
+
+The exposures are concrete, not theoretical. Swiss unfair-competition law
+(UWG Art. 3) covers misleading statements about a business; the Swiss
+Lauterkeitskommission takes complaints from anyone, including competitors, and
+we are about to start naming two of them on our own comparison pages.
+Instagram's synthetic-media rules require the label, and the label sitting over
+a first-person usage claim is itself the disclosure that the claim is false.
+And the whole positioning
+we rebuilt in August is *"we tell you the unflattering number"* — the site now
+publishes a table showing our card rate is the dearest of the three. A faked
+testimonial is expensive precisely because of the strategy it contradicts.
+*(Not legal advice — worth ten minutes with a Swiss lawyer before publishing
+either way.)*
+
+**So: if you want first person, get a real person.** Three ways, all cheaper
+than they sound:
+
+| | Route | What it costs | What you get |
+|---|---|---|---|
+| **1** | **A creator who actually uses it.** Standard influencer arrangement — give them a store, real stock and a market day, a week before the shoot. | A fee, a week's lead time, a `#bezahltePartnerschaft` disclosure | Everything. First person, true, and they'll write better lines than we did |
+| **2** | **The pilot maker.** She already uses it. Signed release (`../legal/content-release-form.md`), shoot her at her own stall. | Almost nothing | The most credible version, and real product on the screens |
+| **3** | **You, on camera.** First person, but as the founder. | Nothing | Honest, and beat 6 lands differently — a founder conceding the price is not the cheapest is *more* striking than a reviewer doing it, not less |
+
+Route 1 is the one you were reaching for. Note that it makes most of this file
+redundant: once a real person is on camera, the AI generation is only useful for
+b-roll you couldn't get on the day.
+
+**And if you keep the synthetic presenter, keep her in the third person.** The
+script as written is already the workaround — she describes what *a maker*
+gets, which is true, checkable, and needs no one to have used anything. That is
+why it was written that way.

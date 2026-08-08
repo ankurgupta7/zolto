@@ -191,6 +191,14 @@ more than it earns.
   not a traffic claim.
 - ❌ Naming or mocking a competitor. The comparison lives on the website where it
   can carry its sources.
+- ❌ **Anyone saying they use Zolto who doesn't.** First person is more
+  persuasive than third, which is exactly why it's tempting — but "I've been
+  using this at markets all summer" is a testimonial, and a testimonial has to
+  be true. If the presenter is cast rather than a genuine user, either give them
+  the product and a market day first, or keep the script in the third person as
+  written. This applies doubly to an AI-generated presenter, who cannot have
+  used anything at all — see
+  [`instagram-short-ai-prompts.md`](./instagram-short-ai-prompts.md) §7a.
 
 **Safe to say, all shipped and checkable:**
 
