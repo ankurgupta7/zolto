@@ -89,8 +89,16 @@ This folder contains everything needed to execute Phase 1 of the Zolto business 
 ## Instagram short (added 2026-08-06)
 
 [`marketing/instagram-short-brief.md`](./marketing/instagram-short-brief.md) is
-the shareable brief for an outside artist: the pitch in three lengths, a
-30-second shot list, the brand palette and type, and — most importantly — the
-list of claims we may **not** make. Hand it over whole; §5 exists because a
-copywriter's instinct is to reach for "cheapest", and on card rate we are the
-most expensive option on our own comparison table.
+the shareable brief for an outside creator: the pitch in three lengths, a
+45-second live-action shot list, caption and camera direction, and — most
+importantly — the list of claims we may **not** make.
+
+The format is a real person walking the Zürich lakeside promenade, showing the
+product on her own laptop and phone, in the **third person** — she is not the
+maker. That distance is deliberate: it lets beat 6 concede that Zolto is not
+the cheapest way to take a card, which a founder saying it to camera could not
+pull off, and which is the most persuasive five seconds in the video.
+
+Hand it over whole; §5 exists because a copywriter's instinct is to reach for
+"cheapest", and on card rate we are the most expensive option on our own
+comparison table.
