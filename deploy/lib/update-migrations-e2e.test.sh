@@ -213,12 +213,16 @@ assert_contains "$LOG" "MODIFY COLUMN \`category\` varchar(64)" \
   "products.category is converted to varchar"
 assert_contains "$OUT" "0036 seed jewellery categories" \
   "0036 seeds the jewellery preset for existing tenants"
+# 0041: the custom-domain uniqueness index. A stale database has no duplicate
+# rows (the probe answers 0), so the index is created rather than skipped.
+assert_contains "$LOG" "CREATE UNIQUE INDEX \`tenant_settings_public_domain_unique\`" \
+  "tenant_settings.public_domain gains its unique index"
 
 # Ordering: the fingerprint INSERT must be the last mutating statement — a
 # fingerprint recorded before the final DDL would let the next deploy skip a
 # half-applied schema.
 FP_LINE="$(printf '%s\n' "$LOG" | grep -n "INSERT INTO \`deploy_state\`" | head -1 | cut -d: -f1)"
-LAST_DDL_LINE="$(printf '%s\n' "$LOG" | grep -n -E "ALTER TABLE|CREATE TABLE IF NOT EXISTS \`(magic_link_tokens|rate_limit_windows)\`" | tail -1 | cut -d: -f1)"
+LAST_DDL_LINE="$(printf '%s\n' "$LOG" | grep -n -E "ALTER TABLE|CREATE UNIQUE INDEX|CREATE TABLE IF NOT EXISTS \`(magic_link_tokens|rate_limit_windows)\`" | tail -1 | cut -d: -f1)"
 if [ -n "$FP_LINE" ] && [ -n "$LAST_DDL_LINE" ] && [ "$FP_LINE" -gt "$LAST_DDL_LINE" ]; then
   pass "the schema fingerprint is recorded after the last DDL (line ${FP_LINE} > ${LAST_DDL_LINE})"
 else
@@ -239,6 +243,9 @@ assert_not_contains "$LOG2" "ALTER TABLE \`products\`" "no products DDL is re-is
 assert_not_contains "$LOG2" "ALTER TABLE \`orders\`" "no orders DDL is re-issued"
 assert_not_contains "$LOG2" "ALTER TABLE \`users\`" "no users DDL is re-issued"
 assert_not_contains "$LOG2" "ALTER TABLE \`tenants\`" "no tenants DDL is re-issued"
+assert_contains "$OUT2" "0041 tenant_settings.public_domain already unique" \
+  "0041 takes its already-applied branch"
+assert_not_contains "$LOG2" "CREATE UNIQUE INDEX" "no unique index is re-created"
 assert_contains "$LOG2" "INSERT INTO \`deploy_state\`" "the fingerprint is still recorded"
 
 echo ""

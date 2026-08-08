@@ -1,8 +1,6 @@
 import type { CreateExpressContextOptions } from "@trpc/server/adapters/express";
 import type { Tenant, User } from "../../drizzle/schema";
-import { db } from "../db";
-import { tenants } from "../../drizzle/schema";
-import { eq } from "drizzle-orm";
+import { resolveTenantForHost } from "../tenantResolve";
 import { sdk } from "./sdk";
 
 export type TrpcContext = {
@@ -12,37 +10,21 @@ export type TrpcContext = {
   tenant: Tenant | null;
 };
 
-// Resolve tenant from request:
-// 1. X-Tenant-Slug header (for API/POS clients)
-// 2. Host header subdomain (tenant.zolto.ch)
-// 3. No fallback — if no tenant resolved, context.tenant is null
-//    This is intentional: Zolto is a fresh product, not Kalakosh.
-//    Kalakosh remains separate on kalakosh.ch.
+// Resolve tenant from request: X-Tenant-Slug header, then the host — a
+// platform subdomain (tenant.zolto.ch) by slug, any other hostname as a
+// registered custom domain (shop.example.com). Unknown hosts resolve to null.
+//
+// The logic itself lives in server/tenantResolve.ts, shared with the non-tRPC
+// routes (SEO, llms.txt, MCP). It used to be duplicated here, and the copies
+// drifted: both looked up the host's left-most label as a slug regardless of
+// which domain it sat under, so a custom domain never found its own tenant —
+// and could find someone else's (`shop.example.com` → the store slugged "shop").
 async function resolveTenant(
   req: CreateExpressContextOptions["req"],
 ): Promise<Tenant | null> {
   try {
-    // Check header first (POS apps, API clients)
     const slug = req.headers["x-tenant-slug"] as string | undefined;
-    if (slug) {
-      const tenant = await db.query.tenants.findFirst({
-        where: eq(tenants.slug, slug),
-      });
-      if (tenant) return tenant;
-    }
-
-    // Check subdomain (tenant.zolto.ch)
-    const host = req.headers.host || "";
-    const subdomain = host.split(".")[0];
-    if (subdomain && subdomain !== "www" && subdomain !== "zolto") {
-      const tenant = await db.query.tenants.findFirst({
-        where: eq(tenants.slug, subdomain),
-      });
-      if (tenant) return tenant;
-    }
-
-    // No fallback. Zolto is a separate product.
-    return null;
+    return await resolveTenantForHost(req.headers.host || "", slug ?? null);
   } catch (_error) {
     return null;
   }

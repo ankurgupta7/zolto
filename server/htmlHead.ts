@@ -50,6 +50,7 @@ export async function injectHeadForRequest(
       metaDescription: settings?.metaDescription ?? null,
       faviconUrl: settings?.faviconUrl || settings?.logoUrl || null,
       primaryColor: settings?.primaryColor ?? null,
+      tenantSlug: tenant.slug,
     });
 
     // Per-route storefront SEO. Only the routes that need the catalogue pay for

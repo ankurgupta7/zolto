@@ -3,7 +3,9 @@
  *
  * Same approach as platform.tsx: mount the REAL pages inside the REAL
  * AdminLayout behind the REAL trpc client, and stub only the transport, so
- * what is captured is what ships. `?route=` picks the page.
+ * what is captured is what ships. `?route=` picks the page, and `?plan=pro`
+ * puts the stub store on the paid plan — the only way to see a plan-gated page
+ * (Domain) in its real state rather than behind its upsell.
  *
  *   npx vite --config tools/screenshot/vite.config.ts &
  *   SHOT_URL="http://localhost:5199/admin.html?route=/admin/account" \
@@ -27,9 +29,11 @@ import Channels from "@/pages/admin/Channels";
 import Keys from "@/pages/admin/Keys";
 import Categories from "@/pages/admin/Categories";
 import CsvImport from "@/pages/CsvImport";
+import Domain from "@/pages/admin/Domain";
 
-const route =
-  new URLSearchParams(location.search).get("route") ?? "/admin/account";
+const params = new URLSearchParams(location.search);
+const route = params.get("route") ?? "/admin/account";
+const plan = params.get("plan") ?? "free";
 
 const RESPONSES: Record<string, unknown> = {
   "auth.me": {
@@ -44,14 +48,22 @@ const RESPONSES: Record<string, unknown> = {
     id: 42,
     slug: "bergblume",
     name: "Bergblume Keramik",
-    plan: "free",
+    plan,
     subscriptionStatus: "trialing",
     terminalLocationId: null,
+  },
+  // Domain page: a saved custom domain whose CNAME hasn't landed yet — the
+  // state a merchant actually sits in while waiting for DNS.
+  "tenant.domainStatus": {
+    domain: "shop.bergblume.ch",
+    expected: "app.zolto.ch",
+    pointsToUs: false,
   },
   "tenant.getSettings": {
     contactEmail: "hello@bergblume.ch",
     contactPhone: "+41 79 000 00 00",
     currency: "chf",
+    publicDomain: "shop.bergblume.ch",
     twintQrUrl: null,
     vertical: "ceramics",
     verticalDescription: "Wheel-thrown stoneware in muted glazes",
@@ -68,9 +80,12 @@ const RESPONSES: Record<string, unknown> = {
     key,
     labelEn: key,
     labelDe:
-      { "Mugs & Cups": "Tassen & Becher", Bowls: "Schalen", Vases: "Vasen", Other: "Sonstiges" }[
-        key
-      ] ?? null,
+      {
+        "Mugs & Cups": "Tassen & Becher",
+        Bowls: "Schalen",
+        Vases: "Vasen",
+        Other: "Sonstiges",
+      }[key] ?? null,
     extraIncludes: [],
     sortOrder: i,
   })),
@@ -126,6 +141,7 @@ const PAGES: Record<string, React.ComponentType> = {
   pos: Pos,
   channels: Channels,
   keys: Keys,
+  domain: Domain,
 };
 
 const queryClient = new QueryClient({

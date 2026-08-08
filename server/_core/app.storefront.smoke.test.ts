@@ -8,18 +8,23 @@ import request from "supertest";
 //   HTTP request → express → tRPC adapter → createContext (tenant resolution)
 //   → products router → db read → JSON response.
 
-const { findFirst, getVisibleProducts, getUserByOpenId, getDb } = vi.hoisted(
-  () => ({
-    findFirst: vi.fn(),
-    getVisibleProducts: vi.fn(),
-    getUserByOpenId: vi.fn(),
-    getDb: vi.fn(),
-  }),
-);
+const {
+  getTenantBySlug,
+  getTenantByCustomDomain,
+  getVisibleProducts,
+  getUserByOpenId,
+  getDb,
+} = vi.hoisted(() => ({
+  getTenantBySlug: vi.fn(),
+  getTenantByCustomDomain: vi.fn(),
+  getVisibleProducts: vi.fn(),
+  getUserByOpenId: vi.fn(),
+  getDb: vi.fn(),
+}));
 
 // The db module is imported across many routers; keep every real export and
 // override only the boundary this e2e drives: connection warm-up, the auth
-// lookup, the tenant-resolution proxy, and the storefront product read.
+// lookup, the two tenant-resolution lookups, and the storefront product read.
 vi.mock("../db", async (importActual) => {
   const actual = await importActual<typeof import("../db")>();
   return {
@@ -27,7 +32,8 @@ vi.mock("../db", async (importActual) => {
     getDb,
     getUserByOpenId,
     getVisibleProducts,
-    db: { query: { tenants: { findFirst } } },
+    getTenantBySlug,
+    getTenantByCustomDomain,
   };
 });
 
@@ -44,7 +50,8 @@ let app: Express;
 beforeAll(async () => {
   getDb.mockResolvedValue({});
   getUserByOpenId.mockResolvedValue(undefined); // anonymous visitor
-  findFirst.mockResolvedValue(TENANT);
+  getTenantBySlug.mockResolvedValue(TENANT);
+  getTenantByCustomDomain.mockResolvedValue(undefined);
   getVisibleProducts.mockResolvedValue(PRODUCTS);
   app = await createApp();
 });
@@ -82,8 +89,8 @@ describe("storefront e2e (tenant resolves, data flows)", () => {
 
   it("still 404s a storefront read when the slug matches no tenant", async () => {
     // Miss on both the header lookup and the subdomain fallback.
-    findFirst.mockReset();
-    findFirst.mockResolvedValue(undefined);
+    getTenantBySlug.mockReset();
+    getTenantBySlug.mockResolvedValue(undefined);
     const res = await request(app)
       .get("/api/trpc/products.list")
       .set("X-Tenant-Slug", "ghost");

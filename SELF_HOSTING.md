@@ -546,7 +546,7 @@ docker network inspect zolto_internal \
 
   `./update.sh` now names these runners and force-removes them on exit (even on Ctrl-C), so fresh installs should not hit this case.
 
-## Tenant custom domains (Maker plan and above)
+## Tenant custom domains (Pro plan)
 
 Tenants can serve their storefront on their own domain. Two pieces make it work:
 
@@ -573,5 +573,12 @@ Tenants can serve their storefront on their own domain. Two pieces make it work:
    ```
 
    Set `PLATFORM_DOMAIN` (e.g. `app.zolto.ch`) in `.env` — tenants get shown
-   "CNAME your domain → app.zolto.ch" in Plan & Billing, and the app live-checks
-   their DNS. HTTPS is issued automatically on the first visit after DNS points.
+   "CNAME your domain → app.zolto.ch" under Store → Domain, and the app
+   live-checks their DNS. HTTPS is issued automatically on the first visit after
+   DNS points.
+
+   Requests then arrive with `Host: shop.example.com`, and the app maps that
+   hostname back to the store through `tenant_settings.public_domain`
+   (`server/tenantResolve.ts`) — no per-tenant configuration, and no relation to
+   the store's `*.zolto.ch` slug, which keeps working alongside it. That column
+   is unique: a hostname belongs to exactly one store.

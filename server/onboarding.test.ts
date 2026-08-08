@@ -175,6 +175,15 @@ describe("deriveOnboardingStatus", () => {
     expect(s.tasks.find((t) => t.id === "custom-domain")!.done).toBe(true);
   });
 
+  it("points the custom-domain task at the page that completes it", async () => {
+    // It used to link to Plan & Billing, which sells the feature but has no
+    // domain field — the task could never be finished from where it sent you.
+    const s = await deriveOnboardingStatus(tenant());
+    expect(s.tasks.find((t) => t.id === "custom-domain")!.href).toBe(
+      "/admin/domain",
+    );
+  });
+
   it("completes pos-ready once a Terminal location exists", async () => {
     const s = await deriveOnboardingStatus(
       tenant({

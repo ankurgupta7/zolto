@@ -25,6 +25,7 @@ import {
   getPendingStaffInvites,
   getStaffInviteByToken,
   getTenantSettingsByDomain,
+  getTenantByCustomDomain,
   createStaffInvite,
   joinTenantAsStaff,
   countTenantProducts,
@@ -98,6 +99,12 @@ describe("db helpers when the database is unavailable", () => {
     await expect(getStaffInviteByToken("t")).resolves.toBeUndefined();
     await expect(
       getTenantSettingsByDomain("x.example.com"),
+    ).resolves.toBeUndefined();
+    // Custom-domain resolution runs on every storefront request: with the
+    // database down it must degrade to "no tenant", not throw out of the tRPC
+    // context builder.
+    await expect(
+      getTenantByCustomDomain("x.example.com"),
     ).resolves.toBeUndefined();
     await expect(
       createStaffInvite({

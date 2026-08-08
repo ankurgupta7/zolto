@@ -23,6 +23,15 @@ export interface StorefrontBranding {
   metaDescription?: string | null;
   faviconUrl?: string | null;
   primaryColor?: string | null;
+  /**
+   * The slug of the store this host serves, stamped into the shell as
+   * `<meta name="zolto-tenant-slug">`. The client can derive the slug itself
+   * from a platform subdomain, but not from a custom domain — only the server
+   * knows that shop.example.com is "aurora". Without it the SPA fell back to
+   * VITE_DEFAULT_TENANT_SLUG on every custom domain and asked the API for the
+   * wrong store (see client/src/lib/surface.ts).
+   */
+  tenantSlug?: string | null;
 }
 
 const HEX = /^#[0-9a-fA-F]{6}$/;
@@ -78,6 +87,14 @@ export function injectStorefrontHead(
     out,
     `<link rel="icon" href="${escapeHtml(faviconHref)}" />`,
   );
+
+  // Which store this host serves, for the SPA's surface resolver.
+  if (b.tenantSlug?.trim()) {
+    out = appendToHead(
+      out,
+      `<meta name="zolto-tenant-slug" content="${escapeHtml(b.tenantSlug.trim())}" />`,
+    );
+  }
 
   // Tab title + OG identity.
   const title = b.metaTitle?.trim() || b.storeName;

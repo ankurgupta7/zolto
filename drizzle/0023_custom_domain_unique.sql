@@ -1,0 +1,13 @@
+-- One custom domain, one store.
+--
+-- `public_domain` decides which tenant a request arriving on that hostname is
+-- served as (server/tenantResolve.ts), and which tenant's plan gates the TLS
+-- certificate for it (server/domainAsk.ts). Both lookups take the first row
+-- they find, so two stores claiming the same hostname means the winner is
+-- whatever order the database happened to return — a tenant mix-up, not a
+-- cosmetic clash.
+--
+-- MySQL exempts NULL from unique indexes, so the many stores with no custom
+-- domain are unaffected; only a second store trying to claim a hostname that is
+-- already taken is refused.
+CREATE UNIQUE INDEX `tenant_settings_public_domain_unique` ON `tenant_settings` (`public_domain`);

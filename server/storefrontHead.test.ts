@@ -98,4 +98,31 @@ describe("injectStorefrontHead", () => {
     expect(out).not.toContain("<script>alert(1)</script>");
     expect(out).toContain("&lt;script&gt;");
   });
+
+  // A custom domain carries no slug in its hostname, so the SPA can only learn
+  // which store it is serving from this tag (client/src/lib/surface.ts).
+  it("stamps the resolved tenant slug into the shell", () => {
+    const out = injectStorefrontHead(SHELL, {
+      storeName: "Aurora Atelier",
+      tenantSlug: "aurora",
+    });
+    expect(out).toContain('<meta name="zolto-tenant-slug" content="aurora" />');
+  });
+
+  it("omits the slug tag when there is nothing to stamp", () => {
+    expect(
+      injectStorefrontHead(SHELL, { storeName: "Aurora", tenantSlug: null }),
+    ).not.toContain("zolto-tenant-slug");
+    expect(injectStorefrontHead(SHELL, { storeName: "Aurora" })).not.toContain(
+      "zolto-tenant-slug",
+    );
+  });
+
+  it("escapes the slug like every other injected value", () => {
+    const out = injectStorefrontHead(SHELL, {
+      storeName: "Evil",
+      tenantSlug: '"><script>alert(1)</script>',
+    });
+    expect(out).not.toContain("<script>alert(1)</script>");
+  });
 });

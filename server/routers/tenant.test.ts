@@ -20,6 +20,7 @@ const { dbMock, createStripeCustomer, buildConnectAuthorizeUrl, storagePut } =
       assignUserToTenantAsAdmin: vi.fn(),
       deleteUserById: vi.fn(),
       seedTenantCategories: vi.fn(),
+      getTenantSettingsByDomain: vi.fn(),
     },
     createStripeCustomer: vi.fn(),
     buildConnectAuthorizeUrl: vi.fn(),
@@ -97,6 +98,7 @@ beforeEach(() => {
   dbMock.getStoreUserByEmail.mockResolvedValue(undefined);
   dbMock.getPendingTenantAdminByEmail.mockResolvedValue(undefined);
   dbMock.seedTenantCategories.mockResolvedValue(undefined);
+  dbMock.getTenantSettingsByDomain.mockResolvedValue(undefined);
   sendClaimLinkEmail.mockResolvedValue(false);
   createStripeCustomer.mockResolvedValue(null);
   brandingAiMock.rateLimitCheck.mockResolvedValue({
@@ -1109,6 +1111,41 @@ describe("tenant.updateSettings plan gates", () => {
     expect(set).not.toHaveBeenCalled();
   });
 
+  // One domain, one store: the hostname now decides which store a request is
+  // served as (server/tenantResolve.ts), so letting two stores register the
+  // same one means whoever's row comes back first serves the other's traffic.
+  it("refuses a domain another store has already connected", async () => {
+    const { caller, set } = tenantCtx("pro");
+    dbMock.getTenantSettingsByDomain.mockResolvedValue({
+      id: 3,
+      tenantId: 7,
+      publicDomain: "shop.example.com",
+    });
+    await expect(
+      caller.updateSettings({ publicDomain: "shop.example.com" }),
+    ).rejects.toThrow(/already connected to another store/);
+    expect(set).not.toHaveBeenCalled();
+  });
+
+  it("lets a store re-save the domain it already owns", async () => {
+    const { caller, set } = tenantCtx("pro");
+    dbMock.getTenantSettingsByDomain.mockResolvedValue({
+      id: 9,
+      tenantId: 42,
+      publicDomain: "shop.example.com",
+    });
+    await expect(
+      caller.updateSettings({ publicDomain: "shop.example.com" }),
+    ).resolves.toEqual({ success: true });
+    expect(set).toHaveBeenCalled();
+  });
+
+  it("does not spend a domain lookup when no domain is being set", async () => {
+    const { caller } = tenantCtx("pro");
+    await caller.updateSettings({ metaTitle: "Aurora" });
+    expect(dbMock.getTenantSettingsByDomain).not.toHaveBeenCalled();
+  });
+
   it("accepts a template change on every plan, and rejects unknown template ids", async () => {
     const { caller, set } = tenantCtx("free");
     await expect(
@@ -1563,5 +1600,74 @@ describe("tenant channel-credential vault procedures", () => {
     expect(vaultMock.setTenantSecret).not.toHaveBeenCalled();
     expect(vaultMock.deleteTenantSecret).not.toHaveBeenCalled();
     expect(vaultMock.listTenantSecrets).not.toHaveBeenCalled();
+  });
+});
+
+// tenant.domainStatus reports the store's registered custom domain and whether
+// its DNS points at the platform yet. It shipped as
+// `publicProcedure.use(requireTenant)` — the read half of the same mistake
+// updateSettings made — so anyone who could reach a store's host learned which
+// domain that merchant had bought and how far along the setup was.
+describe("tenant.domainStatus authorization", () => {
+  function statusCtx(
+    user: { openId: string; role?: string; tenantId?: number } | null,
+    tenantId = 42,
+  ) {
+    const findFirst = vi
+      .fn()
+      .mockResolvedValue({ id: 9, publicDomain: "shop.example.com" });
+    dbMock.db.query = { tenantSettings: { findFirst } };
+    return {
+      caller: tenantRouter.createCaller(
+        ctx(user, { id: tenantId, plan: "pro" }),
+      ),
+      findFirst,
+    };
+  }
+
+  it("refuses an anonymous caller", async () => {
+    const { caller, findFirst } = statusCtx(null);
+    await expect(caller.domainStatus()).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
+    expect(findFirst).not.toHaveBeenCalled();
+  });
+
+  it("refuses a signed-in non-admin", async () => {
+    const { caller, findFirst } = statusCtx({
+      openId: "google:shopper",
+      role: "user",
+      tenantId: 42,
+    });
+    await expect(caller.domainStatus()).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
+    expect(findFirst).not.toHaveBeenCalled();
+  });
+
+  it("refuses an admin of a DIFFERENT store", async () => {
+    const { caller, findFirst } = statusCtx(
+      { openId: "google:other", role: "admin", tenantId: 7 },
+      42,
+    );
+    await expect(caller.domainStatus()).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
+    expect(findFirst).not.toHaveBeenCalled();
+  });
+
+  it("serves this store's own admin", async () => {
+    process.env.PLATFORM_DOMAIN = "app.zolto.ch";
+    const { caller } = statusCtx({
+      openId: "google:admin",
+      role: "admin",
+      tenantId: 42,
+    });
+    await expect(caller.domainStatus()).resolves.toMatchObject({
+      domain: "shop.example.com",
+      expected: "app.zolto.ch",
+      pointsToUs: false,
+    });
+    delete process.env.PLATFORM_DOMAIN;
   });
 });

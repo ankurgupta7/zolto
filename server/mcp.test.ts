@@ -757,6 +757,9 @@ const mocks = vi.hoisted(() => {
   const rateLimitRows = new Map<string, { count: number; resetAt: number }>();
   return {
     getTenantBySlug: vi.fn(),
+    // Hosts that aren't platform subdomains are looked up as custom domains
+    // (server/tenantResolve.ts); these tests drive slugs, so it finds nothing.
+    getTenantByCustomDomain: vi.fn(async () => undefined),
     getVisibleProducts: vi.fn(),
     getVisibleProductById: vi.fn(),
     getPublicStores: vi.fn(async () => []),
@@ -780,6 +783,8 @@ const mocks = vi.hoisted(() => {
 
 vi.mock("./db", () => ({
   getTenantBySlug: (...a: unknown[]) => mocks.getTenantBySlug(...a),
+  getTenantByCustomDomain: (...a: unknown[]) =>
+    mocks.getTenantByCustomDomain(...a),
   getVisibleProducts: (...a: unknown[]) => mocks.getVisibleProducts(...a),
   getVisibleProductById: (...a: unknown[]) => mocks.getVisibleProductById(...a),
   getPublicStores: (...a: unknown[]) => mocks.getPublicStores(...a),
