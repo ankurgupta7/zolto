@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, cleanup } from "@testing-library/react";
-import { TenantProvider } from "./TenantContext";
+import { TenantProvider, useTenant } from "./TenantContext";
+import { EMPTY_CONTENT } from "@/lib/storefrontContent";
 
 const mocks = vi.hoisted(() => ({
   tenantData: undefined as unknown,
@@ -142,5 +143,48 @@ describe("TenantProvider two-color branding", () => {
     expect(accent).not.toBe("");
     // Same hue family as the ink — the pre-two-color behaviour, preserved.
     expect(Math.abs(hueOf(ink) - hueOf(accent))).toBeLessThan(12);
+  });
+});
+
+// The provider is the only thing that turns a settings row into the content
+// the storefront pages read, so a column added to the schema but never mapped
+// here would silently never reach a page.
+describe("TenantProvider merchant-authored content", () => {
+  function contentOf() {
+    let seen: unknown;
+    function Probe() {
+      seen = useTenant().content;
+      return null;
+    }
+    render(
+      <TenantProvider slug="aurora">
+        <Probe />
+      </TenantProvider>,
+    );
+    return seen as Record<string, unknown>;
+  }
+
+  it("hands pages an all-null content object for a store with no settings", () => {
+    mocks.settingsData = null;
+    expect(contentOf()).toEqual(EMPTY_CONTENT);
+  });
+
+  it("maps every authored column through to the storefront", () => {
+    mocks.settingsData = {
+      heroImageUrl: "https://cdn.example/shopfront.jpg",
+      heroHeadline: "Made by hand",
+      heroSubtitle: "In the old town since 2018",
+      aboutBody: "We opened with one kiln.",
+      companyLegalName: "Aurora Atelier GmbH",
+      companyAddress: "Musterstrasse 1\n8001 Basel",
+      vatNumber: "CHE-123.456.789 MWST",
+      companyRegistration: "CH-020.3.001.234-5",
+    };
+    expect(contentOf()).toEqual(mocks.settingsData);
+  });
+
+  it("collapses a blank column to null so pages only branch on null", () => {
+    mocks.settingsData = { heroHeadline: "  ", aboutBody: "" };
+    expect(contentOf()).toEqual(EMPTY_CONTENT);
   });
 });
