@@ -1,5 +1,5 @@
 /**
- * The AI-native pitch — hero visual and the two bands beneath it.
+ * The AI-native pitch — the thesis band and the two bands beneath it.
  *
  * Copy lives in AI_NATIVE_PITCH (shared/platform.ts) so the landing page, the
  * llms/MCP briefs and the tests all read one source; these components are the
@@ -8,9 +8,14 @@
  * genuinely supports (per-store MCP `create_checkout` — see server/mcp.ts),
  * which is what lets the proof band call itself "live today" rather than a
  * concept reel.
+ *
+ * All three bands used to open the page, with the thesis as the `<h1>`. They
+ * now sit below the product sections — see the doc comment on MAKER_PITCH for
+ * why. The copy is unchanged; only its place in the argument moved.
  */
 
 import { AI_NATIVE_PITCH } from "@shared/platform";
+import { SketchUnderline } from "@/components/SketchAccents";
 import { ScrollReveal } from "./ScrollReveal";
 import { useMarketingT } from "../lib/marketingI18n";
 
@@ -140,6 +145,52 @@ export function AgentChatMock() {
         </p>
       </div>
     </div>
+  );
+}
+
+/**
+ * The thesis band: assistants are the new front door, with the chart beside it.
+ *
+ * This is the copy that was the hero. It keeps its eyebrow, headline and body
+ * verbatim — what changed is that it's an `<h2>` on a page whose reader already
+ * knows what a Zolto till is, so "your next customer is an AI" reads as a
+ * reason to choose this shop rather than as a description of it.
+ */
+export function AiNativeBand() {
+  const { st } = useMarketingT();
+  return (
+    <section className="bg-[var(--brand-ink)]" data-testid="ai-native-band">
+      <div className="mx-auto grid w-full max-w-6xl items-center gap-10 px-4 py-20 sm:px-6 md:grid-cols-2">
+        <ScrollReveal>
+          <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
+            {st("aiNativePitch.eyebrow", AI_NATIVE_PITCH.eyebrow)}
+          </p>
+          <h2 className="mt-3 max-w-xl font-serif text-3xl leading-[1.15] text-white sm:text-4xl">
+            {st("aiNativePitch.headline", AI_NATIVE_PITCH.headline)}{" "}
+            {/* Only the punchline is underlined, so the stroke stays tight to
+                the words however the heading wraps. */}
+            <span className="relative inline-block">
+              {st(
+                "aiNativePitch.headlineEmphasis",
+                AI_NATIVE_PITCH.headlineEmphasis,
+              )}
+              <span
+                aria-hidden
+                className="absolute -bottom-2 left-0 w-full text-[var(--brand-accent)]"
+              >
+                <SketchUnderline />
+              </span>
+            </span>
+          </h2>
+          <p className="mt-8 max-w-md leading-relaxed text-white/70">
+            {st("aiNativePitch.body", AI_NATIVE_PITCH.body)}
+          </p>
+        </ScrollReveal>
+        <ScrollReveal>
+          <DiscoveryShiftChart />
+        </ScrollReveal>
+      </div>
+    </section>
   );
 }
 

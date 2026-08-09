@@ -7,7 +7,14 @@
 
 export const PLATFORM = {
   name: "Zolto",
-  tagline: "AI-run commerce for makers",
+  /**
+   * The page `<title>` and the MCP handshake read this, so it is the shortest
+   * answer to "what is Zolto?" anywhere on the platform. It used to be
+   * "AI-run commerce for makers", which describes how the thing is built
+   * rather than what it does — see MAKER_PITCH for the same correction applied
+   * to the hero.
+   */
+  tagline: "The till and the online shop for makers",
   /** One-liner used as the default meta description / llms.txt summary. */
   /**
    * Two claims were removed from this paragraph in the August 2026 pricing
@@ -854,7 +861,67 @@ export const CARD_READER_GAG = {
 } as const;
 
 /**
- * The AI-native main pitch — the landing hero and its proof sections.
+ * The landing hero — what Zolto *is*, in the merchant's own nouns.
+ *
+ * This constant exists because the hero used to be AI_NATIVE_PITCH, and that
+ * was a mistake worth recording so it doesn't get undone. The AI-native thesis
+ * is true, sourced and genuinely differentiating, but it is an argument for
+ * *choosing* Zolto — it only lands on a reader who already knows what Zolto is.
+ * A jeweller arriving cold read four sections (the thesis, the agent chat, the
+ * cost strip, found→asked→bought) before the page mentioned a till, and nine
+ * before it mentioned TWINT. The page answered "why is this the future?" ahead
+ * of "what is this?", and a reader who never got the second answer never
+ * reached the first.
+ *
+ * So the hero now names the category (a point-of-sale and a web store sharing
+ * one inventory), the payment methods a Swiss maker actually reaches for, the
+ * hardware (the phone or tablet they already own), and who it's for. The
+ * thesis keeps its full band — headline, body and chart intact — further down
+ * the page, where it reads as "and it's ready for what's coming" instead of as
+ * the product description.
+ *
+ * Every claim here is true of FREE_PLAN and pinned there by platform.test.ts,
+ * the same way ZERO_COST_POS and AI_NATIVE_PITCH are. Note what the hero does
+ * *not* say: nothing about being cheaper than anyone. On card rate we are not
+ * (docs/planning/positioning-pricing-revision.md §1), and a hero that opened on
+ * price would be contradicted by our own comparison table further down.
+ */
+export const MAKER_PITCH = {
+  eyebrow: "jewellers, potters, stallholders",
+  headline: "For one-of-a-kind things:",
+  /**
+   * Split for the hand-drawn underline — see ZERO_COST_POS on why.
+   *
+   * The width of this string is a hard constraint, not a matter of taste, and
+   * it is why the headline reads audience-first rather than product-first. The
+   * hero's heading column is 532px on a desktop and 342px on a 390px phone, at
+   * 48px/36px Cormorant. "for one-of-a-kind things." measures 472px: on a
+   * desktop it can't share a line with "shop" and pushes it onto a line of its
+   * own, and on a phone it is *wider than the column*, so it wraps inside its
+   * own inline-block and drags the underline across the column — the failure
+   * the screenshot section of CLAUDE.md documents.
+   *
+   * So the phrase moved into the headline, where it is allowed to wrap, and
+   * the underline went on the two nouns, which are short in all four
+   * languages. When editing any translation of this string, measure it: an
+   * emphasis wider than about 330px wraps on a phone, and because this is an
+   * inline-block that wrap is invisible to getClientRects() — the signal is
+   * the box going full-column-width, not a second rect.
+   */
+  headlineEmphasis: "a till and a shop.",
+  body: "Zolto is a point-of-sale and a web store that share one inventory. Tap the photo of the piece you just sold, take TWINT, a card or cash on the phone or tablet you already own — and the last one comes off your website before the customer has walked away.",
+  /** Labels on the hero's till drawing. */
+  till: {
+    title: "your till, on the phone you already own",
+    /** Rendered as one line, so a translator can adapt the words around TWINT. */
+    methods: "TWINT · Cards · Cash",
+    caption:
+      "Every piece with its photo, name and price. Tap the one you sold, take the payment, and your website updates itself.",
+  },
+} as const;
+
+/**
+ * The AI-native pitch — the thesis band and its proof sections.
  *
  * The thesis: buying is moving from search results into assistant
  * conversations, and assistants can only recommend stores they can read.
