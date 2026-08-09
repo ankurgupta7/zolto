@@ -28,9 +28,30 @@
             </intent-filter>
         </activity>
 
+        <!--
+            exported=true because of the pairing deep link below: tapping
+            `zolto://pair?t=…` in the store admin hands this activity the token
+            and the register binds itself, instead of a merchant typing 64 hex
+            characters into a phone.
+
+            A custom scheme rather than an https App Link, because verified App
+            Links need an assetlinks.json carrying the signing certificate
+            fingerprint — which a debug build published from CI does not have a
+            stable one of. The token in the link is single-use and short-lived,
+            and is exchanged for the real key server-side, so another app
+            registering the same scheme intercepts at most one spent token and
+            never the POS key itself.
+        -->
         <activity
             android:name=".SetupActivity"
-            android:exported="false" />
+            android:exported="true">
+            <intent-filter android:autoVerify="false">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="zolto" android:host="pair" />
+            </intent-filter>
+        </activity>
 
         <activity
             android:name=".SaleReviewActivity"

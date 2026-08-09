@@ -14,6 +14,13 @@ interface ApiService {
     @GET("api/pos/health")
     suspend fun health(): HealthResponse
 
+    // One-tap pairing. The ONLY call that deliberately carries no X-POS-Key:
+    // this is how a register with no key gets one. Reach it through
+    // RetrofitClient.pairingService(baseUrl), which builds a client without the
+    // auth interceptor and without touching the shared one.
+    @POST("api/pos/pair")
+    suspend fun redeemPairing(@Body request: PairingRequest): PairingResponse
+
     @GET("api/pos/products")
     suspend fun getProducts(@Query("includeHidden") includeHidden: Boolean = false): List<Product>
 

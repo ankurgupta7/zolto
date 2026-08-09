@@ -5,7 +5,9 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import ch.zolto.pos.data.PosConfig
 import ch.zolto.pos.data.RetrofitClient
+import ch.zolto.pos.data.models.PairingRequest
 import ch.zolto.pos.databinding.ActivitySetupBinding
+import ch.zolto.pos.logic.PairingLink
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -34,6 +36,65 @@ class SetupActivity : AppCompatActivity() {
         }
 
         binding.btnConnect.setOnClickListener { tryConnect() }
+
+        // One-tap pairing: launched by tapping `zolto://pair?t=…` in the store
+        // admin. Skips this form entirely — nobody types 64 hex characters into a
+        // phone at a market stall if they don't have to.
+        PairingLink.parse(intent?.dataString)?.let { pairByLink(it) }
+    }
+
+    /** Also fires when the activity is already open and a second link arrives. */
+    override fun onNewIntent(intent: android.content.Intent?) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        PairingLink.parse(intent?.dataString)?.let { pairByLink(it) }
+    }
+
+    /**
+     * Redeem a pairing token, then verify the key it returned before saving.
+     *
+     * The health check is not ceremony: the token is single-use, so if the key
+     * turns out not to work we must not have already overwritten a working
+     * pairing with it. Save only once the store answers.
+     */
+    private fun pairByLink(link: PairingLink.Parsed) {
+        binding.btnConnect.isEnabled = false
+        binding.btnConnect.text = getString(R.string.setup_checking)
+        binding.edtBaseUrl.setText(link.baseUrl)
+
+        scope.launch {
+            val key = withContext(Dispatchers.IO) {
+                try {
+                    RetrofitClient.pairingService(link.baseUrl)
+                        .redeemPairing(PairingRequest(link.token))
+                        .apiKey
+                        .takeIf { it.isNotBlank() }
+                } catch (_: Exception) {
+                    null
+                }
+            }
+
+            val verified = key != null && withContext(Dispatchers.IO) {
+                try {
+                    RetrofitClient.init(link.baseUrl, key)
+                    RetrofitClient.apiService.health().ok
+                } catch (_: Exception) {
+                    false
+                }
+            }
+
+            if (verified && key != null) {
+                PosConfig.save(this@SetupActivity, link.baseUrl, key)
+                startActivity(android.content.Intent(this@SetupActivity, MainActivity::class.java))
+                finish()
+            } else {
+                binding.btnConnect.isEnabled = true
+                binding.btnConnect.text = getString(R.string.setup_connect)
+                // Vague on purpose, mirroring the server: the link is spent
+                // either way, so the only useful instruction is "get a new one".
+                toast(getString(R.string.setup_pairing_link_failed))
+            }
+        }
     }
 
     private fun tryConnect() {
