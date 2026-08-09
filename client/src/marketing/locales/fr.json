@@ -499,9 +499,9 @@
       "catch": "Pas de compte à rebours d'essai. Pas de palier de départ qui expire discrètement. La seule chose que nous facturons, ce sont les ventes en ligne que nous vous apportons — et s'il n'y en a pas, il n'y a rien à facturer. Celui qui traite vos paiements carte et TWINT prélève toujours son propre taux, comme partout ailleurs ; cette facture est entre vous et lui, et nous n'en prenons pas une part."
     },
     "makerPitch": {
-      "eyebrow": "pour les ateliers de bijoux, de céramique et les marchés",
-      "headline": "La caisse et la boutique en ligne",
-      "headlineEmphasis": "pour l'artisanat.",
+      "eyebrow": "bijoux, céramique, marchés",
+      "headline": "Pour les pièces uniques :",
+      "headlineEmphasis": "une caisse et un site.",
       "body": "Zolto, c'est une caisse et une boutique en ligne qui partagent un seul inventaire. Touchez la photo de la pièce que vous venez de vendre, encaissez en TWINT, par carte ou en espèces sur le téléphone ou la tablette que vous avez déjà — et la dernière disparaît de votre site avant même que la personne ait quitté votre stand.",
       "till": {
         "title": "votre caisse, sur le téléphone que vous avez déjà",

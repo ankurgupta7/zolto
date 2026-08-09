@@ -380,6 +380,20 @@ describe("marketing locale files", () => {
     expect(enLocale.shared).toEqual(expectedShared);
   });
 
+  it("keeps the hero's underlined phrase short in every language", () => {
+    // The English source is guarded in platform.test.ts; this is the same
+    // guard for the three translations, which is where it is likeliest to be
+    // broken — a translator has no way to see that an extra word drags the
+    // sketch underline across the column on a phone. See the doc comment on
+    // MAKER_PITCH.headlineEmphasis for the measurements.
+    for (const [lang, resources] of Object.entries(LOCALES)) {
+      const emphasis = (
+        resources.shared.makerPitch as { headlineEmphasis: string }
+      ).headlineEmphasis;
+      expect(emphasis.length, `${lang} hero emphasis`).toBeLessThanOrEqual(30);
+    }
+  });
+
   it("translates every shared FAQ in every language (no English leaking by accident)", () => {
     for (const [lang, resources] of Object.entries(LOCALES)) {
       if (lang === "en") continue;

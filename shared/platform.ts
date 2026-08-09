@@ -887,16 +887,28 @@ export const CARD_READER_GAG = {
  * price would be contradicted by our own comparison table further down.
  */
 export const MAKER_PITCH = {
-  eyebrow: "for jewellers, potters and stallholders",
-  headline: "The till and the online shop",
+  eyebrow: "jewellers, potters, stallholders",
+  headline: "For one-of-a-kind things:",
   /**
-   * Split for the hand-drawn underline — see ZERO_COST_POS on why. Kept to two
-   * words on purpose: the hero's heading column is half the container, so the
-   * emphasis has to fit on a line beside "shop". The first draft underlined
-   * "for one-of-a-kind things.", which was too wide to sit there and pushed
-   * "shop" onto a line of its own.
+   * Split for the hand-drawn underline — see ZERO_COST_POS on why.
+   *
+   * The width of this string is a hard constraint, not a matter of taste, and
+   * it is why the headline reads audience-first rather than product-first. The
+   * hero's heading column is 532px on a desktop and 342px on a 390px phone, at
+   * 48px/36px Cormorant. "for one-of-a-kind things." measures 472px: on a
+   * desktop it can't share a line with "shop" and pushes it onto a line of its
+   * own, and on a phone it is *wider than the column*, so it wraps inside its
+   * own inline-block and drags the underline across the column — the failure
+   * the screenshot section of CLAUDE.md documents.
+   *
+   * So the phrase moved into the headline, where it is allowed to wrap, and
+   * the underline went on the two nouns, which are short in all four
+   * languages. When editing any translation of this string, measure it: an
+   * emphasis wider than about 330px wraps on a phone, and because this is an
+   * inline-block that wrap is invisible to getClientRects() — the signal is
+   * the box going full-column-width, not a second rect.
    */
-  headlineEmphasis: "for makers.",
+  headlineEmphasis: "a till and a shop.",
   body: "Zolto is a point-of-sale and a web store that share one inventory. Tap the photo of the piece you just sold, take TWINT, a card or cash on the phone or tablet you already own — and the last one comes off your website before the customer has walked away.",
   /** Labels on the hero's till drawing. */
   till: {

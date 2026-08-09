@@ -49,8 +49,9 @@ export default function Landing() {
             <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
               {st("makerPitch.eyebrow", MAKER_PITCH.eyebrow)}
             </p>
-            {/* max-w-2xl, not xl: at xl the headline broke after "online" and
-                left "shop" alone on a line of its own. */}
+            {/* The column, not max-w, is what actually bounds this heading —
+                see MAKER_PITCH.headlineEmphasis for the measurements and for
+                why the underlined phrase has to stay short. */}
             <h1 className="mt-4 max-w-2xl font-serif text-4xl leading-[1.1] text-white sm:text-5xl">
               {st("makerPitch.headline", MAKER_PITCH.headline)}{" "}
               {/* Only the punchline is underlined, so the stroke stays tight

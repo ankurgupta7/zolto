@@ -499,9 +499,9 @@
       "catch": "No trial clock. No starter tier that quietly expires. The only thing we ever charge for is the online sales we bring you — and if there aren't any, there's nothing to charge. Whoever processes your card and TWINT payments still charges their own rate, the same as they would anywhere else; that bill is between you and them, and we don't take a slice of it."
     },
     "makerPitch": {
-      "eyebrow": "for jewellers, potters and stallholders",
-      "headline": "The till and the online shop",
-      "headlineEmphasis": "for makers.",
+      "eyebrow": "jewellers, potters, stallholders",
+      "headline": "For one-of-a-kind things:",
+      "headlineEmphasis": "a till and a shop.",
       "body": "Zolto is a point-of-sale and a web store that share one inventory. Tap the photo of the piece you just sold, take TWINT, a card or cash on the phone or tablet you already own — and the last one comes off your website before the customer has walked away.",
       "till": {
         "title": "your till, on the phone you already own",

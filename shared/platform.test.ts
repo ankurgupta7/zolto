@@ -390,6 +390,19 @@ describe("MAKER_PITCH", () => {
     expect(hero).toMatch(/phone|tablet/);
   });
 
+  it("keeps the underlined phrase short enough not to wrap on a phone", () => {
+    // A character count is a proxy for a measurement, and a crude one — but
+    // the thing it guards is invisible to every other test here. The emphasis
+    // renders in a 342px column at 36px Cormorant on a 390px phone; past
+    // roughly 330px it wraps inside its own inline-block and the hand-drawn
+    // underline, which is absolutely positioned at w-full, trails across the
+    // column. The DOM is identical either way, so no render test catches it.
+    // 30 characters is comfortably inside that at Cormorant's average advance.
+    // If you need more room, measure it in a browser first — and see the doc
+    // comment on MAKER_PITCH.headlineEmphasis.
+    expect(MAKER_PITCH.headlineEmphasis.length).toBeLessThanOrEqual(30);
+  });
+
   it("promises only what the Free plan actually ships", () => {
     // Same contract as ZERO_COST_POS: the hero describes the product a visitor
     // gets for CHF 0, so every capability it names has to be on FREE_PLAN.
