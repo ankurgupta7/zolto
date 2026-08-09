@@ -60,6 +60,7 @@ import {
 import { VERTICAL_PRESETS, isVertical, type Vertical } from "@shared/verticals";
 import { ENV } from "./_core/env";
 import { PLANS } from "@shared/platform";
+import { effectivePlan } from "@shared/entitlements";
 import { hashPosApiKey } from "./posApiKey";
 import {
   DEFAULT_TENANT_ID,
@@ -346,15 +347,16 @@ export async function createProduct(data: WithOptionalTenant<InsertProduct>) {
   // choke point so every intake channel — admin UI, CSV import, bulk photo
   // upload, Discord/WhatsApp/Slack — hits the same limit. Fails open when
   // the tenant row can't be loaded so a broken lookup never blocks writes.
+  // effectivePlan, not tenant.plan: a store the operator has comped onto Pro
+  // gets Pro's catalogue room (shared/entitlements.ts).
   const tenant = await getTenantById(row.tenantId);
-  const cap = tenant
-    ? PLANS.find((p) => p.id === tenant.plan)?.maxProducts
-    : undefined;
+  const plan = tenant ? effectivePlan(tenant) : undefined;
+  const cap = plan ? PLANS.find((p) => p.id === plan)?.maxProducts : undefined;
   if (cap !== undefined) {
     const count = await countTenantProducts(row.tenantId);
     if (count >= cap) {
       throw new Error(
-        `Your catalogue is at its ${cap}-product limit on the ${tenant!.plan} plan — upgrade for more room.`,
+        `Your catalogue is at its ${cap}-product limit on the ${plan} plan — upgrade for more room.`,
       );
     }
   }
@@ -1134,10 +1136,41 @@ export interface OperatorTenantRow {
   createdAt: Date;
   /** Presence only — the account id itself is not the operator's business. */
   stripeConnected: boolean;
+  /**
+   * What this store has been given on the house — null for every ordinary
+   * store. `plan` is the granted plan (`tenants.comp_plan`), NOT the paid one
+   * above; shared/entitlements.ts resolves the pair.
+   */
+  comp: {
+    plan: "free" | "pro" | null;
+    feeWaived: boolean;
+    note: string | null;
+    grantedAt: Date | null;
+  } | null;
   /** Users on this tenant with role admin or superadmin. */
   adminCount: number;
   /** Users on this tenant of any role. */
   userCount: number;
+}
+
+/**
+ * The comp columns as the console renders them, or null when there is nothing
+ * to render. Shared by the list and the detail so the two cannot disagree about
+ * whether a store is on the house.
+ */
+function compSummary(row: {
+  compPlan: "free" | "pro" | null;
+  compFeeWaived: boolean;
+  compNote: string | null;
+  compGrantedAt: Date | null;
+}): OperatorTenantRow["comp"] {
+  if (!row.compPlan && !row.compFeeWaived) return null;
+  return {
+    plan: row.compPlan,
+    feeWaived: row.compFeeWaived,
+    note: row.compNote,
+    grantedAt: row.compGrantedAt,
+  };
 }
 
 export async function listTenantsForOperator(): Promise<OperatorTenantRow[]> {
@@ -1153,6 +1186,10 @@ export async function listTenantsForOperator(): Promise<OperatorTenantRow[]> {
         trialEndsAt: tenants.trialEndsAt,
         createdAt: tenants.createdAt,
         stripeConnectedAccountId: tenants.stripeConnectedAccountId,
+        compPlan: tenants.compPlan,
+        compFeeWaived: tenants.compFeeWaived,
+        compNote: tenants.compNote,
+        compGrantedAt: tenants.compGrantedAt,
       })
       .from(tenants)
       .orderBy(desc(tenants.createdAt));
@@ -1185,6 +1222,7 @@ export async function listTenantsForOperator(): Promise<OperatorTenantRow[]> {
       trialEndsAt: r.trialEndsAt,
       createdAt: r.createdAt,
       stripeConnected: Boolean(r.stripeConnectedAccountId),
+      comp: compSummary(r),
       adminCount: byTenant.get(r.id)?.adminCount ?? 0,
       userCount: byTenant.get(r.id)?.userCount ?? 0,
     }));
@@ -1234,6 +1272,10 @@ export async function getTenantDetailForOperator(
         trialEndsAt: tenants.trialEndsAt,
         createdAt: tenants.createdAt,
         stripeConnectedAccountId: tenants.stripeConnectedAccountId,
+        compPlan: tenants.compPlan,
+        compFeeWaived: tenants.compFeeWaived,
+        compNote: tenants.compNote,
+        compGrantedAt: tenants.compGrantedAt,
         onboardingStep: tenants.onboardingStep,
         referralCode: tenants.referralCode,
       })
@@ -1278,6 +1320,7 @@ export async function getTenantDetailForOperator(
         trialEndsAt: row.trialEndsAt,
         createdAt: row.createdAt,
         stripeConnected: Boolean(row.stripeConnectedAccountId),
+        comp: compSummary(row),
         adminCount: mapped.filter(
           (u) => u.role === "admin" || u.role === "superadmin",
         ).length,
@@ -1343,6 +1386,51 @@ export async function setTenantPlanByOperator(
     if (!target) return false;
 
     await db.update(tenants).set({ plan }).where(eq(tenants.id, tenantId));
+    return true;
+  }, false);
+}
+
+/**
+ * Put a store on the house — or take it off again.
+ *
+ * `plan` here is the plan GRANTED, written to `comp_plan`; the store's own
+ * `tenants.plan` is deliberately untouched, because that column is Stripe's
+ * (server/billing.ts writes it from subscription webhooks). Keeping the grant
+ * in its own column is what stops a cancelled subscription arriving late from
+ * silently revoking a comp, and what stops revoking a comp from taking away a
+ * plan the merchant actually pays for — shared/entitlements.ts resolves the two
+ * into one answer for every gate.
+ *
+ * Passing `plan: null` and `feeWaived: false` revokes the comp entirely and
+ * clears its provenance, so a revoked store is indistinguishable from one that
+ * was never comped.
+ */
+export async function setTenantCompByOperator(args: {
+  tenantId: number;
+  plan: "free" | "pro" | null;
+  feeWaived: boolean;
+  note?: string | null;
+  grantedByUserId?: number | null;
+}): Promise<boolean> {
+  return withDb(async (db) => {
+    const [target] = await db
+      .select({ id: tenants.id })
+      .from(tenants)
+      .where(eq(tenants.id, args.tenantId))
+      .limit(1);
+    if (!target) return false;
+
+    const revoking = args.plan === null && !args.feeWaived;
+    await db
+      .update(tenants)
+      .set({
+        compPlan: args.plan,
+        compFeeWaived: args.feeWaived,
+        compNote: revoking ? null : args.note?.trim() || null,
+        compGrantedAt: revoking ? null : new Date(),
+        compGrantedBy: revoking ? null : (args.grantedByUserId ?? null),
+      })
+      .where(eq(tenants.id, args.tenantId));
     return true;
   }, false);
 }

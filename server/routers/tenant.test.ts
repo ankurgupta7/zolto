@@ -78,7 +78,14 @@ function ctx(
     tenantId?: number;
     email?: string;
   } | null = null,
-  tenant: { id: number; plan: string } | null = null,
+  tenant: {
+    id: number;
+    plan: string;
+    compPlan?: string | null;
+    compFeeWaived?: boolean;
+    compNote?: string | null;
+    posApiKey?: string;
+  } | null = null,
 ): TrpcContext {
   return {
     req: { protocol: "https", headers: {} } as never,
@@ -1166,6 +1173,56 @@ describe("tenant.updateSettings plan gates", () => {
 // its "Admin" heading, so ANY unauthenticated caller who could reach a store's
 // host could rewrite that store's settings — contact email, Discord intake
 // channel, public domain, branding. These pin the guard shut.
+// The client gates (Domain, Support, Billing) all read `plan` off this
+// response, so what it means is a contract and not an implementation detail.
+describe("tenant.me — the plan the admin UI gates on", () => {
+  const admin = { openId: "google:admin", role: "admin", tenantId: 42 };
+  const base = { id: 42, posApiKey: "hashed-secret" };
+
+  it("reports the paid plan for an ordinary store", async () => {
+    const me = await tenantRouter
+      .createCaller(ctx(admin, { ...base, plan: "free" }))
+      .me();
+    expect(me.plan).toBe("free");
+    expect(me.comped).toBe(false);
+  });
+
+  it("reports the comped plan, with the paid one still visible", async () => {
+    const me = await tenantRouter
+      .createCaller(ctx(admin, { ...base, plan: "free", compPlan: "pro" }))
+      .me();
+    expect(me.plan).toBe("pro"); // what the gates read
+    expect(me.paidPlan).toBe("free"); // what Stripe bills
+    expect(me.planComped).toBe(true);
+    expect(me.onlineFeeBps).toBe(0);
+  });
+
+  it("reports a waived fee without inventing a plan grant", async () => {
+    const me = await tenantRouter
+      .createCaller(ctx(admin, { ...base, plan: "free", compFeeWaived: true }))
+      .me();
+    expect(me.plan).toBe("free");
+    expect(me.onlineFeeBps).toBe(0);
+    expect(me.planComped).toBe(false);
+  });
+
+  it("never returns the POS key hash, nor the operator's private note", async () => {
+    const me = await tenantRouter
+      .createCaller(
+        ctx(admin, {
+          ...base,
+          plan: "free",
+          compPlan: "pro",
+          compNote: "friend of the founder",
+        }),
+      )
+      .me();
+    expect(me).not.toHaveProperty("posApiKey");
+    expect(me).not.toHaveProperty("compNote");
+    expect(JSON.stringify(me)).not.toContain("founder");
+  });
+});
+
 describe("tenant.updateSettings authorization", () => {
   function settingsCtx(
     user: { openId: string; role?: string; tenantId?: number } | null,

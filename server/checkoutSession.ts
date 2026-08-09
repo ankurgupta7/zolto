@@ -14,7 +14,7 @@
  * Free plan, nothing on Pro (docs/planning/pricing-pivot-agent-commerce.md).
  */
 
-import { PLANS, REVENUE_SHARE } from "@shared/platform";
+import { onlineFeeBpsFor, type TenantBillingFacts } from "@shared/entitlements";
 import type { Tenant } from "../drizzle/schema";
 import {
   createOrder,
@@ -97,14 +97,17 @@ export class CheckoutError extends Error {
  * product subtotal only — never on shipping — and in-person POS sales never
  * carry a fee at all (server/pos.ts). An unknown plan value bills like Free,
  * matching the DB default.
+ *
+ * Takes the tenant's billing facts rather than a bare plan id so a comped store
+ * cannot be skimmed by a caller that only had `tenant.plan` to hand — the fee
+ * has two ways to reach zero (Pro, and an explicit waiver) and
+ * shared/entitlements.ts owns both.
  */
 export function platformFeeRappen(
-  plan: string,
+  tenant: TenantBillingFacts,
   subtotalRappen: number,
 ): number {
-  const bps =
-    PLANS.find((p) => p.id === plan)?.onlineFeeBps ?? REVENUE_SHARE.freeBps;
-  return Math.round((subtotalRappen * bps) / 10_000);
+  return Math.round((subtotalRappen * onlineFeeBpsFor(tenant)) / 10_000);
 }
 
 /**
@@ -274,7 +277,7 @@ export async function createStorefrontCheckoutSession(params: {
       ? 0
       : CH_FLAT_SHIPPING_FEE_RAPPEN;
 
-  const feeRappen = platformFeeRappen(tenant.plan, subtotalRappen);
+  const feeRappen = platformFeeRappen(tenant, subtotalRappen);
 
   // The second argument's `stripeAccount` runs this call on the tenant's own
   // connected Standard account (a "direct charge") using Zolto's platform key

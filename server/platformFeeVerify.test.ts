@@ -100,8 +100,14 @@ describe("verdictFor", () => {
 });
 
 describe("summarise", () => {
-  const pass = { label: "free", verdict: verdictFor({ expectedFeeRappen: 100, observedFeeRappen: 100 }) };
-  const fail = { label: "pro", verdict: verdictFor({ expectedFeeRappen: 0, observedFeeRappen: 25 }) };
+  const pass = {
+    label: "free",
+    verdict: verdictFor({ expectedFeeRappen: 100, observedFeeRappen: 100 }),
+  };
+  const fail = {
+    label: "pro",
+    verdict: verdictFor({ expectedFeeRappen: 0, observedFeeRappen: 25 }),
+  };
 
   it("passes only when every case passed", () => {
     expect(summarise([pass]).pass).toBe(true);
@@ -122,17 +128,17 @@ describe("the fee the verifier checks is the fee checkout charges", () => {
     // production does — so the script computes its expectation with the same
     // function checkoutSession.ts calls.
     const subtotal = 10_000; // CHF 100.00
-    expect(platformFeeRappen("free", subtotal)).toBe(100); // 1%
-    expect(platformFeeRappen("pro", subtotal)).toBe(0);
+    expect(platformFeeRappen({ plan: "free" }, subtotal)).toBe(100); // 1%
+    expect(platformFeeRappen({ plan: "pro" }, subtotal)).toBe(0);
 
     const free = verdictFor({
-      expectedFeeRappen: platformFeeRappen("free", subtotal),
+      expectedFeeRappen: platformFeeRappen({ plan: "free" }, subtotal),
       observedFeeRappen: 100,
     });
     expect(free.pass).toBe(true);
 
     const pro = verdictFor({
-      expectedFeeRappen: platformFeeRappen("pro", subtotal),
+      expectedFeeRappen: platformFeeRappen({ plan: "pro" }, subtotal),
       observedFeeRappen: null,
     });
     expect(pro.pass).toBe(true);

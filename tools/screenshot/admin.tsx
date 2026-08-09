@@ -30,10 +30,15 @@ import Keys from "@/pages/admin/Keys";
 import Categories from "@/pages/admin/Categories";
 import CsvImport from "@/pages/CsvImport";
 import Domain from "@/pages/admin/Domain";
+import Billing from "@/pages/Billing";
 
 const params = new URLSearchParams(location.search);
 const route = params.get("route") ?? "/admin/account";
 const plan = params.get("plan") ?? "free";
+// `?comp=pro` puts the stub store on the house — the state the operator's
+// "On the house" grant leaves a merchant in, and the only way to see the
+// Billing page's comp banner rather than its upsell.
+const comp = params.get("comp");
 
 const RESPONSES: Record<string, unknown> = {
   "auth.me": {
@@ -44,12 +49,21 @@ const RESPONSES: Record<string, unknown> = {
     loginMethod: "google",
     tenantId: 42,
   },
+  // `plan` here is the ENTITLED plan, exactly as tenant.me returns it — so
+  // `?comp=pro` lifts the plan gates on this stub store the same way a real
+  // comp does, and the Domain page renders its form rather than its upsell.
   "tenant.me": {
     id: 42,
     slug: "bergblume",
     name: "Bergblume Keramik",
-    plan,
-    subscriptionStatus: "trialing",
+    plan: comp === "pro" ? "pro" : plan,
+    paidPlan: plan,
+    compPlan: comp === "pro" ? "pro" : null,
+    planComped: comp === "pro",
+    feeWaived: Boolean(comp),
+    comped: Boolean(comp),
+    onlineFeeBps: comp || plan === "pro" ? 0 : 100,
+    subscriptionStatus: comp ? null : "trialing",
     terminalLocationId: null,
   },
   // Domain page: a saved custom domain whose CNAME hasn't landed yet — the
@@ -112,6 +126,70 @@ const RESPONSES: Record<string, unknown> = {
       },
     ],
   },
+  "billing.getStatus": {
+    plan: comp === "pro" ? "pro" : plan,
+    comp:
+      comp === "pro"
+        ? { plan: "pro", planComped: true, feeWaived: true }
+        : comp === "fee"
+          ? { plan: null, planComped: false, feeWaived: true }
+          : null,
+    subscriptionStatus: comp ? null : "trialing",
+    trialEndsAt: null,
+    ai:
+      comp === "pro" || plan === "pro"
+        ? { allowancePerMonth: null, usedThisMonth: null }
+        : { allowancePerMonth: 5, usedThisMonth: 2 },
+    onlineFees: {
+      feePercentLabel: "1%",
+      appliesTo: "online and AI-agent orders",
+      feeBps: comp || plan === "pro" ? 0 : 100,
+      monthGmvChf: 3200,
+      monthAgentGmvChf: 500,
+      monthOrderCount: 12,
+      monthFeeChf: comp || plan === "pro" ? 0 : 32,
+    },
+    upsell:
+      comp || plan === "pro"
+        ? null
+        : { breakEvenOnlineChf: 2500, proPriceChf: 25, savingsChf: 7 },
+    plans: [
+      {
+        id: "free",
+        name: "Free",
+        priceChf: 0,
+        onlineFeeBps: 100,
+        aiPhotoAllowancePerMonth: 5,
+        maxProducts: 200,
+        storageGb: 5,
+      },
+      {
+        id: "pro",
+        name: "Pro",
+        priceChf: 25,
+        onlineFeeBps: 0,
+        aiPhotoAllowancePerMonth: null,
+        maxProducts: 5000,
+        storageGb: 50,
+      },
+    ],
+    storage: { usedBytes: 1024 ** 3, limitBytes: 5 * 1024 ** 3 },
+    billingConfigured: true,
+  },
+  "billing.photoCreditHistory": [],
+  "staff.list": {
+    staff: [
+      {
+        id: 1,
+        name: "Anna Brunner",
+        email: "anna@bergblume.ch",
+        role: "admin",
+      },
+    ],
+    pendingInvites: [],
+    seatsUsed: 1,
+    seatLimit: comp === "pro" || plan === "pro" ? 3 : 1,
+  },
   "instagram.adminList": [],
   // Import page: provider migration cards + existing-product matching.
   "migration.status": {
@@ -144,6 +222,10 @@ const PAGES: Record<string, React.ComponentType> = {
   domain: Domain,
 };
 
+// Billing lives outside ADMIN_NAV (it is reached from the account menu), so it
+// gets its own route rather than a nav entry.
+const BILLING_PATH = "/admin/billing";
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: { retry: false, staleTime: Number.POSITIVE_INFINITY },
@@ -161,6 +243,9 @@ createRoot(document.getElementById("root")!).render(
     <QueryClientProvider client={queryClient}>
       <Router hook={hook}>
         <Switch>
+          <Route path={BILLING_PATH}>
+            <Billing />
+          </Route>
           {ADMIN_NAV.filter((i) => PAGES[i.id]).map((item) => {
             const Page = PAGES[item.id];
             return (

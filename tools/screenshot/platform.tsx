@@ -43,6 +43,7 @@ const STORES = [
     stripeConnected: true,
     adminCount: 1,
     userCount: 4,
+    comp: null,
   },
   {
     id: 42,
@@ -56,6 +57,15 @@ const STORES = [
     stripeConnected: false,
     adminCount: 0,
     userCount: 2,
+    // Comped onto Pro with the skim waived — the grant the operator console
+    // exists to make visible. Without a comped store in the fixtures the new
+    // pill and the "On the house" card never render in a screenshot.
+    comp: {
+      plan: "pro" as const,
+      feeWaived: true,
+      note: "Design partner — first ten stores",
+      grantedAt: new Date("2026-06-20T00:00:00Z"),
+    },
   },
   {
     id: 7,
@@ -69,6 +79,13 @@ const STORES = [
     stripeConnected: true,
     adminCount: 2,
     userCount: 5,
+    // Fee waived only: still on Free's limits, but Zolto takes no cut.
+    comp: {
+      plan: null,
+      feeWaived: true,
+      note: "Outage apology, June",
+      grantedAt: new Date("2026-07-02T00:00:00Z"),
+    },
   },
 ];
 

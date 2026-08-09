@@ -866,6 +866,49 @@ else
   ok "0041 tenant_settings.public_domain already unique"
 fi
 
+# ── 0042: comped stores ───────────────────────────────────────────────────────
+# Ships drizzle/0024_tenant_comps.sql. What the platform owner gives a store for
+# nothing: `comp_plan` grants a plan without a subscription, `comp_fee_waived`
+# takes 0% on its online/agent orders. Kept separate from `plan` — which Stripe's
+# webhooks write — so a late `customer.subscription.deleted` can't revoke a comp
+# and revoking a comp can't remove a plan the merchant pays for. Both are read
+# together via shared/entitlements.ts. NULL + 0 is the existing behaviour of
+# every store, so this is additive. Idempotent.
+if [ "$(col_exists tenants comp_plan)" = "0" ]; then
+  run_sql "0042 add tenants.comp_plan" \
+    "ALTER TABLE \`tenants\` ADD \`comp_plan\` enum('free','pro') NULL;"
+else
+  ok "0042 tenants.comp_plan already exists"
+fi
+
+if [ "$(col_exists tenants comp_fee_waived)" = "0" ]; then
+  run_sql "0042 add tenants.comp_fee_waived" \
+    "ALTER TABLE \`tenants\` ADD \`comp_fee_waived\` boolean NOT NULL DEFAULT false;"
+else
+  ok "0042 tenants.comp_fee_waived already exists"
+fi
+
+if [ "$(col_exists tenants comp_note)" = "0" ]; then
+  run_sql "0042 add tenants.comp_note" \
+    "ALTER TABLE \`tenants\` ADD \`comp_note\` varchar(255) NULL;"
+else
+  ok "0042 tenants.comp_note already exists"
+fi
+
+if [ "$(col_exists tenants comp_granted_at)" = "0" ]; then
+  run_sql "0042 add tenants.comp_granted_at" \
+    "ALTER TABLE \`tenants\` ADD \`comp_granted_at\` timestamp NULL;"
+else
+  ok "0042 tenants.comp_granted_at already exists"
+fi
+
+if [ "$(col_exists tenants comp_granted_by)" = "0" ]; then
+  run_sql "0042 add tenants.comp_granted_by" \
+    "ALTER TABLE \`tenants\` ADD \`comp_granted_by\` int NULL;"
+else
+  ok "0042 tenants.comp_granted_by already exists"
+fi
+
 # ── Record the applied migration set ──────────────────────────────────────────
 # Only reached when every migration above succeeded — `set -e` plus run_sql's
 # die() mean a failure never gets this far, so a half-applied schema is never

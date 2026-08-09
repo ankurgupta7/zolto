@@ -34,7 +34,7 @@ import {
   getTenantById,
   getTenantBySlug,
 } from "./db";
-import { PLAN_FEATURES, type PlanId } from "./_core/trpc";
+import { featuresForTenant } from "./_core/trpc";
 import { getPlatformRootDomain } from "./_core/platformDomain";
 
 const HOSTNAME_RE = /^[a-z0-9]+(-[a-z0-9]+)*(\.[a-z0-9]+(-[a-z0-9]+)*)+$/;
@@ -77,8 +77,7 @@ export function registerDomainAsk(app: Express): void {
       // Plan gate: the domain must belong to a tenant whose plan still
       // includes custom domains (a downgrade to free turns TLS issuance off).
       const tenant = await getTenantById(settings.tenantId);
-      const allowed =
-        tenant && PLAN_FEATURES[tenant.plan as PlanId]?.customDomain === true;
+      const allowed = Boolean(tenant && featuresForTenant(tenant).customDomain);
       res.status(allowed ? 200 : 403).end();
     } catch (err) {
       console.error("[DomainAsk] lookup failed:", err);

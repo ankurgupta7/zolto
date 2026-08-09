@@ -1,12 +1,20 @@
 /**
  * One store, as the operator sees it when a merchant is stuck.
  *
- * The two repairs here are the ones that otherwise need SSH and a MySQL prompt
+ * The repairs here are the ones that otherwise need SSH and a MySQL prompt
  * (deploy/tenant-admin.sh): promote a user to the store's admin, and move the
- * store between plans. Both are superadmin-only server-side; the role checks
- * on this page only decide what is drawn.
+ * store between plans. Plus the one deliberate favour — putting a store on the
+ * house. All of them are superadmin-only server-side; the role checks on this
+ * page only decide what is drawn.
+ *
+ * "Plan" and "On the house" are different cards on purpose. Plan edits
+ * `tenants.plan`, the column Stripe's webhooks write, and is for when billing
+ * and access have diverged. A comp is a separate grant that survives those
+ * webhooks and says so on the merchant's own billing page — see
+ * shared/entitlements.ts.
  */
 
+import { useState } from "react";
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -17,6 +25,7 @@ import {
   PrimaryButton,
   SecondaryButton,
   LoadingState,
+  inputClass,
 } from "@/components/admin/ui";
 
 function Row({
@@ -66,6 +75,16 @@ export default function StoreDetail({ tenantId }: { tenantId: number }) {
     onError: (e) => toast.error(e.message || "Could not change the plan."),
   });
 
+  const [note, setNote] = useState("");
+  const setComp = trpc.platform.setTenantComp.useMutation({
+    onSuccess: () => {
+      invalidate();
+      setNote("");
+      toast.success("Comp updated. The store's own billing is untouched.");
+    },
+    onError: (e) => toast.error(e.message || "Could not update the comp."),
+  });
+
   if (!Number.isFinite(tenantId)) {
     return <p className="text-sm text-muted-foreground">Invalid store id.</p>;
   }
@@ -88,6 +107,7 @@ export default function StoreDetail({ tenantId }: { tenantId: number }) {
   if (!detail) return null;
   const { tenant, users } = detail;
   const host = tenant.domain ?? `${tenant.slug}.zolto.ch`;
+  const comp = tenant.comp;
   const noAdmin = tenant.adminCount === 0;
 
   return (
@@ -148,8 +168,8 @@ export default function StoreDetail({ tenantId }: { tenantId: number }) {
       </SettingsCard>
 
       <SettingsCard
-        title="Plan"
-        description="Changes entitlement only — Stripe is not touched. Use for comps and for cases where billing and access have diverged."
+        title="Paid plan"
+        description="The plan this store pays for. Changes entitlement only — Stripe is not touched — so use this when billing and access have diverged. To give a store something for nothing, use “On the house” below instead: it survives Stripe's webhooks and tells the merchant it's a gift."
       >
         <div className="flex items-center gap-3">
           <span className="text-sm text-foreground">
@@ -165,6 +185,120 @@ export default function StoreDetail({ tenantId }: { tenantId: number }) {
                 Move to {plan}
               </SecondaryButton>
             ))}
+          </div>
+        </div>
+      </SettingsCard>
+
+      <SettingsCard
+        title="On the house"
+        description="Give this store a plan it doesn't pay for, take no cut of its online and agent orders, or both. Stripe is never touched — the store's own plan and subscription stay exactly as they are, so a cancellation arriving later can't revoke what you grant here."
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-foreground">
+            {comp ? (
+              <>
+                {comp.plan ? (
+                  <>
+                    Comped to{" "}
+                    <strong className="capitalize">{comp.plan}</strong>
+                  </>
+                ) : (
+                  <>Paying for its own plan</>
+                )}
+                {comp.feeWaived
+                  ? ", and pays Zolto 0% on online & agent orders."
+                  : "."}
+                {comp.grantedAt && (
+                  <span className="text-muted-foreground">
+                    {" "}
+                    Granted{" "}
+                    {new Date(comp.grantedAt).toLocaleDateString("en-CH")}.
+                  </span>
+                )}
+                {comp.note && (
+                  <span className="mt-1 block text-xs text-muted-foreground">
+                    “{comp.note}”
+                  </span>
+                )}
+              </>
+            ) : (
+              <>
+                Nothing is comped — this store pays for its plan and Zolto's
+                usual online fee.
+              </>
+            )}
+          </p>
+
+          <div>
+            <label
+              htmlFor="comp-note"
+              className="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+            >
+              Why (optional)
+            </label>
+            <input
+              id="comp-note"
+              type="text"
+              maxLength={255}
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="Design partner, launch apology, friend of the house…"
+              className={`${inputClass} mt-1`}
+            />
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <PrimaryButton
+              loading={setComp.isPending}
+              onClick={() =>
+                setComp.mutate({
+                  tenantId,
+                  plan: "pro",
+                  waiveOnlineFee: true,
+                  note: note.trim() || undefined,
+                })
+              }
+            >
+              Pro, free, 0% fee
+            </PrimaryButton>
+            <SecondaryButton
+              disabled={setComp.isPending}
+              onClick={() =>
+                setComp.mutate({
+                  tenantId,
+                  plan: "pro",
+                  waiveOnlineFee: false,
+                  note: note.trim() || undefined,
+                })
+              }
+            >
+              Free upgrade to Pro only
+            </SecondaryButton>
+            <SecondaryButton
+              disabled={setComp.isPending}
+              onClick={() =>
+                setComp.mutate({
+                  tenantId,
+                  plan: null,
+                  waiveOnlineFee: true,
+                  note: note.trim() || undefined,
+                })
+              }
+            >
+              Waive the online fee only
+            </SecondaryButton>
+            <SecondaryButton
+              disabled={setComp.isPending || !comp}
+              onClick={() =>
+                setComp.mutate({
+                  tenantId,
+                  plan: null,
+                  waiveOnlineFee: false,
+                })
+              }
+            >
+              Revoke
+            </SecondaryButton>
           </div>
         </div>
       </SettingsCard>

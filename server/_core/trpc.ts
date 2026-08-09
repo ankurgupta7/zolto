@@ -5,6 +5,7 @@ import {
   type PlanId,
   type PlanFeature,
 } from "@shared/platform";
+import { effectivePlan, featuresForTenant } from "@shared/entitlements";
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import type { TrpcContext } from "./context";
@@ -89,7 +90,12 @@ export const superadminProcedure = t.procedure.use(
 // this middleware enforces. It used to be defined here, which put it out of the
 // client's reach and left every admin screen mirroring the rule by hand — see
 // the note on PLAN_FEATURES in shared/platform.ts for what that cost.
-export { PLAN_FEATURES, featuresForPlan };
+//
+// `featuresForTenant` is the one to reach for when you have a tenant row: it
+// applies any comp the platform owner has granted (shared/entitlements.ts).
+// `featuresForPlan` is for the cases where a bare plan id is genuinely all
+// there is — the pricing page, a plan the caller is asking *about*.
+export { PLAN_FEATURES, featuresForPlan, featuresForTenant };
 export type { PlanId, PlanFeature };
 
 /** The next plan up, for upgrade prompts. */
@@ -107,11 +113,14 @@ export function checkFeature(feature: PlanFeature) {
       });
     }
 
-    const features = PLAN_FEATURES[ctx.tenant.plan];
+    // effectivePlan, not tenant.plan: a store the platform owner has comped
+    // onto Pro is entitled to Pro's features even though it pays for Free.
+    const plan = effectivePlan(ctx.tenant);
+    const features = PLAN_FEATURES[plan];
     const hasFeature = features[feature as keyof typeof features] ?? false;
 
     if (!hasFeature) {
-      const nextPlan = UPGRADE_PATH[ctx.tenant.plan];
+      const nextPlan = UPGRADE_PATH[plan];
       throw new TRPCError({
         code: "FORBIDDEN",
         message: nextPlan

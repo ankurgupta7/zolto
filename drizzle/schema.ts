@@ -25,6 +25,25 @@ export const tenants = mysqlTable("tenants", {
   // free / pro. Signup defaults to "free". Free carries the 1% platform fee
   // on online/agent orders; Pro removes it (see PLANS[].onlineFeeBps).
   plan: mysqlEnum("plan", ["free", "pro"]).default("free").notNull(),
+  // ── Comps: what the platform owner gives this store for nothing ───────────
+  // Derived through shared/entitlements.ts, never read raw. `plan` above is
+  // what Stripe bills and Stripe writes; these three are what we granted, kept
+  // apart so a late `customer.subscription.deleted` can't quietly revoke a comp
+  // (and so revoking a comp can't take away something the merchant bought).
+  //
+  // comp_plan: the plan this store is entitled to without paying — NULL for
+  // every ordinary store.
+  compPlan: mysqlEnum("comp_plan", ["free", "pro"]),
+  // comp_fee_waived: take no platform fee on this store's online/agent orders,
+  // whatever plan it is on. Separate from comp_plan because "don't skim this
+  // merchant" and "give this merchant Pro" are separate favours.
+  compFeeWaived: boolean("comp_fee_waived").default(false).notNull(),
+  // Why, in the operator's own words — rendered in the console next to the
+  // grant, so a comp found six months later can be judged rather than guessed.
+  compNote: varchar("comp_note", { length: 255 }),
+  compGrantedAt: timestamp("comp_granted_at"),
+  /** users.id of the superadmin who granted it. */
+  compGrantedBy: int("comp_granted_by"),
   stripeCustomerId: varchar("stripe_customer_id", { length: 255 }),
   stripeSubscriptionId: varchar("stripe_subscription_id", { length: 255 }),
   // Stripe Connect (Standard) account for THIS tenant's own storefront
