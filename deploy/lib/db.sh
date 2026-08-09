@@ -623,6 +623,34 @@ migrate_0034_magic_link_tokens() {
   fi
 }
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Migration 0043: one-tap POS register pairing.
+#
+# Ships drizzle/0025_pos_pairing_tokens.sql. server/posPairing.ts mints a
+# short-lived single-use token so a merchant can bind a register by tapping a
+# link instead of typing a 64-char key into a phone; without this table minting
+# a pairing link fails on a live deployment. Mirrors the drizzle DDL exactly,
+# including the UNIQUE on `token` that redemption's single-row lookup relies on.
+# Idempotent.
+# ─────────────────────────────────────────────────────────────────────────────
+migrate_0043_pos_pairing_tokens() {
+  if [ "$(tbl_exists pos_pairing_tokens)" = "0" ]; then
+    run_sql "0043 pos_pairing_tokens table" "
+      CREATE TABLE IF NOT EXISTS \`pos_pairing_tokens\` (
+        \`id\`         int AUTO_INCREMENT NOT NULL,
+        \`tenant_id\`  int NOT NULL,
+        \`token\`      varchar(64) NOT NULL,
+        \`expiresAt\`  timestamp NOT NULL,
+        \`consumedAt\` timestamp NULL,
+        \`createdAt\`  timestamp NOT NULL DEFAULT (now()),
+        CONSTRAINT \`pos_pairing_tokens_id\` PRIMARY KEY(\`id\`),
+        CONSTRAINT \`pos_pairing_tokens_token_unique\` UNIQUE(\`token\`)
+      );"
+  else
+    ok "0043 pos_pairing_tokens already exists"
+  fi
+}
+
 migrate_0036_merchant_verticals() {
   # Per-tenant categories + merchant vertical. Ships
   # drizzle/0017_merchant_verticals.sql and 0018_seed_jewellery_categories.sql:

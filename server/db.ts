@@ -44,6 +44,7 @@ import {
   posAttributions,
   posOrderItems,
   posOrders,
+  posPairingTokens,
   type Product,
   productImages,
   products,
@@ -252,6 +253,75 @@ export async function consumeMagicLinkToken(id: number): Promise<void> {
       .update(magicLinkTokens)
       .set({ consumedAt: new Date() })
       .where(eq(magicLinkTokens.id, id)),
+  );
+}
+
+// ─── POS pairing tokens (one-tap register setup) ───────────────────────────────
+
+export async function createPosPairingToken(entry: {
+  tenantId: number;
+  token: string;
+  expiresAt: Date;
+}): Promise<void> {
+  await withDbOrThrow((db) =>
+    db.insert(posPairingTokens).values({
+      tenantId: entry.tenantId,
+      token: entry.token,
+      expiresAt: entry.expiresAt,
+    }),
+  );
+}
+
+/**
+ * Claim a pairing token: marks it consumed and reports the tenant it belonged
+ * to, or undefined if it was unknown, expired or already spent.
+ *
+ * Single-use is enforced by the UPDATE's own WHERE clause rather than by
+ * reading the row and then writing it — two registers opening the same link at
+ * the same moment would both pass a read-then-write check, and both would get
+ * live credentials. Here the second UPDATE matches zero rows and is refused.
+ */
+export async function claimPosPairingToken(
+  tokenHash: string,
+): Promise<{ tenantId: number } | undefined> {
+  return withDb(async (db) => {
+    const now = new Date();
+    const result = await db
+      .update(posPairingTokens)
+      .set({ consumedAt: now })
+      .where(
+        and(
+          eq(posPairingTokens.token, tokenHash),
+          isNull(posPairingTokens.consumedAt),
+          gt(posPairingTokens.expiresAt, now),
+        ),
+      );
+    // mysql2 reports how many rows the WHERE actually matched. Zero means some
+    // other request won the race, or the token was never valid.
+    const affected = (result as unknown as Array<{ affectedRows?: number }>)[0]
+      ?.affectedRows;
+    if (!affected) return undefined;
+
+    const rows = await db
+      .select({ tenantId: posPairingTokens.tenantId })
+      .from(posPairingTokens)
+      .where(eq(posPairingTokens.token, tokenHash))
+      .limit(1);
+    return rows[0];
+  }, undefined);
+}
+
+/** Housekeeping: drop spent and expired pairing tokens. */
+export async function deleteStalePosPairingTokens(): Promise<void> {
+  await withDbOrThrow((db) =>
+    db
+      .delete(posPairingTokens)
+      .where(
+        or(
+          isNotNull(posPairingTokens.consumedAt),
+          lt(posPairingTokens.expiresAt, new Date()),
+        ),
+      ),
   );
 }
 

@@ -14,6 +14,32 @@ import { posOrders, posOrderItems, products } from "../drizzle/schema";
 import { getStripe, isStripeConfigured } from "./stripe";
 import { escapeHtml, sendTransactionalEmail } from "./_core/email";
 import { storagePut } from "./storage";
+import { redeemPairingToken } from "./posPairing";
+import { createRateLimiter } from "./rateLimit";
+
+/**
+ * The single answer every failed pairing gets. One message for unknown, expired,
+ * already-spent and server-side failures alike, so the endpoint can't be used to
+ * confirm which tokens ever existed.
+ */
+const PAIRING_FAILED =
+  "This pairing link is no longer valid. Generate a new one from Keys & access.";
+
+/**
+ * Pairing is unauthenticated by necessity, so the token is the only thing
+ * standing between a caller and a store's POS key. A 32-byte token is not
+ * guessable, but a per-IP ceiling keeps anyone from trying at volume and keeps
+ * the vault decrypt path off a hot loop.
+ */
+const pairingLimiter = createRateLimiter({
+  limit: 20,
+  windowMs: 10 * 60 * 1000,
+});
+
+/** Test seam — lets a test start from a clean pairing rate-limit window. */
+export async function resetPosPairingRateLimits(): Promise<void> {
+  await pairingLimiter.reset();
+}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Multi-tenant POS Key Middleware
@@ -479,6 +505,55 @@ function _generateReceiptHtml(
 // ---------------------------------------------------------------------------
 
 export function registerPosRoutes(app: Express): void {
+  // ─── One-tap pairing ────────────────────────────────────────────────────────
+  // Deliberately NOT behind requirePosKey: this is how a register that has no
+  // key yet gets one. The pairing token IS the credential here — single-use and
+  // minutes-long (server/posPairing.ts).
+  //
+  // Every failure answers with the same 400 and the same message. Separating
+  // "unknown token" from "expired" from "already used" would let someone
+  // grinding tokens learn which guesses were once real, and the app has nothing
+  // useful to do with the distinction anyway.
+  app.post("/api/pos/pair", async (req: Request, res: Response) => {
+    const clientKey =
+      (req.headers["x-forwarded-for"] as string | undefined)
+        ?.split(",")[0]
+        ?.trim() ||
+      req.ip ||
+      "unknown";
+
+    const limit = await pairingLimiter.check(clientKey);
+    if (!limit.allowed) {
+      res
+        .status(429)
+        .json({ error: "Too many pairing attempts", retryAfter: limit.retryAfterSeconds });
+      return;
+    }
+
+    const token = (req.body as { token?: unknown } | undefined)?.token;
+    if (typeof token !== "string") {
+      res.status(400).json({ error: PAIRING_FAILED });
+      return;
+    }
+
+    try {
+      const paired = await redeemPairingToken(token);
+      if (!paired) {
+        res.status(400).json({ error: PAIRING_FAILED });
+        return;
+      }
+      res.json({
+        apiKey: paired.apiKey,
+        storeName: paired.storeName,
+        storeSlug: paired.storeSlug,
+      });
+    } catch (err) {
+      // Never leak why. A DB or vault error looks the same as a bad token.
+      console.error("[POS] pairing redemption failed:", err);
+      res.status(400).json({ error: PAIRING_FAILED });
+    }
+  });
+
   app.get("/api/pos/health", requirePosKey, (_req: Request, res: Response) => {
     if (!isStripeConfigured()) {
       res.status(503).json({ ok: false, error: "Stripe not configured" });

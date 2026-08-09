@@ -909,6 +909,14 @@ else
   ok "0042 tenants.comp_granted_by already exists"
 fi
 
+# ── 0043: one-tap POS register pairing ────────────────────────────────────────
+# Ships drizzle/0025_pos_pairing_tokens.sql. Short-lived single-use tokens so a
+# merchant can pair a register by tapping a link rather than typing a 64-char
+# key into a phone; the key itself stays out of the URL and out of this table.
+# Additive — nothing reads it until a merchant mints a pairing link.
+# Idempotent; see migrate_0043_pos_pairing_tokens in deploy/lib/db.sh.
+migrate_0043_pos_pairing_tokens
+
 # ── Record the applied migration set ──────────────────────────────────────────
 # Only reached when every migration above succeeded — `set -e` plus run_sql's
 # die() mean a failure never gets this far, so a half-applied schema is never

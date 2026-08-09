@@ -51,6 +51,14 @@ import { buildConnectAuthorizeUrl } from "../stripeConnect";
 import { deriveOnboardingStatus } from "../onboarding";
 import { createRateLimiter } from "../rateLimit";
 import { generatePosApiKey, hashPosApiKey } from "../posApiKey";
+import {
+  buildPairingDeepLink,
+  buildPairingWebLink,
+  canMintPairingToken,
+  mintPairingToken,
+  rememberPosApiKey,
+} from "../posPairing";
+import { getPosDownloads } from "../posDownloads";
 import { tenants, tenantSettings } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
 import crypto from "node:crypto";
@@ -77,6 +85,16 @@ const LOGO_MIME_TYPES = ["image/png", "image/jpeg", "image/webp"] as const;
 // hits the wall fast.
 const logoPaletteLimiter = createRateLimiter({
   limit: 10,
+  windowMs: 60 * 60 * 1000,
+});
+
+// Each pairing link is a live route to a store's POS key, so an admin session
+// cannot mint them without bound. Keyed per tenant rather than per IP: the cost
+// of abuse is a pile of redeemable links for THAT store, and a shared office IP
+// shouldn't make one merchant's minting count against another's. Generous enough
+// to set up several registers in a sitting.
+const posPairingMintLimiter = createRateLimiter({
+  limit: 20,
   windowMs: 60 * 60 * 1000,
 });
 
@@ -257,10 +275,12 @@ export const tenantRouter = router({
         });
       }
 
-      // 3. Create the tenant with a 14-day trial. The POS key is stored ONLY
-      // as a SHA-256 hash; the plaintext is returned here exactly once (the
-      // tenant enters it into their POS app) and is unrecoverable afterwards —
-      // a lost key is rotated, not retrieved (see rotatePosApiKey below).
+      // 3. Create the tenant with a 14-day trial. `tenants.pos_api_key` holds
+      // ONLY a SHA-256 hash; the plaintext is returned here exactly once (the
+      // tenant enters it into their POS app). A copy is also written to the
+      // encrypted tenant-secrets vault below, which is what lets the merchant
+      // later pair a register by tapping a link — a lost key still can't be
+      // read back out of `tenants`, and is rotated rather than retrieved.
       const posApiKeyPlaintext = generatePosApiKey();
       const trialEndsAt = new Date();
       trialEndsAt.setDate(trialEndsAt.getDate() + 14);
@@ -273,6 +293,11 @@ export const tenantRouter = router({
         trialEndsAt,
         referralCode: generateReferralCode(),
       });
+
+      // Vault the key so one-tap register pairing works from day one. Best
+      // effort on purpose — a deployment with no TENANT_SECRETS_KEY must not
+      // fail a signup over a pairing convenience (see rememberPosApiKey).
+      await rememberPosApiKey(tenantId, posApiKeyPlaintext);
 
       // 4. Settings, seeded with the wizard's branding choices and the
       // vertical's starter category list. The logo is uploaded first so its
@@ -654,14 +679,68 @@ rationale: one friendly sentence (max 25 words) naming BOTH colors, e.g. "Deep f
   // ─── Admin: rotate the POS API key (show-once) ─────────────────────────────
   // The old key stops working the moment this returns — every POS terminal for
   // this tenant must be reconfigured with the new key. Like signup, the
-  // plaintext is returned exactly once; only its SHA-256 is stored.
+  // plaintext is returned exactly once; only its SHA-256 is stored in `tenants`.
+  //
+  // A copy also goes into the encrypted tenant-secrets vault so the merchant can
+  // pair a register later by tapping a link instead of retyping this key — see
+  // server/posPairing.ts for why that trade was made deliberately.
   rotatePosApiKey: adminProcedure.mutation(async ({ ctx }) => {
     const plaintext = generatePosApiKey();
     await db
       .update(tenants)
       .set({ posApiKey: hashPosApiKey(plaintext) })
       .where(eq(tenants.id, ctx.user.tenantId));
+    await rememberPosApiKey(ctx.user.tenantId, plaintext);
     return { posApiKey: plaintext };
+  }),
+
+  // ─── Where a merchant gets the register app ────────────────────────────────
+  // Platform build info, not tenant data — the same two links for every store —
+  // so this is scoped to "signed in" and nothing more. Resolution, caching and
+  // failure handling all live in server/posDownloads.ts.
+  posDownloads: protectedProcedure.query(async () => {
+    return getPosDownloads();
+  }),
+
+  // ─── Admin: mint a one-tap pairing link ────────────────────────────────────
+  // `adminProcedure`, not `tenantAdminProcedure`, and that is correct here for
+  // the reason CLAUDE.md gives: every read and write below is scoped through
+  // ctx.user.tenantId — the caller's OWN store — and nothing touches ctx.tenant,
+  // so pointing at another store's host cannot retarget it.
+  //
+  // Returns a token that expires in minutes and can be redeemed once. The POS
+  // key itself is never returned here; the app fetches it from /api/pos/pair.
+  createPosPairingToken: adminProcedure.mutation(async ({ ctx }) => {
+    const limit = await posPairingMintLimiter.check(`${ctx.user.tenantId}`);
+    if (!limit.allowed) {
+      throw new TRPCError({
+        code: "TOO_MANY_REQUESTS",
+        message: `Too many pairing links requested. Try again in ${limit.retryAfterSeconds}s.`,
+      });
+    }
+
+    const minted = await mintPairingToken(ctx.user.tenantId);
+    if (!minted.ok) {
+      // Keys minted before the vault write existed cannot be recovered, so the
+      // merchant has to rotate once. Surfaced as a value rather than an error
+      // because it is an expected state with a clear next step, not a fault.
+      return { available: false as const, reason: minted.reason };
+    }
+
+    const origin = getCanonicalOrigin(ctx.req);
+    return {
+      available: true as const,
+      deepLink: buildPairingDeepLink(origin, minted.token),
+      webLink: buildPairingWebLink(origin, minted.token),
+      expiresAt: minted.expiresAt,
+    };
+  }),
+
+  // Can this store pair a register by link at all, or must it rotate first?
+  // Split from the mutation so the UI can render the right affordance without
+  // burning a token to find out.
+  posPairingAvailable: adminProcedure.query(async ({ ctx }) => {
+    return { available: await canMintPairingToken(ctx.user.tenantId) };
   }),
 
   // ─── Admin: Onboarding checklist (derived — see server/onboarding.ts) ──────

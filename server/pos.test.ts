@@ -66,8 +66,28 @@ vi.mock("./stripe", () => ({
   isStripeConfigured: vi.fn().mockReturnValue(false),
 }));
 
-import { registerPosRoutes } from "./pos";
+// Pairing redemption is covered end-to-end in server/posPairing.test.ts; here it
+// is mocked so these tests are about the ROUTE — status codes, the single shared
+// error message, and the rate limit.
+vi.mock("./posPairing", () => ({ redeemPairingToken: vi.fn() }));
+
+// The pairing limiter's default store is the DB-backed one, and ./db is mocked
+// to have no database. An in-memory store keeps the limit real in tests.
+vi.mock("./rateLimit", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./rateLimit")>();
+  return {
+    ...actual,
+    createRateLimiter: (opts: { limit: number; windowMs: number }) =>
+      actual.createRateLimiter({
+        ...opts,
+        store: actual.createInMemoryRateLimitStore(),
+      }),
+  };
+});
+
+import { registerPosRoutes, resetPosPairingRateLimits } from "./pos";
 import { getDb, markProductsSold } from "./db";
+import { redeemPairingToken } from "./posPairing";
 import { getStripe, isStripeConfigured } from "./stripe";
 
 function makeApp() {
@@ -1526,5 +1546,124 @@ describe("POST /api/pos/save-receipt", () => {
     // storagePut without S3 env throws internally → receiptUrl stays null,
     // but the customer details still get persisted (graceful degradation).
     expect(db.update).toHaveBeenCalled();
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// POST /api/pos/pair — one-tap register pairing
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// The one POS route with no X-POS-Key, because it is how a register that has no
+// key yet gets one. What stands in for auth is the pairing token itself.
+
+describe("POST /api/pos/pair", () => {
+  beforeEach(async () => {
+    vi.mocked(redeemPairingToken).mockReset();
+    await resetPosPairingRateLimits();
+  });
+
+  it("hands the store's credentials to a register with a good token", async () => {
+    vi.mocked(redeemPairingToken).mockResolvedValue({
+      apiKey: "k".repeat(64),
+      storeName: "Bergblume",
+      storeSlug: "bergblume",
+    });
+
+    const res = await request(makeApp())
+      .post("/api/pos/pair")
+      .send({ token: "tok" });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      apiKey: "k".repeat(64),
+      storeName: "Bergblume",
+      storeSlug: "bergblume",
+    });
+  });
+
+  it("needs no POS key — that is the whole point", async () => {
+    vi.mocked(redeemPairingToken).mockResolvedValue({
+      apiKey: "k".repeat(64),
+      storeName: "Bergblume",
+      storeSlug: "bergblume",
+    });
+    const res = await request(makeApp())
+      .post("/api/pos/pair")
+      .send({ token: "tok" });
+    // No x-pos-key header was set anywhere above.
+    expect(res.status).toBe(200);
+  });
+
+  // Unknown, expired, already-spent and internal failure must be
+  // indistinguishable: a differentiated error tells someone grinding tokens
+  // which guesses were once real.
+  it("answers every failure identically", async () => {
+    const app = makeApp();
+
+    vi.mocked(redeemPairingToken).mockResolvedValue(null);
+    const rejected = await request(app).post("/api/pos/pair").send({ token: "nope" });
+
+    vi.mocked(redeemPairingToken).mockRejectedValue(new Error("db down"));
+    const threw = await request(app).post("/api/pos/pair").send({ token: "tok" });
+
+    const missing = await request(app).post("/api/pos/pair").send({});
+    const wrongType = await request(app)
+      .post("/api/pos/pair")
+      .send({ token: 12345 });
+
+    for (const res of [rejected, threw, missing, wrongType]) {
+      expect(res.status).toBe(400);
+      expect(res.body.error).toBe(rejected.body.error);
+    }
+  });
+
+  it("never echoes the token back", async () => {
+    vi.mocked(redeemPairingToken).mockResolvedValue(null);
+    const res = await request(makeApp())
+      .post("/api/pos/pair")
+      .send({ token: "super-secret-token" });
+    expect(JSON.stringify(res.body)).not.toContain("super-secret-token");
+  });
+
+  it("rate limits a caller grinding tokens", async () => {
+    const app = makeApp();
+    vi.mocked(redeemPairingToken).mockResolvedValue(null);
+
+    let sawLimit = false;
+    for (let i = 0; i < 25; i++) {
+      const res = await request(app)
+        .post("/api/pos/pair")
+        .set("x-forwarded-for", "203.0.113.9")
+        .send({ token: `guess-${i}` });
+      if (res.status === 429) {
+        sawLimit = true;
+        expect(res.body.retryAfter).toBeGreaterThan(0);
+        break;
+      }
+    }
+    expect(sawLimit).toBe(true);
+  });
+
+  it("buckets by caller, so one grinder can't lock out a real merchant", async () => {
+    const app = makeApp();
+    vi.mocked(redeemPairingToken).mockResolvedValue(null);
+
+    for (let i = 0; i < 25; i++) {
+      await request(app)
+        .post("/api/pos/pair")
+        .set("x-forwarded-for", "203.0.113.9")
+        .send({ token: `guess-${i}` });
+    }
+
+    vi.mocked(redeemPairingToken).mockResolvedValue({
+      apiKey: "k".repeat(64),
+      storeName: "Bergblume",
+      storeSlug: "bergblume",
+    });
+    const other = await request(app)
+      .post("/api/pos/pair")
+      .set("x-forwarded-for", "198.51.100.4")
+      .send({ token: "good" });
+    expect(other.status).toBe(200);
   });
 });

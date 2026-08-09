@@ -731,3 +731,34 @@ export const magicLinkTokens = mysqlTable("magic_link_tokens", {
 
 export type MagicLinkToken = typeof magicLinkTokens.$inferSelect;
 export type InsertMagicLinkToken = typeof magicLinkTokens.$inferInsert;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// POS PAIRING TOKENS — one-tap register setup
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// Short-lived, single-use tokens that let a merchant bind a register by tapping
+// a link (`zolto://pair?t=…`) instead of typing a 64-char key on a phone.
+//
+// The token exists so the POS key itself never travels in a URL, where it would
+// land in browser history, server access logs and Referer headers. The app
+// redeems the token at POST /api/pos/pair and gets the key over TLS in a
+// response body instead.
+//
+// Deliberately stores NO key: redemption reads the tenant's key from the
+// encrypted tenant_secrets vault (provider "pos"). So a dump of this table
+// yields nothing usable, and — like magic_link_tokens above — only the SHA-256
+// of the token is stored, so even a leaked row can't be redeemed.
+export const posPairingTokens = mysqlTable("pos_pairing_tokens", {
+  id: int("id").autoincrement().primaryKey(),
+  tenantId: int("tenant_id").notNull(),
+  // SHA-256 of the token handed to the merchant, never the token itself.
+  token: varchar("token", { length: 64 }).notNull().unique(),
+  expiresAt: timestamp("expiresAt").notNull(),
+  // Set by a conditional UPDATE … WHERE consumedAt IS NULL, which is what makes
+  // single-use hold under two devices redeeming the same link at once.
+  consumedAt: timestamp("consumedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type PosPairingToken = typeof posPairingTokens.$inferSelect;
+export type InsertPosPairingToken = typeof posPairingTokens.$inferInsert;
