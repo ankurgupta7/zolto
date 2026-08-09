@@ -31,10 +31,18 @@
  * presence-based check would silently drop them — the opposite of migrating
  * the whole inventory.
  *
- * Images are re-hosted into this deployment's own storage rather than linked
- * back to the old site, so the new store doesn't depend on kalakosh.ch
- * staying up.
+ * ## Where the photos come from
+ *
+ * A database dump carries `imageUrl`/`imageKey` strings, never image bytes, so
+ * the photos have to be pulled from wherever they actually live and re-hosted
+ * into this deployment's own storage. Set `KALAKOSH_S3_*` to read them
+ * straight out of the old bucket — the only route that survives kalakosh.ch
+ * going dark, and the one that matters when the old deployment left
+ * `S3_PUBLIC_URL` blank and its `imageUrl`s are relative `/uploads/<key>`
+ * paths only its own web app can serve. Failing that, they are fetched over
+ * HTTP from `assetBaseUrl`.
  */
+import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { PLANS } from "@shared/platform";
 import { FALLBACK_CATEGORY_KEY } from "@shared/verticals";
 import type { InsertProduct } from "../drizzle/schema";
@@ -68,6 +76,8 @@ export interface SourceProduct {
   price: string | number | null;
   category?: string | null;
   imageUrl?: string | null;
+  /** S3 object key in the SOURCE bucket — the fallback when the URL can't be fetched. */
+  imageKey?: string | null;
   quantity?: number | null;
   /** MySQL hands booleans back as 0/1, the tRPC endpoint as true/false. */
   sold?: boolean | number | null;
@@ -81,6 +91,7 @@ export interface SourceProduct {
 
 export interface SourceImage {
   imageUrl: string;
+  imageKey?: string | null;
   sortOrder?: number | null;
 }
 
@@ -215,7 +226,129 @@ export function extensionFor(url: string, contentType: string | null): string {
 }
 
 /**
- * Downloads one source image and re-hosts it in this deployment's storage.
+ * The OLD deployment's S3 bucket, read directly by object key.
+ *
+ * Distinct from this deployment's own `S3_*` vars: the two stores keep
+ * separate buckets and credentials on purpose (.env.example's golden rule).
+ * Fetching by key is what makes a migration from a database backup possible
+ * at all — the dump carries `imageKey`/`imageUrl` strings, never the bytes,
+ * and when the old deployment left `S3_PUBLIC_URL` blank its `imageUrl` is a
+ * relative `/uploads/<key>` that only its own web app can serve. Without this
+ * the photos die with kalakosh.ch.
+ */
+export interface SourceS3Config {
+  bucket: string;
+  region: string;
+  endpoint?: string;
+  accessKeyId: string;
+  secretAccessKey: string;
+}
+
+/** Reads `KALAKOSH_S3_*`. Returns null when the bucket isn't configured. */
+export function sourceS3ConfigFromEnv(
+  env: NodeJS.ProcessEnv = process.env,
+): SourceS3Config | null {
+  const bucket = env.KALAKOSH_S3_BUCKET;
+  const accessKeyId = env.KALAKOSH_S3_ACCESS_KEY_ID;
+  const secretAccessKey = env.KALAKOSH_S3_SECRET_ACCESS_KEY;
+  if (!bucket || !accessKeyId || !secretAccessKey) return null;
+  return {
+    bucket,
+    region: env.KALAKOSH_S3_REGION ?? "us-east-1",
+    endpoint: env.KALAKOSH_S3_ENDPOINT,
+    accessKeyId,
+    secretAccessKey,
+  };
+}
+
+/** Loaded image bytes plus the name its file extension is inferred from. */
+interface LoadedImage {
+  buffer: Buffer;
+  contentType: string | null;
+  origin: string;
+}
+
+export type SourceObjectReader = (key: string) => Promise<LoadedImage>;
+
+/** Binds a `GetObject` reader to the source bucket. */
+export function createSourceObjectReader(
+  config: SourceS3Config,
+): SourceObjectReader {
+  const client = new S3Client({
+    region: config.region,
+    ...(config.endpoint
+      ? { endpoint: config.endpoint, forcePathStyle: true }
+      : {}),
+    credentials: {
+      accessKeyId: config.accessKeyId,
+      secretAccessKey: config.secretAccessKey,
+    },
+  });
+
+  return async (key: string) => {
+    const response = await client.send(
+      new GetObjectCommand({ Bucket: config.bucket, Key: key }),
+    );
+    const bytes = await response.Body?.transformToByteArray();
+    if (!bytes) throw new Error(`Empty body for source object ${key}`);
+    return {
+      buffer: Buffer.from(bytes),
+      contentType: response.ContentType ?? null,
+      origin: key,
+    };
+  };
+}
+
+interface ImageContext {
+  assetBaseUrl: string;
+  fetchImpl: typeof fetch;
+  readSourceObject: SourceObjectReader | null;
+}
+
+/**
+ * Gets one image's bytes, preferring the source bucket over the source site.
+ *
+ * The bucket is authoritative and needs neither the old web app to be running
+ * nor its images to be publicly readable, so it goes first whenever an object
+ * key and credentials are both available. HTTP remains the fallback — and the
+ * only path when `KALAKOSH_S3_*` is unset, which is exactly the behaviour
+ * this had before.
+ */
+async function loadImage(
+  image: { imageKey?: string | null; imageUrl?: string | null },
+  ctx: ImageContext,
+): Promise<LoadedImage | null> {
+  const key = image.imageKey?.trim();
+  if (key && ctx.readSourceObject) {
+    try {
+      return await ctx.readSourceObject(key);
+    } catch (err) {
+      console.warn(
+        `[importKalakosh] Source bucket has no readable object "${key}", falling back to its URL:`,
+        err,
+      );
+    }
+  }
+
+  const resolved = image.imageUrl
+    ? resolveAssetUrl(image.imageUrl, ctx.assetBaseUrl)
+    : null;
+  if (!resolved) return null;
+
+  await assertPublicHostname(new URL(resolved).hostname);
+  const response = await ctx.fetchImpl(resolved);
+  if (!response.ok) {
+    throw new Error(`Image fetch failed with status ${response.status}`);
+  }
+  return {
+    buffer: Buffer.from(await response.arrayBuffer()),
+    contentType: response.headers.get("content-type"),
+    origin: resolved,
+  };
+}
+
+/**
+ * Loads one source image and re-hosts it in this deployment's storage.
  *
  * A `StorageQuotaError` is rethrown rather than swallowed: once the tenant is
  * over their plan's allowance every later upload fails too, so the run should
@@ -223,29 +356,27 @@ export function extensionFor(url: string, contentType: string | null): string {
  */
 async function rehostImage(
   tenantId: number,
-  sourceUrl: string,
+  image: { imageKey?: string | null; imageUrl?: string | null },
   relKey: string,
-  fetchImpl: typeof fetch,
+  ctx: ImageContext,
 ): Promise<{ imageKey: string; imageUrl: string } | null> {
   try {
-    await assertPublicHostname(new URL(sourceUrl).hostname);
+    const loaded = await loadImage(image, ctx);
+    if (!loaded) return null;
 
-    const response = await fetchImpl(sourceUrl);
-    if (!response.ok) {
-      throw new Error(`Image fetch failed with status ${response.status}`);
-    }
-    const contentType = response.headers.get("content-type");
-    const buffer = Buffer.from(await response.arrayBuffer());
     const { key, url } = await storagePut(
       tenantId,
-      `${relKey}.${extensionFor(sourceUrl, contentType)}`,
-      buffer,
-      contentType ?? "image/jpeg",
+      `${relKey}.${extensionFor(loaded.origin, loaded.contentType)}`,
+      loaded.buffer,
+      loaded.contentType ?? "image/jpeg",
     );
     return { imageKey: key, imageUrl: url };
   } catch (err) {
     if (err instanceof StorageQuotaError) throw err;
-    console.warn(`[importKalakosh] Could not re-host image ${sourceUrl}:`, err);
+    console.warn(
+      `[importKalakosh] Could not re-host image ${image.imageKey ?? image.imageUrl}:`,
+      err,
+    );
     return null;
   }
 }
@@ -261,6 +392,7 @@ interface SourceProductRow {
   price: string | number | null;
   category: string | null;
   imageUrl: string | null;
+  imageKey: string | null;
   quantity: number | null;
   sold: number | boolean | null;
   visible: number | boolean | null;
@@ -272,6 +404,7 @@ interface SourceProductRow {
 interface SourceImageRow {
   productId: number;
   imageUrl: string;
+  imageKey: string | null;
   sortOrder: number | null;
 }
 
@@ -282,9 +415,13 @@ export function shapeSourceRows(
 ): SourceProduct[] {
   const galleries = new Map<number, SourceImage[]>();
   for (const row of imageRows) {
-    if (!row.imageUrl) continue;
+    if (!row.imageUrl && !row.imageKey) continue;
     const list = galleries.get(row.productId) ?? [];
-    list.push({ imageUrl: row.imageUrl, sortOrder: row.sortOrder ?? 0 });
+    list.push({
+      imageUrl: row.imageUrl,
+      imageKey: row.imageKey ?? null,
+      sortOrder: row.sortOrder ?? 0,
+    });
     galleries.set(row.productId, list);
   }
   galleries.forEach((list) => {
@@ -309,12 +446,13 @@ export async function readSourceCatalogFromDatabase(
   try {
     const [productRows] = await connection.query(
       `SELECT id, name, description, nameEn, descriptionEn, price, category,
-              imageUrl, quantity, sold, visible, source, createdAt, updatedAt
+              imageUrl, imageKey, quantity, sold, visible, source,
+              createdAt, updatedAt
          FROM products
         ORDER BY createdAt ASC, id ASC`,
     );
     const [imageRows] = await connection.query(
-      `SELECT productId, imageUrl, sortOrder
+      `SELECT productId, imageUrl, imageKey, sortOrder
          FROM product_images
         ORDER BY productId ASC, sortOrder ASC, id ASC`,
     );
@@ -360,6 +498,8 @@ export interface ImportOptions {
   log?: (message: string) => void;
   /** Test seam — bypasses source selection entirely. */
   readSource?: () => Promise<SourceProduct[]>;
+  /** Test seam — bypasses the `KALAKOSH_S3_*` bucket reader. */
+  readSourceObject?: SourceObjectReader;
 }
 
 async function loadSourceCatalog(
@@ -403,6 +543,22 @@ export async function importKalakoshCatalog(
       `No tenant with slug "${tenantSlug}" found — run tenant seeding first.`,
     );
   }
+
+  const sourceS3 = sourceS3ConfigFromEnv();
+  const imageContext: ImageContext = {
+    assetBaseUrl,
+    fetchImpl,
+    readSourceObject:
+      options.readSourceObject ??
+      (sourceS3 ? createSourceObjectReader(sourceS3) : null),
+  };
+  log(
+    imageContext.readSourceObject
+      ? "Photos will be pulled straight from the source bucket, falling back to their URLs."
+      : `⚠ No source bucket configured (KALAKOSH_S3_*) — photos will be fetched over HTTP from ${assetBaseUrl}.\n` +
+          "  If the old deployment left S3_PUBLIC_URL blank its imageUrls are relative and only\n" +
+          "  it can serve them, so migrating from a backup after it goes dark needs the bucket.",
+  );
 
   const sourceProducts = await loadSourceCatalog(options, log);
   log(`Source catalogue: ${sourceProducts.length} product(s).`);
@@ -464,7 +620,9 @@ export async function importKalakoshCatalog(
   }
 
   if (options.dryRun) {
-    const withoutImage = queue.filter(({ row }) => !row.imageUrl).length;
+    const withoutImage = queue.filter(
+      ({ row }) => !row.imageUrl && !row.imageKey,
+    ).length;
     log(
       `\nDry run — nothing written. Would import ${queue.length} product(s), ` +
         `${withoutImage} of them without a photo.`,
@@ -474,18 +632,16 @@ export async function importKalakoshCatalog(
 
   for (const { row, mapped } of queue) {
     try {
-      const primarySourceUrl = row.imageUrl
-        ? resolveAssetUrl(row.imageUrl, assetBaseUrl)
-        : null;
-      const primary = primarySourceUrl
+      const hasPrimary = Boolean(row.imageUrl || row.imageKey);
+      const primary = hasPrimary
         ? await rehostImage(
             tenant.id,
-            primarySourceUrl,
+            row,
             `import/kalakosh/${row.id}/primary`,
-            fetchImpl,
+            imageContext,
           )
         : null;
-      if (primarySourceUrl && !primary) summary.imagesFailed++;
+      if (hasPrimary && !primary) summary.imagesFailed++;
 
       const result = await createProduct({
         ...mapped,
@@ -510,20 +666,23 @@ export async function importKalakoshCatalog(
 
       // Gallery images are non-fatal: the product row is already committed, so
       // a failed extra photo must not undo an imported piece of stock.
-      const seen = new Set([row.imageUrl?.trim()].filter(Boolean));
+      // Identity is the object key where there is one — two rows can carry the
+      // same photo under different URLs (relative vs public) but never under
+      // different keys.
+      const identity = (image: SourceImage | SourceProduct) =>
+        image.imageKey?.trim() || image.imageUrl?.trim() || "";
+      const seen = new Set([identity(row)].filter(Boolean));
       let sortOrder = 1;
       for (const image of row.images ?? []) {
-        if (seen.has(image.imageUrl.trim())) continue;
-        seen.add(image.imageUrl.trim());
-        const galleryUrl = resolveAssetUrl(image.imageUrl, assetBaseUrl);
-        const rehosted = galleryUrl
-          ? await rehostImage(
-              tenant.id,
-              galleryUrl,
-              `import/kalakosh/${row.id}/${sortOrder}`,
-              fetchImpl,
-            )
-          : null;
+        const id = identity(image);
+        if (id && seen.has(id)) continue;
+        seen.add(id);
+        const rehosted = await rehostImage(
+          tenant.id,
+          image,
+          `import/kalakosh/${row.id}/${sortOrder}`,
+          imageContext,
+        );
         if (!rehosted) {
           summary.imagesFailed++;
           continue;

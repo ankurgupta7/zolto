@@ -9,7 +9,9 @@ import {
   readSourceCatalogOverHttp,
   resolveAssetUrl,
   resolveCategory,
+  createSourceObjectReader,
   shapeSourceRows,
+  sourceS3ConfigFromEnv,
   type SourceProduct,
 } from "./importKalakosh";
 
@@ -32,6 +34,12 @@ vi.mock("./ssrf", () => ({
 
 vi.mock("mysql2/promise", () => ({ createConnection: vi.fn() }));
 
+const s3Send = vi.fn();
+vi.mock("@aws-sdk/client-s3", () => ({
+  S3Client: vi.fn(() => ({ send: s3Send })),
+  GetObjectCommand: vi.fn((input) => ({ input })),
+}));
+
 import {
   addProductImage,
   createProduct,
@@ -41,6 +49,7 @@ import {
 } from "./db";
 import { StorageQuotaError, storagePut } from "./storage";
 import { createConnection } from "mysql2/promise";
+import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
 
 const JEWELLERY_KEYS = [
   "Necklaces",
@@ -261,16 +270,73 @@ describe("shapeSourceRows", () => {
     const shaped = shapeSourceRows(
       [{ id: 1, name: "A" } as never, { id: 2, name: "B" } as never],
       [
-        { productId: 1, imageUrl: "b.jpg", sortOrder: 2 },
-        { productId: 1, imageUrl: "a.jpg", sortOrder: 1 },
-        { productId: 3, imageUrl: "orphan.jpg", sortOrder: 0 },
+        { productId: 1, imageUrl: "b.jpg", imageKey: "k/b.jpg", sortOrder: 2 },
+        { productId: 1, imageUrl: "a.jpg", imageKey: "k/a.jpg", sortOrder: 1 },
+        { productId: 3, imageUrl: "orphan.jpg", imageKey: null, sortOrder: 0 },
       ],
     );
     expect(shaped[0].images?.map((i) => i.imageUrl)).toEqual([
       "a.jpg",
       "b.jpg",
     ]);
+    expect(shaped[0].images?.map((i) => i.imageKey)).toEqual([
+      "k/a.jpg",
+      "k/b.jpg",
+    ]);
     expect(shaped[1].images).toEqual([]);
+  });
+
+  it("keeps a gallery row that has only an object key", () => {
+    const shaped = shapeSourceRows(
+      [{ id: 1, name: "A" } as never],
+      [
+        { productId: 1, imageUrl: "", imageKey: "k/only.jpg", sortOrder: 0 },
+        { productId: 1, imageUrl: "", imageKey: null, sortOrder: 1 },
+      ],
+    );
+    expect(shaped[0].images).toEqual([
+      { imageUrl: "", imageKey: "k/only.jpg", sortOrder: 0 },
+    ]);
+  });
+});
+
+describe("sourceS3ConfigFromEnv", () => {
+  it("reads the KALAKOSH_S3_* vars, defaulting the region", () => {
+    expect(
+      sourceS3ConfigFromEnv({
+        KALAKOSH_S3_BUCKET: "kalakosh-images",
+        KALAKOSH_S3_ACCESS_KEY_ID: "id",
+        KALAKOSH_S3_SECRET_ACCESS_KEY: "secret",
+        KALAKOSH_S3_ENDPOINT: "https://acct.r2.cloudflarestorage.com",
+      } as NodeJS.ProcessEnv),
+    ).toEqual({
+      bucket: "kalakosh-images",
+      accessKeyId: "id",
+      secretAccessKey: "secret",
+      endpoint: "https://acct.r2.cloudflarestorage.com",
+      region: "us-east-1",
+    });
+  });
+
+  it("returns null unless bucket and both credentials are present", () => {
+    expect(sourceS3ConfigFromEnv({} as NodeJS.ProcessEnv)).toBeNull();
+    expect(
+      sourceS3ConfigFromEnv({
+        KALAKOSH_S3_BUCKET: "b",
+        KALAKOSH_S3_ACCESS_KEY_ID: "id",
+      } as NodeJS.ProcessEnv),
+    ).toBeNull();
+  });
+
+  it("never falls back to this deployment's own S3_* vars", () => {
+    // Reading them would silently look for Kalakosh's photos in Zolto's bucket.
+    expect(
+      sourceS3ConfigFromEnv({
+        S3_BUCKET: "zolto",
+        S3_ACCESS_KEY_ID: "id",
+        S3_SECRET_ACCESS_KEY: "secret",
+      } as NodeJS.ProcessEnv),
+    ).toBeNull();
   });
 });
 
@@ -294,6 +360,61 @@ describe("readSourceCatalogOverHttp", () => {
   });
 });
 
+describe("createSourceObjectReader", () => {
+  const config = {
+    bucket: "kalakosh-images",
+    region: "auto",
+    endpoint: "https://acct.r2.cloudflarestorage.com",
+    accessKeyId: "id",
+    secretAccessKey: "secret",
+  };
+
+  it("reads an object out of the source bucket", async () => {
+    s3Send.mockResolvedValue({
+      Body: { transformToByteArray: async () => new Uint8Array([1, 2, 3]) },
+      ContentType: "image/webp",
+    });
+
+    await expect(
+      createSourceObjectReader(config)("products/16.webp"),
+    ).resolves.toEqual({
+      buffer: Buffer.from([1, 2, 3]),
+      contentType: "image/webp",
+      // The key, not a URL — this is what the file extension is inferred from.
+      origin: "products/16.webp",
+    });
+    expect(GetObjectCommand).toHaveBeenCalledWith({
+      Bucket: "kalakosh-images",
+      Key: "products/16.webp",
+    });
+  });
+
+  it("path-styles the request for a non-AWS endpoint", () => {
+    createSourceObjectReader(config);
+    expect(S3Client).toHaveBeenCalledWith(
+      expect.objectContaining({
+        region: "auto",
+        endpoint: "https://acct.r2.cloudflarestorage.com",
+        forcePathStyle: true,
+      }),
+    );
+  });
+
+  it("omits the endpoint for plain AWS", () => {
+    createSourceObjectReader({ ...config, endpoint: undefined });
+    expect(S3Client).toHaveBeenCalledWith(
+      expect.not.objectContaining({ forcePathStyle: true }),
+    );
+  });
+
+  it("throws rather than storing an empty object", async () => {
+    s3Send.mockResolvedValue({ Body: undefined });
+    await expect(createSourceObjectReader(config)("gone.jpg")).rejects.toThrow(
+      /Empty body/,
+    );
+  });
+});
+
 describe("readSourceCatalogFromDatabase", () => {
   it("reads every product and its gallery, unfiltered", async () => {
     const query = vi
@@ -314,7 +435,9 @@ describe("readSourceCatalogFromDatabase", () => {
 
     expect(catalogue).toHaveLength(2);
     expect(catalogue[0]).toMatchObject({ name: "Hidden", visible: 0 });
-    expect(catalogue[1].images).toEqual([{ imageUrl: "b.jpg", sortOrder: 1 }]);
+    expect(catalogue[1].images).toEqual([
+      { imageUrl: "b.jpg", imageKey: null, sortOrder: 1 },
+    ]);
     // No WHERE clause — a visibility or image filter here is exactly the bug
     // that left hidden and unphotographed stock behind.
     expect(query.mock.calls[0][0]).not.toMatch(/where/i);
@@ -438,6 +561,135 @@ describe("importKalakoshCatalog", () => {
       imageUrl: "https://cdn/1.jpg",
       sortOrder: 1,
     });
+  });
+
+  it("pulls photos from the source bucket by key when one is configured", async () => {
+    mockDestination();
+    const readSourceObject = vi.fn().mockResolvedValue({
+      buffer: Buffer.from([1, 2, 3]),
+      contentType: "image/webp",
+      origin: "products/16.webp",
+    });
+    const fetchImpl = vi.fn();
+
+    const summary = await importKalakoshCatalog({
+      readSource: async () => [
+        // The relative URL the old deployment writes when S3_PUBLIC_URL is
+        // blank — unusable once kalakosh.ch is gone, but the key still works.
+        {
+          ...sourceEarrings,
+          imageUrl: "/uploads/products/16.webp",
+          imageKey: "products/16.webp",
+        },
+      ],
+      readSourceObject,
+      fetchImpl: fetchImpl as never,
+    });
+
+    expect(summary).toMatchObject({ imported: 1, imagesFailed: 0 });
+    expect(readSourceObject).toHaveBeenCalledWith("products/16.webp");
+    // Nothing was asked of the old website at all.
+    expect(fetchImpl).not.toHaveBeenCalled();
+    expect(storagePut).toHaveBeenCalledWith(
+      7,
+      "import/kalakosh/16/primary.webp",
+      Buffer.from([1, 2, 3]),
+      "image/webp",
+    );
+  });
+
+  it("imports a product whose only photo reference is an object key", async () => {
+    mockDestination();
+    const readSourceObject = vi.fn().mockResolvedValue({
+      buffer: Buffer.from([1]),
+      contentType: "image/jpeg",
+      origin: "products/16.jpg",
+    });
+
+    const summary = await importKalakoshCatalog({
+      readSource: async () => [
+        { ...sourceEarrings, imageUrl: null, imageKey: "products/16.jpg" },
+      ],
+      readSourceObject,
+      fetchImpl: vi.fn() as never,
+    });
+
+    expect(summary).toMatchObject({ imported: 1, withoutImage: 0 });
+    expect(createProduct).toHaveBeenCalledWith(
+      expect.objectContaining({
+        imageKey: "import/kalakosh/16/primary_ab12.jpg",
+      }),
+    );
+  });
+
+  it("falls back to the URL when the key is missing from the source bucket", async () => {
+    mockDestination();
+    const readSourceObject = vi
+      .fn()
+      .mockRejectedValue(new Error("NoSuchKey: products/16.jpg"));
+    const fetchImpl = vi.fn().mockResolvedValue(imageResponse());
+
+    const summary = await importKalakoshCatalog({
+      readSource: async () => [
+        { ...sourceEarrings, imageKey: "products/16.jpg" },
+      ],
+      readSourceObject,
+      fetchImpl: fetchImpl as never,
+    });
+
+    expect(summary).toMatchObject({ imported: 1, imagesFailed: 0 });
+    expect(readSourceObject).toHaveBeenCalled();
+    expect(fetchImpl).toHaveBeenCalledWith(sourceEarrings.imageUrl);
+  });
+
+  it("uses HTTP only when no source bucket is configured", async () => {
+    mockDestination();
+    const fetchImpl = vi.fn().mockResolvedValue(imageResponse());
+
+    await importKalakoshCatalog({
+      readSource: async () => [
+        { ...sourceEarrings, imageKey: "products/16.jpg" },
+      ],
+      fetchImpl: fetchImpl as never,
+    });
+
+    expect(fetchImpl).toHaveBeenCalledWith(sourceEarrings.imageUrl);
+  });
+
+  it("de-duplicates the primary against the gallery by object key", async () => {
+    mockDestination();
+    const readSourceObject = vi.fn().mockResolvedValue({
+      buffer: Buffer.from([1]),
+      contentType: "image/jpeg",
+      origin: "products/16.jpg",
+    });
+
+    const summary = await importKalakoshCatalog({
+      readSource: async () => [
+        {
+          ...sourceEarrings,
+          imageUrl: "https://cdn/public/16.jpg",
+          imageKey: "products/16.jpg",
+          images: [
+            // Same object, different URL spelling — one photo, not two.
+            {
+              imageUrl: "/uploads/products/16.jpg",
+              imageKey: "products/16.jpg",
+            },
+            {
+              imageUrl: "/uploads/products/16b.jpg",
+              imageKey: "products/16b.jpg",
+            },
+          ],
+        },
+      ],
+      readSourceObject,
+      fetchImpl: vi.fn() as never,
+    });
+
+    expect(summary).toMatchObject({ imported: 1, galleryImages: 1 });
+    expect(readSourceObject).toHaveBeenCalledTimes(2);
+    expect(readSourceObject).toHaveBeenLastCalledWith("products/16b.jpg");
   });
 
   it("still imports the product when its image can't be re-hosted", async () => {

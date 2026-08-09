@@ -11,11 +11,18 @@
  * given, ./.env is loaded from the current directory.
  *
  * Set KALAKOSH_DATABASE_URL (or pass --source-db=…) to a read-only connection
- * to the old kalakosh.ch database. That is the only source that carries the
- * whole inventory: hidden pieces, sold-out pieces, pieces that were never
- * photographed, and every product's gallery images. Without it the script
- * falls back to kalakosh.ch's public products.list endpoint, which is the
- * storefront view and shows only visible, photographed products.
+ * to the old kalakosh.ch database — or to a throwaway MySQL holding a restored
+ * `deploy/backup.sh` dump, which is safer and lets you dry-run repeatedly.
+ * That is the only source that carries the whole inventory: hidden pieces,
+ * sold-out pieces, pieces that were never photographed, and every product's
+ * gallery images. Without it the script falls back to kalakosh.ch's public
+ * products.list endpoint, which is the storefront view and shows only visible,
+ * photographed products.
+ *
+ * A dump carries image URLs and keys, not the image bytes. Set the
+ * KALAKOSH_S3_* vars (see .env.example) so photos are read straight from the
+ * old bucket by key; otherwise they are fetched over HTTP from --asset-base,
+ * which needs kalakosh.ch to still be serving them.
  *
  * Flags:
  *   --dry-run            report what would be imported, write nothing
