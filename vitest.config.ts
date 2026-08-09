@@ -31,7 +31,14 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       reporter: ["text", "lcov"],
-      include: ["server/**", "client/src/**"],
+      // `shared/**` is in scope because code that decides money now lives
+      // there: shared/entitlements.ts owns the platform fee and every plan
+      // gate, read by both planes. Leaving it out meant the one file whose
+      // regression would silently stop billing (or start billing a comped
+      // store) reported no coverage at all — while `shared/` is in fact the
+      // best-covered directory here, so measuring it raises the number rather
+      // than lowering it.
+      include: ["server/**", "client/src/**", "shared/**"],
       exclude: [
         "**/*.test.ts",
         "**/*.test.tsx",
