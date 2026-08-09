@@ -8,6 +8,7 @@ import {
   PRICING_PROMISE,
   COST_COMPARISON,
   ZERO_COST_POS,
+  MAKER_PITCH,
   AI_NATIVE_PITCH,
   SELLING_FLOW,
   CARD_READER_GAG,
@@ -169,6 +170,17 @@ describe("marketing locale files", () => {
         body: ZERO_COST_POS.body,
         includes: [...ZERO_COST_POS.includes],
         catch: ZERO_COST_POS.catch,
+      },
+      makerPitch: {
+        eyebrow: MAKER_PITCH.eyebrow,
+        headline: MAKER_PITCH.headline,
+        headlineEmphasis: MAKER_PITCH.headlineEmphasis,
+        body: MAKER_PITCH.body,
+        till: {
+          title: MAKER_PITCH.till.title,
+          methods: MAKER_PITCH.till.methods,
+          caption: MAKER_PITCH.till.caption,
+        },
       },
       aiNativePitch: {
         eyebrow: AI_NATIVE_PITCH.eyebrow,

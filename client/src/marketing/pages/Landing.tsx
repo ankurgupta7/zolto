@@ -2,7 +2,7 @@ import { Link } from "wouter";
 import { SketchUnderline } from "@/components/SketchAccents";
 import ParticleField from "@/components/ParticleField";
 import {
-  AI_NATIVE_PITCH,
+  MAKER_PITCH,
   PRICING_PROMISE,
   COST_COMPARISON,
   INCUMBENT_COMPARISON,
@@ -14,10 +14,11 @@ import {
   PhotoToListing,
 } from "../components/MarketingIllustrations";
 import {
-  DiscoveryShiftChart,
+  AiNativeBand,
   AgentProofBand,
   HowAnAiBuys,
 } from "../components/AgentPitch";
+import { HeroTill } from "../components/HeroTill";
 import { Container } from "../components/Container";
 import { DayInTheLife } from "../components/DayInTheLife";
 import { ScrollReveal } from "../components/ScrollReveal";
@@ -36,21 +37,23 @@ export default function Landing() {
           fades out over the light sections via screen blend. */}
       <ParticleField />
 
-      {/* ── Hero — the AI-native thesis: assistants are the new front door ── */}
+      {/* ── Hero — what Zolto is, in the merchant's nouns (see MAKER_PITCH) ── */}
       <section className="bg-[var(--brand-ink)]">
         <Container className="grid items-center gap-10 pb-20 pt-20 md:grid-cols-2">
           <div>
             <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
-              {st("aiNativePitch.eyebrow", AI_NATIVE_PITCH.eyebrow)}
+              {st("makerPitch.eyebrow", MAKER_PITCH.eyebrow)}
             </p>
-            <h1 className="mt-4 max-w-xl font-serif text-4xl leading-[1.1] text-white sm:text-5xl">
-              {st("aiNativePitch.headline", AI_NATIVE_PITCH.headline)}{" "}
+            {/* max-w-2xl, not xl: at xl the headline broke after "online" and
+                left "shop" alone on a line of its own. */}
+            <h1 className="mt-4 max-w-2xl font-serif text-4xl leading-[1.1] text-white sm:text-5xl">
+              {st("makerPitch.headline", MAKER_PITCH.headline)}{" "}
               {/* Only the punchline is underlined, so the stroke stays tight
                   to the words however the heading wraps. */}
               <span className="relative inline-block">
                 {st(
-                  "aiNativePitch.headlineEmphasis",
-                  AI_NATIVE_PITCH.headlineEmphasis,
+                  "makerPitch.headlineEmphasis",
+                  MAKER_PITCH.headlineEmphasis,
                 )}
                 <span className="absolute -bottom-2 left-0 w-full text-[var(--brand-accent)]">
                   <SketchUnderline />
@@ -58,7 +61,7 @@ export default function Landing() {
               </span>
             </h1>
             <p className="mt-8 max-w-md text-lg leading-relaxed text-white/70">
-              {st("aiNativePitch.body", AI_NATIVE_PITCH.body)}
+              {st("makerPitch.body", MAKER_PITCH.body)}
             </p>
             <div className="mt-10 flex flex-wrap items-center gap-4">
               <Link
@@ -89,15 +92,19 @@ export default function Landing() {
             </ul>
           </div>
 
-          {/* The discovery shift, drawn rather than asserted */}
+          {/* The product, drawn rather than asserted */}
           <div className="hidden md:block">
-            <DiscoveryShiftChart />
+            <HeroTill />
           </div>
         </Container>
       </section>
 
-      {/* ── Proof: an AI buying from a Zolto store, inside the conversation ── */}
-      <AgentProofBand />
+      {/* ── The in-person argument, straight after the hero: the same phone the
+           hero drew, and the one thing only this till does ── */}
+      <SqueezePlay />
+
+      {/* ── The differentiator: a real POS + catalogue, at CHF 0/month ── */}
+      <ZeroCostPos />
 
       {/* ── Cost strip (Direction A) — a year with the old guard vs a month here ── */}
       <section className="bg-[var(--brand-ink-deep)]">
@@ -135,12 +142,6 @@ export default function Landing() {
           </div>
         </Container>
       </section>
-
-      {/* ── The mechanics: found → asked → bought, nothing to configure ── */}
-      <HowAnAiBuys />
-
-      {/* ── The differentiator: a real POS + catalogue, at CHF 0/month ── */}
-      <ZeroCostPos />
 
       {/* ── The pledge (Direction B) — the heart of the positioning ── */}
       <section className="border-b border-[var(--brand-border)] bg-[var(--brand-surface-2)]">
@@ -226,15 +227,6 @@ export default function Landing() {
           </div>
         </Container>
       </section>
-
-      {/* ── The squeeze play — the in-person argument that isn't a tie ──
-           This slot used to hold CardReaderGag, whose premise ("nobody should
-           sell you a CHF 300 reader") every competitor in this market now
-           shares: SumUp Tap to Pay and Worldline Tap on Mobile both run on an
-           ordinary phone. The constant and its tests are kept — the joke is
-           still good and still true — but the section it anchored was arguing
-           a point nobody is contesting. */}
-      <SqueezePlay />
 
       {/* ── How it works — one inventory + photo→listing (kept illustrations) ── */}
       <Container as="section" id="product" className="py-20">
@@ -342,6 +334,16 @@ export default function Landing() {
           </div>
         </Container>
       </section>
+
+      {/* ── And it's ready for what's coming ──
+           The AI-native thesis, in full: the band that used to be the hero,
+           its proof, and the found → asked → bought mechanics. It sits here
+           rather than at the top because it argues for choosing Zolto, which
+           only means something once the reader knows what Zolto is — see the
+           doc comment on MAKER_PITCH. ── */}
+      <AiNativeBand />
+      <AgentProofBand />
+      <HowAnAiBuys />
 
       {/* ── Proof you can go and check, before we ask for the signup ── */}
       <DiaryTeaser />

@@ -3,12 +3,28 @@ import { render, screen, cleanup } from "@testing-library/react";
 import { AI_NATIVE_PITCH } from "@shared/platform";
 import {
   DiscoveryShiftChart,
+  AiNativeBand,
   AgentChatMock,
   AgentProofBand,
   HowAnAiBuys,
 } from "./AgentPitch";
 
 afterEach(cleanup);
+
+describe("AiNativeBand", () => {
+  it("states the thesis with its chart, as a section rather than the page title", () => {
+    render(<AiNativeBand />);
+    // The copy is the copy that used to be the hero — unchanged. What moved is
+    // the heading level: this argues for choosing Zolto, it doesn't name it.
+    const heading = screen.getByRole("heading", { level: 2 });
+    expect(heading.textContent).toContain(AI_NATIVE_PITCH.headline);
+    expect(heading.textContent).toContain(AI_NATIVE_PITCH.headlineEmphasis);
+    expect(screen.getByText(AI_NATIVE_PITCH.eyebrow)).toBeTruthy();
+    expect(screen.getByText(AI_NATIVE_PITCH.body)).toBeTruthy();
+    // The chart came down the page with it rather than being dropped.
+    expect(screen.getByText(AI_NATIVE_PITCH.chart.caption)).toBeTruthy();
+  });
+});
 
 describe("DiscoveryShiftChart", () => {
   it("labels both curves and states the caption", () => {

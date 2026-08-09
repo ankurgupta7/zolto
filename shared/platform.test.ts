@@ -16,6 +16,7 @@ import {
   SELLING_FLOW,
   monthlyCostAt,
   ZERO_COST_POS,
+  MAKER_PITCH,
   AI_NATIVE_PITCH,
   FREE_PLAN,
   COMPETITORS,
@@ -369,11 +370,60 @@ describe("ZERO_COST_POS", () => {
   });
 });
 
+describe("MAKER_PITCH", () => {
+  it("names the product in the merchant's own nouns", () => {
+    // The whole reason this constant exists: a reader arriving cold has to be
+    // told what Zolto is, in words they already use, before anything argues
+    // for it. These four are the load-bearing ones — the category, the payment
+    // method a Swiss maker reaches for first, and the hardware they own.
+    const hero = [
+      MAKER_PITCH.eyebrow,
+      MAKER_PITCH.headline,
+      MAKER_PITCH.headlineEmphasis,
+      MAKER_PITCH.body,
+    ]
+      .join(" ")
+      .toLowerCase();
+    expect(hero).toContain("till");
+    expect(hero).toContain("point-of-sale");
+    expect(hero).toContain("twint");
+    expect(hero).toMatch(/phone|tablet/);
+  });
+
+  it("promises only what the Free plan actually ships", () => {
+    // Same contract as ZERO_COST_POS: the hero describes the product a visitor
+    // gets for CHF 0, so every capability it names has to be on FREE_PLAN.
+    const free = FREE_PLAN.features.join(" ").toLowerCase();
+    for (const term of ["pos", "twint", "online store", "inventory sync"]) {
+      expect(free).toContain(term);
+    }
+  });
+
+  it("makes no claim about price or about any competitor", () => {
+    // On card rate Zolto is the dearest option on its own comparison table
+    // (docs/planning/positioning-pricing-revision.md §1). A hero that opened on
+    // "cheaper" would be contradicted by our own page further down, so it
+    // opens on what the thing is instead.
+    const claimed = [
+      MAKER_PITCH.eyebrow,
+      MAKER_PITCH.headline,
+      MAKER_PITCH.headlineEmphasis,
+      MAKER_PITCH.body,
+      MAKER_PITCH.till.title,
+      MAKER_PITCH.till.caption,
+    ].join(" ");
+    for (const c of COMPETITORS) {
+      expect(claimed).not.toContain(c.name);
+    }
+    expect(claimed.toLowerCase()).not.toMatch(/cheape|lowest|save you/);
+  });
+});
+
 describe("AI_NATIVE_PITCH", () => {
   it("promises only the agent surface the Free plan actually ships", () => {
-    // The hero's whole thesis rests on the Free plan's "Found by AI agents"
-    // line — if that ever leaves the free tier, this pitch becomes a paywall
-    // claim and must be rewritten, not silently kept.
+    // The thesis band rests on the Free plan's "Found by AI agents" line — if
+    // that ever leaves the free tier, this pitch becomes a paywall claim and
+    // must be rewritten, not silently kept.
     const free = FREE_PLAN.features.join(" ").toLowerCase();
     for (const term of ["llms.txt", "mcp"]) {
       expect(free).toContain(term);

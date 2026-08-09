@@ -498,6 +498,17 @@
       ],
       "catch": "Nessun conto alla rovescia di prova. Nessun piano iniziale che scade in silenzio. L'unica cosa per cui addebitiamo qualcosa sono le vendite online che ti portiamo — e se non ce ne sono, non c'è nulla da addebitare. Chi elabora i tuoi pagamenti con carta e TWINT applica comunque la sua tariffa, come farebbe ovunque; quel conto è tra te e lui, e noi non ne prendiamo una fetta."
     },
+    "makerPitch": {
+      "eyebrow": "per orafi, ceramisti e banchi di mercato",
+      "headline": "La cassa e il negozio online",
+      "headlineEmphasis": "per l'artigianato.",
+      "body": "Zolto è una cassa e un negozio online che condividono un solo inventario. Tocchi la foto del pezzo appena venduto, incassi con TWINT, carta o contanti sul telefono o tablet che ha già — e l'ultimo esemplare sparisce dal Suo sito prima che il cliente si sia allontanato.",
+      "till": {
+        "title": "la Sua cassa, sul telefono che ha già",
+        "methods": "TWINT · Carta · Contanti",
+        "caption": "Ogni pezzo con la sua foto, il suo nome e il suo prezzo. Tocchi quello venduto, incassi — il Suo sito si aggiorna da solo."
+      }
+    },
     "aiNativePitch": {
       "eyebrow": "il commercio si sta spostando nella finestra di chat",
       "headline": "Il Suo prossimo cliente",
