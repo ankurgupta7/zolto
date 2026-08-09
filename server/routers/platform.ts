@@ -20,6 +20,7 @@ import {
   getTenantDetailForOperator,
   setTenantUserRoleByOperator,
   setTenantPlanByOperator,
+  setTenantCompByOperator,
   getTenantBySlug,
   createTenant,
   createTenantSettings,
@@ -129,6 +130,49 @@ export const platformRouter = router({
     .mutation(async ({ ctx, input }) => {
       auditOperatorAction(ctx.user?.id, "setTenantPlan", input);
       const ok = await setTenantPlanByOperator(input.tenantId, input.plan);
+      if (!ok) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "No such store." });
+      }
+      return { success: true };
+    }),
+
+  /**
+   * Put a store on the house: give it a plan it doesn't pay for, waive Zolto's
+   * cut of its online/agent orders, or both.
+   *
+   * This is the deliberate, recorded version of what `setTenantPlan` does by
+   * hand. `setTenantPlan` edits `tenants.plan` — the column Stripe's webhooks
+   * own — so a plan moved there is both indistinguishable from a paid one and
+   * liable to be reset by a subscription event arriving later. A comp lives in
+   * its own columns, survives that, and reads as a grant on both consoles:
+   * the merchant is told their Pro is a gift rather than being offered the
+   * chance to buy it again (billing.createPlanCheckout refuses them).
+   *
+   * `plan: null` + `waiveOnlineFee: false` revokes. Revoking never touches the
+   * store's paid plan, so a comped merchant who has since subscribed keeps
+   * exactly what they are paying for.
+   */
+  setTenantComp: superadminProcedure
+    .input(
+      z.object({
+        tenantId: z.number().int().positive(),
+        /** The plan granted for free. null = grant no plan. */
+        plan: z.enum(["free", "pro"]).nullable(),
+        /** Take 0% on this store's online/agent orders, whatever its plan. */
+        waiveOnlineFee: z.boolean(),
+        /** Why — shown next to the grant in the console. */
+        note: z.string().trim().max(255).optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      auditOperatorAction(ctx.user?.id, "setTenantComp", input);
+      const ok = await setTenantCompByOperator({
+        tenantId: input.tenantId,
+        plan: input.plan,
+        feeWaived: input.waiveOnlineFee,
+        note: input.note ?? null,
+        grantedByUserId: ctx.user?.id ?? null,
+      });
       if (!ok) {
         throw new TRPCError({ code: "NOT_FOUND", message: "No such store." });
       }

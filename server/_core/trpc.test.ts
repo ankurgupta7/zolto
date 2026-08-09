@@ -41,6 +41,15 @@ function tenant(plan: string) {
   return { id: 7, plan } as unknown as NonNullable<TrpcContext["tenant"]>;
 }
 
+/** A tenant row carrying the platform owner's comp columns. */
+function comp(over: {
+  plan: string;
+  compPlan?: string | null;
+  compFeeWaived?: boolean;
+}) {
+  return { id: 7, ...over } as unknown as NonNullable<TrpcContext["tenant"]>;
+}
+
 describe("superadminProcedure", () => {
   it("allows a superadmin", async () => {
     const caller = testRouter.createCaller(ctx({ user: user("superadmin") }));
@@ -91,6 +100,32 @@ describe("checkFeature", () => {
   it("fails without a tenant context", async () => {
     const caller = testRouter.createCaller(ctx());
     await expect(caller.domainGated()).rejects.toThrow(/No tenant context/);
+  });
+
+  // A comp is only worth granting if the gates honour it. This one is the
+  // gate: a store comped onto Pro pays for Free, so reading `tenant.plan`
+  // here would hand the merchant an upsell for what they were just given.
+  it("honours a comped plan, not the one the store pays for", async () => {
+    const comped = testRouter.createCaller(
+      ctx({ tenant: comp({ plan: "free", compPlan: "pro" }) }),
+    );
+    expect(await comped.domainGated()).toBe("ok");
+    expect(await comped.multiCurrencyGated()).toBe("ok");
+  });
+
+  it("does not open paid features for a bare fee waiver", async () => {
+    // Waiving the skim is a pricing favour, not an entitlement one.
+    const caller = testRouter.createCaller(
+      ctx({ tenant: comp({ plan: "free", compFeeWaived: true }) }),
+    );
+    await expect(caller.domainGated()).rejects.toThrow(/Pro plan/);
+  });
+
+  it("never demotes a paying store to a stale comp", async () => {
+    const caller = testRouter.createCaller(
+      ctx({ tenant: comp({ plan: "pro", compPlan: "free" }) }),
+    );
+    expect(await caller.domainGated()).toBe("ok");
   });
 });
 

@@ -20,7 +20,7 @@ import {
   getTenantSettings,
   hasPhotoConsumption,
 } from "./db";
-import { PLAN_FEATURES, type PlanId } from "./_core/trpc";
+import { featuresForTenant } from "./_core/trpc";
 
 export interface OnboardingTask {
   id: string;
@@ -67,7 +67,7 @@ export async function deriveOnboardingStatus(
     hasPhotoConsumption(tenant.id),
   ]);
 
-  const features = PLAN_FEATURES[tenant.plan as PlanId];
+  const features = featuresForTenant(tenant);
   const tasks: OnboardingTask[] = [];
 
   tasks.push({

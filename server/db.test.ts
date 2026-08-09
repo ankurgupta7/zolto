@@ -86,6 +86,7 @@ import {
   getTenantAdminContact,
   insertBulkUploadLog,
   createProduct,
+  setTenantCompByOperator,
 } from "./db";
 
 const sampleOrder = {
@@ -369,6 +370,105 @@ describe("insertBulkUploadLog", () => {
       operation: "create",
       ref: "msg-123",
     });
+  });
+});
+
+describe("setTenantCompByOperator", () => {
+  function withExistingTenant() {
+    const updateChain = makeChain(undefined);
+    dbMock.select.mockReturnValue(makeChain([{ id: 42 }]));
+    dbMock.update.mockReturnValue(updateChain);
+    return updateChain;
+  }
+
+  it("writes the grant, its reason, and who granted it", async () => {
+    const updateChain = withExistingTenant();
+
+    const ok = await setTenantCompByOperator({
+      tenantId: 42,
+      plan: "pro",
+      feeWaived: true,
+      note: "design partner",
+      grantedByUserId: 9,
+    });
+
+    expect(ok).toBe(true);
+    const [setArg] = updateChain.__calls.set[0];
+    expect(setArg).toMatchObject({
+      compPlan: "pro",
+      compFeeWaived: true,
+      compNote: "design partner",
+      compGrantedBy: 9,
+    });
+    expect(setArg.compGrantedAt).toBeInstanceOf(Date);
+  });
+
+  // The whole reason comps live in their own columns: `plan` is Stripe's,
+  // and a late subscription webhook writing it must not revoke the grant.
+  it("never touches the store's own paid plan", async () => {
+    const updateChain = withExistingTenant();
+    await setTenantCompByOperator({
+      tenantId: 42,
+      plan: "pro",
+      feeWaived: false,
+    });
+    const [setArg] = updateChain.__calls.set[0];
+    expect(setArg).not.toHaveProperty("plan");
+    expect(setArg).not.toHaveProperty("stripeSubscriptionId");
+    expect(setArg).not.toHaveProperty("subscriptionStatus");
+  });
+
+  it("clears the provenance when the comp is revoked", async () => {
+    const updateChain = withExistingTenant();
+    await setTenantCompByOperator({
+      tenantId: 42,
+      plan: null,
+      feeWaived: false,
+      note: "ignored on revoke",
+      grantedByUserId: 9,
+    });
+    expect(updateChain.__calls.set[0][0]).toEqual({
+      compPlan: null,
+      compFeeWaived: false,
+      compNote: null,
+      compGrantedAt: null,
+      compGrantedBy: null,
+    });
+  });
+
+  it("keeps the provenance when only the plan half is dropped", async () => {
+    const updateChain = withExistingTenant();
+    await setTenantCompByOperator({
+      tenantId: 42,
+      plan: null,
+      feeWaived: true,
+      note: "fee only",
+    });
+    const [setArg] = updateChain.__calls.set[0];
+    expect(setArg.compNote).toBe("fee only");
+    expect(setArg.compGrantedAt).toBeInstanceOf(Date);
+  });
+
+  it("stores a blank note as null rather than an empty string", async () => {
+    const updateChain = withExistingTenant();
+    await setTenantCompByOperator({
+      tenantId: 42,
+      plan: "pro",
+      feeWaived: false,
+      note: "   ",
+    });
+    expect(updateChain.__calls.set[0][0].compNote).toBeNull();
+  });
+
+  it("reports a store that does not exist, and writes nothing", async () => {
+    dbMock.select.mockReturnValue(makeChain([]));
+    const ok = await setTenantCompByOperator({
+      tenantId: 999,
+      plan: "pro",
+      feeWaived: true,
+    });
+    expect(ok).toBe(false);
+    expect(dbMock.update).not.toHaveBeenCalled();
   });
 });
 

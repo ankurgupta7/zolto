@@ -30,13 +30,17 @@ import {
   Users,
 } from "lucide-react";
 
+import { featuresForPlan } from "@shared/platform";
+
 const PLAN_ORDER = ["free", "pro"] as const;
 
 const CURRENCIES = ["chf", "eur", "usd", "gbp"] as const;
 
-/** Plans that include a custom domain / multi-currency (mirrors PLAN_FEATURES). */
-const CUSTOM_DOMAIN_PLANS = new Set(["pro"]);
-const MULTI_CURRENCY_PLANS = new Set(["pro"]);
+// Gates read PLAN_FEATURES itself rather than a hand-copied Set of plan ids.
+// The Sets that used to live here were labelled "mirrors PLAN_FEATURES", and
+// mirrors rot: Domain.tsx's copy still held the retired four-tier ids after the
+// Free/Pro pivot, so it matched no plan and showed paying Pro merchants an
+// upsell for the domain they had already bought.
 
 function planLabel(id: string): string {
   return id.charAt(0).toUpperCase() + id.slice(1);
@@ -195,6 +199,28 @@ export default function Billing() {
         </div>
       )}
 
+      {/* A comped store is told so plainly. Without this the page shows Pro
+          with no subscription behind it, which reads as a billing fault the
+          merchant might try to "fix" by paying for what they were given. */}
+      {data?.comp && (
+        <div className="rounded-lg border border-emerald-300 bg-emerald-50 p-4 text-sm text-emerald-900">
+          <p className="font-medium">
+            {t("catalog.account.billing.compTitle")}
+          </p>
+          <p className="mt-1">
+            {data.comp.planComped && data.comp.plan
+              ? t("catalog.account.billing.compPlan", {
+                  plan: planLabel(data.comp.plan),
+                })
+              : null}
+            {data.comp.planComped && data.comp.feeWaived ? " " : null}
+            {data.comp.feeWaived
+              ? t("catalog.account.billing.compFeeWaived")
+              : null}
+          </p>
+        </div>
+      )}
+
       {/* Plans */}
       {data && (
         <section>
@@ -273,15 +299,19 @@ export default function Billing() {
                     ) : (
                       isCurrent && (
                         <div className="text-center text-sm text-muted-foreground py-2">
-                          {data.subscriptionStatus === "trialing"
-                            ? t("catalog.account.billing.trialUntil", {
-                                date: data.trialEndsAt
-                                  ? new Date(
-                                      data.trialEndsAt,
-                                    ).toLocaleDateString(locale)
-                                  : "—",
-                              })
-                            : t("catalog.account.billing.active")}
+                          {/* A comped plan has no subscription behind it, so
+                              neither "trial until…" nor "active" is true of it. */}
+                          {data.comp?.planComped
+                            ? t("catalog.account.billing.compBadge")
+                            : data.subscriptionStatus === "trialing"
+                              ? t("catalog.account.billing.trialUntil", {
+                                  date: data.trialEndsAt
+                                    ? new Date(
+                                        data.trialEndsAt,
+                                      ).toLocaleDateString(locale)
+                                    : "—",
+                                })
+                              : t("catalog.account.billing.active")}
                         </div>
                       )
                     )}
@@ -322,12 +352,16 @@ export default function Billing() {
                   CHF {data.onlineFees.monthFeeChf.toLocaleString(locale)}
                 </div>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {data.plan === "pro"
-                    ? t("catalog.account.billing.feesOnPro")
-                    : t("catalog.account.billing.feesOnFree", {
-                        percent: data.onlineFees.feePercentLabel,
-                        appliesTo: data.onlineFees.appliesTo,
-                      })}
+                  {/* Read the fee the store actually pays, not its plan: a
+                      Free-plan store can have the fee waived outright. */}
+                  {data.comp?.feeWaived
+                    ? t("catalog.account.billing.feesWaived")
+                    : data.onlineFees.feeBps === 0
+                      ? t("catalog.account.billing.feesOnPro")
+                      : t("catalog.account.billing.feesOnFree", {
+                          percent: data.onlineFees.feePercentLabel,
+                          appliesTo: data.onlineFees.appliesTo,
+                        })}
                 </p>
               </div>
             </div>
@@ -548,13 +582,13 @@ export default function Billing() {
                 <span className="text-sm font-medium">
                   {t("catalog.account.billing.customDomain")}
                 </span>
-                {!CUSTOM_DOMAIN_PLANS.has(currentPlan) && (
+                {!featuresForPlan(currentPlan).customDomain && (
                   <span className="text-xs text-muted-foreground">
                     {t("catalog.account.billing.proPlanBadge")}
                   </span>
                 )}
               </div>
-              {CUSTOM_DOMAIN_PLANS.has(currentPlan) ? (
+              {featuresForPlan(currentPlan).customDomain ? (
                 <>
                   <form
                     className="flex gap-2"
@@ -612,7 +646,7 @@ export default function Billing() {
                 <span className="text-sm font-medium">
                   {t("catalog.account.billing.storeCurrency")}
                 </span>
-                {!MULTI_CURRENCY_PLANS.has(currentPlan) && (
+                {!featuresForPlan(currentPlan).multiCurrency && (
                   <span className="text-xs text-muted-foreground">
                     {t("catalog.account.billing.proPlanBadge")}
                   </span>
@@ -641,7 +675,7 @@ export default function Billing() {
                   type="submit"
                   disabled={
                     settingsMutation.isPending ||
-                    (!MULTI_CURRENCY_PLANS.has(currentPlan) &&
+                    (!featuresForPlan(currentPlan).multiCurrency &&
                       (currencyInput ?? "chf") !== "chf")
                   }
                   className="rounded-md bg-primary px-3 py-2 text-sm text-primary-foreground hover:opacity-90 disabled:opacity-50"

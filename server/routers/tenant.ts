@@ -9,8 +9,9 @@ import {
   adminProcedure,
   requireTenant,
   tenantAdminProcedure,
-  PLAN_FEATURES,
+  featuresForTenant,
 } from "../_core/trpc";
+import { entitlementsFor } from "@shared/entitlements";
 import {
   db,
   getTenantBySlug,
@@ -610,8 +611,25 @@ rationale: one friendly sentence (max 25 words) naming BOTH colors, e.g. "Deep f
   }),
 
   // ─── Protected: Get my tenant ──────────────────────────────────────────────
+  /**
+   * `plan` is deliberately the **entitled** plan here, not the raw billing
+   * column — every admin screen that reads this gates on it (Domain, Support,
+   * Billing), and a store the platform owner comped onto Pro pays for Free.
+   * Returning the raw column would have shown a comped merchant an upsell for
+   * the plan they had just been given, which is the same failure the
+   * PLAN_FEATURES note in shared/platform.ts records.
+   *
+   * What the store actually pays for is still here as `paidPlan`, alongside
+   * the rest of `entitlementsFor` — so nothing is hidden, it is just no longer
+   * the field a gate reaches for by accident.
+   *
+   * `compNote` is stripped: it's the operator's own shorthand for why a store
+   * was comped, written for the platform console and not for the merchant.
+   */
   me: publicProcedure.use(requireTenant).query(async ({ ctx }) => {
-    return stripPosApiKey(ctx.tenant);
+    const { compNote: _compNote, ...tenant } = stripPosApiKey(ctx.tenant);
+    const entitlements = entitlementsFor(ctx.tenant);
+    return { ...tenant, ...entitlements, plan: entitlements.effectivePlan };
   }),
 
   // ─── Protected: Which store does the signed-in user belong to? ─────────────
@@ -784,7 +802,7 @@ rationale: one friendly sentence (max 25 words) naming BOTH colors, e.g. "Deep f
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const features = PLAN_FEATURES[ctx.tenant.plan];
+      const features = featuresForTenant(ctx.tenant);
 
       if (input.publicDomain !== undefined && !features.customDomain) {
         throw new TRPCError({

@@ -81,9 +81,22 @@ function run(
 
 describe("platformFeeRappen", () => {
   it("takes 1% on Free, nothing on Pro, and treats unknown plans as Free", () => {
-    expect(platformFeeRappen("free", 18_500)).toBe(185);
-    expect(platformFeeRappen("pro", 18_500)).toBe(0);
-    expect(platformFeeRappen("legacy-tier", 18_500)).toBe(185);
+    expect(platformFeeRappen({ plan: "free" }, 18_500)).toBe(185);
+    expect(platformFeeRappen({ plan: "pro" }, 18_500)).toBe(0);
+    expect(platformFeeRappen({ plan: "legacy-tier" }, 18_500)).toBe(185);
+  });
+
+  it("takes nothing from a store comped onto Pro", () => {
+    expect(platformFeeRappen({ plan: "free", compPlan: "pro" }, 18_500)).toBe(
+      0,
+    );
+  });
+
+  it("takes nothing from a store whose fee is waived on Free", () => {
+    // The other half of the favour: still on Free's limits, but we don't skim.
+    expect(
+      platformFeeRappen({ plan: "free", compFeeWaived: true }, 18_500),
+    ).toBe(0);
   });
 });
 
@@ -114,6 +127,39 @@ describe("createStorefrontCheckoutSession", () => {
     expect(createOrder).toHaveBeenCalledWith(
       expect.objectContaining({ platformFeeRappen: 0 }),
     );
+  });
+
+  // The end of the "don't charge them any margin" promise: the merchant's own
+  // Stripe charge must carry no application_fee_amount at all, and the order
+  // must record that Zolto earned nothing on it.
+  it("omits the fee entirely for a store comped onto Pro", async () => {
+    await run({
+      tenant: { ...tenant, plan: "free", compPlan: "pro" } as Tenant,
+    });
+    const args = sessionsCreate.mock.calls[0][0];
+    expect("application_fee_amount" in args.payment_intent_data).toBe(false);
+    expect(createOrder).toHaveBeenCalledWith(
+      expect.objectContaining({ platformFeeRappen: 0 }),
+    );
+  });
+
+  it("omits the fee for a Free store whose fee alone is waived", async () => {
+    await run({
+      tenant: { ...tenant, plan: "free", compFeeWaived: true } as Tenant,
+    });
+    const args = sessionsCreate.mock.calls[0][0];
+    expect("application_fee_amount" in args.payment_intent_data).toBe(false);
+    expect(createOrder).toHaveBeenCalledWith(
+      expect.objectContaining({ platformFeeRappen: 0 }),
+    );
+  });
+
+  it("still takes 1% from an ordinary free store", async () => {
+    await run();
+    expect(
+      sessionsCreate.mock.calls[0][0].payment_intent_data
+        .application_fee_amount,
+    ).toBe(185);
   });
 
   it("records the sales channel on both the order and the Stripe session", async () => {

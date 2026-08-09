@@ -26,6 +26,7 @@ import {
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import crypto from "node:crypto";
 import { storageBytesForPlan } from "@shared/platform";
+import { effectivePlan } from "@shared/entitlements";
 import {
   getTenantById,
   getTenantStorageBytes,
@@ -133,7 +134,9 @@ export async function storagePut(
   const incomingBytes = body.length;
 
   const tenant = await getTenantById(tenantId);
-  const plan = tenant?.plan ?? "free";
+  // The plan the store is *entitled* to, comps included — a store comped onto
+  // Pro gets Pro's 50 GB, not the 5 GB its unpaid `plan` column still says.
+  const plan = effectivePlan(tenant ?? { plan: "free" });
   const limitBytes = storageBytesForPlan(plan);
   const usedBytes = await getTenantStorageBytes(tenantId);
 

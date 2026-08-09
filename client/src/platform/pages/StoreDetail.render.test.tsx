@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
   error: null as { message: string } | null,
   setRole: vi.fn(),
   setPlan: vi.fn(),
+  setComp: vi.fn(),
 }));
 
 vi.mock("@/lib/trpc", () => ({
@@ -31,6 +32,9 @@ vi.mock("@/lib/trpc", () => ({
       },
       setTenantPlan: {
         useMutation: () => ({ mutate: mocks.setPlan, isPending: false }),
+      },
+      setTenantComp: {
+        useMutation: () => ({ mutate: mocks.setComp, isPending: false }),
       },
     },
   },
@@ -75,6 +79,7 @@ function detail(over: Record<string, unknown> = {}, users = [user()]) {
       userCount: users.length,
       onboardingStep: 2,
       referralCode: "ABC123",
+      comp: null,
       ...over,
     },
     users,
@@ -159,6 +164,102 @@ describe("StoreDetail — plan", () => {
   it("states that Stripe is not touched, so nobody assumes billing followed", () => {
     render(<StoreDetail tenantId={42} />);
     expect(screen.getByText(/Stripe is not touched/i)).toBeTruthy();
+  });
+});
+
+describe("StoreDetail — on the house", () => {
+  it("says plainly when nothing is comped", () => {
+    render(<StoreDetail tenantId={42} />);
+    expect(screen.getByText(/Nothing is comped/i)).toBeTruthy();
+  });
+
+  it("comps the store onto Pro with the fee waived, carrying the reason", () => {
+    render(<StoreDetail tenantId={42} />);
+    fireEvent.change(screen.getByLabelText(/Why/i), {
+      target: { value: "design partner" },
+    });
+    fireEvent.click(screen.getByText("Pro, free, 0% fee"));
+    expect(mocks.setComp).toHaveBeenCalledWith({
+      tenantId: 42,
+      plan: "pro",
+      waiveOnlineFee: true,
+      note: "design partner",
+    });
+  });
+
+  it("can hand over the plan without waiving the fee", () => {
+    render(<StoreDetail tenantId={42} />);
+    fireEvent.click(screen.getByText("Free upgrade to Pro only"));
+    expect(mocks.setComp).toHaveBeenCalledWith({
+      tenantId: 42,
+      plan: "pro",
+      waiveOnlineFee: false,
+      note: undefined,
+    });
+  });
+
+  it("can waive the fee without handing over the plan", () => {
+    render(<StoreDetail tenantId={42} />);
+    fireEvent.click(screen.getByText("Waive the online fee only"));
+    expect(mocks.setComp).toHaveBeenCalledWith({
+      tenantId: 42,
+      plan: null,
+      waiveOnlineFee: true,
+      note: undefined,
+    });
+  });
+
+  it("revokes both halves at once, and sends no note", () => {
+    mocks.detail = detail({
+      comp: {
+        plan: "pro",
+        feeWaived: true,
+        note: "design partner",
+        grantedAt: new Date("2026-06-01T00:00:00Z"),
+      },
+    });
+    render(<StoreDetail tenantId={42} />);
+    fireEvent.click(screen.getByText("Revoke"));
+    expect(mocks.setComp).toHaveBeenCalledWith({
+      tenantId: 42,
+      plan: null,
+      waiveOnlineFee: false,
+    });
+  });
+
+  it("has nothing to revoke on a store that was never comped", () => {
+    render(<StoreDetail tenantId={42} />);
+    expect(
+      screen.getByText("Revoke").closest("button")?.hasAttribute("disabled"),
+    ).toBe(true);
+  });
+
+  it("shows what was granted, when, and why", () => {
+    mocks.detail = detail({
+      comp: {
+        plan: "pro",
+        feeWaived: true,
+        note: "design partner",
+        grantedAt: new Date("2026-06-01T00:00:00Z"),
+      },
+    });
+    render(<StoreDetail tenantId={42} />);
+    expect(screen.getByText(/Comped to/i)).toBeTruthy();
+    expect(screen.getByText(/0% on online/i)).toBeTruthy();
+    expect(screen.getByText(/design partner/)).toBeTruthy();
+  });
+
+  // Two cards, two different columns. Conflating them is how a comp ends up
+  // written into the plan Stripe owns and then silently reset by a webhook.
+  it("keeps the paid plan and the comp visibly separate", () => {
+    mocks.detail = detail({
+      plan: "free",
+      comp: { plan: "pro", feeWaived: false, note: null, grantedAt: null },
+    });
+    render(<StoreDetail tenantId={42} />);
+    // The paid-plan card still reports what the store actually pays for.
+    expect(screen.getByText("free")).toBeTruthy();
+    expect(screen.getByText(/Comped to/i)).toBeTruthy();
   });
 });
 

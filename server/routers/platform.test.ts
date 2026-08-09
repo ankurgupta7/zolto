@@ -7,6 +7,7 @@ const { dbMock } = vi.hoisted(() => ({
     getTenantDetailForOperator: vi.fn(),
     setTenantUserRoleByOperator: vi.fn(),
     setTenantPlanByOperator: vi.fn(),
+    setTenantCompByOperator: vi.fn(),
     getTenantBySlug: vi.fn(),
     createTenant: vi.fn(),
     createTenantSettings: vi.fn(),
@@ -110,6 +111,7 @@ beforeEach(() => {
   dbMock.getTenantDetailForOperator.mockResolvedValue(tenantDetail);
   dbMock.setTenantUserRoleByOperator.mockResolvedValue(true);
   dbMock.setTenantPlanByOperator.mockResolvedValue(true);
+  dbMock.setTenantCompByOperator.mockResolvedValue(true);
 });
 
 // This endpoint replaced `tenant.list`, which shipped as a publicProcedure
@@ -275,6 +277,95 @@ describe("platform.setTenantPlan", () => {
       platformRouter
         .createCaller(ctx("superadmin"))
         .setTenantPlan({ tenantId: 999, plan: "pro" }),
+    ).rejects.toThrow(/No such store/);
+  });
+});
+
+describe("platform.setTenantComp", () => {
+  // The favour the whole feature exists for: Pro for nothing, and no cut of
+  // this store's online sales.
+  it("comps a store onto Pro with the fee waived", async () => {
+    const res = await platformRouter
+      .createCaller(ctx("superadmin"))
+      .setTenantComp({
+        tenantId: 2,
+        plan: "pro",
+        waiveOnlineFee: true,
+        note: "design partner",
+      });
+    expect(dbMock.setTenantCompByOperator).toHaveBeenCalledWith({
+      tenantId: 2,
+      plan: "pro",
+      feeWaived: true,
+      note: "design partner",
+      grantedByUserId: 1,
+    });
+    expect(res.success).toBe(true);
+  });
+
+  it("waives the fee without granting a plan", async () => {
+    await platformRouter.createCaller(ctx("superadmin")).setTenantComp({
+      tenantId: 2,
+      plan: null,
+      waiveOnlineFee: true,
+    });
+    expect(dbMock.setTenantCompByOperator).toHaveBeenCalledWith(
+      expect.objectContaining({ plan: null, feeWaived: true }),
+    );
+  });
+
+  it("revokes with a null plan and no waiver", async () => {
+    await platformRouter.createCaller(ctx("superadmin")).setTenantComp({
+      tenantId: 2,
+      plan: null,
+      waiveOnlineFee: false,
+    });
+    expect(dbMock.setTenantCompByOperator).toHaveBeenCalledWith(
+      expect.objectContaining({ plan: null, feeWaived: false }),
+    );
+  });
+
+  it("records who granted it, for the audit trail", async () => {
+    await platformRouter.createCaller(ctx("superadmin")).setTenantComp({
+      tenantId: 2,
+      plan: "pro",
+      waiveOnlineFee: false,
+    });
+    expect(dbMock.setTenantCompByOperator).toHaveBeenCalledWith(
+      expect.objectContaining({ grantedByUserId: 1 }),
+    );
+  });
+
+  // Giving away the platform's revenue is the most consequential button in the
+  // console. An admin of ANOTHER store reaching it would be able to comp
+  // themselves — the cross-tenant case CLAUDE.md warns regresses silently.
+  it("is superadmin only — a store admin cannot comp anyone, including itself", async () => {
+    for (const role of [null, "customer", "staff", "admin"]) {
+      await expect(
+        platformRouter
+          .createCaller(ctx(role))
+          .setTenantComp({ tenantId: 7, plan: "pro", waiveOnlineFee: true }),
+      ).rejects.toThrow();
+    }
+    expect(dbMock.setTenantCompByOperator).not.toHaveBeenCalled();
+  });
+
+  it("rejects a plan id that is not in the schema", async () => {
+    await expect(
+      platformRouter.createCaller(ctx("superadmin")).setTenantComp({
+        tenantId: 2,
+        plan: "enterprise",
+        waiveOnlineFee: false,
+      } as never),
+    ).rejects.toThrow();
+  });
+
+  it("404s on a store that does not exist", async () => {
+    dbMock.setTenantCompByOperator.mockResolvedValue(false);
+    await expect(
+      platformRouter
+        .createCaller(ctx("superadmin"))
+        .setTenantComp({ tenantId: 999, plan: "pro", waiveOnlineFee: true }),
     ).rejects.toThrow(/No such store/);
   });
 });

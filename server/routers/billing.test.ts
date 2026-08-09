@@ -180,6 +180,108 @@ describe("billingRouter.checkout mutations", () => {
   });
 });
 
+// ── Comped stores ───────────────────────────────────────────────────────────
+// A store the platform owner has put on the house: it pays for Free, is
+// entitled to Pro, and must never be sold the thing it was given.
+describe("billingRouter — a comped store", () => {
+  const COMPED = { plan: "free", compPlan: "pro" };
+
+  it("reports the plan it is entitled to, not the one it pays for", async () => {
+    const caller = billingRouter.createCaller(ctx("admin", COMPED));
+    const status = await caller.getStatus();
+    expect(status.plan).toBe("pro");
+    expect(status.comp).toMatchObject({ plan: "pro", planComped: true });
+  });
+
+  it("gets the comped plan's AI allowance and storage", async () => {
+    const caller = billingRouter.createCaller(ctx("admin", COMPED));
+    const status = await caller.getStatus();
+    expect(photoCreditsMock.photoAllowanceForPlan).toHaveBeenCalledWith("pro");
+    expect(status.ai.allowancePerMonth).toBeNull(); // unmetered, like Pro
+    expect(status.storage.limitBytes).toBe(50 * 1024 ** 3); // Pro's 50 GB
+  });
+
+  it("burns AI photos against the comped plan, not the paid one", async () => {
+    const caller = billingRouter.createCaller(ctx("admin", COMPED));
+    await caller.generateProductPhoto({ productId: 42, stylePrompt: "white" });
+    expect(photoCreditsMock.generateStyledProductPhoto).toHaveBeenCalledWith(
+      expect.objectContaining({ plan: "pro" }),
+    );
+  });
+
+  it("is shown no upsell — there is nothing left to sell it", async () => {
+    const caller = billingRouter.createCaller(ctx("admin", COMPED));
+    const status = await caller.getStatus();
+    expect(status.upsell).toBeNull();
+    expect(status.onlineFees.feeBps).toBe(0);
+  });
+
+  // The door that actually has to be locked: the UI hides the button, but a
+  // stale tab or a direct call would otherwise start a real CHF 25/month
+  // subscription for the Pro this merchant was given for free.
+  it("refuses to sell Pro to a store already comped onto Pro", async () => {
+    const caller = billingRouter.createCaller(ctx("admin", COMPED));
+    await expect(caller.createPlanCheckout({ plan: "pro" })).rejects.toThrow(
+      /already on pro at no charge/i,
+    );
+    expect(billingMock.createPlanCheckoutSession).not.toHaveBeenCalled();
+  });
+
+  it("refuses to sell Pro to a store that already pays for Pro", async () => {
+    const caller = billingRouter.createCaller(ctx("admin", { plan: "pro" }));
+    await expect(caller.createPlanCheckout({ plan: "pro" })).rejects.toThrow(
+      /already on pro/i,
+    );
+    expect(billingMock.createPlanCheckoutSession).not.toHaveBeenCalled();
+  });
+});
+
+describe("billingRouter — a store whose fee alone is waived", () => {
+  const WAIVED = { plan: "free", compFeeWaived: true };
+
+  it("reports 0% while staying on Free's limits", async () => {
+    const caller = billingRouter.createCaller(ctx("admin", WAIVED));
+    const status = await caller.getStatus();
+    expect(status.plan).toBe("free");
+    expect(status.onlineFees.feeBps).toBe(0);
+    expect(status.ai.allowancePerMonth).toBe(5); // still Free's allowance
+    expect(status.comp).toMatchObject({ feeWaived: true, planComped: false });
+  });
+
+  it("is shown no upsell — it already pays nothing on online orders", async () => {
+    const caller = billingRouter.createCaller(ctx("admin", WAIVED));
+    expect((await caller.getStatus()).upsell).toBeNull();
+  });
+
+  it("can still buy Pro if it wants the rest of the plan", async () => {
+    const caller = billingRouter.createCaller(ctx("admin", WAIVED));
+    await expect(
+      caller.createPlanCheckout({ plan: "pro" }),
+    ).resolves.toMatchObject({ url: expect.stringContaining("stripe") });
+  });
+});
+
+describe("billingRouter — an ordinary free store is unaffected", () => {
+  it("still pays the 1% and still sees the upsell", async () => {
+    const caller = billingRouter.createCaller(ctx());
+    const status = await caller.getStatus();
+    expect(status.comp).toBeNull();
+    expect(status.onlineFees.feeBps).toBe(100);
+    expect(status.upsell).not.toBeNull();
+  });
+
+  it("never leaks the operator's private note about why a store was comped", async () => {
+    const caller = billingRouter.createCaller(
+      ctx("admin", {
+        plan: "free",
+        compPlan: "pro",
+        compNote: "friend of the founder",
+      }),
+    );
+    expect(JSON.stringify(await caller.getStatus())).not.toContain("founder");
+  });
+});
+
 describe("billingRouter.generateProductPhoto", () => {
   it("delegates to the photo service with the tenant's plan", async () => {
     const caller = billingRouter.createCaller(ctx());

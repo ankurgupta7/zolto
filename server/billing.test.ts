@@ -287,6 +287,27 @@ describe("handleBillingEvent", () => {
     });
   });
 
+  // The reason comps live in their own columns rather than in `plan`. A
+  // cancellation for an OLD subscription can land weeks after the platform
+  // owner comped the store; if it could reach the comp columns, the merchant
+  // would silently lose the Pro they were given and start being skimmed again.
+  it("cannot revoke a comp when a stale cancellation lands", async () => {
+    getTenantByStripeSubscriptionId.mockResolvedValue({
+      ...tenant,
+      plan: "pro",
+      compPlan: "pro",
+      compFeeWaived: true,
+    });
+    await handleBillingEvent({
+      type: "customer.subscription.deleted",
+      data: { object: { id: "sub_1", customer: "cus_t7", metadata: {} } },
+    } as Stripe.Event);
+
+    const written = updateTenantBilling.mock.calls.at(-1)?.[1];
+    expect(written).not.toHaveProperty("compPlan");
+    expect(written).not.toHaveProperty("compFeeWaived");
+  });
+
   it("claims subscription invoices without further work (no credit grants)", async () => {
     const claimed = await handleBillingEvent({
       type: "invoice.payment_succeeded",

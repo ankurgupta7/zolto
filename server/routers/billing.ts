@@ -7,6 +7,11 @@ import {
   type PaidPlanId,
 } from "../billing";
 import {
+  effectivePlan,
+  entitlementsFor,
+  isPlanComped,
+} from "@shared/entitlements";
+import {
   PLANS,
   PRO_PLAN,
   storageBytesForPlan,
@@ -44,7 +49,11 @@ export const billingRouter = router({
    * the UI surfaces "you'd save CHF X on Pro this month".
    */
   getStatus: tenantAdmin.query(async ({ ctx }) => {
-    const allowance = photoAllowanceForPlan(ctx.tenant.plan);
+    // Everything below reads the ENTITLED plan, not the paid one: a store the
+    // platform owner has comped onto Pro sees Pro's allowances and must not be
+    // shown an upsell for what it has already been given.
+    const entitlements = entitlementsFor(ctx.tenant);
+    const allowance = photoAllowanceForPlan(entitlements.effectivePlan);
     const [usedThisMonth, online, storageBytes] = await Promise.all([
       allowance === null
         ? Promise.resolve(0)
@@ -52,11 +61,28 @@ export const billingRouter = router({
       getMonthlyOnlineSales(ctx.tenant.id),
       getTenantStorageBytes(ctx.tenant.id),
     ]);
-    const onFree = ctx.tenant.plan !== "pro";
+    // The upsell only makes sense for a store that would actually pay the fee.
+    const payingTheSkim = entitlements.onlineFeeBps > 0;
     const skimChf = online.feeRappen / 100;
 
     return {
-      plan: ctx.tenant.plan,
+      plan: entitlements.effectivePlan,
+      /**
+       * What this store is comped, if anything — the merchant's own view of
+       * the grant, so "Pro, on the house" reads as deliberate rather than as a
+       * billing bug they might try to "fix" by paying for it again.
+       *
+       * Deliberately NOT `compNote`: that is the operator's own shorthand for
+       * why a store was comped ("launch apology", "friend of the house"),
+       * written for the platform console and not for the merchant to read.
+       */
+      comp: entitlements.comped
+        ? {
+            plan: entitlements.compPlan,
+            planComped: entitlements.planComped,
+            feeWaived: entitlements.feeWaived,
+          }
+        : null,
       subscriptionStatus: ctx.tenant.subscriptionStatus,
       trialEndsAt: ctx.tenant.trialEndsAt,
       ai: {
@@ -67,12 +93,14 @@ export const billingRouter = router({
       onlineFees: {
         feePercentLabel: REVENUE_SHARE.percentLabel,
         appliesTo: REVENUE_SHARE.appliesTo,
+        /** What this store actually pays, comps included — 0% when waived. */
+        feeBps: entitlements.onlineFeeBps,
         monthGmvChf: online.gmvRappen / 100,
         monthAgentGmvChf: online.agentGmvRappen / 100,
         monthOrderCount: online.orderCount,
         monthFeeChf: skimChf,
       },
-      upsell: onFree
+      upsell: payingTheSkim
         ? {
             breakEvenOnlineChf: PRO_BREAK_EVEN_ONLINE_CHF,
             proPriceChf: PRO_PLAN.priceChf,
@@ -93,7 +121,7 @@ export const billingRouter = router({
       // refused. A quota you only learn about by hitting it is a support ticket.
       storage: {
         usedBytes: storageBytes,
-        limitBytes: storageBytesForPlan(ctx.tenant.plan),
+        limitBytes: storageBytesForPlan(entitlements.effectivePlan),
       },
       billingConfigured: isBillingConfigured(),
     };
@@ -103,6 +131,19 @@ export const billingRouter = router({
   createPlanCheckout: tenantAdmin
     .input(z.object({ plan: z.enum(["pro"]) }))
     .mutation(async ({ ctx, input }) => {
+      // Never take money for something we have already given away. The UI
+      // hides the button for a comped store, but the mutation is the door that
+      // actually has to be locked — a stale tab or a direct call would
+      // otherwise start a real subscription and charge a merchant CHF 25/month
+      // for the Pro they were comped.
+      if (effectivePlan(ctx.tenant) === input.plan) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: isPlanComped(ctx.tenant)
+            ? `Your store is already on ${input.plan} at no charge — there's nothing to pay.`
+            : `Your store is already on ${input.plan}.`,
+        });
+      }
       try {
         return await createPlanCheckoutSession({
           tenant: ctx.tenant,
@@ -136,7 +177,7 @@ export const billingRouter = router({
     .mutation(async ({ ctx, input }) => {
       return generateStyledProductPhoto({
         tenantId: ctx.tenant.id,
-        plan: ctx.tenant.plan,
+        plan: effectivePlan(ctx.tenant),
         productId: input.productId,
         stylePrompt: input.stylePrompt,
       });

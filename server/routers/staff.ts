@@ -17,8 +17,7 @@ import {
   router,
   protectedProcedure,
   tenantAdminProcedure,
-  PLAN_FEATURES,
-  type PlanId,
+  featuresForTenant,
 } from "../_core/trpc";
 import {
   countTenantStaff,
@@ -57,7 +56,7 @@ export const staffRouter = router({
       getTenantStaff(ctx.tenant.id),
       getPendingStaffInvites(ctx.tenant.id),
     ]);
-    const limit = PLAN_FEATURES[ctx.tenant.plan as PlanId]?.maxStaff ?? 1;
+    const limit = featuresForTenant(ctx.tenant).maxStaff;
     return {
       staff: staff.map((u) => ({
         id: u.id,
@@ -79,7 +78,7 @@ export const staffRouter = router({
   invite: tenantAdmin
     .input(z.object({ email: z.string().email().max(320) }))
     .mutation(async ({ ctx, input }) => {
-      const limit = PLAN_FEATURES[ctx.tenant.plan as PlanId]?.maxStaff ?? 1;
+      const limit = featuresForTenant(ctx.tenant).maxStaff;
       const used = await seatsUsed(ctx.tenant.id);
       if (used >= limit) {
         throw new TRPCError({
@@ -199,8 +198,7 @@ export const staffRouter = router({
         countTenantStaff(invite.tenantId),
         getTenantById(invite.tenantId),
       ]);
-      const max =
-        PLAN_FEATURES[(tenant?.plan ?? "free") as PlanId]?.maxStaff ?? 1;
+      const max = featuresForTenant(tenant ?? { plan: "free" }).maxStaff;
       if (staffCount >= max) {
         throw new TRPCError({
           code: "FORBIDDEN",

@@ -5,12 +5,7 @@
  */
 
 import { TRPCError } from "@trpc/server";
-import {
-  router,
-  tenantAdminProcedure,
-  PLAN_FEATURES,
-  type PlanId,
-} from "../_core/trpc";
+import { router, tenantAdminProcedure, featuresForTenant } from "../_core/trpc";
 import { computeInsights, generateInsightsNarrative } from "../insights";
 import { getTenantSettings } from "../db";
 
@@ -29,7 +24,7 @@ export const insightsRouter = router({
 
   /** LLM narrative — Pro only (advanced analytics). */
   narrative: tenantAdmin.query(async ({ ctx }) => {
-    const features = PLAN_FEATURES[ctx.tenant.plan as PlanId];
+    const features = featuresForTenant(ctx.tenant);
     if (features?.analytics !== "advanced") {
       throw new TRPCError({
         code: "FORBIDDEN",

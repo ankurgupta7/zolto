@@ -21,6 +21,7 @@ const mocks = vi.hoisted(() => ({
   },
   statusData: {
     plan: "free",
+    comp: null,
     subscriptionStatus: "trialing",
     trialEndsAt: null,
     ai: { allowancePerMonth: 5, usedThisMonth: 2 },
@@ -31,6 +32,7 @@ const mocks = vi.hoisted(() => ({
       monthAgentGmvChf: 500,
       monthOrderCount: 12,
       monthFeeChf: 32,
+      feeBps: 100,
     },
     upsell: { breakEvenOnlineChf: 2500, proPriceChf: 25, savingsChf: 7 },
     plans: [
@@ -280,6 +282,120 @@ describe("Billing page", () => {
 // Every line of copy here is one `admin`-namespace lookup away from a raw key,
 // so pin that the account fragment resolves in a non-default language rather
 // than falling back to English (or rendering "catalog.account.billing.…").
+// A store the platform owner has put on the house. Without this the page
+// shows Pro with no subscription behind it, which reads as a billing fault —
+// and offers to sell the merchant the plan they were given.
+describe("Billing page — a comped store", () => {
+  const compedPro = () =>
+    ({
+      ...mocks.statusData,
+      plan: "pro",
+      comp: { plan: "pro", planComped: true, feeWaived: true },
+      subscriptionStatus: null,
+      ai: { allowancePerMonth: null, usedThisMonth: null },
+      upsell: null,
+      onlineFees: {
+        ...(mocks.statusData as { onlineFees: Record<string, unknown> })
+          .onlineFees,
+        monthFeeChf: 0,
+        feeBps: 0,
+      },
+    }) as never;
+
+  it("says the plan is a gift rather than a subscription", () => {
+    const original = mocks.statusData;
+    mocks.statusData = compedPro();
+    render(<Billing />);
+    expect(screen.getByText("Your store is on the house")).toBeTruthy();
+    expect(
+      screen.getByText(/given you the Pro plan at no charge/),
+    ).toBeTruthy();
+    expect(screen.getByText(/no platform fee/)).toBeTruthy();
+    mocks.statusData = original;
+  });
+
+  it("offers no way to buy the plan it was given", () => {
+    const original = mocks.statusData;
+    mocks.statusData = compedPro();
+    render(<Billing />);
+    expect(screen.queryByText("Upgrade")).toBeNull();
+    expect(screen.queryByText("Upgrade now")).toBeNull();
+    expect(mocks.planCheckoutMutate).not.toHaveBeenCalled();
+    mocks.statusData = original;
+  });
+
+  it("shows 'On the house' instead of a trial or subscription state", () => {
+    const original = mocks.statusData;
+    mocks.statusData = compedPro();
+    render(<Billing />);
+    expect(screen.getByText("On the house")).toBeTruthy();
+    expect(screen.queryByText(/Trial until/)).toBeNull();
+    expect(screen.queryByText("Active")).toBeNull();
+    mocks.statusData = original;
+  });
+
+  it("names the waived fee where the 1% line would be", () => {
+    const original = mocks.statusData;
+    mocks.statusData = compedPro();
+    render(<Billing />);
+    expect(
+      screen.getByText(/Platform fees \(0% — on the house\)/),
+    ).toBeTruthy();
+    mocks.statusData = original;
+  });
+
+  it("unlocks the Pro-gated store settings for a comped store", () => {
+    // The gates here read PLAN_FEATURES for the plan the server reports, and
+    // the server reports the ENTITLED plan — so the custom-domain and
+    // multi-currency locks lift for a comped store exactly as they do for a
+    // paying one. An ordinary Free store still sees both "Pro plan" badges.
+    render(<Billing />);
+    expect(screen.getAllByText("Pro plan").length).toBe(2);
+    expect(
+      screen.getByText(/Serve your store on your own domain/),
+    ).toBeTruthy();
+    cleanup();
+
+    const original = mocks.statusData;
+    mocks.statusData = compedPro();
+    render(<Billing />);
+    expect(screen.queryByText("Pro plan")).toBeNull();
+    expect(
+      screen.queryByText(/Serve your store on your own domain/),
+    ).toBeNull();
+    mocks.statusData = original;
+  });
+
+  it("still charges an ordinary free store, and still upsells it", () => {
+    render(<Billing />);
+    expect(screen.queryByText("Your store is on the house")).toBeNull();
+    expect(screen.getByText(/You'd save CHF 7 on Pro/)).toBeTruthy();
+  });
+});
+
+describe("Billing page — a store whose fee alone is waived", () => {
+  it("keeps the Free plan but reports no platform fee", () => {
+    const original = mocks.statusData;
+    mocks.statusData = {
+      ...mocks.statusData,
+      comp: { plan: null, planComped: false, feeWaived: true },
+      upsell: null,
+      onlineFees: {
+        ...(mocks.statusData as { onlineFees: Record<string, unknown> })
+          .onlineFees,
+        monthFeeChf: 0,
+        feeBps: 0,
+      },
+    } as never;
+    render(<Billing />);
+    expect(screen.getByText("Your store is on the house")).toBeTruthy();
+    expect(screen.getByText(/no platform fee/)).toBeTruthy();
+    // No plan was granted, so the page must not claim one was.
+    expect(screen.queryByText(/at no charge/)).toBeNull();
+    mocks.statusData = original;
+  });
+});
+
 describe("Billing page — translated", () => {
   afterEach(async () => {
     await act(async () => {

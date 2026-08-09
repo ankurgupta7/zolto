@@ -5,7 +5,7 @@ import {
   renderMarketingLlmsTxt,
   renderMarketingLlmsFullTxt,
 } from "@shared/marketing";
-import { featuresForPlan } from "@shared/platform";
+import { featuresForTenant } from "@shared/entitlements";
 import { VERTICAL_PRESETS, isVertical } from "@shared/verticals";
 import { getTenantSettings, getVisibleProducts } from "./db";
 import { resolveBaseUrl } from "./seo";
@@ -51,7 +51,7 @@ export function renderStorefrontLlmsTxt(
   // Pro sells 'Your brand only — no "runs on Zolto"', and this brief is served
   // to exactly the AI agents that claim is about — so the platform credit only
   // appears on plans without white-labelling.
-  const platformCredit = featuresForPlan(tenant.plan).whiteLabel
+  const platformCredit = featuresForTenant(tenant).whiteLabel
     ? ""
     : " This store runs on Zolto.";
   const catalogueLine =
