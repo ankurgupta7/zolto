@@ -35,6 +35,19 @@ describe("Landing", () => {
     expect(screen.getByTestId("hero-till")).toBeTruthy();
   });
 
+  it("shows the till on a phone, not just on a desktop", () => {
+    renderLanding();
+    // The hero visual used to be `hidden md:block`, which dropped the picture
+    // of the product on the device most makers browse from. jsdom has no
+    // viewport, so the check is that nothing in the till's ancestry inside the
+    // hero hides it at the base breakpoint.
+    let el: HTMLElement | null = screen.getByTestId("hero-till");
+    while (el && el.tagName !== "SECTION") {
+      expect(el.className).not.toMatch(/(^|\s)hidden(\s|$)/);
+      el = el.parentElement;
+    }
+  });
+
   it("keeps the AI-native thesis as a full band, below the product sections", () => {
     renderLanding();
     // Still there, still with its chart — but an h2, not the page's h1.

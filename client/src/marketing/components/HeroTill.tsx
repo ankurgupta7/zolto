@@ -29,14 +29,17 @@ export function HeroTill() {
       <p className="text-[11px] uppercase tracking-[0.2em] text-white/45">
         {title}
       </p>
-      <div className="mt-5 flex items-center justify-center gap-7">
+      {/* The payment row sits beside the handset rather than under it, so the
+          card keeps a landscape shape next to a portrait phone — and, on a
+          phone, so the whole card stays short enough that it doesn't push the
+          hero's buttons a screen and a half down. The handset shrinks instead
+          of the layout changing. */}
+      <div className="mt-5 flex items-center justify-center gap-5 sm:gap-7">
         <SqueezePlayTill
           has={["grid", "twint"]}
           title={title}
-          className="h-56 w-auto text-[var(--brand-accent-light)]"
+          className="h-36 w-auto text-[var(--brand-accent-light)] sm:h-56"
         />
-        {/* The payment row sits beside the handset rather than under it, so the
-            card keeps a landscape shape next to a portrait phone. */}
         <p className="font-serif text-lg leading-relaxed text-white/80">
           {st("makerPitch.till.methods", till.methods)}
         </p>

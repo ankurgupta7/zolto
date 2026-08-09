@@ -39,8 +39,13 @@ export default function Landing() {
 
       {/* ── Hero — what Zolto is, in the merchant's nouns (see MAKER_PITCH) ── */}
       <section className="bg-[var(--brand-ink)]">
-        <Container className="grid items-center gap-10 pb-20 pt-20 md:grid-cols-2">
-          <div>
+        {/* Three grid children, not two, so the till can sit between the copy
+            and the buttons on a phone and still occupy the second column on a
+            desktop. A merchant browsing on their phone is the likeliest reader
+            there is; the picture of the product should not be the one thing
+            their screen drops. */}
+        <Container className="grid gap-10 pb-20 pt-20 md:grid-cols-2 md:items-center">
+          <div className="md:col-start-1 md:row-start-1">
             <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
               {st("makerPitch.eyebrow", MAKER_PITCH.eyebrow)}
             </p>
@@ -63,7 +68,15 @@ export default function Landing() {
             <p className="mt-8 max-w-md text-lg leading-relaxed text-white/70">
               {st("makerPitch.body", MAKER_PITCH.body)}
             </p>
-            <div className="mt-10 flex flex-wrap items-center gap-4">
+          </div>
+
+          {/* The product, drawn rather than asserted */}
+          <div className="md:col-start-2 md:row-start-1 md:row-end-3">
+            <HeroTill />
+          </div>
+
+          <div className="md:col-start-1 md:row-start-2">
+            <div className="flex flex-wrap items-center gap-4">
               <Link
                 href="/signup"
                 className="rounded-md bg-[var(--brand-accent)] px-7 py-3 text-xs font-medium uppercase tracking-[0.14em] text-[var(--brand-ink)] transition-colors hover:bg-[var(--brand-accent-light)]"
@@ -90,11 +103,6 @@ export default function Landing() {
                 </li>
               ))}
             </ul>
-          </div>
-
-          {/* The product, drawn rather than asserted */}
-          <div className="hidden md:block">
-            <HeroTill />
           </div>
         </Container>
       </section>
