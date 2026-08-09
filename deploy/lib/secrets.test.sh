@@ -272,6 +272,241 @@ fi
 assert_contains "$(cat "$WORK/err")" "bad token" \
   "reports why Codemagic refused instead of reporting success"
 
+
+# ── json_get ──────────────────────────────────────────────────────────────────
+echo ""
+echo "json_get:"
+
+B2_AUTH_FIXTURE='{"accountId":"acc123","authorizationToken":"tok456","apiInfo":{"storageApi":{"apiUrl":"https://api003.backblazeb2.com","bucketId":null}}}'
+
+assert_eq "$(printf '%s' "$B2_AUTH_FIXTURE" | json_get accountId)" "acc123" \
+  "reads a top-level field"
+assert_eq "$(printf '%s' "$B2_AUTH_FIXTURE" | json_get apiInfo.storageApi.apiUrl)" \
+  "https://api003.backblazeb2.com" "reads a nested field by dotted path"
+assert_eq "$(printf '%s' "$B2_AUTH_FIXTURE" | json_get apiInfo.storageApi.missing)" "" \
+  "a missing leaf reads as empty"
+assert_eq "$(printf '%s' "$B2_AUTH_FIXTURE" | json_get nope.deeper.still)" "" \
+  "a missing branch reads as empty rather than erroring"
+assert_eq "$(printf '%s' "$B2_AUTH_FIXTURE" | json_get apiInfo.storageApi.bucketId)" "" \
+  "an explicit null reads as empty"
+assert_eq "$(printf '%s' '{"buckets":[{"bucketId":"b-1"}]}' | json_get buckets.0.bucketId)" "b-1" \
+  "indexes into an array"
+
+# ── b2_authorize / b2_api (stubbed curl) ──────────────────────────────────────
+echo ""
+echo "b2_authorize / b2_api:"
+
+STUB_STATUS=200 STUB_BODY="$B2_AUTH_FIXTURE" b2_authorize "masterid" "mastersecret" >/dev/null
+B2_ARGS="$(cat "$STUB_ARGS")"
+assert_contains "$B2_ARGS" "b2api/v3/b2_authorize_account" "authorizes against the v3 endpoint"
+assert_contains "$B2_ARGS" "masterid:mastersecret" "sends the master key as basic auth"
+
+STUB_STATUS=200 STUB_BODY='{"applicationKeyId":"k-new","applicationKey":"s-new"}' \
+  b2_api "https://api003.backblazeb2.com/" "tok456" b2_create_key '{"accountId":"acc123"}' >/dev/null
+CREATE_ARGS="$(cat "$STUB_ARGS")"
+assert_contains "$CREATE_ARGS" "https://api003.backblazeb2.com/b2api/v3/b2_create_key" \
+  "normalizes a trailing slash on the API URL"
+assert_contains "$CREATE_ARGS" "Authorization: tok456" "sends the session token"
+assert_contains "$CREATE_ARGS" '{"accountId":"acc123"}' "sends the body verbatim"
+
+if STUB_STATUS=401 STUB_BODY='{"message":"not authorized to write keys"}' \
+  b2_api "https://api003.backblazeb2.com" "tok" b2_create_key '{}' >/dev/null 2>"$WORK/b2err"; then
+  fail "surfaces a rejected B2 request"
+else
+  pass "surfaces a rejected B2 request"
+fi
+assert_contains "$(cat "$WORK/b2err")" "not authorized to write keys" \
+  "reports why B2 refused"
+
+# ── s3_probe ──────────────────────────────────────────────────────────────────
+echo ""
+echo "s3_probe:"
+
+# The stub records only the LAST invocation, so a fully successful probe leaves
+# the DELETE behind — which is what proves the probe cleans up after itself.
+STUB_STATUS=200 STUB_BODY='' \
+  s3_probe "https://s3.eu-central-003.backblazeb2.com" "eu-central-003" "zolto-images" \
+  "keyid" "keysecret" "_probe-1"
+PROBE_ARGS="$(cat "$STUB_ARGS")"
+assert_contains "$PROBE_ARGS" "https://s3.eu-central-003.backblazeb2.com/zolto-images/_probe-1" \
+  "addresses the object path-style, as forcePathStyle does"
+assert_contains "$PROBE_ARGS" "aws:amz:eu-central-003:s3" "signs with the bucket's region"
+assert_contains "$PROBE_ARGS" "DELETE" "deletes the probe object last"
+assert_contains "$PROBE_ARGS" "keyid:keysecret" "uses the key being verified, not the master"
+
+if STUB_STATUS=403 STUB_BODY='<Error>AccessDenied</Error>' \
+  s3_probe "https://s3.x.backblazeb2.com" "r" "b" "id" "sec" 2>/dev/null; then
+  fail "fails when the new key cannot write"
+else
+  pass "fails when the new key cannot write"
+fi
+
+# ── rotate-secrets.sh s3-key (end to end, stubbed curl) ───────────────────────
+echo ""
+echo "rotate-secrets.sh s3-key:"
+
+ROTATE="${SCRIPT_DIR}/../rotate-secrets.sh"
+
+# A .env that still carries .env.example's placeholders has no key to rotate;
+# saying so beats a TLS failure against a hostname that never existed.
+cat >"$WORK/placeholder.env" <<'ENVEOF'
+S3_BUCKET=zolto-images
+S3_REGION=auto
+S3_ENDPOINT=https://your_account_id.r2.cloudflarestorage.com
+S3_ACCESS_KEY_ID=your_access_key
+S3_SECRET_ACCESS_KEY=your_secret_key
+ENVEOF
+OUT="$(B2_MASTER_KEY_ID=m B2_MASTER_KEY=s bash "$ROTATE" s3-key \
+  --env "$WORK/placeholder.env" 2>&1 || true)"
+assert_contains "$OUT" "still holds .env.example placeholders" \
+  "refuses an unconfigured deployment instead of failing at the network"
+
+cat >"$WORK/s3.env" <<'ENVEOF'
+KEEP_ME=untouched
+S3_BUCKET=zolto-images
+S3_REGION=eu-central-003
+S3_ENDPOINT=https://s3.eu-central-003.backblazeb2.com
+S3_ACCESS_KEY_ID=oldkeyid
+S3_SECRET_ACCESS_KEY=oldkeysecret
+ENVEOF
+
+OUT="$(B2_MASTER_KEY_ID=m B2_MASTER_KEY=s bash "$ROTATE" s3-key \
+  --env "$WORK/s3.env" --dry-run 2>&1 || true)"
+assert_contains "$OUT" "would create a key" "dry run says what it would create"
+assert_eq "$(read_env_var "$WORK/s3.env" S3_ACCESS_KEY_ID)" "oldkeyid" \
+  "dry run leaves .env alone"
+
+# A non-B2 endpoint is refused rather than half-attempted.
+cat >"$WORK/r2.env" <<'ENVEOF'
+S3_BUCKET=zolto-images
+S3_REGION=auto
+S3_ENDPOINT=https://abc123.r2.cloudflarestorage.com
+S3_ACCESS_KEY_ID=realkeyid
+ENVEOF
+OUT="$(B2_MASTER_KEY_ID=m B2_MASTER_KEY=s bash "$ROTATE" s3-key \
+  --env "$WORK/r2.env" 2>&1 || true)"
+assert_contains "$OUT" "Only Backblaze B2 key rotation is automated" \
+  "refuses a provider it cannot mint keys for"
+
+# Missing operator credentials must stop it before anything is created.
+OUT="$(env -u B2_MASTER_KEY_ID -u B2_MASTER_KEY bash "$ROTATE" s3-key \
+  --env "$WORK/s3.env" 2>&1 || true)"
+assert_contains "$OUT" "B2_MASTER_KEY_ID and B2_MASTER_KEY must be exported" \
+  "requires the key-minting credential up front"
+assert_eq "$(read_env_var "$WORK/s3.env" S3_ACCESS_KEY_ID)" "oldkeyid" \
+  "and changes nothing when it is absent"
+
+# Full run against a scripted B2: authorize → list bucket → create → probe →
+# write → delete. The stub answers each call by the endpoint in its arguments.
+B2_STUB="$WORK/b2-stub"
+cat >"$B2_STUB" <<'STUB'
+#!/bin/bash
+{ for a in "$@"; do printf '%s\n' "$a"; done; } >>"$STUB_CALLS"
+out=""; prev=""; url=""
+for a in "$@"; do
+  [ "$prev" = "-o" ] && out="$a"
+  case "$a" in https://*) url="$a" ;; esac
+  prev="$a"
+done
+body='{}'
+case "$url" in
+  *b2_authorize_account*) body='{"accountId":"acc123","authorizationToken":"tok456","apiInfo":{"storageApi":{"apiUrl":"https://api003.backblazeb2.com"}}}' ;;
+  *b2_list_buckets*)      body='{"buckets":[{"bucketId":"bucket-1","bucketName":"zolto-images"}]}' ;;
+  *b2_create_key*)        body='{"applicationKeyId":"newkeyid","applicationKey":"newkeysecret"}' ;;
+  *b2_delete_key*)        body='{"applicationKeyId":"oldkeyid"}' ;;
+esac
+[ -n "$out" ] && printf '%s' "$body" >"$out"
+printf '200'
+STUB
+chmod +x "$B2_STUB"
+
+# The real script probes for --aws-sigv4 support with `curl --help all`; the
+# stub answers that too so the verification step runs.
+cat >"$WORK/b2-stub-help" <<'STUB'
+#!/bin/bash
+if [ "$1" = "--help" ]; then echo "     --aws-sigv4 <provider1[:provider2...]>"; exit 0; fi
+exec "$B2_STUB_INNER" "$@"
+STUB
+chmod +x "$WORK/b2-stub-help"
+
+export STUB_CALLS="$WORK/b2-calls"
+: >"$STUB_CALLS"
+OUT="$(B2_MASTER_KEY_ID=masterid B2_MASTER_KEY=mastersecret \
+  B2_STUB_INNER="$B2_STUB" CURL_BIN="$WORK/b2-stub-help" \
+  bash "$ROTATE" s3-key --env "$WORK/s3.env" 2>&1 || true)"
+
+assert_eq "$(read_env_var "$WORK/s3.env" S3_ACCESS_KEY_ID)" "newkeyid" \
+  "writes the new key id to .env"
+assert_eq "$(read_env_var "$WORK/s3.env" S3_SECRET_ACCESS_KEY)" "newkeysecret" \
+  "writes the new secret to .env"
+assert_eq "$(read_env_var "$WORK/s3.env" KEEP_ME)" "untouched" \
+  "leaves unrelated keys alone"
+CALLS="$(cat "$STUB_CALLS")"
+assert_contains "$CALLS" "b2_create_key" "mints a key"
+assert_contains "$CALLS" '"bucketId":"bucket-1"' "scopes the key to the bucket, not the account"
+assert_contains "$CALLS" "b2_delete_key" "revokes the key it replaced"
+assert_contains "$CALLS" '"applicationKeyId":"oldkeyid"' "revokes the OLD id, not the new one"
+assert_not_contains "$OUT" "newkeysecret" "never prints the new secret"
+
+# --keep-old must not revoke anything.
+cat >"$WORK/s3b.env" <<'ENVEOF'
+S3_BUCKET=zolto-images
+S3_REGION=eu-central-003
+S3_ENDPOINT=https://s3.eu-central-003.backblazeb2.com
+S3_ACCESS_KEY_ID=oldkeyid
+S3_SECRET_ACCESS_KEY=oldkeysecret
+ENVEOF
+: >"$STUB_CALLS"
+B2_MASTER_KEY_ID=masterid B2_MASTER_KEY=mastersecret \
+  B2_STUB_INNER="$B2_STUB" CURL_BIN="$WORK/b2-stub-help" \
+  bash "$ROTATE" s3-key --env "$WORK/s3b.env" --keep-old >/dev/null 2>&1 || true
+assert_not_contains "$(cat "$STUB_CALLS")" "b2_delete_key" \
+  "--keep-old leaves the previous key alive"
+assert_eq "$(read_env_var "$WORK/s3b.env" S3_ACCESS_KEY_ID)" "newkeyid" \
+  "--keep-old still installs the new key"
+
+# A key that cannot complete the S3 round-trip must never reach .env, and the
+# old one must survive — this is the ordering the whole target is built around.
+FAIL_STUB="$WORK/b2-stub-failprobe"
+cat >"$FAIL_STUB" <<'STUB'
+#!/bin/bash
+{ for a in "$@"; do printf '%s\n' "$a"; done; } >>"$STUB_CALLS"
+out=""; prev=""; url=""
+for a in "$@"; do
+  [ "$prev" = "-o" ] && out="$a"
+  case "$a" in https://*) url="$a" ;; esac
+  prev="$a"
+done
+body='{}'; status=200
+case "$url" in
+  *b2_authorize_account*) body='{"accountId":"acc123","authorizationToken":"tok456","apiInfo":{"storageApi":{"apiUrl":"https://api003.backblazeb2.com"}}}' ;;
+  *b2_list_buckets*)      body='{"buckets":[{"bucketId":"bucket-1"}]}' ;;
+  *b2_create_key*)        body='{"applicationKeyId":"newkeyid","applicationKey":"newkeysecret"}' ;;
+  *backblazeb2.com/zolto-images/*) body='<Error>AccessDenied</Error>'; status=403 ;;
+esac
+[ -n "$out" ] && printf '%s' "$body" >"$out"
+printf '%s' "$status"
+STUB
+chmod +x "$FAIL_STUB"
+
+cat >"$WORK/s3c.env" <<'ENVEOF'
+S3_BUCKET=zolto-images
+S3_REGION=eu-central-003
+S3_ENDPOINT=https://s3.eu-central-003.backblazeb2.com
+S3_ACCESS_KEY_ID=oldkeyid
+S3_SECRET_ACCESS_KEY=oldkeysecret
+ENVEOF
+: >"$STUB_CALLS"
+OUT="$(B2_MASTER_KEY_ID=masterid B2_MASTER_KEY=mastersecret \
+  B2_STUB_INNER="$FAIL_STUB" CURL_BIN="$WORK/b2-stub-help" \
+  bash "$ROTATE" s3-key --env "$WORK/s3c.env" 2>&1 || true)"
+assert_eq "$(read_env_var "$WORK/s3c.env" S3_ACCESS_KEY_ID)" "oldkeyid" \
+  "a failed probe leaves the working key in .env"
+assert_not_contains "$(cat "$STUB_CALLS")" "b2_delete_key" \
+  "a failed probe never revokes the key still in use"
+assert_contains "$OUT" "Nothing was changed" "and says so"
+assert_contains "$OUT" "newkeyid" "naming the orphaned key so it can be cleaned up"
+
 # ── Summary ───────────────────────────────────────────────────────────────────
 echo ""
 echo "──────────────────────────────────────────"

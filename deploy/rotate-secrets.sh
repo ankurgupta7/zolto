@@ -24,6 +24,9 @@ ENV_FILE=".env"
 GITHUB_REPO="ankurgupta7/zolto"
 POS_KEY=""
 BASE_URL_OVERRIDE=""
+S3_BUCKET_OVERRIDE=""
+KEEP_OLD=0
+RESTART=0
 DRY_RUN=0
 STRIPE_API="https://api.stripe.com/v1"
 
@@ -50,8 +53,20 @@ Targets:
 
   stripe            stripe-key followed by stripe-webhooks.
 
+  s3-key            Mint a fresh Backblaze B2 application key scoped to
+                    S3_BUCKET, prove it works by writing/reading/deleting an
+                    object through the S3 API, write it to .env, then delete
+                    the key it replaced. Non-interactive: safe from cron.
+                    Needs B2_MASTER_KEY_ID / B2_MASTER_KEY in the environment.
+
 Options:
   --env FILE        .env to read/write (default: .env)
+  --bucket NAME     s3-key: bucket to scope the new key to
+                    (default: S3_BUCKET from .env)
+  --keep-old        s3-key: leave the previous key alive. Use when other
+                    deployments still hold it; delete it by hand afterwards.
+  --restart         s3-key: `docker compose up -d app` once .env is written,
+                    so the running service picks the new key up.
   --key KEY         pos-ci-key: the plaintext key, instead of being prompted.
                     Prefer the prompt — an argument is visible to `ps` and
                     lands in your shell history.
@@ -65,6 +80,20 @@ Options:
 Credentials, all read from the environment rather than .env:
   CODEMAGIC_TOKEN, CODEMAGIC_APP_ID   pos-ci-key: enables the Codemagic push.
                                       Skipped with a warning when unset.
+
+  B2_MASTER_KEY_ID, B2_MASTER_KEY     s3-key: a B2 key with `writeKeys`, i.e.
+                                      the master application key. Required.
+                                      Deliberately NOT in .env — a deployment
+                                      must not hold a credential that can mint
+                                      further credentials.
+
+Deliberately not automated:
+  JWT_SECRET          rotating it invalidates every session; it is a one-line
+                      `openssl rand -hex 32` plus a restart, and wants to be a
+                      decision rather than a scheduled job.
+  TENANT_SECRETS_KEY  it decrypts the tenant_secrets vault. Rotating it without
+                      re-encrypting every row makes all stored tenant secrets
+                      unrecoverable, so it needs a migration, not a new value.
 
   These are operator credentials, not deployment config — the server never
   needs them, and scripts/migrate-tenant-secrets.mjs deletes them from .env as
@@ -319,6 +348,168 @@ rotate_stripe_webhooks() {
   echo "  Restart the service so it picks the new signing secrets up: ./update.sh"
 }
 
+# ── Target: s3-key ────────────────────────────────────────────────────────────
+#
+# Order matters and is the whole safety story: mint → verify → write .env →
+# delete the old key. Verification happens against the S3-compatible endpoint
+# the app itself uses, so "it worked" means the deployment will work, not just
+# that B2 accepted an auth header. Nothing is destroyed until that passes, and
+# a failure anywhere before the write leaves the deployment on its current key.
+rotate_s3_key() {
+  local endpoint region bucket old_id
+  local auth account_id api_url token buckets bucket_id
+  local key_name created new_id new_secret backup probe
+
+  endpoint="$(read_env_var "$ENV_FILE" S3_ENDPOINT)"
+  region="$(read_env_var "$ENV_FILE" S3_REGION)"
+  bucket="${S3_BUCKET_OVERRIDE:-$(read_env_var "$ENV_FILE" S3_BUCKET)}"
+  old_id="$(read_env_var "$ENV_FILE" S3_ACCESS_KEY_ID)"
+
+  [ -n "$endpoint" ] || die "S3_ENDPOINT not found in $ENV_FILE"
+  [ -n "$bucket" ] || die "S3_BUCKET not found in $ENV_FILE (or pass --bucket)"
+  [ -n "$region" ] || die "S3_REGION not found in $ENV_FILE"
+
+  # A deployment still carrying .env.example's placeholders has no key to
+  # rotate. Saying so beats an SSL handshake failure against a hostname that
+  # was never meant to resolve.
+  case "${endpoint}${old_id}" in
+    *your_account_id* | *your_access_key* | *change_me*)
+      die "S3 is not configured in $ENV_FILE — it still holds .env.example placeholders
+(endpoint: ${endpoint}). This rotates an existing key; it does not do first-time
+setup. Fill in the S3_* block, confirm uploads work, then rotate." ;;
+  esac
+
+  case "$endpoint" in
+    *backblazeb2.com*) ;;
+    *) die "S3_ENDPOINT is ${endpoint}.
+Only Backblaze B2 key rotation is automated here — B2 is what this platform
+deploys on. R2 and AWS mint credentials through their own APIs (Cloudflare
+tokens, IAM), so each needs its own target rather than a pretend-generic one." ;;
+  esac
+
+  [ -n "${B2_MASTER_KEY_ID:-}" ] && [ -n "${B2_MASTER_KEY:-}" ] ||
+    die "B2_MASTER_KEY_ID and B2_MASTER_KEY must be exported.
+Only a key with the writeKeys capability can mint another; that is the master
+application key, and it is read from the environment so .env never holds it."
+
+  key_name="zolto-${bucket}-$(date -u +%Y%m%d%H%M%S)"
+
+  step "Rotating the S3 key for bucket '$bucket'"
+  echo "  endpoint:  $endpoint"
+  echo "  current:   ${old_id:-<none in $ENV_FILE>}"
+  echo "  new name:  $key_name"
+
+  if [ "$DRY_RUN" -eq 1 ]; then
+    would "authorize with B2_MASTER_KEY_ID $(mask_secret "${B2_MASTER_KEY_ID}")"
+    would "create a key named $key_name scoped to '$bucket'"
+    would "PUT/GET/DELETE a probe object with it via $endpoint"
+    would "write S3_ACCESS_KEY_ID and S3_SECRET_ACCESS_KEY to $ENV_FILE"
+    if [ "$KEEP_OLD" -eq 1 ]; then
+      would "leave ${old_id:-the previous key} in place (--keep-old)"
+    else
+      would "delete the previous key ${old_id:-<none>}"
+    fi
+    [ "$RESTART" -eq 1 ] && would "docker compose up -d app"
+    return 0
+  fi
+
+  # 1. Authorize.
+  auth="$(b2_authorize "$B2_MASTER_KEY_ID" "$B2_MASTER_KEY")" ||
+    die "B2 rejected the master key (see above)."
+  account_id="$(printf '%s' "$auth" | json_get accountId)"
+  api_url="$(printf '%s' "$auth" | json_get apiInfo.storageApi.apiUrl)"
+  token="$(printf '%s' "$auth" | json_get authorizationToken)"
+  [ -n "$account_id" ] && [ -n "$api_url" ] && [ -n "$token" ] ||
+    die "B2 authorized but the response was not the shape expected:
+${auth}"
+  ok "authorized account ${account_id}"
+
+  # 2. Resolve the bucket id — a key scoped to one bucket cannot touch another,
+  #    which is the difference between rotating a credential and handing out a
+  #    new master.
+  buckets="$(b2_api "$api_url" "$token" b2_list_buckets \
+    "{\"accountId\":\"$(json_escape "$account_id")\",\"bucketName\":\"$(json_escape "$bucket")\"}")" ||
+    die "could not list bucket '$bucket' (see above)."
+  bucket_id="$(printf '%s' "$buckets" | json_get buckets.0.bucketId)"
+  [ -n "$bucket_id" ] || die "B2 has no bucket named '$bucket' on account ${account_id}."
+  ok "bucket '$bucket' → ${bucket_id}"
+
+  # 3. Mint. Capabilities are exactly what server/storage.ts exercises:
+  #    storagePut writes, the /uploads proxy and signed URLs read, and delete
+  #    is needed for the probe to clean up after itself.
+  created="$(b2_api "$api_url" "$token" b2_create_key \
+    "{\"accountId\":\"$(json_escape "$account_id")\",\"keyName\":\"$(json_escape "$key_name")\",\"bucketId\":\"$(json_escape "$bucket_id")\",\"capabilities\":[\"listBuckets\",\"listFiles\",\"readFiles\",\"writeFiles\",\"deleteFiles\"]}")" ||
+    die "B2 refused to create the key (see above)."
+  new_id="$(printf '%s' "$created" | json_get applicationKeyId)"
+  new_secret="$(printf '%s' "$created" | json_get applicationKey)"
+  [ -n "$new_id" ] && [ -n "$new_secret" ] ||
+    die "B2 returned success but no key material:
+${created}"
+  ok "created $(mask_secret "$new_id")"
+
+  # 4. Prove it before anything is destroyed.
+  probe="_rotation-probe-$(date -u +%Y%m%d%H%M%S)"
+  if ! curl_supports_sigv4; then
+    warn "this curl has no --aws-sigv4, so the new key cannot be verified."
+    warn "  Leaving the old key alive; delete it once uploads are confirmed:"
+    warn "    B2 console → App Keys → ${old_id:-<the previous key>}"
+    KEEP_OLD=1
+  else
+    step "Verifying $(mask_secret "$new_id") against ${endpoint}"
+    if s3_probe "$endpoint" "$region" "$bucket" "$new_id" "$new_secret" "$probe"; then
+      ok "wrote, read and deleted ${probe}"
+    else
+      die "the new key could not complete an S3 round-trip. Nothing was changed.
+$ENV_FILE still holds the working key. The unused key ${new_id} was created and
+should be deleted: B2 console → App Keys."
+    fi
+  fi
+
+  # 5. Write.
+  backup="$(backup_env_file "$ENV_FILE")"
+  set_env_var "$ENV_FILE" S3_ACCESS_KEY_ID "$new_id"
+  set_env_var "$ENV_FILE" S3_SECRET_ACCESS_KEY "$new_secret"
+  ok "S3_ACCESS_KEY_ID and S3_SECRET_ACCESS_KEY → $ENV_FILE (backup: $backup)"
+
+  # 6. Retire the old one. Skipped when it is the master key: that would lock
+  #    every future rotation out of its own credential.
+  if [ -z "$old_id" ]; then
+    warn "no previous S3_ACCESS_KEY_ID was in $ENV_FILE — nothing to delete."
+  elif [ "$old_id" = "$new_id" ]; then
+    warn "the previous key id matches the new one — not deleting it."
+  elif [ "$old_id" = "${B2_MASTER_KEY_ID}" ]; then
+    warn "the deployment was using the MASTER key. It is not deleted here, but"
+    warn "  it should never have been in .env — revoke it in the B2 console"
+    warn "  once you have confirmed nothing else uses it."
+  elif [ "$KEEP_OLD" -eq 1 ]; then
+    echo "  · keeping the previous key ${old_id} (--keep-old)"
+  else
+    step "Deleting the previous key ${old_id}"
+    if b2_api "$api_url" "$token" b2_delete_key \
+      "{\"applicationKeyId\":\"$(json_escape "$old_id")\"}" >/dev/null; then
+      ok "revoked"
+    else
+      warn "B2 would not delete ${old_id}. The new key is live and in $ENV_FILE;"
+      warn "  remove the old one by hand: B2 console → App Keys."
+    fi
+  fi
+
+  # 7. Make the running service use it.
+  if [ "$RESTART" -eq 1 ]; then
+    step "Restarting the app"
+    if docker compose up -d app; then
+      ok "app recreated with the new key"
+    else
+      warn "the restart failed — .env is correct, the service is not yet using it."
+      return 1
+    fi
+  else
+    echo ""
+    echo "  .env is updated; the running service still holds the old key."
+    echo "  Pick it up with:  docker compose up -d app   (or ./update.sh)"
+  fi
+}
+
 # ── Arguments ─────────────────────────────────────────────────────────────────
 TARGET=""
 while [ $# -gt 0 ]; do
@@ -338,6 +529,18 @@ while [ $# -gt 0 ]; do
     --base-url)
       BASE_URL_OVERRIDE="${2:-}"
       shift 2
+      ;;
+    --bucket)
+      S3_BUCKET_OVERRIDE="${2:-}"
+      shift 2
+      ;;
+    --keep-old)
+      KEEP_OLD=1
+      shift
+      ;;
+    --restart)
+      RESTART=1
+      shift
       ;;
     --dry-run)
       DRY_RUN=1
@@ -364,7 +567,7 @@ done
 # Every target except pos-ci-key reads and rewrites .env; pos-ci-key only reads
 # it, and only for PUBLIC_BASE_URL.
 case "$TARGET" in
-  stripe-key | stripe-webhooks | stripe)
+  stripe-key | stripe-webhooks | stripe | s3-key)
     [ -f "$ENV_FILE" ] || die "$ENV_FILE does not exist (pass --env to point elsewhere)."
     ;;
 esac
@@ -379,5 +582,6 @@ case "$TARGET" in
     rotate_stripe_key
     rotate_stripe_webhooks
     ;;
+  s3-key) rotate_s3_key ;;
   *) die "unknown target: $TARGET (try --help)" ;;
 esac

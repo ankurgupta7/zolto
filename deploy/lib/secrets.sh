@@ -183,3 +183,90 @@ codemagic_var_set() {
     -H "x-auth-token: ${CODEMAGIC_TOKEN}" \
     -d "$payload" >/dev/null
 }
+
+# ── JSON reading ──────────────────────────────────────────────────────────────
+
+# json_get <dotted.path>   (JSON on stdin)
+# Prints the value at <dotted.path>, or nothing when any segment is missing.
+# The rotation targets read nested provider responses (B2 buries its API URL at
+# apiInfo.storageApi.apiUrl), and a bespoke grep per field is how the old
+# scripts ended up mis-parsing one.
+json_get() {
+  if command -v jq >/dev/null 2>&1; then
+    # A numeric segment has to become a number: getpath indexes an array with
+    # 0, and dies on the string "0". Provider responses nest lists (B2 returns
+    # buckets[]), so paths must be able to walk into one.
+    jq -r --arg p "$1" '
+      getpath($p | split(".") | map(if test("^[0-9]+$") then tonumber else . end))
+      // empty' 2>/dev/null
+  else
+    python3 -c '
+import sys, json
+doc = json.load(sys.stdin)
+for part in sys.argv[1].split("."):
+    if isinstance(doc, list):
+        try:
+            doc = doc[int(part)]
+        except (ValueError, IndexError):
+            doc = None
+    elif isinstance(doc, dict):
+        doc = doc.get(part)
+    else:
+        doc = None
+    if doc is None:
+        break
+print("" if doc is None else doc)
+' "$1"
+  fi
+}
+
+# ── Backblaze B2 (S3 application keys) ────────────────────────────────────────
+#
+# The S3-compatible API cannot mint its own credentials, so key rotation goes
+# through B2's native API. That needs a key with the `writeKeys` capability —
+# in practice the master application key, which is why it is read from the
+# environment (B2_MASTER_KEY_ID / B2_MASTER_KEY) and never from .env: the
+# deployment must not hold a credential that can create further credentials.
+
+B2_API_ROOT="${B2_API_ROOT:-https://api.backblazeb2.com}"
+
+# b2_authorize <key_id> <key>
+# Prints the b2_authorize_account response. accountId, the storage API URL and
+# the authorization token are read out of it with json_get.
+b2_authorize() {
+  http_json GET "${B2_API_ROOT}/b2api/v3/b2_authorize_account" -u "${1}:${2}"
+}
+
+# b2_api <api_url> <token> <endpoint> <json_body>
+b2_api() {
+  http_json POST "${1%/}/b2api/v3/${3}" \
+    -H "Authorization: ${2}" \
+    -H "Content-Type: application/json" \
+    --data-binary "${4}"
+}
+
+# ── S3 round-trip probe ───────────────────────────────────────────────────────
+
+# curl_supports_sigv4
+# --aws-sigv4 landed in curl 7.75 (2021). Without it the probe cannot run and
+# the caller must decide whether to rotate unverified.
+curl_supports_sigv4() {
+  "${CURL_BIN:-curl}" --help all 2>/dev/null | grep -q -- '--aws-sigv4'
+}
+
+# s3_probe <endpoint> <region> <bucket> <key_id> <secret> [object_key]
+# Writes, reads back and deletes one small object through the S3-compatible
+# API — the same three operations server/storage.ts performs. Proving the new
+# credential works on the path the app actually uses is what makes it safe to
+# delete the old one; a b2_list_buckets call would only prove it authenticates.
+s3_probe() {
+  local endpoint="$1" region="$2" bucket="$3" id="$4" secret="$5"
+  local object="${6:-_rotation-probe}"
+  local url="${endpoint%/}/${bucket}/${object}"
+  local sig="aws:amz:${region}:s3"
+
+  http_json PUT "$url" --aws-sigv4 "$sig" -u "${id}:${secret}" \
+    --data-binary 'rotation probe' >/dev/null || return 1
+  http_json GET "$url" --aws-sigv4 "$sig" -u "${id}:${secret}" >/dev/null || return 1
+  http_json DELETE "$url" --aws-sigv4 "$sig" -u "${id}:${secret}" >/dev/null || return 1
+}
