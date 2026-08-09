@@ -219,7 +219,17 @@
       "generate": "Generate a new key",
       "apiTitle": "Public API access",
       "apiDescription": "Programmatic access to your catalogue and orders.",
-      "apiNote": "A public API for building your own integrations is part of a future Business plan and is coming soon. It'll live here when it's ready."
+      "apiNote": "A public API for building your own integrations is part of a future Business plan and is coming soon. It'll live here when it's ready.",
+      "pairCardTitle": "Pair a register",
+      "pairCardDescription": "Set up a till without typing the key: generate a link, then tap or scan it on the phone that will take payments.",
+      "pairAction": "Generate a pairing link",
+      "pairOpenApp": "Open Zolto POS on this device",
+      "pairScanInstead": "Or scan this code with the Zolto POS app on another phone.",
+      "pairCopyLink": "Copy pairing link",
+      "pairExpires": "Works once, and expires at {{time}}.",
+      "pairAnother": "Generate another link",
+      "pairError": "Could not generate a pairing link.",
+      "pairNeedsRotation": "One-tap pairing needs a key this store generated recently. Rotate your POS key above once, and a pairing link will be available here."
     },
     "dataPrivacy": {
       "title": "Data & privacy",

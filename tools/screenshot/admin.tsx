@@ -112,6 +112,44 @@ const RESPONSES: Record<string, unknown> = {
   "tenant.rotatePosApiKey": {
     posApiKey: "pos_live_c1a9f2e84b7d4d21b6f0e5a83912cdEXAMPLE",
   },
+  // POS page: the rolling `pos-latest` release CI publishes on every merge to
+  // main, as server/posDownloads.ts resolves it — so the shot shows real links
+  // with their build stamp, and the iOS sideload warning that goes with an
+  // unsigned IPA. `?pos=unpublished` shows the no-build-yet state instead.
+  "tenant.posDownloads":
+    params.get("pos") === "unpublished"
+      ? { android: null, ios: null }
+      : {
+          android: {
+            url: "https://github.com/ankurgupta7/zolto/releases/download/pos-latest/ZoltoPOS-latest.apk",
+            requiresSideload: false,
+            sizeBytes: 9_240_000,
+            builtAt: "2026-08-09T09:12:00Z",
+            commit: "3f2a1bc",
+          },
+          ios: {
+            url: "https://github.com/ankurgupta7/zolto/releases/download/pos-latest/ZoltoPOS-latest-unsigned.ipa",
+            requiresSideload: true,
+            sizeBytes: 21_400_000,
+            builtAt: "2026-08-09T09:20:00Z",
+            commit: "3f2a1bc",
+          },
+        },
+  // Keys page: `?pairing=rotate` shows the "rotate once to enable" state a
+  // store lands in when its key predates the vault copy.
+  "tenant.posPairingAvailable": {
+    available: params.get("pairing") !== "rotate",
+  },
+  // Mutation response so the minted-link state (deep link + web link + QR +
+  // expiry) can be captured by clicking "Generate a pairing link".
+  "tenant.createPosPairingToken": {
+    available: true,
+    deepLink:
+      "zolto://pair?t=Q2xhdWRlRXhhbXBsZVBhaXJpbmdUb2tlbg&url=https%3A%2F%2Fbergblume.zolto.ch",
+    webLink:
+      "https://bergblume.zolto.ch/pos/pair?t=Q2xhdWRlRXhhbXBsZVBhaXJpbmdUb2tlbg",
+    expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+  },
   "tenant.channelConnect": {
     slackAuthorizeUrl: "https://slack.com/oauth/v2/authorize?client_id=stub",
     discordInviteUrl: "https://discord.com/oauth2/authorize?client_id=stub",

@@ -1761,9 +1761,7 @@ describe("tenant.rotatePosApiKey", () => {
   });
 
   it("returns the plaintext once and vaults a copy for pairing", async () => {
-    const res = await tenantRouter
-      .createCaller(rotateCtx())
-      .rotatePosApiKey();
+    const res = await tenantRouter.createCaller(rotateCtx()).rotatePosApiKey();
 
     expect(res.posApiKey).toMatch(/^[0-9a-f]{64}$/);
     // The vault copy is what makes a pairing link mintable later without

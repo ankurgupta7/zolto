@@ -1601,10 +1601,14 @@ describe("POST /api/pos/pair", () => {
     const app = makeApp();
 
     vi.mocked(redeemPairingToken).mockResolvedValue(null);
-    const rejected = await request(app).post("/api/pos/pair").send({ token: "nope" });
+    const rejected = await request(app)
+      .post("/api/pos/pair")
+      .send({ token: "nope" });
 
     vi.mocked(redeemPairingToken).mockRejectedValue(new Error("db down"));
-    const threw = await request(app).post("/api/pos/pair").send({ token: "tok" });
+    const threw = await request(app)
+      .post("/api/pos/pair")
+      .send({ token: "tok" });
 
     const missing = await request(app).post("/api/pos/pair").send({});
     const wrongType = await request(app)

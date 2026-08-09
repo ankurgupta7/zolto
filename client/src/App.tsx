@@ -13,6 +13,7 @@ import Admin from "./pages/Admin";
 import Billing from "./pages/Billing";
 import ClaimStaff from "./pages/ClaimStaff";
 import SignIn from "./pages/SignIn";
+import PosPair from "./pages/PosPair";
 import SupportChat from "./components/SupportChat";
 import BulkUpload from "./pages/BulkUpload";
 import CsvImport from "./pages/CsvImport";
@@ -136,6 +137,11 @@ function StorefrontRouter() {
               const.ts getSignInPath) — offers all sign-in methods and returns
               the merchant to ?next=. */}
           <Route path="/signin" component={SignIn} />
+          {/* Where a `zolto://pair` link lands when the register app isn't
+              installed yet. Unauthenticated on purpose: the till phone has never
+              signed in to the admin, and the token in the URL carries the
+              authority. */}
+          <Route path="/pos/pair" component={PosPair} />
           {ADMIN_NAV.map((item) => {
             const Page = ADMIN_PAGES[item.id];
             return (

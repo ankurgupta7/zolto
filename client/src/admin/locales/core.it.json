@@ -57,7 +57,18 @@
       "firstLaunch": "Che cosa chiede l'app al primo avvio",
       "step1": "1. Server",
       "copyServer": "Copia l'indirizzo del server",
-      "step2": "2. La Sua chiave API POS"
+      "step2": "2. La Sua chiave API POS",
+      "checking": "Ricerca di una build {{platform}}…",
+      "iosSideloadNote": "La build per iPhone non è firmata da Apple, quindi non può essere installata direttamente da questo link. Scaricala su un computer e installala con AltStore o Sideloadly. Android si installa direttamente.",
+      "orPairInOneTap": "Oppure salta entrambi i passaggi: genera un link di associazione da “Chiavi e accessi” e toccalo sul telefono della cassa — l’app si configura da sola."
+    },
+    "posPair": {
+      "title": "Configura questa cassa",
+      "description": "Questo link collega questo dispositivo al tuo negozio. Se l’app Zolto POS è installata, dovrebbe già aprirsi.",
+      "openApp": "Apri in Zolto POS",
+      "noAppYet": "Non hai ancora l’app?",
+      "installThenNewLink": "I link di associazione scadono dopo pochi minuti: una volta installata l’app, generane uno nuovo da “Chiavi e accessi”.",
+      "missingToken": "Questo link di associazione è incompleto. Generane uno nuovo dalla pagina “Chiavi e accessi” del tuo negozio."
     }
   }
 }

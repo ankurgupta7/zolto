@@ -136,7 +136,11 @@ async function fetchReleaseMeta(): Promise<ReleaseMeta> {
     `https://api.github.com/repos/${repo}/releases/tags/${encodeURIComponent(tag)}`,
   );
 
-  if (!body || typeof body !== "object" || !Array.isArray((body as { assets?: unknown }).assets)) {
+  if (
+    !body ||
+    typeof body !== "object" ||
+    !Array.isArray((body as { assets?: unknown }).assets)
+  ) {
     // Includes the 404 before the very first publish. Indistinguishable from a
     // transient failure at this layer, so treat it as "couldn't ask" and let
     // the caller fall back to bare URLs.

@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => ({
   settingsData: { twintQrUrl: null } as Record<string, unknown> | null,
   setTwintQr: vi.fn(),
   invalidateSettings: vi.fn(),
+  downloadsData: undefined as Record<string, unknown> | undefined,
 }));
 
 vi.mock("@/lib/trpc", () => ({
@@ -30,6 +31,11 @@ vi.mock("@/lib/trpc", () => ({
       setTwintQr: {
         useMutation: () => ({ mutate: mocks.setTwintQr, isPending: false }),
       },
+      // Read by the embedded PosAppCard; its own behaviour is covered in
+      // components/admin/PosAppCard.render.test.tsx.
+      posDownloads: {
+        useQuery: () => ({ data: mocks.downloadsData, isLoading: false }),
+      },
     },
   },
 }));
@@ -42,6 +48,10 @@ beforeEach(() => {
     url: "https://connect.stripe.test/x",
   };
   mocks.settingsData = { twintQrUrl: null };
+  mocks.downloadsData = {
+    android: { url: "https://x.test/a.apk", requiresSideload: false },
+    ios: { url: "https://x.test/a.ipa", requiresSideload: true },
+  };
 });
 afterEach(() => cleanup());
 

@@ -95,7 +95,10 @@ describe("posDownloads — published build", () => {
           asset("ios-build.json"),
         ]),
       ],
-      ["android-build.json", { commit: "3f2a1bcdeadbeef", platform: "android" }],
+      [
+        "android-build.json",
+        { commit: "3f2a1bcdeadbeef", platform: "android" },
+      ],
       ["ios-build.json", { commit: "abcdef1234567", platform: "ios" }],
     ]);
 
@@ -133,7 +136,9 @@ describe("posDownloads — published build", () => {
   });
 
   it("still returns the link when the sidecar JSON is missing", async () => {
-    stubFetch([["api.github.com", releaseBody([asset("ZoltoPOS-latest.apk")])]]);
+    stubFetch([
+      ["api.github.com", releaseBody([asset("ZoltoPOS-latest.apk")])],
+    ]);
     const d = await getPosDownloads();
     expect(d.android?.url).toContain("ZoltoPOS-latest.apk");
     expect(d.android?.commit).toBeUndefined();
@@ -168,7 +173,9 @@ describe("posDownloads — not published vs. couldn't ask", () => {
   });
 
   it("does not throw when GitHub returns a rate-limit error", async () => {
-    stubFetch([["api.github.com", { message: "API rate limit exceeded" }, 403]]);
+    stubFetch([
+      ["api.github.com", { message: "API rate limit exceeded" }, 403],
+    ]);
     await expect(getPosDownloads()).resolves.toBeTruthy();
   });
 
@@ -181,7 +188,8 @@ describe("posDownloads — not published vs. couldn't ask", () => {
 
 describe("posDownloads — operator overrides", () => {
   it("prefers POS_ANDROID_URL / POS_IOS_URL over the release", async () => {
-    process.env.POS_ANDROID_URL = "https://play.google.com/store/apps/details?id=ch.zolto.pos";
+    process.env.POS_ANDROID_URL =
+      "https://play.google.com/store/apps/details?id=ch.zolto.pos";
     process.env.POS_IOS_URL = "https://testflight.apple.com/join/abc123";
     const { fn } = stubFetch([["api.github.com", releaseBody([])]]);
 

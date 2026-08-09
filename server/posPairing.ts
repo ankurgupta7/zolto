@@ -137,9 +137,7 @@ export type MintResult =
   /** No recoverable key — the merchant must rotate once to enable this. */
   | { ok: false; reason: "needsRotation" };
 
-export async function mintPairingToken(
-  tenantId: number,
-): Promise<MintResult> {
+export async function mintPairingToken(tenantId: number): Promise<MintResult> {
   if (!(await canMintPairingToken(tenantId))) {
     return { ok: false, reason: "needsRotation" };
   }
