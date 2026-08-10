@@ -1401,8 +1401,12 @@
   },
   "costOfAcceptance": {
     "heading": "Was ein Verkauf von CHF {{basket}} kostet",
+    "headingInPerson": "Was ein Verkauf von CHF {{basket}} vor Ort kostet",
+    "headingOnline": "Was ein Verkauf von CHF {{basket}} online kostet",
     "intro": "Günstigstes zuerst. Zolto steht nicht an der Spitze, und genau das ist der Punkt — beim Kartensatz schlägt uns hier jede andere Option. Jede Zahl verlinkt auf ihre Quelle und das Datum, an dem sie gelesen wurde.",
     "tableCaption": "Kosten eines Verkaufs von CHF {{basket}} je Option, günstigstes zuerst",
+    "tableCaptionInPerson": "Kosten eines vor Ort kassierten Verkaufs von CHF {{basket}} je Option, günstigstes zuerst",
+    "tableCaptionOnline": "Kosten eines online kassierten Verkaufs von CHF {{basket}} je Option, günstigstes zuerst",
     "colOption": "Wie Sie das Geld nehmen",
     "colCost": "Kosten des Verkaufs",
     "colRate": "Effektiver Satz",

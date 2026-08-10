@@ -488,6 +488,20 @@ export const PRICING_PROMISE = {
     // survive contact with the first thing we ever charge for.
     "One thing costs extra, once: CHF 20 to lift your whole existing shop — products, stock, photos, categories, your story — off your old site and into Zolto in about a minute. That buys real machine time reading your site, not rent on a row in a database. Incumbents charge you monthly for storing what you already own; we charge once for the work of moving it, and never again.",
   ],
+  /**
+   * Indices of `points` that /pricing's fee section ("the only fee we charge")
+   * already makes, at greater length and from the same constants. That page
+   * showed both, so a visitor read the in-person-is-free, 1%-online,
+   * Pro-removes-it and AI-is-not-metered claims twice in four screens. The
+   * pricing page drops these from the pledge box and keeps the fee section;
+   * every other surface (the landing page, /compare, llms.txt) has no fee
+   * section, so it keeps the whole list.
+   *
+   * Keep this in step when editing `points` — a reordered list would silently
+   * hide the wrong ones. Pricing.test.tsx checks the survivors are the two the
+   * fee section never mentions.
+   */
+  restatedByPricingFeeSection: [0, 1, 2, 3],
 } as const;
 
 /**

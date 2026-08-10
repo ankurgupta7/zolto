@@ -1401,8 +1401,12 @@
   },
   "costOfAcceptance": {
     "heading": "What one CHF {{basket}} sale costs",
+    "headingInPerson": "What one CHF {{basket}} sale costs in person",
+    "headingOnline": "What one CHF {{basket}} sale costs online",
     "intro": "Cheapest first. Zolto is not at the top, and that is the point — on card rate every other option here beats us. Every figure links to where it came from and the date it was read.",
     "tableCaption": "Cost of a CHF {{basket}} sale on each option, cheapest first",
+    "tableCaptionInPerson": "Cost of a CHF {{basket}} sale taken in person on each option, cheapest first",
+    "tableCaptionOnline": "Cost of a CHF {{basket}} sale taken online on each option, cheapest first",
     "colOption": "How you take the money",
     "colCost": "Cost of the sale",
     "colRate": "Effective rate",

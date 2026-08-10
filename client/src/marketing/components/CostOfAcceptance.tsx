@@ -51,16 +51,39 @@ function SourceLine({ rate }: { rate: Rate }) {
   );
 }
 
+/**
+ * Headings and captions are held per channel rather than composed from a
+ * fragment: German puts the channel before the verb ("Was ein Verkauf … vor Ort
+ * kostet"), so "{{heading}} {{channel}}" would only ever read correctly in
+ * English.
+ */
+const HEADING_KEY: Record<Channel, string> = {
+  "in-person": "costOfAcceptance.headingInPerson",
+  online: "costOfAcceptance.headingOnline",
+};
+const CAPTION_KEY: Record<Channel, string> = {
+  "in-person": "costOfAcceptance.tableCaptionInPerson",
+  online: "costOfAcceptance.tableCaptionOnline",
+};
+
 export function CostOfAcceptance({
   channel,
   basketChf = BASKET_EXAMPLE_CHF,
   provider,
+  showFraming = true,
 }: {
   /** Omit to show both channels in one table. */
   channel?: Channel;
   basketChf?: number;
   /** Narrow the negotiated list to one provider (used on /compare pages). */
   provider?: Rate["provider"];
+  /**
+   * The intro and the monthly-fee footnote frame the whole comparison, not one
+   * channel's table. The pricing page renders a table per channel, so it showed
+   * both paragraphs twice, word for word — pass `false` on the second table and
+   * they are stated once.
+   */
+  showFraming?: boolean;
 }) {
   const { t, st, numberLocale } = useMarketingT();
   // On a "Zolto vs X" page, a third party's rates are noise. Everywhere else
@@ -81,22 +104,27 @@ export function CostOfAcceptance({
   return (
     <div data-testid="cost-of-acceptance">
       <h3 className="font-serif text-xl text-[var(--brand-text)]">
-        {t("costOfAcceptance.heading", {
+        {t(channel ? HEADING_KEY[channel] : "costOfAcceptance.heading", {
           basket: basketChf.toLocaleString(numberLocale),
         })}
       </h3>
-      <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[var(--brand-muted-2)]">
-        {t("costOfAcceptance.intro")}
-      </p>
+      {showFraming && (
+        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[var(--brand-muted-2)]">
+          {t("costOfAcceptance.intro")}
+        </p>
+      )}
 
       {/* Wide table, narrow phone: it scrolls inside its own box rather than
           pushing the page sideways. */}
       <div className="mt-6 overflow-x-auto">
         <table className="w-full min-w-[38rem] border-collapse text-left text-sm">
           <caption className="sr-only">
-            {t("costOfAcceptance.tableCaption", {
-              basket: basketChf.toLocaleString(numberLocale),
-            })}
+            {t(
+              channel ? CAPTION_KEY[channel] : "costOfAcceptance.tableCaption",
+              {
+                basket: basketChf.toLocaleString(numberLocale),
+              },
+            )}
           </caption>
           <thead>
             <tr className="border-b border-[var(--brand-border)]">
@@ -165,12 +193,14 @@ export function CostOfAcceptance({
       </div>
 
       {/* The line that stops the table reading as a scoreboard we won. */}
-      <p
-        data-testid="cost-of-acceptance-note"
-        className="mt-5 max-w-2xl rounded-lg bg-[var(--brand-surface-2)] px-4 py-3 text-xs leading-relaxed text-[var(--brand-muted-2)]"
-      >
-        {t("costOfAcceptance.note")}
-      </p>
+      {showFraming && (
+        <p
+          data-testid="cost-of-acceptance-note"
+          className="mt-5 max-w-2xl rounded-lg bg-[var(--brand-surface-2)] px-4 py-3 text-xs leading-relaxed text-[var(--brand-muted-2)]"
+        >
+          {t("costOfAcceptance.note")}
+        </p>
+      )}
 
       {negotiated.length > 0 && (
         <div className="mt-8" data-testid="negotiated-offerings">

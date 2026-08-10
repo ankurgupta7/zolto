@@ -102,20 +102,40 @@ export function AdminLayout({
   }, [location]);
 
   return (
-    <div className="flex min-h-screen bg-background">
+    // The storefront Navbar is `fixed` and h-20 (md:h-24) tall, and every admin
+    // route renders underneath it (App.tsx StorefrontRouter). Without this
+    // offset the shell starts at y=0, so the sidebar's first group heading and
+    // its top entries — and the page title beside them — sit permanently behind
+    // the navbar. min-h is the viewport minus that bar so the padding doesn't
+    // invent a screenful of scroll on a short page.
+    <div
+      data-testid="admin-shell"
+      className="flex min-h-[calc(100vh-5rem)] bg-background pt-20 md:min-h-[calc(100vh-6rem)] md:pt-24"
+    >
       {/* Mobile backdrop */}
       {navOpen && (
         <button
           type="button"
           aria-label={t("core.layout.closeNav")}
           onClick={() => setNavOpen(false)}
-          className="fixed inset-0 z-30 bg-black/40 md:hidden"
+          className="fixed inset-x-0 bottom-0 top-20 z-30 bg-black/40 md:hidden"
         />
       )}
 
+      {/* Mobile: an off-canvas drawer starting below the navbar (it is `fixed`,
+          so the shell's padding does not move it, and z-40 puts it under the
+          z-50 navbar rather than over it). Desktop: sticky, one viewport tall
+          and scrolling inside itself, so a long settings page can never carry
+          the navigation off the top of the screen.
+
+          The background is opaque on a phone and the 30% tint only from md up:
+          as a column beside the page a translucent panel is just a tint, but as
+          a drawer *over* the page it let the form underneath show through it —
+          caught by shooting the drawer open at 390x844. */}
       <aside
+        data-testid="admin-sidebar"
         aria-label={t("core.layout.navLabel")}
-        className={`fixed inset-y-0 left-0 z-40 w-60 shrink-0 overflow-y-auto border-r bg-muted/30 px-3 py-4 transition-transform md:static md:z-auto md:translate-x-0 ${
+        className={`fixed bottom-0 left-0 top-20 z-40 w-60 shrink-0 overflow-y-auto border-r bg-muted px-3 py-4 transition-transform md:sticky md:bottom-auto md:top-24 md:z-auto md:h-[calc(100vh-6rem)] md:translate-x-0 md:bg-muted/30 ${
           navOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -175,7 +195,15 @@ export function AdminLayout({
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-14 items-center gap-3 border-b px-4 md:px-6">
+        {/* Sticks directly under the storefront navbar so the page you are on —
+            and the drawer button on a phone — stay reachable while scrolling a
+            long settings page. z-20 keeps it below the mobile drawer (z-40) and
+            its backdrop (z-30); the opaque background stops body content
+            showing through as it scrolls past. */}
+        <header
+          data-testid="admin-header"
+          className="sticky top-20 z-20 flex h-14 items-center gap-3 border-b bg-background px-4 md:top-24 md:px-6"
+        >
           <button
             type="button"
             aria-label={t("core.layout.openNav")}

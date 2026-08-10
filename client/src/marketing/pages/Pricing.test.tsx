@@ -5,6 +5,7 @@ import { memoryLocation } from "wouter/memory-location";
 import Pricing from "./Pricing";
 import {
   PLANS,
+  PRICING_PROMISE,
   PRO_BREAK_EVEN_ONLINE_CHF,
   PRO_PLAN,
   REVENUE_SHARE,
@@ -79,6 +80,58 @@ describe("Pricing", () => {
     expect(
       screen.getAllByText(/Selling in person is free/i).length,
     ).toBeGreaterThan(0);
+  });
+
+  it("makes each fee claim once, not once in the pledge and again below", () => {
+    // The pledge box and the fee section were both stating in-person-is-free,
+    // 1%-online, Pro-removes-it and AI-is-not-metered — the same four claims,
+    // twice, within four screens on a phone.
+    renderPricing();
+    const restated =
+      PRICING_PROMISE.restatedByPricingFeeSection as readonly number[];
+    expect(restated.length).toBeGreaterThan(0);
+    for (const i of restated) {
+      const point = PRICING_PROMISE.points[i];
+      expect(point, `point ${i} exists`).toBeDefined();
+      expect(screen.queryByText(point)).toBeNull();
+    }
+    // …and the fee section still makes every one of them.
+    expect(
+      screen.getByText(/At the market stall, we take nothing/),
+    ).toBeTruthy();
+    expect(
+      screen.getByText(/taken automatically inside the Stripe payment/),
+    ).toBeTruthy();
+    expect(screen.getByText(/kills the fee entirely/)).toBeTruthy();
+    expect(screen.getByText(/AI usage is never the meter/)).toBeTruthy();
+  });
+
+  it("keeps the pledge points nothing else on the page covers", () => {
+    renderPricing();
+    // The processor's cut is not our fee, and the one-off CHF 20 import: the
+    // fee section never mentions either, so trimming the pledge must not have
+    // taken them with it.
+    expect(
+      screen.getByText(/What we charge is not what a sale costs/),
+    ).toBeTruthy();
+    expect(screen.getByText(/One thing costs extra, once/)).toBeTruthy();
+  });
+
+  it("states the cost-comparison framing once across the two channel tables", () => {
+    // Both tables used to carry the same heading, the same intro and the same
+    // monthly-fee footnote, which read as the page rendering twice.
+    renderPricing();
+    expect(screen.getAllByTestId("cost-of-acceptance")).toHaveLength(2);
+    expect(screen.getAllByTestId("cost-of-acceptance-note")).toHaveLength(1);
+    // "Zolto is not at the top" is the intro's own phrase — "cheapest first"
+    // also ends each table's sr-only caption, one per channel.
+    expect(screen.getAllByText(/Zolto is not at the top/i)).toHaveLength(1);
+    expect(
+      screen.getByRole("heading", { name: /sale costs in person/i }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("heading", { name: /sale costs online/i }),
+    ).toBeTruthy();
   });
 
   it("ships no unattributed testimonial while the release is unsigned", () => {
