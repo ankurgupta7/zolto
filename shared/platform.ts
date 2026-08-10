@@ -238,7 +238,14 @@ export const PLANS: PlatformPlan[] = [
       "0% platform fee — keep every online sale",
       "Unmetered AI — photos, descriptions, chat",
       "Your own custom domain + managed SSL",
-      'Your brand only — no "runs on Zolto"',
+      // Every store carries a "Made with Zolto" credit by default — a footer
+      // line, a generator tag and a JSON-LD creator node, so shoppers, search
+      // engines and AI assistants can all tell what a Zolto shop is. Pro buys
+      // the switch that turns it off (tenant_settings.hide_zolto_badge). This
+      // used to read 'Your brand only — no "runs on Zolto"', which described
+      // the credit as automatically absent; it is now the merchant's choice,
+      // and the copy has to say so. See shared/attribution.ts.
+      'White-label switch — hide the "Made with Zolto" credit',
       "Advanced analytics & AI insights",
       "3 staff seats",
       "Priority human support",

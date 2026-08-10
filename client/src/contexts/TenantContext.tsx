@@ -19,6 +19,7 @@ import {
   type StorefrontContent,
 } from "@/lib/storefrontContent";
 import { getTemplate, DEFAULT_TEMPLATE_ID } from "@shared/templates";
+import { creditShown } from "@shared/attribution";
 
 interface TenantContextValue {
   slug: string | null;
@@ -29,6 +30,17 @@ interface TenantContextValue {
    * fall back to the generated copy in lib/storefrontContent.ts.
    */
   content: StorefrontContent;
+  /**
+   * Whether this storefront carries the "Made with Zolto" credit. Combines the
+   * plan's white-label right (`tenant.getBySlug`) with the merchant's own
+   * switch (`tenant.getSettings`) through shared/attribution.ts, so the footer
+   * and the server-injected `<meta generator>` / JSON-LD agree.
+   *
+   * Defaults to false while the queries are in flight: a credit that appears
+   * a beat late is a smaller wrong than one that flashes onto a white-labelled
+   * store's page before being taken away.
+   */
+  showsZoltoCredit: boolean;
   /** True while tenant/settings are still loading (defaults are shown meanwhile). */
   isLoading: boolean;
   /** True if the tenant lookup failed (e.g. not seeded) — defaults are used. */
@@ -137,11 +149,23 @@ export function TenantProvider({
   useApplyBrandColor(branding.primaryColor, branding.secondaryColor);
   useApplyTemplate(settingsQuery.data?.templateId);
 
+  // A store that can't white-label is credited the moment the tenant query
+  // lands — no reason to make the common case wait on a second request. Only a
+  // store that MAY have switched the credit off waits for the settings answer,
+  // which is what keeps the credit from flashing onto a white-labelled page.
+  const tenantData = tenantQuery.data;
+  const showsZoltoCredit =
+    !!tenantData &&
+    (!tenantData.whiteLabel ||
+      (settingsQuery.isFetched &&
+        creditShown(true, settingsQuery.data?.hideZoltoBadge ?? false)));
+
   const value = useMemo<TenantContextValue>(
     () => ({
       slug,
       branding,
       content,
+      showsZoltoCredit,
       isLoading: enabled && (tenantQuery.isLoading || settingsQuery.isLoading),
       notFound: enabled && tenantQuery.isError,
     }),
@@ -149,6 +173,7 @@ export function TenantProvider({
       slug,
       branding,
       content,
+      showsZoltoCredit,
       enabled,
       tenantQuery.isLoading,
       tenantQuery.isError,
@@ -172,6 +197,9 @@ export function useTenant(): TenantContextValue {
       slug: null,
       branding: NEUTRAL_BRANDING,
       content: EMPTY_CONTENT,
+      // Outside a provider means the marketing surface, which IS Zolto — a
+      // "Made with Zolto" credit there would be circular.
+      showsZoltoCredit: false,
       isLoading: false,
       notFound: false,
     };

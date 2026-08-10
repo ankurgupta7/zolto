@@ -994,6 +994,23 @@ migrate_0044_pos_pairing_tokens
 # Idempotent; see migrate_0045_site_imports in deploy/lib/db.sh.
 migrate_0045_site_imports
 
+# ── 0046: the "Made with Zolto" credit becomes an opt-out ─────────────────────
+# Ships drizzle/0028_zolto_attribution.sql. The platform credit used to be
+# decided entirely by the plan: Free stores carried it (in /llms.txt, and
+# nowhere else), Pro stores dropped it silently. A custom domain is Pro-only, so
+# the storefronts where the Zolto name is least discoverable were the exact ones
+# that never named it — to a shopper, a search crawler or an AI agent.
+#
+# The credit now shows by default on every plan and white-labelling buys the
+# right to switch it off. This column is that switch; DEFAULT false means "show
+# it", which is the new behaviour every existing row wants. Idempotent.
+if [ "$(col_exists tenant_settings hide_zolto_badge)" = "0" ]; then
+  run_sql "0046 add tenant_settings.hide_zolto_badge" \
+    "ALTER TABLE \`tenant_settings\` ADD \`hide_zolto_badge\` boolean NOT NULL DEFAULT false;"
+else
+  ok "0046 tenant_settings.hide_zolto_badge already exists"
+fi
+
 # ── Record the applied migration set ──────────────────────────────────────────
 # Only reached when every migration above succeeded — `set -e` plus run_sql's
 # die() mean a failure never gets this far, so a half-applied schema is never

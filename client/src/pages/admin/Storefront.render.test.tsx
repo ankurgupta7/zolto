@@ -210,3 +210,54 @@ describe("Storefront page — merchant-authored content", () => {
     );
   });
 });
+
+describe("Storefront page — the Made with Zolto credit", () => {
+  beforeEach(() => {
+    mocks.meData = { slug: "kalakosh", name: "Kalakosh", plan: "pro" };
+    mocks.settingsData = { primaryColor: "#8B6914", hideZoltoBadge: false };
+  });
+
+  it("shows the credit as on by default and lets Pro switch it off", () => {
+    render(<Storefront />);
+    const toggle = screen.getByLabelText(/Made with Zolto/) as HTMLInputElement;
+    // The checkbox is "show the credit", so the stored flag is inverted.
+    expect(toggle.checked).toBe(true);
+    expect(toggle.disabled).toBe(false);
+
+    fireEvent.click(toggle);
+    fireEvent.click(screen.getAllByText("Save changes")[3]);
+    expect(mocks.save).toHaveBeenCalledWith(
+      expect.objectContaining({ hideZoltoBadge: true }),
+    );
+  });
+
+  it("reflects a store that has already hidden it", () => {
+    mocks.settingsData = { primaryColor: "#8B6914", hideZoltoBadge: true };
+    render(<Storefront />);
+    expect(
+      (screen.getByLabelText(/Made with Zolto/) as HTMLInputElement).checked,
+    ).toBe(false);
+  });
+
+  it("locks the switch on Free and explains what unlocks it", () => {
+    mocks.meData = { slug: "kalakosh", name: "Kalakosh", plan: "free" };
+    render(<Storefront />);
+    expect(
+      (screen.getByLabelText(/Made with Zolto/) as HTMLInputElement).disabled,
+    ).toBe(true);
+    expect(screen.getByText(/part of Pro/)).toBeTruthy();
+  });
+
+  it("never sends a hide the server would reject, even from a stale setting", () => {
+    // A store that dropped to Free still has hide_zolto_badge = true in the
+    // row. Echoing it back would 403 the whole save and lose the merchant's
+    // unrelated edits on this page.
+    mocks.meData = { slug: "kalakosh", name: "Kalakosh", plan: "free" };
+    mocks.settingsData = { primaryColor: "#8B6914", hideZoltoBadge: true };
+    render(<Storefront />);
+    fireEvent.click(screen.getAllByText("Save changes")[0]);
+    expect(mocks.save).toHaveBeenCalledWith(
+      expect.objectContaining({ hideZoltoBadge: false }),
+    );
+  });
+});

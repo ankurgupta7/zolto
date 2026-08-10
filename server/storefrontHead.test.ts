@@ -126,3 +126,44 @@ describe("injectStorefrontHead", () => {
     expect(out).not.toContain("<script>alert(1)</script>");
   });
 });
+
+describe("injectStorefrontHead — the Made with Zolto credit", () => {
+  it("stamps the generator tag and a followable author link by default", () => {
+    const out = injectStorefrontHead(SHELL, { storeName: "Aurora Atelier" });
+    expect(out).toContain(
+      '<meta name="generator" content="Zolto (https://zolto.ch)" />',
+    );
+    expect(out).toContain('<link rel="author" href="https://zolto.ch/"');
+  });
+
+  it("credits by default when the caller says nothing about attribution", () => {
+    // The flag is optional, and a caller that forgets it must credit the
+    // platform rather than silently white-label the store.
+    const out = injectStorefrontHead(SHELL, {
+      storeName: "Aurora",
+      attribution: undefined,
+    });
+    expect(out).toContain('name="generator"');
+  });
+
+  it("drops both tags for a store that has switched the credit off", () => {
+    const out = injectStorefrontHead(SHELL, {
+      storeName: "Aurora Atelier",
+      attribution: false,
+    });
+    expect(out).not.toContain('name="generator"');
+    expect(out).not.toContain('rel="author"');
+    expect(out).not.toContain("zolto.ch");
+  });
+
+  it("still brands the tab for a white-labelled store", () => {
+    // Dropping the credit must not drop the rest of the head injection.
+    const out = injectStorefrontHead(SHELL, {
+      storeName: "Aurora Atelier",
+      attribution: false,
+      tenantSlug: "aurora",
+    });
+    expect(out).toContain("<title>Aurora Atelier</title>");
+    expect(out).toContain('<meta name="zolto-tenant-slug" content="aurora" />');
+  });
+});
