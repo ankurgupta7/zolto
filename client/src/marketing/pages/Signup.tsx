@@ -428,7 +428,10 @@ export default function Signup() {
                   </p>
                 </div>
 
-                <Field label={t("signup.logoLabel")} hint={t("signup.logoHint")}>
+                <Field
+                  label={t("signup.logoLabel")}
+                  hint={t("signup.logoHint")}
+                >
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -566,7 +569,8 @@ export default function Signup() {
                           key={i}
                           className="h-16 rounded-md"
                           style={{
-                            backgroundColor: template.cssVars["--brand-surface"],
+                            backgroundColor:
+                              template.cssVars["--brand-surface"],
                           }}
                         />
                       ))}
@@ -652,7 +656,8 @@ export default function Signup() {
                                 key={i}
                                 className="h-8 flex-1 rounded-sm"
                                 style={{
-                                  backgroundColor: tpl.cssVars["--brand-surface"],
+                                  backgroundColor:
+                                    tpl.cssVars["--brand-surface"],
                                 }}
                               />
                             ))}

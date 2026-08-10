@@ -89,7 +89,9 @@ describe("TenantProvider template theming", () => {
 
 /** Hue of a rendered `#rrggbb`, for asserting which color a swatch came from. */
 function hueOf(hex: string): number {
-  const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
+  const [r, g, b] = [1, 3, 5].map(
+    (i) => parseInt(hex.slice(i, i + 2), 16) / 255,
+  );
   const max = Math.max(r, g, b);
   const d = max - Math.min(r, g, b);
   if (d === 0) return 0;

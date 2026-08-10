@@ -524,9 +524,10 @@ export function registerPosRoutes(app: Express): void {
 
     const limit = await pairingLimiter.check(clientKey);
     if (!limit.allowed) {
-      res
-        .status(429)
-        .json({ error: "Too many pairing attempts", retryAfter: limit.retryAfterSeconds });
+      res.status(429).json({
+        error: "Too many pairing attempts",
+        retryAfter: limit.retryAfterSeconds,
+      });
       return;
     }
 

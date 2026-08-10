@@ -51,7 +51,10 @@ describe("generateImage", () => {
     }));
     vi.stubGlobal("fetch", fetchSpy);
 
-    const res = await generateImage({ tenantId: 7, prompt: "a serene landscape" });
+    const res = await generateImage({
+      tenantId: 7,
+      prompt: "a serene landscape",
+    });
     expect(res.url).toBe("https://cdn/generated.png");
     expect(fetchSpy.mock.calls[0][0].toString()).toContain(
       "images.v1.ImageService/GenerateImage",

@@ -13,9 +13,9 @@ describe("sanitizeNextUrl", () => {
   });
 
   it("keeps a same-origin absolute url, dropping any hash", () => {
-    expect(
-      sanitizeNextUrl(`${ORIGIN}/admin?tab=plan#section`, ORIGIN),
-    ).toBe(`${ORIGIN}/admin?tab=plan`);
+    expect(sanitizeNextUrl(`${ORIGIN}/admin?tab=plan#section`, ORIGIN)).toBe(
+      `${ORIGIN}/admin?tab=plan`,
+    );
   });
 
   it("rejects another origin", () => {

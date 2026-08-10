@@ -117,7 +117,9 @@ async function uploadLogoAndExtract() {
     target: { files: [file] },
   });
   await waitFor(() => screen.getByText("logo.png"));
-  fireEvent.click(screen.getByRole("button", { name: /read my colors from this logo/i }));
+  fireEvent.click(
+    screen.getByRole("button", { name: /read my colors from this logo/i }),
+  );
 }
 
 describe("Signup wizard", () => {
@@ -310,7 +312,9 @@ describe("Signup wizard", () => {
     // FileReader is async — the preview card appears once the data URL lands.
     await waitFor(() => screen.getByText("logo.png"));
 
-    fireEvent.click(screen.getByRole("button", { name: /read my colors from this logo/i }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /read my colors from this logo/i }),
+    );
     // The logo's data URL is what travels to the AI…
     expect(String((mocks.aiVars as { imageData: string }).imageData)).toMatch(
       /^data:image\/png;base64,/,
@@ -384,7 +388,10 @@ describe("Signup wizard", () => {
 
     expect(hexField().value).toBe("#1F2933");
     expect(
-      screen.getByText("Verdant").closest("button")!.getAttribute("aria-pressed"),
+      screen
+        .getByText("Verdant")
+        .closest("button")!
+        .getAttribute("aria-pressed"),
     ).toBe("true");
     expect(screen.queryByText(/suggested from your logo/i)).toBeNull();
   });

@@ -359,7 +359,8 @@ describe("heroCopy with authored content", () => {
     // Machine-translating a store's own words would be worse than not.
     for (const lang of SUPPORTED_LANGUAGES) {
       expect(
-        heroCopy(AURORA, lang, authored({ heroHeadline: "Made by hand" })).title,
+        heroCopy(AURORA, lang, authored({ heroHeadline: "Made by hand" }))
+          .title,
       ).toBe("Made by hand");
     }
   });
@@ -467,7 +468,9 @@ describe("genericImprint with company details", () => {
 // is what lets the storefront pages adopt this one at a time.
 describe("authored content is optional everywhere", () => {
   it("defaults to no overrides", () => {
-    expect(heroCopy(AURORA, "en")).toEqual(heroCopy(AURORA, "en", EMPTY_CONTENT));
+    expect(heroCopy(AURORA, "en")).toEqual(
+      heroCopy(AURORA, "en", EMPTY_CONTENT),
+    );
     expect(genericAbout(AURORA, "en")).toEqual(
       genericAbout(AURORA, "en", EMPTY_CONTENT),
     );

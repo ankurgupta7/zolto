@@ -1,10 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import {
-  render,
-  screen,
-  fireEvent,
-  cleanup,
-} from "@testing-library/react";
+import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import Team from "./Team";
 
 const mocks = vi.hoisted(() => ({
@@ -14,7 +9,9 @@ const mocks = vi.hoisted(() => ({
       { id: 1, name: "Owner", email: "owner@a.example", role: "admin" },
       { id: 2, name: "Sam", email: "sam@a.example", role: "staff" },
     ],
-    pendingInvites: [{ id: 5, email: "pending@a.example", expiresAt: new Date() }],
+    pendingInvites: [
+      { id: 5, email: "pending@a.example", expiresAt: new Date() },
+    ],
     seatsUsed: 3,
     seatLimit: 3,
   } as Record<string, unknown>,
@@ -29,7 +26,9 @@ vi.mock("@/lib/trpc", () => ({
     useUtils: () => ({ staff: { list: { invalidate: vi.fn() } } }),
     staff: {
       list: { useQuery: () => ({ data: mocks.listData }) },
-      invite: { useMutation: () => ({ mutate: mocks.invite, isPending: false }) },
+      invite: {
+        useMutation: () => ({ mutate: mocks.invite, isPending: false }),
+      },
       revokeInvite: {
         useMutation: () => ({ mutate: mocks.revoke, isPending: false }),
       },
@@ -48,7 +47,9 @@ beforeEach(() => {
       { id: 1, name: "Owner", email: "owner@a.example", role: "admin" },
       { id: 2, name: "Sam", email: "sam@a.example", role: "staff" },
     ],
-    pendingInvites: [{ id: 5, email: "pending@a.example", expiresAt: new Date() }],
+    pendingInvites: [
+      { id: 5, email: "pending@a.example", expiresAt: new Date() },
+    ],
     seatsUsed: 3,
     seatLimit: 3,
   };

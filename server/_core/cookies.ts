@@ -16,7 +16,8 @@ function isSecureRequest(req: Request) {
 
 function requestHostname(req: Request): string | undefined {
   const forwarded = req.headers["x-forwarded-host"];
-  const raw = (Array.isArray(forwarded) ? forwarded[0] : forwarded) ?? req.headers.host;
+  const raw =
+    (Array.isArray(forwarded) ? forwarded[0] : forwarded) ?? req.headers.host;
   return raw?.split(":")[0].toLowerCase();
 }
 

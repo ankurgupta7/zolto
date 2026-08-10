@@ -1,4 +1,4 @@
-import { useEffect, } from "react";
+import { useEffect } from "react";
 import Lenis from "lenis";
 
 // Singleton ref so other parts of the app (e.g. ScrollToTop) can access Lenis.

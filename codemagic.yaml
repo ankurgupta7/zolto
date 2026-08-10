@@ -88,12 +88,12 @@ workflows:
         - pull_request
         - push
       branch_patterns:
-        - pattern: 'main'
+        - pattern: "main"
           include: true
           source: true
 
     integrations:
-      app_store_connect: codemagic_service_account  # name from Codemagic UI
+      app_store_connect: codemagic_service_account # name from Codemagic UI
 
     environment:
       ios_signing:
@@ -144,7 +144,7 @@ workflows:
         - pull_request
         - push
       branch_patterns:
-        - pattern: 'main'
+        - pattern: "main"
           include: true
           source: true
 

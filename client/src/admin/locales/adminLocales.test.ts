@@ -109,51 +109,54 @@ function badLeaves(node: unknown, prefix = ""): string[] {
   return typeof node === "string" && node.trim().length > 0 ? [] : [prefix];
 }
 
-describe.each(Object.keys(GROUPS))("admin locale fragment group: %s", (group) => {
-  const byLang = GROUPS[group];
+describe.each(Object.keys(GROUPS))(
+  "admin locale fragment group: %s",
+  (group) => {
+    const byLang = GROUPS[group];
 
-  it("nests everything under its own group name only", () => {
-    for (const lang of LANGS) {
-      const topLevel = Object.keys(byLang[lang]);
-      // Either not written yet ({}), or exactly one top-level key: the group.
-      expect(
-        topLevel,
-        `${group}.${lang}.json must contain only the "${group}" top-level key`,
-      ).toEqual(topLevel.length === 0 ? [] : [group]);
-    }
-  });
-
-  it("carries an identical key tree in all four languages", () => {
-    const reference = pluralAgnosticPaths(byLang.en);
-    for (const lang of LANGS) {
-      expect(
-        pluralAgnosticPaths(byLang[lang]),
-        `${group}.${lang}.json diverges from ${group}.en.json`,
-      ).toEqual(reference);
-    }
-  });
-
-  it("gives every plural key exactly the categories its language needs", () => {
-    for (const lang of LANGS) {
-      const required = pluralCategories(lang);
-      for (const [base, forms] of pluralFormsByBase(byLang[lang])) {
-        // Missing a category silently falls back to another form and renders
-        // the wrong grammatical number; an extra one is dead weight i18next
-        // will never select.
+    it("nests everything under its own group name only", () => {
+      for (const lang of LANGS) {
+        const topLevel = Object.keys(byLang[lang]);
+        // Either not written yet ({}), or exactly one top-level key: the group.
         expect(
-          [...forms].sort(),
-          `${group}.${lang}.json: "${base}" plural forms`,
-        ).toEqual([...required].sort());
+          topLevel,
+          `${group}.${lang}.json must contain only the "${group}" top-level key`,
+        ).toEqual(topLevel.length === 0 ? [] : [group]);
       }
-    }
-  });
+    });
 
-  it("has no empty or non-string leaves", () => {
-    for (const lang of LANGS) {
-      expect(
-        badLeaves(byLang[lang]),
-        `${group}.${lang}.json has blank or non-string values`,
-      ).toEqual([]);
-    }
-  });
-});
+    it("carries an identical key tree in all four languages", () => {
+      const reference = pluralAgnosticPaths(byLang.en);
+      for (const lang of LANGS) {
+        expect(
+          pluralAgnosticPaths(byLang[lang]),
+          `${group}.${lang}.json diverges from ${group}.en.json`,
+        ).toEqual(reference);
+      }
+    });
+
+    it("gives every plural key exactly the categories its language needs", () => {
+      for (const lang of LANGS) {
+        const required = pluralCategories(lang);
+        for (const [base, forms] of pluralFormsByBase(byLang[lang])) {
+          // Missing a category silently falls back to another form and renders
+          // the wrong grammatical number; an extra one is dead weight i18next
+          // will never select.
+          expect(
+            [...forms].sort(),
+            `${group}.${lang}.json: "${base}" plural forms`,
+          ).toEqual([...required].sort());
+        }
+      }
+    });
+
+    it("has no empty or non-string leaves", () => {
+      for (const lang of LANGS) {
+        expect(
+          badLeaves(byLang[lang]),
+          `${group}.${lang}.json has blank or non-string values`,
+        ).toEqual([]);
+      }
+    });
+  },
+);

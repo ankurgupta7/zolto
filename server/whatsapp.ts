@@ -6,10 +6,7 @@ import { createProduct, getTenantByWhatsappNumber } from "./db";
 import { storagePut } from "./storage";
 import type { TenantBranding } from "./_core/email";
 import { channelSecret } from "./channelCredentials";
-import {
-  buildIntakeExtractionPrompt,
-  getVerticalContext,
-} from "./verticals";
+import { buildIntakeExtractionPrompt, getVerticalContext } from "./verticals";
 
 const WHATSAPP_VERIFY_TOKEN =
   process.env.WHATSAPP_VERIFY_TOKEN ?? "kalakosh_verify_token";

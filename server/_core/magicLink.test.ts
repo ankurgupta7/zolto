@@ -17,7 +17,12 @@ vi.mock("./email", () => ({ sendMagicLinkEmail }));
 
 import { registerMagicLinkRoutes, requestMagicLink } from "./magicLink";
 
-const ENV_KEYS = ["JWT_SECRET", "ADMIN_EMAIL", "PUBLIC_BASE_URL", "RESEND_API_KEY"] as const;
+const ENV_KEYS = [
+  "JWT_SECRET",
+  "ADMIN_EMAIL",
+  "PUBLIC_BASE_URL",
+  "RESEND_API_KEY",
+] as const;
 const originalEnv: Record<string, string | undefined> = {};
 
 function makeApp() {
@@ -192,7 +197,9 @@ describe("GET /api/auth/magic-link/callback", () => {
         role: "admin",
       }),
     );
-    const setCookie = (res.headers["set-cookie"] as unknown as string[]).join(";");
+    const setCookie = (res.headers["set-cookie"] as unknown as string[]).join(
+      ";",
+    );
     expect(setCookie).toContain(`${COOKIE_NAME}=`);
   });
 

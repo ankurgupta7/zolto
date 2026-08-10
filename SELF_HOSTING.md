@@ -95,6 +95,7 @@ Both stacks are independent — separate databases, separate deploys — they on
    ```
 
    Replace `<zolto-app-container-name>` with whatever the Zolto app container is actually named on the shared network (check `docker compose ps` in the Zolto stack — commonly `zolto-app-1` or similar). If the Kalakosh-ch Caddy already has its own `on_demand_tls` global block for something else, Caddy only allows one `ask` URL for the whole instance — you'll need to point that single `ask` at an endpoint that can distinguish Kalakosh's own on-demand hosts from Zolto's tenant subdomains (or fold the check into whichever service already backs it).
+
 3. The `/api/domain-ask` endpoint already reads `PUBLIC_BASE_URL` (which you set to `https://zolto.kalakosh.ch` in step 3 above) to know the platform's root domain, so no extra Zolto-side config is needed — it'll recognize `blah.zolto.kalakosh.ch` and check `blah` against the tenants table correctly once the DNS and Caddy block above are in place.
 
 To run Zolto **standalone** instead (its own domain/IP with its own Caddy), see [Step 7 — Configure Caddy](#step-7--configure-caddy) and start it with `docker compose --profile standalone up -d`.
@@ -249,7 +250,7 @@ customers are routed to the WhatsApp enquiry flow instead.
 
 **Stripe Connect (optional — lets tenants link their own Stripe account):**
 Separate from the platform's own `STRIPE_SECRET_KEY` above: Stripe Connect lets
-each *tenant* link their own Stripe account so their storefront's checkout and
+each _tenant_ link their own Stripe account so their storefront's checkout and
 POS/Tap to Pay payouts go directly to them, not through the platform account.
 Without it, tenant admins see "Stripe Connect isn't set up on the platform yet"
 when they try to connect on the admin page — this is expected until configured.
@@ -426,7 +427,7 @@ docker compose down
 > docker compose --profile standalone down
 > ```
 >
-> A plain `docker compose down` does **not** remove containers belonging to a profile that isn't currently enabled, so the standalone Caddy is left running and attached to `zolto_internal`, and the teardown fails with *"Network zolto_internal Resource is still in use"* (see Troubleshooting).
+> A plain `docker compose down` does **not** remove containers belonging to a profile that isn't currently enabled, so the standalone Caddy is left running and attached to `zolto_internal`, and the teardown fails with _"Network zolto_internal Resource is still in use"_ (see Troubleshooting).
 
 ### Reconcile Stripe payments
 
@@ -444,39 +445,39 @@ whenever you suspect a payment is missing.
 
 ## Environment Variable Reference
 
-| Variable                      | Required | Description                                                                                                 |
-| ----------------------------- | -------- | ----------------------------------------------------------------------------------------------------------- |
-| `MYSQL_*`                     | Yes      | Internal database credentials                                                                               |
-| `JWT_SECRET`                  | Yes      | Session cookie signing secret (32+ chars)                                                                   |
-| `GOOGLE_CLIENT_ID`            | Yes      | Google OAuth client ID                                                                                      |
-| `GOOGLE_CLIENT_SECRET`        | Yes      | Google OAuth client secret                                                                                  |
-| `ADMIN_EMAIL`                 | Yes      | Google account allowed to log in as admin                                                                   |
-| `DISCORD_BOT_TOKEN`           | Yes      | Discord bot token                                                                                           |
-| `DISCORD_CHANNEL_ID`          | Yes      | Channel to watch for new products                                                                           |
-| `DISCORD_OWNER_USER_ID`       | No       | Your Discord user ID for DM notifications                                                                   |
-| `LLM_BASE_URL`                | Yes      | OpenAI-compatible API base URL                                                                              |
-| `LLM_API_KEY`                 | Yes      | API key (`ollama` for local Ollama)                                                                         |
-| `LLM_MODEL`                   | Yes      | Model name (e.g. `llama3-8b-8192`)                                                                          |
-| `S3_BUCKET`                   | Yes      | Storage bucket name                                                                                         |
-| `S3_REGION`                   | Yes      | Region (`auto` for R2)                                                                                      |
-| `S3_ACCESS_KEY_ID`            | Yes      | Storage access key                                                                                          |
-| `S3_SECRET_ACCESS_KEY`        | Yes      | Storage secret key                                                                                          |
-| `S3_ENDPOINT`                 | No       | Custom endpoint for non-AWS providers                                                                       |
-| `S3_PUBLIC_URL`               | No       | Public CDN base URL for serving images                                                                      |
-| `STRIPE_SECRET_KEY`           | No       | Stripe secret key — enables card & TWINT checkout                                                           |
-| `STRIPE_WEBHOOK_SECRET`       | No       | Signing secret for `/api/stripe/webhook`                                                                    |
-| `STRIPE_CONNECT_CLIENT_ID`    | No       | Platform's Connect OAuth client ID (`ca_...`) — lets tenants link their own Stripe account                  |
-| `PUBLIC_BASE_URL`             | No       | Canonical site URL — Stripe redirects, Google OAuth's redirect_uri, and recognizing tenant subdomains all key off this |
+| Variable                      | Required | Description                                                                                                                                                    |
+| ----------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `MYSQL_*`                     | Yes      | Internal database credentials                                                                                                                                  |
+| `JWT_SECRET`                  | Yes      | Session cookie signing secret (32+ chars)                                                                                                                      |
+| `GOOGLE_CLIENT_ID`            | Yes      | Google OAuth client ID                                                                                                                                         |
+| `GOOGLE_CLIENT_SECRET`        | Yes      | Google OAuth client secret                                                                                                                                     |
+| `ADMIN_EMAIL`                 | Yes      | Google account allowed to log in as admin                                                                                                                      |
+| `DISCORD_BOT_TOKEN`           | Yes      | Discord bot token                                                                                                                                              |
+| `DISCORD_CHANNEL_ID`          | Yes      | Channel to watch for new products                                                                                                                              |
+| `DISCORD_OWNER_USER_ID`       | No       | Your Discord user ID for DM notifications                                                                                                                      |
+| `LLM_BASE_URL`                | Yes      | OpenAI-compatible API base URL                                                                                                                                 |
+| `LLM_API_KEY`                 | Yes      | API key (`ollama` for local Ollama)                                                                                                                            |
+| `LLM_MODEL`                   | Yes      | Model name (e.g. `llama3-8b-8192`)                                                                                                                             |
+| `S3_BUCKET`                   | Yes      | Storage bucket name                                                                                                                                            |
+| `S3_REGION`                   | Yes      | Region (`auto` for R2)                                                                                                                                         |
+| `S3_ACCESS_KEY_ID`            | Yes      | Storage access key                                                                                                                                             |
+| `S3_SECRET_ACCESS_KEY`        | Yes      | Storage secret key                                                                                                                                             |
+| `S3_ENDPOINT`                 | No       | Custom endpoint for non-AWS providers                                                                                                                          |
+| `S3_PUBLIC_URL`               | No       | Public CDN base URL for serving images                                                                                                                         |
+| `STRIPE_SECRET_KEY`           | No       | Stripe secret key — enables card & TWINT checkout                                                                                                              |
+| `STRIPE_WEBHOOK_SECRET`       | No       | Signing secret for `/api/stripe/webhook`                                                                                                                       |
+| `STRIPE_CONNECT_CLIENT_ID`    | No       | Platform's Connect OAuth client ID (`ca_...`) — lets tenants link their own Stripe account                                                                     |
+| `PUBLIC_BASE_URL`             | No       | Canonical site URL — Stripe redirects, Google OAuth's redirect_uri, and recognizing tenant subdomains all key off this                                         |
 | ~~`POS_API_KEY`~~             | —        | **Retired.** POS keys are per-tenant, generated at signup and stored hashed; CI uses the `platform-tests` tenant's key (`deploy/rotate-secrets.sh pos-ci-key`) |
-| `STRIPE_POS_WEBHOOK_SECRET`   | No       | Signing secret for `/api/pos/webhook`                                                                       |
-| `STRIPE_LOCATION_ID`          | No       | Stripe Terminal Location ID served to POS apps at runtime via `GET /api/pos/config` — not baked into builds |
-| `BACKUP_S3_BUCKET`            | No       | Secondary S3 bucket for database backups                                                                    |
-| `BACKUP_S3_REGION`            | No       | Region for secondary backup bucket                                                                          |
-| `BACKUP_S3_ACCESS_KEY_ID`     | No       | Access key for secondary backup bucket                                                                      |
-| `BACKUP_S3_SECRET_ACCESS_KEY` | No       | Secret key for secondary backup bucket                                                                      |
-| `BACKUP_S3_ENDPOINT`          | No       | Endpoint for secondary backup provider (e.g. Backblaze B2)                                                  |
-| `BACKUP_GITHUB_REPO`          | No       | Private GitHub repo for weekly SQL + CSV backup commits                                                     |
-| `BACKUP_GITHUB_TOKEN`         | No       | Fine-grained PAT with Contents: Read & Write for the backup repo                                            |
+| `STRIPE_POS_WEBHOOK_SECRET`   | No       | Signing secret for `/api/pos/webhook`                                                                                                                          |
+| `STRIPE_LOCATION_ID`          | No       | Stripe Terminal Location ID served to POS apps at runtime via `GET /api/pos/config` — not baked into builds                                                    |
+| `BACKUP_S3_BUCKET`            | No       | Secondary S3 bucket for database backups                                                                                                                       |
+| `BACKUP_S3_REGION`            | No       | Region for secondary backup bucket                                                                                                                             |
+| `BACKUP_S3_ACCESS_KEY_ID`     | No       | Access key for secondary backup bucket                                                                                                                         |
+| `BACKUP_S3_SECRET_ACCESS_KEY` | No       | Secret key for secondary backup bucket                                                                                                                         |
+| `BACKUP_S3_ENDPOINT`          | No       | Endpoint for secondary backup provider (e.g. Backblaze B2)                                                                                                     |
+| `BACKUP_GITHUB_REPO`          | No       | Private GitHub repo for weekly SQL + CSV backup commits                                                                                                        |
+| `BACKUP_GITHUB_TOKEN`         | No       | Fine-grained PAT with Contents: Read & Write for the backup repo                                                                                               |
 
 `PUBLIC_BASE_URL` is technically optional (a single-host deploy without it still works, deriving everything from the incoming request), but strongly recommended once tenant subdomains are in play — see the troubleshooting entry below.
 
@@ -498,18 +499,21 @@ Ensure your domain's DNS A record points to the correct server IP and has propag
 
 **`ERR_SSL_PROTOCOL_ERROR` on a tenant subdomain (e.g. `blah.zolto.ch`)**
 Almost always one of:
+
 - No wildcard DNS record. An `A` record for the apex (`zolto.ch`) does **not** cover subdomains — you also need `*.zolto.ch` pointing at the server IP (see Step 7).
 - `blah` isn't an actual tenant slug yet, or the tenant record hasn't propagated to the DB the app is reading. Caddy's on-demand TLS refuses to mint a cert for hostnames `/api/domain-ask` doesn't recognize — check `docker compose logs app` for `[DomainAsk]` lines, or ask the endpoint directly: `docker compose exec app curl -s "http://localhost:3000/api/domain-ask?domain=blah.zolto.ch" -o /dev/null -w '%{http_code}\n'` (200 = tenant found, 404 = no such slug).
 - DNS hasn't propagated yet after adding the wildcard record — give it a few minutes and retry.
 
 **"Error 400: redirect_uri_mismatch" signing in with Google on a tenant subdomain (e.g. `blah.zolto.ch`)**
 Google OAuth requires an exact, pre-registered redirect URI and doesn't support wildcard subdomains, so the app always routes the OAuth round-trip through **`PUBLIC_BASE_URL`'s own host** — never whichever tenant subdomain the merchant started from. This error means that host mismatch is happening anyway, which points to `PUBLIC_BASE_URL` not being set (or set wrong) in `.env`:
+
 - Set `PUBLIC_BASE_URL=https://zolto.ch` (or `https://zolto.kalakosh.ch` if running alongside Kalakosh-ch) and restart the app.
 - Confirm Google Cloud Console's Authorized redirect URIs list contains exactly `https://<PUBLIC_BASE_URL host>/api/oauth/callback` — one entry covers every tenant, current and future.
 - The tenant is then redirected back to their own subdomain automatically after login (the session cookie is scoped to the whole `*.zolto.ch` family once `PUBLIC_BASE_URL` is set, not just the one host that issued it).
 
 **A tenant admin's "Connect Stripe" fails or redirects with `stripeConnect=error` on a tenant subdomain (e.g. `blah.zolto.ch`)**
 Same class of issue as the Google `redirect_uri_mismatch` above: Stripe also requires an exact, pre-registered redirect URI with no wildcard subdomains, so the app always routes the Connect OAuth round-trip through **`PUBLIC_BASE_URL`'s own host**, never whichever tenant subdomain the admin clicked "Connect Stripe" from.
+
 - Set `PUBLIC_BASE_URL=https://zolto.ch` (or `https://zolto.kalakosh.ch` if running alongside Kalakosh-ch) and restart the app.
 - Confirm the Stripe Dashboard's Connect OAuth settings list the redirect URI exactly as `https://<PUBLIC_BASE_URL host>/api/stripe/connect/callback` — one entry covers every tenant, current and future.
 - If `PUBLIC_BASE_URL` is unset entirely, the app falls back to the request's own host — this works only for whichever single host happens to match what's registered in Stripe, and fails for every other tenant subdomain.

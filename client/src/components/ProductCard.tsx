@@ -280,9 +280,9 @@ export default function ProductCard({ product, onMutated }: Props) {
             </h3>
           </div>
           <span
-            className={`inline-block text-[10px] uppercase tracking-[0.15em] px-2 py-0.5 mb-2 font-sans ${
-              categoryColor(product.category)
-            }`}
+            className={`inline-block text-[10px] uppercase tracking-[0.15em] px-2 py-0.5 mb-2 font-sans ${categoryColor(
+              product.category,
+            )}`}
           >
             {product.category}
           </span>

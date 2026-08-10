@@ -51,6 +51,14 @@ jobs:
       - name: Unit tests
         run: pnpm run test
 
+      # Gating, unlike the lint below: the tree was swept Prettier-clean, so
+      # this is green on day one and only ever red for the PR that dirtied it.
+      # Prettier is pinned to an exact version in package.json — a caret range
+      # lets a minor bump redefine "formatted" and drift the whole tree again,
+      # which is how ~50 files ended up unformatted before the sweep.
+      - name: Formatting
+        run: pnpm exec prettier --check .
+
       # Lint last, and advisory for now. `biome lint` currently exits non-zero
       # on findings that predate this workflow (unused parameters, a handful of
       # `any`s, non-null assertions in tests). Gating on them would make this

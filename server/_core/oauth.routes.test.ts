@@ -111,7 +111,8 @@ describe("GET /api/oauth/login", () => {
   it("rejects a next target on an unrelated host even with PUBLIC_BASE_URL set", async () => {
     process.env.PUBLIC_BASE_URL = "https://zolto.ch";
     const res = await request(makeApp()).get(
-      "/api/oauth/login?next=" + encodeURIComponent("https://evil.example.com/"),
+      "/api/oauth/login?next=" +
+        encodeURIComponent("https://evil.example.com/"),
     );
     const setCookie = (res.headers["set-cookie"] as unknown as string[]).join(
       ";",
