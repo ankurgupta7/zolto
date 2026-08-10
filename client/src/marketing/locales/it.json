@@ -1384,8 +1384,12 @@
   },
   "costOfAcceptance": {
     "heading": "Quanto costa una vendita da CHF {{basket}}",
+    "headingInPerson": "Quanto costa una vendita da CHF {{basket}} di persona",
+    "headingOnline": "Quanto costa una vendita da CHF {{basket}} online",
     "intro": "Dal più economico. Zolto non è in cima, ed è proprio questo il punto — sulla tariffa carta ogni altra opzione qui ci batte. Ogni cifra rimanda alla sua fonte e alla data in cui è stata letta.",
     "tableCaption": "Costo di una vendita da CHF {{basket}} per ogni opzione, dal più economico",
+    "tableCaptionInPerson": "Costo di una vendita da CHF {{basket}} incassata di persona per ogni opzione, dal più economico",
+    "tableCaptionOnline": "Costo di una vendita da CHF {{basket}} incassata online per ogni opzione, dal più economico",
     "colOption": "Come incassi",
     "colCost": "Costo della vendita",
     "colRate": "Tariffa effettiva",

@@ -22,6 +22,9 @@ import "./entry.css";
 import { trpc } from "@/lib/trpc";
 import { SITE_IMPORT } from "@shared/platform";
 import AdminLayout from "@/components/admin/AdminLayout";
+import Navbar from "@/components/Navbar";
+import { TenantProvider } from "@/contexts/TenantContext";
+import { CartProvider } from "@/contexts/CartContext";
 import { ADMIN_NAV } from "@/admin/nav";
 import ShopProfile from "@/pages/admin/ShopProfile";
 import MyAccount from "@/pages/admin/MyAccount";
@@ -67,6 +70,17 @@ const RESPONSES: Record<string, unknown> = {
     onlineFeeBps: comp || plan === "pro" ? 0 : 100,
     subscriptionStatus: comp ? null : "trialing",
     terminalLocationId: null,
+  },
+  // The storefront Navbar renders above every admin route (App.tsx
+  // StorefrontRouter), and it is `fixed`, so the admin shell has to clear it.
+  // Shooting the shell without it hid that: the sidebar's first entries and the
+  // page title were behind the bar in the real app and nowhere near it here.
+  "tenant.getBySlug": {
+    id: 42,
+    slug: "bergblume",
+    name: "Bergblume Keramik",
+    plan: "free",
+    whiteLabel: false,
   },
   // Domain page: a saved custom domain whose CNAME hasn't landed yet — the
   // state a merchant actually sits in while waiting for DNS.
@@ -353,23 +367,29 @@ const { hook } = memoryLocation({ path: route, static: true });
 createRoot(document.getElementById("root")!).render(
   <trpc.Provider client={trpcClient} queryClient={queryClient}>
     <QueryClientProvider client={queryClient}>
-      <Router hook={hook}>
-        <Switch>
-          <Route path={BILLING_PATH}>
-            <Billing />
-          </Route>
-          {ADMIN_NAV.filter((i) => PAGES[i.id]).map((item) => {
-            const Page = PAGES[item.id];
-            return (
-              <Route key={item.id} path={item.path}>
-                <AdminLayout title={item.label}>
-                  <Page />
-                </AdminLayout>
+      <TenantProvider slug="bergblume">
+        {/* The Navbar reads both contexts (branding, cart count). */}
+        <CartProvider>
+          <Router hook={hook}>
+            <Navbar />
+            <Switch>
+              <Route path={BILLING_PATH}>
+                <Billing />
               </Route>
-            );
-          })}
-        </Switch>
-      </Router>
+              {ADMIN_NAV.filter((i) => PAGES[i.id]).map((item) => {
+                const Page = PAGES[item.id];
+                return (
+                  <Route key={item.id} path={item.path}>
+                    <AdminLayout title={item.label}>
+                      <Page />
+                    </AdminLayout>
+                  </Route>
+                );
+              })}
+            </Switch>
+          </Router>
+        </CartProvider>
+      </TenantProvider>
     </QueryClientProvider>
   </trpc.Provider>,
 );

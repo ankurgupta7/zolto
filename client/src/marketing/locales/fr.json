@@ -1388,8 +1388,12 @@
   },
   "costOfAcceptance": {
     "heading": "Ce que coûte une vente de CHF {{basket}}",
+    "headingInPerson": "Ce que coûte une vente de CHF {{basket}} en personne",
+    "headingOnline": "Ce que coûte une vente de CHF {{basket}} en ligne",
     "intro": "Du moins cher au plus cher. Zolto n'est pas en tête, et c'est bien là le propos — sur le taux carte, toutes les autres options ici nous battent. Chaque chiffre renvoie à sa source et à la date de consultation.",
     "tableCaption": "Coût d'une vente de CHF {{basket}} pour chaque option, du moins cher au plus cher",
+    "tableCaptionInPerson": "Coût d'une vente de CHF {{basket}} encaissée en personne pour chaque option, du moins cher au plus cher",
+    "tableCaptionOnline": "Coût d'une vente de CHF {{basket}} encaissée en ligne pour chaque option, du moins cher au plus cher",
     "colOption": "Comment vous encaissez",
     "colCost": "Coût de la vente",
     "colRate": "Taux effectif",
