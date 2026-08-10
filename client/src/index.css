@@ -107,6 +107,23 @@ html[data-reel="proximity"] {
   }
 }
 
+/* `tall:` — the viewport has the *height* for a generous composition. Tailwind's */
+/* own breakpoints are all width, which says nothing about a reel slide: an       */
+/* iPhone 15 Pro and an SE are 18px apart in width and 185px apart in height, and */
+/* height is what decides whether a slide fits. Use it to let a slide breathe on  */
+/* a normal phone while staying compact on a short one — not to hide anything     */
+/* load-bearing, since a short viewport is also a landscape one.                  */
+/*                                                                                */
+/* One trap: this variant is registered after Tailwind's own, so where `tall:` and */
+/* `md:` set the same property they both match on a 1440x900 desktop and `tall:`  */
+/* wins — which is how the one-inventory node kept its phone size there. Scope the */
+/* phone step to `tall:max-md:` when a `md:` rule sets the same property.          */
+@custom-variant tall {
+  @media (min-height: 740px) {
+    @slot;
+  }
+}
+
 /* ─── Chrome geometry ─────────────────────────────────────────────────────────── */
 /* The marketing nav's height, as a token rather than a repeated `h-16`. The       */
 /* homepage reel makes its own scroll container, so it has to size its chapters    */

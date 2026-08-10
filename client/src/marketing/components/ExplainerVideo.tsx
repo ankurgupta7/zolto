@@ -120,7 +120,10 @@ export function ExplainerVideo({
       className="m-0 mx-auto w-full max-w-xl reel:max-w-none"
     >
       <div
-        className="relative aspect-[16/10] overflow-hidden rounded-2xl border border-white/15 bg-[var(--brand-ink-deep)] bg-cover bg-center shadow-[0_28px_70px_-40px_rgba(0,0,0,0.8)]"
+        // 16/9 on a short viewport, 16/10 where there is room: 20px of frame is
+        // the difference between the hero being one screen on an iPhone SE and
+        // scrolling inside itself.
+        className="relative aspect-video overflow-hidden rounded-2xl border border-white/15 bg-[var(--brand-ink-deep)] bg-cover bg-center shadow-[0_28px_70px_-40px_rgba(0,0,0,0.8)] tall:aspect-[16/10]"
         style={{ backgroundImage: `url("${poster}")` }}
       >
         <video
@@ -160,7 +163,7 @@ export function ExplainerVideo({
           </button>
         )}
       </div>
-      <figcaption className="mt-3 font-hand text-xl leading-snug text-[var(--brand-accent)]">
+      <figcaption className="mt-2 font-hand text-lg leading-snug text-[var(--brand-accent)] tall:mt-3 tall:text-xl">
         {t(captionKey, { defaultValue: DEFAULT_CAPTION })}
       </figcaption>
     </figure>

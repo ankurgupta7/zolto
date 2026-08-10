@@ -23,18 +23,22 @@ function renderLanding() {
 }
 
 /**
- * The six chapters, in order, and how many panels each is made of. A panel is
- * one screen: on a phone you swipe through 21 of them, on a roomy desktop each
- * chapter's panels become its columns and you scroll through six screens. The
- * counts are asserted because a chapter that lost a panel would silently lose a
- * screenful of the homepage.
+ * The eight posts, in order, and how many slides each is made of. A slide is one
+ * screen: on a phone you flick down through eight posts and swipe sideways
+ * through 18 slides; on a roomy desktop each post's slides become its columns
+ * and the page is eight screens. The counts are asserted because a post that
+ * lost a slide would silently lose a screenful of the homepage — and because
+ * "one claim per post, never more than three screens" is the grouping this page
+ * is built on, which the max below states outright.
  */
 const CHAPTERS = {
-  promise: 2,
-  squeeze: 4,
-  product: 4,
-  trust: 5,
-  "whats-coming": 4,
+  promise: 1,
+  squeeze: 2,
+  "free-in-person": 2,
+  product: 3,
+  costs: 2,
+  trust: 3,
+  "whats-coming": 3,
   "start-free": 2,
 } as const;
 const CHAPTER_IDS = Object.keys(CHAPTERS) as Array<keyof typeof CHAPTERS>;
@@ -74,7 +78,7 @@ const LANDING_STRINGS: Record<string, string> = Object.fromEntries(
 ) as Record<string, string>;
 
 describe("Landing — the reel", () => {
-  it("is six chapters, in order, each a named section with a heading", () => {
+  it("is eight posts, in order, each a named section with a heading", () => {
     renderLanding();
     const sections = Array.from(
       document.querySelectorAll<HTMLElement>("[data-reel-chapter]"),
@@ -106,8 +110,15 @@ describe("Landing — the reel", () => {
         expect(panel.className).toContain("snap-start");
       }
     }
-    // 21 screens on a phone; six chapters' worth of columns on a desktop.
-    expect(document.querySelectorAll("[data-reel-panel]").length).toBe(21);
+    // 18 screens on a phone; eight posts' worth of columns on a desktop.
+    expect(document.querySelectorAll("[data-reel-panel]").length).toBe(18);
+    // The grouping rule, asserted rather than described: one claim per post, and
+    // never more than three swipes to have read all of it.
+    for (const [id, count] of Object.entries(CHAPTERS)) {
+      expect(count, `${id} is deeper than three screens`).toBeLessThanOrEqual(
+        3,
+      );
+    }
   });
 
   it("pages each post sideways, with a dot per slide and no nested scroller", () => {
@@ -120,6 +131,12 @@ describe("Landing — the reel", () => {
     for (const [id, count] of Object.entries(CHAPTERS)) {
       const post = chapter(id as keyof typeof CHAPTERS);
       const dots = post.querySelector<HTMLElement>('[data-testid="reel-dots"]');
+      if (count === 1) {
+        // A one-slide post has nothing to page through, and a lone dot would
+        // suggest there is more sideways than there is.
+        expect(dots, `${id} should have no dots`).toBeNull();
+        continue;
+      }
       expect(dots, `${id} has no dots`).toBeTruthy();
       const buttons = Array.from(dots!.querySelectorAll("button"));
       expect(buttons.length, `${id} dot count`).toBe(count);
@@ -157,7 +174,9 @@ describe("Landing — the reel", () => {
     expect(dots.map((d) => d.getAttribute("aria-label"))).toEqual([
       en.landing.reel.promise,
       en.landing.reel.squeeze,
+      en.landing.reel.freeInPerson,
       en.landing.reel.how,
+      en.landing.reel.whatItCosts,
       en.landing.reel.trust,
       en.landing.reel.whatsComing,
       en.landing.reel.startFree,
@@ -173,7 +192,7 @@ describe("Landing — the reel", () => {
   });
 });
 
-describe("Landing — chapter 1, the promise", () => {
+describe("Landing — post 1, the promise", () => {
   it("leads by saying what Zolto is, in the merchant's nouns", () => {
     renderLanding();
     expect(
@@ -191,9 +210,13 @@ describe("Landing — chapter 1, the promise", () => {
     expect(screen.getByText(/point-of-sale and a web store/i)).toBeTruthy();
   });
 
-  it("puts the explainer video in the hero's second column", () => {
+  it("keeps the promise and the video it rests on one slide", () => {
     renderLanding();
-    const video = within(chapter("promise")).getByTestId("explainer-video");
+    const post = chapter("promise");
+    // One slide, so the video is on screen with the claim rather than a swipe
+    // behind it — and the post has no dots, since there is nothing to page.
+    expect(post.querySelectorAll("[data-reel-panel]").length).toBe(1);
+    const video = within(post).getByTestId("explainer-video");
     expect(video).toBeTruthy();
     expect(
       within(chapter("promise"))
@@ -228,20 +251,28 @@ describe("Landing — chapter 1, the promise", () => {
   });
 });
 
-describe("Landing — chapter 2, the squeeze", () => {
-  it("keeps both arguments — the three tills and the CHF 0 till — in one chapter", () => {
+describe("Landing — post 2, the squeeze, and post 3, its answer", () => {
+  it("argues the squeeze with the three tills, and nothing else", () => {
     renderLanding();
     const squeeze = within(chapter("squeeze"));
-    // Two panels of squeeze argument, two of the CHF 0 answer — the band's own
-    // `data-testid` went away when it split into panel-sized parts.
+    // The band's own `data-testid` went away when it split into slide-sized
+    // parts, so the check is the copy and the three panels of the comparison.
     expect(squeeze.getByText(POSITIONING.squeezePlay.body)).toBeTruthy();
     expect(squeeze.getAllByTestId(/^squeeze-panel-/).length).toBe(3);
     expect(squeeze.getByTestId("squeeze-claim").textContent).toContain(
       POSITIONING.squeezePlay.claim,
     );
-    // The differentiator, and the price it is free at.
-    expect(squeeze.getByTestId("zero-cost-pos")).toBeTruthy();
-    expect(squeeze.getByTestId("zero-cost-price").textContent).toContain("CHF");
+    // The answer is the *next* post's claim, not this one's — one post, one
+    // claim, which is the whole reason these two are no longer one four-slide
+    // post.
+    expect(squeeze.queryByTestId("zero-cost-pos")).toBeNull();
+  });
+
+  it("answers it in a post of its own: the CHF 0 till and its price", () => {
+    renderLanding();
+    const free = within(chapter("free-in-person"));
+    expect(free.getByTestId("zero-cost-pos")).toBeTruthy();
+    expect(free.getByTestId("zero-cost-price").textContent).toContain("CHF");
     // …and the pricing pledge's promise still appears on the page.
     expect(
       screen.getAllByText(/selling in person is free/i).length,
@@ -249,7 +280,23 @@ describe("Landing — chapter 2, the squeeze", () => {
   });
 });
 
-describe("Landing — chapter 3, how it works", () => {
+describe("Landing — post 4, how it works", () => {
+  it("opens on its own heading rather than giving it a screen", () => {
+    // A slide carrying nothing but an eyebrow and an h2 costs a swipe and says
+    // nothing the next slide doesn't, so the heading rides on the first slide.
+    renderLanding();
+    const slides = chapter("product").querySelectorAll("[data-reel-panel]");
+    expect(slides.length).toBe(3);
+    const first = within(slides[0] as HTMLElement);
+    expect(first.getByText(en.landing.howEyebrow)).toBeTruthy();
+    expect(
+      first.getByRole("heading", { level: 2, name: en.landing.howHeading }),
+    ).toBeTruthy();
+    expect(
+      first.getByRole("heading", { level: 3, name: en.landing.inventoryTitle }),
+    ).toBeTruthy();
+  });
+
   it("shows the product visually: channels, photo→listing, and the till", () => {
     renderLanding();
     const how = within(chapter("product"));
@@ -275,15 +322,21 @@ describe("Landing — chapter 3, how it works", () => {
   });
 });
 
-describe("Landing — chapter 4, trust", () => {
-  it("carries the cost strip, the pledge, and the whole ledger", () => {
+describe("Landing — post 5, what it costs, and post 6, trust", () => {
+  it("puts the year-vs-month strip beside the pledge that backs it", () => {
+    renderLanding();
+    const costs = within(chapter("costs"));
+    // A year with the old guard against a month here.
+    expect(costs.getByText(en.shared.costComparison.themLabel)).toBeTruthy();
+    expect(costs.getByText(en.shared.costComparison.usLabel)).toBeTruthy();
+    // The pledge, signed — it is a promise about the number beside it, which is
+    // why it moved off the Swissness post.
+    expect(costs.getByText(en.landing.pledgeSignature)).toBeTruthy();
+  });
+
+  it("carries the whole ledger on the trust post", () => {
     renderLanding();
     const trust = within(chapter("trust"));
-    // A year with the old guard against a month here.
-    expect(trust.getByText(en.shared.costComparison.themLabel)).toBeTruthy();
-    expect(trust.getByText(en.shared.costComparison.usLabel)).toBeTruthy();
-    // The pledge, signed.
-    expect(trust.getByText(en.landing.pledgeSignature)).toBeTruthy();
     // The ledger: every row, including the ones still outside Europe.
     expect(
       trust.getByRole("heading", {
@@ -304,7 +357,7 @@ describe("Landing — chapter 4, trust", () => {
     // the two numbers a scroll apart is not one. jsdom has no viewport, so the
     // check is that the three columns are unconditional.
     renderLanding();
-    const strip = chapter("trust").querySelector<HTMLElement>(
+    const strip = chapter("costs").querySelector<HTMLElement>(
       "[class*='brand-ink-deep']",
     );
     expect(strip).toBeTruthy();
@@ -314,7 +367,7 @@ describe("Landing — chapter 4, trust", () => {
   });
 });
 
-describe("Landing — chapter 5, what's coming", () => {
+describe("Landing — post 7, what's coming", () => {
   it("shows the scan → tap → reconcile selling loop", () => {
     renderLanding();
     const coming = within(chapter("whats-coming"));
@@ -348,7 +401,7 @@ describe("Landing — chapter 5, what's coming", () => {
   });
 });
 
-describe("Landing — chapter 6, start free", () => {
+describe("Landing — post 8, start free", () => {
   it("closes on the CTA and the diary a visitor can go and check", () => {
     renderLanding();
     const closing = within(chapter("start-free"));

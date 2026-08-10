@@ -35,7 +35,7 @@ import { useMarketingT } from "../lib/marketingI18n";
 /**
  * The Zolto homepage, as a reel of carousel posts.
  *
- * Six chapters. Each is one post — exactly one screen, so flicking down slides
+ * Eight posts, and a post is exactly one screen — so flicking down slides
  * the one you're leaving up and fills the viewport with the next — and each post
  * is made of panels you swipe *sideways* through, with dots under them, the way
  * a multi-picture post works. Above a roomy breakpoint the sideways axis
@@ -47,14 +47,24 @@ import { useMarketingT } from "../lib/marketingI18n";
  * screen per flick on a 375px phone and on a 1920px desktop alike, and the first
  * two cuts of this page could not manage that at any size but 1440x900.
  *
- * What each chapter carries, and the desktop grid its panels fall back into:
+ * One post makes one claim, and no post is more than three screens wide, so a
+ * reader who never swipes sideways still gets the whole argument — the rail is
+ * that argument's outline. What each post carries, and the desktop grid its
+ * slides fall back into:
  *
- *   1 Promise        copy + CTA | explainer video
- *   2 The squeeze    the squeeze argument, three tills | the CHF 0 claim, its price
- *   3 How it works   title, then one inventory | photo→listing | the till
- *   4 Trust          cost strip, the pledge | Swissness intro, the ledger
- *   5 What's coming  the market day | the AI-native thesis, its chart
- *   6 Start free     closing CTA, the launch diary
+ *   1 Promise         one slide: the claim, the explainer video, the CTAs
+ *   2 The squeeze     the argument | the three tills
+ *   3 Free in person  the CHF 0 claim | its price
+ *   4 How it works    one inventory | photo→listing | the till
+ *   5 What it costs   the cost strip | the pledge
+ *   6 Trust           Swissness intro | the ledger, in two slices
+ *   7 What's coming   the messy claim + the thesis, its chart | a market day
+ *   8 Start free      closing CTA, the launch diary
+ *
+ * Two screens went away rather than moving: the "One shop. Everywhere you sell."
+ * heading now opens the one-inventory slide, and the "Sell first. Sort it out
+ * later." copy opens the thesis slide. A slide carrying nothing but an eyebrow
+ * and an h2 costs a swipe and says nothing the next slide doesn't.
  *
  * No copy changed when this became a reel, and no colour left its token. Bands
  * arguing the same point were paired into one chapter, and the dark ones became
@@ -94,131 +104,152 @@ export default function Landing() {
           label={t("landing.reel.promise")}
           className="bg-[var(--brand-ink)]"
         >
-          <ReelPanels layout="reel:grid-cols-2 reel:items-center reel:gap-10">
+          {/* One slide, not two: the promise and the thing it promises belong on
+              the same screen — the video *is* the argument, and a reader who has
+              to swipe for it has already read the claim unproven. The desktop
+              hero is unchanged, because the grid placement below rebuilds the
+              two columns out of the same three blocks. */}
+          <ReelPanels>
             <ReelPanel>
-              <div>
-                <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
-                  {st("makerPitch.eyebrow", MAKER_PITCH.eyebrow)}
-                </p>
-                {/* The column, not max-w, is what actually bounds this heading —
-                    see MAKER_PITCH.headlineEmphasis for the measurements and for
-                    why the underlined phrase has to stay short. */}
-                <h1 className="mt-4 max-w-2xl font-serif text-4xl leading-[1.1] text-white sm:text-5xl">
-                  {st("makerPitch.headline", MAKER_PITCH.headline)}{" "}
-                  {/* Only the punchline is underlined, so the stroke stays tight
-                      to the words however the heading wraps. */}
-                  <span className="relative inline-block">
-                    {st(
-                      "makerPitch.headlineEmphasis",
-                      MAKER_PITCH.headlineEmphasis,
-                    )}
-                    <span className="absolute -bottom-2 left-0 w-full text-[var(--brand-accent)]">
-                      <SketchUnderline />
+              {/* Stacked on a phone — copy, then the video, then the buttons, the
+                  order the reader needs them in. Two columns from md up, which is
+                  also what saves the hero on a wide-but-short laptop: 1232px of
+                  measure gave the paragraph one line and the frame 360px of
+                  height, and the slide stopped fitting its own screen. */}
+              <div className="grid content-center gap-2.5 tall:gap-6 md:grid-cols-[1.05fr_0.95fr] md:items-center md:gap-10">
+                <div className="md:col-start-1 md:row-start-1">
+                  <p className="font-hand text-xl leading-none text-[var(--brand-accent)] tall:text-2xl">
+                    {st("makerPitch.eyebrow", MAKER_PITCH.eyebrow)}
+                  </p>
+                  {/* The column, not max-w, is what actually bounds this heading —
+                      see MAKER_PITCH.headlineEmphasis for the measurements and for
+                      why the underlined phrase has to stay short. */}
+                  <h1 className="mt-2 max-w-2xl font-serif text-3xl leading-[1.1] text-white tall:mt-4 tall:text-4xl sm:text-5xl">
+                    {st("makerPitch.headline", MAKER_PITCH.headline)}{" "}
+                    {/* Only the punchline is underlined, so the stroke stays tight
+                        to the words however the heading wraps. */}
+                    <span className="relative inline-block">
+                      {st(
+                        "makerPitch.headlineEmphasis",
+                        MAKER_PITCH.headlineEmphasis,
+                      )}
+                      <span className="absolute -bottom-2 left-0 w-full text-[var(--brand-accent)]">
+                        <SketchUnderline />
+                      </span>
                     </span>
-                  </span>
-                </h1>
-                <p className="mt-4 max-w-md leading-relaxed text-white/70 sm:mt-6 sm:text-lg">
-                  {st("makerPitch.body", MAKER_PITCH.body)}
-                </p>
-
-                <div className="mt-6 flex flex-wrap items-center gap-3 sm:mt-8 sm:gap-4">
-                  <Link
-                    href="/signup"
-                    className="rounded-md bg-[var(--brand-accent)] px-7 py-3 text-xs font-medium uppercase tracking-[0.14em] text-[var(--brand-ink)] transition-colors hover:bg-[var(--brand-accent-light)]"
-                  >
-                    {t("landing.startFree")}
-                  </Link>
-                  <Link
-                    href="/pricing"
-                    className="rounded-md border border-white/25 px-7 py-3 text-xs font-medium uppercase tracking-[0.14em] text-white/85 transition-colors hover:border-white hover:text-white"
-                  >
-                    {t("landing.seePricing")}
-                  </Link>
+                  </h1>
+                  <p className="mt-3 max-w-md text-sm leading-relaxed text-white/70 tall:mt-5 tall:text-base sm:text-lg">
+                    {st("makerPitch.body", MAKER_PITCH.body)}
+                  </p>
                 </div>
 
-                {/* Where we're from, above the fold. Three facts, no sentence —
-                    the trust chapter does the explaining. */}
-                <ul className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2 text-[11px] uppercase tracking-[0.16em] text-white/50 sm:mt-8">
-                  {SOVEREIGNTY.heroBadges.map((badge, i) => (
-                    <li key={badge} className="flex items-center gap-2">
-                      <span aria-hidden className="text-[var(--brand-accent)]">
-                        ✦
-                      </span>
-                      {st(`sovereignty.heroBadges.${i}`, badge)}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </ReelPanel>
+                {/* The product, shown rather than asserted — the second column on
+                    a desktop, the middle of the composition on a phone. */}
+                <div className="md:col-start-2 md:row-span-2 md:row-start-1">
+                  <ExplainerVideo
+                    src={EXPLAINER_SRC}
+                    poster={EXPLAINER_POSTER}
+                    captionKey="landing.video.caption"
+                  />
+                </div>
 
-            {/* The product, shown rather than asserted. */}
-            <ReelPanel>
-              <ExplainerVideo
-                src={EXPLAINER_SRC}
-                poster={EXPLAINER_POSTER}
-                captionKey="landing.video.caption"
-              />
+                <div className="md:col-start-1 md:row-start-2">
+                  <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+                    <Link
+                      href="/signup"
+                      className="rounded-md bg-[var(--brand-accent)] px-7 py-3 text-xs font-medium uppercase tracking-[0.14em] text-[var(--brand-ink)] transition-colors hover:bg-[var(--brand-accent-light)]"
+                    >
+                      {t("landing.startFree")}
+                    </Link>
+                    <Link
+                      href="/pricing"
+                      className="rounded-md border border-white/25 px-7 py-3 text-xs font-medium uppercase tracking-[0.14em] text-white/85 transition-colors hover:border-white hover:text-white"
+                    >
+                      {t("landing.seePricing")}
+                    </Link>
+                  </div>
+
+                  {/* Where we're from, above the fold. Three facts, no sentence —
+                      the trust chapter does the explaining. */}
+                  <ul className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-[11px] uppercase tracking-[0.16em] text-white/50 tall:mt-6">
+                    {SOVEREIGNTY.heroBadges.map((badge, i) => (
+                      <li key={badge} className="flex items-center gap-2">
+                        <span
+                          aria-hidden
+                          className="text-[var(--brand-accent)]"
+                        >
+                          ✦
+                        </span>
+                        {st(`sovereignty.heroBadges.${i}`, badge)}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
             </ReelPanel>
           </ReelPanels>
         </ReelChapter>
 
-        {/* ── 2. The squeeze — the in-person argument and the CHF 0 till that
-             answers it, which used to be two consecutive bands making one
-             point ── */}
+        {/* ── 2. The squeeze — the hole every other till has in it ── */}
         <ReelChapter
           id="squeeze"
           label={t("landing.reel.squeeze")}
           className="bg-[var(--brand-surface)]"
         >
-          {/* Each column is its own stack, not cells in a shared 2x2 grid: grid
-              rows are shared between columns, so a short panel beside a tall one
-              inherits the tall one's row and the chapter grows by the difference
-              — 456px of it, in this chapter's case. */}
-          <ReelPanels layout="reel:grid-cols-[1.05fr_0.95fr] reel:items-center reel:gap-6">
-            <div className="contents reel:grid reel:content-center reel:gap-6">
-              <ReelPanel>
-                <SqueezePlayArgument dense />
-              </ReelPanel>
-              <ReelPanel>
-                <SqueezePlayTills dense />
-              </ReelPanel>
-            </div>
-            <div className="contents reel:grid reel:content-center reel:gap-6">
-              <ReelPanel>
-                <ZeroCostPosClaim dense />
-              </ReelPanel>
-              <ReelPanel>
-                <ZeroCostPosPrice dense />
-              </ReelPanel>
-            </div>
+          <ReelPanels layout="reel:grid-cols-[1.05fr_0.95fr] reel:items-center reel:gap-8">
+            <ReelPanel>
+              <SqueezePlayArgument dense />
+            </ReelPanel>
+            <ReelPanel>
+              <SqueezePlayTills dense />
+            </ReelPanel>
           </ReelPanels>
         </ReelChapter>
 
-        {/* ── 3. How it works — one inventory, photo→listing, and the till the
+        {/* ── 3. Free in person — the answer to the squeeze, and its price. Its
+             own post rather than the back half of the one above: the two claims
+             are different claims, and the rail should say so. ── */}
+        <ReelChapter
+          id="free-in-person"
+          label={t("landing.reel.freeInPerson")}
+          className="border-y border-[var(--brand-border)] bg-[var(--brand-surface-2)]"
+        >
+          <ReelPanels layout="reel:grid-cols-[1.05fr_0.95fr] reel:items-center reel:gap-8">
+            <ReelPanel>
+              <ZeroCostPosClaim dense />
+            </ReelPanel>
+            <ReelPanel>
+              <ZeroCostPosPrice dense />
+            </ReelPanel>
+          </ReelPanels>
+        </ReelChapter>
+
+        {/* ── 4. How it works — one inventory, photo→listing, and the till the
              hero used to show ── */}
         <ReelChapter id="product" label={t("landing.reel.how")}>
           <ReelPanels layout="reel:grid-cols-3 reel:gap-10">
-            <ReelPanel className="reel:col-span-3">
-              <div className="text-center">
-                <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
-                  {t("landing.howEyebrow")}
-                </p>
-                <h2 className="mt-2 font-serif text-3xl text-[var(--brand-text)] sm:text-4xl">
-                  {t("landing.howHeading")}
-                </h2>
-              </div>
-            </ReelPanel>
-
-            {/* Feature 1 — one inventory, two channels */}
+            {/* Feature 1 — one inventory, two channels. It carries the post's
+                own heading rather than giving it a screen of its own: a slide
+                with nothing on it but an eyebrow and an h2 costs a swipe and
+                says nothing the next slide doesn't. */}
             <ReelPanel>
               <div>
-                <h3 className="font-serif text-2xl text-[var(--brand-text)]">
+                <p className="font-hand text-xl leading-none text-[var(--brand-accent)] tall:text-2xl">
+                  {t("landing.howEyebrow")}
+                </p>
+                <h2 className="mt-1 font-serif text-xl text-[var(--brand-text)] tall:text-3xl sm:text-4xl">
+                  {t("landing.howHeading")}
+                </h2>
+                {/* Deliberately a step below the post's h2 rather than beside
+                    it in size: two headings of the same weight on one slide read
+                    as two competing titles. */}
+                <h3 className="mt-3.5 font-serif text-lg text-[var(--brand-text)] tall:mt-5 tall:text-xl">
                   {t("landing.inventoryTitle")}
                 </h3>
-                <p className="mt-3 text-[15px] leading-relaxed text-[var(--brand-muted-2)]">
+                <p className="mt-2 text-sm leading-relaxed text-[var(--brand-muted-2)] tall:text-[15px]">
                   {t("landing.inventoryBody")}
                 </p>
-                <div className="mt-4">
+                <div className="mt-3 tall:mt-4">
                   <OneInventoryDiagram />
                 </div>
               </div>
@@ -250,8 +281,90 @@ export default function Landing() {
           </ReelPanels>
         </ReelChapter>
 
-        {/* ── 4. Trust — a year with the old guard against a month here, the
-             pledge, and the ledger ── */}
+        {/* ── 5. What it costs — a year with the old guard against a month here,
+             and the pledge that stands behind it ── */}
+        <ReelChapter
+          id="costs"
+          label={t("landing.reel.whatItCosts")}
+          className="bg-[var(--brand-surface)]"
+        >
+          <ReelPanels layout="reel:grid-cols-[0.95fr_1.05fr] reel:items-center reel:gap-8">
+            <ReelPanel>
+              {/* Cost strip (Direction A) — the mahogany band, now a panel.
+                  It stays three-across on a phone rather than stacking: the
+                  stacked version is 700px tall (the rotated arrow alone claims
+                  a row the width of the card), and a *comparison* that puts
+                  the two numbers a swipe apart isn't one. */}
+              <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-2xl bg-[var(--brand-ink-deep)] px-4 py-7 text-center sm:gap-4 sm:p-6">
+                <div>
+                  <p className="text-[10px] uppercase tracking-[0.16em] text-white/45 sm:text-[11px] sm:tracking-[0.2em]">
+                    {st("costComparison.themLabel", COST_COMPARISON.themLabel)}
+                  </p>
+                  <p className="mt-1.5 whitespace-nowrap font-serif text-2xl font-semibold text-white/55 line-through decoration-[var(--brand-accent)]/60 lining-nums tabular-nums sm:mt-2 sm:text-4xl">
+                    CHF{" "}
+                    {COST_COMPARISON.themPerYearChf.toLocaleString(
+                      numberLocale,
+                    )}
+                  </p>
+                  <p className="mt-1.5 text-[11px] leading-snug text-white/40 sm:mt-2 sm:text-xs">
+                    {st("costComparison.themNote", COST_COMPARISON.themNote)}
+                  </p>
+                </div>
+                <div
+                  aria-hidden
+                  className="text-xl text-[var(--brand-accent)] sm:text-3xl"
+                >
+                  →
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-[0.16em] text-white/45 sm:text-[11px] sm:tracking-[0.2em]">
+                    {st("costComparison.usLabel", COST_COMPARISON.usLabel)}
+                  </p>
+                  <p className="mt-1.5 whitespace-nowrap font-serif text-3xl font-bold text-[var(--brand-accent-light)] lining-nums tabular-nums sm:mt-2 sm:text-5xl">
+                    {formatPrice(COST_COMPARISON.usPerMonthChf)}
+                  </p>
+                  <p className="mt-1.5 text-[11px] leading-snug text-white/40 sm:mt-2 sm:text-xs">
+                    {st("costComparison.usNote", COST_COMPARISON.usNote)}
+                  </p>
+                </div>
+              </div>
+            </ReelPanel>
+
+            {/* The pledge (Direction B) — the heart of the positioning, beside
+                the number it is a promise about. It keeps its reveal: it is not
+                the first thing in the post. The five itemised points render on
+                /pricing, above the plans — see
+                PRICING_PROMISE.restatedByPricingFeeSection. */}
+            <ReelPanel>
+              <ScrollReveal className="relative rounded-2xl border border-[var(--brand-border)] bg-white p-5 shadow-[0_20px_50px_-34px_rgba(45,38,32,0.4)] sm:p-8">
+                {/* The pledge's own label is this post's heading — an h2, not a
+                    decorative span: a post whose only words are numbers and a
+                    quotation has no heading at all, and a section landmark
+                    without one is a landmark nobody can navigate to. */}
+                <h2 className="absolute -top-3 left-5 bg-white px-2.5 font-hand text-xl text-[var(--brand-accent)] sm:left-8">
+                  {t("landing.pledgeEyebrow")}
+                </h2>
+                <p className="font-serif text-xl leading-snug text-[var(--brand-text)] lining-nums sm:text-2xl">
+                  &ldquo;
+                  {st("pricingPromise.pledge", PRICING_PROMISE.pledge)}&rdquo;
+                </p>
+                <Link
+                  href="/pricing"
+                  className="mt-4 inline-block text-sm text-[var(--brand-ink)] underline decoration-[var(--brand-accent)] underline-offset-4 transition-colors hover:text-[var(--brand-accent)]"
+                >
+                  {t("landing.seePricing")}
+                </Link>
+                <p className="mt-4 font-hand text-2xl text-[var(--brand-text)]">
+                  {t("landing.pledgeSignature")}
+                </p>
+              </ScrollReveal>
+            </ReelPanel>
+          </ReelPanels>
+        </ReelChapter>
+
+        {/* ── 6. Trust — made in Switzerland, and the ledger that shows which
+             parts aren't yet. Every row stays on the homepage rather than
+             behind the link. ── */}
         <ReelChapter
           id="trust"
           label={t("landing.reel.trust")}
@@ -260,87 +373,14 @@ export default function Landing() {
           {/* The ledger takes the wider column: its nine rows only lay out one
               line each once they have room for the piece and its state side by
               side. See SwissMadeLedger's `dense`. */}
-          <ReelPanels layout="reel:grid-cols-[0.72fr_1.28fr] reel:items-start reel:gap-6">
-            <div className="contents reel:grid reel:content-center reel:gap-6">
-              <ReelPanel>
-                {/* Cost strip (Direction A) — the mahogany band, now a panel.
-                    It stays three-across on a phone rather than stacking: the
-                    stacked version is 700px tall (the rotated arrow alone claims
-                    a row the width of the card), and a *comparison* that puts
-                    the two numbers a swipe apart isn't one. */}
-                <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-2xl bg-[var(--brand-ink-deep)] px-4 py-7 text-center sm:gap-4 sm:p-6">
-                  <div>
-                    <p className="text-[10px] uppercase tracking-[0.16em] text-white/45 sm:text-[11px] sm:tracking-[0.2em]">
-                      {st(
-                        "costComparison.themLabel",
-                        COST_COMPARISON.themLabel,
-                      )}
-                    </p>
-                    <p className="mt-1.5 whitespace-nowrap font-serif text-2xl font-semibold text-white/55 line-through decoration-[var(--brand-accent)]/60 lining-nums tabular-nums sm:mt-2 sm:text-4xl">
-                      CHF{" "}
-                      {COST_COMPARISON.themPerYearChf.toLocaleString(
-                        numberLocale,
-                      )}
-                    </p>
-                    <p className="mt-1.5 text-[11px] leading-snug text-white/40 sm:mt-2 sm:text-xs">
-                      {st("costComparison.themNote", COST_COMPARISON.themNote)}
-                    </p>
-                  </div>
-                  <div
-                    aria-hidden
-                    className="text-xl text-[var(--brand-accent)] sm:text-3xl"
-                  >
-                    →
-                  </div>
-                  <div>
-                    <p className="text-[10px] uppercase tracking-[0.16em] text-white/45 sm:text-[11px] sm:tracking-[0.2em]">
-                      {st("costComparison.usLabel", COST_COMPARISON.usLabel)}
-                    </p>
-                    <p className="mt-1.5 whitespace-nowrap font-serif text-3xl font-bold text-[var(--brand-accent-light)] lining-nums tabular-nums sm:mt-2 sm:text-5xl">
-                      {formatPrice(COST_COMPARISON.usPerMonthChf)}
-                    </p>
-                    <p className="mt-1.5 text-[11px] leading-snug text-white/40 sm:mt-2 sm:text-xs">
-                      {st("costComparison.usNote", COST_COMPARISON.usNote)}
-                    </p>
-                  </div>
-                </div>
-              </ReelPanel>
-
-              {/* The pledge (Direction B) — the heart of the positioning. It
-                  keeps its reveal: it is not the first thing in the chapter. The
-                  five itemised points render on /pricing, above the plans — see
-                  PRICING_PROMISE.restatedByPricingFeeSection. */}
-              <ReelPanel>
-                <ScrollReveal className="relative rounded-2xl border border-[var(--brand-border)] bg-white p-5 shadow-[0_20px_50px_-34px_rgba(45,38,32,0.4)] sm:p-8">
-                  <span className="absolute -top-3 left-5 bg-white px-2.5 font-hand text-xl text-[var(--brand-accent)] sm:left-8">
-                    {t("landing.pledgeEyebrow")}
-                  </span>
-                  <p className="font-serif text-xl leading-snug text-[var(--brand-text)] lining-nums sm:text-2xl">
-                    &ldquo;
-                    {st("pricingPromise.pledge", PRICING_PROMISE.pledge)}&rdquo;
-                  </p>
-                  <Link
-                    href="/pricing"
-                    className="mt-4 inline-block text-sm text-[var(--brand-ink)] underline decoration-[var(--brand-accent)] underline-offset-4 transition-colors hover:text-[var(--brand-accent)]"
-                  >
-                    {t("landing.seePricing")}
-                  </Link>
-                  <p className="mt-4 font-hand text-2xl text-[var(--brand-text)]">
-                    {t("landing.pledgeSignature")}
-                  </p>
-                </ScrollReveal>
-              </ReelPanel>
-            </div>
-
-            {/* Made in Switzerland — the ledger, every row, still on the
-                homepage rather than behind the link. Nine rows are a screen and
-                a quarter on a phone, so they read over two panels; in reel mode
-                the two sit back to back in the same column and look like the one
-                list they are. */}
+          <ReelPanels layout="reel:grid-cols-[0.72fr_1.28fr] reel:items-center reel:gap-6">
+            <ReelPanel>
+              <SwissMadeIntro dense />
+            </ReelPanel>
+            {/* Nine rows are a screen and a quarter on a phone, so they read
+                over two slides; in reel mode the two sit back to back in the
+                same column and look like the one list they are. */}
             <div className="contents reel:grid reel:content-center reel:gap-4">
-              <ReelPanel>
-                <SwissMadeIntro dense />
-              </ReelPanel>
               <ReelPanel>
                 <SwissMadeLedger dense to={5} />
               </ReelPanel>
@@ -352,51 +392,54 @@ export default function Landing() {
           </ReelPanels>
         </ReelChapter>
 
-        {/* ── 5. What's coming — a market day, and the thesis it is heading
-             towards. The proof band and the found→asked→bought mechanics moved
-             to /why-zolto; this chapter links them. ── */}
+        {/* ── 7. What's coming — the messy-stall claim and the thesis it leads
+             to, the chart under it, and a market day as it actually goes. The
+             proof band and the found→asked→bought mechanics moved to
+             /why-zolto; the chart slide links them. ── */}
         <ReelChapter
           id="whats-coming"
           label={t("landing.reel.whatsComing")}
           className="bg-white"
         >
-          <ReelPanels layout="reel:grid-cols-[1fr_0.85fr] reel:items-start reel:gap-8">
-            <div className="contents reel:grid reel:content-center reel:gap-8">
+          <ReelPanels layout="reel:grid-cols-[1.05fr_0.85fr_1.1fr] reel:items-center reel:gap-7">
+            <>
+              {/* The claim: the messy stall, then the thesis it is heading for.
+                  These were two screens and neither filled one. */}
               <ReelPanel>
-                <div className="max-w-2xl">
-                  <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
-                    {t("landing.messyEyebrow")}
-                  </p>
-                  <h2 className="mt-2 font-serif text-3xl text-[var(--brand-text)] sm:text-4xl">
-                    {t("landing.messyHeading")}
-                  </h2>
-                  <p className="mt-3 text-[var(--brand-muted-2)]">
-                    {t("landing.messyBody")}
-                  </p>
+                <div className="grid gap-4 tall:gap-5">
+                  <div className="max-w-2xl">
+                    <p className="font-hand text-xl leading-none text-[var(--brand-accent)] tall:text-2xl">
+                      {t("landing.messyEyebrow")}
+                    </p>
+                    <h2 className="mt-1 font-serif text-2xl text-[var(--brand-text)] tall:mt-2 tall:text-3xl sm:text-4xl">
+                      {t("landing.messyHeading")}
+                    </h2>
+                    <p className="mt-2 text-sm text-[var(--brand-muted-2)] tall:mt-3 tall:text-base">
+                      {t("landing.messyBody")}
+                    </p>
+                  </div>
+                  <AiNativeThesis dense />
+                </div>
+              </ReelPanel>
+              <ReelPanel>
+                <div className="grid gap-4">
+                  <DiscoveryShiftChart dense />
                   <Link
                     href="/why-zolto"
-                    className="mt-5 inline-block text-sm text-[var(--brand-ink)] underline decoration-[var(--brand-accent)] underline-offset-4 transition-colors hover:text-[var(--brand-accent)]"
+                    className="mx-auto text-sm text-[var(--brand-ink)] underline decoration-[var(--brand-accent)] underline-offset-4 transition-colors hover:text-[var(--brand-accent)] reel:mx-0"
                   >
                     {t("landing.reel.whyZoltoLink")}
                   </Link>
                 </div>
               </ReelPanel>
-              <ReelPanel>
-                <DayInTheLife />
-              </ReelPanel>
-            </div>
-            <div className="contents reel:grid reel:content-center reel:gap-5">
-              <ReelPanel>
-                <AiNativeThesis dense />
-              </ReelPanel>
-              <ReelPanel>
-                <DiscoveryShiftChart dense />
-              </ReelPanel>
-            </div>
+            </>
+            <ReelPanel>
+              <DayInTheLife />
+            </ReelPanel>
           </ReelPanels>
         </ReelChapter>
 
-        {/* ── 6. Start free — the closing CTA and the one thing on this page a
+        {/* ── 8. Start free — the closing CTA and the one thing on this page a
              visitor can go and check for themselves ── */}
         <ReelChapter
           id="start-free"
