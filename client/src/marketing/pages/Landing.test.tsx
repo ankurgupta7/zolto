@@ -110,6 +110,43 @@ describe("Landing — the reel", () => {
     expect(document.querySelectorAll("[data-reel-panel]").length).toBe(21);
   });
 
+  it("pages each post sideways, with a dot per slide and no nested scroller", () => {
+    renderLanding();
+    const slideLabel = (n: number, total: number) =>
+      en.landing.reel.slide
+        .replace("{{n}}", String(n))
+        .replace("{{total}}", String(total));
+
+    for (const [id, count] of Object.entries(CHAPTERS)) {
+      const post = chapter(id as keyof typeof CHAPTERS);
+      const dots = post.querySelector<HTMLElement>('[data-testid="reel-dots"]');
+      expect(dots, `${id} has no dots`).toBeTruthy();
+      const buttons = Array.from(dots!.querySelectorAll("button"));
+      expect(buttons.length, `${id} dot count`).toBe(count);
+      expect(buttons.map((b) => b.getAttribute("aria-label"))).toEqual(
+        buttons.map((_, i) => slideLabel(i + 1, count)),
+      );
+      // The pager belongs to the post, so it says which post it pages.
+      expect(dots!.getAttribute("aria-label")).toBe(
+        post.getAttribute("aria-label"),
+      );
+    }
+
+    // A horizontal scroller inside the horizontal track swallows the swipe and
+    // strands the reader mid-post — SqueezePlayTills and DiaryTeaser both used
+    // to do it. Nothing on this page may.
+    const tracks = Array.from(
+      document.querySelectorAll<HTMLElement>('[data-testid="reel-track"]'),
+    );
+    expect(tracks.length).toBe(CHAPTER_IDS.length);
+    for (const track of tracks) {
+      expect(
+        track.querySelectorAll('[class*="overflow-x-auto"]').length,
+        `${track.closest("section")?.id} nests a horizontal scroller`,
+      ).toBe(0);
+    }
+  });
+
   it("gives the rail one dot per chapter, labelled and current-tracked", () => {
     renderLanding();
     const rail = screen.getByRole("navigation", {
@@ -260,6 +297,21 @@ describe("Landing — chapter 4, trust", () => {
       trust.getByRole("link", { name: /moving next/i }).getAttribute("href"),
     ).toBe(SOVEREIGNTY.href);
   });
+
+  it("keeps the two costs beside each other at every width", () => {
+    // Stacked, the strip is 700px tall on a phone — the rotated arrow alone
+    // claims a row the width of the card — and it is a *comparison*: putting
+    // the two numbers a scroll apart is not one. jsdom has no viewport, so the
+    // check is that the three columns are unconditional.
+    renderLanding();
+    const strip = chapter("trust").querySelector<HTMLElement>(
+      "[class*='brand-ink-deep']",
+    );
+    expect(strip).toBeTruthy();
+    expect(strip!.className).toContain("grid-cols-[1fr_auto_1fr]");
+    expect(strip!.className).not.toContain("sm:grid-cols-");
+    expect(strip!.innerHTML).not.toContain("rotate-90");
+  });
 });
 
 describe("Landing — chapter 5, what's coming", () => {
@@ -327,6 +379,8 @@ describe("Landing — the copy that moved, and the copy that stayed", () => {
     for (const label of Object.values(en.landing.reel)) {
       if (label === en.landing.reel.railLabel) continue;
       if (label === en.landing.reel.whyZoltoLink) continue;
+      // The slide label names a dot under a post, not a chapter on the rail.
+      if (label === en.landing.reel.slide) continue;
       expect(
         within(rail).queryByRole("button", { name: label }),
         `rail dot "${label}"`,

@@ -209,6 +209,16 @@ html[data-reel="proximity"] {
 
 /* ─── Custom Utilities ───────────────────────────────────────────────────────── */
 
+/* A scroller whose scrollbar would be chrome rather than information — the
+   homepage reel's carousel posts, which say where you are with dots instead.
+   Everything reachable by swipe is also reachable by those dots and by tab. */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 .font-serif {
   font-family: var(--font-serif);
 }

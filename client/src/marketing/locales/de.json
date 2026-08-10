@@ -57,6 +57,7 @@
     "ctaButton": "Shop erstellen →",
     "reel": {
       "railLabel": "Kapitel",
+      "slide": "Bild {{n}} von {{total}}",
       "promise": "Versprechen",
       "squeeze": "Die Zange",
       "how": "So funktioniert es",

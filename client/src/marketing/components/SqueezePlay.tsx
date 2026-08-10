@@ -83,6 +83,13 @@ export function SqueezePlayArgument({ dense = false }: DenseProps = {}) {
  * horizontal swipe with its own x-snap: three stacked cards are a screen and a
  * half, and the argument is a *comparison* — it only works if you can put the
  * panels beside each other.
+ *
+ * Except in `dense`, where the reel panel this sits in *is already* a horizontal
+ * swipe — a second one nested inside it swallows the gesture and strands the
+ * reader mid-post. There the three tills become three compact rows instead: the
+ * drawing shrinks and moves beside its label, which keeps all three comparable
+ * in one glance without a second axis. From `sm` up both shapes are the same
+ * three-column grid.
  */
 export function SqueezePlayTills({ dense = false }: DenseProps = {}) {
   const { t, st } = useMarketingT();
@@ -91,9 +98,12 @@ export function SqueezePlayTills({ dense = false }: DenseProps = {}) {
   return (
     <div>
       <ul
-        className={`flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 sm:grid sm:snap-none sm:overflow-visible sm:pb-0 sm:grid-cols-3 ${
-          dense ? "sm:gap-3" : "sm:gap-8"
-        }`}
+        data-testid="squeeze-tills"
+        className={
+          dense
+            ? "grid gap-2 sm:grid-cols-3 sm:gap-3"
+            : "flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 sm:grid sm:snap-none sm:grid-cols-3 sm:gap-8 sm:overflow-visible sm:pb-0"
+        }
       >
         {sp.panels.map((panel, i) => {
           const isZolto = panel.has.length > 1;
@@ -101,8 +111,10 @@ export function SqueezePlayTills({ dense = false }: DenseProps = {}) {
             <li
               key={panel.id}
               data-testid={`squeeze-panel-${panel.id}`}
-              className={`min-w-[80%] shrink-0 snap-center rounded-2xl border sm:min-w-0 sm:shrink ${
-                dense ? "p-4" : "p-6"
+              className={`rounded-2xl border ${
+                dense
+                  ? "flex items-center gap-3 p-2 sm:block sm:p-4"
+                  : "min-w-[80%] shrink-0 snap-center p-6 sm:min-w-0 sm:shrink"
               } ${
                 isZolto
                   ? "border-[var(--brand-accent)] bg-white ring-1 ring-[var(--brand-accent)]"
@@ -112,38 +124,54 @@ export function SqueezePlayTills({ dense = false }: DenseProps = {}) {
               <SqueezePlayTill
                 has={panel.has}
                 title={st(`squeezePlay.panels.${i}.label`, panel.label)}
-                className={`mx-auto w-auto ${dense ? "h-24" : "h-40"} ${
+                className={`w-auto ${
+                  dense ? "h-14 flex-none sm:mx-auto sm:h-24" : "mx-auto h-40"
+                } ${
                   isZolto
                     ? "text-[var(--brand-ink)]"
                     : "text-[var(--brand-muted)]"
                 }`}
               />
-              <h3
-                className={`font-serif text-lg leading-snug text-[var(--brand-text)] ${
-                  dense ? "mt-3" : "mt-6"
-                }`}
-              >
-                {st(`squeezePlay.panels.${i}.label`, panel.label)}
-              </h3>
-              <p className="mt-2 text-sm leading-relaxed text-[var(--brand-muted-2)]">
-                {st(`squeezePlay.panels.${i}.detail`, panel.detail)}
-              </p>
-              {"sourceId" in panel && panel.sourceId && (
-                <p className="mt-3 text-xs text-[var(--brand-muted)]">
-                  <a
-                    href={source(panel.sourceId).url}
-                    target="_blank"
-                    rel="noreferrer nofollow"
-                    className="underline decoration-dotted underline-offset-2 hover:text-[var(--brand-accent)]"
-                  >
-                    {source(panel.sourceId).label}
-                  </a>{" "}
-                  ·{" "}
-                  {t("sources.read", {
-                    date: source(panel.sourceId).retrievedOn,
-                  })}
+              <div className={dense ? "min-w-0" : ""}>
+                <h3
+                  className={`font-serif leading-snug text-[var(--brand-text)] ${
+                    dense ? "text-base sm:mt-3 sm:text-lg" : "mt-6 text-lg"
+                  }`}
+                >
+                  {st(`squeezePlay.panels.${i}.label`, panel.label)}
+                </h3>
+                <p
+                  className={`text-[var(--brand-muted-2)] ${
+                    dense
+                      ? "mt-1 text-[13px] leading-snug sm:mt-2 sm:text-sm sm:leading-relaxed"
+                      : "mt-2 text-sm leading-relaxed"
+                  }`}
+                >
+                  {st(`squeezePlay.panels.${i}.detail`, panel.detail)}
                 </p>
-              )}
+                {"sourceId" in panel && panel.sourceId && (
+                  <p
+                    className={`text-[var(--brand-muted)] ${
+                      dense
+                        ? "mt-1 text-[11px] leading-snug sm:mt-3 sm:text-xs"
+                        : "mt-3 text-xs"
+                    }`}
+                  >
+                    <a
+                      href={source(panel.sourceId).url}
+                      target="_blank"
+                      rel="noreferrer nofollow"
+                      className="underline decoration-dotted underline-offset-2 hover:text-[var(--brand-accent)]"
+                    >
+                      {source(panel.sourceId).label}
+                    </a>{" "}
+                    ·{" "}
+                    {t("sources.read", {
+                      date: source(panel.sourceId).retrievedOn,
+                    })}
+                  </p>
+                )}
+              </div>
             </li>
           );
         })}
@@ -151,8 +179,8 @@ export function SqueezePlayTills({ dense = false }: DenseProps = {}) {
 
       <p
         data-testid="squeeze-claim"
-        className={`max-w-2xl font-serif text-xl leading-snug text-[var(--brand-text)] ${
-          dense ? "mt-4" : "mt-10"
+        className={`max-w-2xl font-serif leading-snug text-[var(--brand-text)] ${
+          dense ? "mt-2 text-lg sm:mt-4 sm:text-xl" : "mt-10 text-xl"
         }`}
       >
         {st("squeezePlay.claim", sp.claim)}

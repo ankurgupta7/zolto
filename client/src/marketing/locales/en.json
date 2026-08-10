@@ -57,6 +57,7 @@
     "ctaButton": "Create your store →",
     "reel": {
       "railLabel": "Chapters",
+      "slide": "Slide {{n}} of {{total}}",
       "promise": "Promise",
       "squeeze": "The squeeze",
       "how": "How it works",

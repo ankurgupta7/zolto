@@ -72,4 +72,27 @@ describe("DiaryTeaser", () => {
       DIARY_POSTS.length,
     );
   });
+
+  it("nests no swipe row inside the reel's own carousel", () => {
+    // In the reel the panel around this IS a horizontal snap track: a scroller
+    // inside a scroller eats the gesture. Dense stacks the posts as compact
+    // rows instead, and every reading time and link is still there.
+    const { hook } = memoryLocation({ path: "/", static: true });
+    const { container } = render(
+      <Router hook={hook}>
+        <DiaryTeaser dense />
+      </Router>,
+    );
+    expect(container.querySelectorAll('[class*="overflow-x"]').length).toBe(0);
+    expect(container.querySelectorAll('[class*="snap-"]').length).toBe(0);
+    for (const post of DIARY_POSTS) {
+      expect(screen.getByText(post.readingTime)).toBeTruthy();
+      expect(screen.getByText(post.dek)).toBeTruthy();
+      expect(
+        screen
+          .getByRole("link", { name: new RegExp(post.title, "i") })
+          .getAttribute("href"),
+      ).toBe(`/blog/${post.slug}`);
+    }
+  });
 });

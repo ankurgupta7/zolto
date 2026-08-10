@@ -105,4 +105,15 @@ describe("HowAnAiBuys", () => {
     );
     expect(screen.getByText(AI_NATIVE_PITCH.chart.caption)).toBeTruthy();
   });
+
+  it("caps the chart's width while it is a slide", () => {
+    // The svg is `w-full` over a 1.8 aspect, so an uncapped slide on a 1280px
+    // laptop — wide, but not tall enough for the desktop columns — draws a
+    // 684px-tall chart and the slide starts scrolling inside itself. The
+    // reel-mode column bounds it, so the cap lifts there.
+    const { container } = render(<DiscoveryShiftChart dense />);
+    const frame = container.firstElementChild!;
+    expect(frame.className).toContain("max-w-xl");
+    expect(frame.className).toContain("reel:max-w-none");
+  });
 });

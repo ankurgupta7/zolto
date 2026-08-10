@@ -115,22 +115,19 @@ await page.evaluate(async () => {
 });
 await page.waitForTimeout(1500);
 
-// SHOT_CHAPTER=3 / SHOT_PANEL=7 scroll the reel to a chapter or to one panel
+// SHOT_CHAPTER=3 / SHOT_PANEL=7 move the reel to a chapter or to one panel
 // before capturing — the only way to shoot anything but the first screen, since
 // each is a screen of its own. Pair either with SHOT_FULLPAGE=0: a full-page
 // shot of a 21-panel reel is a 12,000px image nobody can read.
+//
+// The reel has two axes below its layout breakpoint, so SHOT_PANEL takes both:
+// it scrolls the page down to the panel's chapter *and* its chapter's track
+// sideways to the panel. Scrolling only down lands on the first slide of the
+// post and quietly shoots the wrong panel.
 const reelTarget = process.env.SHOT_PANEL
-  ? {
-      kind: "panel",
-      attr: "data-reel-panel",
-      nth: Number(process.env.SHOT_PANEL),
-    }
+  ? { kind: "panel", nth: Number(process.env.SHOT_PANEL) }
   : process.env.SHOT_CHAPTER
-    ? {
-        kind: "chapter",
-        attr: "data-reel-chapter",
-        nth: Number(process.env.SHOT_CHAPTER),
-      }
+    ? { kind: "chapter", nth: Number(process.env.SHOT_CHAPTER) }
     : null;
 if (reelTarget) {
   if (!Number.isInteger(reelTarget.nth) || reelTarget.nth < 1) {
@@ -138,16 +135,29 @@ if (reelTarget) {
       `SHOT_${reelTarget.kind.toUpperCase()} must be a 1-based index — got "${reelTarget.nth}"`,
     );
   }
-  const label = await page.evaluate(({ attr, nth }) => {
+  const label = await page.evaluate(({ kind, nth }) => {
+    const attr = kind === "panel" ? "data-reel-panel" : "data-reel-chapter";
     const target = document.querySelectorAll(`[${attr}]`)[nth - 1];
     if (!target) return null;
     const nav =
       document.querySelector("header")?.getBoundingClientRect().height ?? 0;
+    const post = target.closest("[data-reel-chapter]") ?? target;
     window.scrollTo({
-      top: target.getBoundingClientRect().top + window.scrollY - nav,
+      top: post.getBoundingClientRect().top + window.scrollY - nav,
       behavior: "instant",
     });
-    return `${target.getAttribute(attr)} (${target.offsetHeight}px)`;
+    let sideways = "";
+    const track = target.closest("[data-testid='reel-track']");
+    if (kind === "panel" && track) {
+      const slides = Array.from(track.querySelectorAll("[data-reel-panel]"));
+      const index = slides.indexOf(target);
+      track.scrollLeft =
+        target.getBoundingClientRect().left -
+        track.getBoundingClientRect().left +
+        track.scrollLeft;
+      sideways = `, slide ${index + 1}/${slides.length}`;
+    }
+    return `${target.getAttribute(attr)}${sideways} (${target.offsetHeight}px)`;
   }, reelTarget);
   if (!label) throw new Error(`no reel ${reelTarget.kind} ${reelTarget.nth}`);
   console.log(`scrolled to ${reelTarget.kind} ${reelTarget.nth} — ${label}`);

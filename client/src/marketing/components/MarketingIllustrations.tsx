@@ -19,7 +19,7 @@ import { SketchArrow } from "@/components/SketchAccents";
  */
 export function OneInventoryDiagram() {
   return (
-    <div className="grid items-center gap-6 md:grid-cols-[1fr_auto_1fr]">
+    <div className="grid items-center gap-3 md:grid-cols-[1fr_auto_1fr] md:gap-6">
       {/* Channel: market stall / POS */}
       <ChannelCard
         icon={Smartphone}
@@ -30,11 +30,14 @@ export function OneInventoryDiagram() {
       />
 
       {/* Center: one inventory */}
-      <div className="relative flex flex-col items-center justify-center px-2 py-4">
+      {/* Below md the arrows are hidden and this is just the node stacked
+          between the two cards, so it carries no vertical padding there — the
+          diagram shares a phone screen with its heading in the homepage reel. */}
+      <div className="relative flex flex-col items-center justify-center px-2 md:py-4">
         {/* Arrows fan out to both channels; flipped horizontally on the left. */}
         <SketchArrow className="absolute left-[-3.5rem] top-1/2 hidden h-8 w-16 -translate-y-1/2 -scale-x-100 text-[var(--brand-accent)] md:block" />
         <SketchArrow className="absolute right-[-3.5rem] top-1/2 hidden h-8 w-16 -translate-y-1/2 text-[var(--brand-accent)] md:block" />
-        <div className="flex h-24 w-24 flex-col items-center justify-center rounded-full border-2 border-[var(--brand-ink)] bg-[var(--brand-surface-2)] text-center">
+        <div className="flex h-20 w-20 flex-col items-center justify-center rounded-full border-2 border-[var(--brand-ink)] bg-[var(--brand-surface-2)] text-center md:h-24 md:w-24">
           <span className="font-serif text-2xl leading-none text-[var(--brand-ink)] lining-nums tabular-nums">
             12
           </span>
@@ -72,7 +75,7 @@ function ChannelCard({
   stock: string;
 }) {
   return (
-    <div className="rounded-lg border border-[var(--brand-border)] bg-white p-5">
+    <div className="rounded-lg border border-[var(--brand-border)] bg-white p-4 md:p-5">
       <div className="flex items-center gap-3">
         <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-[var(--brand-surface)] text-[var(--brand-accent)]">
           <Icon size={18} strokeWidth={1.5} />
@@ -86,8 +89,10 @@ function ChannelCard({
           </p>
         </div>
       </div>
-      <p className="mt-3 text-sm text-[var(--brand-muted-2)]">{detail}</p>
-      <p className="mt-3 inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-medium tabular-nums text-emerald-700">
+      <p className="mt-2 text-sm text-[var(--brand-muted-2)] md:mt-3">
+        {detail}
+      </p>
+      <p className="mt-2 inline-flex md:mt-3 items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-medium tabular-nums text-emerald-700">
         {stock}
       </p>
     </div>
@@ -191,14 +196,17 @@ export function NecklaceSketch({
  */
 export function PhotoToListing() {
   return (
-    <div className="grid items-center gap-3 sm:grid-cols-[1fr_auto_1fr] sm:gap-6">
+    // Before and after sit beside each other at every width. Stacked, the pair
+    // is 550px on a 375px phone — most of a screen spent on one drawing — and a
+    // before/after only lands as a comparison anyway when you can see both.
+    <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:gap-6">
       {/* Before: a hand-framed snapshot */}
       <figure className="relative mx-auto w-full max-w-[11rem] sm:max-w-xs">
-        <div className="rounded-[0.4rem] border-2 border-dashed border-[var(--brand-accent)]/60 bg-[var(--brand-surface-2)] p-3">
+        <div className="rounded-[0.4rem] border-2 border-dashed border-[var(--brand-accent)]/60 bg-[var(--brand-surface-2)] p-2 sm:p-3">
           <div className="flex aspect-[4/3] items-center justify-center rounded-sm bg-[var(--brand-surface-3)]">
             <NecklaceSketch className="h-[78%] w-[82%] text-[var(--brand-muted)]" />
           </div>
-          <figcaption className="font-hand mt-2 text-center text-[var(--brand-accent)]">
+          <figcaption className="font-hand mt-2 text-center leading-tight text-[var(--brand-accent)]">
             just your phone photo
           </figcaption>
         </div>
@@ -207,25 +215,25 @@ export function PhotoToListing() {
       {/* Arrow with an AI marker */}
       <div className="flex flex-col items-center gap-1 text-[var(--brand-accent)]">
         <Sparkles size={16} />
-        <SketchArrow className="h-5 w-12 rotate-90 sm:h-6 sm:w-16 sm:rotate-0" />
+        <SketchArrow className="h-5 w-8 sm:h-6 sm:w-16" />
       </div>
 
       {/* After: a crisp generated listing */}
-      <div className="mx-auto w-full max-w-[15rem] rounded-lg border border-[var(--brand-border)] bg-white p-3 shadow-sm sm:max-w-xs sm:p-4">
+      <div className="mx-auto w-full max-w-[15rem] rounded-lg border border-[var(--brand-border)] bg-white p-2 shadow-sm sm:max-w-xs sm:p-4">
         <div className="flex aspect-[4/3] items-center justify-center rounded-sm bg-gradient-to-br from-[var(--brand-surface)] to-[var(--brand-surface-3)]">
           <NecklaceSketch
             crisp
             className="h-[78%] w-[82%] text-[var(--brand-accent)]"
           />
         </div>
-        <p className="mt-3 font-serif text-base leading-tight text-[var(--brand-text)]">
+        <p className="mt-2 font-serif text-sm leading-tight text-[var(--brand-text)] sm:mt-3 sm:text-base">
           Moonstone Pendant Necklace
         </p>
-        <p className="mt-1 text-xs leading-relaxed text-[var(--brand-muted-2)]">
+        <p className="mt-1 text-[11px] leading-snug text-[var(--brand-muted-2)] sm:text-xs sm:leading-relaxed">
           Sterling silver chain, 8&nbsp;mm rainbow moonstone drop. Handmade in
           Zürich.
         </p>
-        <p className="mt-2 font-serif text-lg text-[var(--brand-ink)] lining-nums tabular-nums">
+        <p className="mt-1.5 font-serif text-base text-[var(--brand-ink)] lining-nums tabular-nums sm:mt-2 sm:text-lg">
           CHF 180
         </p>
       </div>

@@ -57,6 +57,7 @@
     "ctaButton": "Crei il Suo negozio →",
     "reel": {
       "railLabel": "Capitoli",
+      "slide": "Riquadro {{n}} di {{total}}",
       "promise": "La promessa",
       "squeeze": "La stretta",
       "how": "Come funziona",

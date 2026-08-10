@@ -14,7 +14,6 @@ import {
 } from "../components/MarketingIllustrations";
 import { AiNativeThesis, DiscoveryShiftChart } from "../components/AgentPitch";
 import { HeroTill } from "../components/HeroTill";
-import { Container } from "../components/Container";
 import { DayInTheLife } from "../components/DayInTheLife";
 import { ScrollReveal } from "../components/ScrollReveal";
 import { DiaryTeaser } from "../components/DiaryTeaser";
@@ -25,29 +24,36 @@ import {
 } from "../components/SqueezePlay";
 import { SwissMadeIntro, SwissMadeLedger } from "../components/SwissMade";
 import { ExplainerVideo } from "../components/ExplainerVideo";
-import { ReelChapter, ReelPanel, ReelStage } from "../components/ReelStage";
+import {
+  ReelChapter,
+  ReelPanel,
+  ReelPanels,
+  ReelStage,
+} from "../components/ReelStage";
 import { useMarketingT } from "../lib/marketingI18n";
 
 /**
- * The Zolto homepage, as a reel.
+ * The Zolto homepage, as a reel of carousel posts.
  *
- * Six chapters, each made of **panels**. A panel is one screen: on a roomy
- * viewport a chapter's panels are its columns and the chapter is the screen; on
- * a phone they stack and each panel is a screen you swipe to. The mechanics —
- * and the measurements that forced that model — live in
- * components/ReelStage.tsx. The short version is that the first cut of this reel
- * snapped whole chapters, so it only worked at 1440x900 and above: a chapter is
- * ~2.8 screens tall on a phone and 1.03-1.6x the screen on a 1280x800 laptop or
- * an iPad.
+ * Six chapters. Each is one post — exactly one screen, so flicking down slides
+ * the one you're leaving up and fills the viewport with the next — and each post
+ * is made of panels you swipe *sideways* through, with dots under them, the way
+ * a multi-picture post works. Above a roomy breakpoint the sideways axis
+ * collapses and the panels become the chapter's columns: that is the desktop page
+ * this reel started as. components/ReelStage.tsx holds the mechanics.
  *
- * What each chapter carries, and the reel-mode grid that puts its panels back
- * into the desktop layout:
+ * Content that cannot fit a phone screen goes sideways rather than making a post
+ * taller. That is what the two axes buy: the vertical rhythm stays exactly one
+ * screen per flick on a 375px phone and on a 1920px desktop alike, and the first
+ * two cuts of this page could not manage that at any size but 1440x900.
+ *
+ * What each chapter carries, and the desktop grid its panels fall back into:
  *
  *   1 Promise        copy + CTA | explainer video
  *   2 The squeeze    the squeeze argument, three tills | the CHF 0 claim, its price
  *   3 How it works   title, then one inventory | photo→listing | the till
- *   4 Trust          cost strip + pledge | Swissness intro, the ledger
- *   5 What's coming  the market day | the AI-native thesis
+ *   4 Trust          cost strip, the pledge | Swissness intro, the ledger
+ *   5 What's coming  the market day | the AI-native thesis, its chart
  *   6 Start free     closing CTA, the launch diary
  *
  * No copy changed when this became a reel, and no colour left its token. Bands
@@ -60,6 +66,10 @@ import { useMarketingT } from "../lib/marketingI18n";
  * AgentProofBand, HowAnAiBuys and the end-of-day email mock live on /why-zolto,
  * and the old-guard comparison table moved to the /compare index. Chapter five
  * links the first; the nav links the second.
+ *
+ * The `contents reel:grid` wrappers are how one panel list serves both axes:
+ * `display: contents` makes a group's slides direct children of the horizontal
+ * track, and the same wrapper becomes a real grid column on a desktop.
  */
 
 /** The explainer cut and its drawn poster — see client/public/video/README.md. */
@@ -84,7 +94,7 @@ export default function Landing() {
           label={t("landing.reel.promise")}
           className="bg-[var(--brand-ink)]"
         >
-          <Container className="grid reel:grid-cols-2 reel:items-center reel:gap-10">
+          <ReelPanels layout="reel:grid-cols-2 reel:items-center reel:gap-10">
             <ReelPanel>
               <div>
                 <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
@@ -107,11 +117,11 @@ export default function Landing() {
                     </span>
                   </span>
                 </h1>
-                <p className="mt-6 max-w-md text-lg leading-relaxed text-white/70">
+                <p className="mt-4 max-w-md leading-relaxed text-white/70 sm:mt-6 sm:text-lg">
                   {st("makerPitch.body", MAKER_PITCH.body)}
                 </p>
 
-                <div className="mt-8 flex flex-wrap items-center gap-4">
+                <div className="mt-6 flex flex-wrap items-center gap-3 sm:mt-8 sm:gap-4">
                   <Link
                     href="/signup"
                     className="rounded-md bg-[var(--brand-accent)] px-7 py-3 text-xs font-medium uppercase tracking-[0.14em] text-[var(--brand-ink)] transition-colors hover:bg-[var(--brand-accent-light)]"
@@ -128,7 +138,7 @@ export default function Landing() {
 
                 {/* Where we're from, above the fold. Three facts, no sentence —
                     the trust chapter does the explaining. */}
-                <ul className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-2 text-[11px] uppercase tracking-[0.16em] text-white/50">
+                <ul className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2 text-[11px] uppercase tracking-[0.16em] text-white/50 sm:mt-8">
                   {SOVEREIGNTY.heroBadges.map((badge, i) => (
                     <li key={badge} className="flex items-center gap-2">
                       <span aria-hidden className="text-[var(--brand-accent)]">
@@ -149,7 +159,7 @@ export default function Landing() {
                 captionKey="landing.video.caption"
               />
             </ReelPanel>
-          </Container>
+          </ReelPanels>
         </ReelChapter>
 
         {/* ── 2. The squeeze — the in-person argument and the CHF 0 till that
@@ -164,8 +174,8 @@ export default function Landing() {
               rows are shared between columns, so a short panel beside a tall one
               inherits the tall one's row and the chapter grows by the difference
               — 456px of it, in this chapter's case. */}
-          <Container className="grid reel:grid-cols-[1.05fr_0.95fr] reel:items-center reel:gap-6">
-            <div className="grid reel:content-center reel:gap-6">
+          <ReelPanels layout="reel:grid-cols-[1.05fr_0.95fr] reel:items-center reel:gap-6">
+            <div className="contents reel:grid reel:content-center reel:gap-6">
               <ReelPanel>
                 <SqueezePlayArgument dense />
               </ReelPanel>
@@ -173,7 +183,7 @@ export default function Landing() {
                 <SqueezePlayTills dense />
               </ReelPanel>
             </div>
-            <div className="grid reel:content-center reel:gap-6">
+            <div className="contents reel:grid reel:content-center reel:gap-6">
               <ReelPanel>
                 <ZeroCostPosClaim dense />
               </ReelPanel>
@@ -181,13 +191,13 @@ export default function Landing() {
                 <ZeroCostPosPrice dense />
               </ReelPanel>
             </div>
-          </Container>
+          </ReelPanels>
         </ReelChapter>
 
         {/* ── 3. How it works — one inventory, photo→listing, and the till the
              hero used to show ── */}
         <ReelChapter id="product" label={t("landing.reel.how")}>
-          <Container className="grid reel:grid-cols-3 reel:gap-10">
+          <ReelPanels layout="reel:grid-cols-3 reel:gap-10">
             <ReelPanel className="reel:col-span-3">
               <div className="text-center">
                 <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
@@ -237,7 +247,7 @@ export default function Landing() {
                 <HeroTill />
               </div>
             </ReelPanel>
-          </Container>
+          </ReelPanels>
         </ReelChapter>
 
         {/* ── 4. Trust — a year with the old guard against a month here, the
@@ -250,42 +260,46 @@ export default function Landing() {
           {/* The ledger takes the wider column: its nine rows only lay out one
               line each once they have room for the piece and its state side by
               side. See SwissMadeLedger's `dense`. */}
-          <Container className="grid reel:grid-cols-[0.72fr_1.28fr] reel:items-start reel:gap-6">
-            <div className="grid reel:content-center reel:gap-6">
+          <ReelPanels layout="reel:grid-cols-[0.72fr_1.28fr] reel:items-start reel:gap-6">
+            <div className="contents reel:grid reel:content-center reel:gap-6">
               <ReelPanel>
-                {/* Cost strip (Direction A) — the mahogany band, now a panel. */}
-                <div className="grid items-center gap-4 rounded-2xl bg-[var(--brand-ink-deep)] p-6 text-center sm:grid-cols-[1fr_auto_1fr]">
+                {/* Cost strip (Direction A) — the mahogany band, now a panel.
+                    It stays three-across on a phone rather than stacking: the
+                    stacked version is 700px tall (the rotated arrow alone claims
+                    a row the width of the card), and a *comparison* that puts
+                    the two numbers a swipe apart isn't one. */}
+                <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-2xl bg-[var(--brand-ink-deep)] px-4 py-7 text-center sm:gap-4 sm:p-6">
                   <div>
-                    <p className="text-[11px] uppercase tracking-[0.2em] text-white/45">
+                    <p className="text-[10px] uppercase tracking-[0.16em] text-white/45 sm:text-[11px] sm:tracking-[0.2em]">
                       {st(
                         "costComparison.themLabel",
                         COST_COMPARISON.themLabel,
                       )}
                     </p>
-                    <p className="mt-2 font-serif text-4xl font-semibold text-white/55 line-through decoration-[var(--brand-accent)]/60 lining-nums tabular-nums">
+                    <p className="mt-1.5 whitespace-nowrap font-serif text-2xl font-semibold text-white/55 line-through decoration-[var(--brand-accent)]/60 lining-nums tabular-nums sm:mt-2 sm:text-4xl">
                       CHF{" "}
                       {COST_COMPARISON.themPerYearChf.toLocaleString(
                         numberLocale,
                       )}
                     </p>
-                    <p className="mt-2 text-xs text-white/40">
+                    <p className="mt-1.5 text-[11px] leading-snug text-white/40 sm:mt-2 sm:text-xs">
                       {st("costComparison.themNote", COST_COMPARISON.themNote)}
                     </p>
                   </div>
                   <div
                     aria-hidden
-                    className="text-3xl text-[var(--brand-accent)] max-sm:rotate-90"
+                    className="text-xl text-[var(--brand-accent)] sm:text-3xl"
                   >
                     →
                   </div>
                   <div>
-                    <p className="text-[11px] uppercase tracking-[0.2em] text-white/45">
+                    <p className="text-[10px] uppercase tracking-[0.16em] text-white/45 sm:text-[11px] sm:tracking-[0.2em]">
                       {st("costComparison.usLabel", COST_COMPARISON.usLabel)}
                     </p>
-                    <p className="mt-2 font-serif text-5xl font-bold text-[var(--brand-accent-light)] lining-nums tabular-nums">
+                    <p className="mt-1.5 whitespace-nowrap font-serif text-3xl font-bold text-[var(--brand-accent-light)] lining-nums tabular-nums sm:mt-2 sm:text-5xl">
                       {formatPrice(COST_COMPARISON.usPerMonthChf)}
                     </p>
-                    <p className="mt-2 text-xs text-white/40">
+                    <p className="mt-1.5 text-[11px] leading-snug text-white/40 sm:mt-2 sm:text-xs">
                       {st("costComparison.usNote", COST_COMPARISON.usNote)}
                     </p>
                   </div>
@@ -297,21 +311,21 @@ export default function Landing() {
                   five itemised points render on /pricing, above the plans — see
                   PRICING_PROMISE.restatedByPricingFeeSection. */}
               <ReelPanel>
-                <ScrollReveal className="relative rounded-2xl border border-[var(--brand-border)] bg-white p-8 shadow-[0_20px_50px_-34px_rgba(45,38,32,0.4)]">
-                  <span className="absolute -top-3 left-8 bg-white px-2.5 font-hand text-xl text-[var(--brand-accent)]">
+                <ScrollReveal className="relative rounded-2xl border border-[var(--brand-border)] bg-white p-5 shadow-[0_20px_50px_-34px_rgba(45,38,32,0.4)] sm:p-8">
+                  <span className="absolute -top-3 left-5 bg-white px-2.5 font-hand text-xl text-[var(--brand-accent)] sm:left-8">
                     {t("landing.pledgeEyebrow")}
                   </span>
-                  <p className="font-serif text-2xl leading-snug text-[var(--brand-text)] lining-nums">
+                  <p className="font-serif text-xl leading-snug text-[var(--brand-text)] lining-nums sm:text-2xl">
                     &ldquo;
                     {st("pricingPromise.pledge", PRICING_PROMISE.pledge)}&rdquo;
                   </p>
                   <Link
                     href="/pricing"
-                    className="mt-5 inline-block text-sm text-[var(--brand-ink)] underline decoration-[var(--brand-accent)] underline-offset-4 transition-colors hover:text-[var(--brand-accent)]"
+                    className="mt-4 inline-block text-sm text-[var(--brand-ink)] underline decoration-[var(--brand-accent)] underline-offset-4 transition-colors hover:text-[var(--brand-accent)]"
                   >
                     {t("landing.seePricing")}
                   </Link>
-                  <p className="mt-5 font-hand text-2xl text-[var(--brand-text)]">
+                  <p className="mt-4 font-hand text-2xl text-[var(--brand-text)]">
                     {t("landing.pledgeSignature")}
                   </p>
                 </ScrollReveal>
@@ -323,7 +337,7 @@ export default function Landing() {
                 a quarter on a phone, so they read over two panels; in reel mode
                 the two sit back to back in the same column and look like the one
                 list they are. */}
-            <div className="grid reel:content-center reel:gap-4">
+            <div className="contents reel:grid reel:content-center reel:gap-4">
               <ReelPanel>
                 <SwissMadeIntro dense />
               </ReelPanel>
@@ -335,7 +349,7 @@ export default function Landing() {
                 <SwissMadeLedger dense from={5} />
               </ReelPanel>
             </div>
-          </Container>
+          </ReelPanels>
         </ReelChapter>
 
         {/* ── 5. What's coming — a market day, and the thesis it is heading
@@ -346,8 +360,8 @@ export default function Landing() {
           label={t("landing.reel.whatsComing")}
           className="bg-white"
         >
-          <Container className="grid reel:grid-cols-[1fr_0.85fr] reel:items-start reel:gap-8">
-            <div className="grid reel:content-center reel:gap-8">
+          <ReelPanels layout="reel:grid-cols-[1fr_0.85fr] reel:items-start reel:gap-8">
+            <div className="contents reel:grid reel:content-center reel:gap-8">
               <ReelPanel>
                 <div className="max-w-2xl">
                   <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
@@ -371,7 +385,7 @@ export default function Landing() {
                 <DayInTheLife />
               </ReelPanel>
             </div>
-            <div className="grid reel:content-center reel:gap-5">
+            <div className="contents reel:grid reel:content-center reel:gap-5">
               <ReelPanel>
                 <AiNativeThesis dense />
               </ReelPanel>
@@ -379,7 +393,7 @@ export default function Landing() {
                 <DiscoveryShiftChart dense />
               </ReelPanel>
             </div>
-          </Container>
+          </ReelPanels>
         </ReelChapter>
 
         {/* ── 6. Start free — the closing CTA and the one thing on this page a
@@ -389,7 +403,7 @@ export default function Landing() {
           label={t("landing.reel.startFree")}
           className="border-t border-[var(--brand-border)] bg-[var(--brand-surface-2)]"
         >
-          <Container className="grid reel:gap-10">
+          <ReelPanels layout="reel:gap-10">
             <ReelPanel>
               <div className="rounded-2xl bg-[var(--brand-ink)] px-7 py-10 text-center">
                 <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
@@ -413,7 +427,7 @@ export default function Landing() {
             <ReelPanel>
               <DiaryTeaser dense />
             </ReelPanel>
-          </Container>
+          </ReelPanels>
         </ReelChapter>
       </ReelStage>
     </>

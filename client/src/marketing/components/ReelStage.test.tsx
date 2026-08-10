@@ -19,15 +19,22 @@ import {
 import {
   ReelChapter,
   ReelPanel,
+  ReelPanels,
   ReelStage,
   REEL_LAYOUT_QUERY,
 } from "./ReelStage";
 
 /**
- * The reel's contract. Panels — not chapters — are what snapping aligns to, the
- * scroller is the document, and the snap strength is measured rather than
- * assumed: a target taller than the screen downgrades the whole scroller to
- * proximity, because a mandatory target you can't reach the bottom of is a trap.
+ * The reel's contract — two axes, and neither of them may trap the reader.
+ *
+ * Down: a chapter is one post, exactly one screen, and `snap-always` makes one
+ * flick advance one post. Sideways: the panels of a post are a horizontal snap
+ * track with dots, and `overscroll-x-contain` keeps a swipe at either end from
+ * chaining into the browser's back gesture. Above REEL_LAYOUT_QUERY the sideways
+ * axis collapses, the panels become columns and the snap strength is measured
+ * rather than assumed: a chapter taller than the screen downgrades the whole
+ * scroller to proximity, because a mandatory target whose bottom can't be
+ * reached is a trap.
  */
 
 interface FakeEntry {
@@ -55,23 +62,61 @@ class MockIntersectionObserver {
   }
 }
 
-function liveObserver() {
-  const observer = MockIntersectionObserver.instances.at(-1);
-  if (!observer) throw new Error("no IntersectionObserver was created");
+/**
+ * There are two kinds of observer on the page now — one watching the posts for
+ * the rail, one per track watching that post's slides for its dots — and a
+ * re-render replaces them, so "the live one" is the last of its kind.
+ */
+function observerWithThreshold(threshold: number) {
+  const observer = MockIntersectionObserver.instances
+    .filter((o) => o.options.threshold === threshold)
+    .at(-1);
+  if (!observer) throw new Error(`no observer at threshold ${threshold}`);
   return observer;
 }
 
-/** Report panel visibility the way the browser would, by chapter id. */
-function report(entries: Array<[string, number]>) {
-  const observer = liveObserver();
+/** The stage's observer: which post the rail should light. */
+const chapterObserver = () => observerWithThreshold(0.55);
+/** A track's observer: which slide its dots should light. */
+function slideObserver(trackIndex = 0) {
+  const track = document.querySelectorAll('[data-testid="reel-track"]')[
+    trackIndex
+  ];
+  const observer = MockIntersectionObserver.instances
+    .filter((o) => o.options.root === track)
+    .at(-1);
+  if (!observer) throw new Error(`no observer for track ${trackIndex}`);
+  return observer;
+}
+
+/** Report post visibility the way the browser would, by chapter id. */
+function reportChapters(entries: Array<[string, number]>) {
+  const observer = chapterObserver();
   act(() => {
     observer.callback(
       entries.map(([chapterId, ratio]) => ({
-        target: document.querySelector(`[data-reel-panel="${chapterId}"]`)!,
+        target: document.querySelector(`[data-reel-chapter="${chapterId}"]`)!,
         isIntersecting: ratio > 0,
         intersectionRatio: ratio,
       })),
     );
+  });
+}
+
+/** Report which slide of a track is showing, by its index in that track. */
+function reportSlide(trackIndex: number, slideIndex: number) {
+  const observer = slideObserver(trackIndex);
+  const track = document.querySelectorAll('[data-testid="reel-track"]')[
+    trackIndex
+  ];
+  act(() => {
+    observer.callback([
+      {
+        target: track.querySelectorAll("[data-reel-panel]")[slideIndex],
+        isIntersecting: true,
+        intersectionRatio: 1,
+      },
+    ]);
   });
 }
 
@@ -88,7 +133,7 @@ function mockMatchMedia({ wide = true, reduce = false } = {}) {
   })) as unknown as typeof window.matchMedia;
 }
 
-/** Pin the viewport and the height of every snap target of a kind. */
+/** Pin the height of every snap target of a kind. */
 function setHeights(selector: string, height: number) {
   for (const el of Array.from(
     document.querySelectorAll<HTMLElement>(selector),
@@ -120,22 +165,28 @@ function renderReel() {
   return render(
     <ReelStage label="Chapters">
       <ReelChapter id="promise" label="Promise">
-        <ReelPanel>
-          <h2>A whole shop in your pocket</h2>
-        </ReelPanel>
-        <ReelPanel>
-          <p>the explainer</p>
-        </ReelPanel>
+        <ReelPanels layout="reel:grid-cols-2">
+          <ReelPanel>
+            <h2>A whole shop in your pocket</h2>
+          </ReelPanel>
+          <ReelPanel>
+            <p>the explainer</p>
+          </ReelPanel>
+        </ReelPanels>
       </ReelChapter>
       <ReelChapter id="squeeze" label="The squeeze">
-        <ReelPanel>
-          <h2>Your catalogue and TWINT</h2>
-        </ReelPanel>
+        <ReelPanels>
+          <ReelPanel>
+            <h2>Your catalogue and TWINT</h2>
+          </ReelPanel>
+        </ReelPanels>
       </ReelChapter>
       <ReelChapter id="trust" label="Trust">
-        <ReelPanel>
-          <h2>Made in Switzerland</h2>
-        </ReelPanel>
+        <ReelPanels>
+          <ReelPanel>
+            <h2>Made in Switzerland</h2>
+          </ReelPanel>
+        </ReelPanels>
       </ReelChapter>
     </ReelStage>,
   );
@@ -145,7 +196,7 @@ describe("ReelStage — structure", () => {
   it("renders every panel's content, in order, inside named chapter sections", () => {
     renderReel();
     // Nothing is lazy-mounted or hidden behind an interaction: a crawler that
-    // never scrolls still sees the last chapter.
+    // never scrolls, and never swipes sideways, still sees the last slide.
     expect(screen.getByText("A whole shop in your pocket")).toBeTruthy();
     expect(screen.getByText("the explainer")).toBeTruthy();
     expect(screen.getByText("Made in Switzerland")).toBeTruthy();
@@ -167,30 +218,64 @@ describe("ReelStage — structure", () => {
     expect(sections.map((s) => s.id)).toEqual(["promise", "squeeze", "trust"]);
   });
 
-  it("makes each panel a snap target sized in svh, and each chapter one only when wide", () => {
+  it("makes each chapter one full-viewport post, and one flick one post", () => {
     renderReel();
-    const panels = Array.from(document.querySelectorAll("[data-reel-panel]"));
-    expect(panels.length).toBe(4);
-    for (const panel of panels) {
-      expect(panel.className).toContain("snap-start");
-      // svh, not dvh: dvh changes as a mobile address bar collapses, which
-      // would resize the panel mid-swipe.
-      expect(panel.className).toContain(
-        "min-h-[calc(100svh_-_var(--nav-height))]",
-      );
-      // …and steps aside once the chapter itself is the screen.
-      expect(panel.className).toContain("reel:snap-align-none");
-      expect(panel.className).toContain("reel:min-h-0");
-    }
     for (const section of Array.from(document.querySelectorAll("section"))) {
-      expect(section.className).toContain("reel:snap-start");
+      expect(section.className).toContain("snap-start");
+      // `snap-always` is the whole difference between a snappy reel and a long
+      // page that happens to snap: without it a flick sails past three posts.
+      expect(section.className).toContain("snap-always");
+      // dvh, not svh: filling the screen is the point — the post you leave
+      // slides up and this one takes the viewport.
       expect(section.className).toContain(
-        "reel:min-h-[calc(100svh_-_var(--nav-height))]",
+        "h-[calc(100dvh_-_var(--nav-height))]",
       );
-      // `grid`, never `flex`: index.css's unlayered `.flex { min-height: 0 }`
-      // beats every utility and silently collapsed the first version of this.
+      // `grid`, never `flex`: index.css carries an unlayered
+      // `.flex { min-height: 0 }` fix that beats every utility in
+      // @layer utilities, so a flex chapter loses its height and the reel
+      // silently becomes the long page it replaced.
       expect(section.className).toContain("grid");
       expect(section.className).not.toMatch(/(^|\s)flex(\s|$)/);
+      // …and gives the columns back their own height once it is a desktop grid.
+      expect(section.className).toContain("reel:h-auto");
+    }
+  });
+
+  it("makes the panels of a post a horizontal snap track that can't back-navigate", () => {
+    renderReel();
+    const tracks = screen.getAllByTestId("reel-track");
+    expect(tracks.length).toBe(3);
+    for (const track of tracks) {
+      expect(track.className).toContain("snap-x");
+      expect(track.className).toContain("snap-mandatory");
+      expect(track.className).toContain("overflow-x-auto");
+      // Without this a sideways swipe at the first or last slide chains to the
+      // browser's back gesture, so paging a post navigates away from the page.
+      expect(track.className).toContain("overscroll-x-contain");
+      // Above the breakpoint the sideways axis is gone entirely.
+      expect(track.className).toContain("reel:grid");
+      expect(track.className).toContain("reel:snap-none");
+      // `w-full` against Container's `mx-auto`: a grid item with auto margins
+      // does not stretch to its column, so without this the track sized itself
+      // to its content — a 692px scroller inside a 393px post, two thirds of it
+      // clipped by the chapter's overflow-hidden, with every test still green.
+      expect(track.className).toContain("w-full");
+      expect(track.className).toContain("reel:w-auto");
+    }
+    expect(tracks[0].className).toContain("reel:grid-cols-2");
+
+    for (const panel of Array.from(
+      document.querySelectorAll("[data-reel-panel]"),
+    )) {
+      // One slide is one screen wide and one post tall.
+      expect(panel.className).toContain("w-full");
+      expect(panel.className).toContain("h-full");
+      expect(panel.className).toContain("shrink-0");
+      expect(panel.className).toContain("snap-start");
+      expect(panel.className).toContain("snap-always");
+      // …and steps out of the snapping once it is a column.
+      expect(panel.className).toContain("reel:snap-align-none");
+      expect(panel.className).toContain("reel:h-auto");
     }
   });
 
@@ -206,10 +291,64 @@ describe("ReelStage — structure", () => {
   });
 });
 
+describe("ReelStage — the dots under a post", () => {
+  it("gives a multi-slide post one dot per slide, and a single-slide post none", () => {
+    renderReel();
+    const dots = screen.getAllByTestId("reel-dots");
+    // Only "promise" has more than one slide; a lone dot says nothing.
+    expect(dots.length).toBe(1);
+    const buttons = Array.from(dots[0].querySelectorAll("button"));
+    expect(buttons.map((b) => b.getAttribute("aria-label"))).toEqual([
+      "Slide 1 of 2",
+      "Slide 2 of 2",
+    ]);
+    // The dots belong to the post, so they name it.
+    expect(dots[0].getAttribute("aria-label")).toBe("Promise");
+    // They are the phone affordance; the columns need no pager.
+    expect(dots[0].className).toContain("reel:hidden");
+  });
+
+  it("tracks the slide you are on, at a 0.6 threshold inside the track", () => {
+    renderReel();
+    const track = screen.getAllByTestId("reel-track")[0];
+    expect(slideObserver(0).options.threshold).toBe(0.6);
+    // Rooted in the track: "most of this slide is showing" is a question about
+    // the track's box, not the viewport's.
+    expect(slideObserver(0).options.root).toBe(track);
+
+    const dot = (n: number) =>
+      screen.getByRole("button", { name: `Slide ${n} of 2` });
+    reportSlide(0, 1);
+    expect(dot(2).getAttribute("aria-current")).toBe("true");
+    expect(dot(1).getAttribute("aria-current")).toBeNull();
+
+    reportSlide(0, 0);
+    expect(dot(1).getAttribute("aria-current")).toBe("true");
+    expect(dot(2).getAttribute("aria-current")).toBeNull();
+  });
+
+  it("scrolls its own track — not the page — when a dot is clicked", () => {
+    renderReel();
+    const track = screen.getAllByTestId("reel-track")[0];
+    const scrollTo = vi.fn();
+    track.scrollTo = scrollTo as unknown as typeof track.scrollTo;
+    const windowScroll = vi.fn();
+    window.scrollTo = windowScroll as unknown as typeof window.scrollTo;
+
+    fireEvent.click(screen.getByRole("button", { name: "Slide 2 of 2" }));
+
+    expect(scrollTo).toHaveBeenCalledTimes(1);
+    expect(windowScroll).not.toHaveBeenCalled();
+    const [arg] = (scrollTo as unknown as Mock).mock.calls[0];
+    expect(arg.behavior).toBe("smooth");
+    expect(typeof arg.left).toBe("number");
+  });
+});
+
 describe("ReelStage — the rail", () => {
   it("derives one dot per chapter from the chapters that rendered", () => {
     renderReel();
-    const rail = screen.getByRole("navigation", { name: "Chapters" });
+    const rail = screen.getByTestId("reel-rail");
     const dots = Array.from(rail.querySelectorAll("button"));
     expect(dots.length).toBe(3);
     expect(dots.map((d) => d.getAttribute("aria-label"))).toEqual([
@@ -232,13 +371,13 @@ describe("ReelStage — the rail", () => {
     expect(typeof arg.top).toBe("number");
   });
 
-  it("tracks the active chapter from its panels, at a 0.55 threshold", () => {
+  it("tracks the active chapter from the posts themselves, at a 0.55 threshold", () => {
     renderReel();
-    expect(liveObserver().options.threshold).toBe(0.55);
+    expect(chapterObserver().options.threshold).toBe(0.55);
     // The viewport is the observation root now that the document scrolls.
-    expect(liveObserver().options.root).toBeUndefined();
+    expect(chapterObserver().options.root).toBeUndefined();
 
-    report([
+    reportChapters([
       ["promise", 1],
       ["trust", 0],
     ]);
@@ -246,7 +385,7 @@ describe("ReelStage — the rail", () => {
     expect(dot("Promise").getAttribute("aria-current")).toBe("true");
     expect(dot("Trust").getAttribute("aria-current")).toBeNull();
 
-    report([
+    reportChapters([
       ["promise", 0],
       ["trust", 0.9],
     ]);
@@ -275,37 +414,36 @@ describe("ReelStage — snap strength", () => {
     });
   }
 
-  it("snaps hard when every target fits the screen", () => {
+  it("snaps hard when every post fits the screen", () => {
     renderReel();
     setHeights("section", 800);
-    setHeights("[data-reel-panel]", 800);
     remeasure();
     expect(document.documentElement.dataset.reel).toBe("mandatory");
     expect(screen.getByTestId("reel-stage").dataset.reelSnap).toBe("mandatory");
   });
 
-  it("falls back to proximity when a target is taller than the screen", () => {
+  it("falls back to proximity when a post is taller than the screen", () => {
     // Mandatory snapping on a target that doesn't fit means its bottom can
     // never be read — the scroller keeps pulling back to the top. Proximity
     // still catches at the top of each one.
     renderReel();
     setHeights("section", 1400);
-    setHeights("[data-reel-panel]", 1400);
     remeasure();
     expect(document.documentElement.dataset.reel).toBe("proximity");
   });
 
-  it("measures panels below the layout breakpoint and chapters above it", () => {
-    // The two are different heights: a chapter that fits as three columns does
-    // not fit as three stacked panels, which is exactly the case that made the
-    // first version of this reel stop snapping on phones and small laptops.
+  it("snaps hard below the breakpoint whatever the chapters measure", () => {
+    // In carousel mode a post is one viewport by construction — the CSS says so
+    // — so there is nothing to measure and nothing that can trap the reader.
+    // This is the case that made the first two cuts of this reel stop snapping
+    // on phones and small laptops.
     mockMatchMedia({ wide: false });
     renderReel();
-    setHeights("section", 2400); // tall, but not a snap target at this size
-    setHeights("[data-reel-panel]", 700);
+    setHeights("section", 2400);
     remeasure();
     expect(document.documentElement.dataset.reel).toBe("mandatory");
 
+    // Above it the same chapters are measured, and these don't fit.
     mockMatchMedia({ wide: true });
     remeasure();
     expect(document.documentElement.dataset.reel).toBe("proximity");
@@ -315,7 +453,6 @@ describe("ReelStage — snap strength", () => {
     mockMatchMedia({ wide: true, reduce: true });
     renderReel();
     setHeights("section", 800);
-    setHeights("[data-reel-panel]", 800);
     remeasure();
     expect(document.documentElement.dataset.reel).toBeUndefined();
   });
@@ -325,7 +462,6 @@ describe("ReelStage — snap strength", () => {
     // whole site snap.
     const { unmount } = renderReel();
     setHeights("section", 800);
-    setHeights("[data-reel-panel]", 800);
     remeasure();
     expect(document.documentElement.dataset.reel).toBe("mandatory");
     unmount();

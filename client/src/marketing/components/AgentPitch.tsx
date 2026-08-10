@@ -39,8 +39,10 @@ export function DiscoveryShiftChart({
       className={
         dense
           ? // A panel of its own on a phone, so it carries the mahogany the
-            // translucent card would otherwise borrow from a dark band.
-            "rounded-2xl bg-[var(--brand-ink)] p-5"
+            // translucent card would otherwise borrow from a dark band. Capped
+            // like the thesis beside it: the svg is `w-full` over a 1.8 aspect,
+            // so an uncapped panel on a 1280px laptop draws a 684px-tall chart.
+            "mx-auto w-full max-w-xl rounded-2xl bg-[var(--brand-ink)] p-5 reel:max-w-none"
           : "rounded-2xl border border-white/15 bg-white/[0.04] p-7"
       }
     >
@@ -216,7 +218,7 @@ export function AiNativeThesis({ dense = false }: { dense?: boolean } = {}) {
         // Capped in panels mode: a full-width panel on a 1280px laptop gives the
         // heading a 1200px measure, which is not a column anyone reads. The
         // reel-mode column already bounds it.
-        className="mx-auto w-full max-w-xl rounded-2xl bg-[var(--brand-ink)] p-6 reel:max-w-none reel:p-7"
+        className="mx-auto w-full max-w-xl rounded-2xl bg-[var(--brand-ink)] p-5 sm:p-6 reel:max-w-none reel:p-7"
       >
         {copy}
       </div>

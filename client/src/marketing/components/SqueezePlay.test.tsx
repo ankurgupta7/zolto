@@ -176,18 +176,37 @@ describe("SqueezePlayTill", () => {
     expect(screen.getByTestId("squeeze-claim").textContent).toContain(sp.claim);
   });
 
-  it("makes the three tills a swipe row on a phone and a grid from sm up", () => {
+  it("makes the three tills a swipe row on a phone, outside the reel", () => {
     // Three stacked till cards are a screen and a half on a phone, and the
     // argument is a comparison — it only lands if the panels sit beside each
     // other. jsdom has no viewport, so the check is the class contract.
-    render(<SqueezePlayTills dense />);
-    const row = screen.getAllByTestId(/^squeeze-panel-/)[0].parentElement;
-    expect(row?.className).toContain("snap-x");
-    expect(row?.className).toContain("overflow-x-auto");
-    expect(row?.className).toContain("sm:grid-cols-3");
-    expect(row?.className).toContain("sm:snap-none");
+    render(<SqueezePlayTills />);
+    const row = screen.getByTestId("squeeze-tills");
+    expect(row.className).toContain("snap-x");
+    expect(row.className).toContain("overflow-x-auto");
+    expect(row.className).toContain("sm:grid-cols-3");
+    expect(row.className).toContain("sm:snap-none");
     for (const panel of screen.getAllByTestId(/^squeeze-panel-/)) {
       expect(panel.className).toContain("snap-center");
+    }
+  });
+
+  it("never nests a second swipe row inside the reel's own carousel", () => {
+    // In the reel the panel around this IS a horizontal snap track. A scroller
+    // inside a scroller swallows the gesture and strands the reader mid-post, so
+    // dense makes the three tills three compact rows — comparable at a glance,
+    // one axis.
+    render(<SqueezePlayTills dense />);
+    const row = screen.getByTestId("squeeze-tills");
+    expect(row.className).not.toContain("snap-x");
+    expect(row.className).not.toContain("overflow-x");
+    expect(row.className).toContain("grid");
+    expect(row.className).toContain("sm:grid-cols-3");
+    for (const panel of screen.getAllByTestId(/^squeeze-panel-/)) {
+      expect(panel.className).not.toContain("snap-center");
+      // A row on a phone (drawing beside its label), a card from sm up.
+      expect(panel.className).toContain("flex");
+      expect(panel.className).toContain("sm:block");
     }
   });
 });

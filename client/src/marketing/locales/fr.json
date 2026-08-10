@@ -57,6 +57,7 @@
     "ctaButton": "Créer votre boutique →",
     "reel": {
       "railLabel": "Chapitres",
+      "slide": "Vue {{n}} sur {{total}}",
       "promise": "La promesse",
       "squeeze": "L'étau",
       "how": "Comment ça marche",
