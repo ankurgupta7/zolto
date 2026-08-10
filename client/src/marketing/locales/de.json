@@ -475,7 +475,8 @@
         "Online- und KI-Agenten-Bestellungen kosten im Gratis-Plan 1% Gebühr. Keine Online-Verkäufe diesen Monat? Sie zahlen CHF 0. Das war's.",
         "Pro (CHF 25/Monat) schafft die 1% komplett ab und schaltet unlimitierte KI frei. Verkaufen Sie online über rund CHF 2'500/Monat? Dann ist Pro günstiger — wir sagen es Ihnen in der App, sobald sich der Wechsel lohnt.",
         "Wir werden Ihre KI-Nutzung nie kleinlich abrechnen. Reden Sie mit ihr, so viel Sie wollen — Pläne skalieren über Produkte, Fotos und Speicher, nicht darüber, wie gesprächig Sie sind.",
-        "Was wir verlangen, ist nicht das, was ein Verkauf kostet. Ihr Zahlungsanbieter nimmt seinen eigenen Anteil, und dieses Geld geht an ihn, nicht an uns — und beim reinen Kartensatz sind wir nicht der günstigste Weg, in der Schweiz bezahlt zu werden. Wir zeigen Ihnen lieber den ganzen Stapel und lassen Sie rechnen."
+        "Was wir verlangen, ist nicht das, was ein Verkauf kostet. Ihr Zahlungsanbieter nimmt seinen eigenen Anteil, und dieses Geld geht an ihn, nicht an uns — und beim reinen Kartensatz sind wir nicht der günstigste Weg, in der Schweiz bezahlt zu werden. Wir zeigen Ihnen lieber den ganzen Stapel und lassen Sie rechnen.",
+        "Eine Sache kostet extra, einmalig: CHF 20, um deinen ganzen bestehenden Shop — Produkte, Lagerbestand, Fotos, Kategorien, deine Geschichte — in etwa einer Minute von deiner alten Seite zu Zolto zu holen. Damit bezahlst du echte Rechenzeit für das Auslesen deiner Seite, keine Miete für eine Zeile in einer Datenbank. Die Etablierten verlangen monatlich dafür, dass sie aufbewahren, was ohnehin dir gehört; wir verlangen einmal für die Arbeit des Umzugs — und danach nie wieder."
       ]
     },
     "costComparison": {
@@ -871,7 +872,12 @@
       "tables": {
         "weekly": {
           "caption": "Online-Bestellungen, Bestellwert und Traffic nach Woche",
-          "head": ["Woche", "Online-Bestellungen", "Ø Bestellwert", "Besucher"],
+          "head": [
+            "Woche",
+            "Online-Bestellungen",
+            "Ø Bestellwert",
+            "Besucher"
+          ],
           "rowLabels": [
             "Woche 1 (Launch)",
             "Woche 2",
@@ -882,7 +888,11 @@
         },
         "sources": {
           "caption": "Woher die Online-Bestellungen kamen",
-          "head": ["Quelle", "Bestellungen", "% der Online-Verkäufe"],
+          "head": [
+            "Quelle",
+            "Bestellungen",
+            "% der Online-Verkäufe"
+          ],
           "rowLabels": [
             "Instagram (organisch)",
             "Direkt / wiederkehrend",
