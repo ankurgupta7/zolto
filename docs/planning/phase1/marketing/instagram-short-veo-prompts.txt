@@ -1,0 +1,335 @@
+================================================================================
+ZOLTO — INSTAGRAM SHORT · PASTE-READY VIDEO GENERATION PROMPTS
+FIVE SETUPS · 9:16 · ~48 seconds. Written for Veo-3-class models.
+Placeholders are already expanded — paste each block whole, nothing to fill in.
+
+Companion notes and the reasoning behind the constraints:
+  docs/planning/phase1/marketing/instagram-short-ai-prompts.md
+Read §1 (why the screens are cut in, not generated) and §7a/§7b (what she may
+not say) before publishing.
+================================================================================
+
+
+--------------------------------------------------------------------------------
+WHY FIVE AND NOT SEVEN — the arithmetic, so you can check it
+--------------------------------------------------------------------------------
+
+The original seven-beat script ran ~60 seconds of speech inside a 45-second cut.
+Every beat but the last was over its slot, which is also why the beats couldn't
+be merged: beats 1 and 2 alone were ~16 seconds of talking, and no 8-second
+generation holds that. The lines below are trimmed to ~48 seconds, which is what
+makes five setups possible.
+
+  SETUP        BEATS   TOTAL   FOOTAGE OF HER   SCREEN RECORDING
+  A            1 + 2    14s    14s (8s + one extend)      —
+  B            3         7s     3s                        S1  4s
+  C            4         9s     4s                        S2  5s
+  D            5         8s     4s                        S3  4s
+  E            6 + 7    11s     8s                        —  (end card, 3s)
+                       ----   ----
+                        49s    33s of generated footage
+
+Beat 7 gets no generation of its own — it is voiced over the held final frame of
+setup E, under the end card. That merge is free.
+
+Setup A is one location and one continuous action, so use the tool's EXTEND /
+continuation feature for its second half rather than generating a fresh clip.
+Continuity is then handled for you instead of by hand.
+
+
+--------------------------------------------------------------------------------
+BEFORE YOU START — three things that decide whether this works
+--------------------------------------------------------------------------------
+
+1. DO NOT ask the model for the product UI. Every prompt below deliberately
+   keeps the phone screen angled away from the lens. The real interface is cut
+   in afterwards as a full-frame screen recording (S1/S2/S3, at the bottom).
+
+2. THE SAME WOMAN MUST APPEAR IN ALL FIVE. The character wording is repeated
+   verbatim in each prompt — do not paraphrase it between setups. Use the last
+   frame of each setup as the reference image for the next.
+
+3. GENERATE 4–6 VARIANTS PER SETUP and expect to keep one. Setup E is the one to
+   generate most and judge hardest — see the note under it.
+
+Do not put the spoken lines in the prompts. Record or synthesise ONE continuous
+voice track over the finished cut — separately generated voices drift, and the
+joins are what make a video read as AI.
+
+
+--------------------------------------------------------------------------------
+NEGATIVE PROMPT — use on all five setups
+--------------------------------------------------------------------------------
+
+on-screen text, subtitles, captions, watermarks, logos, user interface elements,
+readable screen content, distorted hands, extra fingers, warped faces, plastic
+skin, oversaturated colours, slow motion, drone shot, cinematic colour grade,
+studio lighting, stock-footage look, crowds staring at camera
+
+
+================================================================================
+SETUP A · 0–14s · THE HOOK AND THE OTHER HALF OF THE JOB   (beats 1 + 2)
+Generate 8s, then EXTEND to ~14s. One continuous walk.
+================================================================================
+
+A 32-year-old Swiss woman, warm and relaxed, shoulder-length dark blonde hair
+loosely tied back with strands escaping in the wind, light freckles across the
+nose, minimal natural makeup. She wears an unbuttoned cream linen overshirt over
+a plain white t-shirt, straight-leg indigo jeans, small gold hoop earrings, and
+a tan canvas crossbody bag. Natural skin texture with visible pores and fine
+lines. Ordinary, believable, not a model.
+
+She walks slowly toward the camera along the wide stone promenade at
+Bürkliplatz in Zürich, talking directly to the lens with an easy, unforced
+expression. She begins with one hand gesturing lightly, then starts counting
+items off on the fingers of her right hand, one at a time, ending with a small
+wry shrug. Behind her, Lake Zürich stretches out with small moored boats, a
+passenger ferry in the middle distance, and the faint silhouette of the Alps on
+the horizon; plane trees line the path on her right. A few pedestrians and a
+cyclist pass naturally in the background, none of them looking at the camera.
+The camera walks backwards ahead of her throughout, keeping her from the waist
+up, her eyeline just above lens height, the distance and height unchanging.
+
+Shot on a modern smartphone in 4K, vertical 9:16 aspect ratio. Handheld with
+slight natural sway and micro-jitter, as if held by a friend walking backwards.
+Shallow depth of field, background softly out of focus. Golden hour in Zürich,
+low warm sunlight raking across Lake Zürich, water sparkling behind her.
+Documentary realism. Natural colour, no cinematic teal-and-orange grade, no lens
+flares, no slow motion. Candid social-media footage, not an advertisement.
+
+Ambient audio: light wind, water lapping, distant gulls, footsteps on stone, a
+distant tram bell.
+
+>> The finger-count should land in the extended half. If the extend loses her
+   face or changes the walk, re-roll the extend rather than the whole setup.
+
+
+================================================================================
+SETUP B · 14–21s · THE NOTEBOOK   (beat 3)
+Only ~3s of this is used. Generate 8s and take the best three seconds.
+================================================================================
+
+A 32-year-old Swiss woman, warm and relaxed, shoulder-length dark blonde hair
+loosely tied back with strands escaping in the wind, light freckles across the
+nose, minimal natural makeup. She wears an unbuttoned cream linen overshirt over
+a plain white t-shirt, straight-leg indigo jeans, small gold hoop earrings, and
+a tan canvas crossbody bag. Natural skin texture with visible pores and fine
+lines. Ordinary, believable, not a model.
+
+She stops walking on the Utoquai promenade beside Lake Zürich and turns side-on
+to the camera. She holds a small open notebook filled with handwritten lines in
+one hand, and raises a smartphone in the other to photograph the page, framing
+it the way people photograph a document. The phone is seen from behind and from
+the side; its screen is angled away from the camera and never legible. She
+lowers it and looks at it, pleased. Dappled light through plane trees, lake
+visible behind her shoulder. Camera static at chest height, slight handheld
+sway.
+
+Shot on a modern smartphone in 4K, vertical 9:16 aspect ratio. Handheld with
+slight natural sway and micro-jitter, as if held by a friend walking backwards.
+Shallow depth of field, background softly out of focus. Golden hour in Zürich,
+low warm sunlight raking across Lake Zürich, water sparkling behind her.
+Documentary realism. Natural colour, no cinematic teal-and-orange grade, no lens
+flares, no slow motion. Candid social-media footage, not an advertisement.
+
+Ambient audio: wind in leaves, water, a passing jogger's footsteps.
+
+>> EDIT: ~3s of her raising the phone to the page, then cut to S1 (4s) on
+   "that's the catalogue". Do not cut back — setup C takes over.
+
+
+================================================================================
+SETUP C · 21–30s · THE TILL   (beat 4)
+Only ~4s of this is used, but it is the most important four seconds.
+================================================================================
+
+A 32-year-old Swiss woman, warm and relaxed, shoulder-length dark blonde hair
+loosely tied back with strands escaping in the wind, light freckles across the
+nose, minimal natural makeup. She wears an unbuttoned cream linen overshirt over
+a plain white t-shirt, straight-leg indigo jeans, small gold hoop earrings, and
+a tan canvas crossbody bag. Natural skin texture with visible pores and fine
+lines. Ordinary, believable, not a model.
+
+She walks slowly along the Zürich lakeside promenade holding a smartphone in her
+left hand and tapping it twice with her right thumb in a deliberate, unhurried
+motion. The phone is seen from behind and above her hand; its screen is tilted
+away from the camera and never legible. She glances from the phone to the camera
+and back with a small satisfied nod. Lake and low golden sun behind her. The
+camera tracks alongside her at chest height, close enough that her hand and the
+phone fill a third of the frame.
+
+Shot on a modern smartphone in 4K, vertical 9:16 aspect ratio. Handheld with
+slight natural sway and micro-jitter, as if held by a friend walking backwards.
+Shallow depth of field, background softly out of focus. Golden hour in Zürich,
+low warm sunlight raking across Lake Zürich, water sparkling behind her.
+Documentary realism. Natural colour, no cinematic teal-and-orange grade, no lens
+flares, no slow motion. Candid social-media footage, not an advertisement.
+
+Ambient audio: footsteps, wind, lake water, faint city hum.
+
+>> EDIT: ~2s of her, cut to S2 (5s) on "this is the till" and stay there through
+   the tap and the payment row, ~2s back on her for "card companies don't do
+   that". Give the screen more time than her — this is the beat the whole video
+   exists for.
+
+
+================================================================================
+SETUP D · 30–38s · ONE STOCK COUNT   (beat 5)
+================================================================================
+
+A 32-year-old Swiss woman, warm and relaxed, shoulder-length dark blonde hair
+loosely tied back with strands escaping in the wind, light freckles across the
+nose, minimal natural makeup. She wears an unbuttoned cream linen overshirt over
+a plain white t-shirt, straight-leg indigo jeans, small gold hoop earrings, and
+a tan canvas crossbody bag. Natural skin texture with visible pores and fine
+lines. Ordinary, believable, not a model.
+
+She sits on a wooden bench on the Utoquai promenade in Zürich with an open
+silver laptop on her knees and a smartphone lying on the bench beside her. The
+camera is behind her right shoulder, so both screens are seen at a steep oblique
+angle and neither is legible. She looks from the laptop to the phone and back,
+then half-turns to the camera, raising her eyebrows slightly. Lake Zürich fills
+the background beyond the bench, low sun on the water. Camera static, slightly
+above and behind.
+
+Shot on a modern smartphone in 4K, vertical 9:16 aspect ratio. Handheld with
+slight natural sway and micro-jitter, as if held by a friend walking backwards.
+Shallow depth of field, background softly out of focus. Golden hour in Zürich,
+low warm sunlight raking across Lake Zürich, water sparkling behind her.
+Documentary realism. Natural colour, no cinematic teal-and-orange grade, no lens
+flares, no slow motion. Candid social-media footage, not an advertisement.
+
+Ambient audio: water, distant voices, a boat engine far off.
+
+>> EDIT: ~4s of her over the shoulder, then S3 (4s) — a split screen, storefront
+   above and POS below, the same stock number ticking down on both at the same
+   instant. This is the one beat where a picture-in-picture card over her
+   shoulder works just as well.
+
+
+================================================================================
+SETUP E · 38–49s · THE CONCESSION AND SIGN-OFF   (beats 6 + 7)
+Generate the most variants here. Its final frame carries the end card.
+================================================================================
+
+A 32-year-old Swiss woman, warm and relaxed, shoulder-length dark blonde hair
+loosely tied back with strands escaping in the wind, light freckles across the
+nose, minimal natural makeup. She wears an unbuttoned cream linen overshirt over
+a plain white t-shirt, straight-leg indigo jeans, small gold hoop earrings, and
+a tan canvas crossbody bag. Natural skin texture with visible pores and fine
+lines. Ordinary, believable, not a model.
+
+Close-up, framed from the shoulders up, standing on the Zürich lakeside
+promenade, speaking directly to camera. She gives a small honest shrug and a
+brief genuine half-laugh mid-sentence, then becomes matter-of-fact. Wind moves a
+strand of hair across her face and she tucks it back without breaking eye
+contact. In the final moment she turns her head to look out across the water,
+holding still. Lake and warm evening light thrown out of focus behind her.
+Camera handheld, static, slightly closer than the previous setups.
+
+Shot on a modern smartphone in 4K, vertical 9:16 aspect ratio. Handheld with
+slight natural sway and micro-jitter, as if held by a friend walking backwards.
+Shallow depth of field, background softly out of focus. Golden hour in Zürich,
+low warm sunlight raking across Lake Zürich, water sparkling behind her.
+Documentary realism. Natural colour, no cinematic teal-and-orange grade, no lens
+flares, no slow motion. Candid social-media footage, not an advertisement.
+
+Ambient audio: wind close on the microphone, water, distant gulls.
+
+>> This is the most persuasive eight seconds in the piece. Keep the take where
+   the laugh looks involuntary. GENERATE THIS SETUP FIRST, before spending on
+   the other four: if every variant looks performed, the AI route is not worth
+   continuing, and you will have found that out for the price of one setup.
+
+>> EDIT: hold the final frame — her looking out at the water — for ~3s with a
+   very slow push in, and put beat 7's voice and the end card over it. Logo,
+   CHF 0/month, zolto.ch.
+
+
+================================================================================
+THE VOICE TRACK — one continuous take over the finished cut
+================================================================================
+
+Trimmed to ~48s. The originals ran ~60s of speech against a 45s cut, which is
+what forced seven setups. Third person throughout: she is describing what a
+maker gets. She is NOT the maker, must not claim to use the product herself, and
+must not attribute opinions to unnamed others — see §7a and §7b of the companion
+doc for why, and for what she may say instead.
+
+  A/1  If you make things for a living in Switzerland — nobody warns you about
+       this part.
+
+  A/2  You're not just making the thing. You're photographing it, writing it up,
+       building the website, doing the maths at eleven at night.
+
+  B/3  She photographed a page of her notebook. That's the catalogue — names,
+       prices, quantities. She didn't type any of it.
+
+  C/4  At a market, this is the till. She taps the actual piece — then TWINT,
+       card or cash, same screen. Card companies don't do that.
+
+  D/5  It's already on her website, written up in four languages. One stock
+       count across both — sell it here, it's gone there.
+
+  E/6  Is it the cheapest way to take a card? No. It isn't. She's paying to not
+       spend her evenings on admin.
+
+  E/7  Zolto. Swiss, and free to start.
+
+Delivery: unpolished, one or two natural stumbles left in, no presenter cadence.
+Line E/6 must sound offhand — an aside, not a line. Swiss-German-accented
+English reads local and trustworthy. A German version is worth making from the
+same picture cut.
+
+Captions carry what the trim removed: name the four languages on screen under
+D/5, and put "not the cheapest. that's not the point." under E/6.
+
+
+================================================================================
+THE THREE SCREEN RECORDINGS — record these from the real app
+================================================================================
+
+Capture from a real store with real stock, using the device's own screen
+recorder. Never film a screen with a camera.
+
+  S1 · 4s · phone, 9:16 · into setup B
+     Notebook page photographed, then the catalogue filling in — names, prices
+     and quantities appearing as rows.
+
+  S2 · 5s · phone, 9:16 · into setup C
+     The POS grid of product photographs, thumb taps one, the TWINT / card /
+     cash row appears, TWINT chosen.
+
+  S3 · 4s · laptop + phone composed as a 9:16 split · into setup D
+     Storefront listing above, POS below, one stock count dropping on both at
+     the same instant.
+
+  - S1 and S2 are already 9:16 and drop in full-frame with no crop.
+  - For S3, compose a split rather than shrinking a whole browser window — a
+    scaled-down desktop window is illegible again, which is the problem we
+    started with.
+  - Record the interactions slowly. Real usage speed is unreadable at Reels
+    length; speeding up in the edit is easy, slowing down is not.
+  - Do Not Disturb on, full battery, no notification banners.
+  - Warm the recordings slightly in the grade so the cutaways don't feel pasted
+    into golden-hour footage.
+
+
+================================================================================
+ASSEMBLY
+================================================================================
+
+1. Generate SETUP E first and judge it. Everything else is wasted if the
+   concession sounds performed.
+2. Stitch A, B, C, D, E in order. Trim 0.5–1s off each end where motion settles.
+3. Drop in S1/S2/S3 as hard cuts, full frame, per the EDIT notes. The product
+   must be legible for at least 2 seconds in each. No dissolves.
+4. Hold E's final frame ~3s under the end card.
+5. Lay the voice over the whole cut, then nudge picture to speech.
+6. Captions: bold condensed sans, word-by-word pop-on, white with a hard dark
+   outline, gold #B8963E on one or two key words. Safe areas in 1080×1920 —
+   120px top, 420px bottom, 60px sides.
+7. Keep an ambience bed under the voice: lake, wind, gulls, a tram. A clean mix
+   is what makes AI footage feel synthetic.
+8. Export 1080×1920 H.264. Also cut a 15-second version from A, C and E.
+9. Apply Instagram's AI-content label.

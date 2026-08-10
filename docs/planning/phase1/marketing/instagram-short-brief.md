@@ -1,8 +1,12 @@
-# Zolto — the pitch, and a brief for a 30-second Instagram short
+# Zolto — the pitch, and a brief for a 45-second Instagram short
 
-> **Shareable with an outside artist.** Everything here is either shipped or
+> **Shareable with an outside creator.** Everything here is either shipped or
 > checkable. §5 is the part that matters most to a copywriter's instincts —
 > please read it before writing a single line of on-screen text.
+>
+> **Format: live action, hyper-real, no animation.** A creator walking the
+> Zürich lakeside promenade, showing the product on her own laptop and phone,
+> speaking in the third person about what a maker gets. Vertical 9:16.
 >
 > Written 2026-08-06, from the positioning as it stands after the August
 > pricing review ([`../../positioning-pricing-revision.md`](../../positioning-pricing-revision.md)).
@@ -59,64 +63,117 @@ card terminals. She is tired of evenings spent on admin.
 
 ---
 
-## 3. The short — 30 seconds, 9:16
+## 3. The short — 45 seconds, live action, 9:16
 
-Assume **muted playback**. Every beat must land on the visual plus on-screen
-text; treat voiceover as a bonus, not a carrier.
+**Format: a real person, on the Zürich lakeside, showing the thing on her own
+laptop and phone.** No animation, no motion graphics beyond the captions. It
+should look like a creator who found a product and is telling you about it —
+handheld, daylight, ambient sound, one take per beat where possible.
 
-| # | Time | Visual | On-screen text |
-|---|---|---|---|
-| 1 | 0–3s | Close on hands finishing a piece — wire, clay, thread. Warm, real, shallow depth. | **You didn't start making things to do admin.** |
-| 2 | 3–7s | Quick, cluttered cuts: a scribbled notebook, a spreadsheet, a shoebox of receipts, a laptop at 11pm. Slightly too fast, slightly stressful. | *the other half of the job* |
-| 3 | 7–12s | Phone photographs the notebook page. Whip to the same phone: the scrawl has become a clean grid of products with photos and prices. | **Photograph your notebook. That's the setup.** |
-| 4 | 12–18s | **The money shot.** Market stall, daylight. Her thumb taps a *photo of the actual object* on the grid. Payment row appears: TWINT, card, cash. Customer taps. Done. | **Your things in the till. TWINT, card or cash.** |
-| 5 | 18–23s | Same object on a website on a laptop. The stock number ticks 4 → 3 on the phone *and* the laptop at the same moment. | **One shop. One stall. One stock count.** |
-| 6 | 23–27s | A phone chat window: someone asks an assistant for a handmade gift in Zürich. Her piece appears. A checkout opens. | **Even the AI knows where to send them.** |
-| 7 | 27–30s | Logo on the mahogany band. Gold underline stroke draws itself under the price. | **Zolto — CHF 0/month to start · zolto.ch** |
+**Voice: third person.** The influencer is *not* the maker. She's someone who
+looks at tools for people who make things, and she's describing what a maker
+gets. That distance is the point — it lets her concede things a founder can't.
 
-**If a 15-second cut is needed**, keep beats 1, 4, 7. Beat 4 is the product.
+### Locations, in walking order
 
-### Sound
+All within ~15 minutes on foot, all with water in frame:
 
-No music track chosen yet. Direction: sparse, warm, acoustic — a workshop, not a
-fintech. Diegetic sound (clay, a market, the payment chime) over a synth bed.
+1. **Bürkliplatz** — boats, the lake opening up, Alps on a clear day. Beats 1–2.
+2. **Utoquai promenade** — walking, plane trees, joggers, water on the left. Beats 3–4.
+3. **A bench or the wooden jetty at Utoquai** — sitting, laptop open. Beats 5–6.
+4. **Back on the path, walking away** — beat 7.
+
+### Shot list
+
+| # | Time | Camera & action | What she says (third person) | Big text on screen |
+|---|---|---|---|---|
+| 1 | 0–5s | Walking toward camera, gimbal or steady handheld, lake behind. Direct address. | "If you make things for a living in Switzerland — this is the part nobody warns you about." | **NOBODY WARNS YOU ABOUT THIS** |
+| 2 | 5–11s | Still walking, she counts on her fingers. | "You're not just making the thing. You're photographing it, writing it up, building the website, keeping the stock list, and doing the maths at eleven at night." | **the other half of the job** |
+| 3 | 11–19s | Stops. Phone up, screen toward camera (over-shoulder or clean two-shot with the screen readable). She photographs a handwritten notebook page. Cut to the screen: a product grid appears. | "So this one is interesting. She photographed a page of her notebook — and that's the catalogue. Names, prices, quantities. She didn't type any of it." | **📓 → 🛍️ that's the setup** |
+| 4 | 19–27s | Walking again, phone in hand, POS open. Thumb taps a *photo of an actual object*. Payment row: TWINT, card, cash. | "And at a market, this is the till. She taps the photo of the actual piece — then TWINT, card or cash, same screen. That's the bit the card companies don't do." | **YOUR THINGS. IN THE TILL.** |
+| 5 | 27–35s | Sitting on the bench, laptop open beside the phone, lake behind both. She points between the two screens. | "Same piece is already on her website — written up in German, French, Italian and English. One stock count across both. Sell it here, it's gone there. Instantly." | **ONE STOCK COUNT** |
+| 6 | 35–41s | Close on her, phone up, slight laugh. **The concession.** | "Is it the cheapest way to take a card? No. It isn't. But that's not what she's paying for — she's paying to not spend her evenings doing admin." | **not the cheapest. that's not the point.** |
+| 7 | 41–45s | Standing, walking away along the promenade, turns back for the last line. | "Zolto. It's Swiss, and it's free to start." | **ZOLTO · CHF 0/month · zolto.ch** |
+
+**15-second cut:** beats 1, 4, 6, 7. Beat 4 is the product; beat 6 is why she's
+believed.
+
+> **These lines are over-written for 45 seconds — read before the shoot day.**
+> Timed at ordinary conversational pace they run **~60 seconds of speech**, and
+> every beat but the last is over its slot (beats 2 and 6 by more than half).
+> Either shoot to ~60s, which Reels allows and which suits this format, or use
+> the trimmed ~48-second version in
+> [`instagram-short-veo-prompts.txt`](./instagram-short-veo-prompts.txt) —
+> where the captions carry what came out. What you must not do is let a
+> performer race the lines to fit; the unhurried delivery is the format.
+
+### Voice and performance
+
+- **Unpolished on purpose.** One or two natural stumbles left in. No presenter
+  cadence, no "hey guys". She's talking to one person, not an audience.
+- **Accent is fine and good** — Swiss-German-accented English reads local and
+  trustworthy to this audience. A German-language version is worth shooting
+  back-to-back while the location is set up.
+- **Beat 6 must sound offhand**, almost like an aside. It's the most valuable
+  five seconds in the video and it dies if it sounds scripted.
+
+### Audio
+
+- **A lavalier mic is not optional.** Wind off the Zürichsee will destroy
+  on-camera audio, and the promenade is the windiest place in this brief. Lav +
+  a dead-cat windshield, with the camera mic as a sync reference only.
+- Keep the ambience: water, gulls, a tram bell in the distance, footsteps. Bed
+  it under the voice rather than scrubbing it.
+- No music, or something very low and acoustic. A track that sounds like an ad
+  undoes the whole format.
 
 ---
 
-## 4. Visual direction
+## 4. Look, and the captions
 
-The brand exists already — please extend it rather than invent.
+### The captions (this is a big part of the format)
 
-**Palette**
+Instagram-native, not brand-elegant. The site's serif does not go on screen here.
 
-| Use | Hex |
-|---|---|
-| Page / light ground | `#F7F3EE` oyster cream |
-| Dark band (hero, end card) | `#2D2620` warm mahogany |
-| The one accent | `#B8963E` refined gold |
-| Ink / body | `#1C1714` |
+- **Bold condensed sans, all caps for the punch lines**, sentence case for the
+  softer ones — see the table above for which is which.
+- **Word-by-word pop-on, synced to speech.** The standard Reels karaoke style.
+- **White with a hard dark shadow or outline**, so it survives the lake glare.
+  One accent colour only, for one or two key words: gold `#B8963E`.
+- **Safe areas — this gets missed and ruins deliverables.** In 1080×1920, keep
+  all text inside roughly **120px from the top** and **420px from the bottom**;
+  Instagram's own UI (caption, audio, buttons) covers the bottom fifth. Side
+  margins 60px.
+- Big. Genuinely big — 3 to 6 words on screen at a time, filling the width.
 
-Gold is the *only* accent. Nothing else competes.
+### Camera and grade
 
-**Type**
+- **Shot on a phone is fine and preferred.** A 3:2 cinema camera makes this feel
+  like an advert; a recent iPhone in 4K makes it feel like a person.
+- Handheld with light stabilisation. Let it breathe — no locked-off tripod
+  except perhaps beat 5.
+- **Golden hour**, roughly the last 90 minutes before sunset, lake to the west
+  side of frame. A flat overcast day is the fallback and is honestly easier for
+  the screen shots.
+- Natural grade. Warm, not teal-and-orange. The brand is oyster cream, mahogany
+  and gold — let the location supply that rather than the LUT.
 
-- Headlines: **Cormorant Garamond**, weight 400 — serif, airy, generous line height.
-- Handwritten accents only: **Caveat**, weight 500.
-- ⚠️ Cormorant defaults to *oldstyle* numerals, which renders `CHF 0` as `CHF o`.
-  Any money or stock figure must use lining figures.
+### The screens — the one real technical risk
 
-**Motion and illustration**
+Filming a laptop and a phone outdoors in daylight is where this shoot goes
+wrong. Three defences, use at least two:
 
-The site uses hand-drawn single-weight line art — a market stall, a phone till,
-a sketch underline that draws itself under a punchline. `SqueezePlayTill` in the
-codebase draws three phones in that idiom and is the closest reference for beat 4.
+1. **Screen brightness to maximum**, and shoot the screen beats in open shade —
+   under the plane trees on Utoquai rather than in direct sun.
+2. **Expose for the screen**, let the lake blow out slightly behind. A bright
+   background is fine; an unreadable screen is not.
+3. **Plan for screen replacement in post.** Shoot a clean plate of each screen
+   at the same angle so the UI can be comped in sharp if the live capture is
+   glared. Budget for this rather than discovering it in the edit.
 
-Prefer **live footage for beats 1–2 and 4–5** (hands, market, real objects) and
-**line-art overlay** for the UI moments. The product should feel like it lives
-inside a craft world, not the other way round.
-
-**Casting and location.** A real Swiss market, a real maker's hands. Not a
-studio. Not stock footage of a generic café.
+The product must be **legible for at least 2 seconds** in beats 3, 4 and 5. If
+the viewer can't read the grid of product photos in beat 4, the video has no
+subject.
 
 ---
 
@@ -143,6 +200,20 @@ more than it earns.
   not a traffic claim.
 - ❌ Naming or mocking a competitor. The comparison lives on the website where it
   can carry its sources.
+- ❌ **Anyone saying they use Zolto who doesn't.** First person is more
+  persuasive than third, which is exactly why it's tempting — but "I've been
+  using this at markets all summer" is a testimonial, and a testimonial has to
+  be true. If the presenter is cast rather than a genuine user, either give them
+  the product and a market day first, or keep the script in the third person as
+  written. This applies doubly to an AI-generated presenter, who cannot have
+  used anything at all — see
+  [`instagram-short-ai-prompts.md`](./instagram-short-ai-prompts.md) §7a.
+- ❌ **Second-hand praise: "some people say…", "everyone loves it".** Vaguer is
+  not safer. Zolto has no users yet, so there are no some-people, and putting
+  the opinion in unnamed mouths hides the source rather than supplying one. It
+  is also the weakest sentence in any cut of this script. Beat 4's *"that's the
+  bit the card companies don't do"* is the outside validation you're reaching
+  for, and it has sources behind it — see §7b.
 
 **Safe to say, all shipped and checkable:**
 
@@ -159,21 +230,33 @@ more than it earns.
 ## 6. Practical
 
 **Deliverables**
-1. 30s master, 9:16, 1080×1920, burned-in text (muted-first)
-2. 15s cut (beats 1, 4, 7)
+1. 45s master, 9:16, **1080×1920**, burned-in captions, H.264 MP4
+2. 15s cut (beats 1, 4, 6, 7)
 3. A 1080×1080 still for the feed — beat 4 is the frame
-4. Project file, so copy can be retimed without a reshoot
+4. A German-language version, shot the same day on the same setups
+5. Raw footage and the project file, so captions can be retimed without a reshoot
 
-**Assets we can provide**: logo and wordmark, the full palette and fonts, the
-line-art illustrations, and real product photography from the pilot maker
-(`docs/planning/phase1/assets/`).
+**Assets we can provide**: a loaded demo store so the screens show a real
+catalogue rather than placeholder text, logo and wordmark, the palette, and
+product photography from the pilot maker (`docs/planning/phase1/assets/`).
+
+**Practicalities for a Zürich shoot**
+- Filming on public promenade with a phone and one person is normally fine;
+  a tripod, a crew or anything commercial-looking may need clearance from the
+  city. Worth checking before the day rather than being moved on during it.
+- Golden hour on the lake is busy in summer. Weekday evening beats weekend.
+- Book a weather fallback. Flat overcast is a perfectly good look here and
+  makes the screen shots easier.
 
 **Before any real maker or product appears**, a signed content release is
 required — see `../legal/content-release-form.md`. This applies even to a
 friendly pilot merchant.
 
-**Open questions for the artist**
-1. Live action, animated line art, or a hybrid? The brief assumes hybrid.
-2. Do you shoot, or do we supply footage and you edit?
-3. Whose hands and whose market — do you have a maker, or do we arrange one?
-4. Budget and turnaround for the three deliverables above.
+**Open questions for the creator**
+1. Do you present it yourself, or do we cast someone? The script assumes the
+   creator is on camera.
+2. English only, or English + German the same day? (We'd like both.)
+3. Do you have a maker whose work can appear on the screens, or do we supply the
+   demo store? A real maker needs a signed release; the demo store doesn't.
+4. Can you handle screen replacement in post if the live capture glares?
+5. Budget and turnaround for the five deliverables above.
