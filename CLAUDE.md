@@ -53,16 +53,18 @@ This renders the real components against the real `index.css` — nothing mocked
 It exists because the full dev server needs a database, which a review sandbox
 usually doesn't have.
 
-Four env vars steer it: `SHOT_URL` picks the entry (`catalog.html` is the
+Five env vars steer it: `SHOT_URL` picks the entry (`catalog.html` is the
 catalogue admin page — add `?tour=1` to keep the first-run coach marks —
-and `admin.html?route=…` the settings pages), `SHOT_LANG` the language,
-`SHOT_VIEWPORT=390x844` phone width, and `SHOT_CLICK="Add Product"` clicks a
+and `admin.html?route=…` the settings pages, which render inside the real
+storefront navbar the shell has to clear), `SHOT_LANG` the language,
+`SHOT_VIEWPORT=390x844` phone width, `SHOT_CLICK="Add Product"` clicks a
 control before capturing (comma-separate for a sequence: `"Next,Next"` walks a
-tour along). With `SHOT_FULLPAGE=0` the shot is the viewport only, which is
-what proves an interaction left its result on screen rather than somewhere
-down the page.
+tour along), and `SHOT_SCROLL=1400` leaves the page scrolled down that far.
+With `SHOT_FULLPAGE=0` the shot is the viewport only, which is what proves an
+interaction left its result on screen rather than somewhere down the page —
+and, with `SHOT_SCROLL`, that sticky chrome actually stuck.
 
-Five things it has already caught that every test suite passed straight
+Six things it has already caught that every test suite passed straight
 through, and which are worth checking for by eye:
 
 - **Tailwind emitting no utilities at all.** v4 infers content paths from the
@@ -85,6 +87,11 @@ through, and which are worth checking for by eye:
   page corner. Collapse such a control by _unmounting_ it, not with `hidden`,
   and let `useTourActive()` unfold it while a tour runs — the admin header does
   both. Check it with `SHOT_URL=…/catalog.html?tour=1 SHOT_CLICK="Next,Next"`.
+- **A translucent panel used as an overlay.** The admin sidebar is a column on
+  a desktop and a drawer over the page on a phone — the same `bg-muted/30` that
+  reads as a tint beside content is a window through it, so the form underneath
+  showed through the nav labels. Any element that changes from beside-content to
+  over-content at a breakpoint needs an opaque background on the small side.
 
 `fonts loaded: NONE ⚠` in the output means the shot is showing fallback faces
 and proves nothing about typography — the vendored fonts in

@@ -94,6 +94,65 @@ describe("AdminLayout", () => {
     expect(screen.queryByText("Team")).toBeNull();
   });
 
+  // The storefront Navbar is `fixed` (h-20, md:h-24) and every admin route
+  // renders under it, so the shell has to start below it. It did not: the
+  // sidebar's first group heading and its top entries, and the page title
+  // beside them, were painted underneath the navbar and unreachable.
+  it("starts the shell below the fixed storefront navbar", () => {
+    asViewer("admin", "pro");
+    render(
+      <AdminLayout title="Domain">
+        <p>x</p>
+      </AdminLayout>,
+    );
+    const shell = screen.getByTestId("admin-shell").className;
+    expect(shell).toMatch(/\bpt-20\b/);
+    expect(shell).toMatch(/\bmd:pt-24\b/);
+  });
+
+  it("holds the sidebar and the page title on screen while the page scrolls", () => {
+    asViewer("admin", "pro");
+    render(
+      <AdminLayout title="Domain">
+        <p>x</p>
+      </AdminLayout>,
+    );
+    const sidebar = screen.getByTestId("admin-sidebar").className;
+    // Sticky under the navbar, one viewport tall, scrolling inside itself —
+    // otherwise a long settings page carries the nav off the top of the screen.
+    expect(sidebar).toMatch(/\bmd:sticky\b/);
+    expect(sidebar).toMatch(/md:top-24/);
+    expect(sidebar).toMatch(/md:h-\[calc\(100vh-6rem\)\]/);
+    expect(sidebar).toMatch(/\boverflow-y-auto\b/);
+    // The mobile drawer is the same <aside>, and it is `fixed`, so the shell's
+    // padding does not move it: it needs its own offset below the navbar.
+    expect(sidebar).toMatch(/\btop-20\b/);
+
+    const header = screen.getByTestId("admin-header").className;
+    expect(header).toMatch(/\bsticky\b/);
+    expect(header).toMatch(/\btop-20\b/);
+    expect(header).toMatch(/md:top-24/);
+    // Opaque, or body content scrolls through it; below the drawer (z-40) and
+    // its backdrop (z-30), or it would sit on top of the open drawer.
+    expect(header).toMatch(/\bbg-background\b/);
+    expect(header).toMatch(/\bz-20\b/);
+  });
+
+  it("gives the mobile drawer an opaque background", () => {
+    // Caught by shooting the drawer open at 390x844: bg-muted/30 is a tint
+    // beside the page and a window through it once the same <aside> is an
+    // overlay — the settings form read straight through the nav labels.
+    asViewer("admin", "pro");
+    render(
+      <AdminLayout title="Storefront">
+        <p>x</p>
+      </AdminLayout>,
+    );
+    const sidebar = screen.getByTestId("admin-sidebar").className;
+    expect(sidebar).toMatch(/(^|\s)bg-muted(\s|$)/);
+    expect(sidebar).toMatch(/md:bg-muted\/30/);
+  });
+
   it("renders German nav labels and group titles after a language change", async () => {
     asViewer("admin", "pro");
     await i18n.changeLanguage("de");

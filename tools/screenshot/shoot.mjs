@@ -136,6 +136,21 @@ if (process.env.SHOT_CLICK) {
   }
 }
 
+// SHOT_SCROLL=600 leaves the page scrolled down that many pixels before the
+// shot. Paired with SHOT_FULLPAGE=0 it is the only way to see whether chrome
+// that is supposed to stay put — a sticky sidebar, a sticky header — actually
+// did, since a full-page capture always renders the page as it looks at rest.
+if (process.env.SHOT_SCROLL) {
+  const y = Number(process.env.SHOT_SCROLL);
+  if (!Number.isFinite(y)) {
+    throw new Error(
+      `SHOT_SCROLL must be a number of pixels — got "${process.env.SHOT_SCROLL}"`,
+    );
+  }
+  await page.evaluate((to) => window.scrollTo(0, to), y);
+  await page.waitForTimeout(400);
+}
+
 const loaded = await page.evaluate(() => [
   ...new Set(
     [...document.fonts]
