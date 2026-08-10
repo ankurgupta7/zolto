@@ -85,4 +85,17 @@ describe("HowAnAiBuys", () => {
     render(<HowAnAiBuys />);
     expect(screen.getByText(AI_NATIVE_PITCH.footnote)).toBeTruthy();
   });
+
+  it("becomes a mahogany panel, chart and all, in its dense reel rendering", () => {
+    // The homepage reel puts the thesis beside a market day rather than in a
+    // band of its own; `dense` is that rendering. The chart comes with it —
+    // the band without its chart is an assertion without its evidence.
+    const { container } = render(<AiNativeBand dense />);
+    expect(container.querySelector("section")).toBeNull();
+    expect(screen.getByTestId("ai-native-band").className).toContain(
+      "bg-[var(--brand-ink)]",
+    );
+    expect(screen.getByText(AI_NATIVE_PITCH.chart.caption)).toBeTruthy();
+    expect(screen.getByText(AI_NATIVE_PITCH.body)).toBeTruthy();
+  });
 });

@@ -62,4 +62,24 @@ describe("SwissMade", () => {
       screen.getByRole("link", { name: /moving next/i }).getAttribute("href"),
     ).toBe(SOVEREIGNTY.href);
   });
+
+  // `dense` is the homepage-reel rendering: the chapter owns the band, the
+  // gutter and the vertical rhythm. It is padding and framing only — a variant
+  // that quietly dropped content would make the reel a content cut.
+  it("keeps every ledger row in its dense reel rendering, unfinished ones included", () => {
+    const { hook } = memoryLocation({ path: "/", static: true });
+    const { container } = render(
+      <Router hook={hook}>
+        <SwissMade dense />
+      </Router>,
+    );
+    expect(container.querySelector("section")).toBeNull();
+    // Nine rows is what makes this a ledger rather than a badge; a variant that
+    // hid three of them to fit a viewport would be the badge.
+    for (const entry of SOVEREIGNTY.ledger) {
+      expect(screen.getByText(entry.piece)).toBeTruthy();
+      expect(screen.getByText(entry.today)).toBeTruthy();
+    }
+    expect(screen.getByRole("link", { name: /moving next/i })).toBeTruthy();
+  });
 });

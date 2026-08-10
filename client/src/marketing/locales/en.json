@@ -54,7 +54,21 @@
     "ctaEyebrow": "ready when you are",
     "ctaHeading": "Your store, live this week.",
     "ctaBody": "Free to sell in person, forever. 14-day trial on Pro, no credit card needed to poke around — and no card reader, ever. Promise.",
-    "ctaButton": "Create your store →"
+    "ctaButton": "Create your store →",
+    "reel": {
+      "railLabel": "Chapters",
+      "promise": "Promise",
+      "squeeze": "The squeeze",
+      "how": "How it works",
+      "trust": "Trust",
+      "whatsComing": "What's coming",
+      "startFree": "Start free",
+      "whyZoltoLink": "How an AI finds, asks and buys →"
+    },
+    "video": {
+      "caption": "Two minutes, from empty shop to first sale.",
+      "play": "Play the Zolto explainer"
+    }
   },
   "pricing": {
     "eyebrow": "fair & simple",
@@ -350,6 +364,10 @@
     "buyerFitHeading": "Three questions that settle this",
     "buyerFitIntro": "Answer these before you read another comparison. Two of the three can rule us out, and it is better that you find that out here than after you have moved your catalogue.",
     "limitationsHeading": "Where {{name}} falls short"
+  },
+  "whyZolto": {
+    "metaTitle": "Why {{name}} — ready for the AI that shops for your customer",
+    "metaDescription": "How a customer's assistant finds your shop, checks what's in stock and buys — and what {{name}} already does about it today."
   },
   "signup": {
     "eyebrow": "let’s begin",

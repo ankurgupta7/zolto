@@ -6,6 +6,7 @@ import Landing from "@/marketing/pages/Landing";
 import Sovereignty from "@/marketing/pages/Sovereignty";
 import Pricing from "@/marketing/pages/Pricing";
 import Compare from "@/marketing/pages/Compare";
+import WhyZolto from "@/marketing/pages/WhyZolto";
 import { MarketingShell } from "@/marketing/components/MarketingChrome";
 
 const params = new URLSearchParams(location.search);
@@ -22,6 +23,10 @@ const PAGES = {
   landing: { path: "/", Component: Landing },
   sovereignty: { path: "/made-in-switzerland", Component: Sovereignty },
   pricing: { path: "/pricing", Component: Pricing },
+  // The bands the homepage reel could not hold at one viewport each — the
+  // agent-purchase proof, the found → asked → bought cards, and the
+  // reconciliation email.
+  "why-zolto": { path: "/why-zolto", Component: WhyZolto },
   // The index carries the buyer-fit guide and Zolto's own limitations — the
   // two places the site argues against itself, so worth looking at by eye.
   compare: { path: "/compare", route: "/compare", Component: Compare },

@@ -8,6 +8,7 @@ import {
   PRICING_PROMISE,
   BUYER_FIT,
   ZOLTO_LIMITATIONS,
+  INCUMBENT_COMPARISON,
 } from "@shared/platform";
 import { source } from "@shared/sources";
 import { CapabilityMatrix } from "../components/CapabilityMatrix";
@@ -76,6 +77,64 @@ export default function Compare() {
             </li>
           ))}
         </ul>
+
+        {/* The generic old-guard table. It used to be a band on the homepage,
+            which became a six-chapter reel with no viewport to spare for a
+            seven-row table; this index is the better home for it anyway — it is
+            the page a reader lands on while choosing, and the one place where
+            "them" hasn't yet been narrowed to a named product. The copy and the
+            locale keys came across unchanged, `landing.comparison*` included,
+            so nothing had to be re-translated to move it. */}
+        <div
+          data-testid="incumbent-comparison"
+          className="mx-auto mt-20 max-w-4xl"
+        >
+          <div className="mb-10 text-center">
+            <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
+              {t("landing.comparisonEyebrow")}
+            </p>
+            <h2 className="mt-2 font-serif text-3xl text-[var(--brand-text)]">
+              {t("landing.comparisonHeading")}
+            </h2>
+            <p className="mx-auto mt-3 max-w-xl text-[var(--brand-muted-2)]">
+              {t("landing.comparisonBody")}
+            </p>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse text-left text-[15px]">
+              <thead>
+                <tr>
+                  <th className="border-b border-[var(--brand-border)] px-4 py-3" />
+                  <th className="border-b border-[var(--brand-border)] px-4 py-3 text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--brand-muted)]">
+                    {t("landing.colOldGuard")}
+                  </th>
+                  <th className="border-b border-[var(--brand-border)] px-4 py-3 text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--brand-accent)]">
+                    {PLATFORM.name}
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {INCUMBENT_COMPARISON.map((row) => (
+                  <tr key={row.feature}>
+                    <td className="border-b border-[var(--brand-border)] px-4 py-3.5 font-medium text-[var(--brand-text)]">
+                      {st(`comparison.${row.feature}.feature`, row.feature)}
+                    </td>
+                    <td className="border-b border-[var(--brand-border)] px-4 py-3.5 text-[var(--brand-muted-2)]">
+                      {st(`comparison.${row.feature}.them`, row.them)}
+                    </td>
+                    <td className="border-b border-[var(--brand-border)] bg-[var(--brand-accent)]/[0.07] px-4 py-3.5 font-medium text-[var(--brand-text)]">
+                      <span aria-hidden className="text-[var(--brand-accent)]">
+                        ✓{" "}
+                      </span>
+                      {st(`comparison.${row.feature}.us`, row.us)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
 
         {/* Three questions that settle this purchase. Two of the three route
             the reader away from us when that's the honest answer — which is
@@ -164,7 +223,7 @@ export default function Compare() {
           the whole product: on a page about ONE named competitor, a generic
           seven-row table directly above a specific twenty-two-row one is the
           same argument told twice, the second time better. INCUMBENT_COMPARISON
-          still renders on the landing page, where the reader hasn't picked a
+          renders on the /compare index above, where the reader hasn't picked a
           competitor yet and the generic version is the right altitude. */}
 
       {/* What each product actually does, row by row — including the row
@@ -276,7 +335,7 @@ export default function Compare() {
       </div>
 
       <div className="mx-auto mt-16 max-w-3xl rounded-2xl border border-[var(--brand-accent)]/40 bg-[var(--brand-surface-2)] p-8 text-center">
-        <p className="font-serif text-xl italic text-[var(--brand-muted-2)]">
+        <p className="font-serif text-xl italic text-[var(--brand-muted-2)] lining-nums">
           &ldquo;{st("pricingPromise.pledge", PRICING_PROMISE.pledge)}&rdquo;
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-3">

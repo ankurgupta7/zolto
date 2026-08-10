@@ -15,6 +15,20 @@ const css = readFileSync(
  * viewport. That is what broke the admin guided tour. `.page-enter` is on
  * nearly every page, so it is the wrapper most likely to do this.
  */
+/**
+ * The homepage reel makes its own scroll container and sizes every chapter as
+ * `calc(100dvh - var(--nav-height))` (see marketing/components/ReelStage.tsx).
+ * If the token disappears, `calc()` is invalid and each chapter collapses to
+ * its content height — the whole treatment silently stops being a reel.
+ */
+describe("--nav-height", () => {
+  it("is defined on :root, in rem", () => {
+    const declaration = css.match(/--nav-height:\s*([^;]+);/);
+    expect(declaration).toBeTruthy();
+    expect(declaration?.[1].trim()).toMatch(/^[\d.]+rem$/);
+  });
+});
+
 describe(".page-enter entrance animation", () => {
   const rule = css.match(/\.page-enter\s*\{[^}]*\}/)?.[0] ?? "";
 

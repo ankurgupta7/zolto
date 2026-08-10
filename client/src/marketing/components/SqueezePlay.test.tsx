@@ -147,4 +147,20 @@ describe("SqueezePlayTill", () => {
     render(<SqueezePlayTill has={["grid"]} title="b" />);
     expect(svg().querySelectorAll("circle").length).toBe(0);
   });
+
+  // `dense` is the homepage-reel rendering: the chapter owns the band, the
+  // gutter and the vertical rhythm. It is padding and framing only — a variant
+  // that quietly dropped content would make the reel a content cut.
+  it("keeps every panel and the claim in its dense reel rendering", () => {
+    const { container } = render(<SqueezePlay dense />);
+    expect(container.querySelector("section")).toBeNull();
+    // No reveal: a chapter's opening content is on screen the moment you
+    // arrive, so fading it in reads as jank.
+    expect(screen.queryByTestId("scroll-reveal")).toBeNull();
+    expect(screen.getAllByTestId(/^squeeze-panel-/).length).toBe(3);
+    expect(screen.getByTestId("squeeze-claim").textContent).toContain(sp.claim);
+    for (const panel of sp.panels) {
+      expect(screen.getByText(panel.detail)).toBeTruthy();
+    }
+  });
 });

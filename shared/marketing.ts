@@ -179,6 +179,15 @@ export function marketingSitemapEntries(): SitemapEntry[] {
       }),
     ),
     {
+      // The AI-native argument: the agent-purchase proof, the found → asked →
+      // bought mechanics, and the reconciliation email. They were homepage
+      // bands until the homepage became a reel; this is where they live now.
+      path: "/why-zolto",
+      lastmod: "2026-08-10",
+      changefreq: "monthly",
+      priority: 0.8,
+    },
+    {
       path: "/for",
       lastmod: "2026-07-30",
       changefreq: "monthly",

@@ -13,8 +13,10 @@ import { DATA_RESIDENCY, SOVEREIGNTY } from "@shared/platform";
 import {
   MarketingNav,
   MarketingFooter,
+  MarketingShell,
   StoreShortcut,
   SIGN_IN_PATH,
+  CHROME_OWNED_SCROLL,
 } from "./MarketingChrome";
 import i18n from "@/lib/i18n";
 
@@ -350,5 +352,47 @@ describe("MarketingFooter", () => {
       .map((a) => a.getAttribute("href"));
     expect(hrefs).toContain("/legal/privacy");
     expect(hrefs).toContain("/legal/terms");
+  });
+});
+
+describe("MarketingShell — who owns the scroll container", () => {
+  function renderShell(path: string) {
+    const { hook } = memoryLocation({ path, static: true });
+    return render(
+      <Router hook={hook}>
+        <MarketingShell>
+          <p>the page</p>
+        </MarketingShell>
+      </Router>,
+    );
+  }
+
+  it("gives an ordinary page a main landmark and the footer", () => {
+    const { container } = renderShell("/pricing");
+    expect(container.querySelector("main")).toBeTruthy();
+    expect(container.querySelector("footer")).toBeTruthy();
+    expect(screen.getByText("the page")).toBeTruthy();
+  });
+
+  it("stands both down for a page that owns its own scroll container", () => {
+    // The homepage reel is a nested scroller with overscroll-contain, so it
+    // renders <main> and the footer inside itself — see ReelStage's trailer
+    // prop. Two footers, or a footer a wheel can't reach, would both be worse.
+    expect(CHROME_OWNED_SCROLL.has("/")).toBe(true);
+    const { container } = renderShell("/");
+    expect(container.querySelector("main")).toBeNull();
+    expect(container.querySelector("footer")).toBeNull();
+    expect(screen.getByText("the page")).toBeTruthy();
+    // The nav is still the shell's, and still sticky above the reel.
+    expect(container.querySelector("header")?.className).toContain("sticky");
+  });
+
+  it("sizes the nav from the token the reel measures against", () => {
+    // A bar that grew without --nav-height following would leave every chapter
+    // short by the difference, and a second chapter peeking in at the bottom.
+    const { container } = renderShell("/pricing");
+    expect(container.querySelector("header div")?.className).toContain(
+      "h-[var(--nav-height)]",
+    );
   });
 });

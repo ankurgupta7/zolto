@@ -54,7 +54,21 @@
     "ctaEyebrow": "bereit, wenn Sie es sind",
     "ctaHeading": "Ihr Shop, diese Woche live.",
     "ctaBody": "Vor Ort verkaufen ist gratis, für immer. 14 Tage Pro testen, keine Kreditkarte nötig zum Umschauen — und nie ein Kartenlesegerät. Versprochen.",
-    "ctaButton": "Shop erstellen →"
+    "ctaButton": "Shop erstellen →",
+    "reel": {
+      "railLabel": "Kapitel",
+      "promise": "Versprechen",
+      "squeeze": "Die Zange",
+      "how": "So funktioniert es",
+      "trust": "Vertrauen",
+      "whatsComing": "Was kommt",
+      "startFree": "Gratis starten",
+      "whyZoltoLink": "Wie eine KI findet, fragt und kauft →"
+    },
+    "video": {
+      "caption": "Zwei Minuten, vom leeren Laden zum ersten Verkauf.",
+      "play": "Zolto-Erklärvideo abspielen"
+    }
   },
   "pricing": {
     "eyebrow": "fair & einfach",
@@ -350,6 +364,10 @@
     "buyerFitHeading": "Drei Fragen, die das entscheiden",
     "buyerFitIntro": "Beantworten Sie diese, bevor Sie einen weiteren Vergleich lesen. Zwei der drei können uns ausschliessen, und das erfahren Sie besser hier als nachdem Sie Ihren Katalog umgezogen haben.",
     "limitationsHeading": "Wo {{name}} zu kurz kommt"
+  },
+  "whyZolto": {
+    "metaTitle": "Warum {{name}} — bereit für die KI, die für Ihre Kundschaft einkauft",
+    "metaDescription": "Wie der Assistent einer Kundin Ihren Laden findet, den Lagerbestand prüft und kauft — und was {{name}} heute schon dafür tut."
   },
   "signup": {
     "eyebrow": "los geht’s",

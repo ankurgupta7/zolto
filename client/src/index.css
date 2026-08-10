@@ -69,6 +69,17 @@
   --brand-border-2: #ddd4c9;
 }
 
+/* ─── Chrome geometry ─────────────────────────────────────────────────────────── */
+/* The marketing nav's height, as a token rather than a repeated `h-16`. The       */
+/* homepage reel makes its own scroll container, so it has to size its chapters    */
+/* against the sticky bar above it (min-h-[calc(100dvh-var(--nav-height))]) — and  */
+/* a bar that grew without this following would leave every chapter short by the   */
+/* difference, which reads as a second chapter peeking in at the bottom.           */
+/* MarketingNav renders at exactly this height (see MarketingChrome.tsx).          */
+:root {
+  --nav-height: 4rem;
+}
+
 /* ─── Base Styles ────────────────────────────────────────────────────────────── */
 
 @layer base {
@@ -147,6 +158,11 @@
 }
 
 /* ─── Flex min-size fix ──────────────────────────────────────────────────────── */
+/* Careful: this rule is UNLAYERED, and an unlayered declaration beats anything   */
+/* in @layer utilities regardless of specificity. So `min-h-*` on an element that  */
+/* also carries `flex` is silently discarded — which is how the homepage reel's    */
+/* chapters computed a min-height of 0 and rendered as the long page they replace. */
+/* Use `grid` (or an inline style) where a flex container needs a minimum size.    */
 
 .flex {
   min-width: 0;

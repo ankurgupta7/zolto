@@ -12,6 +12,7 @@ import BlogPost from "./pages/BlogPost";
 import Story from "./pages/Story";
 import Faq from "./pages/Faq";
 import Compare from "./pages/Compare";
+import WhyZolto from "./pages/WhyZolto";
 import Research from "./pages/Research";
 import Segment from "./pages/Segment";
 import Sovereignty from "./pages/Sovereignty";
@@ -55,6 +56,10 @@ export default function MarketingApp() {
         <Route path="/faq" component={Faq} />
         <Route path="/made-in-switzerland" component={Sovereignty} />
         <Route path="/compare" component={Compare} />
+        {/* The AI-native argument in full — the bands the homepage reel could
+            not hold at one viewport each. Linked from the reel's "what's
+            coming" chapter. */}
+        <Route path="/why-zolto" component={WhyZolto} />
         <Route path="/compare/:slug" component={Compare} />
         <Route path="/signup" component={Signup} />
         <Route path="/signin" component={SignIn} />

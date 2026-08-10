@@ -51,4 +51,25 @@ describe("DiaryTeaser", () => {
     renderTeaser();
     expect(screen.getAllByRole("listitem")).toHaveLength(DIARY_POSTS.length);
   });
+
+  // `dense` is the homepage-reel rendering: the chapter owns the band, the
+  // gutter and the vertical rhythm. It is padding and framing only — a variant
+  // that quietly dropped content would make the reel a content cut.
+  it("keeps every post, and its staggered reveal, in its dense reel rendering", () => {
+    const { hook } = memoryLocation({ path: "/", static: true });
+    const { container } = render(
+      <Router hook={hook}>
+        <DiaryTeaser dense />
+      </Router>,
+    );
+    expect(container.querySelector("section")).toBeNull();
+    for (const post of DIARY_POSTS) {
+      expect(screen.getByText(post.title)).toBeTruthy();
+    }
+    // The cards are not the first thing in the closing chapter, so they keep
+    // the reveal the rest of the surface uses.
+    expect(screen.getAllByTestId("scroll-reveal").length).toBe(
+      DIARY_POSTS.length,
+    );
+  });
 });
