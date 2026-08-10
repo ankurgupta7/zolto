@@ -64,14 +64,16 @@ With `SHOT_FULLPAGE=0` the shot is the viewport only, which is what proves an
 interaction left its result on screen rather than somewhere down the page —
 and, with `SHOT_SCROLL`, that sticky chrome actually stuck.
 
-The homepage is a reel of viewport-sized panels, so a full-page shot of it is a
-12,000px image nobody can read: `SHOT_CHAPTER=4` and `SHOT_PANEL=12` scroll to
-one chapter or one panel first, and print the height they landed on. Pair either
-with `SHOT_FULLPAGE=0`. The harness mounts pages without `MarketingShell`, so it
+The homepage is a reel of full-viewport posts, each made of panels you swipe
+sideways through, so a full-page shot of it is a 12,000px image nobody can read:
+`SHOT_CHAPTER=4` and `SHOT_PANEL=12` move to one post or one slide first and
+print where they landed (`SHOT_PANEL` scrolls both axes — down to the slide's
+post and sideways to the slide, and reports `slide 2/4`). Pair either with
+`SHOT_FULLPAGE=0`. The harness mounts pages without `MarketingShell`, so it
 stands a 4rem sticky header in for the reel — a band 64px taller than production
 would flatter every panel's fit.
 
-Seven things it has already caught that every test suite passed straight
+Nine things it has already caught that every test suite passed straight
 through, and which are worth checking for by eye:
 
 - **Tailwind emitting no utilities at all.** v4 infers content paths from the
@@ -106,6 +108,21 @@ through, and which are worth checking for by eye:
   reads as a tint beside content is a window through it, so the form underneath
   showed through the nav labels. Any element that changes from beside-content to
   over-content at a breakpoint needs an opaque background on the small side.
+- **A grid item with auto margins silently sized to its content.** The reel's
+  horizontal track is a `Container`, so it arrives with `mx-auto` — and a grid
+  item with auto margins does not stretch to its column. It sized itself to its
+  content instead: a 692px scroller inside a 393px post, the right-hand two
+  thirds clipped by the chapter's `overflow-hidden`, with a plausible-looking
+  first screen and a green test suite. Anything that must fill its grid area
+  needs an explicit `w-full` — and it is worth measuring `clientWidth` against
+  the viewport, not only heights.
+- **A swipe row nested inside a swipe track.** `SqueezePlayTills` and
+  `DiaryTeaser` each carried their own `snap-x overflow-x-auto` row for phones.
+  Inside the reel's carousel that is a scroller in a scroller: the inner one
+  eats the gesture and strands the reader mid-post. A component with a
+  phone-swipe variant needs a `dense` shape that stacks or compacts instead —
+  and `Landing.test.tsx` now fails if any `overflow-x-auto` appears inside a
+  reel track.
 
 `fonts loaded: NONE ⚠` in the output means the shot is showing fallback faces
 and proves nothing about typography — the vendored fonts in

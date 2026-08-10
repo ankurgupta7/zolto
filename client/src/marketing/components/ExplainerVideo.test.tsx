@@ -201,7 +201,7 @@ describe("ExplainerVideo inside a reel chapter", () => {
     act(() => {
       observer.callback([
         {
-          target: document.querySelector(`[data-reel-panel="${id}"]`)!,
+          target: document.querySelector(`[data-reel-chapter="${id}"]`)!,
           isIntersecting: ratio > 0,
           intersectionRatio: ratio,
         },
@@ -209,6 +209,8 @@ describe("ExplainerVideo inside a reel chapter", () => {
     });
   }
 
+  // Visibility comes from the stage's own observer over the posts, not from a
+  // second one per video — so the report here is a post scrolling off screen.
   it("pauses once its chapter has scrolled away, and resumes on the way back", () => {
     renderInChapter();
     report("promise", 1);

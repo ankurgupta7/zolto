@@ -145,7 +145,9 @@ export function SwissMadeLedger({
             <li
               key={entry.piece}
               className={`grid gap-2 bg-white sm:grid-cols-[1fr_auto] sm:items-center ${
-                dense ? "px-4 py-1.5 sm:gap-4" : "px-5 py-4 sm:gap-6"
+                dense
+                  ? "px-3 py-1 sm:gap-4 sm:px-4 sm:py-1.5"
+                  : "px-5 py-4 sm:gap-6"
               }`}
             >
               {/* Dense puts the piece and its state on one line rather than two:
@@ -166,8 +168,10 @@ export function SwissMadeLedger({
                   {st(`sovereignty.ledger.${i}.piece`, entry.piece)}
                 </p>
                 <p
-                  className={`text-sm leading-relaxed text-[var(--brand-muted-2)] ${
-                    dense ? "" : "mt-0.5"
+                  className={`text-[var(--brand-muted-2)] ${
+                    dense
+                      ? "text-[13px] leading-snug sm:text-sm sm:leading-relaxed"
+                      : "mt-0.5 text-sm leading-relaxed"
                   }`}
                 >
                   {st(`sovereignty.ledger.${i}.today`, entry.today)}
