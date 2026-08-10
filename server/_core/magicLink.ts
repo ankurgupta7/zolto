@@ -20,7 +20,11 @@ import crypto from "node:crypto";
 import * as db from "../db";
 import { getSessionCookieOptions } from "./cookies";
 import { getPlatformRootDomain } from "./platformDomain";
-import { getCanonicalOrigin, sanitizeNextTarget, signSessionJwt } from "./oauth";
+import {
+  getCanonicalOrigin,
+  sanitizeNextTarget,
+  signSessionJwt,
+} from "./oauth";
 import { sendMagicLinkEmail } from "./email";
 
 export const MAGIC_LINK_TTL_MS = 15 * 60 * 1000; // 15 minutes
@@ -67,7 +71,8 @@ export function registerMagicLinkRoutes(app: Express) {
   app.get(
     "/api/auth/magic-link/callback",
     async (req: Request, res: Response) => {
-      const token = typeof req.query.token === "string" ? req.query.token : null;
+      const token =
+        typeof req.query.token === "string" ? req.query.token : null;
       if (!token) {
         res.status(400).send("Missing sign-in token");
         return;
@@ -88,7 +93,9 @@ export function registerMagicLinkRoutes(app: Express) {
         ) {
           res
             .status(400)
-            .send("This sign-in link is invalid or has expired. Please request a new one.");
+            .send(
+              "This sign-in link is invalid or has expired. Please request a new one.",
+            );
           return;
         }
 

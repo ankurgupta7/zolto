@@ -398,7 +398,15 @@ describe("mapMigrationRows", () => {
 
   it("flags a nameless row instead of dropping it silently", () => {
     const [row] = mapMigrationRows(
-      [{ name: "  ", description: "x", price: 5, rawCategory: "", quantity: 1 }],
+      [
+        {
+          name: "  ",
+          description: "x",
+          price: 5,
+          rawCategory: "",
+          quantity: 1,
+        },
+      ],
       TEST_CATEGORIES,
     );
     expect(row.name).toBe("(empty)");

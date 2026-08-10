@@ -221,9 +221,9 @@ export default function ProductDetail() {
           </nav>
 
           <span
-            className={`inline-block text-[10px] uppercase tracking-[0.2em] px-2 py-0.5 mb-4 font-sans ${
-              categoryColor(product.category)
-            }`}
+            className={`inline-block text-[10px] uppercase tracking-[0.2em] px-2 py-0.5 mb-4 font-sans ${categoryColor(
+              product.category,
+            )}`}
           >
             {product.category}
           </span>

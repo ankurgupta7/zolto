@@ -136,7 +136,9 @@ export default function Keys() {
           ) : (
             <PrimaryButton onClick={() => setConfirming(true)}>
               <KeyRound className="h-4 w-4" />
-              {plaintext ? t("store.keys.rotateAgain") : t("store.keys.generate")}
+              {plaintext
+                ? t("store.keys.rotateAgain")
+                : t("store.keys.generate")}
             </PrimaryButton>
           )}
         </div>

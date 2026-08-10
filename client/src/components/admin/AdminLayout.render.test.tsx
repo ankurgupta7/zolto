@@ -11,11 +11,16 @@ vi.mock("@/_core/hooks/useAuth", () => ({
 }));
 const mockMeQuery = vi.fn();
 vi.mock("@/lib/trpc", () => ({
-  trpc: { tenant: { me: { useQuery: (...args: unknown[]) => mockMeQuery(...args) } } },
+  trpc: {
+    tenant: { me: { useQuery: (...args: unknown[]) => mockMeQuery(...args) } },
+  },
 }));
 
 function asViewer(role: string, plan: string) {
-  mockUseAuth.mockReturnValue({ user: { id: 1, role, name: "A", email: "a@b.c" }, loading: false });
+  mockUseAuth.mockReturnValue({
+    user: { id: 1, role, name: "A", email: "a@b.c" },
+    loading: false,
+  });
   mockMeQuery.mockReturnValue({ data: { plan } });
 }
 
@@ -31,7 +36,11 @@ afterEach(() => cleanup());
 describe("AdminLayout", () => {
   it("renders both plane groups for an admin", () => {
     asViewer("admin", "pro");
-    render(<AdminLayout title="Home"><p>page body</p></AdminLayout>);
+    render(
+      <AdminLayout title="Home">
+        <p>page body</p>
+      </AdminLayout>,
+    );
     expect(screen.getByText("Shop")).toBeTruthy();
     expect(screen.getByText("Zolto account")).toBeTruthy();
     expect(screen.getByText("page body")).toBeTruthy();
@@ -40,7 +49,11 @@ describe("AdminLayout", () => {
 
   it("hides admin-only account items from staff, keeping Support", () => {
     asViewer("staff", "pro");
-    render(<AdminLayout><p>x</p></AdminLayout>);
+    render(
+      <AdminLayout>
+        <p>x</p>
+      </AdminLayout>,
+    );
     expect(screen.queryByText("Team")).toBeNull();
     expect(screen.queryByText("Plan & billing")).toBeNull();
     expect(screen.getByText("Support")).toBeTruthy();
@@ -50,21 +63,33 @@ describe("AdminLayout", () => {
 
   it("marks plan-gated items with a lock naming the required plan", () => {
     asViewer("admin", "free");
-    render(<AdminLayout><p>x</p></AdminLayout>);
+    render(
+      <AdminLayout>
+        <p>x</p>
+      </AdminLayout>,
+    );
     // Domain + Insights are both Pro-gated on the two-tier model.
     expect(screen.getAllByLabelText("Requires the pro plan").length).toBe(2);
   });
 
   it("shows no lock once the plan covers the feature", () => {
     asViewer("admin", "pro");
-    render(<AdminLayout><p>x</p></AdminLayout>);
+    render(
+      <AdminLayout>
+        <p>x</p>
+      </AdminLayout>,
+    );
     expect(screen.queryByLabelText("Requires the pro plan")).toBeNull();
   });
 
   it("defaults to staff/free display when queries have not resolved", () => {
     mockUseAuth.mockReturnValue({ user: null, loading: true });
     mockMeQuery.mockReturnValue({ data: undefined });
-    render(<AdminLayout><p>x</p></AdminLayout>);
+    render(
+      <AdminLayout>
+        <p>x</p>
+      </AdminLayout>,
+    );
     expect(screen.getByText("Products")).toBeTruthy();
     expect(screen.queryByText("Team")).toBeNull();
   });
@@ -72,7 +97,11 @@ describe("AdminLayout", () => {
   it("renders German nav labels and group titles after a language change", async () => {
     asViewer("admin", "pro");
     await i18n.changeLanguage("de");
-    render(<AdminLayout><p>x</p></AdminLayout>);
+    render(
+      <AdminLayout>
+        <p>x</p>
+      </AdminLayout>,
+    );
     // Manifest labels stay English data; the shell translates them.
     expect(screen.getByText("Produkte")).toBeTruthy();
     expect(screen.getByText("Bestellungen")).toBeTruthy();
@@ -121,7 +150,11 @@ describe("AdminLayout", () => {
 
   it("ships a language switcher that switches and persists the choice", () => {
     asViewer("admin", "pro");
-    render(<AdminLayout><p>x</p></AdminLayout>);
+    render(
+      <AdminLayout>
+        <p>x</p>
+      </AdminLayout>,
+    );
     const switcher = screen.getByLabelText(
       "Switch language",
     ) as HTMLSelectElement;

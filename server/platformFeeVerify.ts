@@ -133,9 +133,10 @@ export function verdictFor(obs: FeeObservation): FeeVerdict {
  * The overall answer. A run passes only if every case passed — a Free-plan fee
  * that lands is not proof of anything if the Pro case also charged.
  */
-export function summarise(
-  results: { label: string; verdict: FeeVerdict }[],
-): { pass: boolean; failed: string[] } {
+export function summarise(results: { label: string; verdict: FeeVerdict }[]): {
+  pass: boolean;
+  failed: string[];
+} {
   const failed = results.filter((r) => !r.verdict.pass).map((r) => r.label);
   return { pass: failed.length === 0 && results.length > 0, failed };
 }

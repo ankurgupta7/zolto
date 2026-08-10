@@ -28,9 +28,7 @@ const CALLER_TENANT_ID = 7;
 // subdomain must still only ever read/write store 7.
 const HOST_TENANT_ID = 42;
 
-function makeCtx(
-  role: "admin" | "user" | null = "admin",
-): TrpcContext {
+function makeCtx(role: "admin" | "user" | null = "admin"): TrpcContext {
   const user =
     role !== null
       ? {
@@ -109,8 +107,7 @@ describe("migration router authorization", () => {
     stripeProductsList.mockResolvedValue({ data: [], has_more: false });
     await caller.migration.fetchStripeCatalog();
 
-    for (const call of (getTenantById as ReturnType<typeof vi.fn>).mock
-      .calls) {
+    for (const call of (getTenantById as ReturnType<typeof vi.fn>).mock.calls) {
       expect(call[0]).toBe(CALLER_TENANT_ID);
       expect(call[0]).not.toBe(HOST_TENANT_ID);
     }

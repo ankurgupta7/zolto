@@ -443,9 +443,9 @@ describe("checkout.createSession", () => {
 
     const sessionArgs = checkoutSessionsCreate.mock.calls[0][0];
     // Omitted entirely, not passed as 0 — Pro keeps every online sale.
-    expect(
-      "application_fee_amount" in sessionArgs.payment_intent_data,
-    ).toBe(false);
+    expect("application_fee_amount" in sessionArgs.payment_intent_data).toBe(
+      false,
+    );
     expect(createOrder).toHaveBeenCalledWith(
       expect.objectContaining({ platformFeeRappen: 0 }),
     );

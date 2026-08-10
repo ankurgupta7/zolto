@@ -13,6 +13,13 @@ client/public/__manus__
 drizzle
 *.min.js
 
+# Webfont CSS mirrored verbatim from Google's css2 endpoint by
+# tools/fonts/vendor-fonts.sh. Reformatting it would make every re-vendor
+# show up as a diff, and client/indexHtml.test.ts asserts on the upstream
+# quoting (font-family: 'Inter').
+client/public/fonts/*.css
+tools/screenshot/fonts/*.css
+
 # Native mobile projects
 android
 ios

@@ -842,8 +842,7 @@ export function genericImprint(
   const c = CONTENT[lang].imprint;
   const operator = content.companyLegalName ?? branding.storeName;
   const lines = [c.operatedBy(operator)];
-  if (content.companyAddress)
-    lines.push(c.addressLine(content.companyAddress));
+  if (content.companyAddress) lines.push(c.addressLine(content.companyAddress));
   if (branding.contactEmail) lines.push(c.emailLine(branding.contactEmail));
   if (content.vatNumber) lines.push(c.vatLine(content.vatNumber));
   if (content.companyRegistration)

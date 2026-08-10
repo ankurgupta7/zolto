@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { SignJWT } from "jose";
-import { verifySessionJwt, sanitizeNextPath, sanitizeNextTarget } from "./oauth";
+import {
+  verifySessionJwt,
+  sanitizeNextPath,
+  sanitizeNextTarget,
+} from "./oauth";
 
 const SECRET = "test-jwt-secret-at-least-32-characters-long";
 const OTHER_SECRET = "different-jwt-secret-also-32-characters-plus";

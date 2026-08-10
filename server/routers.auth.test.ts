@@ -39,9 +39,10 @@ describe("auth.requestMagicLink", () => {
   it("forwards the email, next path, and request context", async () => {
     requestMagicLink.mockResolvedValue({ emailed: true });
     const context = ctx();
-    const result = await appRouter
-      .createCaller(context)
-      .auth.requestMagicLink({ email: "merchant@example.com", next: "/onboarding" });
+    const result = await appRouter.createCaller(context).auth.requestMagicLink({
+      email: "merchant@example.com",
+      next: "/onboarding",
+    });
 
     expect(requestMagicLink).toHaveBeenCalledWith({
       email: "merchant@example.com",
@@ -52,13 +53,19 @@ describe("auth.requestMagicLink", () => {
   });
 
   it("works without a next path", async () => {
-    requestMagicLink.mockResolvedValue({ emailed: false, previewUrl: "http://x" });
+    requestMagicLink.mockResolvedValue({
+      emailed: false,
+      previewUrl: "http://x",
+    });
     const result = await appRouter
       .createCaller(ctx())
       .auth.requestMagicLink({ email: "merchant@example.com" });
 
     expect(requestMagicLink).toHaveBeenCalledWith(
-      expect.objectContaining({ email: "merchant@example.com", next: undefined }),
+      expect.objectContaining({
+        email: "merchant@example.com",
+        next: undefined,
+      }),
     );
     expect(result).toEqual({ emailed: false, previewUrl: "http://x" });
   });

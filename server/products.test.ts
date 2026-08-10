@@ -40,32 +40,30 @@ vi.mock("./db", () => ({
   getTenantSettings: vi
     .fn()
     .mockResolvedValue({ vertical: "jewellery", verticalDescription: null }),
-  getTenantCategories: vi
-    .fn()
-    .mockResolvedValue(
-      [
-        { key: "Necklaces", extraIncludes: ["Sets"] },
-        { key: "Earrings", extraIncludes: ["Sets"] },
-        { key: "Sets" },
-        { key: "Rings" },
-        { key: "Bracelets" },
-        { key: "Bangles" },
-        { key: "Anklets" },
-        { key: "Brooches" },
-        { key: "Hair Accessories" },
-        { key: "Other" },
-      ].map((c, i) => ({
-        id: i + 1,
-        tenantId: 7,
-        key: c.key,
-        labelEn: c.key,
-        labelDe: null,
-        extraIncludes: c.extraIncludes ?? null,
-        sortOrder: i,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      })),
-    ),
+  getTenantCategories: vi.fn().mockResolvedValue(
+    [
+      { key: "Necklaces", extraIncludes: ["Sets"] },
+      { key: "Earrings", extraIncludes: ["Sets"] },
+      { key: "Sets" },
+      { key: "Rings" },
+      { key: "Bracelets" },
+      { key: "Bangles" },
+      { key: "Anklets" },
+      { key: "Brooches" },
+      { key: "Hair Accessories" },
+      { key: "Other" },
+    ].map((c, i) => ({
+      id: i + 1,
+      tenantId: 7,
+      key: c.key,
+      labelEn: c.key,
+      labelDe: null,
+      extraIncludes: c.extraIncludes ?? null,
+      sortOrder: i,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })),
+  ),
 }));
 
 // ─── Mock notification ─────────────────────────────────────────────────────────

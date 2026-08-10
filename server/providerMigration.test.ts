@@ -230,7 +230,9 @@ describe("mapStripeProducts", () => {
     ]);
     expect(result.rows).toHaveLength(2);
     expect(result.rows.every((r) => r.price === null)).toBe(true);
-    expect(result.warnings.join(" ")).toMatch(/2 products had no default price/);
+    expect(result.warnings.join(" ")).toMatch(
+      /2 products had no default price/,
+    );
   });
 
   it("warns about recurring prices and foreign currencies", () => {

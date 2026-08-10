@@ -1,7 +1,21 @@
-import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from "vitest";
+import {
+  describe,
+  it,
+  expect,
+  vi,
+  beforeAll,
+  beforeEach,
+  afterEach,
+} from "vitest";
 import express from "express";
 import request from "supertest";
-import { SignJWT, exportJWK, exportPKCS8, generateKeyPair, type CryptoKey } from "jose";
+import {
+  SignJWT,
+  exportJWK,
+  exportPKCS8,
+  generateKeyPair,
+  type CryptoKey,
+} from "jose";
 import { COOKIE_NAME } from "../../shared/const";
 
 const upsertUser = vi.fn();
@@ -35,7 +49,12 @@ let applePublicJwk: Record<string, unknown>;
 beforeAll(async () => {
   const apple = await generateKeyPair("ES256", { extractable: true });
   applePrivateKey = apple.privateKey;
-  applePublicJwk = { ...(await exportJWK(apple.publicKey)), kid: APPLE_KID, alg: "ES256", use: "sig" };
+  applePublicJwk = {
+    ...(await exportJWK(apple.publicKey)),
+    kid: APPLE_KID,
+    alg: "ES256",
+    use: "sig",
+  };
 
   const ours = await generateKeyPair("ES256", { extractable: true });
   process.env.APPLE_PRIVATE_KEY = await exportPKCS8(ours.privateKey);
@@ -131,7 +150,9 @@ describe("GET /api/oauth/apple/login", () => {
     );
     expect(loc.searchParams.get("state")).toBeTruthy();
 
-    const setCookie = (res.headers["set-cookie"] as unknown as string[]).join(";");
+    const setCookie = (res.headers["set-cookie"] as unknown as string[]).join(
+      ";",
+    );
     expect(setCookie).toContain("apple_oauth_state=");
   });
 
@@ -219,7 +240,9 @@ describe("POST /api/oauth/apple/callback", () => {
         role: "admin",
       }),
     );
-    const setCookie = (res.headers["set-cookie"] as unknown as string[]).join(";");
+    const setCookie = (res.headers["set-cookie"] as unknown as string[]).join(
+      ";",
+    );
     expect(setCookie).toContain(`${COOKIE_NAME}=`);
   });
 
