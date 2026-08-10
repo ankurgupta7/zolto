@@ -65,6 +65,22 @@ function generateReferralCode(): string {
 
 const HEX_COLOR = /^#[0-9A-Fa-f]{6}$/;
 
+// The merchant-authored text columns on tenant_settings — the store's own
+// words (hero, About, display name) and its legal identity. All share one
+// rule: NULL means "nothing written, use the generated template copy", so
+// updateSettings normalises a submitted blank string to NULL rather than
+// storing an empty one that would read as "written, but empty".
+const AUTHORED_TEXT_FIELDS = [
+  "heroHeadline",
+  "heroSubtitle",
+  "aboutBody",
+  "whiteLabelName",
+  "companyLegalName",
+  "companyAddress",
+  "vatNumber",
+  "companyRegistration",
+] as const;
+
 // Signup accepts the merchant's logo inline (same reasoning as setTwintQr: the
 // merchant has a file, not a URL). SVG is deliberately excluded — a stored SVG
 // served from /uploads can carry script, and nothing here sanitizes it.
@@ -799,6 +815,26 @@ rationale: one friendly sentence (max 25 words) naming BOTH colors, e.g. "Deep f
         // can pull in the new preset via categories.applyPreset.
         vertical: z.enum(VERTICALS).optional(),
         verticalDescription: z.string().trim().max(500).nullable().optional(),
+        // ── Merchant-authored storefront content ────────────────────────────
+        // Nullable, not merely optional: null is how a merchant deletes what
+        // they wrote and goes back to the generated template copy. `.optional()`
+        // alone (as the older branding fields above use) can only ever set a
+        // value, never clear one. Lengths match the columns in drizzle/schema.ts.
+        heroImageUrl: z.string().url().max(1024).nullable().optional(),
+        heroHeadline: z.string().trim().max(120).nullable().optional(),
+        heroSubtitle: z.string().trim().max(300).nullable().optional(),
+        aboutBody: z.string().trim().max(5000).nullable().optional(),
+        // The store's display name on its own storefront, receipts and
+        // notification emails. The column has been read server-side since it
+        // was added (htmlHead.ts, pos.ts, discord.ts, slack.ts, whatsapp.ts,
+        // reconciliation.ts) but was missing from this schema, so nothing
+        // could ever set it.
+        whiteLabelName: z.string().trim().max(255).nullable().optional(),
+        // Legal identity for the storefront's Impressum.
+        companyLegalName: z.string().trim().max(255).nullable().optional(),
+        companyAddress: z.string().trim().max(300).nullable().optional(),
+        vatNumber: z.string().trim().max(64).nullable().optional(),
+        companyRegistration: z.string().trim().max(64).nullable().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -839,6 +875,17 @@ rationale: one friendly sentence (max 25 words) naming BOTH colors, e.g. "Deep f
         });
       }
 
+      // A merchant who empties one of the authored-content boxes sends "",
+      // which would store a blank string where NULL means "fall back to the
+      // generated copy". Normalising here keeps "has this store written
+      // anything?" a null check everywhere downstream — including the imprint,
+      // which hides its "you still need to add your legal details" note once
+      // the details exist, and must not be fooled by an empty string.
+      const patch = { ...input };
+      for (const field of AUTHORED_TEXT_FIELDS) {
+        if (patch[field] === "") patch[field] = null;
+      }
+
       const existing = await db.query.tenantSettings.findFirst({
         where: eq(tenantSettings.tenantId, ctx.tenant.id),
       });
@@ -846,12 +893,12 @@ rationale: one friendly sentence (max 25 words) naming BOTH colors, e.g. "Deep f
       if (existing) {
         await db
           .update(tenantSettings)
-          .set({ ...input, updatedAt: new Date() })
+          .set({ ...patch, updatedAt: new Date() })
           .where(eq(tenantSettings.id, existing.id));
       } else {
         await db.insert(tenantSettings).values({
           tenantId: ctx.tenant.id,
-          ...input,
+          ...patch,
         });
       }
 

@@ -30,6 +30,7 @@ import Keys from "@/pages/admin/Keys";
 import Categories from "@/pages/admin/Categories";
 import CsvImport from "@/pages/CsvImport";
 import Domain from "@/pages/admin/Domain";
+import Storefront from "@/pages/admin/Storefront";
 import Billing from "@/pages/Billing";
 
 const params = new URLSearchParams(location.search);
@@ -81,6 +82,26 @@ const RESPONSES: Record<string, unknown> = {
     twintQrUrl: null,
     vertical: "ceramics",
     verticalDescription: "Wheel-thrown stoneware in muted glazes",
+    // A store that has written its own words, so the Storefront page's content
+    // card is captured filled in rather than as four empty boxes — the state
+    // that actually needs looking at.
+    whiteLabelName: "Bergblume Keramik",
+    logoUrl: null,
+    primaryColor: "#3A5A40",
+    secondaryColor: "#B08968",
+    metaTitle: "Bergblume Keramik — handgetöpfertes Steinzeug",
+    metaDescription:
+      "Auf der Scheibe gedrehtes Steinzeug aus dem Atelier in Basel.",
+    heroImageUrl: null,
+    heroHeadline: "Von Hand gedreht, Stück für Stück",
+    heroSubtitle:
+      "Steinzeug aus dem Atelier — online bestellen oder bei uns vorbeikommen.",
+    aboutBody:
+      "Wir haben 2018 mit einem Brennofen und einem kleinen Tisch angefangen.\n\nHeute drehen wir jedes Stück von Hand in unserem Atelier in Basel.",
+    companyLegalName: "Bergblume Keramik GmbH",
+    companyAddress: "Musterstrasse 1\n4051 Basel\nSchweiz",
+    vatNumber: "CHE-123.456.789 MWST",
+    companyRegistration: "CH-270.3.001.234-5",
   },
   // Bergblume is a ceramics studio — its own category list, not jewellery.
   "categories.list": [
@@ -220,6 +241,7 @@ const PAGES: Record<string, React.ComponentType> = {
   channels: Channels,
   keys: Keys,
   domain: Domain,
+  storefront: Storefront,
 };
 
 // Billing lives outside ADMIN_NAV (it is reached from the account menu), so it

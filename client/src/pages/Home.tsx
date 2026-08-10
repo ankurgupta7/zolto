@@ -51,12 +51,12 @@ function fadeInProps(delay = 0) {
 }
 
 export default function Home() {
-  const { branding } = useTenant();
+  const { branding, content } = useTenant();
   const { i18n } = useTranslation();
   const lang = matchSupportedLanguage(i18n.language) ?? "en";
   const { data: products } = trpc.products.list.useQuery({});
   const featured = products?.slice(0, 6) ?? [];
-  const hero = heroCopy(branding, lang);
+  const hero = heroCopy(branding, lang, content);
   const pillars = valueProps(lang);
   const chrome = pageChrome(branding, lang).home;
   const igHref = instagramHref(branding);
@@ -96,7 +96,7 @@ export default function Home() {
             aria-hidden="true"
           >
             <img
-              src="/hero-bg.svg"
+              src={hero.imageUrl}
               alt=""
               className="w-full h-full object-cover object-center scale-110"
               loading="eager"
@@ -156,9 +156,14 @@ export default function Home() {
             </div>
           </motion.div>
 
+          {/* Decoration, and the first thing to go when the hero gets tall:
+              a merchant's own headline wraps to two or three lines on a phone,
+              which pushes the CTAs down onto this label. Hidden below `sm`,
+              where a full-bleed hero already invites a scroll without being
+              told to. */}
           <motion.div
             style={{ opacity: scrollIndicatorOpacity }}
-            className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-white/30"
+            className="absolute bottom-8 left-1/2 -translate-x-1/2 hidden sm:flex flex-col items-center gap-2 text-white/30"
           >
             <span className="text-[10px] uppercase tracking-[0.2em] font-sans">
               {chrome.scroll}

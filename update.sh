@@ -909,6 +909,75 @@ else
   ok "0042 tenants.comp_granted_by already exists"
 fi
 
+# ── 0043: merchant-authored storefront content + legal identity ───────────────
+# Ships drizzle/0025_storefront_content.sql. Until now a store could change how
+# its website looked but not a word of what it said: the home hero, the About
+# page and the Impressum were generated templates with the store name
+# interpolated in, and the hero background was one static asset every store
+# shared. These columns are where a merchant's own words go.
+#
+# Every column is NULL for every existing store, and NULL means "keep using the
+# generated copy" rather than "render nothing", so this is additive and a
+# no-op until a merchant writes something. Idempotent.
+if [ "$(col_exists tenant_settings hero_image_url)" = "0" ]; then
+  run_sql "0043 add tenant_settings.hero_image_url" \
+    "ALTER TABLE \`tenant_settings\` ADD \`hero_image_url\` varchar(1024) NULL;"
+else
+  ok "0043 tenant_settings.hero_image_url already exists"
+fi
+
+if [ "$(col_exists tenant_settings hero_headline)" = "0" ]; then
+  run_sql "0043 add tenant_settings.hero_headline" \
+    "ALTER TABLE \`tenant_settings\` ADD \`hero_headline\` varchar(120) NULL;"
+else
+  ok "0043 tenant_settings.hero_headline already exists"
+fi
+
+if [ "$(col_exists tenant_settings hero_subtitle)" = "0" ]; then
+  run_sql "0043 add tenant_settings.hero_subtitle" \
+    "ALTER TABLE \`tenant_settings\` ADD \`hero_subtitle\` varchar(300) NULL;"
+else
+  ok "0043 tenant_settings.hero_subtitle already exists"
+fi
+
+if [ "$(col_exists tenant_settings about_body)" = "0" ]; then
+  run_sql "0043 add tenant_settings.about_body" \
+    "ALTER TABLE \`tenant_settings\` ADD \`about_body\` text NULL;"
+else
+  ok "0043 tenant_settings.about_body already exists"
+fi
+
+# The legal-notice fields. The generated Impressum has always told the merchant
+# they are responsible for adding their company form, registration or VAT number
+# and a registered address — and then gave them nowhere to put them.
+if [ "$(col_exists tenant_settings company_legal_name)" = "0" ]; then
+  run_sql "0043 add tenant_settings.company_legal_name" \
+    "ALTER TABLE \`tenant_settings\` ADD \`company_legal_name\` varchar(255) NULL;"
+else
+  ok "0043 tenant_settings.company_legal_name already exists"
+fi
+
+if [ "$(col_exists tenant_settings company_address)" = "0" ]; then
+  run_sql "0043 add tenant_settings.company_address" \
+    "ALTER TABLE \`tenant_settings\` ADD \`company_address\` text NULL;"
+else
+  ok "0043 tenant_settings.company_address already exists"
+fi
+
+if [ "$(col_exists tenant_settings vat_number)" = "0" ]; then
+  run_sql "0043 add tenant_settings.vat_number" \
+    "ALTER TABLE \`tenant_settings\` ADD \`vat_number\` varchar(64) NULL;"
+else
+  ok "0043 tenant_settings.vat_number already exists"
+fi
+
+if [ "$(col_exists tenant_settings company_registration)" = "0" ]; then
+  run_sql "0043 add tenant_settings.company_registration" \
+    "ALTER TABLE \`tenant_settings\` ADD \`company_registration\` varchar(64) NULL;"
+else
+  ok "0043 tenant_settings.company_registration already exists"
+fi
+
 # ── Record the applied migration set ──────────────────────────────────────────
 # Only reached when every migration above succeeded — `set -e` plus run_sql's
 # die() mean a failure never gets this far, so a half-applied schema is never
