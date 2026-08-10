@@ -6,18 +6,19 @@ name: iOS POS Build & Test
 # commits don't burn macOS runner minutes.
 
 on:
+  # PRs stay path-filtered so web-only PRs don't burn macOS runner minutes.
   pull_request:
     branches: ["main"]
     paths:
       - "ios/ZoltoPOS/**"
       - ".github/workflows/ios-pos-build.yml"
       - ".github/actions/ios-setup/**"
+  # Pushes to main are deliberately NOT path-filtered — merchants download this
+  # build from the rolling release, so every merge has to republish or "latest
+  # main build" stops being true. This does cost macOS minutes on every merge;
+  # that is the price of the download link never being stale.
   push:
     branches: ["main"]
-    paths:
-      - "ios/ZoltoPOS/**"
-      - ".github/workflows/ios-pos-build.yml"
-      - ".github/actions/ios-setup/**"
   workflow_dispatch:
 
 concurrency:
@@ -190,3 +191,55 @@ jobs:
           name: ZoltoPOS-unsigned
           path: ${{ runner.temp }}/ZoltoPOS-unsigned.ipa
           retention-days: 14
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # Job 3: Publish the IPA to the rolling `pos-latest` release, giving every
+  # tenant's admin a stable, auth-free download URL.
+  #
+  # This IPA is UNSIGNED, so it is not tap-to-install: the merchant re-signs it
+  # with AltServer/Sideloadly from a computer first. The admin UI says so
+  # plainly (client/src/components/admin/PosAppCard.tsx) rather than implying an
+  # App Store install. Making this tap-installable needs an Apple Developer
+  # Program account and App Store Connect secrets so the build can go to
+  # TestFlight — a separate step, not wired here.
+  #
+  # Runs on ubuntu, not macos: it only moves an artifact around.
+  # ────────────────────────────────────────────────────────────────────────────
+  publish:
+    name: Publish IPA to rolling release
+    needs: build-unsigned-ipa
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download unsigned IPA
+        uses: actions/download-artifact@v4
+        with:
+          name: ZoltoPOS-unsigned
+          path: ipa
+
+      - name: Stage asset + build metadata
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          cp ipa/ZoltoPOS-unsigned.ipa dist/ZoltoPOS-latest-unsigned.ipa
+          cat > dist/ios-build.json <<JSON
+          {
+            "platform": "ios",
+            "commit": "${GITHUB_SHA}",
+            "builtAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "runUrl": "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}",
+            "signed": false
+          }
+          JSON
+          cat dist/ios-build.json
+
+      - name: Publish to rolling release
+        uses: ./.github/actions/pos-release-upload
+        with:
+          files: dist/ZoltoPOS-latest-unsigned.ipa dist/ios-build.json
+          token: ${{ secrets.GITHUB_TOKEN }}

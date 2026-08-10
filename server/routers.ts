@@ -16,6 +16,7 @@ import { staffRouter } from "./routers/staff";
 import { chatRouter } from "./routers/chat";
 import { insightsRouter } from "./routers/insights";
 import { migrationRouter } from "./routers/migration";
+import { siteImportRouter } from "./routers/siteImport";
 import { platformRouter } from "./routers/platform";
 
 // ─── App router ───────────────────────────────────────────────────────────────
@@ -71,6 +72,7 @@ export const appRouter = router({
   insights: insightsRouter, // Sales/inventory stats + AI narrative (Pro)
   products: productsRouter,
   migration: migrationRouter, // Switch-in from Stripe/SumUp/Worldline
+  siteImport: siteImportRouter, // Paid one-time switch-in from an existing site
   categories: categoriesRouter,
   instagram: instagramRouter,
   checkout: checkoutRouter,

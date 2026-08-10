@@ -255,6 +255,37 @@
       "confirmTitle": "Confirm deleting duplicates",
       "confirmDescription": "These products will be permanently removed from the catalogue, including their photos. This cannot be undone.",
       "confirmLabel": "Deletion"
+    },
+    "siteImport": {
+      "title": "Bring your old shop with you",
+      "summary": "Point us at the site you sell on today and we will read it — products, prices, stock, photos, categories and your look.",
+      "priceBadge": "CHF {{price}}, once",
+      "urlLabel": "Your current shop address",
+      "urlPlaceholder": "https://yourshop.ch",
+      "previewCta": "See what we can bring over",
+      "freeNote": "Reading your site is free. You see everything we found — and how much of it — before anything is charged.",
+      "statProducts": "products found",
+      "statPriced": "with a price",
+      "statPhotos": "with a photo",
+      "statCategories": "categories",
+      "noPrice": "no price found",
+      "extraCategories": "Categories",
+      "extraCategoriesHint": "Recreate the {{count}} sections your site uses",
+      "extraBranding": "Logo & colour",
+      "extraBrandingFound": "Carry your logo and brand colour over",
+      "extraProfile": "Shop details",
+      "extraProfileFound": "Name, description and contact details",
+      "extraNothingFound": "Nothing we could read on that site",
+      "whyPaid": "This runs a real crawl over your site every time. You pay for the work of moving, once — never a monthly fee for keeping what is already yours.",
+      "payCta": "Pay CHF {{price}} and import",
+      "nothingToCharge": "There is nothing here worth charging you for. Try the address of a category page, or use the tools below.",
+      "checkoutUnavailable": "Card payments are not set up on this deployment, so this import cannot be purchased here.",
+      "paidReady": "Payment received — ready to add to your shop.",
+      "applyCta": "Add to my shop",
+      "doneTitle": "Done — {{created}} products added, {{updated}} updated.",
+      "doneHidden": "{{count}} arrived hidden because we could not read a price. Set one and they go live.",
+      "doneFailed": "These could not be added: {{names}}",
+      "doneAgain": "Import another site"
     }
   }
 }

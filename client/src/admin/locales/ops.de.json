@@ -255,6 +255,37 @@
       "confirmTitle": "Löschen der Duplikate bestätigen",
       "confirmDescription": "Diese Produkte werden endgültig aus dem Katalog entfernt, einschliesslich ihrer Fotos. Das lässt sich nicht rückgängig machen.",
       "confirmLabel": "Löschung"
+    },
+    "siteImport": {
+      "title": "Bring deinen alten Shop mit",
+      "summary": "Gib uns die Adresse deiner heutigen Verkaufsseite — wir lesen sie aus: Produkte, Preise, Lagerbestand, Fotos, Kategorien und dein Erscheinungsbild.",
+      "priceBadge": "CHF {{price}}, einmalig",
+      "urlLabel": "Adresse deines aktuellen Shops",
+      "urlPlaceholder": "https://deinshop.ch",
+      "previewCta": "Zeig mir, was übernommen werden kann",
+      "freeNote": "Das Auslesen ist gratis. Du siehst alles, was wir gefunden haben — und wie viel —, bevor irgendetwas verrechnet wird.",
+      "statProducts": "Produkte gefunden",
+      "statPriced": "mit Preis",
+      "statPhotos": "mit Foto",
+      "statCategories": "Kategorien",
+      "noPrice": "kein Preis gefunden",
+      "extraCategories": "Kategorien",
+      "extraCategoriesHint": "Die {{count}} Bereiche deiner Seite neu anlegen",
+      "extraBranding": "Logo & Farbe",
+      "extraBrandingFound": "Logo und Markenfarbe übernehmen",
+      "extraProfile": "Shop-Angaben",
+      "extraProfileFound": "Name, Beschreibung und Kontaktangaben",
+      "extraNothingFound": "Auf dieser Seite nichts Lesbares gefunden",
+      "whyPaid": "Dafür läuft jedes Mal ein echter Durchgang über deine Seite. Du zahlst einmal für die Arbeit des Umzugs — nie eine Monatsgebühr dafür, dass etwas liegen bleibt, das dir längst gehört.",
+      "payCta": "CHF {{price}} zahlen und importieren",
+      "nothingToCharge": "Hier gibt es nichts, wofür wir dir etwas verrechnen würden. Versuch die Adresse einer Kategorieseite oder nimm die Werkzeuge unten.",
+      "checkoutUnavailable": "Kartenzahlungen sind auf dieser Installation nicht eingerichtet, dieser Import kann hier nicht gekauft werden.",
+      "paidReady": "Zahlung erhalten — bereit für deinen Shop.",
+      "applyCta": "In meinen Shop übernehmen",
+      "doneTitle": "Fertig — {{created}} Produkte hinzugefügt, {{updated}} aktualisiert.",
+      "doneHidden": "{{count}} sind ausgeblendet angekommen, weil wir keinen Preis lesen konnten. Preis setzen, dann sind sie live.",
+      "doneFailed": "Diese konnten nicht angelegt werden: {{names}}",
+      "doneAgain": "Weitere Seite importieren"
     }
   }
 }

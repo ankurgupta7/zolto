@@ -101,11 +101,33 @@ await page.evaluate(async () => {
 });
 await page.waitForTimeout(1500);
 
+// SHOT_FILL="Your current shop address=https://bergblume.ch" types into a
+// field before anything is clicked. Without it, any state that lives behind a
+// form is unreachable: the submit button is disabled on an empty input, so
+// SHOT_CLICK alone silently captures the at-rest page and proves nothing.
+// Comma-separate to fill several; the value may contain "=", the label may not.
+if (process.env.SHOT_FILL) {
+  for (const pair of process.env.SHOT_FILL.split(",")) {
+    const [label, ...rest] = pair.split("=");
+    await page.getByLabel(label.trim()).first().fill(rest.join("=").trim());
+  }
+  await page.waitForTimeout(300);
+}
+
 // SHOT_CLICK="Add Product" clicks a control first, so a shot can capture what
 // a page looks like *after* an interaction rather than only at rest. Comma-
 // separate to click a sequence — SHOT_CLICK="Next,Next" walks a tour along.
+//
+// Use "||" as the separator instead when a label contains a comma of its own —
+// German and French CTAs routinely do ("Zeig mir, was übernommen werden kann"),
+// and splitting those on the comma looks for two buttons that don't exist and
+// times out. Copy should never be bent around the screenshot tool.
 if (process.env.SHOT_CLICK) {
-  for (const name of process.env.SHOT_CLICK.split(",")) {
+  const raw = process.env.SHOT_CLICK;
+  const names = (raw.includes("||") ? raw.split("||") : raw.split(","))
+    .map((n) => n.trim())
+    .filter(Boolean);
+  for (const name of names) {
     await page
       .getByRole("button", { name: name.trim(), exact: true })
       .first()

@@ -185,6 +185,26 @@ class ApiService {
         }
     }
 
+    /// Redeems a one-tap pairing token for the store's POS key.
+    ///
+    /// The only call that deliberately sends no `x-pos-key`: this is how a
+    /// register with no key gets one. The token is single-use, so this must be
+    /// called exactly once per link — a retry will be refused by the server.
+    ///
+    /// Nothing is saved here; the caller probes the returned key and then hands
+    /// it to StoreSession, so a key that doesn't actually work never replaces a
+    /// working pairing.
+    static func redeemPairing(baseURL: String, token: String) async throws -> PairingRedemption {
+        var req = try buildRequest(
+            baseURL: baseURL, apiKey: "", path: "api/pos/pair", method: "POST",
+            body: try JSONEncoder().encode(["token": token])
+        )
+        // buildRequest always sets x-pos-key; strip it so an unpaired device
+        // isn't sending an empty credential.
+        req.setValue(nil, forHTTPHeaderField: "x-pos-key")
+        return try await send(req)
+    }
+
     /// Validates candidate credentials during pairing WITHOUT saving them and
     /// without posting `.posKeyRejected`. Returns the store's config (identity
     /// included) so the pairing screen can greet the store by name.

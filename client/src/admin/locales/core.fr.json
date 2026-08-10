@@ -57,7 +57,18 @@
       "firstLaunch": "Ce que l'application demande au premier lancement",
       "step1": "1. Serveur",
       "copyServer": "Copier l'adresse du serveur",
-      "step2": "2. Votre clé API POS"
+      "step2": "2. Votre clé API POS",
+      "checking": "Recherche d’une version {{platform}}…",
+      "iosSideloadNote": "La version iPhone n’est pas signée par Apple : elle ne peut donc pas s’installer directement depuis ce lien. Téléchargez-la sur un ordinateur et installez-la avec AltStore ou Sideloadly. Android s’installe directement.",
+      "orPairInOneTap": "Ou sautez les deux étapes : générez un lien d’association depuis « Clés et accès » et touchez-le sur le téléphone de caisse — l’application se configure toute seule."
+    },
+    "posPair": {
+      "title": "Configurer cette caisse",
+      "description": "Ce lien associe cet appareil à votre boutique. Si l’application Zolto POS est installée, elle devrait déjà s’ouvrir.",
+      "openApp": "Ouvrir dans Zolto POS",
+      "noAppYet": "Vous n’avez pas encore l’application ?",
+      "installThenNewLink": "Les liens d’association expirent après quelques minutes : une fois l’application installée, générez-en un nouveau depuis « Clés et accès ».",
+      "missingToken": "Ce lien d’association est incomplet. Générez-en un nouveau depuis la page « Clés et accès » de votre boutique."
     }
   }
 }

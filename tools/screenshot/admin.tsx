@@ -20,6 +20,7 @@ import { httpBatchLink } from "@trpc/client";
 import superjson from "superjson";
 import "./entry.css";
 import { trpc } from "@/lib/trpc";
+import { SITE_IMPORT } from "@shared/platform";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { ADMIN_NAV } from "@/admin/nav";
 import ShopProfile from "@/pages/admin/ShopProfile";
@@ -28,7 +29,7 @@ import Pos from "@/pages/admin/Pos";
 import Channels from "@/pages/admin/Channels";
 import Keys from "@/pages/admin/Keys";
 import Categories from "@/pages/admin/Categories";
-import CsvImport from "@/pages/CsvImport";
+import AdminImport from "@/pages/admin/Import";
 import Domain from "@/pages/admin/Domain";
 import Storefront from "@/pages/admin/Storefront";
 import Billing from "@/pages/Billing";
@@ -133,6 +134,44 @@ const RESPONSES: Record<string, unknown> = {
   "tenant.rotatePosApiKey": {
     posApiKey: "pos_live_c1a9f2e84b7d4d21b6f0e5a83912cdEXAMPLE",
   },
+  // POS page: the rolling `pos-latest` release CI publishes on every merge to
+  // main, as server/posDownloads.ts resolves it — so the shot shows real links
+  // with their build stamp, and the iOS sideload warning that goes with an
+  // unsigned IPA. `?pos=unpublished` shows the no-build-yet state instead.
+  "tenant.posDownloads":
+    params.get("pos") === "unpublished"
+      ? { android: null, ios: null }
+      : {
+          android: {
+            url: "https://github.com/ankurgupta7/zolto/releases/download/pos-latest/ZoltoPOS-latest.apk",
+            requiresSideload: false,
+            sizeBytes: 9_240_000,
+            builtAt: "2026-08-09T09:12:00Z",
+            commit: "3f2a1bc",
+          },
+          ios: {
+            url: "https://github.com/ankurgupta7/zolto/releases/download/pos-latest/ZoltoPOS-latest-unsigned.ipa",
+            requiresSideload: true,
+            sizeBytes: 21_400_000,
+            builtAt: "2026-08-09T09:20:00Z",
+            commit: "3f2a1bc",
+          },
+        },
+  // Keys page: `?pairing=rotate` shows the "rotate once to enable" state a
+  // store lands in when its key predates the vault copy.
+  "tenant.posPairingAvailable": {
+    available: params.get("pairing") !== "rotate",
+  },
+  // Mutation response so the minted-link state (deep link + web link + QR +
+  // expiry) can be captured by clicking "Generate a pairing link".
+  "tenant.createPosPairingToken": {
+    available: true,
+    deepLink:
+      "zolto://pair?t=Q2xhdWRlRXhhbXBsZVBhaXJpbmdUb2tlbg&url=https%3A%2F%2Fbergblume.zolto.ch",
+    webLink:
+      "https://bergblume.zolto.ch/pos/pair?t=Q2xhdWRlRXhhbXBsZVBhaXJpbmdUb2tlbg",
+    expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+  },
   "tenant.channelConnect": {
     slackAuthorizeUrl: "https://slack.com/oauth/v2/authorize?client_id=stub",
     discordInviteUrl: "https://discord.com/oauth2/authorize?client_id=stub",
@@ -218,6 +257,55 @@ const RESPONSES: Record<string, unknown> = {
     csvProviders: ["sumup", "worldline", "generic"],
   },
   "products.adminList": [],
+  // Import page: the paid one-time switch-in (shared/platform.ts SITE_IMPORT).
+  "siteImport.status": {
+    offer: SITE_IMPORT,
+    checkoutAvailable: true,
+    latest: null,
+  },
+  // Mutation response, so `SHOT_CLICK` on "See what we can bring over" captures
+  // the state that actually matters: what was found, shown BEFORE the price.
+  "siteImport.preview": {
+    importId: 5,
+    pagesRead: 34,
+    priceChf: SITE_IMPORT.priceChf,
+    productCount: 118,
+    pricedCount: 112,
+    withPhoto: 104,
+    categories: ["Mugs & Cups", "Bowls", "Vases"],
+    profile: {
+      storeName: "Bergblume Keramik",
+      about: "Wheel-thrown stoneware in muted glazes",
+      email: "hello@bergblume.ch",
+      logoUrl: "https://bergblume.ch/logo.png",
+      primaryColor: "#4a5d4e",
+    },
+    warnings: [
+      "6 of 118 products had no price we could read — you can fill those in before importing.",
+      "14 products came without a photo.",
+    ],
+    has: {
+      logo: true,
+      brandColour: true,
+      shopProfile: true,
+      categories: true,
+    },
+    products: [
+      { name: "Stoneware mug — oat", price: 42, currency: "CHF" },
+      { name: "Stoneware mug — slate", price: 42, currency: "CHF" },
+      { name: "Serving bowl, large", price: 120, currency: "CHF" },
+      { name: "Bud vase", price: 38, currency: "CHF" },
+      { name: "Studio seconds box", price: null },
+    ],
+  },
+};
+
+// Returning from Stripe: /admin/products/import?imported=5. The card reads the
+// row's status, not the URL, so this is the only way to see the paid state.
+RESPONSES["siteImport.get"] = {
+  ...(RESPONSES["siteImport.preview"] as Record<string, unknown>),
+  sourceUrl: "https://bergblume.ch",
+  status: params.get("paid") === "no" ? "previewed" : "paid",
 };
 
 window.fetch = (async (input: RequestInfo | URL) => {
@@ -234,7 +322,9 @@ window.fetch = (async (input: RequestInfo | URL) => {
 
 const PAGES: Record<string, React.ComponentType> = {
   categories: Categories,
-  import: CsvImport,
+  // The Import hub (/admin/products/import), which is what ADMIN_NAV points at
+  // — the CSV importer is a full-screen flow reached from one of its cards.
+  import: AdminImport,
   account: ShopProfile,
   me: MyAccount,
   pos: Pos,

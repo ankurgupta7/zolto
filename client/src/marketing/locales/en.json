@@ -475,7 +475,8 @@
         "Online and AI-agent orders carry a 1% fee on the Free plan. No online sales this month? You pay CHF 0. That's it.",
         "Pro (CHF 25/month) kills the 1% fee entirely and unlocks unmetered AI. Selling past roughly CHF 2,500/month online? Pro's cheaper — we'll tell you in-app the moment it's worth switching.",
         "We'll never nickel-and-dime your AI usage. Talk to it as much as you want — plans scale on products, photos and storage, not on how chatty you get.",
-        "What we charge is not what a sale costs. Your payment provider takes its own cut and that money goes to them, not to us — and on card rate alone we are not the cheapest way to get paid in Switzerland. We'd rather show you the whole stack and let you do the arithmetic."
+        "What we charge is not what a sale costs. Your payment provider takes its own cut and that money goes to them, not to us — and on card rate alone we are not the cheapest way to get paid in Switzerland. We'd rather show you the whole stack and let you do the arithmetic.",
+        "One thing costs extra, once: CHF 20 to lift your whole existing shop — products, stock, photos, categories, your story — off your old site and into Zolto in about a minute. That buys real machine time reading your site, not rent on a row in a database. Incumbents charge you monthly for storing what you already own; we charge once for the work of moving it, and never again."
       ]
     },
     "costComparison": {
@@ -871,7 +872,12 @@
       "tables": {
         "weekly": {
           "caption": "Online orders, order value and traffic by week",
-          "head": ["Week", "Online orders", "Avg order value", "Visitors"],
+          "head": [
+            "Week",
+            "Online orders",
+            "Avg order value",
+            "Visitors"
+          ],
           "rowLabels": [
             "Week 1 (launch)",
             "Week 2",
@@ -882,7 +888,11 @@
         },
         "sources": {
           "caption": "Where the online orders came from",
-          "head": ["Source", "Orders", "% of online sales"],
+          "head": [
+            "Source",
+            "Orders",
+            "% of online sales"
+          ],
           "rowLabels": [
             "Instagram (organic)",
             "Direct / returning",

@@ -21,6 +21,10 @@ const { dbMock, createStripeCustomer, buildConnectAuthorizeUrl, storagePut } =
       deleteUserById: vi.fn(),
       seedTenantCategories: vi.fn(),
       getTenantSettingsByDomain: vi.fn(),
+      // POS pairing tokens — reached through server/posPairing.ts, which imports
+      // the same ./db module this mock stands in for.
+      createPosPairingToken: vi.fn(),
+      claimPosPairingToken: vi.fn(),
     },
     createStripeCustomer: vi.fn(),
     buildConnectAuthorizeUrl: vi.fn(),
@@ -37,6 +41,7 @@ const vaultMock = vi.hoisted(() => ({
   listTenantSecrets: vi.fn(),
   setTenantSecret: vi.fn(),
   deleteTenantSecret: vi.fn(),
+  getTenantSecret: vi.fn(),
   startGatewayForToken: vi.fn(),
 }));
 vi.mock("../tenantSecrets", () => ({
@@ -44,7 +49,13 @@ vi.mock("../tenantSecrets", () => ({
   listTenantSecrets: vaultMock.listTenantSecrets,
   setTenantSecret: vaultMock.setTenantSecret,
   deleteTenantSecret: vaultMock.deleteTenantSecret,
+  getTenantSecret: vaultMock.getTenantSecret,
 }));
+
+// posDownloads reaches out to GitHub's API. Mocked so the router tests stay
+// offline; its own resolution logic is covered in server/posDownloads.test.ts.
+const getPosDownloads = vi.hoisted(() => vi.fn());
+vi.mock("../posDownloads", () => ({ getPosDownloads }));
 vi.mock("../discord", () => ({
   startGatewayForToken: vaultMock.startGatewayForToken,
 }));
@@ -1872,5 +1883,174 @@ describe("tenant.domainStatus authorization", () => {
       pointsToUs: false,
     });
     delete process.env.PLATFORM_DOMAIN;
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// POS app downloads + one-tap register pairing
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe("tenant.rotatePosApiKey", () => {
+  function rotateCtx(tenantId = 7) {
+    return ctx({ openId: "google:a", role: "admin", tenantId });
+  }
+
+  beforeEach(() => {
+    // clearAllMocks resets calls but keeps implementations, so restate the
+    // vault defaults — otherwise the "no vault key" case below leaks into every
+    // later test in the file.
+    vaultMock.isTenantSecretsConfigured.mockReturnValue(true);
+    vaultMock.setTenantSecret.mockResolvedValue(undefined);
+    dbMock.db.update = vi.fn(() => ({
+      set: vi.fn(() => ({ where: vi.fn().mockResolvedValue(undefined) })),
+    })) as never;
+  });
+
+  it("returns the plaintext once and vaults a copy for pairing", async () => {
+    const res = await tenantRouter.createCaller(rotateCtx()).rotatePosApiKey();
+
+    expect(res.posApiKey).toMatch(/^[0-9a-f]{64}$/);
+    // The vault copy is what makes a pairing link mintable later without
+    // rotating again and signing every other register out.
+    expect(vaultMock.setTenantSecret).toHaveBeenCalledWith(
+      7,
+      "pos",
+      res.posApiKey,
+    );
+  });
+
+  it("still rotates when the deployment has no vault key", async () => {
+    // A self-hoster without TENANT_SECRETS_KEY must not lose key rotation just
+    // because one-tap pairing is unavailable to them.
+    vaultMock.isTenantSecretsConfigured.mockReturnValue(false);
+    const res = await tenantRouter.createCaller(rotateCtx()).rotatePosApiKey();
+    expect(res.posApiKey).toMatch(/^[0-9a-f]{64}$/);
+    expect(vaultMock.setTenantSecret).not.toHaveBeenCalled();
+  });
+
+  it("still rotates when the vault write itself fails", async () => {
+    vaultMock.setTenantSecret.mockRejectedValue(new Error("vault down"));
+    await expect(
+      tenantRouter.createCaller(rotateCtx()).rotatePosApiKey(),
+    ).resolves.toMatchObject({ posApiKey: expect.any(String) });
+  });
+
+  it("refuses a non-admin", async () => {
+    await expect(
+      tenantRouter
+        .createCaller(ctx({ openId: "google:b", role: "user", tenantId: 7 }))
+        .rotatePosApiKey(),
+    ).rejects.toThrow();
+  });
+});
+
+describe("tenant.posDownloads", () => {
+  it("hands back what the resolver produced, for any signed-in user", async () => {
+    getPosDownloads.mockResolvedValue({
+      android: { url: "https://x.test/a.apk", requiresSideload: false },
+      ios: { url: "https://x.test/a.ipa", requiresSideload: true },
+    });
+    const res = await tenantRouter
+      .createCaller(ctx({ openId: "google:a", role: "user", tenantId: 7 }))
+      .posDownloads();
+    expect(res.android?.url).toBe("https://x.test/a.apk");
+    expect(res.ios?.requiresSideload).toBe(true);
+  });
+
+  it("refuses an anonymous caller", async () => {
+    await expect(
+      tenantRouter.createCaller(ctx()).posDownloads(),
+    ).rejects.toThrow();
+  });
+});
+
+describe("tenant POS pairing links", () => {
+  const admin = { openId: "google:a", role: "admin", tenantId: 7 };
+
+  beforeEach(() => {
+    vaultMock.isTenantSecretsConfigured.mockReturnValue(true);
+    vaultMock.getTenantSecret.mockResolvedValue("k".repeat(64));
+    dbMock.createPosPairingToken.mockResolvedValue(undefined);
+  });
+
+  it("mints a deep link and a web link for the caller's own store", async () => {
+    const res = await tenantRouter
+      .createCaller(ctx(admin))
+      .createPosPairingToken();
+
+    expect(res.available).toBe(true);
+    if (!res.available) return;
+    expect(res.deepLink).toMatch(/^zolto:\/\/pair\?t=/);
+    expect(res.webLink).toContain("/pos/pair?t=");
+    expect(res.expiresAt.getTime()).toBeGreaterThan(Date.now());
+
+    // Stored against tenant 7, and only as a hash.
+    const row = dbMock.createPosPairingToken.mock.calls[0][0];
+    expect(row.tenantId).toBe(7);
+    expect(row.token).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it("never puts the POS key in the link", async () => {
+    // The whole point of the token: a key in a URL lands in history and logs.
+    const key = "k".repeat(64);
+    vaultMock.getTenantSecret.mockResolvedValue(key);
+    const res = await tenantRouter
+      .createCaller(ctx(admin))
+      .createPosPairingToken();
+    if (!res.available) throw new Error("expected a link");
+    expect(res.deepLink).not.toContain(key);
+    expect(res.webLink).not.toContain(key);
+  });
+
+  it("reports needsRotation when the store's key predates the vault", async () => {
+    vaultMock.getTenantSecret.mockResolvedValue(null);
+    const res = await tenantRouter
+      .createCaller(ctx(admin))
+      .createPosPairingToken();
+    expect(res).toEqual({ available: false, reason: "needsRotation" });
+    expect(dbMock.createPosPairingToken).not.toHaveBeenCalled();
+  });
+
+  it("posPairingAvailable answers without minting anything", async () => {
+    await expect(
+      tenantRouter.createCaller(ctx(admin)).posPairingAvailable(),
+    ).resolves.toEqual({ available: true });
+    expect(dbMock.createPosPairingToken).not.toHaveBeenCalled();
+  });
+
+  it("refuses a non-admin and an anonymous caller", async () => {
+    await expect(
+      tenantRouter
+        .createCaller(ctx({ openId: "google:b", role: "user", tenantId: 7 }))
+        .createPosPairingToken(),
+    ).rejects.toThrow();
+    await expect(
+      tenantRouter.createCaller(ctx()).createPosPairingToken(),
+    ).rejects.toThrow();
+    expect(dbMock.createPosPairingToken).not.toHaveBeenCalled();
+  });
+
+  // The cross-tenant case is the one that silently regresses (CLAUDE.md). This
+  // procedure is bare `adminProcedure`, which alone only proves "admin
+  // somewhere" — so what protects store 42 here is that every read and write
+  // goes through ctx.user.tenantId and nothing reads ctx.tenant. Pointing an
+  // admin of store 7 at store 42's host must still only ever mint for store 7.
+  it("mints for the caller's own store even when addressing another store's host", async () => {
+    const res = await tenantRouter
+      .createCaller(ctx(admin, { id: 42, plan: "free" }))
+      .createPosPairingToken();
+
+    expect(res.available).toBe(true);
+    expect(dbMock.createPosPairingToken.mock.calls[0][0].tenantId).toBe(7);
+    expect(vaultMock.getTenantSecret).toHaveBeenCalledWith(7, "pos");
+    expect(vaultMock.getTenantSecret).not.toHaveBeenCalledWith(42, "pos");
+  });
+
+  it("checks availability for the caller's own store, not the addressed host", async () => {
+    await tenantRouter
+      .createCaller(ctx(admin, { id: 42, plan: "free" }))
+      .posPairingAvailable();
+    expect(vaultMock.getTenantSecret).toHaveBeenCalledWith(7, "pos");
+    expect(vaultMock.getTenantSecret).not.toHaveBeenCalledWith(42, "pos");
   });
 });

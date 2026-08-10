@@ -6,37 +6,79 @@
  * never said where to get the app itself, which is the first thing a merchant
  * standing at a market stall needs.
  *
- * Store links are read from build-time env because the app is built in CI and
- * is not published to either store yet (there is no listing URL to hard-code).
- * When a link is missing this says so plainly rather than rendering a dead
- * button — a merchant who taps a broken store link concludes the POS does not
- * exist. Pairing needs two things and both are shown here: the server address
- * to type in, and the store's POS API key (which lives on Keys & access, since
- * it is a credential and this page is not where secrets belong).
+ * Links come from the server (tenant.posDownloads → server/posDownloads.ts),
+ * which resolves them to the rolling `pos-latest` release CI publishes on every
+ * merge to main. They used to come from build-time env vars nothing ever set,
+ * which is why this card only ever said "not published yet".
+ *
+ * Two things this is careful about:
+ *
+ *   - It never renders a dead button. A missing link says so plainly — a
+ *     merchant who taps a broken store link concludes the POS does not exist.
+ *   - It does not pretend the iOS build is an App Store install. That build is
+ *     unsigned and has to be re-signed from a computer, so the card says so
+ *     where the merchant will read it, not in a footnote.
  */
 
 import { Link } from "wouter";
-import { Smartphone, Apple, KeyRound, Copy, Check } from "lucide-react";
+import { Smartphone, Apple, KeyRound, Copy, Check, Info } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { trpc } from "@/lib/trpc";
 // Ensure the shared i18n instance is initialized even when this card is
 // rendered in isolation (e.g. under test) before main.tsx has run.
 import "@/lib/i18n";
 
-const ANDROID_URL = import.meta.env.VITE_POS_ANDROID_URL as string | undefined;
-const IOS_URL = import.meta.env.VITE_POS_IOS_URL as string | undefined;
+/** "9.2 MB" — merchants pair over stall wifi, so the size is worth showing. */
+function formatSize(bytes?: number): string | null {
+  if (!bytes || bytes <= 0) return null;
+  const mb = bytes / 1_000_000;
+  return `${mb < 10 ? mb.toFixed(1) : Math.round(mb)} MB`;
+}
+
+function formatBuiltAt(iso?: string, locale?: string): string | null {
+  if (!iso) return null;
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toLocaleDateString(locale, {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+interface Download {
+  url: string;
+  requiresSideload: boolean;
+  sizeBytes?: number;
+  builtAt?: string;
+  commit?: string;
+}
 
 function StoreLink({
-  href,
+  download,
   icon: Icon,
   platform,
+  loading,
 }: {
-  href?: string;
+  download?: Download | null;
   icon: typeof Smartphone;
   platform: string;
+  loading: boolean;
 }) {
-  const { t } = useTranslation("admin");
-  if (!href) {
+  const { t, i18n } = useTranslation("admin");
+
+  if (loading) {
+    return (
+      <div className="flex items-center gap-2 rounded-md border border-dashed px-4 py-2 text-sm text-muted-foreground">
+        <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+        {t("core.pos.checking", { platform })}
+      </div>
+    );
+  }
+
+  // No URL at all: say so rather than rendering something that 404s.
+  if (!download) {
     return (
       <div className="flex items-center gap-2 rounded-md border border-dashed px-4 py-2 text-sm text-muted-foreground">
         <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
@@ -44,35 +86,74 @@ function StoreLink({
       </div>
     );
   }
+
+  const size = formatSize(download.sizeBytes);
+  const built = formatBuiltAt(download.builtAt, i18n.language);
+  // Which build a merchant is running is the first thing support needs.
+  const stamp = [size, built, download.commit].filter(Boolean).join(" · ");
+
   return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noreferrer"
-      className="inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
-    >
-      <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
-      {t("core.pos.getFor", { platform })}
-    </a>
+    <div className="flex flex-col gap-1">
+      <a
+        href={download.url}
+        target="_blank"
+        rel="noreferrer"
+        className="inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+      >
+        <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+        {t("core.pos.getFor", { platform })}
+      </a>
+      {stamp && (
+        <span className="px-1 text-xs text-muted-foreground">{stamp}</span>
+      )}
+    </div>
   );
 }
 
 export function PosAppCard({ serverUrl }: { serverUrl: string }) {
   const { t } = useTranslation("admin");
   const [copied, setCopied] = useState(false);
-  const unpublished = !ANDROID_URL && !IOS_URL;
+  const downloads = trpc.tenant.posDownloads.useQuery(undefined, {
+    retry: false,
+    // The server caches for 15 minutes; re-asking on every mount buys nothing.
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const android = downloads.data?.android;
+  const ios = downloads.data?.ios;
+  const loading = downloads.isLoading;
+  const nothingPublished = !loading && !android && !ios;
+  // Only mention sideloading when a build that needs it is actually on offer.
+  const showSideloadNote = Boolean(ios?.requiresSideload);
 
   return (
     <div>
-      <div className="flex flex-wrap gap-3">
-        <StoreLink href={ANDROID_URL} icon={Smartphone} platform="Android" />
-        <StoreLink href={IOS_URL} icon={Apple} platform="iPhone" />
+      <div className="flex flex-wrap items-start gap-3">
+        <StoreLink
+          download={android}
+          icon={Smartphone}
+          platform="Android"
+          loading={loading}
+        />
+        <StoreLink
+          download={ios}
+          icon={Apple}
+          platform="iPhone"
+          loading={loading}
+        />
       </div>
 
-      {unpublished && (
+      {nothingPublished && (
         <p className="mt-3 text-xs text-muted-foreground">
           {t("core.pos.testingNote")}
         </p>
+      )}
+
+      {showSideloadNote && (
+        <div className="mt-3 flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
+          <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+          <p>{t("core.pos.iosSideloadNote")}</p>
+        </div>
       )}
 
       <div className="mt-5 border-t pt-5">
@@ -118,6 +199,11 @@ export function PosAppCard({ serverUrl }: { serverUrl: string }) {
             </Link>
           </li>
         </ol>
+        {/* Both steps above are skippable: the pairing link on Keys & access
+            configures the app on tap, so this is the manual fallback. */}
+        <p className="mt-3 text-xs text-muted-foreground">
+          {t("core.pos.orPairInOneTap")}
+        </p>
       </div>
     </div>
   );

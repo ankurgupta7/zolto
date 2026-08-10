@@ -3,15 +3,20 @@ name: Android Build & Test
 # The POS app lives in android/ and is multi-tenant: registers are bound to
 # their store at runtime (SetupActivity → PosConfig), so there are no baked-in
 # server URLs or POS keys and no secrets.xml step. Unit tests + a debug APK
-# build guard every change under android/.
+# build guard every change under android/, and every merge to main republishes
+# the APK to the rolling `pos-latest` release that tenants download from.
 
 on:
+  # PRs stay path-filtered — a web-only PR has no reason to build the app.
   pull_request:
     branches: ["main"]
     paths: ["android/**", ".github/workflows/android-build.yml"]
+  # Pushes to main deliberately are NOT path-filtered. Merchants download this
+  # build from the rolling release (server/posDownloads.ts), so "latest main"
+  # has to mean the latest main — a server-only merge still republishes, and the
+  # published app never drifts behind the server it talks to.
   push:
     branches: ["main"]
-    paths: ["android/**", ".github/workflows/android-build.yml"]
   workflow_dispatch:
 
 concurrency:
@@ -62,3 +67,48 @@ jobs:
         with:
           name: ZoltoPOS-debug
           path: android/app/build/outputs/apk/debug/app-debug.apk
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # Publish to the rolling `pos-latest` release so each tenant's admin has a
+  # stable, auth-free download URL. Only on merges to main: a PR build is not
+  # something a merchant should be able to install.
+  # ────────────────────────────────────────────────────────────────────────────
+  publish:
+    name: Publish APK to rolling release
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download debug APK
+        uses: actions/download-artifact@v4
+        with:
+          name: ZoltoPOS-debug
+          path: apk
+
+      # Stable asset name: the admin UI's link must not change per build.
+      # The sidecar JSON carries the provenance the fixed name can't.
+      - name: Stage asset + build metadata
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          cp apk/app-debug.apk dist/ZoltoPOS-latest.apk
+          cat > dist/android-build.json <<JSON
+          {
+            "platform": "android",
+            "commit": "${GITHUB_SHA}",
+            "builtAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "runUrl": "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          }
+          JSON
+          cat dist/android-build.json
+
+      - name: Publish to rolling release
+        uses: ./.github/actions/pos-release-upload
+        with:
+          files: dist/ZoltoPOS-latest.apk dist/android-build.json
+          token: ${{ secrets.GITHUB_TOKEN }}

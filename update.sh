@@ -978,6 +978,22 @@ else
   ok "0043 tenant_settings.company_registration already exists"
 fi
 
+# ── 0044: one-tap POS register pairing ────────────────────────────────────────
+# Ships drizzle/0026_pos_pairing_tokens.sql. Short-lived single-use tokens so a
+# merchant can pair a register by tapping a link rather than typing a 64-char
+# key into a phone; the key itself stays out of the URL and out of this table.
+# Additive — nothing reads it until a merchant mints a pairing link.
+# Idempotent; see migrate_0044_pos_pairing_tokens in deploy/lib/db.sh.
+migrate_0044_pos_pairing_tokens
+
+# ── 0045: the paid one-time site import ──────────────────────────────────────
+# Ships drizzle/0027_site_imports.sql. One row per attempt at lifting a
+# merchant's existing shop across; the previewed → paid → applied status is what
+# stops a replayed Stripe webhook importing the same catalogue twice. Additive —
+# nothing reads it until a merchant starts an import.
+# Idempotent; see migrate_0045_site_imports in deploy/lib/db.sh.
+migrate_0045_site_imports
+
 # ── Record the applied migration set ──────────────────────────────────────────
 # Only reached when every migration above succeeded — `set -e` plus run_sql's
 # die() mean a failure never gets this far, so a half-applied schema is never

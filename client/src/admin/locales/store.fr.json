@@ -247,7 +247,17 @@
       "generate": "Générer une nouvelle clé",
       "apiTitle": "Accès API public",
       "apiDescription": "Accès programmatique à votre catalogue et à vos commandes.",
-      "apiNote": "Une API publique pour créer vos propres intégrations fait partie d'un futur forfait Business et arrive bientôt. Elle sera disponible ici dès qu'elle sera prête."
+      "apiNote": "Une API publique pour créer vos propres intégrations fait partie d'un futur forfait Business et arrive bientôt. Elle sera disponible ici dès qu'elle sera prête.",
+      "pairCardTitle": "Associer une caisse",
+      "pairCardDescription": "Configurez une caisse sans saisir la clé : générez un lien, puis touchez-le ou scannez-le sur le téléphone qui encaissera.",
+      "pairAction": "Générer un lien d’association",
+      "pairOpenApp": "Ouvrir Zolto POS sur cet appareil",
+      "pairScanInstead": "Ou scannez ce code avec l’application Zolto POS depuis un autre téléphone.",
+      "pairCopyLink": "Copier le lien d’association",
+      "pairExpires": "Valable une seule fois, expire à {{time}}.",
+      "pairAnother": "Générer un autre lien",
+      "pairError": "Impossible de générer un lien d’association.",
+      "pairNeedsRotation": "L’association en un geste nécessite une clé générée récemment par cette boutique. Renouvelez une fois votre clé POS ci-dessus et un lien d’association apparaîtra ici."
     },
     "dataPrivacy": {
       "title": "Données & confidentialité",
