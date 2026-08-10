@@ -19,7 +19,7 @@ import { SketchArrow } from "@/components/SketchAccents";
  */
 export function OneInventoryDiagram() {
   return (
-    <div className="grid items-center gap-3 md:grid-cols-[1fr_auto_1fr] md:gap-6">
+    <div className="grid items-center gap-2 md:grid-cols-[1fr_auto_1fr] md:gap-6">
       {/* Channel: market stall / POS */}
       <ChannelCard
         icon={Smartphone}
@@ -37,11 +37,14 @@ export function OneInventoryDiagram() {
         {/* Arrows fan out to both channels; flipped horizontally on the left. */}
         <SketchArrow className="absolute left-[-3.5rem] top-1/2 hidden h-8 w-16 -translate-y-1/2 -scale-x-100 text-[var(--brand-accent)] md:block" />
         <SketchArrow className="absolute right-[-3.5rem] top-1/2 hidden h-8 w-16 -translate-y-1/2 text-[var(--brand-accent)] md:block" />
-        <div className="flex h-20 w-20 flex-col items-center justify-center rounded-full border-2 border-[var(--brand-ink)] bg-[var(--brand-surface-2)] text-center md:h-24 md:w-24">
-          <span className="font-serif text-2xl leading-none text-[var(--brand-ink)] lining-nums tabular-nums">
+        <div className="flex h-16 w-16 flex-col items-center justify-center rounded-full border-2 border-[var(--brand-ink)] bg-[var(--brand-surface-2)] text-center tall:max-md:h-20 tall:max-md:w-20 md:h-24 md:w-24">
+          <span className="font-serif text-xl leading-none text-[var(--brand-ink)] lining-nums tabular-nums tall:text-2xl">
             12
           </span>
-          <span className="mt-1 text-[10px] uppercase tracking-[0.14em] text-[var(--brand-muted)]">
+          {/* Sized to the circle it sits in, not to the desktop one: at 0.14em
+              tracking "INVENTORY" is 85px wide, which spilled straight out of
+              the 64px node a short phone gets. */}
+          <span className="mt-0.5 text-[9px] uppercase leading-tight tracking-[0.08em] text-[var(--brand-muted)] tall:mt-1 md:text-[10px] md:tracking-[0.14em]">
             One
             <br />
             inventory

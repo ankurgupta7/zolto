@@ -73,7 +73,7 @@ post and sideways to the slide, and reports `slide 2/4`). Pair either with
 stands a 4rem sticky header in for the reel — a band 64px taller than production
 would flatter every panel's fit.
 
-Nine things it has already caught that every test suite passed straight
+Ten things it has already caught that every test suite passed straight
 through, and which are worth checking for by eye:
 
 - **Tailwind emitting no utilities at all.** v4 infers content paths from the
@@ -116,6 +116,12 @@ through, and which are worth checking for by eye:
   first screen and a green test suite. Anything that must fill its grid area
   needs an explicit `w-full` — and it is worth measuring `clientWidth` against
   the viewport, not only heights.
+- **A custom variant quietly beating a Tailwind one.** `tall:` (min-height) is
+  registered after Tailwind's own breakpoints, so on a 1440x900 desktop both
+  `tall:` and `md:` match and the _later_ rule wins — the one-inventory node kept
+  its 64px phone size on a desktop, with "INVENTORY" spilling out of the ring.
+  Scope the phone step to `tall:max-md:` whenever an `md:` rule sets the same
+  property, and measure the element rather than trusting the class list.
 - **A swipe row nested inside a swipe track.** `SqueezePlayTills` and
   `DiaryTeaser` each carried their own `snap-x overflow-x-auto` row for phones.
   Inside the reel's carousel that is a scroller in a scroller: the inner one
