@@ -69,4 +69,25 @@ describe("ZeroCostPos", () => {
     expect(text).not.toMatch(/shopify/i);
     expect(text).not.toMatch(/no (other )?competitor|nobody else/i);
   });
+
+  // `dense` is the homepage-reel rendering: the chapter owns the band, the
+  // gutter and the vertical rhythm. It is padding and framing only — a variant
+  // that quietly dropped content would make the reel a content cut.
+  it("becomes a mahogany panel, with the price and every included line intact", () => {
+    const { hook } = memoryLocation({ path: "/", static: true });
+    const { container } = render(
+      <Router hook={hook}>
+        <ZeroCostPos dense />
+      </Router>,
+    );
+    expect(container.querySelector("section")).toBeNull();
+    // The statement keeps its mahogany — as a panel rather than a full band.
+    expect(screen.getByTestId("zero-cost-pos").className).toContain(
+      "bg-[var(--brand-ink)]",
+    );
+    expect(screen.getByTestId("zero-cost-price").textContent).toContain("CHF");
+    for (const item of ZERO_COST_POS.includes) {
+      expect(screen.getByText(item)).toBeTruthy();
+    }
+  });
 });

@@ -307,7 +307,9 @@ export function MarketingNav() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-[var(--brand-border)] bg-[var(--brand-ground)]/90 backdrop-blur">
-      <Container className="flex h-16 items-center justify-between">
+      {/* The height is a token because the homepage reel sizes its chapters
+          against it — see --nav-height in index.css. */}
+      <Container className="flex h-[var(--nav-height)] items-center justify-between">
         <Link href="/" className="flex items-center gap-2.5">
           <BrushMark className="h-8 w-8" />
           <span className="font-serif text-xl tracking-tight text-[var(--brand-text)]">
@@ -391,12 +393,35 @@ export function MarketingFooter() {
   );
 }
 
+/**
+ * Routes whose page owns the page's scroll container, and therefore renders its
+ * own `<main>` and its own copy of the footer inside it.
+ *
+ * The homepage is a reel: a nested scroller, sized to the viewport under the
+ * sticky bar, carrying `overscroll-behavior: contain` (see
+ * components/ReelStage.tsx). Contain switches off scroll chaining, which is the
+ * point — a wheel flick at the end of the last chapter must not jerk the window
+ * — but it also means anything left *outside* the scroller can never be reached
+ * with a wheel or a trackpad. The legal links live down there, so the footer
+ * travels into the reel as its trailer and the shell stands its own down.
+ */
+export const CHROME_OWNED_SCROLL = new Set(["/"]);
+
 export function MarketingShell({ children }: { children: ReactNode }) {
+  const [location] = useLocation();
+  const pageOwnsScroll = CHROME_OWNED_SCROLL.has(location);
+
   return (
     <div className="flex min-h-screen flex-col bg-[var(--brand-ground)] font-sans text-[var(--brand-text)]">
       <MarketingNav />
-      <main className="flex-1">{children}</main>
-      <MarketingFooter />
+      {pageOwnsScroll ? (
+        children
+      ) : (
+        <>
+          <main className="flex-1">{children}</main>
+          <MarketingFooter />
+        </>
+      )}
     </div>
   );
 }

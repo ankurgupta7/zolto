@@ -493,9 +493,14 @@ export const PRICING_PROMISE = {
    * already makes, at greater length and from the same constants. That page
    * showed both, so a visitor read the in-person-is-free, 1%-online,
    * Pro-removes-it and AI-is-not-metered claims twice in four screens. The
-   * pricing page drops these from the pledge box and keeps the fee section;
-   * every other surface (the landing page, /compare, llms.txt) has no fee
-   * section, so it keeps the whole list.
+   * pricing page drops these from the pledge box and keeps the fee section.
+   *
+   * Where the itemisation renders now: llms.txt (shared/marketing.ts) carries
+   * the whole list, /pricing carries the survivors of this filter as bullets
+   * plus 0-3 as its fee section, and the landing page and /compare carry the
+   * pledge sentence and a link rather than the points — the homepage reel's
+   * trust chapter is one viewport, and ~900px of pledge bullets is what it
+   * could not hold beside the Swissness ledger (see pages/Landing.tsx).
    *
    * Keep this in step when editing `points` — a reordered list would silently
    * hide the wrong ones. Pricing.test.tsx checks the survivors are the two the

@@ -54,7 +54,21 @@
     "ctaEyebrow": "prêt quand vous l'êtes",
     "ctaHeading": "Votre boutique, en ligne cette semaine.",
     "ctaBody": "Vendre en personne est gratuit, pour toujours. Essai de 14 jours sur Pro, pas de carte de crédit pour explorer — et jamais de terminal de paiement. Promis.",
-    "ctaButton": "Créer votre boutique →"
+    "ctaButton": "Créer votre boutique →",
+    "reel": {
+      "railLabel": "Chapitres",
+      "promise": "La promesse",
+      "squeeze": "L'étau",
+      "how": "Comment ça marche",
+      "trust": "Confiance",
+      "whatsComing": "Ce qui arrive",
+      "startFree": "Commencer",
+      "whyZoltoLink": "Comment une IA trouve, demande et achète →"
+    },
+    "video": {
+      "caption": "Deux minutes, de la boutique vide à la première vente.",
+      "play": "Lire la vidéo de présentation Zolto"
+    }
   },
   "pricing": {
     "eyebrow": "juste & simple",
@@ -350,6 +364,10 @@
     "buyerFitHeading": "Trois questions qui tranchent",
     "buyerFitIntro": "Répondez-y avant de lire une comparaison de plus. Deux des trois peuvent nous écarter, et il vaut mieux l'apprendre ici qu'après avoir déplacé votre catalogue.",
     "limitationsHeading": "Là où {{name}} pèche"
+  },
+  "whyZolto": {
+    "metaTitle": "Pourquoi {{name}} — prêt pour l'IA qui achète pour votre client",
+    "metaDescription": "Comment l'assistant d'un client trouve votre boutique, vérifie le stock et achète — et ce que {{name}} fait déjà pour cela aujourd'hui."
   },
   "signup": {
     "eyebrow": "c’est parti",

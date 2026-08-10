@@ -5,7 +5,6 @@ import {
   MAKER_PITCH,
   PRICING_PROMISE,
   COST_COMPARISON,
-  INCUMBENT_COMPARISON,
   SOVEREIGNTY,
   formatPrice,
 } from "@shared/platform";
@@ -13,11 +12,7 @@ import {
   OneInventoryDiagram,
   PhotoToListing,
 } from "../components/MarketingIllustrations";
-import {
-  AiNativeBand,
-  AgentProofBand,
-  HowAnAiBuys,
-} from "../components/AgentPitch";
+import { AiNativeBand } from "../components/AgentPitch";
 import { HeroTill } from "../components/HeroTill";
 import { Container } from "../components/Container";
 import { DayInTheLife } from "../components/DayInTheLife";
@@ -26,7 +21,45 @@ import { DiaryTeaser } from "../components/DiaryTeaser";
 import { ZeroCostPos } from "../components/ZeroCostPos";
 import { SqueezePlay } from "../components/SqueezePlay";
 import { SwissMade } from "../components/SwissMade";
+import { ExplainerVideo } from "../components/ExplainerVideo";
+import { ReelChapter, ReelStage } from "../components/ReelStage";
+import { MarketingFooter } from "../components/MarketingChrome";
 import { useMarketingT } from "../lib/marketingI18n";
+
+/**
+ * The Zolto homepage, as a reel.
+ *
+ * This page used to be sixteen stacked bands, read top to bottom, and it was
+ * tiring in exactly the way a long page is: no sense of where you were, no
+ * sense of how much was left, and nowhere prominent enough to put the explainer
+ * video. It is now six chapters, each the height of the viewport, snapping to
+ * the top of whichever one you're in, with a progress rail on the right — see
+ * components/ReelStage.tsx for the mechanics and for the three ways the snap
+ * gets out of the reader's way.
+ *
+ * Not a word of copy changed, and no colour left its token. What changed is
+ * choreography and what the homepage carries:
+ *
+ * - The explainer video takes the hero's second column, and the till it
+ *   replaced moved down to the how-it-works chapter as its third visual.
+ * - Bands that were arguing the same point twice were paired into one chapter,
+ *   with the dark ones becoming dark *panels* on a light chapter (ZeroCostPos,
+ *   AiNativeBand, the cost strip, the closing CTA). Same statement, at the size
+ *   a shared viewport allows.
+ * - Three bands left the homepage rather than being shrunk below legibility:
+ *   AgentProofBand, HowAnAiBuys and the end-of-day email mock now live on
+ *   /why-zolto (pages/WhyZolto.tsx), and the old-guard comparison table moved
+ *   to the /compare index, where the reader is already choosing between named
+ *   products. Chapter five links to the first; the nav already links the second.
+ *
+ * The rule for the split: anything a chapter could not hold at 100vh on a
+ * 1440×900 desktop went to a sub-page. Body copy never went below 15px and no
+ * heading changed scale to make something fit.
+ */
+
+/** The explainer cut and its drawn poster — see client/public/video/README.md. */
+const EXPLAINER_SRC = "/video/zolto-explainer.mp4";
+const EXPLAINER_POSTER = "/video/zolto-explainer-poster.svg";
 
 export default function Landing() {
   const { t, st, numberLocale } = useMarketingT();
@@ -34,347 +67,315 @@ export default function Landing() {
   return (
     <>
       {/* Ambient gold-dust layer — glows over the mahogany hero/CTA bands,
-          fades out over the light sections via screen blend. */}
+          fades out over the light sections via screen blend. Portalled to the
+          body, so it is fixed to the viewport rather than to the reel. */}
       <ParticleField />
 
-      {/* ── Hero — what Zolto is, in the merchant's nouns (see MAKER_PITCH) ── */}
-      <section className="bg-[var(--brand-ink)]">
-        {/* Three grid children, not two, so the till can sit between the copy
-            and the buttons on a phone and still occupy the second column on a
-            desktop. A merchant browsing on their phone is the likeliest reader
-            there is; the picture of the product should not be the one thing
-            their screen drops. */}
-        <Container className="grid gap-10 pb-20 pt-20 md:grid-cols-2 md:items-center">
-          <div className="md:col-start-1 md:row-start-1">
-            <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
-              {st("makerPitch.eyebrow", MAKER_PITCH.eyebrow)}
-            </p>
-            {/* The column, not max-w, is what actually bounds this heading —
-                see MAKER_PITCH.headlineEmphasis for the measurements and for
-                why the underlined phrase has to stay short. */}
-            <h1 className="mt-4 max-w-2xl font-serif text-4xl leading-[1.1] text-white sm:text-5xl">
-              {st("makerPitch.headline", MAKER_PITCH.headline)}{" "}
-              {/* Only the punchline is underlined, so the stroke stays tight
-                  to the words however the heading wraps. */}
-              <span className="relative inline-block">
-                {st(
-                  "makerPitch.headlineEmphasis",
-                  MAKER_PITCH.headlineEmphasis,
-                )}
-                <span className="absolute -bottom-2 left-0 w-full text-[var(--brand-accent)]">
-                  <SketchUnderline />
+      <ReelStage
+        label={t("landing.reel.railLabel")}
+        trailer={<MarketingFooter />}
+      >
+        {/* ── 1. Promise — what Zolto is, in the merchant's nouns, beside the
+             explainer video (see MAKER_PITCH) ── */}
+        <ReelChapter
+          id="promise"
+          label={t("landing.reel.promise")}
+          className="bg-[var(--brand-ink)]"
+        >
+          {/* Three grid children, not two, so the video can sit between the
+              copy and the buttons on a phone and still occupy the second
+              column on a desktop. A merchant browsing on their phone is the
+              likeliest reader there is; the picture of the product should not
+              be the one thing their screen drops. */}
+          <Container className="grid gap-10 md:grid-cols-2 md:items-center">
+            <div className="md:col-start-1 md:row-start-1">
+              <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
+                {st("makerPitch.eyebrow", MAKER_PITCH.eyebrow)}
+              </p>
+              {/* The column, not max-w, is what actually bounds this heading —
+                  see MAKER_PITCH.headlineEmphasis for the measurements and for
+                  why the underlined phrase has to stay short. */}
+              <h1 className="mt-4 max-w-2xl font-serif text-4xl leading-[1.1] text-white sm:text-5xl">
+                {st("makerPitch.headline", MAKER_PITCH.headline)}{" "}
+                {/* Only the punchline is underlined, so the stroke stays tight
+                    to the words however the heading wraps. */}
+                <span className="relative inline-block">
+                  {st(
+                    "makerPitch.headlineEmphasis",
+                    MAKER_PITCH.headlineEmphasis,
+                  )}
+                  <span className="absolute -bottom-2 left-0 w-full text-[var(--brand-accent)]">
+                    <SketchUnderline />
+                  </span>
                 </span>
-              </span>
-            </h1>
-            <p className="mt-8 max-w-md text-lg leading-relaxed text-white/70">
-              {st("makerPitch.body", MAKER_PITCH.body)}
-            </p>
-          </div>
+              </h1>
+              <p className="mt-8 max-w-md text-lg leading-relaxed text-white/70">
+                {st("makerPitch.body", MAKER_PITCH.body)}
+              </p>
+            </div>
 
-          {/* The product, drawn rather than asserted */}
-          <div className="md:col-start-2 md:row-start-1 md:row-end-3">
-            <HeroTill />
-          </div>
+            {/* The product, shown rather than asserted. */}
+            <div className="md:col-start-2 md:row-start-1 md:row-end-3">
+              <ExplainerVideo
+                src={EXPLAINER_SRC}
+                poster={EXPLAINER_POSTER}
+                captionKey="landing.video.caption"
+              />
+            </div>
 
-          <div className="md:col-start-1 md:row-start-2">
-            <div className="flex flex-wrap items-center gap-4">
+            <div className="md:col-start-1 md:row-start-2">
+              <div className="flex flex-wrap items-center gap-4">
+                <Link
+                  href="/signup"
+                  className="rounded-md bg-[var(--brand-accent)] px-7 py-3 text-xs font-medium uppercase tracking-[0.14em] text-[var(--brand-ink)] transition-colors hover:bg-[var(--brand-accent-light)]"
+                >
+                  {t("landing.startFree")}
+                </Link>
+                <Link
+                  href="/pricing"
+                  className="rounded-md border border-white/25 px-7 py-3 text-xs font-medium uppercase tracking-[0.14em] text-white/85 transition-colors hover:border-white hover:text-white"
+                >
+                  {t("landing.seePricing")}
+                </Link>
+              </div>
+
+              {/* Where we're from, above the fold. Three facts, no sentence —
+                  the trust chapter does the explaining. */}
+              <ul className="mt-10 flex flex-wrap items-center gap-x-5 gap-y-2 text-[11px] uppercase tracking-[0.16em] text-white/50">
+                {SOVEREIGNTY.heroBadges.map((badge, i) => (
+                  <li key={badge} className="flex items-center gap-2">
+                    <span aria-hidden className="text-[var(--brand-accent)]">
+                      ✦
+                    </span>
+                    {st(`sovereignty.heroBadges.${i}`, badge)}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </Container>
+        </ReelChapter>
+
+        {/* ── 2. The squeeze — the in-person argument and the CHF 0 till that
+             answers it, which used to be two consecutive bands making one
+             point ── */}
+        <ReelChapter
+          id="squeeze"
+          label={t("landing.reel.squeeze")}
+          className="bg-[var(--brand-surface)]"
+        >
+          <Container className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
+            <SqueezePlay dense />
+            <ZeroCostPos dense />
+          </Container>
+        </ReelChapter>
+
+        {/* ── 3. How it works — one inventory, photo→listing, and the till the
+             hero used to show ── */}
+        <ReelChapter id="product" label={t("landing.reel.how")}>
+          <Container>
+            <div className="mb-10 text-center">
+              <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
+                {t("landing.howEyebrow")}
+              </p>
+              <h2 className="mt-2 font-serif text-3xl text-[var(--brand-text)]">
+                {t("landing.howHeading")}
+              </h2>
+            </div>
+
+            {/* Not three equal columns: the photo→listing flow is three panels
+                wide on its own, so it takes the roomiest third and the till —
+                drawn for a hero column — takes the narrowest. */}
+            <div className="grid gap-10 md:grid-cols-[1fr_1.2fr_0.8fr] md:items-start">
+              {/* Feature 1 — one inventory, two channels */}
+              <div>
+                <h3 className="font-serif text-2xl text-[var(--brand-text)]">
+                  {t("landing.inventoryTitle")}
+                </h3>
+                <p className="mt-3 text-[15px] leading-relaxed text-[var(--brand-muted-2)]">
+                  {t("landing.inventoryBody")}
+                </p>
+                <div className="mt-6">
+                  <OneInventoryDiagram />
+                </div>
+              </div>
+
+              {/* Feature 2 — photo to listing */}
+              <div>
+                <h3 className="font-serif text-2xl text-[var(--brand-text)]">
+                  {t("landing.photoTitle")}
+                </h3>
+                <p className="mt-3 text-[15px] leading-relaxed text-[var(--brand-muted-2)]">
+                  {t("landing.photoBody")}
+                </p>
+                <div className="mt-6">
+                  <PhotoToListing />
+                </div>
+              </div>
+
+              {/* The till itself, down from the hero. It is drawn for the
+                  mahogany, so on a light chapter it keeps its own dark ground
+                  — the same move ZeroCostPos and AiNativeBand make. */}
+              <div className="rounded-2xl bg-[var(--brand-ink)]">
+                <HeroTill />
+              </div>
+            </div>
+          </Container>
+        </ReelChapter>
+
+        {/* ── 4. Trust — a year with the old guard against a month here, the
+             pledge, and the ledger ── */}
+        <ReelChapter
+          id="trust"
+          label={t("landing.reel.trust")}
+          className="border-y border-[var(--brand-border)] bg-[var(--brand-surface-2)]"
+        >
+          {/* The ledger takes the wider column on purpose: its nine rows only
+              lay out one line each once they have room for the piece and its
+              state side by side, and flattening them is what buys the strip and
+              the pledge theirs. See SwissMade's `dense`. */}
+          <Container className="grid gap-6 lg:grid-cols-[0.72fr_1.28fr] lg:items-start">
+            <div className="grid gap-6">
+              {/* Cost strip (Direction A) — the mahogany band, now a panel. */}
+              <div className="grid items-center gap-4 rounded-2xl bg-[var(--brand-ink-deep)] p-6 text-center sm:grid-cols-[1fr_auto_1fr]">
+                <div>
+                  <p className="text-[11px] uppercase tracking-[0.2em] text-white/45">
+                    {st("costComparison.themLabel", COST_COMPARISON.themLabel)}
+                  </p>
+                  <p className="mt-2 font-serif text-4xl font-semibold text-white/55 line-through decoration-[var(--brand-accent)]/60 lining-nums tabular-nums">
+                    CHF{" "}
+                    {COST_COMPARISON.themPerYearChf.toLocaleString(
+                      numberLocale,
+                    )}
+                  </p>
+                  <p className="mt-2 text-xs text-white/40">
+                    {st("costComparison.themNote", COST_COMPARISON.themNote)}
+                  </p>
+                </div>
+                <div
+                  aria-hidden
+                  className="text-3xl text-[var(--brand-accent)] max-sm:rotate-90"
+                >
+                  →
+                </div>
+                <div>
+                  <p className="text-[11px] uppercase tracking-[0.2em] text-white/45">
+                    {st("costComparison.usLabel", COST_COMPARISON.usLabel)}
+                  </p>
+                  <p className="mt-2 font-serif text-5xl font-bold text-[var(--brand-accent-light)] lining-nums tabular-nums">
+                    {formatPrice(COST_COMPARISON.usPerMonthChf)}
+                  </p>
+                  <p className="mt-2 text-xs text-white/40">
+                    {st("costComparison.usNote", COST_COMPARISON.usNote)}
+                  </p>
+                </div>
+              </div>
+
+              {/* The pledge (Direction B) — the heart of the positioning. It
+                  keeps its reveal: it is not the first thing in the chapter. */}
+              <ScrollReveal className="relative rounded-2xl border border-[var(--brand-border)] bg-white p-8 shadow-[0_20px_50px_-34px_rgba(45,38,32,0.4)]">
+                <span className="absolute -top-3 left-8 bg-white px-2.5 font-hand text-xl text-[var(--brand-accent)]">
+                  {t("landing.pledgeEyebrow")}
+                </span>
+                <p className="font-serif text-2xl leading-snug text-[var(--brand-text)] lining-nums">
+                  &ldquo;
+                  {st("pricingPromise.pledge", PRICING_PROMISE.pledge)}&rdquo;
+                </p>
+                {/* The five itemised points that used to follow the promise
+                    render in full on /pricing, above the plans, and always did
+                    — this card carried a second copy of them. At ~900px of
+                    them, keeping the duplicate here is what would have pushed
+                    this chapter past a viewport, so the promise stays on the
+                    homepage and its arithmetic lives one click away. */}
+                <Link
+                  href="/pricing"
+                  className="mt-5 inline-block text-sm text-[var(--brand-ink)] underline decoration-[var(--brand-accent)] underline-offset-4 transition-colors hover:text-[var(--brand-accent)]"
+                >
+                  {t("landing.seePricing")}
+                </Link>
+                <p className="mt-5 font-hand text-2xl text-[var(--brand-text)]">
+                  {t("landing.pledgeSignature")}
+                </p>
+              </ScrollReveal>
+            </div>
+
+            {/* Made in Switzerland — the ledger, every row, still on the
+                homepage rather than behind the link. */}
+            <SwissMade dense />
+          </Container>
+        </ReelChapter>
+
+        {/* ── 5. What's coming — a market day, and the thesis it is heading
+             towards. The proof band and the found→asked→bought mechanics moved
+             to /why-zolto; this chapter links them. ── */}
+        <ReelChapter
+          id="whats-coming"
+          label={t("landing.reel.whatsComing")}
+          className="bg-white"
+        >
+          {/* The chapter's heading sits in the left column rather than across
+              the top: the thesis panel beside it is the taller of the two, so a
+              full-width header would have pushed the chapter past a viewport for
+              no gain in how it reads. */}
+          <Container className="grid gap-8 lg:grid-cols-[1fr_0.85fr] lg:items-start">
+            <div>
+              <div className="max-w-2xl">
+                <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
+                  {t("landing.messyEyebrow")}
+                </p>
+                <h2 className="mt-2 font-serif text-3xl text-[var(--brand-text)]">
+                  {t("landing.messyHeading")}
+                </h2>
+                <p className="mt-3 text-[var(--brand-muted-2)]">
+                  {t("landing.messyBody")}
+                </p>
+              </div>
+
+              <div className="mt-8">
+                <DayInTheLife />
+              </div>
+              <Link
+                href="/why-zolto"
+                className="mt-4 inline-block text-sm text-[var(--brand-ink)] underline decoration-[var(--brand-accent)] underline-offset-4 transition-colors hover:text-[var(--brand-accent)]"
+              >
+                {t("landing.reel.whyZoltoLink")}
+              </Link>
+            </div>
+            <AiNativeBand dense />
+          </Container>
+        </ReelChapter>
+
+        {/* ── 6. Start free — the closing CTA and the one thing on this page a
+             visitor can go and check for themselves ── */}
+        <ReelChapter
+          id="start-free"
+          label={t("landing.reel.startFree")}
+          className="border-t border-[var(--brand-border)] bg-[var(--brand-surface-2)]"
+        >
+          <Container>
+            <div className="rounded-2xl bg-[var(--brand-ink)] px-7 py-10 text-center">
+              <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
+                {t("landing.ctaEyebrow")}
+              </p>
+              <h2 className="mt-3 font-serif text-3xl text-white sm:text-4xl">
+                {t("landing.ctaHeading")}
+              </h2>
+              <p className="mx-auto mt-4 max-w-2xl text-white/70">
+                {t("landing.ctaBody")}
+              </p>
               <Link
                 href="/signup"
-                className="rounded-md bg-[var(--brand-accent)] px-7 py-3 text-xs font-medium uppercase tracking-[0.14em] text-[var(--brand-ink)] transition-colors hover:bg-[var(--brand-accent-light)]"
+                className="mt-7 inline-block rounded-md bg-[var(--brand-accent)] px-7 py-3 text-xs font-medium uppercase tracking-[0.14em] text-[var(--brand-ink)] transition-colors hover:bg-[var(--brand-accent-light)]"
               >
-                {t("landing.startFree")}
-              </Link>
-              <Link
-                href="/pricing"
-                className="rounded-md border border-white/25 px-7 py-3 text-xs font-medium uppercase tracking-[0.14em] text-white/85 transition-colors hover:border-white hover:text-white"
-              >
-                {t("landing.seePricing")}
+                {t("landing.ctaButton")}
               </Link>
             </div>
 
-            {/* Where we're from, above the fold. Three facts, no sentence —
-                the ledger band further down does the explaining. */}
-            <ul className="mt-10 flex flex-wrap items-center gap-x-5 gap-y-2 text-[11px] uppercase tracking-[0.16em] text-white/50">
-              {SOVEREIGNTY.heroBadges.map((badge, i) => (
-                <li key={badge} className="flex items-center gap-2">
-                  <span aria-hidden className="text-[var(--brand-accent)]">
-                    ✦
-                  </span>
-                  {st(`sovereignty.heroBadges.${i}`, badge)}
-                </li>
-              ))}
-            </ul>
-          </div>
-        </Container>
-      </section>
-
-      {/* ── The in-person argument, straight after the hero: the same phone the
-           hero drew, and the one thing only this till does ── */}
-      <SqueezePlay />
-
-      {/* ── The differentiator: a real POS + catalogue, at CHF 0/month ── */}
-      <ZeroCostPos />
-
-      {/* ── Cost strip (Direction A) — a year with the old guard vs a month here ── */}
-      <section className="bg-[var(--brand-ink-deep)]">
-        <Container
-          width="4xl"
-          className="grid items-center gap-6 py-12 text-center sm:grid-cols-[1fr_auto_1fr]"
-        >
-          <div>
-            <p className="text-[11px] uppercase tracking-[0.2em] text-white/45">
-              {st("costComparison.themLabel", COST_COMPARISON.themLabel)}
-            </p>
-            <p className="mt-2 font-serif text-5xl font-semibold text-white/55 lining-nums tabular-nums line-through decoration-[var(--brand-accent)]/60">
-              CHF {COST_COMPARISON.themPerYearChf.toLocaleString(numberLocale)}
-            </p>
-            <p className="mt-2 text-xs text-white/40">
-              {st("costComparison.themNote", COST_COMPARISON.themNote)}
-            </p>
-          </div>
-          <div
-            aria-hidden
-            className="text-3xl text-[var(--brand-accent)] max-sm:rotate-90"
-          >
-            →
-          </div>
-          <div>
-            <p className="text-[11px] uppercase tracking-[0.2em] text-white/45">
-              {st("costComparison.usLabel", COST_COMPARISON.usLabel)}
-            </p>
-            <p className="mt-2 font-serif text-6xl font-bold text-[var(--brand-accent-light)] lining-nums tabular-nums">
-              {formatPrice(COST_COMPARISON.usPerMonthChf)}
-            </p>
-            <p className="mt-2 text-xs text-white/40">
-              {st("costComparison.usNote", COST_COMPARISON.usNote)}
-            </p>
-          </div>
-        </Container>
-      </section>
-
-      {/* ── The pledge (Direction B) — the heart of the positioning ── */}
-      <section className="border-b border-[var(--brand-border)] bg-[var(--brand-surface-2)]">
-        <Container width="3xl" className="py-20">
-          <ScrollReveal className="relative rounded-2xl border border-[var(--brand-border)] bg-white p-9 shadow-[0_20px_50px_-34px_rgba(45,38,32,0.4)] md:p-11">
-            <span className="absolute -top-3 left-9 bg-white px-2.5 font-hand text-xl text-[var(--brand-accent)]">
-              {t("landing.pledgeEyebrow")}
-            </span>
-            <p className="font-serif text-2xl leading-snug text-[var(--brand-text)] md:text-[26px]">
-              &ldquo;
-              {st("pricingPromise.pledge", PRICING_PROMISE.pledge)}&rdquo;
-            </p>
-            <ul className="mt-7 grid gap-3">
-              {PRICING_PROMISE.points.map((point, i) => (
-                <li
-                  key={point}
-                  className="flex gap-3 text-[15px] leading-relaxed text-[var(--brand-muted-2)]"
-                >
-                  <span aria-hidden className="text-[var(--brand-accent)]">
-                    —
-                  </span>
-                  {st(`pricingPromise.points.${i}`, point)}
-                </li>
-              ))}
-            </ul>
-            <p className="mt-8 font-hand text-2xl text-[var(--brand-text)]">
-              {t("landing.pledgeSignature")}
-            </p>
-          </ScrollReveal>
-        </Container>
-      </section>
-
-      {/* ── Made in Switzerland — the ledger, high on the page, not a badge ── */}
-      <SwissMade />
-
-      {/* ── Why not the old guard (Direction A) — the comparison table ── */}
-      <section className="bg-[var(--brand-surface)]">
-        <Container width="4xl" className="py-20">
-          <div className="mb-10 text-center">
-            <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
-              {t("landing.comparisonEyebrow")}
-            </p>
-            <h2 className="mt-2 font-serif text-3xl text-[var(--brand-text)]">
-              {t("landing.comparisonHeading")}
-            </h2>
-            <p className="mx-auto mt-3 max-w-xl text-[var(--brand-muted-2)]">
-              {t("landing.comparisonBody")}
-            </p>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-left text-[15px]">
-              <thead>
-                <tr>
-                  <th className="border-b border-[var(--brand-border)] px-4 py-3" />
-                  <th className="border-b border-[var(--brand-border)] px-4 py-3 text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--brand-muted)]">
-                    {t("landing.colOldGuard")}
-                  </th>
-                  <th className="border-b border-[var(--brand-border)] px-4 py-3 text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--brand-accent)]">
-                    Zolto
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {INCUMBENT_COMPARISON.map((row) => (
-                  <tr key={row.feature}>
-                    <td className="border-b border-[var(--brand-border)] px-4 py-3.5 font-medium text-[var(--brand-text)]">
-                      {st(`comparison.${row.feature}.feature`, row.feature)}
-                    </td>
-                    <td className="border-b border-[var(--brand-border)] px-4 py-3.5 text-[var(--brand-muted-2)]">
-                      {st(`comparison.${row.feature}.them`, row.them)}
-                    </td>
-                    <td className="border-b border-[var(--brand-border)] bg-[var(--brand-accent)]/[0.07] px-4 py-3.5 font-medium text-[var(--brand-text)]">
-                      <span aria-hidden className="text-[var(--brand-accent)]">
-                        ✓{" "}
-                      </span>
-                      {st(`comparison.${row.feature}.us`, row.us)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Container>
-      </section>
-
-      {/* ── How it works — one inventory + photo→listing (kept illustrations) ── */}
-      <Container as="section" id="product" className="py-20">
-        <div className="mb-14 text-center">
-          <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
-            {t("landing.howEyebrow")}
-          </p>
-          <h2 className="mt-2 font-serif text-3xl text-[var(--brand-text)]">
-            {t("landing.howHeading")}
-          </h2>
-        </div>
-
-        {/* Feature 1 — one inventory, two channels */}
-        <div className="grid items-center gap-10 md:grid-cols-[0.8fr_1.2fr]">
-          <div>
-            <h3 className="font-serif text-2xl text-[var(--brand-text)]">
-              {t("landing.inventoryTitle")}
-            </h3>
-            <p className="mt-3 max-w-sm leading-relaxed text-[var(--brand-muted-2)]">
-              {t("landing.inventoryBody")}
-            </p>
-          </div>
-          <OneInventoryDiagram />
-        </div>
-
-        {/* Feature 2 — photo to listing */}
-        <div className="mt-20 grid items-center gap-10 md:grid-cols-[0.8fr_1.2fr]">
-          <div className="md:order-2">
-            <h3 className="font-serif text-2xl text-[var(--brand-text)]">
-              {t("landing.photoTitle")}
-            </h3>
-            <p className="mt-3 max-w-sm leading-relaxed text-[var(--brand-muted-2)]">
-              {t("landing.photoBody")}
-            </p>
-          </div>
-          <div className="md:order-1">
-            <PhotoToListing />
-          </div>
-        </div>
-      </Container>
-
-      {/* ── AI-native selling loop (Direction C) — the flagship pillar ── */}
-      <section className="bg-white">
-        <Container className="py-20">
-          <div className="mb-12 text-center">
-            <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
-              {t("landing.messyEyebrow")}
-            </p>
-            <h2 className="mt-2 font-serif text-3xl text-[var(--brand-text)]">
-              {t("landing.messyHeading")}
-            </h2>
-            <p className="mx-auto mt-3 max-w-xl text-[var(--brand-muted-2)]">
-              {t("landing.messyBody")}
-            </p>
-          </div>
-
-          <DayInTheLife />
-
-          {/* End-of-day reconciliation email mock */}
-          <div className="mx-auto mt-12 max-w-xl overflow-hidden rounded-xl border border-[var(--brand-border)] bg-white shadow-[0_18px_44px_-30px_rgba(45,38,32,0.5)]">
-            <div className="border-b border-[var(--brand-border)] px-5 py-3.5 text-[13px] text-[var(--brand-muted)]">
-              {t("landing.emailFrom")}{" "}
-              <span className="text-[var(--brand-text)]">Zolto</span> ·{" "}
-              {t("landing.emailSubjectLabel")}{" "}
-              <span className="text-[var(--brand-text)]">
-                {t("landing.emailSubject")}
-              </span>
+            <div className="mt-10">
+              <DiaryTeaser dense />
             </div>
-            <div className="px-5 py-5">
-              <p className="mb-4 text-[15px] leading-relaxed text-[var(--brand-muted-2)]">
-                {t("landing.emailBody")}
-              </p>
-              {[
-                {
-                  name: t("landing.emailItem1Name"),
-                  meta: t("landing.emailItem1Meta"),
-                },
-                {
-                  name: t("landing.emailItem2Name"),
-                  meta: t("landing.emailItem2Meta"),
-                },
-              ].map((g) => (
-                <div
-                  key={g.name}
-                  className="mb-2.5 flex items-center gap-3 rounded-lg border border-[var(--brand-border)] px-3.5 py-3"
-                >
-                  <span
-                    aria-hidden
-                    className="h-10 w-10 flex-none rounded-md bg-gradient-to-br from-[#d9c9a3] to-[var(--brand-accent)]"
-                  />
-                  <span className="min-w-0">
-                    <span className="block font-serif text-[15px] text-[var(--brand-text)]">
-                      {g.name}
-                    </span>
-                    <span className="text-[13px] text-[var(--brand-muted)]">
-                      {g.meta}
-                    </span>
-                  </span>
-                  <span className="ml-auto rounded-md bg-[var(--brand-accent)] px-3.5 py-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--brand-ink)]">
-                    {t("landing.emailConfirm")}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </Container>
-      </section>
-
-      {/* ── And it's ready for what's coming ──
-           The AI-native thesis, in full: the band that used to be the hero,
-           its proof, and the found → asked → bought mechanics. It sits here
-           rather than at the top because it argues for choosing Zolto, which
-           only means something once the reader knows what Zolto is — see the
-           doc comment on MAKER_PITCH. ── */}
-      <AiNativeBand />
-      <AgentProofBand />
-      <HowAnAiBuys />
-
-      {/* ── Proof you can go and check, before we ask for the signup ── */}
-      <DiaryTeaser />
-
-      {/* ── CTA ── */}
-      <section className="bg-[var(--brand-ink)]">
-        <Container width="4xl" className="py-20 text-center">
-          <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
-            {t("landing.ctaEyebrow")}
-          </p>
-          <h2 className="mt-3 font-serif text-3xl text-white sm:text-4xl">
-            {t("landing.ctaHeading")}
-          </h2>
-          <p className="mt-4 text-white/70">{t("landing.ctaBody")}</p>
-          <Link
-            href="/signup"
-            className="mt-8 inline-block rounded-md bg-[var(--brand-accent)] px-7 py-3 text-xs font-medium uppercase tracking-[0.14em] text-[var(--brand-ink)] transition-colors hover:bg-[var(--brand-accent-light)]"
-          >
-            {t("landing.ctaButton")}
-          </Link>
-        </Container>
-      </section>
+          </Container>
+        </ReelChapter>
+      </ReelStage>
     </>
   );
 }

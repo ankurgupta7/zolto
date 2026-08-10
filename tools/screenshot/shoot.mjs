@@ -90,16 +90,53 @@ page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
 await page.goto(URL, { waitUntil: "networkidle" });
 await page.evaluate(() => document.fonts.ready);
 
-// Scroll the whole page so scroll-triggered reveals have fired by capture time,
-// then return to the top and let transitions settle.
+// Scroll everything scrollable so scroll-triggered reveals have fired by
+// capture time, then return to the top and let transitions settle.
+//
+// "Everything scrollable" and not just the window: the homepage is a reel whose
+// scroll container is a nested element (see marketing/components/ReelStage.tsx),
+// so window.scrollTo moves nothing and document.body.scrollHeight is one
+// viewport. A warm-up that only drove the window silently captured chapter one
+// with every reveal below it still faded out.
 await page.evaluate(async () => {
-  for (let y = 0; y < document.body.scrollHeight; y += 400) {
-    window.scrollTo(0, y);
-    await new Promise((r) => setTimeout(r, 60));
+  const scrollers = [
+    document.scrollingElement ?? document.documentElement,
+    ...document.querySelectorAll("[data-testid='reel-stage']"),
+  ];
+  for (const el of scrollers) {
+    for (let y = 0; y < el.scrollHeight; y += 400) {
+      el.scrollTop = y;
+      await new Promise((r) => setTimeout(r, 60));
+    }
+    el.scrollTop = 0;
   }
-  window.scrollTo(0, 0);
 });
 await page.waitForTimeout(1500);
+
+// SHOT_CHAPTER=3 scrolls the reel to its third chapter before capturing —
+// the only way to shoot a reel chapter other than the first, since each is a
+// viewport of its own inside a nested scroller. Pair it with SHOT_FULLPAGE=0
+// (a full-page shot of a viewport-locked stage is just the first chapter).
+if (process.env.SHOT_CHAPTER) {
+  const nth = Number(process.env.SHOT_CHAPTER);
+  if (!Number.isInteger(nth) || nth < 1) {
+    throw new Error(`SHOT_CHAPTER must be a 1-based index — got "${nth}"`);
+  }
+  const label = await page.evaluate((index) => {
+    const stage = document.querySelector("[data-testid='reel-stage']");
+    const chapters = document.querySelectorAll("[data-reel-chapter]");
+    const target = chapters[index - 1];
+    if (!stage || !target) return null;
+    stage.scrollTop =
+      target.getBoundingClientRect().top -
+      stage.getBoundingClientRect().top +
+      stage.scrollTop;
+    return target.getAttribute("aria-label");
+  }, nth);
+  if (!label) throw new Error(`no reel chapter ${nth} on this page`);
+  console.log(`scrolled to chapter ${nth} — "${label}"`);
+  await page.waitForTimeout(800);
+}
 
 // SHOT_FILL="Your current shop address=https://bergblume.ch" types into a
 // field before anything is clicked. Without it, any state that lives behind a

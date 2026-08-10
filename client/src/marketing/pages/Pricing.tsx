@@ -50,7 +50,7 @@ export default function Pricing() {
             <h2 className="font-serif text-2xl text-[var(--brand-text)]">
               {st("pricingPromise.headline", PRICING_PROMISE.headline)}
             </h2>
-            <p className="mt-3 font-serif text-lg italic leading-snug text-[var(--brand-muted-2)]">
+            <p className="mt-3 font-serif text-lg italic leading-snug text-[var(--brand-muted-2)] lining-nums">
               &ldquo;
               {st("pricingPromise.pledge", PRICING_PROMISE.pledge)}&rdquo;
             </p>

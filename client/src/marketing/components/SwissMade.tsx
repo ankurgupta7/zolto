@@ -44,68 +44,132 @@ export function StateChip({ state }: { state: SovereigntyEntry["state"] }) {
   );
 }
 
-export function SwissMade() {
+export function SwissMade({
+  dense = false,
+}: {
+  /**
+   * Rendered inside the homepage reel's trust chapter, beside the cost strip
+   * and the pledge (see components/ReelStage.tsx). Nine ledger rows plus two
+   * paragraphs is the tallest thing on the homepage, so `dense` tightens the
+   * row rhythm and drops the band's own frame and ScrollReveal — no copy and
+   * no row leaves, because a ledger that hid its unfinished rows to fit a
+   * viewport would be the badge this section exists not to be.
+   */
+  dense?: boolean;
+} = {}) {
   const { t, st } = useMarketingT();
-  return (
-    <section className="border-y border-[var(--brand-border)] bg-[var(--brand-ground)]">
-      <div className="mx-auto w-full max-w-5xl px-4 py-20 sm:px-6">
-        <ScrollReveal>
-          <div className="max-w-2xl">
-            <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
-              {st("sovereignty.eyebrow", SOVEREIGNTY.eyebrow)}
-            </p>
-            <h2 className="mt-3 font-serif text-3xl leading-[1.15] text-[var(--brand-text)] sm:text-4xl">
-              {st("sovereignty.headline", SOVEREIGNTY.headline)}{" "}
-              {/* Only the short second half is underlined, so the stroke stays
+
+  const content = (
+    <>
+      <div className="max-w-2xl">
+        <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
+          {st("sovereignty.eyebrow", SOVEREIGNTY.eyebrow)}
+        </p>
+        <h2 className="mt-3 font-serif text-3xl leading-[1.15] text-[var(--brand-text)] sm:text-4xl">
+          {st("sovereignty.headline", SOVEREIGNTY.headline)}{" "}
+          {/* Only the short second half is underlined, so the stroke stays
                   tight to the words however the heading wraps. */}
-              <span className="relative inline-block">
-                {st(
-                  "sovereignty.headlineEmphasis",
-                  SOVEREIGNTY.headlineEmphasis,
-                )}
-                <span
-                  aria-hidden
-                  className="absolute -bottom-2 left-0 w-full text-[var(--brand-accent)]"
-                >
-                  <SketchUnderline />
-                </span>
-              </span>
-            </h2>
-            <p className="mt-8 text-lg leading-relaxed text-[var(--brand-text)]">
-              {st("sovereignty.serving", SOVEREIGNTY.serving)}
-            </p>
-            <p className="mt-4 leading-relaxed text-[var(--brand-muted-2)]">
-              {st("sovereignty.body", SOVEREIGNTY.body)}
-            </p>
-          </div>
-
-          {/* The ledger. Every row, including the ones we'd rather not print. */}
-          <ul className="mt-10 grid gap-px overflow-hidden rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-border)]">
-            {SOVEREIGNTY.ledger.map((entry, i) => (
-              <li
-                key={entry.piece}
-                className="grid gap-2 bg-white px-5 py-4 sm:grid-cols-[1fr_auto] sm:items-center sm:gap-6"
-              >
-                <div>
-                  <p className="font-serif text-lg leading-snug text-[var(--brand-text)]">
-                    {st(`sovereignty.ledger.${i}.piece`, entry.piece)}
-                  </p>
-                  <p className="mt-0.5 text-sm leading-relaxed text-[var(--brand-muted-2)]">
-                    {st(`sovereignty.ledger.${i}.today`, entry.today)}
-                  </p>
-                </div>
-                <StateChip state={entry.state} />
-              </li>
-            ))}
-          </ul>
-
-          <Link
-            href={SOVEREIGNTY.href}
-            className="mt-8 inline-block text-sm text-[var(--brand-ink)] underline decoration-[var(--brand-accent)] underline-offset-4 transition-colors hover:text-[var(--brand-accent)]"
+          <span className="relative inline-block">
+            {st("sovereignty.headlineEmphasis", SOVEREIGNTY.headlineEmphasis)}
+            <span
+              aria-hidden
+              className="absolute -bottom-2 left-0 w-full text-[var(--brand-accent)]"
+            >
+              <SketchUnderline />
+            </span>
+          </span>
+        </h2>
+        {/* Dense reads the two intro paragraphs as a pair of columns rather
+            than a stack — same words, half the height, which is what leaves the
+            ledger its nine rows inside one chapter. */}
+        <div
+          className={
+            dense ? "mt-3 grid gap-3 sm:grid-cols-2 sm:items-baseline" : ""
+          }
+        >
+          <p
+            className={`text-lg leading-relaxed text-[var(--brand-text)] ${
+              dense ? "" : "mt-8"
+            }`}
           >
-            {t("sovereignty.whatsNextLink")}
-          </Link>
-        </ScrollReveal>
+            {st("sovereignty.serving", SOVEREIGNTY.serving)}
+          </p>
+          <p
+            className={`leading-relaxed text-[var(--brand-muted-2)] ${
+              dense ? "" : "mt-4"
+            }`}
+          >
+            {st("sovereignty.body", SOVEREIGNTY.body)}
+          </p>
+        </div>
+      </div>
+
+      {/* The ledger. Every row, including the ones we'd rather not print. */}
+      <ul
+        className={`grid gap-px overflow-hidden rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-border)] ${
+          dense ? "mt-4" : "mt-10"
+        }`}
+      >
+        {SOVEREIGNTY.ledger.map((entry, i) => (
+          <li
+            key={entry.piece}
+            className={`grid gap-2 bg-white sm:grid-cols-[1fr_auto] sm:items-center ${
+              dense ? "px-4 py-1.5 sm:gap-4" : "px-5 py-4 sm:gap-6"
+            }`}
+          >
+            {/* Dense puts the piece and its state on one line rather than two.
+                Nine rows of stacked pairs is the tallest block on the homepage;
+                laid out as a row each, the ledger reads more like the ledger it
+                claims to be and costs a third of the height. */}
+            <div
+              className={
+                dense
+                  ? "grid gap-0.5 sm:grid-cols-[minmax(0,11rem)_1fr] sm:items-baseline sm:gap-4"
+                  : ""
+              }
+            >
+              <p
+                className={`font-serif leading-snug text-[var(--brand-text)] ${
+                  dense ? "text-base" : "text-lg"
+                }`}
+              >
+                {st(`sovereignty.ledger.${i}.piece`, entry.piece)}
+              </p>
+              <p
+                className={`text-sm leading-relaxed text-[var(--brand-muted-2)] ${
+                  dense ? "" : "mt-0.5"
+                }`}
+              >
+                {st(`sovereignty.ledger.${i}.today`, entry.today)}
+              </p>
+            </div>
+            <StateChip state={entry.state} />
+          </li>
+        ))}
+      </ul>
+
+      <Link
+        href={SOVEREIGNTY.href}
+        className={`inline-block text-sm text-[var(--brand-ink)] underline decoration-[var(--brand-accent)] underline-offset-4 transition-colors hover:text-[var(--brand-accent)] ${
+          dense ? "mt-3" : "mt-8"
+        }`}
+      >
+        {t("sovereignty.whatsNextLink")}
+      </Link>
+    </>
+  );
+
+  if (dense) {
+    return <div data-testid="swiss-made">{content}</div>;
+  }
+
+  return (
+    <section
+      data-testid="swiss-made"
+      className="border-y border-[var(--brand-border)] bg-[var(--brand-ground)]"
+    >
+      <div className="mx-auto w-full max-w-5xl px-4 py-20 sm:px-6">
+        <ScrollReveal>{content}</ScrollReveal>
       </div>
     </section>
   );
