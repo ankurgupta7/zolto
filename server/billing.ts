@@ -22,6 +22,7 @@ import {
   getTenantById,
   getTenantByStripeCustomerId,
   getTenantByStripeSubscriptionId,
+  markSiteImportPaid,
   updateTenantBilling,
 } from "./db";
 import type { Tenant } from "../drizzle/schema";
@@ -76,6 +77,8 @@ function resolveBaseUrl(req?: { headers?: { origin?: string } }): string {
 const META_KIND = "zoltoBilling";
 const KIND_PLAN = "plan_subscription";
 const KIND_PHOTO_CREDITS = "photo_credits";
+/** The one-time switch-in import (shared/platform.ts SITE_IMPORT). */
+const KIND_SITE_IMPORT = "site_import";
 
 /** Does this Checkout Session belong to platform billing, not a storefront? */
 export function isBillingSession(session: Stripe.Checkout.Session): boolean {
@@ -132,6 +135,66 @@ export async function createPlanCheckoutSession(params: {
   return { url: session.url };
 }
 
+/**
+ * Create a ONE-TIME Checkout Session for the switch-in site import.
+ *
+ * `mode: "payment"`, not "subscription" — this is the only thing on the platform
+ * priced per action, and it must never become a recurring line on a merchant's
+ * card. shared/platform.ts SITE_IMPORT states the rule it lives under.
+ *
+ * Priced inline with `price_data` rather than from a Stripe Price env var: the
+ * amount is CHF 20 stated in shared/platform.ts, and a deployment that has
+ * Stripe configured at all can sell this without an operator first minting a
+ * Price object and setting yet another env var.
+ *
+ * `siteImportId` rides in metadata so the webhook can mark exactly this import
+ * paid — the merchant may have several previews open.
+ */
+export async function createSiteImportCheckoutSession(params: {
+  tenant: Tenant;
+  siteImportId: number;
+  priceChf: number;
+  productCount: number;
+  req?: { headers?: { origin?: string } };
+}): Promise<{ url: string; sessionId: string }> {
+  const stripe = getStripe();
+  if (!stripe) throw new Error("Stripe is not configured");
+  if (!params.tenant.stripeCustomerId) {
+    throw new Error("Tenant has no Stripe customer — contact support");
+  }
+
+  const base = resolveBaseUrl(params.req);
+  const session = await stripe.checkout.sessions.create({
+    mode: "payment",
+    customer: params.tenant.stripeCustomerId,
+    line_items: [
+      {
+        quantity: 1,
+        price_data: {
+          currency: "chf",
+          unit_amount: Math.round(params.priceChf * 100),
+          product_data: {
+            name: "Zolto shop import",
+            // What they are buying, in the receipt, in their own terms.
+            description: `One-time import of ${params.productCount} products from your existing site`,
+          },
+        },
+      },
+    ],
+    metadata: {
+      [META_KIND]: KIND_SITE_IMPORT,
+      tenantId: String(params.tenant.id),
+      siteImportId: String(params.siteImportId),
+    },
+    // The Import hub's real route (client/src/admin/nav.ts) — a merchant
+    // returning from Stripe must land back on the card they left, not a 404.
+    success_url: `${base}/admin/products/import?imported=${params.siteImportId}`,
+    cancel_url: `${base}/admin/products/import?cancelled=${params.siteImportId}`,
+  });
+  if (!session.url) throw new Error("Stripe did not return a checkout URL");
+  return { url: session.url, sessionId: session.id };
+}
+
 // ─── Webhook event handling ───────────────────────────────────────────────────
 
 async function handlePlanCheckoutCompleted(
@@ -158,6 +221,42 @@ async function handlePlanCheckoutCompleted(
     subscriptionStatus: "trialing", // subscription_data.trial_period_days
   });
   console.info(`[Billing] Tenant ${tenantId} upgraded to ${plan}`);
+}
+
+/**
+ * Mark a site import paid. The ONLY writer of `site_imports.status = "paid"` —
+ * the client never gets to assert it has paid, it asks Stripe and Stripe tells
+ * us.
+ *
+ * Idempotent by the status transition itself (markSiteImportPaid only moves a
+ * row out of `previewed`), because Stripe retries webhooks and delivers
+ * `checkout.session.completed` and `async_payment_succeeded` for the same
+ * purchase. Charging once but importing twice would duplicate a merchant's
+ * whole catalogue.
+ */
+async function handleSiteImportCheckoutCompleted(
+  session: Stripe.Checkout.Session,
+): Promise<void> {
+  const meta = session.metadata as Record<string, string>;
+  const siteImportId = parseInt(meta.siteImportId, 10);
+  const tenantId = parseInt(meta.tenantId, 10);
+  if (!Number.isFinite(siteImportId) || !Number.isFinite(tenantId)) {
+    console.warn("[Billing] Site-import checkout with bad metadata:", meta);
+    return;
+  }
+  // Scoped by tenant as well as id: a metadata id is attacker-influenced in
+  // principle, and this is the one place money turns into a write.
+  const moved = await markSiteImportPaid({
+    id: siteImportId,
+    tenantId,
+    amountCents: session.amount_total ?? null,
+    currency: session.currency?.toUpperCase() ?? null,
+  });
+  console.info(
+    moved
+      ? `[Billing] Site import ${siteImportId} paid for tenant ${tenantId}`
+      : `[Billing] Site import ${siteImportId} already past preview — ignoring replayed payment`,
+  );
 }
 
 async function handleSubscriptionUpdated(
@@ -248,6 +347,8 @@ export async function handleBillingEvent(
       if (!isBillingSession(session)) return false;
       const kind = (session.metadata as Record<string, string>)[META_KIND];
       if (kind === KIND_PLAN) await handlePlanCheckoutCompleted(session);
+      else if (kind === KIND_SITE_IMPORT)
+        await handleSiteImportCheckoutCompleted(session);
       else if (kind === KIND_PHOTO_CREDITS)
         // Retired product (pre-pivot pay-as-you-go credit packs). AI is now
         // plan-based — unmetered on Pro, monthly allowance on Free — so a

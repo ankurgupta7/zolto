@@ -917,6 +917,14 @@ fi
 # Idempotent; see migrate_0043_pos_pairing_tokens in deploy/lib/db.sh.
 migrate_0043_pos_pairing_tokens
 
+# ── 0044: the paid one-time site import ──────────────────────────────────────
+# Ships drizzle/0026_site_imports.sql. One row per attempt at lifting a
+# merchant's existing shop across; the previewed → paid → applied status is what
+# stops a replayed Stripe webhook importing the same catalogue twice. Additive —
+# nothing reads it until a merchant starts an import.
+# Idempotent; see migrate_0044_site_imports in deploy/lib/db.sh.
+migrate_0044_site_imports
+
 # ── Record the applied migration set ──────────────────────────────────────────
 # Only reached when every migration above succeeded — `set -e` plus run_sql's
 # die() mean a failure never gets this far, so a half-applied schema is never

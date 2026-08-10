@@ -66,6 +66,8 @@ export interface ExtractedProfile {
   /** Free text, as the source wrote it ("Mo–Fr 09:00–18:00"). */
   openingHours?: string;
   logoUrl?: string;
+  /** The site's own brand colour, as `#rrggbb`. See themeColorFromHtml. */
+  primaryColor?: string;
 }
 
 export interface PageExtraction {
@@ -117,21 +119,23 @@ export function decodeEntities(s: string): string {
 
 /** Strip tags and collapse whitespace — for turning a description block into text. */
 export function htmlToText(html: string): string {
-  return decodeEntities(
-    html
-      .replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/gi, " ")
-      .replace(/<br\s*\/?>/gi, "\n")
-      .replace(/<\/(p|div|li|h[1-6])>/gi, "\n")
-      .replace(/<[^>]+>/g, " "),
-  )
-    .replace(/[ \t\f\v]+/g, " ")
-    .replace(/\s*\n\s*/g, "\n")
-    // Tags become spaces so words don't fuse ("<b>a</b><b>b</b>" → "a b"), but
-    // that leaves a gap before punctuation that closed a tag ("safe</b>." →
-    // "safe ."). Close it back up.
-    .replace(/ +([.,;:!?%)\]])/g, "$1")
-    .replace(/([([]) +/g, "$1")
-    .trim();
+  return (
+    decodeEntities(
+      html
+        .replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/gi, " ")
+        .replace(/<br\s*\/?>/gi, "\n")
+        .replace(/<\/(p|div|li|h[1-6])>/gi, "\n")
+        .replace(/<[^>]+>/g, " "),
+    )
+      .replace(/[ \t\f\v]+/g, " ")
+      .replace(/\s*\n\s*/g, "\n")
+      // Tags become spaces so words don't fuse ("<b>a</b><b>b</b>" → "a b"), but
+      // that leaves a gap before punctuation that closed a tag ("safe</b>." →
+      // "safe ."). Close it back up.
+      .replace(/ +([.,;:!?%)\]])/g, "$1")
+      .replace(/([([]) +/g, "$1")
+      .trim()
+  );
 }
 
 /** Every `<script type="application/ld+json">` payload, parsed and flattened. */
@@ -180,8 +184,9 @@ export function parseMetaTags(html: string): Map<string, string> {
   const out = new Map<string, string>();
   for (const tag of Array.from(html.matchAll(/<meta\b[^>]*>/gi))) {
     const el = tag[0];
-    const key =
-      /(?:property|name)\s*=\s*["']([^"']+)["']/i.exec(el)?.[1]?.toLowerCase();
+    const key = /(?:property|name)\s*=\s*["']([^"']+)["']/i
+      .exec(el)?.[1]
+      ?.toLowerCase();
     const content = /content\s*=\s*["']([^"']*)["']/i.exec(el)?.[1];
     if (key && content && !out.has(key)) out.set(key, decodeEntities(content));
   }
@@ -260,7 +265,10 @@ function firstString(v: unknown): string | undefined {
   return undefined;
 }
 
-function absolutize(raw: string | undefined, pageUrl: string): string | undefined {
+function absolutize(
+  raw: string | undefined,
+  pageUrl: string,
+): string | undefined {
   if (!raw) return undefined;
   try {
     return new URL(raw, pageUrl).toString();
@@ -463,6 +471,30 @@ export function logoFromHtml(
   );
 }
 
+/**
+ * The site's brand colour, from `<meta name="theme-color">` (or Microsoft's
+ * older tile colour), normalised to `#rrggbb`.
+ *
+ * Deliberately only the declared colour, never a colour guessed by counting
+ * hex codes in the stylesheet: the most frequent hex on a page is nearly
+ * always a grey from the body text or a border, and importing that as a
+ * merchant's brand would repaint their whole storefront the wrong colour on
+ * their first day. Nothing found means nothing changes.
+ */
+export function themeColorFromHtml(
+  meta: Map<string, string>,
+): string | undefined {
+  const raw = meta.get("theme-color") ?? meta.get("msapplication-tilecolor");
+  if (!raw) return undefined;
+  const hex = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(raw.trim());
+  if (!hex) return undefined;
+  const value = hex[1].toLowerCase();
+  // #abc and #aabbcc mean the same colour; tenant_settings stores the long form.
+  return value.length === 3
+    ? `#${value[0]}${value[0]}${value[1]}${value[1]}${value[2]}${value[2]}`
+    : `#${value}`;
+}
+
 // ─── Page + site assembly ─────────────────────────────────────────────────────
 
 /** Everything one fetched page yields. */
@@ -485,6 +517,7 @@ export function extractPage(html: string, pageUrl: string): PageExtraction {
   profile.email ??= contact.email;
   profile.phone ??= contact.phone;
   profile.logoUrl ??= logoFromHtml(html, meta, pageUrl);
+  profile.primaryColor ??= themeColorFromHtml(meta);
 
   // Categories: the product's own category, plus breadcrumb trails, which is
   // how most shops actually express their sections.

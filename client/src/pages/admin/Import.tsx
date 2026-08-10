@@ -8,6 +8,7 @@ import { Link } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { FileSpreadsheet, Images, Copy, ArrowRight } from "lucide-react";
 import { PageHeader, AdminOnly } from "@/components/admin/ui";
+import SiteImportCard from "@/components/admin/SiteImportCard";
 
 const TOOLS = [
   {
@@ -43,6 +44,10 @@ export default function Import() {
         title={t("ops.import.title")}
         description={t("ops.import.description")}
       />
+
+      {/* The fastest way in goes first: one address, and the whole shop moves.
+          The tools below are what you reach for when there is no old site. */}
+      <SiteImportCard />
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         {TOOLS.map(({ href, icon: Icon, titleKey, bodyKey }) => (

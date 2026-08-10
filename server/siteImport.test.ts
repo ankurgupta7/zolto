@@ -14,6 +14,7 @@ import {
   profileFromJsonLd,
   sameOriginLinks,
   stockFromOffer,
+  themeColorFromHtml,
 } from "./siteImport";
 
 const PAGE = "https://bergblume.example/products/mug";
@@ -24,9 +25,9 @@ function jsonLd(obj: unknown): string {
 
 describe("html scraping primitives", () => {
   it("decodes the entities that actually appear in shop copy", () => {
-    expect(decodeEntities("Caf&eacute; &amp; Th&#233; &#x2014; 5&nbsp;dl")).toBe(
-      "Café & Thé — 5 dl",
-    );
+    expect(
+      decodeEntities("Caf&eacute; &amp; Th&#233; &#x2014; 5&nbsp;dl"),
+    ).toBe("Café & Thé — 5 dl");
   });
 
   it("turns a description block into readable text", () => {
@@ -36,8 +37,9 @@ describe("html scraping primitives", () => {
   });
 
   it("drops script and style content rather than importing it as prose", () => {
-    expect(htmlToText("<div>Real<script>var x=1</script><style>a{}</style></div>"))
-      .toBe("Real");
+    expect(
+      htmlToText("<div>Real<script>var x=1</script><style>a{}</style></div>"),
+    ).toBe("Real");
   });
 
   it("reads meta tags by both name and property", () => {
@@ -162,7 +164,11 @@ describe("products from JSON-LD", () => {
     // Losing the item entirely would be worse: the merchant can type a price,
     // but can't retype a product they were never shown.
     const nodes = parseJsonLd(
-      jsonLd({ "@type": "Product", name: "Plate", offers: { price: "ask us" } }),
+      jsonLd({
+        "@type": "Product",
+        name: "Plate",
+        offers: { price: "ask us" },
+      }),
     );
     expect(productsFromJsonLd(nodes, PAGE)[0]).toMatchObject({
       name: "Plate",
@@ -195,9 +201,15 @@ describe("stock from an offer", () => {
   });
 
   it("reads sold out as zero, in stock as one", () => {
-    expect(stockFromOffer({ availability: "https://schema.org/OutOfStock" })).toBe(0);
-    expect(stockFromOffer({ availability: "http://schema.org/SoldOut" })).toBe(0);
-    expect(stockFromOffer({ availability: "https://schema.org/InStock" })).toBe(1);
+    expect(
+      stockFromOffer({ availability: "https://schema.org/OutOfStock" }),
+    ).toBe(0);
+    expect(stockFromOffer({ availability: "http://schema.org/SoldOut" })).toBe(
+      0,
+    );
+    expect(stockFromOffer({ availability: "https://schema.org/InStock" })).toBe(
+      1,
+    );
   });
 
   it("defaults an unstated stock to one, not to a made-up number", () => {
@@ -207,7 +219,9 @@ describe("stock from an offer", () => {
   });
 
   it("honours a genuine zero inventory level", () => {
-    expect(stockFromOffer({ inventoryLevel: 0, availability: "InStock" })).toBe(0);
+    expect(stockFromOffer({ inventoryLevel: 0, availability: "InStock" })).toBe(
+      0,
+    );
   });
 });
 
@@ -314,8 +328,64 @@ describe("shop profile", () => {
   it("prefers a declared icon over the social preview image for the logo", () => {
     const html = `<link rel="apple-touch-icon" href="/icon.png">`;
     expect(
-      logoFromHtml(html, parseMetaTags(`<meta property="og:image" content="/og.jpg">`), PAGE),
+      logoFromHtml(
+        html,
+        parseMetaTags(`<meta property="og:image" content="/og.jpg">`),
+        PAGE,
+      ),
     ).toBe("https://bergblume.example/icon.png");
+  });
+});
+
+describe("brand colour", () => {
+  it("reads the declared theme colour", () => {
+    expect(
+      themeColorFromHtml(
+        parseMetaTags(`<meta name="theme-color" content="#1B7F5A">`),
+      ),
+    ).toBe("#1b7f5a");
+  });
+
+  it("expands the three-digit form, because tenant_settings stores six", () => {
+    expect(
+      themeColorFromHtml(
+        parseMetaTags(`<meta name="theme-color" content="#0af">`),
+      ),
+    ).toBe("#00aaff");
+  });
+
+  it("falls back to the Microsoft tile colour", () => {
+    expect(
+      themeColorFromHtml(
+        parseMetaTags(
+          `<meta name="msapplication-TileColor" content="#123456">`,
+        ),
+      ),
+    ).toBe("#123456");
+  });
+
+  it("returns nothing for a named or malformed colour rather than guessing", () => {
+    // A merchant's storefront gets repainted from this value. "Nothing found"
+    // has to mean nothing changes, not a colour we invented.
+    expect(
+      themeColorFromHtml(
+        parseMetaTags(`<meta name="theme-color" content="rebeccapurple">`),
+      ),
+    ).toBeUndefined();
+    expect(
+      themeColorFromHtml(
+        parseMetaTags(`<meta name="theme-color" content="#12345">`),
+      ),
+    ).toBeUndefined();
+    expect(themeColorFromHtml(new Map())).toBeUndefined();
+  });
+
+  it("rides along on the page extraction", () => {
+    const page = extractPage(
+      `<meta name="theme-color" content="#883333">`,
+      PAGE,
+    );
+    expect(page.profile.primaryColor).toBe("#883333");
   });
 });
 
@@ -390,8 +460,26 @@ describe("mergeExtractions", () => {
 
   it("lets a sold-out reading win over an assumed in-stock", () => {
     const merged = mergeExtractions([
-      page([{ name: "X", description: "", price: 1, quantity: 1, rawCategory: "", sourceUrl: "a" }]),
-      page([{ name: "X", description: "", price: 1, quantity: 0, rawCategory: "", sourceUrl: "b" }]),
+      page([
+        {
+          name: "X",
+          description: "",
+          price: 1,
+          quantity: 1,
+          rawCategory: "",
+          sourceUrl: "a",
+        },
+      ]),
+      page([
+        {
+          name: "X",
+          description: "",
+          price: 1,
+          quantity: 0,
+          rawCategory: "",
+          sourceUrl: "b",
+        },
+      ]),
     ]);
     expect(merged.products[0].quantity).toBe(0);
   });
@@ -407,11 +495,27 @@ describe("mergeExtractions", () => {
   it("counts what is missing so the merchant can judge before paying", () => {
     const merged = mergeExtractions([
       page([
-        { name: "A", description: "", price: null, quantity: 1, rawCategory: "", sourceUrl: "a" },
-        { name: "B", description: "", price: 5, quantity: 1, rawCategory: "", sourceUrl: "b" },
+        {
+          name: "A",
+          description: "",
+          price: null,
+          quantity: 1,
+          rawCategory: "",
+          sourceUrl: "a",
+        },
+        {
+          name: "B",
+          description: "",
+          price: 5,
+          quantity: 1,
+          rawCategory: "",
+          sourceUrl: "b",
+        },
       ]),
     ]);
     expect(merged.warnings.join(" ")).toMatch(/1 of 2 products had no price/);
-    expect(merged.warnings.join(" ")).toMatch(/2 products came without a photo/);
+    expect(merged.warnings.join(" ")).toMatch(
+      /2 products came without a photo/,
+    );
   });
 });

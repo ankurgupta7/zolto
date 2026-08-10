@@ -269,6 +269,37 @@
       "groupsFound_many": "groupes de doublons trouvés",
       "copies_many": "({{count}} copies)",
       "removed_many": "{{count}} produits en double supprimés"
+    },
+    "siteImport": {
+      "title": "Emmenez votre ancienne boutique avec vous",
+      "summary": "Donnez-nous l’adresse du site où vous vendez aujourd’hui : nous le lisons — produits, prix, stock, photos, catégories et votre identité visuelle.",
+      "priceBadge": "CHF {{price}}, une fois",
+      "urlLabel": "Adresse de votre boutique actuelle",
+      "urlPlaceholder": "https://votreboutique.ch",
+      "previewCta": "Voir ce qui peut être repris",
+      "freeNote": "La lecture de votre site est gratuite. Vous voyez tout ce que nous avons trouvé — et en quelle quantité — avant que quoi que ce soit ne soit facturé.",
+      "statProducts": "produits trouvés",
+      "statPriced": "avec un prix",
+      "statPhotos": "avec une photo",
+      "statCategories": "catégories",
+      "noPrice": "aucun prix trouvé",
+      "extraCategories": "Catégories",
+      "extraCategoriesHint": "Recréer les {{count}} rayons de votre site",
+      "extraBranding": "Logo et couleur",
+      "extraBrandingFound": "Reprendre votre logo et votre couleur",
+      "extraProfile": "Infos boutique",
+      "extraProfileFound": "Nom, description et coordonnées",
+      "extraNothingFound": "Rien de lisible sur ce site",
+      "whyPaid": "Chaque lecture parcourt réellement votre site. Vous payez une fois le travail du déménagement — jamais un abonnement pour garder ce qui vous appartient déjà.",
+      "payCta": "Payer CHF {{price}} et importer",
+      "nothingToCharge": "Il n’y a rien ici qui justifie de vous facturer. Essayez l’adresse d’une page de catégorie, ou utilisez les outils ci-dessous.",
+      "checkoutUnavailable": "Les paiements par carte ne sont pas configurés sur cette installation ; cet import ne peut pas être acheté ici.",
+      "paidReady": "Paiement reçu — prêt à rejoindre votre boutique.",
+      "applyCta": "Ajouter à ma boutique",
+      "doneTitle": "Terminé — {{created}} produits ajoutés, {{updated}} mis à jour.",
+      "doneHidden": "{{count}} sont arrivés masqués faute de prix lisible. Indiquez-en un et ils passent en ligne.",
+      "doneFailed": "Impossible d’ajouter : {{names}}",
+      "doneAgain": "Importer un autre site"
     }
   }
 }

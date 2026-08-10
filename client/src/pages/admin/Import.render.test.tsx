@@ -8,6 +8,12 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("@/_core/hooks/useAuth", () => ({ useAuth: () => mocks.authState }));
 
+// The paid site importer has its own render test (SiteImportCard.render.test)
+// and needs a tRPC provider; here we only care that the page mounts it.
+vi.mock("@/components/admin/SiteImportCard", () => ({
+  default: () => <div>SITE IMPORT CARD</div>,
+}));
+
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.authState.user = { role: "admin" };
@@ -41,5 +47,16 @@ describe("Import page", () => {
       "/admin/duplicates",
     );
     expect(screen.getAllByText("Open")).toHaveLength(3);
+  });
+
+  it("leads with the one-address import, above the manual tools", () => {
+    const { container } = render(<Import />);
+    const card = screen.getByText("SITE IMPORT CARD");
+    const csv = screen.getByText("CSV import");
+    // Source order is reading order: the fastest way in comes first.
+    expect(
+      card.compareDocumentPosition(csv) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(container.textContent).toContain("SITE IMPORT CARD");
   });
 });

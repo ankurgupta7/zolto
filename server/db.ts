@@ -48,6 +48,8 @@ import {
   type Product,
   productImages,
   products,
+  type SiteImport,
+  siteImports,
   type StripeReconciliation,
   stripeReconciliations,
   users,
@@ -2034,6 +2036,37 @@ export async function createTenantSettings(
   await withDbOrThrow((db) => db.insert(tenantSettings).values(data));
 }
 
+/**
+ * Patch a store's settings by tenant id, creating the row if it is missing.
+ *
+ * tenant.updateSettings does this inline off `ctx.tenant`; this exists for the
+ * callers that are scoped through `ctx.user.tenantId` instead — the shape
+ * CLAUDE.md's authorization table calls the correct use of bare
+ * `adminProcedure` — so they never have to reach for the request's host to
+ * decide whose settings they are writing.
+ */
+export async function upsertTenantSettingsFields(
+  tenantId: number,
+  patch: Partial<InsertTenantSetting>,
+): Promise<void> {
+  if (Object.keys(patch).length === 0) return;
+  await withDbOrThrow(async (db) => {
+    const existing = await db
+      .select({ id: tenantSettings.id })
+      .from(tenantSettings)
+      .where(eq(tenantSettings.tenantId, tenantId))
+      .limit(1);
+    if (existing[0]) {
+      await db
+        .update(tenantSettings)
+        .set({ ...patch, updatedAt: new Date() })
+        .where(eq(tenantSettings.id, existing[0].id));
+    } else {
+      await db.insert(tenantSettings).values({ ...patch, tenantId });
+    }
+  });
+}
+
 // ─── Tenant categories ────────────────────────────────────────────────────────
 // Per-store product category list, seeded from the tenant's vertical preset
 // at signup and editable by the store admin. products.category stores the
@@ -2896,6 +2929,165 @@ export async function forgetStorageObject(
         and(
           eq(storageObjects.tenantId, tenantId),
           eq(storageObjects.storageKey, storageKey),
+        ),
+      ),
+  );
+}
+
+// ─── Site imports (the paid one-time switch-in) ───────────────────────────────
+
+/**
+ * Record a completed preview. The extraction is stored with it so that the
+ * merchant pays for the result they were actually shown: re-crawling after
+ * payment could return a different shop (a page edited, a product sold out)
+ * from the one they agreed to buy.
+ */
+export async function createSiteImport(entry: {
+  tenantId: number;
+  sourceUrl: string;
+  extraction: unknown;
+  productCount: number;
+}): Promise<number> {
+  return withDbOrThrow(async (db) => {
+    const inserted = await db.insert(siteImports).values({
+      tenantId: entry.tenantId,
+      sourceUrl: entry.sourceUrl,
+      extraction: entry.extraction,
+      productCount: entry.productCount,
+    });
+    return (inserted as unknown as { insertId?: number }).insertId ?? 0;
+  });
+}
+
+/** Read one import, scoped so a tenant can never open another tenant's crawl. */
+export async function getSiteImportForTenant(
+  tenantId: number,
+  id: number,
+): Promise<SiteImport | undefined> {
+  return withDb(async (db) => {
+    const rows = await db
+      .select()
+      .from(siteImports)
+      .where(and(eq(siteImports.tenantId, tenantId), eq(siteImports.id, id)))
+      .limit(1);
+    return rows[0];
+  }, undefined);
+}
+
+/** The most recent import for this tenant, for the admin page's resume state. */
+export async function getLatestSiteImportForTenant(
+  tenantId: number,
+): Promise<SiteImport | undefined> {
+  return withDb(async (db) => {
+    const rows = await db
+      .select()
+      .from(siteImports)
+      .where(eq(siteImports.tenantId, tenantId))
+      .orderBy(desc(siteImports.id))
+      .limit(1);
+    return rows[0];
+  }, undefined);
+}
+
+/** Remember which Checkout Session was opened for this import. */
+export async function setSiteImportCheckoutSession(
+  tenantId: number,
+  id: number,
+  stripeSessionId: string,
+): Promise<void> {
+  await withDbOrThrow((db) =>
+    db
+      .update(siteImports)
+      .set({ stripeSessionId })
+      .where(and(eq(siteImports.tenantId, tenantId), eq(siteImports.id, id))),
+  );
+}
+
+/**
+ * Mark an import paid. Returns true only for the call that actually moved the
+ * row out of `previewed`.
+ *
+ * Stripe retries webhooks, and delivers both `checkout.session.completed` and
+ * `async_payment_succeeded` for the same purchase. The status transition is
+ * the idempotency key: the second delivery matches no rows and reports false,
+ * so the caller does not re-run the import and duplicate the whole catalogue.
+ */
+export async function markSiteImportPaid(entry: {
+  id: number;
+  tenantId: number;
+  amountCents: number | null;
+  currency: string | null;
+}): Promise<boolean> {
+  return withDbOrThrow(async (db) => {
+    const result = await db
+      .update(siteImports)
+      .set({
+        status: "paid",
+        paidAt: new Date(),
+        amountCents: entry.amountCents,
+        currency: entry.currency,
+      })
+      .where(
+        and(
+          eq(siteImports.id, entry.id),
+          eq(siteImports.tenantId, entry.tenantId),
+          eq(siteImports.status, "previewed"),
+        ),
+      );
+    const affected = (result as unknown as Array<{ affectedRows?: number }>)[0]
+      ?.affectedRows;
+    return Boolean(affected);
+  });
+}
+
+/**
+ * Mark an import as landed. Like the payment transition this is guarded by the
+ * status it moves from, so two admins hitting "apply" at once produce one
+ * import and one refusal rather than two copies of every product.
+ */
+export async function markSiteImportApplied(
+  tenantId: number,
+  id: number,
+): Promise<boolean> {
+  return withDbOrThrow(async (db) => {
+    const result = await db
+      .update(siteImports)
+      .set({ status: "applied", appliedAt: new Date() })
+      .where(
+        and(
+          eq(siteImports.id, id),
+          eq(siteImports.tenantId, tenantId),
+          eq(siteImports.status, "paid"),
+        ),
+      );
+    const affected = (result as unknown as Array<{ affectedRows?: number }>)[0]
+      ?.affectedRows;
+    return Boolean(affected);
+  });
+}
+
+/**
+ * Record a failure. Deliberately does not touch a row that already reached
+ * `applied` — a merchant who paid and got their shop must not be shown a
+ * failure because a later step tripped.
+ */
+export async function markSiteImportFailed(
+  tenantId: number,
+  id: number,
+  reason: string,
+): Promise<void> {
+  await withDbOrThrow((db) =>
+    db
+      .update(siteImports)
+      .set({ status: "failed", failureReason: reason.slice(0, 512) })
+      .where(
+        and(
+          eq(siteImports.id, id),
+          eq(siteImports.tenantId, tenantId),
+          or(
+            eq(siteImports.status, "previewed"),
+            eq(siteImports.status, "paid"),
+          ),
         ),
       ),
   );

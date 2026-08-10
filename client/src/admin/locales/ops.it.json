@@ -269,6 +269,37 @@
       "groupsFound_many": "gruppi di duplicati trovati",
       "copies_many": "({{count}} copie)",
       "removed_many": "{{count}} prodotti duplicati rimossi"
+    },
+    "siteImport": {
+      "title": "Porta con te il tuo vecchio negozio",
+      "summary": "Dacci l’indirizzo del sito su cui vendi oggi: lo leggiamo noi — prodotti, prezzi, scorte, foto, categorie e il tuo aspetto.",
+      "priceBadge": "CHF {{price}}, una volta",
+      "urlLabel": "Indirizzo del tuo negozio attuale",
+      "urlPlaceholder": "https://tuonegozio.ch",
+      "previewCta": "Mostrami cosa possiamo portare",
+      "freeNote": "Leggere il tuo sito è gratis. Vedi tutto quello che abbiamo trovato — e quanto — prima che ti venga addebitato qualcosa.",
+      "statProducts": "prodotti trovati",
+      "statPriced": "con prezzo",
+      "statPhotos": "con foto",
+      "statCategories": "categorie",
+      "noPrice": "nessun prezzo trovato",
+      "extraCategories": "Categorie",
+      "extraCategoriesHint": "Ricreare i {{count}} reparti del tuo sito",
+      "extraBranding": "Logo e colore",
+      "extraBrandingFound": "Portare logo e colore del marchio",
+      "extraProfile": "Dati del negozio",
+      "extraProfileFound": "Nome, descrizione e contatti",
+      "extraNothingFound": "Su quel sito non abbiamo letto nulla",
+      "whyPaid": "Ogni volta questo percorre davvero il tuo sito. Paghi una volta il lavoro del trasloco — mai un canone mensile per tenere quello che è già tuo.",
+      "payCta": "Paga CHF {{price}} e importa",
+      "nothingToCharge": "Qui non c’è nulla per cui valga la pena farti pagare. Prova l’indirizzo di una pagina di categoria, o usa gli strumenti qui sotto.",
+      "checkoutUnavailable": "I pagamenti con carta non sono configurati su questa installazione: questo import non si può acquistare qui.",
+      "paidReady": "Pagamento ricevuto — pronto per il tuo negozio.",
+      "applyCta": "Aggiungi al mio negozio",
+      "doneTitle": "Fatto — {{created}} prodotti aggiunti, {{updated}} aggiornati.",
+      "doneHidden": "{{count}} sono arrivati nascosti perché non abbiamo letto un prezzo. Impostalo e vanno online.",
+      "doneFailed": "Non è stato possibile aggiungere: {{names}}",
+      "doneAgain": "Importa un altro sito"
     }
   }
 }

@@ -651,6 +651,38 @@ migrate_0043_pos_pairing_tokens() {
   fi
 }
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Migration 0044: the paid one-time site import.
+#
+# Ships drizzle/0026_site_imports.sql. server/routers/siteImport.ts writes a row
+# per attempt; without this table the importer's free preview fails outright.
+# `status` carries the previewed → paid → applied order that keeps a replayed
+# Stripe webhook from importing the same shop twice. Idempotent.
+# ─────────────────────────────────────────────────────────────────────────────
+migrate_0044_site_imports() {
+  if [ "$(tbl_exists site_imports)" = "0" ]; then
+    run_sql "0044 site_imports table" "
+      CREATE TABLE IF NOT EXISTS \`site_imports\` (
+        \`id\`                int AUTO_INCREMENT NOT NULL,
+        \`tenant_id\`         int NOT NULL,
+        \`source_url\`        varchar(1024) NOT NULL,
+        \`status\`            enum('previewed','paid','applied','failed') NOT NULL DEFAULT 'previewed',
+        \`extraction\`        json,
+        \`product_count\`     int NOT NULL DEFAULT 0,
+        \`stripe_session_id\` varchar(255),
+        \`amount_cents\`      int,
+        \`currency\`          varchar(3),
+        \`paid_at\`           timestamp NULL,
+        \`applied_at\`        timestamp NULL,
+        \`failure_reason\`    varchar(512),
+        \`createdAt\`         timestamp NOT NULL DEFAULT (now()),
+        CONSTRAINT \`site_imports_id\` PRIMARY KEY(\`id\`)
+      );"
+  else
+    ok "0044 site_imports already exists"
+  fi
+}
+
 migrate_0036_merchant_verticals() {
   # Per-tenant categories + merchant vertical. Ships
   # drizzle/0017_merchant_verticals.sql and 0018_seed_jewellery_categories.sql:
