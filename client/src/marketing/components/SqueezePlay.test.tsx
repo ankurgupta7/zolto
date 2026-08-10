@@ -2,7 +2,11 @@ import { describe, it, expect, afterEach } from "vitest";
 import { render, screen, cleanup, within } from "@testing-library/react";
 import { POSITIONING } from "@shared/platform";
 import { source } from "@shared/sources";
-import { SqueezePlay } from "./SqueezePlay";
+import {
+  SqueezePlay,
+  SqueezePlayArgument,
+  SqueezePlayTills,
+} from "./SqueezePlay";
 import { SqueezePlayTill } from "./MarketingIllustrations";
 
 afterEach(cleanup);
@@ -148,19 +152,42 @@ describe("SqueezePlayTill", () => {
     expect(svg().querySelectorAll("circle").length).toBe(0);
   });
 
-  // `dense` is the homepage-reel rendering: the chapter owns the band, the
-  // gutter and the vertical rhythm. It is padding and framing only — a variant
-  // that quietly dropped content would make the reel a content cut.
-  it("keeps every panel and the claim in its dense reel rendering", () => {
-    const { container } = render(<SqueezePlay dense />);
+  // The band splits in two for the homepage reel, which snaps one screen at a
+  // time: the argument is a screen and the tills are a screen. Together they
+  // must still be the whole band — a split that quietly dropped a panel would
+  // make the reel a content cut.
+  it("splits into an argument and its tills without losing either", () => {
+    const { container } = render(
+      <>
+        <SqueezePlayArgument dense />
+        <SqueezePlayTills dense />
+      </>,
+    );
     expect(container.querySelector("section")).toBeNull();
-    // No reveal: a chapter's opening content is on screen the moment you
-    // arrive, so fading it in reads as jank.
+    // No reveal: a panel's content is on screen the moment you arrive, so
+    // fading it in reads as jank.
     expect(screen.queryByTestId("scroll-reveal")).toBeNull();
+    expect(screen.getByText(sp.body)).toBeTruthy();
     expect(screen.getAllByTestId(/^squeeze-panel-/).length).toBe(3);
-    expect(screen.getByTestId("squeeze-claim").textContent).toContain(sp.claim);
     for (const panel of sp.panels) {
       expect(screen.getByText(panel.detail)).toBeTruthy();
+    }
+    // The punchline travels with the evidence, not ahead of it.
+    expect(screen.getByTestId("squeeze-claim").textContent).toContain(sp.claim);
+  });
+
+  it("makes the three tills a swipe row on a phone and a grid from sm up", () => {
+    // Three stacked till cards are a screen and a half on a phone, and the
+    // argument is a comparison — it only lands if the panels sit beside each
+    // other. jsdom has no viewport, so the check is the class contract.
+    render(<SqueezePlayTills dense />);
+    const row = screen.getAllByTestId(/^squeeze-panel-/)[0].parentElement;
+    expect(row?.className).toContain("snap-x");
+    expect(row?.className).toContain("overflow-x-auto");
+    expect(row?.className).toContain("sm:grid-cols-3");
+    expect(row?.className).toContain("sm:snap-none");
+    for (const panel of screen.getAllByTestId(/^squeeze-panel-/)) {
+      expect(panel.className).toContain("snap-center");
     }
   });
 });

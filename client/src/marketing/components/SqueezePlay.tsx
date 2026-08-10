@@ -26,56 +26,74 @@ import { useMarketingT } from "../lib/marketingI18n";
  * claim is scoped to the three named options rather than to every product in
  * every country, because the broader version isn't checkable (see the doc
  * comment on POSITIONING.squeezePlay).
+ *
+ * The band comes in two halves — the argument and the tills — because the
+ * homepage reel snaps one screen at a time and the whole band is two screens on
+ * a phone. Reading order is the same either way: claim, then evidence, then the
+ * punchline under the evidence.
  */
-export function SqueezePlay({
-  dense = false,
-}: {
-  /**
-   * Rendered inside a homepage reel chapter (see components/ReelStage.tsx).
-   * The chapter owns the background band, the gutter and the vertical rhythm,
-   * so this drops its own section wrapper and tightens the panels to fit a
-   * viewport alongside ZeroCostPos. The ScrollReveal comes off with it: a
-   * chapter's opening content is on screen the instant you arrive, so fading
-   * it in reads as jank rather than as unfolding.
-   */
+
+/**
+ * `dense` marks the homepage-reel rendering: the chapter (and its panels) own
+ * the band, the gutter and the vertical rhythm, and the content is on screen
+ * the moment its panel arrives, so the ScrollReveal comes off too — it would
+ * fade in on arrival and read as jank rather than as unfolding.
+ */
+interface DenseProps {
   dense?: boolean;
-} = {}) {
+}
+
+/** The eyebrow, the headline and the paragraph that sets up the three tills. */
+export function SqueezePlayArgument({ dense = false }: DenseProps = {}) {
+  const { st } = useMarketingT();
+  const sp = POSITIONING.squeezePlay;
+
+  return (
+    <div className="max-w-2xl">
+      <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
+        {st("squeezePlay.eyebrow", sp.eyebrow)}
+      </p>
+      <h2 className="mt-3 font-serif text-3xl leading-[1.15] text-[var(--brand-text)] sm:text-4xl">
+        {st("squeezePlay.headline", sp.headline)}{" "}
+        {/* Only the punchline is underlined — underlining the whole
+            heading leaves the stroke trailing once it wraps. */}
+        <span className="relative inline-block">
+          {st("squeezePlay.headlineEmphasis", sp.headlineEmphasis)}
+          <span
+            aria-hidden
+            className="absolute -bottom-2 left-0 w-full text-[var(--brand-accent)]"
+          >
+            <SketchUnderline />
+          </span>
+        </span>
+      </h2>
+      <p
+        className={`leading-relaxed text-[var(--brand-muted-2)] ${
+          dense ? "mt-5" : "mt-8"
+        }`}
+      >
+        {st("squeezePlay.body", sp.body)}
+      </p>
+    </div>
+  );
+}
+
+/**
+ * The three tills and the sentence they prove. On a phone the row becomes a
+ * horizontal swipe with its own x-snap: three stacked cards are a screen and a
+ * half, and the argument is a *comparison* — it only works if you can put the
+ * panels beside each other.
+ */
+export function SqueezePlayTills({ dense = false }: DenseProps = {}) {
   const { t, st } = useMarketingT();
   const sp = POSITIONING.squeezePlay;
 
-  const content = (
-    <>
-      <div className="max-w-2xl">
-        <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
-          {st("squeezePlay.eyebrow", sp.eyebrow)}
-        </p>
-        <h2 className="mt-3 font-serif text-3xl leading-[1.15] text-[var(--brand-text)] sm:text-4xl">
-          {st("squeezePlay.headline", sp.headline)}{" "}
-          {/* Only the punchline is underlined — underlining the whole
-              heading leaves the stroke trailing once it wraps. */}
-          <span className="relative inline-block">
-            {st("squeezePlay.headlineEmphasis", sp.headlineEmphasis)}
-            <span
-              aria-hidden
-              className="absolute -bottom-2 left-0 w-full text-[var(--brand-accent)]"
-            >
-              <SketchUnderline />
-            </span>
-          </span>
-        </h2>
-        <p
-          className={`leading-relaxed text-[var(--brand-muted-2)] ${
-            dense ? "mt-5" : "mt-8"
-          }`}
-        >
-          {st("squeezePlay.body", sp.body)}
-        </p>
-      </div>
-
-      {/* Three tills. On a phone these stack, which is fine — the argument
-          survives being read one panel at a time. */}
+  return (
+    <div>
       <ul
-        className={`grid sm:grid-cols-3 ${dense ? "mt-5 gap-3" : "mt-12 gap-8"}`}
+        className={`flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 sm:grid sm:snap-none sm:overflow-visible sm:pb-0 sm:grid-cols-3 ${
+          dense ? "sm:gap-3" : "sm:gap-8"
+        }`}
       >
         {sp.panels.map((panel, i) => {
           const isZolto = panel.has.length > 1;
@@ -83,7 +101,9 @@ export function SqueezePlay({
             <li
               key={panel.id}
               data-testid={`squeeze-panel-${panel.id}`}
-              className={`rounded-2xl border ${dense ? "p-4" : "p-6"} ${
+              className={`min-w-[80%] shrink-0 snap-center rounded-2xl border sm:min-w-0 sm:shrink ${
+                dense ? "p-4" : "p-6"
+              } ${
                 isZolto
                   ? "border-[var(--brand-accent)] bg-white ring-1 ring-[var(--brand-accent)]"
                   : "border-[var(--brand-border)] bg-white/60"
@@ -137,17 +157,21 @@ export function SqueezePlay({
       >
         {st("squeezePlay.claim", sp.claim)}
       </p>
-    </>
+    </div>
   );
+}
 
-  if (dense) {
-    return <div data-testid="squeeze-play">{content}</div>;
-  }
-
+/** The whole band, as it renders anywhere that is not the homepage reel. */
+export function SqueezePlay() {
   return (
     <section className="bg-[var(--brand-surface)]" data-testid="squeeze-play">
       <div className="mx-auto w-full max-w-5xl px-4 py-20 sm:px-6">
-        <ScrollReveal>{content}</ScrollReveal>
+        <ScrollReveal>
+          <SqueezePlayArgument />
+          <div className="mt-12">
+            <SqueezePlayTills />
+          </div>
+        </ScrollReveal>
       </div>
     </section>
   );

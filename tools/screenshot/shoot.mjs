@@ -90,51 +90,67 @@ page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
 await page.goto(URL, { waitUntil: "networkidle" });
 await page.evaluate(() => document.fonts.ready);
 
-// Scroll everything scrollable so scroll-triggered reveals have fired by
-// capture time, then return to the top and let transitions settle.
-//
-// "Everything scrollable" and not just the window: the homepage is a reel whose
-// scroll container is a nested element (see marketing/components/ReelStage.tsx),
-// so window.scrollTo moves nothing and document.body.scrollHeight is one
-// viewport. A warm-up that only drove the window silently captured chapter one
-// with every reveal below it still faded out.
+// The homepage reel snaps the *document* scroller and its chapters are made of
+// viewport-sized panels, so this page renders without MarketingShell's sticky
+// nav — which would make every panel 64px taller than production and flatter
+// every fit. Stand one in, and let the stage re-measure against it.
+await page.evaluate(() => {
+  if (!document.querySelector("[data-testid='reel-stage']")) return;
+  if (document.querySelector("header")) return;
+  const header = document.createElement("header");
+  header.style.cssText =
+    "position:sticky;top:0;height:var(--nav-height);z-index:50;background:var(--brand-ground);border-bottom:1px solid var(--brand-border)";
+  document.body.prepend(header);
+  window.dispatchEvent(new Event("resize"));
+});
+
+// Scroll the page so scroll-triggered reveals have fired by capture time, then
+// return to the top and let transitions settle.
 await page.evaluate(async () => {
-  const scrollers = [
-    document.scrollingElement ?? document.documentElement,
-    ...document.querySelectorAll("[data-testid='reel-stage']"),
-  ];
-  for (const el of scrollers) {
-    for (let y = 0; y < el.scrollHeight; y += 400) {
-      el.scrollTop = y;
-      await new Promise((r) => setTimeout(r, 60));
-    }
-    el.scrollTop = 0;
+  for (let y = 0; y < document.documentElement.scrollHeight; y += 400) {
+    window.scrollTo(0, y);
+    await new Promise((r) => setTimeout(r, 60));
   }
+  window.scrollTo(0, 0);
 });
 await page.waitForTimeout(1500);
 
-// SHOT_CHAPTER=3 scrolls the reel to its third chapter before capturing —
-// the only way to shoot a reel chapter other than the first, since each is a
-// viewport of its own inside a nested scroller. Pair it with SHOT_FULLPAGE=0
-// (a full-page shot of a viewport-locked stage is just the first chapter).
-if (process.env.SHOT_CHAPTER) {
-  const nth = Number(process.env.SHOT_CHAPTER);
-  if (!Number.isInteger(nth) || nth < 1) {
-    throw new Error(`SHOT_CHAPTER must be a 1-based index — got "${nth}"`);
+// SHOT_CHAPTER=3 / SHOT_PANEL=7 scroll the reel to a chapter or to one panel
+// before capturing — the only way to shoot anything but the first screen, since
+// each is a screen of its own. Pair either with SHOT_FULLPAGE=0: a full-page
+// shot of a 21-panel reel is a 12,000px image nobody can read.
+const reelTarget = process.env.SHOT_PANEL
+  ? {
+      kind: "panel",
+      attr: "data-reel-panel",
+      nth: Number(process.env.SHOT_PANEL),
+    }
+  : process.env.SHOT_CHAPTER
+    ? {
+        kind: "chapter",
+        attr: "data-reel-chapter",
+        nth: Number(process.env.SHOT_CHAPTER),
+      }
+    : null;
+if (reelTarget) {
+  if (!Number.isInteger(reelTarget.nth) || reelTarget.nth < 1) {
+    throw new Error(
+      `SHOT_${reelTarget.kind.toUpperCase()} must be a 1-based index — got "${reelTarget.nth}"`,
+    );
   }
-  const label = await page.evaluate((index) => {
-    const stage = document.querySelector("[data-testid='reel-stage']");
-    const chapters = document.querySelectorAll("[data-reel-chapter]");
-    const target = chapters[index - 1];
-    if (!stage || !target) return null;
-    stage.scrollTop =
-      target.getBoundingClientRect().top -
-      stage.getBoundingClientRect().top +
-      stage.scrollTop;
-    return target.getAttribute("aria-label");
-  }, nth);
-  if (!label) throw new Error(`no reel chapter ${nth} on this page`);
-  console.log(`scrolled to chapter ${nth} — "${label}"`);
+  const label = await page.evaluate(({ attr, nth }) => {
+    const target = document.querySelectorAll(`[${attr}]`)[nth - 1];
+    if (!target) return null;
+    const nav =
+      document.querySelector("header")?.getBoundingClientRect().height ?? 0;
+    window.scrollTo({
+      top: target.getBoundingClientRect().top + window.scrollY - nav,
+      behavior: "instant",
+    });
+    return `${target.getAttribute(attr)} (${target.offsetHeight}px)`;
+  }, reelTarget);
+  if (!label) throw new Error(`no reel ${reelTarget.kind} ${reelTarget.nth}`);
+  console.log(`scrolled to ${reelTarget.kind} ${reelTarget.nth} — ${label}`);
   await page.waitForTimeout(800);
 }
 

@@ -191,9 +191,9 @@ export function NecklaceSketch({
  */
 export function PhotoToListing() {
   return (
-    <div className="grid items-center gap-6 sm:grid-cols-[1fr_auto_1fr]">
+    <div className="grid items-center gap-3 sm:grid-cols-[1fr_auto_1fr] sm:gap-6">
       {/* Before: a hand-framed snapshot */}
-      <figure className="relative mx-auto w-full max-w-xs">
+      <figure className="relative mx-auto w-full max-w-[11rem] sm:max-w-xs">
         <div className="rounded-[0.4rem] border-2 border-dashed border-[var(--brand-accent)]/60 bg-[var(--brand-surface-2)] p-3">
           <div className="flex aspect-[4/3] items-center justify-center rounded-sm bg-[var(--brand-surface-3)]">
             <NecklaceSketch className="h-[78%] w-[82%] text-[var(--brand-muted)]" />
@@ -207,11 +207,11 @@ export function PhotoToListing() {
       {/* Arrow with an AI marker */}
       <div className="flex flex-col items-center gap-1 text-[var(--brand-accent)]">
         <Sparkles size={16} />
-        <SketchArrow className="h-6 w-16 rotate-90 sm:rotate-0" />
+        <SketchArrow className="h-5 w-12 rotate-90 sm:h-6 sm:w-16 sm:rotate-0" />
       </div>
 
       {/* After: a crisp generated listing */}
-      <div className="mx-auto w-full max-w-xs rounded-lg border border-[var(--brand-border)] bg-white p-4 shadow-sm">
+      <div className="mx-auto w-full max-w-[15rem] rounded-lg border border-[var(--brand-border)] bg-white p-3 shadow-sm sm:max-w-xs sm:p-4">
         <div className="flex aspect-[4/3] items-center justify-center rounded-sm bg-gradient-to-br from-[var(--brand-surface)] to-[var(--brand-surface-3)]">
           <NecklaceSketch
             crisp

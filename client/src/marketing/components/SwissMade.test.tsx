@@ -3,7 +3,7 @@ import { render, screen, cleanup } from "@testing-library/react";
 import { Router } from "wouter";
 import { memoryLocation } from "wouter/memory-location";
 import { SOVEREIGNTY, sovereigntyByState } from "@shared/platform";
-import { SwissMade } from "./SwissMade";
+import { SwissMade, SwissMadeIntro, SwissMadeLedger } from "./SwissMade";
 
 afterEach(cleanup);
 
@@ -63,19 +63,20 @@ describe("SwissMade", () => {
     ).toBe(SOVEREIGNTY.href);
   });
 
-  // `dense` is the homepage-reel rendering: the chapter owns the band, the
-  // gutter and the vertical rhythm. It is padding and framing only — a variant
-  // that quietly dropped content would make the reel a content cut.
-  it("keeps every ledger row in its dense reel rendering, unfinished ones included", () => {
+  // The band splits in two for the homepage reel, which snaps one screen at a
+  // time: the intro is a screen and the ledger is a screen. Every row has to
+  // survive the split, unfinished ones included — a ledger that hid those to
+  // fit a viewport would be the badge this section exists not to be.
+  it("keeps every ledger row across the reel's two panels", () => {
     const { hook } = memoryLocation({ path: "/", static: true });
     const { container } = render(
       <Router hook={hook}>
-        <SwissMade dense />
+        <SwissMadeIntro dense />
+        <SwissMadeLedger dense />
       </Router>,
     );
     expect(container.querySelector("section")).toBeNull();
-    // Nine rows is what makes this a ledger rather than a badge; a variant that
-    // hid three of them to fit a viewport would be the badge.
+    expect(screen.getByText(SOVEREIGNTY.serving)).toBeTruthy();
     for (const entry of SOVEREIGNTY.ledger) {
       expect(screen.getByText(entry.piece)).toBeTruthy();
       expect(screen.getByText(entry.today)).toBeTruthy();

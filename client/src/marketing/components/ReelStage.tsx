@@ -10,63 +10,63 @@ import {
 import type { ReactNode } from "react";
 
 /**
- * ReelStage / ReelChapter — the homepage's vertical reel.
+ * ReelStage / ReelChapter / ReelPanel — the homepage's vertical reel.
  *
- * The landing page used to be sixteen stacked bands. It is now six chapters,
- * each the height of the viewport, with momentum scrolling, snap alignment to
- * the top of each chapter, and a progress rail down the right-hand side. The
- * copy, the components and the colour tokens are unchanged — this is the
- * choreography only.
+ * The homepage is six chapters. A **panel** is one screen of a chapter, and the
+ * panel — not the chapter — is what scroll-snapping aligns to. On a roomy
+ * viewport a chapter's panels lay out as its columns, so the chapter *is* one
+ * screen and one panel is one column (what the desktop page has always looked
+ * like). On a phone the same panels stack, and each one is a screen you swipe
+ * to. Same markup, same copy, one mechanism.
  *
- * Three things about this treatment are load-bearing, and all three exist
- * because `scroll-snap-type: y mandatory` is hostile if you apply it blindly:
+ * That indirection is the whole point, and it exists because the first version
+ * of this reel snapped whole chapters and measurably did not work anywhere
+ * except the viewport it was tuned to:
  *
- * 1. **It is a desktop treatment.** Below 768px, and under
- *    `prefers-reduced-motion: reduce`, the stage stops being a scroll container
- *    at all: no fixed height, no snapping, no smooth scroll. Mobile gets the
- *    plain long scroll it always had, which is also what a merchant on a train
- *    with a thumb on the screen actually wants.
- * 2. **A chapter taller than the stage opts itself out.** Mandatory snapping on
- *    a chapter that doesn't fit means the reader can never see its bottom — the
- *    scroller keeps yanking them back to its top. Each chapter measures itself
- *    against the stage and switches to `scroll-snap-align: none` when it
- *    overflows, so it scrolls like an ordinary band.
+ *   iPhone 15 Pro   393x852   0 of 6 chapters snapped (reel gated off below 768px;
+ *                             a chapter is ~2.8 screens tall at phone width)
+ *   iPad portrait   768x1024  2 of 6 (four chapters 1.4-1.6x the screen)
+ *   laptop          1280x800  2 of 6 (four chapters 1.03-1.14x the screen)
+ *   laptop          1440x900  6 of 6
+ *
+ * Three things stay load-bearing, all because `snap-type: mandatory` is hostile
+ * applied blindly:
+ *
+ * 1. **Snapping is on the document scroller.** Not a nested full-height box: on
+ *    iOS Safari a nested scroller stops the address bar collapsing, gets worse
+ *    momentum, and needs `overscroll-contain`, which then makes the footer
+ *    unreachable by wheel. `html[data-reel]` in index.css carries the snapping;
+ *    this component only decides the strength.
+ * 2. **Strength adapts to what actually fits.** Every snap target is measured
+ *    against the viewport; one that overflows downgrades the whole scroller to
+ *    `proximity`, because a mandatory target taller than the screen is a target
+ *    whose bottom can never be read. `prefers-reduced-motion` turns snapping off
+ *    altogether.
  * 3. **No keyboard interception.** Nothing here listens for keys. PageUp,
- *    PageDown, Home, End, the arrows and tab-to-focus all do exactly what the
- *    browser does with them inside any other scroll container.
+ *    PageDown, Home, End, the arrows and tab-to-focus do exactly what the
+ *    browser does with them.
  *
- * The rail is derived from the chapters that actually rendered — each
- * `ReelChapter` registers its own id and label — so it cannot drift from the
- * page the way a hardcoded list of six labels would. Which chapter is *active*
- * comes from one `IntersectionObserver` at `threshold: 0.55` rooted on the
- * stage, not from scroll arithmetic: with chapters the height of the scroller,
- * "more than half of it is showing" is exactly the question the rail is asking.
- *
- * SEO and screen readers see none of this. Every chapter is a real `<section>`
- * with an accessible name and its headings, rendered in source order, always
- * mounted, never hidden behind an interaction.
+ * SEO and screen readers see none of it: every chapter is a real `<section>`
+ * with an accessible name and its headings, in source order, always mounted.
  */
 
-/** Fraction of a chapter that must be showing for the rail to call it active. */
+/** Fraction of a panel that must show for the rail to call its chapter active. */
 const ACTIVE_THRESHOLD = 0.55;
 
-/** The reel is a desktop treatment; below this the page is a plain long scroll. */
-const DESKTOP_QUERY = "(min-width: 768px)";
+/**
+ * The viewport is roomy enough for a whole chapter to be one screen. Must stay
+ * identical to the `reel` custom variant in index.css — the layout is CSS's
+ * decision and this is only how the measuring code asks which way it went.
+ * ReelStage.test.tsx compares the two strings.
+ */
+export const REEL_LAYOUT_QUERY = "(min-width: 1024px) and (min-height: 820px)";
 const REDUCE_QUERY = "(prefers-reduced-motion: reduce)";
+
+type SnapMode = "mandatory" | "proximity" | "off";
 
 function mediaMatches(query: string): boolean {
   if (typeof window === "undefined" || !window.matchMedia) return false;
   return window.matchMedia(query).matches ?? false;
-}
-
-/**
- * Whether to run the reel at all. Read synchronously during the first render
- * (this surface is client-rendered) rather than in an effect: flipping the page
- * from a long scroll into a viewport-locked stage after mount is a layout shift
- * on load, and the reel exists to make the page feel considered.
- */
-function computeReelActive(): boolean {
-  return mediaMatches(DESKTOP_QUERY) && !mediaMatches(REDUCE_QUERY);
 }
 
 /** Subscribe to a media query, tolerating the pre-2019 listener API. */
@@ -81,22 +81,32 @@ function watchMedia(query: string, onChange: () => void): () => void {
   return () => mql.removeListener?.(onChange);
 }
 
+/** The sticky nav's height, which `scroll-padding-top` already accounts for. */
+function navHeight(): number {
+  if (typeof document === "undefined") return 0;
+  return document.querySelector("header")?.getBoundingClientRect().height ?? 0;
+}
+
 interface RegisteredChapter {
   id: string;
   label: string;
   el: HTMLElement;
 }
 
+interface RegisteredPanel {
+  chapterId: string;
+  el: HTMLElement;
+}
+
 interface StageApi {
-  register: (chapter: RegisteredChapter) => () => void;
+  registerChapter: (chapter: RegisteredChapter) => () => void;
+  registerPanel: (panel: RegisteredPanel) => () => void;
   scrollToChapter: (id: string) => void;
   chapters: Array<{ id: string; label: string }>;
   activeId: string | null;
-  /** Ids currently past the active threshold — what pauses the video. */
+  /** Chapter ids with a panel on screen — what pauses the hero video. */
   visibleIds: readonly string[];
-  reelActive: boolean;
-  /** The scroll container itself. A getter, so it survives the first render. */
-  getStageEl: () => HTMLElement | null;
+  snapMode: SnapMode;
 }
 
 const StageContext = createContext<StageApi | null>(null);
@@ -106,8 +116,7 @@ const ChapterContext = createContext<{ id: string; visible: boolean } | null>(
 
 /**
  * The chapters this stage is showing, in document order, plus which one is
- * active. Exposed for the rail and for anything else that wants to follow the
- * reel; returns an empty reel outside a `ReelStage`.
+ * active. Returns an empty reel outside a `ReelStage`.
  */
 export function useReelChapters(): {
   chapters: Array<{ id: string; label: string }>;
@@ -121,17 +130,17 @@ export function useReelChapters(): {
 }
 
 /**
- * Whether the chapter around this component is on screen. Used by
- * `ExplainerVideo` to stop playing once its chapter is scrolled away — it reads
- * the stage's observer rather than starting a second one. Outside a chapter
- * (a sub-page, a test) it answers "visible", so nothing that keys off it stalls.
+ * Whether the chapter around this component is on screen. `ExplainerVideo` uses
+ * it to stop playing once its chapter is scrolled away, reading the stage's
+ * observer rather than starting a second one. Outside a chapter (a sub-page, a
+ * test) it answers "visible", so nothing that keys off it stalls.
  */
 export function useReelChapterVisible(): boolean {
   const chapter = useContext(ChapterContext);
   return chapter ? chapter.visible : true;
 }
 
-function byDocumentPosition(a: RegisteredChapter, b: RegisteredChapter) {
+function byDocumentPosition<T extends { el: HTMLElement }>(a: T, b: T) {
   if (a.el === b.el) return 0;
   return a.el.compareDocumentPosition(b.el) & Node.DOCUMENT_POSITION_FOLLOWING
     ? -1
@@ -188,177 +197,186 @@ function ChapterRail({ label }: { label: string }) {
 export function ReelStage({
   label,
   children,
-  trailer,
 }: {
   /** Accessible name for the progress rail, e.g. "Chapters". */
   label: string;
   children: ReactNode;
-  /**
-   * Content that follows the last chapter inside the scroll container — the
-   * site footer. The stage is the page's scroller and `overscroll-contain`
-   * deliberately stops scroll chaining, so anything left *outside* it (the
-   * legal links, for one) would be unreachable with a wheel or a trackpad.
-   * `MarketingShell` stands its own footer down for the routes that own their
-   * scroll container; see CHROME_OWNED_SCROLL there.
-   */
-  trailer?: ReactNode;
 }) {
-  const stageRef = useRef<HTMLDivElement>(null);
-  const [registered, setRegistered] = useState<RegisteredChapter[]>([]);
+  const [chapters, setChapters] = useState<RegisteredChapter[]>([]);
+  const [panels, setPanels] = useState<RegisteredPanel[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [visibleIds, setVisibleIds] = useState<readonly string[]>([]);
-  const [reelActive, setReelActive] = useState(computeReelActive);
-  // Ratios live in a ref, not state: the observer reports only the chapters
-  // that crossed the threshold, so deciding the active one needs the last
-  // reading for the others too.
-  const ratios = useRef(new Map<string, number>());
+  const [snapMode, setSnapMode] = useState<SnapMode>("off");
+  // Ratios live in a ref: the observer reports only the panels that crossed the
+  // threshold, so picking the active chapter needs the last reading for the rest.
+  const ratios = useRef(new Map<HTMLElement, number>());
 
-  useEffect(() => {
-    const sync = () => setReelActive(computeReelActive());
-    const stopDesktop = watchMedia(DESKTOP_QUERY, sync);
-    const stopReduce = watchMedia(REDUCE_QUERY, sync);
-    sync();
-    return () => {
-      stopDesktop();
-      stopReduce();
-    };
-  }, []);
-
-  const register = useCallback((chapter: RegisteredChapter) => {
-    setRegistered((prev) =>
+  const registerChapter = useCallback((chapter: RegisteredChapter) => {
+    setChapters((prev) =>
       [...prev.filter((c) => c.el !== chapter.el), chapter].sort(
         byDocumentPosition,
       ),
     );
-    return () => {
-      setRegistered((prev) => prev.filter((c) => c.el !== chapter.el));
-      ratios.current.delete(chapter.id);
-    };
+    return () => setChapters((prev) => prev.filter((c) => c.el !== chapter.el));
   }, []);
 
+  const registerPanel = useCallback((panel: RegisteredPanel) => {
+    setPanels((prev) =>
+      [...prev.filter((p) => p.el !== panel.el), panel].sort(
+        byDocumentPosition,
+      ),
+    );
+    return () =>
+      setPanels((prev) => {
+        ratios.current.delete(panel.el);
+        return prev.filter((p) => p.el !== panel.el);
+      });
+  }, []);
+
+  // ── Snap strength ─────────────────────────────────────────────────────────
+  // Measured, not guessed: which targets overflow depends on the language, the
+  // font, the window and whether CSS laid the chapter out as one screen or as a
+  // stack of panels.
   useEffect(() => {
-    if (registered.length === 0) {
-      setActiveId(null);
-      setVisibleIds([]);
+    const measure = () => {
+      if (mediaMatches(REDUCE_QUERY)) {
+        setSnapMode("off");
+        return;
+      }
+      const wide = mediaMatches(REEL_LAYOUT_QUERY);
+      const targets = wide ? chapters : panels;
+      if (targets.length === 0) {
+        setSnapMode("off");
+        return;
+      }
+      const band = window.innerHeight - navHeight();
+      const fits = targets.every((t) => t.el.offsetHeight <= band + 2);
+      setSnapMode(fits ? "mandatory" : "proximity");
+    };
+
+    measure();
+    const stopReduce = watchMedia(REDUCE_QUERY, measure);
+    const stopLayout = watchMedia(REEL_LAYOUT_QUERY, measure);
+    window.addEventListener("resize", measure);
+    // Content reflows without a resize too — a language switch, a font landing,
+    // an image finally sizing itself.
+    const observer =
+      typeof ResizeObserver === "undefined"
+        ? null
+        : new ResizeObserver(measure);
+    for (const target of [...chapters, ...panels]) observer?.observe(target.el);
+    return () => {
+      stopReduce();
+      stopLayout();
+      window.removeEventListener("resize", measure);
+      observer?.disconnect();
+    };
+  }, [chapters, panels]);
+
+  // The scroller is the document, so the snap declaration goes on <html> — and
+  // comes off again when the reel unmounts, or every other page inherits it.
+  useEffect(() => {
+    const root = document.documentElement;
+    if (snapMode === "off") {
+      delete root.dataset.reel;
+    } else {
+      root.dataset.reel = snapMode;
+    }
+    return () => {
+      delete root.dataset.reel;
+    };
+  }, [snapMode]);
+
+  // ── Which chapter the rail should light ───────────────────────────────────
+  useEffect(() => {
+    if (panels.length === 0) {
+      setActiveId(chapters[0]?.id ?? null);
+      setVisibleIds(chapters.map((c) => c.id));
       return;
     }
-    // No observer (jsdom, ancient browsers): the reel degrades to a long page,
-    // so call the first chapter active and every chapter visible rather than
-    // leaving the rail unlit and the video paused forever.
+    // No observer (jsdom, ancient browsers): call the first chapter active and
+    // every chapter visible rather than leaving the rail unlit and the video
+    // paused for good.
     if (typeof IntersectionObserver === "undefined") {
-      setActiveId(registered[0].id);
-      setVisibleIds(registered.map((c) => c.id));
+      setActiveId(panels[0].chapterId);
+      setVisibleIds(chapters.map((c) => c.id));
       return;
     }
 
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
-          const id = entry.target.getAttribute("data-reel-chapter");
-          if (!id) continue;
           ratios.current.set(
-            id,
+            entry.target as HTMLElement,
             entry.isIntersecting ? entry.intersectionRatio || 1 : 0,
           );
         }
-        const showing = registered.filter(
-          (c) => (ratios.current.get(c.id) ?? 0) > 0,
-        );
-        setVisibleIds(showing.map((c) => c.id));
-        // The chapter showing most of itself wins. Ties keep the earlier one,
-        // so a rail dot never flickers between two chapters at a snap point.
+        const showing = new Set<string>();
         let best: string | null = null;
         let bestRatio = 0;
-        for (const c of registered) {
-          const ratio = ratios.current.get(c.id) ?? 0;
+        for (const panel of panels) {
+          const ratio = ratios.current.get(panel.el) ?? 0;
+          if (ratio > 0) showing.add(panel.chapterId);
           if (ratio > bestRatio) {
-            best = c.id;
+            best = panel.chapterId;
             bestRatio = ratio;
           }
         }
+        setVisibleIds(Array.from(showing));
         if (best) setActiveId(best);
       },
-      {
-        root: reelActive ? stageRef.current : null,
-        threshold: ACTIVE_THRESHOLD,
-      },
+      { threshold: ACTIVE_THRESHOLD },
     );
-    for (const chapter of registered) observer.observe(chapter.el);
+    for (const panel of panels) observer.observe(panel.el);
     return () => observer.disconnect();
-  }, [registered, reelActive]);
+  }, [panels, chapters]);
 
   const scrollToChapter = useCallback(
     (id: string) => {
-      const chapter = registered.find((c) => c.id === id);
+      const chapter = chapters.find((c) => c.id === id);
       if (!chapter) return;
-      const behavior: ScrollBehavior = mediaMatches(REDUCE_QUERY)
-        ? "auto"
-        : "smooth";
-      const stage = stageRef.current;
-
-      // scrollIntoView is deliberately not used: it walks every scrollable
-      // ancestor and picks its own alignment, which on a snapping container
-      // fights the snap points and can leave the page mid-chapter.
-      if (reelActive && stage) {
-        const top =
-          chapter.el.getBoundingClientRect().top -
-          stage.getBoundingClientRect().top +
-          stage.scrollTop;
-        if (typeof stage.scrollTo === "function") {
-          stage.scrollTo({ top, behavior });
-        } else {
-          stage.scrollTop = top;
-        }
-        return;
-      }
-
-      // Plain long scroll: the window is the scroller, and the sticky bar has
-      // to come off the target or the chapter's heading lands underneath it.
-      const navHeight =
-        document.querySelector("header")?.getBoundingClientRect().height ?? 0;
+      // scrollIntoView is deliberately not used: it picks its own alignment and
+      // walks every scrollable ancestor, which on a snapping scroller fights the
+      // snap points and can leave the page mid-panel.
       const top =
-        chapter.el.getBoundingClientRect().top + window.scrollY - navHeight;
-      if (typeof window.scrollTo === "function") {
-        window.scrollTo({ top, behavior });
-      }
+        chapter.el.getBoundingClientRect().top + window.scrollY - navHeight();
+      if (typeof window.scrollTo !== "function") return;
+      window.scrollTo({
+        top,
+        behavior: mediaMatches(REDUCE_QUERY) ? "auto" : "smooth",
+      });
     },
-    [registered, reelActive],
+    [chapters],
   );
 
   const api = useMemo<StageApi>(
     () => ({
-      register,
+      registerChapter,
+      registerPanel,
       scrollToChapter,
-      chapters: registered.map(({ id, label: chapterLabel }) => ({
+      chapters: chapters.map(({ id, label: chapterLabel }) => ({
         id,
         label: chapterLabel,
       })),
       activeId,
       visibleIds,
-      reelActive,
-      getStageEl: () => stageRef.current,
+      snapMode,
     }),
-    [register, scrollToChapter, registered, activeId, visibleIds, reelActive],
+    [
+      registerChapter,
+      registerPanel,
+      scrollToChapter,
+      chapters,
+      activeId,
+      visibleIds,
+      snapMode,
+    ],
   );
 
   return (
     <StageContext.Provider value={api}>
-      <div
-        ref={stageRef}
-        data-testid="reel-stage"
-        data-reel-active={reelActive ? "true" : "false"}
-        className={
-          reelActive
-            ? "h-[calc(100dvh_-_var(--nav-height))] snap-y snap-mandatory overflow-y-auto overscroll-y-contain scroll-smooth"
-            : ""
-        }
-      >
-        {/* The stage is the page's scroll container, so it owns <main> too —
-            MarketingShell steps aside for these routes. Snap alignment is not
-            limited to direct children of the scroller, so the chapters can sit
-            inside the landmark where they belong. */}
-        <main>{children}</main>
-        {trailer}
+      <div data-testid="reel-stage" data-reel-snap={snapMode}>
+        {children}
       </div>
       <ChapterRail label={label} />
     </StageContext.Provider>
@@ -369,6 +387,7 @@ export function ReelChapter({
   label,
   id,
   className = "",
+  layout = "",
   children,
 }: {
   /** Rail label and the section's accessible name. */
@@ -377,76 +396,83 @@ export function ReelChapter({
   id: string;
   /** The chapter's background band, e.g. `bg-[var(--brand-ink)]`. */
   className?: string;
+  /**
+   * How the chapter's panels lay out once the viewport is roomy enough for the
+   * chapter to be one screen — grid classes under the `reel:` variant, e.g.
+   * `reel:grid-cols-2 reel:items-center`. Ignored below that size, where each
+   * panel is a screen of its own.
+   */
+  layout?: string;
   children: ReactNode;
 }) {
   const stage = useContext(StageContext);
   const ref = useRef<HTMLElement>(null);
-  const [overflows, setOverflows] = useState(false);
-  const reelActive = stage?.reelActive ?? false;
-  const register = stage?.register;
+  const registerChapter = stage?.registerChapter;
 
   useEffect(() => {
     const el = ref.current;
-    if (!el || !register) return;
-    return register({ id, label, el });
-  }, [register, id, label]);
-
-  // A chapter that doesn't fit the stage stops snapping — see the note at the
-  // top of this file. Measured rather than guessed: which chapters overflow
-  // depends on the language, the font, and how wide the window is.
-  const getStageEl = stage?.getStageEl;
-  useEffect(() => {
-    const el = ref.current;
-    const stageEl = getStageEl?.() ?? null;
-    if (!el || !stageEl || !reelActive) {
-      setOverflows(false);
-      return;
-    }
-    const measure = () => {
-      const available = stageEl.clientHeight;
-      setOverflows(available > 0 && el.offsetHeight > available + 1);
-    };
-    measure();
-    const observer =
-      typeof ResizeObserver === "undefined"
-        ? null
-        : new ResizeObserver(measure);
-    observer?.observe(el);
-    observer?.observe(stageEl);
-    window.addEventListener("resize", measure);
-    return () => {
-      observer?.disconnect();
-      window.removeEventListener("resize", measure);
-    };
-  }, [reelActive, getStageEl]);
+    if (!el || !registerChapter) return;
+    return registerChapter({ id, label, el });
+  }, [registerChapter, id, label]);
 
   const visible = stage ? stage.visibleIds.includes(id) : true;
   const chapterValue = useMemo(() => ({ id, visible }), [id, visible]);
 
-  // `grid content-center`, not `flex flex-col justify-center`: index.css carries
-  // an unlayered `.flex { min-width: 0; min-height: 0 }` fix, and an unlayered
-  // rule beats every utility in `@layer utilities` whatever its specificity — so
-  // a flex chapter's min-height computed to 0 and the reel rendered as the plain
-  // long page it replaced. The first screenshot of this feature is what caught
-  // that; no DOM assertion could have.
-  const chapterClass = reelActive
-    ? `min-h-[calc(100dvh_-_var(--nav-height))] py-6 ${
-        overflows ? "snap-align-none" : "snap-start"
-      }`
-    : "py-16 md:py-20";
-
   return (
     <ChapterContext.Provider value={chapterValue}>
+      {/* `grid`, never `flex`: index.css carries an unlayered
+          `.flex { min-height: 0 }` fix that beats every utility in
+          @layer utilities, so a flex chapter loses its min-height and the reel
+          silently becomes the long page it replaces. */}
       <section
         ref={ref}
         id={id}
         data-reel-chapter={id}
-        data-reel-snap={reelActive && !overflows ? "start" : "none"}
         aria-label={label}
-        className={`grid content-center ${chapterClass} ${className}`}
+        className={`grid ${className} reel:min-h-[calc(100svh_-_var(--nav-height))] reel:snap-start reel:content-center reel:py-5 ${layout}`}
       >
         {children}
       </section>
     </ChapterContext.Provider>
+  );
+}
+
+export function ReelPanel({
+  className = "",
+  children,
+}: {
+  /**
+   * Where this panel sits once the chapter is one screen — grid placement under
+   * the `reel:` variant, e.g. `reel:col-start-2 reel:row-span-2`.
+   */
+  className?: string;
+  children: ReactNode;
+}) {
+  const stage = useContext(StageContext);
+  const chapter = useContext(ChapterContext);
+  const ref = useRef<HTMLDivElement>(null);
+  const registerPanel = stage?.registerPanel;
+  const chapterId = chapter?.id;
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || !registerPanel || !chapterId) return;
+    return registerPanel({ chapterId, el });
+  }, [registerPanel, chapterId]);
+
+  return (
+    <div
+      ref={ref}
+      data-reel-panel={chapterId ?? ""}
+      // svh, not dvh: dvh changes as a mobile address bar collapses, which
+      // would resize the panel you are mid-swipe through. svh is the
+      // small-address-bar height, so a panel that fits always fits.
+      //
+      // The min-height is a utility rather than an inline style on purpose —
+      // `reel:min-h-0` has to be able to win, and nothing overrides inline.
+      className={`grid min-h-[calc(100svh_-_var(--nav-height))] snap-start content-center py-10 ${className} reel:min-h-0 reel:snap-align-none reel:py-0`}
+    >
+      {children}
+    </div>
   );
 }

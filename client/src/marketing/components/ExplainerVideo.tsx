@@ -112,7 +112,13 @@ export function ExplainerVideo({
   }, []);
 
   return (
-    <figure data-testid="explainer-video" className="m-0">
+    <figure
+      data-testid="explainer-video"
+      // Capped in panels mode: a full-bleed 16/10 frame is 750px tall on a
+      // 1280px laptop, which is a panel that cannot fit its own screen. In reel
+      // mode the column already bounds it.
+      className="m-0 mx-auto w-full max-w-xl reel:max-w-none"
+    >
       <div
         className="relative aspect-[16/10] overflow-hidden rounded-2xl border border-white/15 bg-[var(--brand-ink-deep)] bg-cover bg-center shadow-[0_28px_70px_-40px_rgba(0,0,0,0.8)]"
         style={{ backgroundImage: `url("${poster}")` }}

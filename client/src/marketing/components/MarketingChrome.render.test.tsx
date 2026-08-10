@@ -16,7 +16,6 @@ import {
   MarketingShell,
   StoreShortcut,
   SIGN_IN_PATH,
-  CHROME_OWNED_SCROLL,
 } from "./MarketingChrome";
 import i18n from "@/lib/i18n";
 
@@ -355,7 +354,7 @@ describe("MarketingFooter", () => {
   });
 });
 
-describe("MarketingShell — who owns the scroll container", () => {
+describe("MarketingShell", () => {
   function renderShell(path: string) {
     const { hook } = memoryLocation({ path, static: true });
     return render(
@@ -367,29 +366,23 @@ describe("MarketingShell — who owns the scroll container", () => {
     );
   }
 
-  it("gives an ordinary page a main landmark and the footer", () => {
-    const { container } = renderShell("/pricing");
-    expect(container.querySelector("main")).toBeTruthy();
-    expect(container.querySelector("footer")).toBeTruthy();
-    expect(screen.getByText("the page")).toBeTruthy();
-  });
-
-  it("stands both down for a page that owns its own scroll container", () => {
-    // The homepage reel is a nested scroller with overscroll-contain, so it
-    // renders <main> and the footer inside itself — see ReelStage's trailer
-    // prop. Two footers, or a footer a wheel can't reach, would both be worse.
-    expect(CHROME_OWNED_SCROLL.has("/")).toBe(true);
-    const { container } = renderShell("/");
-    expect(container.querySelector("main")).toBeNull();
-    expect(container.querySelector("footer")).toBeNull();
-    expect(screen.getByText("the page")).toBeTruthy();
-    // The nav is still the shell's, and still sticky above the reel.
-    expect(container.querySelector("header")?.className).toContain("sticky");
+  it("gives every page a main landmark and the footer, homepage included", () => {
+    // The homepage reel briefly rendered its own copy of both, because it
+    // snapped inside a nested scroller whose overscroll-contain made an outside
+    // footer unreachable. Snapping moved to the document scroller, so the
+    // footer is ordinary content below the last chapter again.
+    for (const path of ["/", "/pricing"]) {
+      const { container, unmount } = renderShell(path);
+      expect(container.querySelectorAll("main").length, path).toBe(1);
+      expect(container.querySelectorAll("footer").length, path).toBe(1);
+      expect(screen.getByText("the page")).toBeTruthy();
+      unmount();
+    }
   });
 
   it("sizes the nav from the token the reel measures against", () => {
-    // A bar that grew without --nav-height following would leave every chapter
-    // short by the difference, and a second chapter peeking in at the bottom.
+    // A bar that grew without --nav-height following would leave every panel
+    // short by the difference, and a second panel peeking in at the bottom.
     const { container } = renderShell("/pricing");
     expect(container.querySelector("header div")?.className).toContain(
       "h-[var(--nav-height)]",

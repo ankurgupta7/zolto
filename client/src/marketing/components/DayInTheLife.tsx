@@ -53,7 +53,7 @@ function Beat({
     <ScrollReveal
       as="li"
       delay={index * 160}
-      className="relative pb-12 last:pb-0 sm:pl-12"
+      className="relative pb-5 last:pb-0 sm:pb-12 sm:pl-12"
     >
       {/* Numbered node, sitting on the spine. */}
       <span className="absolute left-0 top-0 hidden h-8 w-8 items-center justify-center rounded-full border border-[var(--brand-accent)] bg-[var(--brand-surface-2)] font-serif text-sm font-bold text-[var(--brand-ink)] lining-nums tabular-nums sm:flex">
@@ -64,7 +64,7 @@ function Beat({
         ref={ref}
         data-drawn={inView ? "true" : "false"}
         data-testid="day-beat"
-        className="grid items-center gap-6 sm:grid-cols-[1fr_auto]"
+        className="grid items-center gap-3 sm:grid-cols-[1fr_auto] sm:gap-6"
       >
         <div>
           <p className="font-hand text-xl leading-none text-[var(--brand-accent)]">
@@ -79,7 +79,7 @@ function Beat({
         </div>
 
         {Scene && (
-          <Scene className="h-28 w-36 shrink-0 justify-self-start text-[var(--brand-accent)] sm:justify-self-end" />
+          <Scene className="h-16 w-24 shrink-0 justify-self-start text-[var(--brand-accent)] sm:h-28 sm:w-36 sm:justify-self-end" />
         )}
       </div>
     </ScrollReveal>
