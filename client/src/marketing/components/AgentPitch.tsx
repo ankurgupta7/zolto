@@ -24,7 +24,9 @@ import { useMarketingT } from "../lib/marketingI18n";
  * about direction, not data — no axis numbers on purpose (platform.test.ts
  * keeps the caption free of invented percentages).
  */
-export function DiscoveryShiftChart() {
+export function DiscoveryShiftChart({
+  dense = false,
+}: { dense?: boolean } = {}) {
   const { st } = useMarketingT();
   const c = AI_NATIVE_PITCH.chart;
   const decliningLabel = st(
@@ -33,7 +35,15 @@ export function DiscoveryShiftChart() {
   );
   const risingLabel = st("aiNativePitch.chart.risingLabel", c.risingLabel);
   return (
-    <div className="rounded-2xl border border-white/15 bg-white/[0.04] p-7">
+    <div
+      className={
+        dense
+          ? // A panel of its own on a phone, so it carries the mahogany the
+            // translucent card would otherwise borrow from a dark band.
+            "rounded-2xl bg-[var(--brand-ink)] p-5"
+          : "rounded-2xl border border-white/15 bg-white/[0.04] p-7"
+      }
+    >
       <p className="text-[11px] uppercase tracking-[0.2em] text-white/45">
         {st("aiNativePitch.chart.title", c.title)}
       </p>
@@ -82,7 +92,11 @@ export function DiscoveryShiftChart() {
           {c.endYear}
         </text>
       </svg>
-      <p className="mt-4 text-sm leading-relaxed text-white/60">
+      <p
+        className={`text-sm leading-relaxed text-white/60 ${
+          dense ? "mt-3" : "mt-4"
+        }`}
+      >
         {st("aiNativePitch.chart.caption", c.caption)}
       </p>
     </div>
@@ -156,20 +170,13 @@ export function AgentChatMock() {
  * knows what a Zolto till is, so "your next customer is an AI" reads as a
  * reason to choose this shop rather than as a description of it.
  */
-export function AiNativeBand({
-  dense = false,
-}: {
-  /**
-   * Rendered inside the homepage reel's "what's coming" chapter, beside the
-   * market day (see components/ReelStage.tsx). The mahogany becomes a mahogany
-   * *panel* on a light chapter — the same treatment ZeroCostPos gets in the
-   * squeeze chapter — and the copy stacks above its chart instead of sitting
-   * beside it, because half a chapter is not two columns wide.
-   */
-  dense?: boolean;
-} = {}) {
+/**
+ * The thesis itself, without its chart. Split out for the homepage reel, where a
+ * panel is one screen and the pair is a screen and a tenth on a phone; in
+ * `dense` it carries the mahogany a light chapter can't lend it.
+ */
+export function AiNativeThesis({ dense = false }: { dense?: boolean } = {}) {
   const { st } = useMarketingT();
-
   const copy = (
     <>
       <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
@@ -206,26 +213,16 @@ export function AiNativeBand({
     return (
       <div
         data-testid="ai-native-band"
-        className="rounded-2xl bg-[var(--brand-ink)] p-7"
+        // Capped in panels mode: a full-width panel on a 1280px laptop gives the
+        // heading a 1200px measure, which is not a column anyone reads. The
+        // reel-mode column already bounds it.
+        className="mx-auto w-full max-w-xl rounded-2xl bg-[var(--brand-ink)] p-6 reel:max-w-none reel:p-7"
       >
         {copy}
-        <div className="mt-6">
-          <DiscoveryShiftChart />
-        </div>
       </div>
     );
   }
-
-  return (
-    <section className="bg-[var(--brand-ink)]" data-testid="ai-native-band">
-      <div className="mx-auto grid w-full max-w-6xl items-center gap-10 px-4 py-20 sm:px-6 md:grid-cols-2">
-        <ScrollReveal>{copy}</ScrollReveal>
-        <ScrollReveal>
-          <DiscoveryShiftChart />
-        </ScrollReveal>
-      </div>
-    </section>
-  );
+  return copy;
 }
 
 /** The proof band: the chat mock, framed as something you can go try. */

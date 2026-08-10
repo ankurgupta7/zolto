@@ -22,17 +22,24 @@ function renderLanding() {
   );
 }
 
-/** The six chapters, in order, by the id each `ReelChapter` carries. */
-const CHAPTERS = [
-  "promise",
-  "squeeze",
-  "product",
-  "trust",
-  "whats-coming",
-  "start-free",
-] as const;
+/**
+ * The six chapters, in order, and how many panels each is made of. A panel is
+ * one screen: on a phone you swipe through 21 of them, on a roomy desktop each
+ * chapter's panels become its columns and you scroll through six screens. The
+ * counts are asserted because a chapter that lost a panel would silently lose a
+ * screenful of the homepage.
+ */
+const CHAPTERS = {
+  promise: 2,
+  squeeze: 4,
+  product: 4,
+  trust: 5,
+  "whats-coming": 4,
+  "start-free": 2,
+} as const;
+const CHAPTER_IDS = Object.keys(CHAPTERS) as Array<keyof typeof CHAPTERS>;
 
-function chapter(id: (typeof CHAPTERS)[number]) {
+function chapter(id: keyof typeof CHAPTERS) {
   const el = document.querySelector<HTMLElement>(`[data-reel-chapter="${id}"]`);
   if (!el) throw new Error(`no chapter "${id}" on the page`);
   return el;
@@ -73,7 +80,7 @@ describe("Landing — the reel", () => {
       document.querySelectorAll<HTMLElement>("[data-reel-chapter]"),
     );
     expect(sections.map((s) => s.getAttribute("data-reel-chapter"))).toEqual([
-      ...CHAPTERS,
+      ...CHAPTER_IDS,
     ]);
     for (const section of sections) {
       expect(section.tagName).toBe("SECTION");
@@ -86,13 +93,30 @@ describe("Landing — the reel", () => {
     }
   });
 
+  it("builds each chapter from panels, one screen each", () => {
+    renderLanding();
+    for (const [id, count] of Object.entries(CHAPTERS)) {
+      const panels = chapter(id as keyof typeof CHAPTERS).querySelectorAll(
+        "[data-reel-panel]",
+      );
+      expect(panels.length, `${id} panel count`).toBe(count);
+      for (const panel of Array.from(panels)) {
+        // Every panel is a snap target in its own right — that is what makes
+        // the reel work on a phone, where a whole chapter is ~3 screens tall.
+        expect(panel.className).toContain("snap-start");
+      }
+    }
+    // 21 screens on a phone; six chapters' worth of columns on a desktop.
+    expect(document.querySelectorAll("[data-reel-panel]").length).toBe(21);
+  });
+
   it("gives the rail one dot per chapter, labelled and current-tracked", () => {
     renderLanding();
     const rail = screen.getByRole("navigation", {
       name: en.landing.reel.railLabel,
     });
     const dots = within(rail).getAllByRole("button");
-    expect(dots.length).toBe(CHAPTERS.length);
+    expect(dots.length).toBe(CHAPTER_IDS.length);
     expect(dots.map((d) => d.getAttribute("aria-label"))).toEqual([
       en.landing.reel.promise,
       en.landing.reel.squeeze,
@@ -171,7 +195,9 @@ describe("Landing — chapter 2, the squeeze", () => {
   it("keeps both arguments — the three tills and the CHF 0 till — in one chapter", () => {
     renderLanding();
     const squeeze = within(chapter("squeeze"));
-    expect(squeeze.getByTestId("squeeze-play")).toBeTruthy();
+    // Two panels of squeeze argument, two of the CHF 0 answer — the band's own
+    // `data-testid` went away when it split into panel-sized parts.
+    expect(squeeze.getByText(POSITIONING.squeezePlay.body)).toBeTruthy();
     expect(squeeze.getAllByTestId(/^squeeze-panel-/).length).toBe(3);
     expect(squeeze.getByTestId("squeeze-claim").textContent).toContain(
       POSITIONING.squeezePlay.claim,
@@ -283,24 +309,6 @@ describe("Landing — chapter 6, start free", () => {
         .getAttribute("href"),
     ).toBe("/signup");
     expect(closing.getByTestId("diary-teaser")).toBeTruthy();
-  });
-
-  it("carries the footer inside the reel, where a wheel can still reach it", () => {
-    // The stage is the scroll container and it contains overscroll — a footer
-    // outside it would be unreachable. MarketingShell stands its own down for
-    // this route (see CHROME_OWNED_SCROLL).
-    renderLanding();
-    const stage = screen.getByTestId("reel-stage");
-    const footer = stage.querySelector("footer");
-    expect(footer).toBeTruthy();
-    // Still the page's contentinfo: outside <main>, not inside a section.
-    expect(footer?.closest("main")).toBeNull();
-    expect(footer?.closest("section")).toBeNull();
-    const hrefs = Array.from(footer!.querySelectorAll("a")).map((a) =>
-      a.getAttribute("href"),
-    );
-    expect(hrefs).toContain("/legal/privacy");
-    expect(hrefs).toContain("/legal/terms");
   });
 });
 

@@ -3,7 +3,7 @@ import { render, screen, cleanup } from "@testing-library/react";
 import { Router } from "wouter";
 import { memoryLocation } from "wouter/memory-location";
 import { ZERO_COST_POS, FREE_PLAN, POSITIONING } from "@shared/platform";
-import { ZeroCostPos } from "./ZeroCostPos";
+import { ZeroCostPos, ZeroCostPosClaim, ZeroCostPosPrice } from "./ZeroCostPos";
 
 afterEach(cleanup);
 
@@ -70,14 +70,15 @@ describe("ZeroCostPos", () => {
     expect(text).not.toMatch(/no (other )?competitor|nobody else/i);
   });
 
-  // `dense` is the homepage-reel rendering: the chapter owns the band, the
-  // gutter and the vertical rhythm. It is padding and framing only — a variant
-  // that quietly dropped content would make the reel a content cut.
-  it("becomes a mahogany panel, with the price and every included line intact", () => {
+  // The band splits in two for the homepage reel, which snaps one screen at a
+  // time: the claim is a screen and the price is a screen. Each half carries
+  // its own mahogany, so the statement keeps its ground on a light chapter.
+  it("splits into a claim and a price, each keeping the mahogany", () => {
     const { hook } = memoryLocation({ path: "/", static: true });
     const { container } = render(
       <Router hook={hook}>
-        <ZeroCostPos dense />
+        <ZeroCostPosClaim dense />
+        <ZeroCostPosPrice dense />
       </Router>,
     );
     expect(container.querySelector("section")).toBeNull();

@@ -349,7 +349,10 @@ export function MarketingNav() {
 export function MarketingFooter() {
   const { t, st } = useMarketingT();
   return (
-    <footer className="border-t border-[var(--brand-border)] bg-[var(--brand-surface)]">
+    // `snap-start` is inert on every page but the homepage, where the document
+    // scroller snaps: without a snap point of its own the footer is content past
+    // the last one, and a mandatory scroller has no reason to rest there.
+    <footer className="snap-start border-t border-[var(--brand-border)] bg-[var(--brand-surface)]">
       <Container className="flex flex-col gap-4 py-10 text-sm text-[var(--brand-muted-2)] sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p>{t("footer.copyright", { year: new Date().getFullYear() })}</p>
@@ -394,34 +397,20 @@ export function MarketingFooter() {
 }
 
 /**
- * Routes whose page owns the page's scroll container, and therefore renders its
- * own `<main>` and its own copy of the footer inside it.
- *
- * The homepage is a reel: a nested scroller, sized to the viewport under the
- * sticky bar, carrying `overscroll-behavior: contain` (see
- * components/ReelStage.tsx). Contain switches off scroll chaining, which is the
- * point — a wheel flick at the end of the last chapter must not jerk the window
- * — but it also means anything left *outside* the scroller can never be reached
- * with a wheel or a trackpad. The legal links live down there, so the footer
- * travels into the reel as its trailer and the shell stands its own down.
+ * The shell owns `<main>` and the footer on every route, the homepage reel
+ * included. It briefly did not: while the reel snapped inside a nested
+ * full-height scroller, that scroller's `overscroll-contain` made a footer
+ * outside it unreachable by wheel, so the reel carried its own copy. Snapping
+ * moved to the document scroller (see components/ReelStage.tsx for why iOS made
+ * that necessary), and with it the footer went back to being ordinary content
+ * below the last chapter.
  */
-export const CHROME_OWNED_SCROLL = new Set(["/"]);
-
 export function MarketingShell({ children }: { children: ReactNode }) {
-  const [location] = useLocation();
-  const pageOwnsScroll = CHROME_OWNED_SCROLL.has(location);
-
   return (
     <div className="flex min-h-screen flex-col bg-[var(--brand-ground)] font-sans text-[var(--brand-text)]">
       <MarketingNav />
-      {pageOwnsScroll ? (
-        children
-      ) : (
-        <>
-          <main className="flex-1">{children}</main>
-          <MarketingFooter />
-        </>
-      )}
+      <main className="flex-1">{children}</main>
+      <MarketingFooter />
     </div>
   );
 }

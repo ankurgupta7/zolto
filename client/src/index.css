@@ -69,6 +69,44 @@
   --brand-border-2: #ddd4c9;
 }
 
+/* ─── The homepage reel ───────────────────────────────────────────────────────── */
+/* Snapping lives on the document scroller, not on a nested box. A nested          */
+/* full-height scroller stops iOS Safari collapsing its address bar, makes         */
+/* momentum worse, and needs overscroll-contain — which then traps the footer.     */
+/* The document has none of those problems, so ReelStage sets data-reel on <html>  */
+/* and the snap strength adapts: mandatory only when every snap target fits the    */
+/* screen, proximity when one doesn't (a mandatory target taller than the viewport */
+/* can never have its bottom read). See marketing/components/ReelStage.tsx.        */
+
+html[data-reel] {
+  scroll-padding-top: var(--nav-height);
+  scroll-behavior: smooth;
+}
+html[data-reel="mandatory"] {
+  scroll-snap-type: y mandatory;
+}
+html[data-reel="proximity"] {
+  scroll-snap-type: y proximity;
+}
+@media (prefers-reduced-motion: reduce) {
+  html[data-reel] {
+    scroll-snap-type: none;
+    scroll-behavior: auto;
+  }
+}
+
+/* `reel:` — the viewport is roomy enough to lay a whole chapter out as one       */
+/* screen, so the chapter is the snap target and its panels become its columns.   */
+/* Below this, each panel is a screen of its own. The height half of the query is  */
+/* the half that matters: at 1280x800 four of six chapters overflowed a           */
+/* width-only breakpoint and silently stopped snapping. REEL_LAYOUT_QUERY in      */
+/* ReelStage.tsx must stay identical — ReelStage.test.tsx checks that it does.    */
+@custom-variant reel {
+  @media (min-width: 1024px) and (min-height: 820px) {
+    @slot;
+  }
+}
+
 /* ─── Chrome geometry ─────────────────────────────────────────────────────────── */
 /* The marketing nav's height, as a token rather than a repeated `h-16`. The       */
 /* homepage reel makes its own scroll container, so it has to size its chapters    */

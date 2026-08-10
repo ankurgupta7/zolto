@@ -53,7 +53,7 @@ This renders the real components against the real `index.css` — nothing mocked
 It exists because the full dev server needs a database, which a review sandbox
 usually doesn't have.
 
-Five env vars steer it: `SHOT_URL` picks the entry (`catalog.html` is the
+Env vars steer it: `SHOT_URL` picks the entry (`catalog.html` is the
 catalogue admin page — add `?tour=1` to keep the first-run coach marks —
 and `admin.html?route=…` the settings pages, which render inside the real
 storefront navbar the shell has to clear), `SHOT_LANG` the language,
@@ -64,7 +64,14 @@ With `SHOT_FULLPAGE=0` the shot is the viewport only, which is what proves an
 interaction left its result on screen rather than somewhere down the page —
 and, with `SHOT_SCROLL`, that sticky chrome actually stuck.
 
-Six things it has already caught that every test suite passed straight
+The homepage is a reel of viewport-sized panels, so a full-page shot of it is a
+12,000px image nobody can read: `SHOT_CHAPTER=4` and `SHOT_PANEL=12` scroll to
+one chapter or one panel first, and print the height they landed on. Pair either
+with `SHOT_FULLPAGE=0`. The harness mounts pages without `MarketingShell`, so it
+stands a 4rem sticky header in for the reel — a band 64px taller than production
+would flatter every panel's fit.
+
+Seven things it has already caught that every test suite passed straight
 through, and which are worth checking for by eye:
 
 - **Tailwind emitting no utilities at all.** v4 infers content paths from the
@@ -87,6 +94,13 @@ through, and which are worth checking for by eye:
   page corner. Collapse such a control by _unmounting_ it, not with `hidden`,
   and let `useTourActive()` unfold it while a tour runs — the admin header does
   both. Check it with `SHOT_URL=…/catalog.html?tour=1 SHOT_CLICK="Next,Next"`.
+- **A layout that only works at the viewport it was tuned to.** The homepage
+  reel snapped whole chapters and was measured at 1440x900, where all six fit.
+  It fit nowhere else: 0 of 6 on a phone (a chapter is ~2.8 screens at 393px),
+  2 of 6 on an iPad or a 1280x800 laptop. Snap targets are now viewport-sized
+  panels, and the strength is measured rather than assumed — but the lesson is
+  the measuring: shoot and measure at 375, 393, 768, 1280 and 1440 before
+  believing a full-viewport layout works.
 - **A translucent panel used as an overlay.** The admin sidebar is a column on
   a desktop and a drawer over the page on a phone — the same `bg-muted/30` that
   reads as a tint beside content is a window through it, so the form underneath

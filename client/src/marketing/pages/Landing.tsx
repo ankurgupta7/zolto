@@ -12,49 +12,54 @@ import {
   OneInventoryDiagram,
   PhotoToListing,
 } from "../components/MarketingIllustrations";
-import { AiNativeBand } from "../components/AgentPitch";
+import { AiNativeThesis, DiscoveryShiftChart } from "../components/AgentPitch";
 import { HeroTill } from "../components/HeroTill";
 import { Container } from "../components/Container";
 import { DayInTheLife } from "../components/DayInTheLife";
 import { ScrollReveal } from "../components/ScrollReveal";
 import { DiaryTeaser } from "../components/DiaryTeaser";
-import { ZeroCostPos } from "../components/ZeroCostPos";
-import { SqueezePlay } from "../components/SqueezePlay";
-import { SwissMade } from "../components/SwissMade";
+import { ZeroCostPosClaim, ZeroCostPosPrice } from "../components/ZeroCostPos";
+import {
+  SqueezePlayArgument,
+  SqueezePlayTills,
+} from "../components/SqueezePlay";
+import { SwissMadeIntro, SwissMadeLedger } from "../components/SwissMade";
 import { ExplainerVideo } from "../components/ExplainerVideo";
-import { ReelChapter, ReelStage } from "../components/ReelStage";
-import { MarketingFooter } from "../components/MarketingChrome";
+import { ReelChapter, ReelPanel, ReelStage } from "../components/ReelStage";
 import { useMarketingT } from "../lib/marketingI18n";
 
 /**
  * The Zolto homepage, as a reel.
  *
- * This page used to be sixteen stacked bands, read top to bottom, and it was
- * tiring in exactly the way a long page is: no sense of where you were, no
- * sense of how much was left, and nowhere prominent enough to put the explainer
- * video. It is now six chapters, each the height of the viewport, snapping to
- * the top of whichever one you're in, with a progress rail on the right — see
- * components/ReelStage.tsx for the mechanics and for the three ways the snap
- * gets out of the reader's way.
+ * Six chapters, each made of **panels**. A panel is one screen: on a roomy
+ * viewport a chapter's panels are its columns and the chapter is the screen; on
+ * a phone they stack and each panel is a screen you swipe to. The mechanics —
+ * and the measurements that forced that model — live in
+ * components/ReelStage.tsx. The short version is that the first cut of this reel
+ * snapped whole chapters, so it only worked at 1440x900 and above: a chapter is
+ * ~2.8 screens tall on a phone and 1.03-1.6x the screen on a 1280x800 laptop or
+ * an iPad.
  *
- * Not a word of copy changed, and no colour left its token. What changed is
- * choreography and what the homepage carries:
+ * What each chapter carries, and the reel-mode grid that puts its panels back
+ * into the desktop layout:
  *
- * - The explainer video takes the hero's second column, and the till it
- *   replaced moved down to the how-it-works chapter as its third visual.
- * - Bands that were arguing the same point twice were paired into one chapter,
- *   with the dark ones becoming dark *panels* on a light chapter (ZeroCostPos,
- *   AiNativeBand, the cost strip, the closing CTA). Same statement, at the size
- *   a shared viewport allows.
- * - Three bands left the homepage rather than being shrunk below legibility:
- *   AgentProofBand, HowAnAiBuys and the end-of-day email mock now live on
- *   /why-zolto (pages/WhyZolto.tsx), and the old-guard comparison table moved
- *   to the /compare index, where the reader is already choosing between named
- *   products. Chapter five links to the first; the nav already links the second.
+ *   1 Promise        copy + CTA | explainer video
+ *   2 The squeeze    the squeeze argument, three tills | the CHF 0 claim, its price
+ *   3 How it works   title, then one inventory | photo→listing | the till
+ *   4 Trust          cost strip + pledge | Swissness intro, the ledger
+ *   5 What's coming  the market day | the AI-native thesis
+ *   6 Start free     closing CTA, the launch diary
  *
- * The rule for the split: anything a chapter could not hold at 100vh on a
- * 1440×900 desktop went to a sub-page. Body copy never went below 15px and no
- * heading changed scale to make something fit.
+ * No copy changed when this became a reel, and no colour left its token. Bands
+ * arguing the same point were paired into one chapter, and the dark ones became
+ * dark *panels* on a light chapter (the CHF 0 claim and its price, the thesis,
+ * the cost strip, the closing CTA) — the same statement at the size a shared
+ * screen allows.
+ *
+ * Three bands left the homepage rather than being shrunk below legibility:
+ * AgentProofBand, HowAnAiBuys and the end-of-day email mock live on /why-zolto,
+ * and the old-guard comparison table moved to the /compare index. Chapter five
+ * links the first; the nav links the second.
  */
 
 /** The explainer cut and its drawn poster — see client/public/video/README.md. */
@@ -71,10 +76,7 @@ export default function Landing() {
           body, so it is fixed to the viewport rather than to the reel. */}
       <ParticleField />
 
-      <ReelStage
-        label={t("landing.reel.railLabel")}
-        trailer={<MarketingFooter />}
-      >
+      <ReelStage label={t("landing.reel.railLabel")}>
         {/* ── 1. Promise — what Zolto is, in the merchant's nouns, beside the
              explainer video (see MAKER_PITCH) ── */}
         <ReelChapter
@@ -82,76 +84,71 @@ export default function Landing() {
           label={t("landing.reel.promise")}
           className="bg-[var(--brand-ink)]"
         >
-          {/* Three grid children, not two, so the video can sit between the
-              copy and the buttons on a phone and still occupy the second
-              column on a desktop. A merchant browsing on their phone is the
-              likeliest reader there is; the picture of the product should not
-              be the one thing their screen drops. */}
-          <Container className="grid gap-10 md:grid-cols-2 md:items-center">
-            <div className="md:col-start-1 md:row-start-1">
-              <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
-                {st("makerPitch.eyebrow", MAKER_PITCH.eyebrow)}
-              </p>
-              {/* The column, not max-w, is what actually bounds this heading —
-                  see MAKER_PITCH.headlineEmphasis for the measurements and for
-                  why the underlined phrase has to stay short. */}
-              <h1 className="mt-4 max-w-2xl font-serif text-4xl leading-[1.1] text-white sm:text-5xl">
-                {st("makerPitch.headline", MAKER_PITCH.headline)}{" "}
-                {/* Only the punchline is underlined, so the stroke stays tight
-                    to the words however the heading wraps. */}
-                <span className="relative inline-block">
-                  {st(
-                    "makerPitch.headlineEmphasis",
-                    MAKER_PITCH.headlineEmphasis,
-                  )}
-                  <span className="absolute -bottom-2 left-0 w-full text-[var(--brand-accent)]">
-                    <SketchUnderline />
+          <Container className="grid reel:grid-cols-2 reel:items-center reel:gap-10">
+            <ReelPanel>
+              <div>
+                <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
+                  {st("makerPitch.eyebrow", MAKER_PITCH.eyebrow)}
+                </p>
+                {/* The column, not max-w, is what actually bounds this heading —
+                    see MAKER_PITCH.headlineEmphasis for the measurements and for
+                    why the underlined phrase has to stay short. */}
+                <h1 className="mt-4 max-w-2xl font-serif text-4xl leading-[1.1] text-white sm:text-5xl">
+                  {st("makerPitch.headline", MAKER_PITCH.headline)}{" "}
+                  {/* Only the punchline is underlined, so the stroke stays tight
+                      to the words however the heading wraps. */}
+                  <span className="relative inline-block">
+                    {st(
+                      "makerPitch.headlineEmphasis",
+                      MAKER_PITCH.headlineEmphasis,
+                    )}
+                    <span className="absolute -bottom-2 left-0 w-full text-[var(--brand-accent)]">
+                      <SketchUnderline />
+                    </span>
                   </span>
-                </span>
-              </h1>
-              <p className="mt-8 max-w-md text-lg leading-relaxed text-white/70">
-                {st("makerPitch.body", MAKER_PITCH.body)}
-              </p>
-            </div>
+                </h1>
+                <p className="mt-6 max-w-md text-lg leading-relaxed text-white/70">
+                  {st("makerPitch.body", MAKER_PITCH.body)}
+                </p>
+
+                <div className="mt-8 flex flex-wrap items-center gap-4">
+                  <Link
+                    href="/signup"
+                    className="rounded-md bg-[var(--brand-accent)] px-7 py-3 text-xs font-medium uppercase tracking-[0.14em] text-[var(--brand-ink)] transition-colors hover:bg-[var(--brand-accent-light)]"
+                  >
+                    {t("landing.startFree")}
+                  </Link>
+                  <Link
+                    href="/pricing"
+                    className="rounded-md border border-white/25 px-7 py-3 text-xs font-medium uppercase tracking-[0.14em] text-white/85 transition-colors hover:border-white hover:text-white"
+                  >
+                    {t("landing.seePricing")}
+                  </Link>
+                </div>
+
+                {/* Where we're from, above the fold. Three facts, no sentence —
+                    the trust chapter does the explaining. */}
+                <ul className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-2 text-[11px] uppercase tracking-[0.16em] text-white/50">
+                  {SOVEREIGNTY.heroBadges.map((badge, i) => (
+                    <li key={badge} className="flex items-center gap-2">
+                      <span aria-hidden className="text-[var(--brand-accent)]">
+                        ✦
+                      </span>
+                      {st(`sovereignty.heroBadges.${i}`, badge)}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </ReelPanel>
 
             {/* The product, shown rather than asserted. */}
-            <div className="md:col-start-2 md:row-start-1 md:row-end-3">
+            <ReelPanel>
               <ExplainerVideo
                 src={EXPLAINER_SRC}
                 poster={EXPLAINER_POSTER}
                 captionKey="landing.video.caption"
               />
-            </div>
-
-            <div className="md:col-start-1 md:row-start-2">
-              <div className="flex flex-wrap items-center gap-4">
-                <Link
-                  href="/signup"
-                  className="rounded-md bg-[var(--brand-accent)] px-7 py-3 text-xs font-medium uppercase tracking-[0.14em] text-[var(--brand-ink)] transition-colors hover:bg-[var(--brand-accent-light)]"
-                >
-                  {t("landing.startFree")}
-                </Link>
-                <Link
-                  href="/pricing"
-                  className="rounded-md border border-white/25 px-7 py-3 text-xs font-medium uppercase tracking-[0.14em] text-white/85 transition-colors hover:border-white hover:text-white"
-                >
-                  {t("landing.seePricing")}
-                </Link>
-              </div>
-
-              {/* Where we're from, above the fold. Three facts, no sentence —
-                  the trust chapter does the explaining. */}
-              <ul className="mt-10 flex flex-wrap items-center gap-x-5 gap-y-2 text-[11px] uppercase tracking-[0.16em] text-white/50">
-                {SOVEREIGNTY.heroBadges.map((badge, i) => (
-                  <li key={badge} className="flex items-center gap-2">
-                    <span aria-hidden className="text-[var(--brand-accent)]">
-                      ✦
-                    </span>
-                    {st(`sovereignty.heroBadges.${i}`, badge)}
-                  </li>
-                ))}
-              </ul>
-            </div>
+            </ReelPanel>
           </Container>
         </ReelChapter>
 
@@ -163,30 +160,47 @@ export default function Landing() {
           label={t("landing.reel.squeeze")}
           className="bg-[var(--brand-surface)]"
         >
-          <Container className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
-            <SqueezePlay dense />
-            <ZeroCostPos dense />
+          {/* Each column is its own stack, not cells in a shared 2x2 grid: grid
+              rows are shared between columns, so a short panel beside a tall one
+              inherits the tall one's row and the chapter grows by the difference
+              — 456px of it, in this chapter's case. */}
+          <Container className="grid reel:grid-cols-[1.05fr_0.95fr] reel:items-center reel:gap-6">
+            <div className="grid reel:content-center reel:gap-6">
+              <ReelPanel>
+                <SqueezePlayArgument dense />
+              </ReelPanel>
+              <ReelPanel>
+                <SqueezePlayTills dense />
+              </ReelPanel>
+            </div>
+            <div className="grid reel:content-center reel:gap-6">
+              <ReelPanel>
+                <ZeroCostPosClaim dense />
+              </ReelPanel>
+              <ReelPanel>
+                <ZeroCostPosPrice dense />
+              </ReelPanel>
+            </div>
           </Container>
         </ReelChapter>
 
         {/* ── 3. How it works — one inventory, photo→listing, and the till the
              hero used to show ── */}
         <ReelChapter id="product" label={t("landing.reel.how")}>
-          <Container>
-            <div className="mb-10 text-center">
-              <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
-                {t("landing.howEyebrow")}
-              </p>
-              <h2 className="mt-2 font-serif text-3xl text-[var(--brand-text)]">
-                {t("landing.howHeading")}
-              </h2>
-            </div>
+          <Container className="grid reel:grid-cols-3 reel:gap-10">
+            <ReelPanel className="reel:col-span-3">
+              <div className="text-center">
+                <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
+                  {t("landing.howEyebrow")}
+                </p>
+                <h2 className="mt-2 font-serif text-3xl text-[var(--brand-text)] sm:text-4xl">
+                  {t("landing.howHeading")}
+                </h2>
+              </div>
+            </ReelPanel>
 
-            {/* Not three equal columns: the photo→listing flow is three panels
-                wide on its own, so it takes the roomiest third and the till —
-                drawn for a hero column — takes the narrowest. */}
-            <div className="grid gap-10 md:grid-cols-[1fr_1.2fr_0.8fr] md:items-start">
-              {/* Feature 1 — one inventory, two channels */}
+            {/* Feature 1 — one inventory, two channels */}
+            <ReelPanel>
               <div>
                 <h3 className="font-serif text-2xl text-[var(--brand-text)]">
                   {t("landing.inventoryTitle")}
@@ -194,12 +208,14 @@ export default function Landing() {
                 <p className="mt-3 text-[15px] leading-relaxed text-[var(--brand-muted-2)]">
                   {t("landing.inventoryBody")}
                 </p>
-                <div className="mt-6">
+                <div className="mt-4">
                   <OneInventoryDiagram />
                 </div>
               </div>
+            </ReelPanel>
 
-              {/* Feature 2 — photo to listing */}
+            {/* Feature 2 — photo to listing */}
+            <ReelPanel>
               <div>
                 <h3 className="font-serif text-2xl text-[var(--brand-text)]">
                   {t("landing.photoTitle")}
@@ -207,18 +223,20 @@ export default function Landing() {
                 <p className="mt-3 text-[15px] leading-relaxed text-[var(--brand-muted-2)]">
                   {t("landing.photoBody")}
                 </p>
-                <div className="mt-6">
+                <div className="mt-4">
                   <PhotoToListing />
                 </div>
               </div>
+            </ReelPanel>
 
-              {/* The till itself, down from the hero. It is drawn for the
-                  mahogany, so on a light chapter it keeps its own dark ground
-                  — the same move ZeroCostPos and AiNativeBand make. */}
+            {/* The till itself, down from the hero. It is drawn for the
+                mahogany, so on a light chapter it keeps its own dark ground —
+                the same move the CHF 0 claim and the thesis make. */}
+            <ReelPanel>
               <div className="rounded-2xl bg-[var(--brand-ink)]">
                 <HeroTill />
               </div>
-            </div>
+            </ReelPanel>
           </Container>
         </ReelChapter>
 
@@ -229,78 +247,94 @@ export default function Landing() {
           label={t("landing.reel.trust")}
           className="border-y border-[var(--brand-border)] bg-[var(--brand-surface-2)]"
         >
-          {/* The ledger takes the wider column on purpose: its nine rows only
-              lay out one line each once they have room for the piece and its
-              state side by side, and flattening them is what buys the strip and
-              the pledge theirs. See SwissMade's `dense`. */}
-          <Container className="grid gap-6 lg:grid-cols-[0.72fr_1.28fr] lg:items-start">
-            <div className="grid gap-6">
-              {/* Cost strip (Direction A) — the mahogany band, now a panel. */}
-              <div className="grid items-center gap-4 rounded-2xl bg-[var(--brand-ink-deep)] p-6 text-center sm:grid-cols-[1fr_auto_1fr]">
-                <div>
-                  <p className="text-[11px] uppercase tracking-[0.2em] text-white/45">
-                    {st("costComparison.themLabel", COST_COMPARISON.themLabel)}
-                  </p>
-                  <p className="mt-2 font-serif text-4xl font-semibold text-white/55 line-through decoration-[var(--brand-accent)]/60 lining-nums tabular-nums">
-                    CHF{" "}
-                    {COST_COMPARISON.themPerYearChf.toLocaleString(
-                      numberLocale,
-                    )}
-                  </p>
-                  <p className="mt-2 text-xs text-white/40">
-                    {st("costComparison.themNote", COST_COMPARISON.themNote)}
-                  </p>
+          {/* The ledger takes the wider column: its nine rows only lay out one
+              line each once they have room for the piece and its state side by
+              side. See SwissMadeLedger's `dense`. */}
+          <Container className="grid reel:grid-cols-[0.72fr_1.28fr] reel:items-start reel:gap-6">
+            <div className="grid reel:content-center reel:gap-6">
+              <ReelPanel>
+                {/* Cost strip (Direction A) — the mahogany band, now a panel. */}
+                <div className="grid items-center gap-4 rounded-2xl bg-[var(--brand-ink-deep)] p-6 text-center sm:grid-cols-[1fr_auto_1fr]">
+                  <div>
+                    <p className="text-[11px] uppercase tracking-[0.2em] text-white/45">
+                      {st(
+                        "costComparison.themLabel",
+                        COST_COMPARISON.themLabel,
+                      )}
+                    </p>
+                    <p className="mt-2 font-serif text-4xl font-semibold text-white/55 line-through decoration-[var(--brand-accent)]/60 lining-nums tabular-nums">
+                      CHF{" "}
+                      {COST_COMPARISON.themPerYearChf.toLocaleString(
+                        numberLocale,
+                      )}
+                    </p>
+                    <p className="mt-2 text-xs text-white/40">
+                      {st("costComparison.themNote", COST_COMPARISON.themNote)}
+                    </p>
+                  </div>
+                  <div
+                    aria-hidden
+                    className="text-3xl text-[var(--brand-accent)] max-sm:rotate-90"
+                  >
+                    →
+                  </div>
+                  <div>
+                    <p className="text-[11px] uppercase tracking-[0.2em] text-white/45">
+                      {st("costComparison.usLabel", COST_COMPARISON.usLabel)}
+                    </p>
+                    <p className="mt-2 font-serif text-5xl font-bold text-[var(--brand-accent-light)] lining-nums tabular-nums">
+                      {formatPrice(COST_COMPARISON.usPerMonthChf)}
+                    </p>
+                    <p className="mt-2 text-xs text-white/40">
+                      {st("costComparison.usNote", COST_COMPARISON.usNote)}
+                    </p>
+                  </div>
                 </div>
-                <div
-                  aria-hidden
-                  className="text-3xl text-[var(--brand-accent)] max-sm:rotate-90"
-                >
-                  →
-                </div>
-                <div>
-                  <p className="text-[11px] uppercase tracking-[0.2em] text-white/45">
-                    {st("costComparison.usLabel", COST_COMPARISON.usLabel)}
-                  </p>
-                  <p className="mt-2 font-serif text-5xl font-bold text-[var(--brand-accent-light)] lining-nums tabular-nums">
-                    {formatPrice(COST_COMPARISON.usPerMonthChf)}
-                  </p>
-                  <p className="mt-2 text-xs text-white/40">
-                    {st("costComparison.usNote", COST_COMPARISON.usNote)}
-                  </p>
-                </div>
-              </div>
+              </ReelPanel>
 
               {/* The pledge (Direction B) — the heart of the positioning. It
-                  keeps its reveal: it is not the first thing in the chapter. */}
-              <ScrollReveal className="relative rounded-2xl border border-[var(--brand-border)] bg-white p-8 shadow-[0_20px_50px_-34px_rgba(45,38,32,0.4)]">
-                <span className="absolute -top-3 left-8 bg-white px-2.5 font-hand text-xl text-[var(--brand-accent)]">
-                  {t("landing.pledgeEyebrow")}
-                </span>
-                <p className="font-serif text-2xl leading-snug text-[var(--brand-text)] lining-nums">
-                  &ldquo;
-                  {st("pricingPromise.pledge", PRICING_PROMISE.pledge)}&rdquo;
-                </p>
-                {/* The five itemised points that used to follow the promise
-                    render in full on /pricing, above the plans, and always did
-                    — this card carried a second copy of them. At ~900px of
-                    them, keeping the duplicate here is what would have pushed
-                    this chapter past a viewport, so the promise stays on the
-                    homepage and its arithmetic lives one click away. */}
-                <Link
-                  href="/pricing"
-                  className="mt-5 inline-block text-sm text-[var(--brand-ink)] underline decoration-[var(--brand-accent)] underline-offset-4 transition-colors hover:text-[var(--brand-accent)]"
-                >
-                  {t("landing.seePricing")}
-                </Link>
-                <p className="mt-5 font-hand text-2xl text-[var(--brand-text)]">
-                  {t("landing.pledgeSignature")}
-                </p>
-              </ScrollReveal>
+                  keeps its reveal: it is not the first thing in the chapter. The
+                  five itemised points render on /pricing, above the plans — see
+                  PRICING_PROMISE.restatedByPricingFeeSection. */}
+              <ReelPanel>
+                <ScrollReveal className="relative rounded-2xl border border-[var(--brand-border)] bg-white p-8 shadow-[0_20px_50px_-34px_rgba(45,38,32,0.4)]">
+                  <span className="absolute -top-3 left-8 bg-white px-2.5 font-hand text-xl text-[var(--brand-accent)]">
+                    {t("landing.pledgeEyebrow")}
+                  </span>
+                  <p className="font-serif text-2xl leading-snug text-[var(--brand-text)] lining-nums">
+                    &ldquo;
+                    {st("pricingPromise.pledge", PRICING_PROMISE.pledge)}&rdquo;
+                  </p>
+                  <Link
+                    href="/pricing"
+                    className="mt-5 inline-block text-sm text-[var(--brand-ink)] underline decoration-[var(--brand-accent)] underline-offset-4 transition-colors hover:text-[var(--brand-accent)]"
+                  >
+                    {t("landing.seePricing")}
+                  </Link>
+                  <p className="mt-5 font-hand text-2xl text-[var(--brand-text)]">
+                    {t("landing.pledgeSignature")}
+                  </p>
+                </ScrollReveal>
+              </ReelPanel>
             </div>
 
             {/* Made in Switzerland — the ledger, every row, still on the
-                homepage rather than behind the link. */}
-            <SwissMade dense />
+                homepage rather than behind the link. Nine rows are a screen and
+                a quarter on a phone, so they read over two panels; in reel mode
+                the two sit back to back in the same column and look like the one
+                list they are. */}
+            <div className="grid reel:content-center reel:gap-4">
+              <ReelPanel>
+                <SwissMadeIntro dense />
+              </ReelPanel>
+              <ReelPanel>
+                <SwissMadeLedger dense to={5} />
+              </ReelPanel>
+              {/* -mt-4 cancels the column gap so the two slices meet. */}
+              <ReelPanel className="reel:-mt-4">
+                <SwissMadeLedger dense from={5} />
+              </ReelPanel>
+            </div>
           </Container>
         </ReelChapter>
 
@@ -312,35 +346,39 @@ export default function Landing() {
           label={t("landing.reel.whatsComing")}
           className="bg-white"
         >
-          {/* The chapter's heading sits in the left column rather than across
-              the top: the thesis panel beside it is the taller of the two, so a
-              full-width header would have pushed the chapter past a viewport for
-              no gain in how it reads. */}
-          <Container className="grid gap-8 lg:grid-cols-[1fr_0.85fr] lg:items-start">
-            <div>
-              <div className="max-w-2xl">
-                <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
-                  {t("landing.messyEyebrow")}
-                </p>
-                <h2 className="mt-2 font-serif text-3xl text-[var(--brand-text)]">
-                  {t("landing.messyHeading")}
-                </h2>
-                <p className="mt-3 text-[var(--brand-muted-2)]">
-                  {t("landing.messyBody")}
-                </p>
-              </div>
-
-              <div className="mt-8">
+          <Container className="grid reel:grid-cols-[1fr_0.85fr] reel:items-start reel:gap-8">
+            <div className="grid reel:content-center reel:gap-8">
+              <ReelPanel>
+                <div className="max-w-2xl">
+                  <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
+                    {t("landing.messyEyebrow")}
+                  </p>
+                  <h2 className="mt-2 font-serif text-3xl text-[var(--brand-text)] sm:text-4xl">
+                    {t("landing.messyHeading")}
+                  </h2>
+                  <p className="mt-3 text-[var(--brand-muted-2)]">
+                    {t("landing.messyBody")}
+                  </p>
+                  <Link
+                    href="/why-zolto"
+                    className="mt-5 inline-block text-sm text-[var(--brand-ink)] underline decoration-[var(--brand-accent)] underline-offset-4 transition-colors hover:text-[var(--brand-accent)]"
+                  >
+                    {t("landing.reel.whyZoltoLink")}
+                  </Link>
+                </div>
+              </ReelPanel>
+              <ReelPanel>
                 <DayInTheLife />
-              </div>
-              <Link
-                href="/why-zolto"
-                className="mt-4 inline-block text-sm text-[var(--brand-ink)] underline decoration-[var(--brand-accent)] underline-offset-4 transition-colors hover:text-[var(--brand-accent)]"
-              >
-                {t("landing.reel.whyZoltoLink")}
-              </Link>
+              </ReelPanel>
             </div>
-            <AiNativeBand dense />
+            <div className="grid reel:content-center reel:gap-5">
+              <ReelPanel>
+                <AiNativeThesis dense />
+              </ReelPanel>
+              <ReelPanel>
+                <DiscoveryShiftChart dense />
+              </ReelPanel>
+            </div>
           </Container>
         </ReelChapter>
 
@@ -351,28 +389,30 @@ export default function Landing() {
           label={t("landing.reel.startFree")}
           className="border-t border-[var(--brand-border)] bg-[var(--brand-surface-2)]"
         >
-          <Container>
-            <div className="rounded-2xl bg-[var(--brand-ink)] px-7 py-10 text-center">
-              <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
-                {t("landing.ctaEyebrow")}
-              </p>
-              <h2 className="mt-3 font-serif text-3xl text-white sm:text-4xl">
-                {t("landing.ctaHeading")}
-              </h2>
-              <p className="mx-auto mt-4 max-w-2xl text-white/70">
-                {t("landing.ctaBody")}
-              </p>
-              <Link
-                href="/signup"
-                className="mt-7 inline-block rounded-md bg-[var(--brand-accent)] px-7 py-3 text-xs font-medium uppercase tracking-[0.14em] text-[var(--brand-ink)] transition-colors hover:bg-[var(--brand-accent-light)]"
-              >
-                {t("landing.ctaButton")}
-              </Link>
-            </div>
+          <Container className="grid reel:gap-10">
+            <ReelPanel>
+              <div className="rounded-2xl bg-[var(--brand-ink)] px-7 py-10 text-center">
+                <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
+                  {t("landing.ctaEyebrow")}
+                </p>
+                <h2 className="mt-3 font-serif text-3xl text-white sm:text-4xl">
+                  {t("landing.ctaHeading")}
+                </h2>
+                <p className="mx-auto mt-4 max-w-2xl text-white/70">
+                  {t("landing.ctaBody")}
+                </p>
+                <Link
+                  href="/signup"
+                  className="mt-7 inline-block rounded-md bg-[var(--brand-accent)] px-7 py-3 text-xs font-medium uppercase tracking-[0.14em] text-[var(--brand-ink)] transition-colors hover:bg-[var(--brand-accent-light)]"
+                >
+                  {t("landing.ctaButton")}
+                </Link>
+              </div>
+            </ReelPanel>
 
-            <div className="mt-10">
+            <ReelPanel>
               <DiaryTeaser dense />
-            </div>
+            </ReelPanel>
           </Container>
         </ReelChapter>
       </ReelStage>

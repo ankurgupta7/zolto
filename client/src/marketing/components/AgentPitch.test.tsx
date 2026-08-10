@@ -3,7 +3,7 @@ import { render, screen, cleanup } from "@testing-library/react";
 import { AI_NATIVE_PITCH } from "@shared/platform";
 import {
   DiscoveryShiftChart,
-  AiNativeBand,
+  AiNativeThesis,
   AgentChatMock,
   AgentProofBand,
   HowAnAiBuys,
@@ -11,9 +11,9 @@ import {
 
 afterEach(cleanup);
 
-describe("AiNativeBand", () => {
+describe("AiNativeThesis", () => {
   it("states the thesis with its chart, as a section rather than the page title", () => {
-    render(<AiNativeBand />);
+    render(<AiNativeThesis />);
     // The copy is the copy that used to be the hero — unchanged. What moved is
     // the heading level: this argues for choosing Zolto, it doesn't name it.
     const heading = screen.getByRole("heading", { level: 2 });
@@ -21,8 +21,8 @@ describe("AiNativeBand", () => {
     expect(heading.textContent).toContain(AI_NATIVE_PITCH.headlineEmphasis);
     expect(screen.getByText(AI_NATIVE_PITCH.eyebrow)).toBeTruthy();
     expect(screen.getByText(AI_NATIVE_PITCH.body)).toBeTruthy();
-    // The chart came down the page with it rather than being dropped.
-    expect(screen.getByText(AI_NATIVE_PITCH.chart.caption)).toBeTruthy();
+    // The chart is its own component (and, in the reel, its own panel) — see
+    // DiscoveryShiftChart below.
   });
 });
 
@@ -86,16 +86,23 @@ describe("HowAnAiBuys", () => {
     expect(screen.getByText(AI_NATIVE_PITCH.footnote)).toBeTruthy();
   });
 
-  it("becomes a mahogany panel, chart and all, in its dense reel rendering", () => {
+  it("becomes a mahogany panel in its dense reel rendering", () => {
     // The homepage reel puts the thesis beside a market day rather than in a
-    // band of its own; `dense` is that rendering. The chart comes with it —
-    // the band without its chart is an assertion without its evidence.
-    const { container } = render(<AiNativeBand dense />);
+    // band of its own, and on a phone the thesis and its chart are a panel
+    // each — so `dense` carries the mahogany that a light chapter can't lend.
+    const { container } = render(<AiNativeThesis dense />);
     expect(container.querySelector("section")).toBeNull();
     expect(screen.getByTestId("ai-native-band").className).toContain(
       "bg-[var(--brand-ink)]",
     );
-    expect(screen.getByText(AI_NATIVE_PITCH.chart.caption)).toBeTruthy();
     expect(screen.getByText(AI_NATIVE_PITCH.body)).toBeTruthy();
+  });
+
+  it("gives the chart its own mahogany when it is a panel of its own", () => {
+    const { container } = render(<DiscoveryShiftChart dense />);
+    expect(container.firstElementChild?.className).toContain(
+      "bg-[var(--brand-ink)]",
+    );
+    expect(screen.getByText(AI_NATIVE_PITCH.chart.caption)).toBeTruthy();
   });
 });

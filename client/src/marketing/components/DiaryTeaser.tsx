@@ -43,13 +43,27 @@ export function DiaryTeaser({
         </p>
       </div>
 
+      {/* Dense turns the cards into a phone swipe row: three stacked cards are
+          a screen of their own, and a reel panel is one screen. From sm up they
+          go back to being a grid. */}
       <ul
-        className={`grid sm:grid-cols-2 lg:grid-cols-3 ${
-          dense ? "gap-4" : "gap-6"
-        }`}
+        className={
+          dense
+            ? "flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 sm:grid sm:snap-none sm:grid-cols-2 sm:overflow-visible sm:pb-0 lg:grid-cols-3"
+            : "grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
+        }
       >
         {DIARY_POSTS.map((post, i) => (
-          <ScrollReveal as="li" key={post.slug} delay={i * 120}>
+          <ScrollReveal
+            as="li"
+            key={post.slug}
+            delay={i * 120}
+            className={
+              dense
+                ? "min-w-[80%] shrink-0 snap-center sm:min-w-0 sm:shrink"
+                : ""
+            }
+          >
             <Link
               href={`/blog/${post.slug}`}
               className={`group flex h-full flex-col rounded-xl border border-[var(--brand-border)] bg-white transition-colors hover:border-[var(--brand-accent)]/60 ${

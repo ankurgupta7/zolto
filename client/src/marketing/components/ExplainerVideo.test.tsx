@@ -15,7 +15,7 @@ import {
   fireEvent,
 } from "@testing-library/react";
 import { ExplainerVideo } from "./ExplainerVideo";
-import { ReelChapter, ReelStage } from "./ReelStage";
+import { ReelChapter, ReelPanel, ReelStage } from "./ReelStage";
 
 /**
  * The explainer plays like a hero video and not like an advert: silent while
@@ -178,15 +178,19 @@ describe("ExplainerVideo inside a reel chapter", () => {
     return render(
       <ReelStage label="Chapters">
         <ReelChapter id="promise" label="Promise">
-          <h2>Promise</h2>
-          <ExplainerVideo
-            src={SRC}
-            poster={POSTER}
-            captionKey="landing.video.caption"
-          />
+          <ReelPanel>
+            <h2>Promise</h2>
+            <ExplainerVideo
+              src={SRC}
+              poster={POSTER}
+              captionKey="landing.video.caption"
+            />
+          </ReelPanel>
         </ReelChapter>
         <ReelChapter id="squeeze" label="The squeeze">
-          <h2>Squeeze</h2>
+          <ReelPanel>
+            <h2>Squeeze</h2>
+          </ReelPanel>
         </ReelChapter>
       </ReelStage>,
     );
@@ -197,7 +201,7 @@ describe("ExplainerVideo inside a reel chapter", () => {
     act(() => {
       observer.callback([
         {
-          target: document.querySelector(`[data-reel-chapter="${id}"]`)!,
+          target: document.querySelector(`[data-reel-panel="${id}"]`)!,
           isIntersecting: ratio > 0,
           intersectionRatio: ratio,
         },
