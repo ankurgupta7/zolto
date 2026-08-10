@@ -1,4 +1,4 @@
-name: 'Publish POS build to the rolling release'
+name: "Publish POS build to the rolling release"
 description: >
   Upload a POS app build to the rolling `pos-latest` GitHub Release under a
   stable asset name, creating the release if it does not exist yet.
@@ -16,14 +16,14 @@ description: >
 
 inputs:
   tag:
-    description: 'Release tag to publish under.'
+    description: "Release tag to publish under."
     required: false
-    default: 'pos-latest'
+    default: "pos-latest"
   files:
-    description: 'Newline- or space-separated paths to upload.'
+    description: "Newline- or space-separated paths to upload."
     required: true
   token:
-    description: 'Token with contents:write on this repo.'
+    description: "Token with contents:write on this repo."
     required: true
 
 runs:

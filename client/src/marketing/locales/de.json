@@ -872,12 +872,7 @@
       "tables": {
         "weekly": {
           "caption": "Online-Bestellungen, Bestellwert und Traffic nach Woche",
-          "head": [
-            "Woche",
-            "Online-Bestellungen",
-            "Ø Bestellwert",
-            "Besucher"
-          ],
+          "head": ["Woche", "Online-Bestellungen", "Ø Bestellwert", "Besucher"],
           "rowLabels": [
             "Woche 1 (Launch)",
             "Woche 2",
@@ -888,11 +883,7 @@
         },
         "sources": {
           "caption": "Woher die Online-Bestellungen kamen",
-          "head": [
-            "Quelle",
-            "Bestellungen",
-            "% der Online-Verkäufe"
-          ],
+          "head": ["Quelle", "Bestellungen", "% der Online-Verkäufe"],
           "rowLabels": [
             "Instagram (organisch)",
             "Direkt / wiederkehrend",

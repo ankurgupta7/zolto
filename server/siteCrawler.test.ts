@@ -36,7 +36,10 @@ function stub(
     return {
       ok: status >= 200 && status < 300,
       status,
-      headers: new Headers({ "content-type": "text/html", ...(r.headers ?? {}) }),
+      headers: new Headers({
+        "content-type": "text/html",
+        ...(r.headers ?? {}),
+      }),
       text: async () => r.body ?? "",
     } as unknown as Response;
   });
@@ -78,7 +81,9 @@ describe("robots.txt", () => {
 
 describe("fetchPageSafely — SSRF", () => {
   it("refuses a host the SSRF guard rejects", async () => {
-    assertPublicHostname.mockRejectedValue(new Error("Internal URLs not allowed"));
+    assertPublicHostname.mockRejectedValue(
+      new Error("Internal URLs not allowed"),
+    );
     const fetchImpl = stub({});
     expect(
       await fetchPageSafely("http://169.254.169.254/latest/meta-data", {
@@ -135,13 +140,17 @@ describe("fetchPageSafely — SSRF", () => {
         headers: { location: "https://a.example/" },
       },
     });
-    expect(await fetchPageSafely("https://a.example/", { fetchImpl })).toBeNull();
+    expect(
+      await fetchPageSafely("https://a.example/", { fetchImpl }),
+    ).toBeNull();
     expect(fetchImpl.mock.calls.length).toBeLessThanOrEqual(6);
   });
 
   it("refuses non-http schemes outright", async () => {
     const fetchImpl = stub({});
-    expect(await fetchPageSafely("file:///etc/passwd", { fetchImpl })).toBeNull();
+    expect(
+      await fetchPageSafely("file:///etc/passwd", { fetchImpl }),
+    ).toBeNull();
     expect(await fetchPageSafely("ftp://x.example/", { fetchImpl })).toBeNull();
     expect(fetchImpl).not.toHaveBeenCalled();
   });
@@ -149,10 +158,14 @@ describe("fetchPageSafely — SSRF", () => {
 
 describe("fetchPageSafely — what counts as a page", () => {
   it("identifies itself so a merchant can see us in their logs", async () => {
-    const fetchImpl = stub({ "https://shop.example/": { body: "<html></html>" } });
+    const fetchImpl = stub({
+      "https://shop.example/": { body: "<html></html>" },
+    });
     await fetchPageSafely("https://shop.example/", { fetchImpl });
     const init = fetchImpl.mock.calls[0][1] as RequestInit;
-    expect((init.headers as Record<string, string>)["user-agent"]).toBe(USER_AGENT);
+    expect((init.headers as Record<string, string>)["user-agent"]).toBe(
+      USER_AGENT,
+    );
     // Manual redirects are what makes the per-hop check possible at all.
     expect(init.redirect).toBe("manual");
   });
@@ -186,7 +199,9 @@ describe("fetchPageSafely — what counts as a page", () => {
 
   it("truncates a body that lied about its size", async () => {
     // content-length can be absent or wrong; the body is the only real measure.
-    const fetchImpl = stub({ "https://shop.example/": { body: "y".repeat(5000) } });
+    const fetchImpl = stub({
+      "https://shop.example/": { body: "y".repeat(5000) },
+    });
     const page = await fetchPageSafely("https://shop.example/", {
       fetchImpl,
       maxBytes: 1000,
@@ -196,14 +211,18 @@ describe("fetchPageSafely — what counts as a page", () => {
 
   it("returns null on an error status rather than throwing", async () => {
     const fetchImpl = stub({ "https://shop.example/": { status: 500 } });
-    expect(await fetchPageSafely("https://shop.example/", { fetchImpl })).toBeNull();
+    expect(
+      await fetchPageSafely("https://shop.example/", { fetchImpl }),
+    ).toBeNull();
   });
 
   it("returns null when the network throws", async () => {
     const fetchImpl = vi.fn(async () => {
       throw new Error("ECONNREFUSED");
     }) as unknown as typeof fetch;
-    expect(await fetchPageSafely("https://shop.example/", { fetchImpl })).toBeNull();
+    expect(
+      await fetchPageSafely("https://shop.example/", { fetchImpl }),
+    ).toBeNull();
   });
 });
 
@@ -270,13 +289,15 @@ describe("crawlSite", () => {
   });
 
   it("stops at the page cap and says so", async () => {
-    const routes: Record<string, { body: string; headers?: Record<string, string> }> =
-      {
-        "https://shop.example/robots.txt": {
-          body: "",
-          headers: { "content-type": "text/plain" },
-        },
-      };
+    const routes: Record<
+      string,
+      { body: string; headers?: Record<string, string> }
+    > = {
+      "https://shop.example/robots.txt": {
+        body: "",
+        headers: { "content-type": "text/plain" },
+      },
+    };
     const links = Array.from(
       { length: 10 },
       (_, i) => `<a href="/products/p${i}">p</a>`,
@@ -334,6 +355,8 @@ describe("crawlSite", () => {
   it("rejects input that is not a web address", async () => {
     const result = await crawlSite("not a url", { fetchImpl: stub({}) });
     expect(result.pages).toEqual([]);
-    expect(result.warnings.join(" ")).toMatch(/doesn't look like a web address/);
+    expect(result.warnings.join(" ")).toMatch(
+      /doesn't look like a web address/,
+    );
   });
 });

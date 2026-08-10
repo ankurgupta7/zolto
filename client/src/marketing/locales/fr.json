@@ -888,11 +888,7 @@
         },
         "sources": {
           "caption": "D’où venaient les commandes en ligne",
-          "head": [
-            "Source",
-            "Commandes",
-            "% des ventes en ligne"
-          ],
+          "head": ["Source", "Commandes", "% des ventes en ligne"],
           "rowLabels": [
             "Instagram (organique)",
             "Direct / clients revenus",

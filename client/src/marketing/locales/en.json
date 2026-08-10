@@ -872,12 +872,7 @@
       "tables": {
         "weekly": {
           "caption": "Online orders, order value and traffic by week",
-          "head": [
-            "Week",
-            "Online orders",
-            "Avg order value",
-            "Visitors"
-          ],
+          "head": ["Week", "Online orders", "Avg order value", "Visitors"],
           "rowLabels": [
             "Week 1 (launch)",
             "Week 2",
@@ -888,11 +883,7 @@
         },
         "sources": {
           "caption": "Where the online orders came from",
-          "head": [
-            "Source",
-            "Orders",
-            "% of online sales"
-          ],
+          "head": ["Source", "Orders", "% of online sales"],
           "rowLabels": [
             "Instagram (organic)",
             "Direct / returning",

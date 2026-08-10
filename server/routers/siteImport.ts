@@ -518,10 +518,10 @@ async function applyExtraction(
     ),
     profileApplied: Boolean(
       settingsPatch.contactEmail ||
-        settingsPatch.contactPhone ||
-        settingsPatch.metaTitle ||
-        settingsPatch.metaDescription ||
-        settingsPatch.companyAddress,
+      settingsPatch.contactPhone ||
+      settingsPatch.metaTitle ||
+      settingsPatch.metaDescription ||
+      settingsPatch.companyAddress,
     ),
   };
 }

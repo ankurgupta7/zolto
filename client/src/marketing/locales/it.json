@@ -888,11 +888,7 @@
         },
         "sources": {
           "caption": "Da dove sono arrivati gli ordini online",
-          "head": [
-            "Fonte",
-            "Ordini",
-            "% delle vendite online"
-          ],
+          "head": ["Fonte", "Ordini", "% delle vendite online"],
           "rowLabels": [
             "Instagram (organico)",
             "Diretto / di ritorno",
@@ -1118,11 +1114,7 @@
         "L'infrastruttura europea continua a esistere solo se le aziende europee la comprano davvero. Preferiamo esserne clienti che discuterne."
       ],
       "promise": "Questo è l'elenco completo. Quando una riga si sposta la cambiamo qui e diciamo che cosa si è mosso — una vecchia promessa ridipinta in silenzio come risultato vale meno della bandiera su cui la stamperemmo.",
-      "heroBadges": [
-        "Fatto in Svizzera",
-        "Server in Europa",
-        "TWINT integrato"
-      ]
+      "heroBadges": ["Fatto in Svizzera", "Server in Europa", "TWINT integrato"]
     },
     "squeezePlay": {
       "eyebrow": "quello che non è un pareggio",

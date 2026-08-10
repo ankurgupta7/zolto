@@ -82,7 +82,10 @@ export function parseRobots(txt: string): string[] {
   return disallow;
 }
 
-export function isAllowedByRobots(pathname: string, disallow: string[]): boolean {
+export function isAllowedByRobots(
+  pathname: string,
+  disallow: string[],
+): boolean {
   return !disallow.some((rule) => {
     if (rule === "/") return true;
     // Treat a trailing * as the prefix match it already is.
@@ -127,7 +130,8 @@ export async function fetchPageSafely(
     } catch {
       return null;
     }
-    if (parsed.protocol !== "https:" && parsed.protocol !== "http:") return null;
+    if (parsed.protocol !== "https:" && parsed.protocol !== "http:")
+      return null;
 
     // THE check. Runs before the FIRST request and before following EVERY
     // redirect — validating only the merchant's original URL would let a 302
@@ -173,7 +177,10 @@ export async function fetchPageSafely(
 
     // Trust the declared length when it is already too big, but never trust it
     // to be honest about being small — measure the body too.
-    const declared = Number.parseInt(res.headers.get("content-length") ?? "", 10);
+    const declared = Number.parseInt(
+      res.headers.get("content-length") ?? "",
+      10,
+    );
     if (Number.isFinite(declared) && declared > maxBytes) return null;
 
     let html: string;
@@ -218,7 +225,11 @@ export async function crawlSite(
   try {
     origin = new URL(startUrl).origin;
   } catch {
-    return { pages: [], attempted: 0, warnings: ["That doesn't look like a web address."] };
+    return {
+      pages: [],
+      attempted: 0,
+      warnings: ["That doesn't look like a web address."],
+    };
   }
 
   // robots.txt is advisory for us — we are acting for the site's own owner —
