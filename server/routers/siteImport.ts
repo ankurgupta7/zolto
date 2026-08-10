@@ -485,7 +485,25 @@ async function applyExtraction(
     }
     if (extraction.profile.about) {
       settingsPatch.metaDescription = extraction.profile.about;
+      // …and into the About page's own copy, not only the SEO tag. Those are
+      // different jobs: metaDescription is what a search result shows, while
+      // aboutBody is the paragraph a customer reads. Leaving the latter
+      // generated would mean the "shop story" bullet in SITE_IMPORT.includes
+      // was a promise we only half kept.
+      settingsPatch.aboutBody = extraction.profile.about;
     }
+    // A postal address on the source site is what the generated Impressum has
+    // always told the merchant to supply and given them nowhere to put.
+    const address = [
+      extraction.profile.addressLine,
+      [extraction.profile.postalCode, extraction.profile.city]
+        .filter(Boolean)
+        .join(" "),
+    ]
+      .filter(Boolean)
+      .join("\n")
+      .trim();
+    if (address) settingsPatch.companyAddress = address;
   }
   await upsertTenantSettingsFields(tenantId, settingsPatch);
 
@@ -500,9 +518,10 @@ async function applyExtraction(
     ),
     profileApplied: Boolean(
       settingsPatch.contactEmail ||
-      settingsPatch.contactPhone ||
-      settingsPatch.metaTitle ||
-      settingsPatch.metaDescription,
+        settingsPatch.contactPhone ||
+        settingsPatch.metaTitle ||
+        settingsPatch.metaDescription ||
+        settingsPatch.companyAddress,
     ),
   };
 }

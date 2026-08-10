@@ -1,9 +1,13 @@
 /**
  * Shop profile (account plane) — the store's identity within Zolto: name, slug,
- * plan/trial status, business contact details, and the currency it sells in.
- * Name and slug are the tenant's stable identity (changing them is a support
- * operation), so they're shown read-only; the rest is editable via
- * tenant.updateSettings.
+ * plan/trial status, business contact details, the currency it sells in, and
+ * the legal identity behind it. Name and slug are the tenant's stable identity
+ * (changing them is a support operation), so they're shown read-only; the rest
+ * is editable via tenant.updateSettings.
+ *
+ * The company details are here rather than on the Storefront page because they
+ * describe the business, not the website — but they are published, on the
+ * storefront's legal notice, which the fields say plainly.
  */
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -41,6 +45,10 @@ export default function ShopProfile() {
   const [currency, setCurrency] = useState<string>(DEFAULT_CURRENCY);
   const [vertical, setVertical] = useState<string>("jewellery");
   const [verticalDescription, setVerticalDescription] = useState("");
+  const [companyLegalName, setCompanyLegalName] = useState("");
+  const [companyAddress, setCompanyAddress] = useState("");
+  const [vatNumber, setVatNumber] = useState("");
+  const [companyRegistration, setCompanyRegistration] = useState("");
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -54,6 +62,10 @@ export default function ShopProfile() {
           : "jewellery",
       );
       setVerticalDescription(settings.verticalDescription ?? "");
+      setCompanyLegalName(settings.companyLegalName ?? "");
+      setCompanyAddress(settings.companyAddress ?? "");
+      setVatNumber(settings.vatNumber ?? "");
+      setCompanyRegistration(settings.companyRegistration ?? "");
     }
   }, [settings]);
 
@@ -82,6 +94,13 @@ export default function ShopProfile() {
       currency,
       ...(isVertical(vertical) ? { vertical } : {}),
       verticalDescription: verticalDescription.trim() || null,
+      // Nullable so a merchant who mistyped a VAT number can remove it and
+      // have the line disappear from their legal notice, rather than being
+      // stuck with it because an empty box means "leave unchanged".
+      companyLegalName: companyLegalName.trim() || null,
+      companyAddress: companyAddress.trim() || null,
+      vatNumber: vatNumber.trim() || null,
+      companyRegistration: companyRegistration.trim() || null,
     });
   };
 
@@ -267,6 +286,79 @@ export default function ShopProfile() {
               ) : null}
             </p>
           </div>
+        </div>
+      </SettingsCard>
+
+      <SettingsCard
+        title={t("store.shopProfile.companyTitle")}
+        description={t("store.shopProfile.companyDescription")}
+        footer={
+          <PrimaryButton onClick={onSave} loading={save.isPending}>
+            {t("store.shopProfile.saveChanges")}
+          </PrimaryButton>
+        }
+      >
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+          <Field
+            label={t("store.shopProfile.companyLegalName")}
+            htmlFor="company-legal-name"
+            hint={t("store.shopProfile.companyLegalNameHint")}
+          >
+            <input
+              id="company-legal-name"
+              type="text"
+              value={companyLegalName}
+              onChange={(e) => setCompanyLegalName(e.target.value)}
+              placeholder={tenant?.name ?? ""}
+              maxLength={255}
+              className={inputClass}
+            />
+          </Field>
+          <Field
+            label={t("store.shopProfile.companyAddress")}
+            htmlFor="company-address"
+            hint={t("store.shopProfile.companyAddressHint")}
+          >
+            <textarea
+              id="company-address"
+              value={companyAddress}
+              onChange={(e) => setCompanyAddress(e.target.value)}
+              rows={3}
+              maxLength={300}
+              placeholder={t("store.shopProfile.companyAddressPlaceholder")}
+              className={`${inputClass} resize-none`}
+            />
+          </Field>
+          <Field
+            label={t("store.shopProfile.vatNumber")}
+            htmlFor="vat-number"
+            hint={t("store.shopProfile.vatNumberHint")}
+          >
+            <input
+              id="vat-number"
+              type="text"
+              value={vatNumber}
+              onChange={(e) => setVatNumber(e.target.value)}
+              placeholder="CHE-123.456.789 MWST"
+              maxLength={64}
+              className={inputClass}
+            />
+          </Field>
+          <Field
+            label={t("store.shopProfile.companyRegistration")}
+            htmlFor="company-registration"
+            hint={t("store.shopProfile.companyRegistrationHint")}
+          >
+            <input
+              id="company-registration"
+              type="text"
+              value={companyRegistration}
+              onChange={(e) => setCompanyRegistration(e.target.value)}
+              placeholder="CH-020.3.001.234-5"
+              maxLength={64}
+              className={inputClass}
+            />
+          </Field>
         </div>
       </SettingsCard>
     </div>

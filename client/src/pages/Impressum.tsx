@@ -9,10 +9,10 @@ import { matchSupportedLanguage } from "@/lib/languages";
  * number, VAT status) their business requires.
  */
 export default function Impressum() {
-  const { branding } = useTenant();
+  const { branding, content } = useTenant();
   const { i18n } = useTranslation();
   const lang = matchSupportedLanguage(i18n.language) ?? "en";
-  const imprint = genericImprint(branding, lang);
+  const imprint = genericImprint(branding, lang, content);
   const chrome = pageChrome(branding, lang).imprint;
 
   return (
@@ -28,21 +28,34 @@ export default function Impressum() {
       </section>
 
       <section className="py-16 bg-background">
-        <div className="container max-w-2xl">
-          <dl className="space-y-5">
-            {imprint.lines.map((line, i) => (
-              <div
-                key={i}
-                className="border-b border-[var(--brand-border)] pb-4 text-foreground font-sans text-sm"
-              >
-                {line}
-              </div>
-            ))}
-          </dl>
+        {/* Inner wrapper, not `container max-w-2xl`: `.container` is plain
+            unlayered CSS (index.css), so its 1280px max-width wins over any
+            `max-w-*` utility sitting beside it. */}
+        <div className="container">
+          <div className="mx-auto max-w-2xl">
+            <dl className="space-y-5">
+              {imprint.lines.map((line, i) => (
+                <div
+                  key={i}
+                  // The address line is entered as a multi-line block and must
+                  // render as one — `whitespace-pre-line` keeps its newlines
+                  // without letting a long single-line entry overflow.
+                  className="whitespace-pre-line border-b border-[var(--brand-border)] pb-4 text-foreground font-sans text-sm"
+                >
+                  {line}
+                </div>
+              ))}
+            </dl>
 
-          <p className="mt-10 rounded border border-[var(--brand-border)] bg-[var(--brand-surface-2)] p-4 text-xs text-muted-foreground font-sans">
-            {chrome.disclaimer}
-          </p>
+            {/* The "add the details your jurisdiction requires" note is advice
+                for a merchant who hasn't added them yet. Once they have, it is
+                just a disclaimer on their own legal notice — so it goes away. */}
+            {!imprint.hasCompanyDetails && (
+              <p className="mt-10 rounded border border-[var(--brand-border)] bg-[var(--brand-surface-2)] p-4 text-xs text-muted-foreground font-sans">
+                {chrome.disclaimer}
+              </p>
+            )}
+          </div>
         </div>
       </section>
     </div>

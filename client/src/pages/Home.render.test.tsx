@@ -19,6 +19,16 @@ const mocks = vi.hoisted(() => ({
     currency: "chf",
     primaryColor: "#2D2620",
   },
+  content: {
+    heroImageUrl: null as string | null,
+    heroHeadline: null as string | null,
+    heroSubtitle: null as string | null,
+    aboutBody: null,
+    companyLegalName: null,
+    companyAddress: null,
+    vatNumber: null,
+    companyRegistration: null,
+  },
 }));
 
 vi.mock("@/lib/trpc", () => ({
@@ -33,6 +43,7 @@ vi.mock("@/contexts/TenantContext", () => ({
   useTenant: () => ({
     slug: "aurora",
     branding: mocks.branding,
+    content: mocks.content,
     isLoading: false,
     notFound: false,
   }),
@@ -96,6 +107,9 @@ beforeEach(async () => {
   await i18n.changeLanguage("en");
   mocks.products = [];
   mocks.branding.instagramHandle = "aurora.atelier";
+  mocks.content.heroImageUrl = null;
+  mocks.content.heroHeadline = null;
+  mocks.content.heroSubtitle = null;
   // jsdom ships none of these; framer-motion's whileInView and embla need them.
   vi.stubGlobal(
     "IntersectionObserver",
@@ -198,6 +212,52 @@ describe("Home page", () => {
     renderHome();
     expect(screen.queryByText("Shop by category")).toBeNull();
     expect(screen.queryByText("New in the shop")).toBeNull();
+  });
+
+  // Until these fields existed, every Zolto storefront showed the same hero:
+  // the same background image, the same "Welcome", the same sentence.
+  it("shows the platform banner and the store name when nothing is authored", () => {
+    renderHome();
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Aurora Atelier" }),
+    ).toBeTruthy();
+    const banner = document.querySelector("section img");
+    expect(banner?.getAttribute("src")).toBe("/hero-bg.svg");
+  });
+
+  it("renders the merchant's own banner, headline and intro", () => {
+    mocks.content.heroImageUrl = "https://cdn.example/shopfront.jpg";
+    mocks.content.heroHeadline = "Made by hand";
+    mocks.content.heroSubtitle = "In the old town since 2018";
+    renderHome();
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Made by hand" }),
+    ).toBeTruthy();
+    expect(screen.getByText("In the old town since 2018")).toBeTruthy();
+    expect(document.querySelector("section img")?.getAttribute("src")).toBe(
+      "https://cdn.example/shopfront.jpg",
+    );
+  });
+
+  it("keeps the template intro when only a headline is authored", () => {
+    mocks.content.heroHeadline = "Made by hand";
+    renderHome();
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Made by hand" }),
+    ).toBeTruthy();
+    expect(screen.getByText(/browse the collection/i)).toBeTruthy();
+  });
+
+  it("shows an authored headline as written even in another language", async () => {
+    // The merchant writes one headline; it is not machine-translated.
+    mocks.content.heroHeadline = "Made by hand";
+    await i18n.changeLanguage("de");
+    renderHome();
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Made by hand" }),
+    ).toBeTruthy();
+    // The chrome around it still translates.
+    expect(screen.getByText("Willkommen")).toBeTruthy();
   });
 
   it("renders the storefront copy in German when the language is de", async () => {

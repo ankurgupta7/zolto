@@ -13,11 +13,22 @@ import {
   type Branding,
 } from "@/lib/branding";
 import { derivePalette } from "@/lib/palette";
+import {
+  contentFrom,
+  EMPTY_CONTENT,
+  type StorefrontContent,
+} from "@/lib/storefrontContent";
 import { getTemplate, DEFAULT_TEMPLATE_ID } from "@shared/templates";
 
 interface TenantContextValue {
   slug: string | null;
   branding: Branding;
+  /**
+   * What the merchant wrote for their own pages (hero, About, legal identity).
+   * Every field is null until they write something, and the storefront pages
+   * fall back to the generated copy in lib/storefrontContent.ts.
+   */
+  content: StorefrontContent;
   /** True while tenant/settings are still loading (defaults are shown meanwhile). */
   isLoading: boolean;
   /** True if the tenant lookup failed (e.g. not seeded) — defaults are used. */
@@ -118,6 +129,11 @@ export function TenantProvider({
     [tenantQuery.data?.name, settingsQuery.data, slug],
   );
 
+  const content = useMemo(
+    () => contentFrom(settingsQuery.data ?? null),
+    [settingsQuery.data],
+  );
+
   useApplyBrandColor(branding.primaryColor, branding.secondaryColor);
   useApplyTemplate(settingsQuery.data?.templateId);
 
@@ -125,12 +141,14 @@ export function TenantProvider({
     () => ({
       slug,
       branding,
+      content,
       isLoading: enabled && (tenantQuery.isLoading || settingsQuery.isLoading),
       notFound: enabled && tenantQuery.isError,
     }),
     [
       slug,
       branding,
+      content,
       enabled,
       tenantQuery.isLoading,
       tenantQuery.isError,
@@ -153,6 +171,7 @@ export function useTenant(): TenantContextValue {
     return {
       slug: null,
       branding: NEUTRAL_BRANDING,
+      content: EMPTY_CONTENT,
       isLoading: false,
       notFound: false,
     };

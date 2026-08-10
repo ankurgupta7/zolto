@@ -624,18 +624,18 @@ migrate_0034_magic_link_tokens() {
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Migration 0043: one-tap POS register pairing.
+# Migration 0044: one-tap POS register pairing.
 #
-# Ships drizzle/0025_pos_pairing_tokens.sql. server/posPairing.ts mints a
+# Ships drizzle/0026_pos_pairing_tokens.sql. server/posPairing.ts mints a
 # short-lived single-use token so a merchant can bind a register by tapping a
 # link instead of typing a 64-char key into a phone; without this table minting
 # a pairing link fails on a live deployment. Mirrors the drizzle DDL exactly,
 # including the UNIQUE on `token` that redemption's single-row lookup relies on.
 # Idempotent.
 # ─────────────────────────────────────────────────────────────────────────────
-migrate_0043_pos_pairing_tokens() {
+migrate_0044_pos_pairing_tokens() {
   if [ "$(tbl_exists pos_pairing_tokens)" = "0" ]; then
-    run_sql "0043 pos_pairing_tokens table" "
+    run_sql "0044 pos_pairing_tokens table" "
       CREATE TABLE IF NOT EXISTS \`pos_pairing_tokens\` (
         \`id\`         int AUTO_INCREMENT NOT NULL,
         \`tenant_id\`  int NOT NULL,
@@ -647,21 +647,21 @@ migrate_0043_pos_pairing_tokens() {
         CONSTRAINT \`pos_pairing_tokens_token_unique\` UNIQUE(\`token\`)
       );"
   else
-    ok "0043 pos_pairing_tokens already exists"
+    ok "0044 pos_pairing_tokens already exists"
   fi
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Migration 0044: the paid one-time site import.
+# Migration 0045: the paid one-time site import.
 #
-# Ships drizzle/0026_site_imports.sql. server/routers/siteImport.ts writes a row
+# Ships drizzle/0027_site_imports.sql. server/routers/siteImport.ts writes a row
 # per attempt; without this table the importer's free preview fails outright.
 # `status` carries the previewed → paid → applied order that keeps a replayed
 # Stripe webhook from importing the same shop twice. Idempotent.
 # ─────────────────────────────────────────────────────────────────────────────
-migrate_0044_site_imports() {
+migrate_0045_site_imports() {
   if [ "$(tbl_exists site_imports)" = "0" ]; then
-    run_sql "0044 site_imports table" "
+    run_sql "0045 site_imports table" "
       CREATE TABLE IF NOT EXISTS \`site_imports\` (
         \`id\`                int AUTO_INCREMENT NOT NULL,
         \`tenant_id\`         int NOT NULL,
@@ -679,7 +679,7 @@ migrate_0044_site_imports() {
         CONSTRAINT \`site_imports_id\` PRIMARY KEY(\`id\`)
       );"
   else
-    ok "0044 site_imports already exists"
+    ok "0045 site_imports already exists"
   fi
 }
 

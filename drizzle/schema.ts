@@ -110,6 +110,33 @@ export const tenantSettings = mysqlTable("tenant_settings", {
   metaDescription: text("meta_description"),
   // Branding
   whiteLabelName: varchar("white_label_name", { length: 255 }),
+  // ── Merchant-authored storefront content ──────────────────────────────────
+  // Every column here is NULL for a store that has written nothing, and NULL
+  // means "use the generated template copy" (client/src/lib/storefrontContent.ts)
+  // rather than "render an empty page". That is what keeps a store that never
+  // opens the Storefront page looking exactly as it did before these existed.
+  //
+  // The home page's hero background. A hosted URL rather than an upload, to
+  // match logo_url on the same admin card.
+  heroImageUrl: varchar("hero_image_url", { length: 1024 }),
+  // The hero's H1 and the sentence under it. NULL headline falls back to the
+  // store name, which is what the hero has always shown.
+  heroHeadline: varchar("hero_headline", { length: 120 }),
+  heroSubtitle: varchar("hero_subtitle", { length: 300 }),
+  // The About page's body, as plain prose. Blank lines separate paragraphs —
+  // the page renders each as its own <p>, exactly like the generated copy it
+  // replaces. Deliberately not markdown: nothing else in the storefront
+  // renders merchant HTML, and keeping it plain text keeps it that way.
+  aboutBody: text("about_body"),
+  // ── Legal identity, for the storefront's Impressum ────────────────────────
+  // The imprint page has always told the merchant they are responsible for
+  // adding their company form, registration/VAT numbers and registered
+  // address; these are where those go. Public by design — an imprint is a
+  // published document, not private data.
+  companyLegalName: varchar("company_legal_name", { length: 255 }),
+  companyAddress: text("company_address"),
+  vatNumber: varchar("vat_number", { length: 64 }),
+  companyRegistration: varchar("company_registration", { length: 64 }),
   // The store's custom domain (Pro). Unique because it decides which store a
   // request is served from (server/tenantResolve.ts) — two rows claiming the
   // same hostname means the winner is whichever row LIMIT 1 happens to return.

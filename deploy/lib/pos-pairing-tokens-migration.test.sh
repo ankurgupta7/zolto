@@ -1,6 +1,6 @@
 #!/bin/bash
 # deploy/lib/pos-pairing-tokens-migration.test.sh — tests for
-# migrate_0043_pos_pairing_tokens.
+# migrate_0044_pos_pairing_tokens.
 #
 # Plain bash, no framework and no real DB. Sources db.sh and drives the
 # migration with a fake $MYSQL that answers the information_schema probe from a
@@ -64,7 +64,7 @@ MYSQL="fake_mysql"
 echo "Scenario A — pos_pairing_tokens missing:"
 FAKE_TABLE_EXISTS=0
 : > "$MUT_LOG_FILE"
-migrate_0043_pos_pairing_tokens
+migrate_0044_pos_pairing_tokens
 A_LOG="$(cat "$MUT_LOG_FILE")"
 assert_contains "$A_LOG" "CREATE TABLE IF NOT EXISTS \`pos_pairing_tokens\`" "creates pos_pairing_tokens"
 # Every column server/posPairing.ts reads or writes.
@@ -88,7 +88,7 @@ assert_not_contains "$A_LOG" "ciphertext" "stores no ciphertext either"
 echo "Scenario B — pos_pairing_tokens already present (idempotency):"
 FAKE_TABLE_EXISTS=1
 : > "$MUT_LOG_FILE"
-migrate_0043_pos_pairing_tokens
+migrate_0044_pos_pairing_tokens
 B_LOG="$(cat "$MUT_LOG_FILE")"
 assert_not_contains "$B_LOG" "CREATE TABLE" "no CREATE TABLE on re-run"
 

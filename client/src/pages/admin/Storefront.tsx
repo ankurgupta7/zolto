@@ -1,7 +1,14 @@
 /**
- * Storefront (store plane) — the tenant's own website branding: logo, brand
- * colour, and SEO meta. All fields persist through tenant.updateSettings (the
- * same procedure the storefront reads to render itself).
+ * Storefront (store plane) — the tenant's own website: display name, logo,
+ * brand colours, the words on its home and About pages, and SEO meta. All
+ * fields persist through tenant.updateSettings (the same procedure the
+ * storefront reads to render itself).
+ *
+ * Every content field is optional and clears back to null, because null is
+ * what makes the storefront fall back to the generated template copy in
+ * client/src/lib/storefrontContent.ts. A merchant emptying a box gets the
+ * default back, not a blank page — so nothing here can leave a store worse
+ * off than never having opened it.
  */
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -20,19 +27,29 @@ import { useTenantSettings } from "@/components/admin/useTenantSettings";
 export default function Storefront() {
   const { t } = useTranslation("admin");
   const { tenant, slug, settings, invalidate } = useTenantSettings();
+  const [displayName, setDisplayName] = useState("");
   const [logoUrl, setLogoUrl] = useState("");
   const [primaryColor, setPrimaryColor] = useState("#000000");
   const [secondaryColor, setSecondaryColor] = useState("");
+  const [heroImageUrl, setHeroImageUrl] = useState("");
+  const [heroHeadline, setHeroHeadline] = useState("");
+  const [heroSubtitle, setHeroSubtitle] = useState("");
+  const [aboutBody, setAboutBody] = useState("");
   const [metaTitle, setMetaTitle] = useState("");
   const [metaDescription, setMetaDescription] = useState("");
 
   useEffect(() => {
     if (settings) {
+      setDisplayName(settings.whiteLabelName ?? "");
       setLogoUrl(settings.logoUrl ?? "");
       setPrimaryColor(settings.primaryColor ?? "#000000");
       // Empty means "derive the accent from the primary" — the pre-two-color
       // behaviour, and what a store that never picked a highlight still wants.
       setSecondaryColor(settings.secondaryColor ?? "");
+      setHeroImageUrl(settings.heroImageUrl ?? "");
+      setHeroHeadline(settings.heroHeadline ?? "");
+      setHeroSubtitle(settings.heroSubtitle ?? "");
+      setAboutBody(settings.aboutBody ?? "");
       setMetaTitle(settings.metaTitle ?? "");
       setMetaDescription(settings.metaDescription ?? "");
     }
@@ -59,12 +76,25 @@ export default function Storefront() {
       toast.error(t("store.storefront.invalidSecondaryColor"));
       return;
     }
+    if (heroImageUrl.trim() && !/^https?:\/\//.test(heroImageUrl.trim())) {
+      toast.error(t("store.storefront.invalidHeroImage"));
+      return;
+    }
     save.mutate({
       logoUrl: logoUrl.trim() || undefined,
       primaryColor: primaryColor || undefined,
       secondaryColor: secondaryColor || undefined,
       metaTitle: metaTitle.trim() || undefined,
       metaDescription: metaDescription.trim() || undefined,
+      // `|| null` rather than `|| undefined`: these are the merchant's own
+      // words, and emptying the box has to actually delete them and restore
+      // the generated copy. `undefined` would silently leave the old text in
+      // place — the field would look cleared and the storefront would not be.
+      whiteLabelName: displayName.trim() || null,
+      heroImageUrl: heroImageUrl.trim() || null,
+      heroHeadline: heroHeadline.trim() || null,
+      heroSubtitle: heroSubtitle.trim() || null,
+      aboutBody: aboutBody.trim() || null,
     });
   };
 
@@ -101,6 +131,23 @@ export default function Storefront() {
       >
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
           <Field
+            label={t("store.storefront.displayName")}
+            htmlFor="display-name"
+            hint={t("store.storefront.displayNameHint", {
+              name: tenant?.name ?? "",
+            })}
+          >
+            <input
+              id="display-name"
+              type="text"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              placeholder={tenant?.name ?? ""}
+              maxLength={255}
+              className={inputClass}
+            />
+          </Field>
+          <Field
             label={t("store.storefront.logoUrl")}
             htmlFor="logo-url"
             hint={t("store.storefront.logoUrlHint")}
@@ -123,7 +170,11 @@ export default function Storefront() {
               <input
                 aria-label={t("store.storefront.primaryColourPickerAria")}
                 type="color"
-                value={/^#[0-9A-Fa-f]{6}$/.test(primaryColor) ? primaryColor : "#000000"}
+                value={
+                  /^#[0-9A-Fa-f]{6}$/.test(primaryColor)
+                    ? primaryColor
+                    : "#000000"
+                }
                 onChange={(e) => setPrimaryColor(e.target.value)}
                 className="h-10 w-14 shrink-0 cursor-pointer rounded-md border bg-background"
               />
@@ -177,6 +228,95 @@ export default function Storefront() {
             />
           </div>
         )}
+      </SettingsCard>
+
+      <SettingsCard
+        title={t("store.storefront.contentTitle")}
+        description={t("store.storefront.contentDescription")}
+        footer={
+          <PrimaryButton onClick={onSave} loading={save.isPending}>
+            {t("store.storefront.saveChanges")}
+          </PrimaryButton>
+        }
+      >
+        <div className="space-y-5">
+          <Field
+            label={t("store.storefront.heroImageUrl")}
+            htmlFor="hero-image-url"
+            hint={t("store.storefront.heroImageUrlHint")}
+          >
+            <input
+              id="hero-image-url"
+              type="url"
+              value={heroImageUrl}
+              onChange={(e) => setHeroImageUrl(e.target.value)}
+              placeholder="https://…/shopfront.jpg"
+              className={inputClass}
+            />
+          </Field>
+          {heroImageUrl && /^https?:\/\//.test(heroImageUrl) && (
+            <div>
+              <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                {t("store.storefront.heroImagePreview")}
+              </p>
+              {/* Same 16:9-ish crop the hero band applies, so a photo whose
+                  subject sits at the edge is visibly wrong here rather than
+                  only on the live storefront. */}
+              <img
+                src={heroImageUrl}
+                alt={t("store.storefront.heroImagePreview")}
+                className="h-32 w-full max-w-md rounded border object-cover object-center"
+              />
+            </div>
+          )}
+          <Field
+            label={t("store.storefront.heroHeadline")}
+            htmlFor="hero-headline"
+            hint={t("store.storefront.heroHeadlineHint", {
+              name: tenant?.name ?? "",
+            })}
+          >
+            <input
+              id="hero-headline"
+              type="text"
+              value={heroHeadline}
+              onChange={(e) => setHeroHeadline(e.target.value)}
+              placeholder={t("store.storefront.heroHeadlinePlaceholder")}
+              maxLength={120}
+              className={inputClass}
+            />
+          </Field>
+          <Field
+            label={t("store.storefront.heroSubtitle")}
+            htmlFor="hero-subtitle"
+            hint={t("store.storefront.heroSubtitleHint")}
+          >
+            <textarea
+              id="hero-subtitle"
+              value={heroSubtitle}
+              onChange={(e) => setHeroSubtitle(e.target.value)}
+              rows={2}
+              maxLength={300}
+              placeholder={t("store.storefront.heroSubtitlePlaceholder")}
+              className={`${inputClass} resize-none`}
+            />
+          </Field>
+          <Field
+            label={t("store.storefront.aboutBody")}
+            htmlFor="about-body"
+            hint={t("store.storefront.aboutBodyHint")}
+          >
+            <textarea
+              id="about-body"
+              value={aboutBody}
+              onChange={(e) => setAboutBody(e.target.value)}
+              rows={8}
+              maxLength={5000}
+              placeholder={t("store.storefront.aboutBodyPlaceholder")}
+              className={`${inputClass} resize-y`}
+            />
+          </Field>
+        </div>
       </SettingsCard>
 
       <SettingsCard

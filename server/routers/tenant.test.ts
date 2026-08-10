@@ -1313,6 +1313,152 @@ describe("tenant.updateSettings authorization", () => {
   });
 });
 
+describe("tenant.updateSettings merchant-authored content", () => {
+  const admin = { openId: "google:admin", role: "admin", tenantId: 42 };
+
+  // `existing: null` is the store that has no tenant_settings row yet — the
+  // insert branch. Not `undefined`, which would re-trigger the default.
+  function settingsCtx(
+    user: Record<string, unknown> | null = admin,
+    tenantId = 42,
+    existing: unknown = { id: 9 },
+  ) {
+    dbMock.db.query = {
+      tenantSettings: { findFirst: vi.fn().mockResolvedValue(existing) },
+    };
+    const where = vi.fn().mockResolvedValue(undefined);
+    const set = vi.fn(() => ({ where }));
+    const values = vi.fn().mockResolvedValue(undefined);
+    dbMock.db.update = vi.fn(() => ({ set }));
+    dbMock.db.insert = vi.fn(() => ({ values }));
+    return {
+      caller: tenantRouter.createCaller(
+        ctx(user, { id: tenantId, plan: "free" }),
+      ),
+      set,
+      values,
+    };
+  }
+
+  it("stores the hero, About and legal fields on every plan", async () => {
+    // None of this is plan-gated: a store's own words are not a paid feature,
+    // and an imprint is a legal obligation rather than an upsell.
+    const { caller, set } = settingsCtx();
+    await expect(
+      caller.updateSettings({
+        heroImageUrl: "https://cdn.example/shopfront.jpg",
+        heroHeadline: "Made by hand",
+        heroSubtitle: "In the old town since 2018",
+        aboutBody: "We opened with one kiln.",
+        whiteLabelName: "Aurora Atelier",
+        companyLegalName: "Aurora Atelier GmbH",
+        companyAddress: "Musterstrasse 1\n8001 Basel",
+        vatNumber: "CHE-123.456.789 MWST",
+        companyRegistration: "CH-020.3.001.234-5",
+      }),
+    ).resolves.toEqual({ success: true });
+    expect(set).toHaveBeenCalledWith(
+      expect.objectContaining({
+        heroHeadline: "Made by hand",
+        aboutBody: "We opened with one kiln.",
+        whiteLabelName: "Aurora Atelier",
+        companyAddress: "Musterstrasse 1\n8001 Basel",
+        vatNumber: "CHE-123.456.789 MWST",
+      }),
+    );
+  });
+
+  // The whole point of `.nullable()` on these fields: a merchant must be able
+  // to delete what they wrote and get the generated copy back. With
+  // `.optional()` alone — as the older branding fields still are — clearing a
+  // box would be indistinguishable from not touching it.
+  it("clears a field back to null", async () => {
+    const { caller, set } = settingsCtx();
+    await caller.updateSettings({ heroHeadline: null, aboutBody: null });
+    expect(set).toHaveBeenCalledWith(
+      expect.objectContaining({ heroHeadline: null, aboutBody: null }),
+    );
+  });
+
+  it("normalises an emptied box to null rather than a blank string", async () => {
+    // "" would read as "written, but empty" downstream — and would fool the
+    // imprint into dropping its "add your legal details" note while showing
+    // no details at all.
+    const { caller, set } = settingsCtx();
+    await caller.updateSettings({
+      heroHeadline: "   ",
+      companyAddress: "",
+      vatNumber: "",
+    });
+    expect(set).toHaveBeenCalledWith(
+      expect.objectContaining({
+        heroHeadline: null,
+        companyAddress: null,
+        vatNumber: null,
+      }),
+    );
+  });
+
+  it("leaves untouched fields out of the update entirely", async () => {
+    const { caller, set } = settingsCtx();
+    await caller.updateSettings({ heroHeadline: "Made by hand" });
+    const patch = set.mock.calls[0][0] as Record<string, unknown>;
+    expect(patch).not.toHaveProperty("aboutBody");
+    expect(patch).not.toHaveProperty("companyAddress");
+  });
+
+  it("writes the same fields when the store has no settings row yet", async () => {
+    const { caller, values } = settingsCtx(admin, 42, null);
+    await caller.updateSettings({ heroHeadline: "Made by hand" });
+    expect(values).toHaveBeenCalledWith(
+      expect.objectContaining({ tenantId: 42, heroHeadline: "Made by hand" }),
+    );
+  });
+
+  it("rejects a banner that is not a URL", async () => {
+    const { caller, set } = settingsCtx();
+    await expect(
+      caller.updateSettings({ heroImageUrl: "shopfront.jpg" }),
+    ).rejects.toThrow();
+    expect(set).not.toHaveBeenCalled();
+  });
+
+  it("rejects copy longer than the column can hold", async () => {
+    // Truncation on the way into MySQL would silently cut a merchant's
+    // sentence in half; a rejection tells them to shorten it themselves.
+    const { caller, set } = settingsCtx();
+    await expect(
+      caller.updateSettings({ heroHeadline: "x".repeat(121) }),
+    ).rejects.toThrow();
+    await expect(
+      caller.updateSettings({ aboutBody: "x".repeat(5001) }),
+    ).rejects.toThrow();
+    expect(set).not.toHaveBeenCalled();
+  });
+
+  it("refuses an admin of a DIFFERENT store", async () => {
+    // The cross-tenant case, which is what actually regresses: a real admin,
+    // but of tenant 7, rewriting tenant 42's home page and legal notice.
+    // Defacing another merchant's storefront needs only the wrong procedure.
+    const { caller, set } = settingsCtx(
+      { openId: "google:other", role: "admin", tenantId: 7 },
+      42,
+    );
+    await expect(
+      caller.updateSettings({ heroHeadline: "Owned" }),
+    ).rejects.toThrow();
+    expect(set).not.toHaveBeenCalled();
+  });
+
+  it("refuses an anonymous caller", async () => {
+    const { caller, set } = settingsCtx(null);
+    await expect(
+      caller.updateSettings({ aboutBody: "Owned" }),
+    ).rejects.toThrow();
+    expect(set).not.toHaveBeenCalled();
+  });
+});
+
 describe("tenant onboarding mutations", () => {
   const admin = { openId: "google:admin", role: "admin", tenantId: 42 };
 

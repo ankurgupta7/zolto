@@ -569,6 +569,9 @@ describe("apply", () => {
             phone: "+41 44 000 00 00",
             storeName: "Old Shop",
             about: "We make mugs.",
+            addressLine: "Musterstrasse 1",
+            postalCode: "4051",
+            city: "Basel",
           },
         }),
       }),
@@ -582,9 +585,41 @@ describe("apply", () => {
       contactPhone: "+41 44 000 00 00",
       metaTitle: "Old Shop",
       metaDescription: "We make mugs.",
+      // The About page's own copy, not only the search-result snippet — those
+      // are different jobs, and "shop story" promises the former.
+      aboutBody: "We make mugs.",
+      companyAddress: "Musterstrasse 1\n4051 Basel",
     });
     expect(result.brandingApplied).toBe(true);
     expect(result.profileApplied).toBe(true);
+  });
+
+  it("writes no address when the source site gave none", async () => {
+    // An Impressum showing a blank address block is worse than one still
+    // showing the generated placeholder, so a missing address writes nothing.
+    mocked(getSiteImportForTenant).mockResolvedValue(
+      importRow({
+        status: "paid",
+        extraction: extraction({ profile: { storeName: "Old Shop" } }),
+      }),
+    );
+    await caller().siteImport.applyImport({ importId: 5 });
+    expect(
+      mocked(upsertTenantSettingsFields).mock.calls[0][1],
+    ).not.toHaveProperty("companyAddress");
+  });
+
+  it("keeps a city-only address readable rather than emitting a stray newline", async () => {
+    mocked(getSiteImportForTenant).mockResolvedValue(
+      importRow({
+        status: "paid",
+        extraction: extraction({ profile: { city: "Basel" } }),
+      }),
+    );
+    await caller().siteImport.applyImport({ importId: 5 });
+    expect(mocked(upsertTenantSettingsFields).mock.calls[0][1]).toMatchObject({
+      companyAddress: "Basel",
+    });
   });
 
   it("leaves branding and profile alone when the merchant opted out", async () => {

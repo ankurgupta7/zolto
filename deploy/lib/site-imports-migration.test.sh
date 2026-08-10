@@ -1,5 +1,5 @@
 #!/bin/bash
-# deploy/lib/site-imports-migration.test.sh — tests for migrate_0044_site_imports.
+# deploy/lib/site-imports-migration.test.sh — tests for migrate_0045_site_imports.
 #
 # Plain bash, no framework and no real DB. Sources db.sh and drives the
 # migration with a fake $MYSQL that answers the information_schema probe from a
@@ -65,7 +65,7 @@ MYSQL="fake_mysql"
 echo "Scenario A — site_imports missing:"
 FAKE_TABLE_EXISTS=0
 : > "$MUT_LOG_FILE"
-migrate_0044_site_imports
+migrate_0045_site_imports
 A_LOG="$(cat "$MUT_LOG_FILE")"
 assert_contains "$A_LOG" "CREATE TABLE IF NOT EXISTS \`site_imports\`" "creates site_imports"
 # Every column the site-import helpers in server/db.ts touch.
@@ -107,7 +107,7 @@ assert_not_contains "$A_LOG" "api_key" "stores no keys"
 echo "Scenario B — site_imports already present (idempotency):"
 FAKE_TABLE_EXISTS=1
 : > "$MUT_LOG_FILE"
-migrate_0044_site_imports
+migrate_0045_site_imports
 B_LOG="$(cat "$MUT_LOG_FILE")"
 assert_not_contains "$B_LOG" "CREATE TABLE" "no CREATE TABLE on re-run"
 
