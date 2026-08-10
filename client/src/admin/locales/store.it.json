@@ -91,7 +91,12 @@
       "heroSubtitlePlaceholder": "Sfogli la collezione e paghi in sicurezza, oppure venga a trovarci in laboratorio.",
       "aboutBody": "Pagina Chi siamo",
       "aboutBodyHint": "La Sua storia, con parole Sue. Lasci una riga vuota tra i paragrafi. Viene mostrata a tutti i visitatori esattamente come è scritta — non viene tradotta.",
-      "aboutBodyPlaceholder": "Abbiamo aperto nel 2018 con un forno e un piccolo tavolo…"
+      "aboutBodyPlaceholder": "Abbiamo aperto nel 2018 con un forno e un piccolo tavolo…",
+      "creditTitle": "Realizzato con Zolto",
+      "creditDescription": "Una piccola menzione nel piè di pagina e l’indicazione leggibile dalle macchine che segnala a motori di ricerca e assistenti IA su quale piattaforma gira il Suo negozio.",
+      "creditToggle": "Mostra la menzione «Realizzato con Zolto»",
+      "creditToggleHint": "Una riga sotto il Suo copyright, con collegamento a {{url}} — più il tag generator e i dati strutturati che leggono motori di ricerca e assistenti IA.",
+      "creditProOnly": "Nascondere la menzione fa parte di Pro. Con Free rimane visibile — è così che altri artigiani scoprono Zolto."
     },
     "categories": {
       "title": "Categorie",

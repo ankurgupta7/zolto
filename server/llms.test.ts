@@ -93,29 +93,50 @@ describe("renderStorefrontLlmsTxt", () => {
     expect(txt).toContain("create_checkout");
   });
 
-  it("credits Zolto on the Free plan but not on white-labelled Pro", () => {
-    const freeTxt = renderStorefrontLlmsTxt(
-      { ...tenant, plan: "free" } as Tenant,
-      [makeProduct({ id: 1 })],
-      "https://kalakosh.ch",
-    );
-    expect(freeTxt).toContain("This store runs on Zolto.");
+  it("credits Zolto on every plan by default, with a link an agent can follow", () => {
+    for (const plan of ["free", "pro", "atelier"]) {
+      const txt = renderStorefrontLlmsTxt(
+        { ...tenant, plan } as Tenant,
+        [makeProduct({ id: 1 })],
+        "https://kalakosh.ch",
+      );
+      expect(txt, plan).toContain("Made with Zolto (https://zolto.ch).");
+      expect(txt, plan).toContain("## Made with Zolto");
+      expect(txt, plan).toContain("[Zolto](https://zolto.ch)");
+      // The credit must not read as an endorsement of a second shop: an agent
+      // buying here has to keep the merchant as the counterparty.
+      expect(txt, plan).toContain("Zolto is the platform, not the merchant");
+    }
+  });
 
-    // Pro's card says 'Your brand only — no "runs on Zolto"', and this brief
-    // is served to the very agents that claim is about.
-    const proTxt = renderStorefrontLlmsTxt(
+  it("drops the credit only when a white-label plan has switched it off", () => {
+    const hidden = renderStorefrontLlmsTxt(
       { ...tenant, plan: "pro" } as Tenant,
       [makeProduct({ id: 1 })],
       "https://kalakosh.ch",
+      { hideZoltoBadge: true },
     );
-    expect(proTxt).not.toContain("runs on Zolto");
-    // A retired/unknown plan falls back to Free behaviour, not Pro's.
-    const unknownTxt = renderStorefrontLlmsTxt(
-      { ...tenant, plan: "atelier" } as Tenant,
+    expect(hidden).not.toContain("Zolto");
+
+    // The same switch set on a store WITHOUT white-labelling is inert — a Free
+    // store cannot opt out of the credit it is paying with, and a Pro store
+    // that lapses gets the credit back with no data migration.
+    const free = renderStorefrontLlmsTxt(
+      { ...tenant, plan: "free" } as Tenant,
       [makeProduct({ id: 1 })],
       "https://kalakosh.ch",
+      { hideZoltoBadge: true },
     );
-    expect(unknownTxt).toContain("This store runs on Zolto.");
+    expect(free).toContain("Made with Zolto");
+
+    // …and a comped Pro store is honoured like a paying one (entitlements.ts).
+    const comped = renderStorefrontLlmsTxt(
+      { ...tenant, plan: "free", compPlan: "pro" } as Tenant,
+      [makeProduct({ id: 1 })],
+      "https://kalakosh.ch",
+      { hideZoltoBadge: true },
+    );
+    expect(comped).not.toContain("Zolto");
   });
 
   it("summarises the tail when there are many products", () => {

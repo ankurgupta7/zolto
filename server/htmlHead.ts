@@ -1,5 +1,6 @@
 import type { Request } from "express";
 import { isMarketingHost } from "@shared/marketing";
+import { showsZoltoAttribution } from "@shared/attribution";
 import { injectMarketingHead } from "./marketingSeo";
 import { injectStorefrontHead } from "./storefrontHead";
 import {
@@ -43,6 +44,13 @@ export async function injectHeadForRequest(
     if (!tenant) return html;
     const settings = await getTenantSettings(tenant.id);
     const storeName = settings?.whiteLabelName || tenant.name;
+    // One gate, read once and passed to both injectors, so the <meta generator>
+    // and the JSON-LD creator node can never disagree about whether this store
+    // is credited.
+    const attribution = showsZoltoAttribution({
+      ...tenant,
+      hideZoltoBadge: settings?.hideZoltoBadge ?? false,
+    });
 
     const out = injectStorefrontHead(html, {
       storeName,
@@ -51,6 +59,7 @@ export async function injectHeadForRequest(
       faviconUrl: settings?.faviconUrl || settings?.logoUrl || null,
       primaryColor: settings?.primaryColor ?? null,
       tenantSlug: tenant.slug,
+      attribution,
     });
 
     // Per-route storefront SEO. Only the routes that need the catalogue pay for
@@ -62,6 +71,7 @@ export async function injectHeadForRequest(
       currency: settings?.currency || "chf",
       description: settings?.metaDescription ?? null,
       logoUrl: settings?.logoUrl ?? null,
+      attribution,
     };
     const clean = routePath.replace(/\/+$/, "") || "/";
 

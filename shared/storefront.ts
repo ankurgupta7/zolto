@@ -14,6 +14,7 @@
  */
 
 import { normalizeBaseUrl } from "./marketing";
+import { zoltoCreatorJsonLd, zoltoCreatorRef } from "./attribution";
 
 /** Who the store is, as far as structured data is concerned. */
 export interface StorefrontIdentity {
@@ -24,6 +25,18 @@ export interface StorefrontIdentity {
   currency: string;
   description?: string | null;
   logoUrl?: string | null;
+  /**
+   * Whether this store carries the "Made with Zolto" credit — from
+   * shared/attribution.ts `showsZoltoAttribution`, not from the plan directly.
+   * Defaults to true when absent, so a caller that hasn't been taught about
+   * white-labelling credits the platform rather than silently dropping it.
+   */
+  attribution?: boolean;
+}
+
+/** Does this identity carry the platform credit? Absent means yes. */
+function credited(identity: StorefrontIdentity): boolean {
+  return identity.attribution !== false;
 }
 
 /**
@@ -125,6 +138,15 @@ export function storeJsonLd(
   };
 }
 
+/**
+ * schema.org/WebSite for the storefront.
+ *
+ * `creator` is the machine-readable half of the "Made with Zolto" credit: the
+ * store is the *publisher* of its own site, Zolto is what *built* it. An AI
+ * crawler that reads this graph on a merchant's own domain learns the platform
+ * behind it and gets a resolvable `@id` to follow — which the footer link alone
+ * cannot give it, since most such crawlers never run our JavaScript.
+ */
 export function websiteJsonLd(
   identity: StorefrontIdentity,
 ): Record<string, unknown> {
@@ -135,7 +157,20 @@ export function websiteJsonLd(
     url: `${base}/`,
     name: identity.storeName,
     publisher: { "@id": `${base}/#store` },
+    ...(credited(identity) ? { creator: zoltoCreatorRef() } : {}),
   };
+}
+
+/**
+ * The graph nodes a credited storefront adds on top of its own: the Zolto
+ * Organization that `websiteJsonLd`'s `creator` points at. Empty for a
+ * white-labelled store that has opted out, so its graph names no platform at
+ * all rather than naming one with a dangling reference.
+ */
+export function attributionJsonLd(
+  identity: StorefrontIdentity,
+): Record<string, unknown>[] {
+  return credited(identity) ? [zoltoCreatorJsonLd()] : [];
 }
 
 export function breadcrumbJsonLd(

@@ -177,7 +177,9 @@
     "copyright": "© {{year}} {{store}}. All rights reserved.",
     "swissQuality": "Curated with care",
     "policy": "Sales & Returns Policy",
-    "impressum": "Legal Notice"
+    "impressum": "Legal Notice",
+    "madeWith": "Made with",
+    "madeWithTitle": "This shop is made with {{platform}} — the till and online shop for makers"
   },
   "bulkUpload": {
     "adminBadge": "Admin",

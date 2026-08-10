@@ -91,7 +91,12 @@
       "heroSubtitlePlaceholder": "Browse the collection and check out securely, or visit us in the studio.",
       "aboutBody": "About page",
       "aboutBodyHint": "Your story, in your own words. Leave an empty line between paragraphs. Shown to every visitor exactly as written — it is not translated.",
-      "aboutBodyPlaceholder": "We opened in 2018 with one kiln and a small table…"
+      "aboutBodyPlaceholder": "We opened in 2018 with one kiln and a small table…",
+      "creditTitle": "Made with Zolto",
+      "creditDescription": "A small credit in your footer, and the machine-readable note that tells search engines and AI assistants which platform your shop runs on.",
+      "creditToggle": "Show the “Made with Zolto” credit",
+      "creditToggleHint": "One line under your copyright, linking to {{url}} — plus the generator tag and structured data that search engines and AI assistants read.",
+      "creditProOnly": "Hiding the credit is part of Pro. On Free it stays on — it is how other makers find Zolto."
     },
     "categories": {
       "title": "Categories",

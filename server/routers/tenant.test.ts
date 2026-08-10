@@ -1041,6 +1041,64 @@ describe("tenant.getStripeConnectUrl", () => {
   });
 });
 
+describe("tenant.getBySlug", () => {
+  function slugCtx(tenant: Record<string, unknown> | undefined) {
+    dbMock.db.query = {
+      tenants: { findFirst: vi.fn().mockResolvedValue(tenant) },
+    };
+    return tenantRouter.createCaller(ctx());
+  }
+
+  it("tells the storefront whether this store may hide the Zolto credit", async () => {
+    // The storefront footer needs the white-label RIGHT (this) plus the
+    // merchant's switch (from getSettings) — see shared/attribution.ts.
+    const free = await slugCtx({
+      id: 1,
+      slug: "bergblume",
+      name: "Bergblume",
+      plan: "free",
+    }).getBySlug({ slug: "bergblume" });
+    expect(free.whiteLabel).toBe(false);
+
+    const pro = await slugCtx({
+      id: 1,
+      slug: "aurora",
+      name: "Aurora",
+      plan: "pro",
+    }).getBySlug({ slug: "aurora" });
+    expect(pro.whiteLabel).toBe(true);
+  });
+
+  it("honours a comped Pro store, which reading `plan` alone would miss", async () => {
+    const comped = await slugCtx({
+      id: 1,
+      slug: "house",
+      name: "On the house",
+      plan: "free",
+      compPlan: "pro",
+    }).getBySlug({ slug: "house" });
+    expect(comped.plan).toBe("free");
+    expect(comped.whiteLabel).toBe(true);
+  });
+
+  it("never leaks the POS key through the public storefront read", async () => {
+    const res = await slugCtx({
+      id: 1,
+      slug: "bergblume",
+      name: "Bergblume",
+      plan: "free",
+      posApiKey: "secret",
+    }).getBySlug({ slug: "bergblume" });
+    expect(JSON.stringify(res)).not.toContain("secret");
+  });
+
+  it("404s an unknown slug", async () => {
+    await expect(
+      slugCtx(undefined).getBySlug({ slug: "nope" }),
+    ).rejects.toThrow(/not found/i);
+  });
+});
+
 describe("tenant.updateSettings plan gates", () => {
   const admin = { openId: "google:admin", role: "admin", tenantId: 42 };
 
@@ -1102,6 +1160,35 @@ describe("tenant.updateSettings plan gates", () => {
     const { caller, set } = tenantCtx("free");
     await expect(
       caller.updateSettings({ primaryColor: "#2D6B4A", metaTitle: "Hi" }),
+    ).resolves.toEqual({ success: true });
+    expect(set).toHaveBeenCalled();
+  });
+
+  it("rejects hiding the Made with Zolto credit on the free plan", async () => {
+    // The credit is what a Free store pays with; only a white-label plan may
+    // switch it off. shared/attribution.ts ignores a stale `true` anyway, but
+    // the write must not succeed in the first place.
+    const { caller, set } = tenantCtx("free");
+    await expect(
+      caller.updateSettings({ hideZoltoBadge: true }),
+    ).rejects.toThrow(/Pro plan/);
+    expect(set).not.toHaveBeenCalled();
+  });
+
+  it("allows hiding the credit on the Pro plan", async () => {
+    const { caller, set } = tenantCtx("pro");
+    await expect(
+      caller.updateSettings({ hideZoltoBadge: true }),
+    ).resolves.toEqual({ success: true });
+    expect(set).toHaveBeenCalled();
+  });
+
+  it("lets a store on any plan turn the credit back ON", async () => {
+    // Only the hide direction is gated: a store that drops from Pro to Free
+    // must still be able to clear the flag it set while it had the feature.
+    const { caller, set } = tenantCtx("free");
+    await expect(
+      caller.updateSettings({ hideZoltoBadge: false }),
     ).resolves.toEqual({ success: true });
     expect(set).toHaveBeenCalled();
   });
@@ -1283,6 +1370,19 @@ describe("tenant.updateSettings authorization", () => {
     );
     await expect(
       caller.updateSettings({ discordChannelId: "12345678901234567" }),
+    ).rejects.toThrow();
+    expect(set).not.toHaveBeenCalled();
+  });
+
+  it("refuses an admin of a DIFFERENT store the white-label switch", async () => {
+    // Same cross-tenant shape as above, on the newest gated field: pointing at
+    // store 42's host must not let store 7's admin strip its platform credit.
+    const { caller, set } = settingsCtx(
+      { openId: "google:other", role: "admin", tenantId: 7 },
+      42,
+    );
+    await expect(
+      caller.updateSettings({ hideZoltoBadge: true }),
     ).rejects.toThrow();
     expect(set).not.toHaveBeenCalled();
   });

@@ -177,7 +177,9 @@
     "copyright": "© {{year}} {{store}}. Alle Rechte vorbehalten.",
     "swissQuality": "Mit Sorgfalt kuratiert",
     "policy": "Verkaufs- & Rückgabebedingungen",
-    "impressum": "Impressum"
+    "impressum": "Impressum",
+    "madeWith": "Erstellt mit",
+    "madeWithTitle": "Dieser Shop wurde mit {{platform}} erstellt — Kasse und Onlineshop für Kunstschaffende"
   },
   "bulkUpload": {
     "adminBadge": "Admin",

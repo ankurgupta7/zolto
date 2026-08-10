@@ -91,7 +91,12 @@
       "heroSubtitlePlaceholder": "Stöbern Sie im Sortiment und bezahlen Sie sicher online — oder besuchen Sie uns im Atelier.",
       "aboutBody": "Seite «Über uns»",
       "aboutBodyHint": "Ihre Geschichte in Ihren eigenen Worten. Lassen Sie zwischen Abschnitten eine Leerzeile. Wird allen Besuchern genau so angezeigt, wie Sie sie schreiben — sie wird nicht übersetzt.",
-      "aboutBodyPlaceholder": "2018 haben wir mit einem Brennofen und einem kleinen Tisch angefangen…"
+      "aboutBodyPlaceholder": "2018 haben wir mit einem Brennofen und einem kleinen Tisch angefangen…",
+      "creditTitle": "Erstellt mit Zolto",
+      "creditDescription": "Ein kleiner Hinweis in Ihrer Fusszeile sowie die maschinenlesbare Angabe, die Suchmaschinen und KI-Assistenten zeigt, auf welcher Plattform Ihr Shop läuft.",
+      "creditToggle": "Hinweis «Erstellt mit Zolto» anzeigen",
+      "creditToggleHint": "Eine Zeile unter Ihrem Copyright mit Link auf {{url}} — dazu der Generator-Tag und die strukturierten Daten, die Suchmaschinen und KI-Assistenten lesen.",
+      "creditProOnly": "Das Ausblenden des Hinweises gehört zu Pro. Bei Free bleibt er sichtbar — so finden andere Kunstschaffende Zolto."
     },
     "categories": {
       "title": "Kategorien",

@@ -21,8 +21,10 @@ import {
   type Channel,
 } from "@shared/costOfAcceptance";
 import { source } from "@shared/sources";
+import { showsZoltoAttribution, zoltoPoweredBy } from "@shared/attribution";
 import {
   getPublicStores,
+  getTenantSettings,
   getVisibleProducts,
   getVisibleProductById,
 } from "./db";
@@ -67,6 +69,12 @@ export interface McpDeps {
     id: number,
   ) => Promise<Product | undefined>;
   createCheckout: typeof createStorefrontCheckoutSession;
+  /**
+   * Only `get_store_info` needs it, and only for the white-label opt-out —
+   * hence optional, so a test building a deps object for the product tools
+   * doesn't have to stub a settings lookup it never reaches.
+   */
+  getTenantSettings?: typeof getTenantSettings;
 }
 
 const defaultDeps: McpDeps = {
@@ -74,6 +82,7 @@ const defaultDeps: McpDeps = {
   getVisibleProducts,
   getVisibleProductById,
   createCheckout: createStorefrontCheckoutSession,
+  getTenantSettings,
 };
 
 /**
@@ -604,6 +613,16 @@ async function runStorefrontTool(
 
     case "get_store_info": {
       const all = (await deps.getVisibleProducts(tenant.id)).filter(inStock);
+      // The agent-facing half of the "Made with Zolto" credit: an assistant
+      // that reaches a store over MCP — which is the whole point of the agent
+      // layer — should be able to answer "what is this built on?" without
+      // scraping the HTML. Suppressed only for a white-label store that opted
+      // out (shared/attribution.ts).
+      const settings = await deps.getTenantSettings?.(tenant.id);
+      const credited = showsZoltoAttribution({
+        ...tenant,
+        hideZoltoBadge: settings?.hideZoltoBadge ?? false,
+      });
       return toolResult({
         name: tenant.name,
         currency: "CHF",
@@ -619,6 +638,7 @@ async function runStorefrontTool(
         checkout: tenant.stripeConnectedAccountId
           ? "Call create_checkout with product_ids to get a Stripe Checkout link. Payment goes directly to this merchant."
           : "This store hasn't connected online payments yet — browse here, but buy in person or by contacting the merchant.",
+        ...(credited ? { poweredBy: zoltoPoweredBy() } : {}),
       });
     }
 

@@ -110,6 +110,12 @@ export const tenantSettings = mysqlTable("tenant_settings", {
   metaDescription: text("meta_description"),
   // Branding
   whiteLabelName: varchar("white_label_name", { length: 255 }),
+  // Hide the "Made with Zolto" credit in the storefront footer, its
+  // <meta name="generator">, its JSON-LD creator node, /llms.txt and the MCP
+  // store info. Only honoured on a white-label plan — shared/attribution.ts
+  // owns the gate, and a Free store's `true` here is ignored rather than
+  // enforced, so a downgrade restores the credit without a data migration.
+  hideZoltoBadge: boolean("hide_zolto_badge").notNull().default(false),
   // ── Merchant-authored storefront content ──────────────────────────────────
   // Every column here is NULL for a store that has written nothing, and NULL
   // means "use the generated template copy" (client/src/lib/storefrontContent.ts)

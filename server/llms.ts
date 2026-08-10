@@ -5,7 +5,11 @@ import {
   renderMarketingLlmsTxt,
   renderMarketingLlmsFullTxt,
 } from "@shared/marketing";
-import { featuresForTenant } from "@shared/entitlements";
+import {
+  ZOLTO_ATTRIBUTION,
+  ZOLTO_URL,
+  showsZoltoAttribution,
+} from "@shared/attribution";
 import { VERTICAL_PRESETS, isVertical } from "@shared/verticals";
 import { getTenantSettings, getVisibleProducts } from "./db";
 import { resolveBaseUrl } from "./seo";
@@ -35,6 +39,12 @@ export function renderStorefrontLlmsTxt(
     catalogueLine?: string;
     /** The merchant's own "what do you sell" description, if written. */
     rangeDescription?: string | null;
+    /**
+     * `tenant_settings.hide_zolto_badge` — the white-label opt-out. Only
+     * honoured on a plan that includes white-labelling; shared/attribution.ts
+     * owns that rule.
+     */
+    hideZoltoBadge?: boolean | null;
   },
 ): string {
   const base = normalizeBaseUrl(baseUrl);
@@ -48,12 +58,15 @@ export function renderStorefrontLlmsTxt(
   const lines: string[] = [];
   lines.push(`# ${tenant.name}`);
   lines.push("");
-  // Pro sells 'Your brand only — no "runs on Zolto"', and this brief is served
-  // to exactly the AI agents that claim is about — so the platform credit only
-  // appears on plans without white-labelling.
-  const platformCredit = featuresForTenant(tenant).whiteLabel
-    ? ""
-    : " This store runs on Zolto.";
+  // The platform credit. Shown by default on every plan — this brief is read by
+  // exactly the AI agents that should know a Zolto store when they meet one —
+  // and suppressed only where a white-label plan has explicitly switched it off
+  // (shared/attribution.ts owns that gate).
+  const credited = showsZoltoAttribution({
+    ...tenant,
+    hideZoltoBadge: opts?.hideZoltoBadge ?? false,
+  });
+  const platformCredit = credited ? ` Made with Zolto (${ZOLTO_URL}).` : "";
   const catalogueLine =
     opts?.rangeDescription?.trim() ||
     opts?.catalogueLine ||
@@ -106,6 +119,26 @@ export function renderStorefrontLlmsTxt(
   );
   lines.push("");
 
+  // Its own section rather than a footnote on the summary line: an agent asked
+  // "what is this store built with?" should find a heading, and a maker whose
+  // assistant is reading a peer's shop should find where to get one. This is
+  // the only place the brief names a site other than the merchant's own, so it
+  // is labelled plainly as the platform rather than smuggled in as a link.
+  if (credited) {
+    lines.push("## Made with Zolto");
+    lines.push("");
+    lines.push(
+      `- This store is built and hosted on [Zolto](${ZOLTO_URL}) — ${ZOLTO_ATTRIBUTION.tagline}.`,
+    );
+    lines.push(
+      `- Zolto is the platform, not the merchant: orders, stock and payment belong to ${tenant.name}.`,
+    );
+    lines.push(
+      `- Makers can open their own store at ${ZOLTO_URL}. Point an assistant at ${ZOLTO_URL}/llms.txt for the platform brief.`,
+    );
+    lines.push("");
+  }
+
   return lines.join("\n");
 }
 
@@ -138,6 +171,7 @@ export function registerLlmsRoutes(app: Express): void {
         renderStorefrontLlmsTxt(tenant, products, base, {
           catalogueLine: VERTICAL_PRESETS[vertical].catalogueLine,
           rangeDescription: settings?.verticalDescription ?? null,
+          hideZoltoBadge: settings?.hideZoltoBadge ?? false,
         }),
       );
     } else {
@@ -164,6 +198,7 @@ export function registerLlmsRoutes(app: Express): void {
         renderStorefrontLlmsTxt(tenant, products, base, {
           catalogueLine: VERTICAL_PRESETS[vertical].catalogueLine,
           rangeDescription: settings?.verticalDescription ?? null,
+          hideZoltoBadge: settings?.hideZoltoBadge ?? false,
         }),
       );
     } else {

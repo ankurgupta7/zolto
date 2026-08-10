@@ -203,6 +203,12 @@ export const tenantRouter = router({
         slug: tenant.slug,
         name: tenant.name,
         plan: tenant.plan,
+        // Whether this store is ALLOWED to hide the "Made with Zolto" credit,
+        // not whether it does — the switch itself lives on tenant_settings and
+        // comes back from getSettings. Derived (rather than left to the client
+        // to infer from `plan`) so a comped Pro store is honoured here too;
+        // see shared/entitlements.ts on why `plan` alone is never the gate.
+        whiteLabel: featuresForTenant(tenant).whiteLabel,
       };
     }),
 
@@ -909,6 +915,9 @@ rationale: one friendly sentence (max 25 words) naming BOTH colors, e.g. "Deep f
         // reconciliation.ts) but was missing from this schema, so nothing
         // could ever set it.
         whiteLabelName: z.string().trim().max(255).nullable().optional(),
+        // Hide the "Made with Zolto" credit — the white-label plan feature,
+        // enforced below.
+        hideZoltoBadge: z.boolean().optional(),
         // Legal identity for the storefront's Impressum.
         companyLegalName: z.string().trim().max(255).nullable().optional(),
         companyAddress: z.string().trim().max(300).nullable().optional(),
@@ -941,6 +950,17 @@ rationale: one friendly sentence (max 25 words) naming BOTH colors, e.g. "Deep f
               "Disconnect it there first, or pick a different subdomain.",
           });
         }
+      }
+      // Hiding the platform credit is the white-label feature. Only the *hide*
+      // direction is gated: a store that drops to Free must always be able to
+      // set this back to false, and shared/attribution.ts already ignores a
+      // stale `true` so the credit reappears the moment the plan lapses.
+      if (input.hideZoltoBadge === true && !features.whiteLabel) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message:
+            'Hiding the "Made with Zolto" credit requires the Pro plan. Please upgrade.',
+        });
       }
       if (
         input.currency !== undefined &&

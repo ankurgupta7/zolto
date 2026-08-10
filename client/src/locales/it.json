@@ -178,7 +178,9 @@
     "copyright": "© {{year}} {{store}}. Tutti i diritti riservati.",
     "swissQuality": "Selezionato con cura",
     "policy": "Condizioni di vendita e reso",
-    "impressum": "Impressum"
+    "impressum": "Impressum",
+    "madeWith": "Realizzato con",
+    "madeWithTitle": "Questo negozio è realizzato con {{platform}} — la cassa e il negozio online per artigiani"
   },
   "bulkUpload": {
     "adminBadge": "Admin",

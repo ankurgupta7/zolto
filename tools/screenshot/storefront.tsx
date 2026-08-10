@@ -18,6 +18,9 @@
  * `?route=` picks the page (/, /about, /impressum). `?authored=0` empties the
  * merchant's own copy, which is how every store looked before those fields
  * existed and the state most stores will still be in — worth shooting both.
+ * `?whitelabel=1` puts the store on a plan that has switched the "Made with
+ * Zolto" footer credit off — the other half of the only footer state that has
+ * two answers.
  */
 
 import { createRoot } from "react-dom/client";
@@ -34,10 +37,12 @@ import { CartProvider } from "@/contexts/CartContext";
 import Home from "@/pages/Home";
 import About from "@/pages/About";
 import Impressum from "@/pages/Impressum";
+import Footer from "@/components/Footer";
 
 const params = new URLSearchParams(location.search);
 const route = params.get("route") ?? "/";
 const authored = params.get("authored") !== "0";
+const whitelabel = params.get("whitelabel") === "1";
 
 /** What the merchant wrote — or nothing, under `?authored=0`. */
 const AUTHORED = authored
@@ -91,7 +96,8 @@ const RESPONSES: Record<string, unknown> = {
     id: 42,
     slug: "bergblume",
     name: "Bergblume Keramik",
-    plan: "free",
+    plan: whitelabel ? "pro" : "free",
+    whiteLabel: whitelabel,
   },
   "tenant.getSettings": {
     logoUrl: null,
@@ -102,9 +108,26 @@ const RESPONSES: Record<string, unknown> = {
     contactEmail: "hello@bergblume.ch",
     instagramHandle: "bergblume.keramik",
     whatsappNumber: null,
+    hideZoltoBadge: whitelabel,
     ...AUTHORED,
   },
   "products.list": PRODUCTS,
+  // The footer's collection links come from the store's own category list.
+  "categories.list": [
+    "Tassen & Becher",
+    "Schalen",
+    "Teller",
+    "Vasen",
+    "Other",
+  ].map((key, i) => ({
+    key,
+    labelEn: key,
+    labelDe: key,
+    labelFr: null,
+    labelIt: null,
+    extraIncludes: [],
+    sortOrder: i,
+  })),
 };
 
 window.fetch = (async (input: RequestInfo | URL) => {
@@ -150,6 +173,10 @@ createRoot(document.getElementById("root")!).render(
                 <Home />
               </Route>
             </Switch>
+            {/* The real footer, because the "Made with Zolto" credit lives in
+                it and no DOM assertion can tell whether it reads as the
+                platform's line or as part of the merchant's own copyright. */}
+            <Footer />
           </Router>
         </CartProvider>
       </TenantProvider>
