@@ -475,7 +475,8 @@
         "Les commandes en ligne et via agents IA portent des frais de 1% sur le plan Gratuit. Pas de ventes en ligne ce mois-ci ? Vous payez CHF 0. C'est tout.",
         "Pro (CHF 25/mois) supprime entièrement le 1% et débloque l'IA illimitée. Vous vendez plus d'environ CHF 2 500/mois en ligne ? Pro est moins cher — nous vous le dirons dans l'app dès que le changement en vaut la peine.",
         "Nous ne facturerons jamais votre usage de l'IA au compte-gouttes. Parlez-lui autant que vous voulez — les plans évoluent selon les produits, les photos et le stockage, pas selon votre bavardage.",
-        "Ce que nous facturons n'est pas ce que coûte une vente. Votre prestataire de paiement prend sa propre part et cet argent lui revient, pas à nous — et sur le seul taux carte, nous ne sommes pas le moyen le moins cher d'être payé en Suisse. Nous préférons vous montrer toute la pile et vous laisser faire le calcul."
+        "Ce que nous facturons n'est pas ce que coûte une vente. Votre prestataire de paiement prend sa propre part et cet argent lui revient, pas à nous — et sur le seul taux carte, nous ne sommes pas le moyen le moins cher d'être payé en Suisse. Nous préférons vous montrer toute la pile et vous laisser faire le calcul.",
+        "Une seule chose coûte un supplément, une fois : CHF 20 pour transférer toute votre boutique existante — produits, stock, photos, catégories, votre histoire — de votre ancien site vers Zolto en une minute environ. Cela paie du temps machine réel passé à lire votre site, pas un loyer sur une ligne dans une base de données. Les acteurs établis vous facturent chaque mois le stockage de ce qui vous appartient déjà ; nous facturons une fois le travail du déménagement, et plus jamais ensuite."
       ]
     },
     "costComparison": {
@@ -887,7 +888,11 @@
         },
         "sources": {
           "caption": "D’où venaient les commandes en ligne",
-          "head": ["Source", "Commandes", "% des ventes en ligne"],
+          "head": [
+            "Source",
+            "Commandes",
+            "% des ventes en ligne"
+          ],
           "rowLabels": [
             "Instagram (organique)",
             "Direct / clients revenus",

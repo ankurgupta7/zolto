@@ -758,3 +758,81 @@ export const magicLinkTokens = mysqlTable("magic_link_tokens", {
 
 export type MagicLinkToken = typeof magicLinkTokens.$inferSelect;
 export type InsertMagicLinkToken = typeof magicLinkTokens.$inferInsert;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// POS PAIRING TOKENS — one-tap register setup
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// Short-lived, single-use tokens that let a merchant bind a register by tapping
+// a link (`zolto://pair?t=…`) instead of typing a 64-char key on a phone.
+//
+// The token exists so the POS key itself never travels in a URL, where it would
+// land in browser history, server access logs and Referer headers. The app
+// redeems the token at POST /api/pos/pair and gets the key over TLS in a
+// response body instead.
+//
+// Deliberately stores NO key: redemption reads the tenant's key from the
+// encrypted tenant_secrets vault (provider "pos"). So a dump of this table
+// yields nothing usable, and — like magic_link_tokens above — only the SHA-256
+// of the token is stored, so even a leaked row can't be redeemed.
+export const posPairingTokens = mysqlTable("pos_pairing_tokens", {
+  id: int("id").autoincrement().primaryKey(),
+  tenantId: int("tenant_id").notNull(),
+  // SHA-256 of the token handed to the merchant, never the token itself.
+  token: varchar("token", { length: 64 }).notNull().unique(),
+  expiresAt: timestamp("expiresAt").notNull(),
+  // Set by a conditional UPDATE … WHERE consumedAt IS NULL, which is what makes
+  // single-use hold under two devices redeeming the same link at once.
+  consumedAt: timestamp("consumedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type PosPairingToken = typeof posPairingTokens.$inferSelect;
+export type InsertPosPairingToken = typeof posPairingTokens.$inferInsert;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SITE IMPORTS — the paid one-time switch-in (shared/platform.ts SITE_IMPORT)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// One attempt at lifting a merchant's existing shop into Zolto. The row IS the
+// state machine, and its order is the whole point of the feature's pricing:
+//
+//   previewed → paid → applied
+//
+// The crawl and the extraction happen at `previewed`, for free, and the merchant
+// sees everything that was found before a payment is asked for. That is what
+// makes charging CHF 20 defensible: nobody pays for a crawl that came back
+// empty. `paid` is written only by the Stripe webhook, never by the client, and
+// `applied` is set once the rows have actually landed in the catalogue — so a
+// double-submit or a replayed webhook can't import the same shop twice.
+export const siteImports = mysqlTable("site_imports", {
+  id: int("id").autoincrement().primaryKey(),
+  tenantId: int("tenant_id").notNull(),
+  /** The URL the merchant gave us, normalised to an origin + path. */
+  sourceUrl: varchar("source_url", { length: 1024 }).notNull(),
+  status: mysqlEnum("status", ["previewed", "paid", "applied", "failed"])
+    .default("previewed")
+    .notNull(),
+  /**
+   * The extraction, as JSON (products, profile, categories, warnings). Held so
+   * the merchant can pay, leave, come back and still get the result they were
+   * shown — re-crawling after payment could return something different from
+   * what they agreed to buy.
+   */
+  extraction: json("extraction"),
+  /** Denormalised for the admin list and for support, without parsing the JSON. */
+  productCount: int("product_count").default(0).notNull(),
+  /** Set at checkout, matched by the webhook. */
+  stripeSessionId: varchar("stripe_session_id", { length: 255 }),
+  /** Charged amount in cents, recorded as charged rather than as configured. */
+  amountCents: int("amount_cents"),
+  currency: varchar("currency", { length: 3 }),
+  paidAt: timestamp("paid_at"),
+  appliedAt: timestamp("applied_at"),
+  /** What went wrong, for support. Never shown raw to the merchant. */
+  failureReason: varchar("failure_reason", { length: 512 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type SiteImport = typeof siteImports.$inferSelect;
+export type InsertSiteImport = typeof siteImports.$inferInsert;

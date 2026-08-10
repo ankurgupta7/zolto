@@ -475,7 +475,8 @@
         "Gli ordini online e tramite agenti IA hanno una commissione dell'1% sul piano Gratuito. Nessuna vendita online questo mese? Paga CHF 0. Tutto qui.",
         "Pro (CHF 25/mese) elimina del tutto l'1% e sblocca l'IA senza limiti. Vende oltre circa CHF 2'500/mese online? Pro è più conveniente — glielo diremo nell'app nel momento in cui vale la pena cambiare.",
         "Non Le faremo mai pagare l'IA col contagocce. Ci parli quanto vuole — i piani crescono su prodotti, foto e spazio, non su quanto chiacchiera.",
-        "Quello che addebitiamo non è quello che costa una vendita. Il tuo fornitore di pagamenti trattiene la sua parte e quel denaro va a lui, non a noi — e sulla sola tariffa carta non siamo il modo più economico per farsi pagare in Svizzera. Preferiamo mostrarti l'intera pila e lasciarti fare i conti."
+        "Quello che addebitiamo non è quello che costa una vendita. Il tuo fornitore di pagamenti trattiene la sua parte e quel denaro va a lui, non a noi — e sulla sola tariffa carta non siamo il modo più economico per farsi pagare in Svizzera. Preferiamo mostrarti l'intera pila e lasciarti fare i conti.",
+        "Una sola cosa costa un extra, una volta sola: CHF 20 per portare tutto il tuo negozio esistente — prodotti, scorte, foto, categorie, la tua storia — dal vecchio sito a Zolto in circa un minuto. Paghi tempo macchina reale per leggere il tuo sito, non un affitto per una riga in un database. Gli operatori storici ti fanno pagare ogni mese per conservare ciò che è già tuo; noi facciamo pagare una volta il lavoro del trasloco, e mai più."
       ]
     },
     "costComparison": {
@@ -887,7 +888,11 @@
         },
         "sources": {
           "caption": "Da dove sono arrivati gli ordini online",
-          "head": ["Fonte", "Ordini", "% delle vendite online"],
+          "head": [
+            "Fonte",
+            "Ordini",
+            "% delle vendite online"
+          ],
           "rowLabels": [
             "Instagram (organico)",
             "Diretto / di ritorno",
@@ -1113,7 +1118,11 @@
         "L'infrastruttura europea continua a esistere solo se le aziende europee la comprano davvero. Preferiamo esserne clienti che discuterne."
       ],
       "promise": "Questo è l'elenco completo. Quando una riga si sposta la cambiamo qui e diciamo che cosa si è mosso — una vecchia promessa ridipinta in silenzio come risultato vale meno della bandiera su cui la stamperemmo.",
-      "heroBadges": ["Fatto in Svizzera", "Server in Europa", "TWINT integrato"]
+      "heroBadges": [
+        "Fatto in Svizzera",
+        "Server in Europa",
+        "TWINT integrato"
+      ]
     },
     "squeezePlay": {
       "eyebrow": "quello che non è un pareggio",

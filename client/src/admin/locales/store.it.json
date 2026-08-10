@@ -247,7 +247,17 @@
       "generate": "Genera una nuova chiave",
       "apiTitle": "Accesso all'API pubblica",
       "apiDescription": "Accesso programmatico al Suo catalogo e ai Suoi ordini.",
-      "apiNote": "Un'API pubblica per costruire le Sue integrazioni fa parte di un futuro piano Business ed è in arrivo. Comparirà qui quando sarà pronta."
+      "apiNote": "Un'API pubblica per costruire le Sue integrazioni fa parte di un futuro piano Business ed è in arrivo. Comparirà qui quando sarà pronta.",
+      "pairCardTitle": "Associa una cassa",
+      "pairCardDescription": "Configura una cassa senza digitare la chiave: genera un link, poi toccalo o scansionalo sul telefono che incasserà.",
+      "pairAction": "Genera un link di associazione",
+      "pairOpenApp": "Apri Zolto POS su questo dispositivo",
+      "pairScanInstead": "Oppure scansiona questo codice con l’app Zolto POS da un altro telefono.",
+      "pairCopyLink": "Copia il link di associazione",
+      "pairExpires": "Valido una volta sola, scade alle {{time}}.",
+      "pairAnother": "Genera un altro link",
+      "pairError": "Non è stato possibile generare un link di associazione.",
+      "pairNeedsRotation": "L’associazione con un tocco richiede una chiave generata di recente da questo negozio. Rinnova una volta la tua chiave POS qui sopra e qui apparirà un link di associazione."
     },
     "dataPrivacy": {
       "title": "Dati e privacy",

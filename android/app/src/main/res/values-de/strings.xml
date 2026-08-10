@@ -118,6 +118,7 @@
     <string name="setup_key_hint">POS-API-Schlüssel</string>
     <string name="setup_connect">Verbinden</string>
     <string name="setup_checking">Wird geprüft…</string>
+    <string name="setup_pairing_link_failed">Dieser Kopplungslink hat nicht funktioniert — er ist möglicherweise abgelaufen oder wurde bereits verwendet. Erstelle einen neuen unter „Schlüssel &amp; Zugriff“ in deinem Shop.</string>
 
     <!-- First-time Tap to Pay provisioning -->
     <string name="t2p_provision_title">Einrichtung des Kartenlesegeräts</string>

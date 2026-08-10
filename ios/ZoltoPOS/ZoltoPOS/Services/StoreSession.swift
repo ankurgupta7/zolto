@@ -58,6 +58,31 @@ final class StoreSession: ObservableObject {
         apply(config: config)
     }
 
+    /// Redeem a one-tap pairing link the merchant tapped in their admin.
+    ///
+    /// Order matters: redeem, then probe the key we got, and only persist once
+    /// the probe succeeds — so a key that doesn't actually work never replaces a
+    /// pairing that does. The token is single-use, so a failure here means the
+    /// merchant needs a fresh link rather than a retry, and the message says so.
+    func pair(with link: Pairing.PairingLink) async {
+        pairingMessage = nil
+        do {
+            let redeemed = try await ApiService.redeemPairing(
+                baseURL: link.baseURL, token: link.token
+            )
+            let config = try await ApiService.probe(
+                baseURL: link.baseURL, apiKey: redeemed.apiKey
+            )
+            completePairing(baseURL: link.baseURL, apiKey: redeemed.apiKey, config: config)
+        } catch {
+            // Deliberately vague about the cause, mirroring the server: the link
+            // is spent either way, so the only useful instruction is "get a new
+            // one". Never include the token or the error's raw body.
+            pairingMessage = "That pairing link didn't work \u{2014} it may have expired or already been used. Generate a new one from your store's Keys & access page."
+            isPaired = ApiService.shared.isConfigured
+        }
+    }
+
     /// Called by the pairing screen after a successful probe: persist the
     /// credentials and adopt the store's identity.
     func completePairing(baseURL: String, apiKey: String, config: PosConfigResponse) {

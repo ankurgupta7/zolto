@@ -118,6 +118,7 @@
     <string name="setup_key_hint">Chiave API POS</string>
     <string name="setup_connect">Collega</string>
     <string name="setup_checking">Verifica in corso…</string>
+    <string name="setup_pairing_link_failed">Questo link di associazione non ha funzionato — potrebbe essere scaduto o già stato usato. Generane uno nuovo dalla pagina “Chiavi e accessi” del tuo negozio.</string>
 
     <!-- First-time Tap to Pay provisioning -->
     <string name="t2p_provision_title">Configurazione del lettore di carte</string>

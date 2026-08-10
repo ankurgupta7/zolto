@@ -476,7 +476,45 @@ export const PRICING_PROMISE = {
     // person" reads as the cost of a sale, which it isn't — and the reader
     // finds out from their Stripe statement instead of from us.
     "What we charge is not what a sale costs. Your payment provider takes its own cut and that money goes to them, not to us — and on card rate alone we are not the cheapest way to get paid in Switzerland. We'd rather show you the whole stack and let you do the arithmetic.",
+    // The one paid extra, stated up front and in the pledge's own terms. It is
+    // here rather than buried in the admin because "no surprises" has to
+    // survive contact with the first thing we ever charge for.
+    "One thing costs extra, once: CHF 20 to lift your whole existing shop — products, stock, photos, categories, your story — off your old site and into Zolto in about a minute. That buys real machine time reading your site, not rent on a row in a database. Incumbents charge you monthly for storing what you already own; we charge once for the work of moving it, and never again.",
   ],
+} as const;
+
+/**
+ * The one-time switch-in import — the only thing on the platform with a price
+ * attached to a single action rather than a plan.
+ *
+ * Pricing it at all sits uneasily next to PRICING_PROMISE, so the rule we hold
+ * ourselves to is written here: we charge when a feature costs us real money
+ * per use (fetching and reading a merchant's entire site burns compute and
+ * model tokens), and never for storage, seats, or the privilege of keeping data
+ * we already hold. That is the line between this and what the incumbents do.
+ *
+ * The merchant sees everything the importer found BEFORE paying — see
+ * server/siteImport.ts — so CHF 20 buys a known result, not a lottery ticket.
+ */
+export const SITE_IMPORT = {
+  priceChf: 20,
+  name: "Bring your old shop with you",
+  summary:
+    "Point us at the site you sell on today. We read the whole thing and bring your products, stock levels, photos, categories and shop details across — you review it all before anything is written, and before you pay.",
+  /** Why this one costs money when nothing else per-action does. */
+  whyPaid:
+    "Reading a whole shop takes real machine time and real model tokens every time it runs — it is a cost we pay per import, not a switch we flip. So it is priced once, at what it costs plus a little, and never becomes a subscription.",
+  /** What the merchant is buying, listed before checkout. */
+  includes: [
+    "Every product we can find — name, description, price and photos",
+    "Stock levels, so your inventory starts correct instead of at zero",
+    "Your categories, taken from how your old shop was actually organised",
+    "Your shop story, contact details and opening hours",
+    "Your logo, and a colour palette derived from it",
+  ],
+  /** Stated plainly because a crawler cannot promise perfection. */
+  caveat:
+    "Some shops hide their catalogue behind scripts we can't read. You see exactly what we found — and how much of it — before you're asked to pay, so a thin result costs you nothing.",
 } as const;
 
 /**

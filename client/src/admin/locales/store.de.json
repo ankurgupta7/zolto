@@ -247,7 +247,17 @@
       "generate": "Neuen Schlüssel erstellen",
       "apiTitle": "Öffentlicher API-Zugriff",
       "apiDescription": "Programmatischer Zugriff auf Ihren Katalog und Ihre Bestellungen.",
-      "apiNote": "Eine öffentliche API für eigene Integrationen ist Teil eines künftigen Business-Plans und kommt bald. Sie wird hier zu finden sein, sobald sie bereit ist."
+      "apiNote": "Eine öffentliche API für eigene Integrationen ist Teil eines künftigen Business-Plans und kommt bald. Sie wird hier zu finden sein, sobald sie bereit ist.",
+      "pairCardTitle": "Kasse koppeln",
+      "pairCardDescription": "Richte eine Kasse ohne Tippen des Schlüssels ein: Erstelle einen Link und tippe oder scanne ihn auf dem Handy, das Zahlungen annimmt.",
+      "pairAction": "Kopplungslink erstellen",
+      "pairOpenApp": "Zolto POS auf diesem Gerät öffnen",
+      "pairScanInstead": "Oder scanne diesen Code mit der Zolto-POS-App auf einem anderen Handy.",
+      "pairCopyLink": "Kopplungslink kopieren",
+      "pairExpires": "Einmal gültig, läuft um {{time}} ab.",
+      "pairAnother": "Weiteren Link erstellen",
+      "pairError": "Kopplungslink konnte nicht erstellt werden.",
+      "pairNeedsRotation": "Die Ein-Tipp-Kopplung braucht einen Schlüssel, den dieser Shop kürzlich erstellt hat. Erneuere oben einmal deinen POS-Schlüssel, dann ist hier ein Kopplungslink verfügbar."
     },
     "dataPrivacy": {
       "title": "Daten & Datenschutz",

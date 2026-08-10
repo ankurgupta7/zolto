@@ -101,4 +101,75 @@ final class PairingTests: XCTestCase {
         XCTAssertNil(Pairing.parseQrPayload(""))
         XCTAssertNil(Pairing.parseQrPayload("  \n "))
     }
+
+    // MARK: - One-tap pairing deep links
+    //
+    // `zolto://pair?t=<token>&url=<origin>` is what the merchant taps in their
+    // admin. The token is NOT a POS key — it is redeemed once at
+    // POST /api/pos/pair — so these tests also pin that a pairing link and a
+    // key-carrying QR payload can never be mistaken for one another.
+
+    func testParsesPairingLink() {
+        let link = Pairing.parsePairingLink(
+            URL(string: "zolto://pair?t=tok123&url=https://bergblume.zolto.ch")!
+        )
+        XCTAssertEqual(
+            link,
+            Pairing.PairingLink(token: "tok123", baseURL: "https://bergblume.zolto.ch")
+        )
+    }
+
+    func testAcceptsTokenSpelledOut() {
+        let link = Pairing.parsePairingLink(URL(string: "zolto://pair?token=tok123")!)
+        XCTAssertEqual(link?.token, "tok123")
+    }
+
+    func testFallsBackToDefaultHostWhenLinkCarriesNone() {
+        // Every link the admin mints carries `url`, but a hand-typed one may not,
+        // and landing on the default beats refusing to pair at all.
+        let link = Pairing.parsePairingLink(URL(string: "zolto://pair?t=tok123")!)
+        XCTAssertEqual(link?.baseURL, Pairing.defaultBaseURL)
+    }
+
+    func testIgnoresAnUnusableHostInTheLink() {
+        let link = Pairing.parsePairingLink(
+            URL(string: "zolto://pair?t=tok123&url=ftp://evil.example")!
+        )
+        XCTAssertEqual(link?.baseURL, Pairing.defaultBaseURL)
+    }
+
+    func testPercentDecodesTheServerOrigin() {
+        let link = Pairing.parsePairingLink(
+            URL(string: "zolto://pair?t=tok&url=https%3A%2F%2Fbergblume.zolto.ch")!
+        )
+        XCTAssertEqual(link?.baseURL, "https://bergblume.zolto.ch")
+    }
+
+    func testRejectsOtherSchemesAndActions() {
+        XCTAssertNil(Pairing.parsePairingLink(URL(string: "https://zolto.ch/pos/pair?t=tok")!))
+        XCTAssertNil(Pairing.parsePairingLink(URL(string: "zolto://open?t=tok")!))
+        XCTAssertNil(Pairing.parsePairingLink(URL(string: "otherapp://pair?t=tok")!))
+    }
+
+    func testRejectsPairingLinkWithoutAToken() {
+        XCTAssertNil(Pairing.parsePairingLink(URL(string: "zolto://pair")!))
+        XCTAssertNil(Pairing.parsePairingLink(URL(string: "zolto://pair?t=")!))
+        XCTAssertNil(Pairing.parsePairingLink(URL(string: "zolto://pair?url=https://zolto.ch")!))
+    }
+
+    func testAcceptsSingleSlashForm() {
+        // Depending on how the link is written, "pair" arrives as the host or as
+        // the path. Both must work rather than failing on a form the OS hands us.
+        XCTAssertEqual(Pairing.parsePairingLink(URL(string: "zolto:/pair?t=tok")!)?.token, "tok")
+    }
+
+    func testPairingLinkAndKeyQrAreNotInterchangeable() {
+        // A key-carrying QR URL must not parse as a redeemable token...
+        XCTAssertNil(
+            Pairing.parsePairingLink(URL(string: "zolto://pair?key=deadbeef")!)
+        )
+        // ...and a token link must not be read as though it carried a POS key.
+        let creds = Pairing.parseQrPayload("zolto://pair?t=tok123")
+        XCTAssertNil(creds)
+    }
 }
