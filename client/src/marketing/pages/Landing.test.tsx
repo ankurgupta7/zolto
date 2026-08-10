@@ -24,13 +24,13 @@ function renderLanding() {
 
 /**
  * The six chapters, in order, and how many panels each is made of. A panel is
- * one screen: on a phone you swipe through 21 of them, on a roomy desktop each
+ * one screen: on a phone you swipe through 20 of them, on a roomy desktop each
  * chapter's panels become its columns and you scroll through six screens. The
  * counts are asserted because a chapter that lost a panel would silently lose a
  * screenful of the homepage.
  */
 const CHAPTERS = {
-  promise: 2,
+  promise: 1,
   squeeze: 4,
   product: 4,
   trust: 5,
@@ -106,8 +106,8 @@ describe("Landing — the reel", () => {
         expect(panel.className).toContain("snap-start");
       }
     }
-    // 21 screens on a phone; six chapters' worth of columns on a desktop.
-    expect(document.querySelectorAll("[data-reel-panel]").length).toBe(21);
+    // 20 screens on a phone; six chapters' worth of columns on a desktop.
+    expect(document.querySelectorAll("[data-reel-panel]").length).toBe(20);
   });
 
   it("pages each post sideways, with a dot per slide and no nested scroller", () => {
@@ -120,6 +120,12 @@ describe("Landing — the reel", () => {
     for (const [id, count] of Object.entries(CHAPTERS)) {
       const post = chapter(id as keyof typeof CHAPTERS);
       const dots = post.querySelector<HTMLElement>('[data-testid="reel-dots"]');
+      if (count === 1) {
+        // A one-slide post has nothing to page through, and a lone dot would
+        // suggest there is more sideways than there is.
+        expect(dots, `${id} should have no dots`).toBeNull();
+        continue;
+      }
       expect(dots, `${id} has no dots`).toBeTruthy();
       const buttons = Array.from(dots!.querySelectorAll("button"));
       expect(buttons.length, `${id} dot count`).toBe(count);
@@ -191,9 +197,13 @@ describe("Landing — chapter 1, the promise", () => {
     expect(screen.getByText(/point-of-sale and a web store/i)).toBeTruthy();
   });
 
-  it("puts the explainer video in the hero's second column", () => {
+  it("keeps the promise and the video it rests on one slide", () => {
     renderLanding();
-    const video = within(chapter("promise")).getByTestId("explainer-video");
+    const post = chapter("promise");
+    // One slide, so the video is on screen with the claim rather than a swipe
+    // behind it — and the post has no dots, since there is nothing to page.
+    expect(post.querySelectorAll("[data-reel-panel]").length).toBe(1);
+    const video = within(post).getByTestId("explainer-video");
     expect(video).toBeTruthy();
     expect(
       within(chapter("promise"))

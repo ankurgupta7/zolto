@@ -49,7 +49,7 @@ import { useMarketingT } from "../lib/marketingI18n";
  *
  * What each chapter carries, and the desktop grid its panels fall back into:
  *
- *   1 Promise        copy + CTA | explainer video
+ *   1 Promise        one slide: the claim, the explainer video, the CTAs
  *   2 The squeeze    the squeeze argument, three tills | the CHF 0 claim, its price
  *   3 How it works   title, then one inventory | photo→listing | the till
  *   4 Trust          cost strip, the pledge | Swissness intro, the ledger
@@ -94,70 +94,88 @@ export default function Landing() {
           label={t("landing.reel.promise")}
           className="bg-[var(--brand-ink)]"
         >
-          <ReelPanels layout="reel:grid-cols-2 reel:items-center reel:gap-10">
+          {/* One slide, not two: the promise and the thing it promises belong on
+              the same screen — the video *is* the argument, and a reader who has
+              to swipe for it has already read the claim unproven. The desktop
+              hero is unchanged, because the grid placement below rebuilds the
+              two columns out of the same three blocks. */}
+          <ReelPanels>
             <ReelPanel>
-              <div>
-                <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
-                  {st("makerPitch.eyebrow", MAKER_PITCH.eyebrow)}
-                </p>
-                {/* The column, not max-w, is what actually bounds this heading —
-                    see MAKER_PITCH.headlineEmphasis for the measurements and for
-                    why the underlined phrase has to stay short. */}
-                <h1 className="mt-4 max-w-2xl font-serif text-4xl leading-[1.1] text-white sm:text-5xl">
-                  {st("makerPitch.headline", MAKER_PITCH.headline)}{" "}
-                  {/* Only the punchline is underlined, so the stroke stays tight
-                      to the words however the heading wraps. */}
-                  <span className="relative inline-block">
-                    {st(
-                      "makerPitch.headlineEmphasis",
-                      MAKER_PITCH.headlineEmphasis,
-                    )}
-                    <span className="absolute -bottom-2 left-0 w-full text-[var(--brand-accent)]">
-                      <SketchUnderline />
+              {/* Stacked on a phone — copy, then the video, then the buttons, the
+                  order the reader needs them in. Two columns from md up, which is
+                  also what saves the hero on a wide-but-short laptop: 1232px of
+                  measure gave the paragraph one line and the frame 360px of
+                  height, and the slide stopped fitting its own screen. */}
+              <div className="grid content-center gap-2.5 tall:gap-6 md:grid-cols-[1.05fr_0.95fr] md:items-center md:gap-10">
+                <div className="md:col-start-1 md:row-start-1">
+                  <p className="font-hand text-xl leading-none text-[var(--brand-accent)] tall:text-2xl">
+                    {st("makerPitch.eyebrow", MAKER_PITCH.eyebrow)}
+                  </p>
+                  {/* The column, not max-w, is what actually bounds this heading —
+                      see MAKER_PITCH.headlineEmphasis for the measurements and for
+                      why the underlined phrase has to stay short. */}
+                  <h1 className="mt-2 max-w-2xl font-serif text-3xl leading-[1.1] text-white tall:mt-4 tall:text-4xl sm:text-5xl">
+                    {st("makerPitch.headline", MAKER_PITCH.headline)}{" "}
+                    {/* Only the punchline is underlined, so the stroke stays tight
+                        to the words however the heading wraps. */}
+                    <span className="relative inline-block">
+                      {st(
+                        "makerPitch.headlineEmphasis",
+                        MAKER_PITCH.headlineEmphasis,
+                      )}
+                      <span className="absolute -bottom-2 left-0 w-full text-[var(--brand-accent)]">
+                        <SketchUnderline />
+                      </span>
                     </span>
-                  </span>
-                </h1>
-                <p className="mt-4 max-w-md leading-relaxed text-white/70 sm:mt-6 sm:text-lg">
-                  {st("makerPitch.body", MAKER_PITCH.body)}
-                </p>
-
-                <div className="mt-6 flex flex-wrap items-center gap-3 sm:mt-8 sm:gap-4">
-                  <Link
-                    href="/signup"
-                    className="rounded-md bg-[var(--brand-accent)] px-7 py-3 text-xs font-medium uppercase tracking-[0.14em] text-[var(--brand-ink)] transition-colors hover:bg-[var(--brand-accent-light)]"
-                  >
-                    {t("landing.startFree")}
-                  </Link>
-                  <Link
-                    href="/pricing"
-                    className="rounded-md border border-white/25 px-7 py-3 text-xs font-medium uppercase tracking-[0.14em] text-white/85 transition-colors hover:border-white hover:text-white"
-                  >
-                    {t("landing.seePricing")}
-                  </Link>
+                  </h1>
+                  <p className="mt-3 max-w-md text-sm leading-relaxed text-white/70 tall:mt-5 tall:text-base sm:text-lg">
+                    {st("makerPitch.body", MAKER_PITCH.body)}
+                  </p>
                 </div>
 
-                {/* Where we're from, above the fold. Three facts, no sentence —
-                    the trust chapter does the explaining. */}
-                <ul className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2 text-[11px] uppercase tracking-[0.16em] text-white/50 sm:mt-8">
-                  {SOVEREIGNTY.heroBadges.map((badge, i) => (
-                    <li key={badge} className="flex items-center gap-2">
-                      <span aria-hidden className="text-[var(--brand-accent)]">
-                        ✦
-                      </span>
-                      {st(`sovereignty.heroBadges.${i}`, badge)}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </ReelPanel>
+                {/* The product, shown rather than asserted — the second column on
+                    a desktop, the middle of the composition on a phone. */}
+                <div className="md:col-start-2 md:row-span-2 md:row-start-1">
+                  <ExplainerVideo
+                    src={EXPLAINER_SRC}
+                    poster={EXPLAINER_POSTER}
+                    captionKey="landing.video.caption"
+                  />
+                </div>
 
-            {/* The product, shown rather than asserted. */}
-            <ReelPanel>
-              <ExplainerVideo
-                src={EXPLAINER_SRC}
-                poster={EXPLAINER_POSTER}
-                captionKey="landing.video.caption"
-              />
+                <div className="md:col-start-1 md:row-start-2">
+                  <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+                    <Link
+                      href="/signup"
+                      className="rounded-md bg-[var(--brand-accent)] px-7 py-3 text-xs font-medium uppercase tracking-[0.14em] text-[var(--brand-ink)] transition-colors hover:bg-[var(--brand-accent-light)]"
+                    >
+                      {t("landing.startFree")}
+                    </Link>
+                    <Link
+                      href="/pricing"
+                      className="rounded-md border border-white/25 px-7 py-3 text-xs font-medium uppercase tracking-[0.14em] text-white/85 transition-colors hover:border-white hover:text-white"
+                    >
+                      {t("landing.seePricing")}
+                    </Link>
+                  </div>
+
+                  {/* Where we're from, above the fold. Three facts, no sentence —
+                      the trust chapter does the explaining. */}
+                  <ul className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-[11px] uppercase tracking-[0.16em] text-white/50 tall:mt-6">
+                    {SOVEREIGNTY.heroBadges.map((badge, i) => (
+                      <li key={badge} className="flex items-center gap-2">
+                        <span
+                          aria-hidden
+                          className="text-[var(--brand-accent)]"
+                        >
+                          ✦
+                        </span>
+                        {st(`sovereignty.heroBadges.${i}`, badge)}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
             </ReelPanel>
           </ReelPanels>
         </ReelChapter>
