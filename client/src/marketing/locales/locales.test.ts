@@ -184,10 +184,10 @@ describe("marketing locale files", () => {
         headline: MAKER_PITCH.headline,
         headlineEmphasis: MAKER_PITCH.headlineEmphasis,
         body: MAKER_PITCH.body,
-        till: {
-          title: MAKER_PITCH.till.title,
-          methods: MAKER_PITCH.till.methods,
-          caption: MAKER_PITCH.till.caption,
+        register: {
+          title: MAKER_PITCH.register.title,
+          methods: MAKER_PITCH.register.methods,
+          caption: MAKER_PITCH.register.caption,
         },
       },
       aiNativePitch: {

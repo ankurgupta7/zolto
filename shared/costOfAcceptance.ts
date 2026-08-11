@@ -95,7 +95,7 @@ export const RATES: Rate[] = [
     confidence: "verified",
     sourceId: "twint-merchant-fees",
     caveat:
-      "This is the merchant's own TWINT QR: the money never passes through Stripe or Zolto, and the sale is recorded in the till rather than captured by it.",
+      "This is the merchant's own TWINT QR: the money never passes through Stripe or Zolto, and the sale is recorded in the register rather than captured by it.",
   },
   {
     id: "sumup-payments-plus",
@@ -181,7 +181,7 @@ export const RATES: Rate[] = [
     confidence: "verified",
     sourceId: "stripe-ch-pricing",
     caveat:
-      "Swiss-issued cards fall in Stripe's non-EEA bucket, confirmed with Stripe. Zolto adds nothing on top — this is Stripe's rate — but it makes cards the dearest way to take a payment at your stall. If your customer offers TWINT, take it: same till, same tap, less than half the cost.",
+      "Swiss-issued cards fall in Stripe's non-EEA bucket, confirmed with Stripe. Zolto adds nothing on top — this is Stripe's rate — but it makes cards the dearest way to take a payment at your stall. If your customer offers TWINT, take it: same register, same tap, less than half the cost.",
   },
 
   // ---- Online -----------------------------------------------------------

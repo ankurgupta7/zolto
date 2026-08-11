@@ -536,7 +536,7 @@
       "headline": "Per i pezzi unici:",
       "headlineEmphasis": "una cassa e un sito.",
       "body": "Una cassa e un negozio online che condividono un solo magazzino. Tocca la foto del pezzo appena venduto sul telefono che hai in mano — sparisce dal tuo sito prima che il cliente giri l'angolo.",
-      "till": {
+      "register": {
         "title": "la Sua cassa, sul telefono che ha già",
         "methods": "TWINT · Carta · Contanti",
         "caption": "Ogni pezzo con la sua foto, il suo nome e il suo prezzo. Tocchi quello venduto, incassi — il Suo sito si aggiorna da solo."
@@ -604,7 +604,7 @@
       ]
     },
     "comparison": {
-      "Your catalogue and TWINT in the same till": {
+      "Your catalogue and TWINT on one screen": {
         "feature": "Il tuo catalogo e TWINT nella stessa cassa",
         "them": "L'uno o l'altro: un'app di cassa che non può accettare TWINT, o un'app TWINT senza catalogo dentro",
         "us": "Entrambi, su un solo schermo — tocca la foto, poi scegli TWINT, carta o contanti"
@@ -1392,7 +1392,7 @@
       }
     ],
     "capabilityGroups": {
-      "The till": "La cassa",
+      "The register": "La cassa",
       "The shop": "Il negozio",
       "The AI": "L'IA",
       "The money": "I soldi"

@@ -65,7 +65,7 @@ describe("CostOfAcceptance", () => {
     render(<CostOfAcceptance channel="in-person" />);
     const row = screen.getByTestId("cost-row-zolto-card").textContent!;
     expect(row).toMatch(/adds nothing on top/i);
-    expect(row).toMatch(/take it: same till/i);
+    expect(row).toMatch(/take it: same register/i);
   });
 
   it("links every row to its source, with the date it was read", () => {

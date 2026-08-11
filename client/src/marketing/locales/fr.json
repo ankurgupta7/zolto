@@ -536,7 +536,7 @@
       "headline": "Pour les pièces uniques :",
       "headlineEmphasis": "une caisse et un site.",
       "body": "Une caisse et une boutique en ligne qui partagent un seul stock. Touchez la photo de la pièce vendue sur le téléphone que vous tenez — elle quitte votre site avant que le client ait tourné le coin.",
-      "till": {
+      "register": {
         "title": "votre caisse, sur le téléphone que vous avez déjà",
         "methods": "TWINT · Carte · Espèces",
         "caption": "Chaque pièce avec sa photo, son nom et son prix. Touchez celle que vous avez vendue, encaissez — votre site se met à jour tout seul."
@@ -604,7 +604,7 @@
       ]
     },
     "comparison": {
-      "Your catalogue and TWINT in the same till": {
+      "Your catalogue and TWINT on one screen": {
         "feature": "Votre catalogue et TWINT dans la même caisse",
         "them": "L'un ou l'autre : une appli de caisse incapable de prendre TWINT, ou une appli TWINT sans catalogue dedans",
         "us": "Les deux, sur un écran — touchez la photo, puis choisissez TWINT, carte ou espèces"
@@ -1396,7 +1396,7 @@
       }
     ],
     "capabilityGroups": {
-      "The till": "La caisse",
+      "The register": "La caisse",
       "The shop": "La boutique",
       "The AI": "L'IA",
       "The money": "L'argent"

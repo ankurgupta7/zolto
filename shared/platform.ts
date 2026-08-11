@@ -14,7 +14,7 @@ export const PLATFORM = {
    * rather than what it does — see MAKER_PITCH for the same correction applied
    * to the hero.
    */
-  tagline: "The till and the online shop for makers",
+  tagline: "The point of sale and the online shop for makers",
   /** One-liner used as the default meta description / llms.txt summary. */
   /**
    * Two claims were removed from this paragraph in the August 2026 pricing
@@ -30,7 +30,7 @@ export const PLATFORM = {
    *    complete a purchase in the chat.
    */
   summary:
-    "Zolto gives independent makers and artisans a point-of-sale and an online store that share one inventory — with an AI assistant that handles setup, product photos, listings, and support. One till takes TWINT, cards and cash from a grid of your actual objects, on the phone you already own. Zolto charges nothing on in-person sales and 1% on online and AI-agent orders on the Free plan; your payment provider's own fees apply on top and go to them. Built by AI, for AI: every store ships an llms.txt and a Model Context Protocol (MCP) endpoint out of the box, so AI assistants can find, recommend, and start a checkout with it directly. Sell online and in person without managing technology.",
+    "Zolto gives independent makers and artisans a point-of-sale and an online store that share one inventory — with an AI assistant that handles setup, product photos, listings, and support. One register takes TWINT, cards and cash from a grid of your actual objects, on the phone you already own. Zolto charges nothing on in-person sales and 1% on online and AI-agent orders on the Free plan; your payment provider's own fees apply on top and go to them. Built by AI, for AI: every store ships an llms.txt and a Model Context Protocol (MCP) endpoint out of the box, so AI assistants can find, recommend, and start a checkout with it directly. Sell online and in person without managing technology.",
   /** Who it's for — used in schema audience + llms briefs. */
   audience:
     "Independent makers, artisans, and small shop owners — people who sell at craft fairs, markets, and pop-ups and want an online store without hiring a developer.",
@@ -413,7 +413,7 @@ export const POSITIONING = {
    * The squeeze play — the one in-person argument that survives contact with
    * the competition, and the replacement for the retired "no card reader" lead.
    *
-   * The shape of it: the two incumbents have opposite gaps. SumUp's till has a
+   * The shape of it: the two incumbents have opposite gaps. SumUp's register has a
    * genuinely good item catalogue and cannot take TWINT at all. Worldline's Tap
    * on Mobile takes TWINT at a competitive flat rate and has no catalogue to put
    * in front of it. Zolto is the only one of the three where a maker taps a
@@ -432,8 +432,8 @@ export const POSITIONING = {
     eyebrow: "the one that isn't a tie",
     /** Split for the hand-drawn underline — see ZERO_COST_POS on why. */
     headline: "Your catalogue and TWINT,",
-    headlineEmphasis: "in the same till.",
-    body: "Every till in this market now runs on an ordinary phone, so that stopped being the argument. Here's the one that's left: the two big options have opposite holes in them, and a Swiss maker falls straight down whichever one they pick.",
+    headlineEmphasis: "on one screen.",
+    body: "Every register in this market now runs on an ordinary phone, so that stopped being the argument. Here's the one that's left: the two big options have opposite holes in them, and a Swiss maker falls straight down whichever one they pick.",
     /**
      * The homepage-reel version of `body`. The reel snaps one screen per
      * chapter, so a 42-word run-up is read in full before the reader may flick
@@ -442,7 +442,7 @@ export const POSITIONING = {
      * chosen to be reading and an assistant needs the reasoning to quote.
      */
     bodyShort:
-      "Every till runs on a phone now. So the question is what's in it.",
+      "Every register runs on a phone now. So the question is what's in it.",
     /**
      * Column headers for the matrix rendering. The two properties are exactly
      * the two members of `has`, so a column can never appear that no panel can
@@ -453,13 +453,13 @@ export const POSITIONING = {
       twint: "TWINT",
     },
     /**
-     * Three tills, side by side. Order matters — concede twice, then land it.
+     * Three registers, side by side. Order matters — concede twice, then land it.
      * `has` drives which illustration variant renders *and* which cells tick in
      * the matrix, so the drawing, the grid and the claim cannot disagree about
      * which panel is missing what.
      *
      * `vendor` names the product the row is about. The rows were anonymous
-     * while they were paragraphs ("a till with your things in it"), which reads
+     * while they were paragraphs ("a register with your things in it"), which reads
      * as coy in a grid — and the citation underneath has always named the
      * vendor anyway, so the name was never the part being withheld.
      *
@@ -472,7 +472,7 @@ export const POSITIONING = {
         id: "grid-no-twint",
         has: ["grid"] as const,
         vendor: "SumUp",
-        label: "A till with your things in it",
+        label: "A register with your things in it",
         note: "second TWINT setup, reconciled by hand",
         detail:
           "Photos, prices, stock counts — and no way to take the payment method half your customers reach for first. The workaround is a second, separate TWINT setup and a manual reconciliation at the end of the day.",
@@ -482,10 +482,10 @@ export const POSITIONING = {
         id: "twint-no-grid",
         has: ["twint"] as const,
         vendor: "Worldline",
-        label: "A till that takes TWINT",
+        label: "A register that takes TWINT",
         note: "type in the amount, every time",
         detail:
-          "TWINT, cards, a good flat rate — and nothing in it. It's a payment app: you type in an amount every time, or you buy and integrate separate till software to sit on top of it.",
+          "TWINT, cards, a good flat rate — and nothing in it. It's a payment app: you type in an amount every time, or you buy and integrate separate POS software to sit on top of it.",
         sourceId: "worldline-tap-on-mobile",
       },
       {
@@ -638,7 +638,7 @@ export const COST_COMPARISON = {
  * day it's written and stale the week after — the same reasoning that keeps
  * COMPETITORS free of pricing (see below).
  *
- * What makes it land is that it's specific and falsifiable: a full till, with
+ * What makes it land is that it's specific and falsifiable: a full point of sale, with
  * photos, names and prices, at CHF 0/month, with no clock on it.
  */
 export const ZERO_COST_POS = {
@@ -650,7 +650,7 @@ export const ZERO_COST_POS = {
    */
   headline: "A whole shop in your pocket.",
   headlineEmphasis: "For nothing.",
-  body: "Photos, names, prices, stock counts — your actual catalogue, in the till on your phone. Tap to take the payment. Watch it sync to your website. Then pay us CHF 0.00 at the end of the month, and again the month after that.",
+  body: "Photos, names, prices, stock counts — your actual catalogue, in the register on your phone. Tap to take the payment. Watch it sync to your website. Then pay us CHF 0.00 at the end of the month, and again the month after that.",
   /**
    * The homepage-reel version of `body`.
    *
@@ -849,7 +849,7 @@ export const SOVEREIGNTY = {
       state: "european",
       next: "A Swiss data centre, so the machines and the company share a country.",
     },
-    // There are two TWINT paths in the till and this row used to describe only
+    // There are two TWINT paths in the register and this row used to describe only
     // the flattering one. `twint_qr` (server/pos.ts) is the merchant's own
     // sticker: Swiss end to end, 1.3%, and the money never touches us. The
     // in-app TWINT button is a Stripe PaymentIntent, so it runs on Stripe's
@@ -864,7 +864,7 @@ export const SOVEREIGNTY = {
       state: "swiss",
     },
     {
-      piece: "TWINT — the button in the till",
+      piece: "TWINT — the button in the register",
       today:
         "A Stripe payment, not a direct TWINT one — Stripe's rails, at a rate Stripe doesn't publish",
       todayShort: "Via Stripe, not TWINT directly",
@@ -974,14 +974,14 @@ export const INCUMBENT_COMPARISON: ComparisonRow[] = [
   {
     // The headline row, first on purpose. Not "we're cheaper" — we aren't —
     // but "only one of these takes both, from a grid of your actual objects".
-    feature: "Your catalogue and TWINT in the same till",
-    them: "One or the other: a till app that can't take TWINT, or a TWINT app with no catalogue in it",
+    feature: "Your catalogue and TWINT on one screen",
+    them: "One or the other: a POS app that can't take TWINT, or a TWINT app with no catalogue in it",
     us: "Both, on one screen — tap the photo, then choose TWINT, card or cash",
   },
   {
     feature: "What a sale costs",
     them: "Their rate, all in — and at a stall, every one of them beats ours on cards",
-    us: "Your processor's rate, plus 0% from us in person and 1% online on Free — so take TWINT, which is in the same till",
+    us: "Your processor's rate, plus 0% from us in person and 1% online on Free — so take TWINT, which is on the same screen",
   },
   {
     feature: "Building the store",
@@ -1047,7 +1047,7 @@ export const CARD_READER_GAG = {
  * is true, sourced and genuinely differentiating, but it is an argument for
  * *choosing* Zolto — it only lands on a reader who already knows what Zolto is.
  * A jeweller arriving cold read four sections (the thesis, the agent chat, the
- * cost strip, found→asked→bought) before the page mentioned a till, and nine
+ * cost strip, found→asked→bought) before the page mentioned a register, and nine
  * before it mentioned TWINT. The page answered "why is this the future?" ahead
  * of "what is this?", and a reader who never got the second answer never
  * reached the first.
@@ -1086,8 +1086,19 @@ export const MAKER_PITCH = {
    * emphasis wider than about 330px wraps on a phone, and because this is an
    * inline-block that wrap is invisible to getClientRects() — the signal is
    * the box going full-column-width, not a second rect.
+   *
+   * ON "REGISTER". This said "till" until August 2026. "Till" is standard UK
+   * and Irish retail English and is not what this category calls itself in
+   * Switzerland: SumUp ships a product called SumUp Register and markets
+   * "SumUp POS"; Worldline's own Swiss English pages say "cash register" and
+   * "payment terminal"; the German, French and Italian have always said
+   * Kasse / caisse / cassa. "Point of sale" is the right category noun and
+   * is used as such elsewhere, but it cannot go here — measured at 36px
+   * Cormorant, "a point of sale and a shop." is 361px against the ~330px
+   * ceiling above, and "a cash register and a shop." is 362px. "A register
+   * and a shop." is 294px. The measurement picked the word, not taste.
    */
-  headlineEmphasis: "a till and a shop.",
+  headlineEmphasis: "a register and a shop.",
   /**
    * Trimmed in the August 2026 copy audit: 50 words to 35.
    *
@@ -1098,15 +1109,15 @@ export const MAKER_PITCH = {
    * What deliberately stayed is "point-of-sale" and "phone", against the first
    * draft of this cut. They are not decoration: a reader arriving cold needs
    * the category in a word they already use, and this is a product whose whole
-   * thesis is being legible to a machine reading the page. "Till" is what a
-   * Swiss maker says; "point-of-sale" is what they'd search, and what an
-   * assistant matches on. Dropping it would have saved four words and cost the
-   * one sentence on the site that says what Zolto is.
+   * thesis is being legible to a machine reading the page. "Point-of-sale" is
+   * what a buyer searches and what an assistant matches on. Dropping it would
+   * have saved four words and cost the one sentence on the site that says what
+   * Zolto is.
    */
   body: "A point-of-sale and a web shop that share one inventory. Tap the photo of the piece you just sold on the phone in your hand — it's off your website before the customer has walked away.",
-  /** Labels on the hero's till drawing. */
-  till: {
-    title: "your till, on the phone you already own",
+  /** Labels on the hero's register drawing. */
+  register: {
+    title: "your register, on the phone you already own",
     /** Rendered as one line, so a translator can adapt the words around TWINT. */
     methods: "TWINT · Cards · Cash",
     caption:
@@ -1405,12 +1416,12 @@ export type Support = boolean | "partial" | "n/a";
  *
  * The matrix was ten payment-shaped rows, which quietly conceded the frame:
  * it compared Zolto to payment companies on payment questions, where the best
- * available outcome is a tie. The product is a till, a shop, one inventory and
+ * available outcome is a tie. The product is a register, a shop, one inventory and
  * an AI that runs all three — so the matrix now asks about all of it, grouped,
  * and the payment section is one of four rather than the whole thing.
  */
 export const CAPABILITY_GROUPS = [
-  "The till",
+  "The register",
   "The shop",
   "The AI",
   "The money",
@@ -1427,25 +1438,25 @@ export interface Capability {
 }
 
 export const CAPABILITIES: Capability[] = [
-  // ── The till ───────────────────────────────────────────────────────────
+  // ── The register ───────────────────────────────────────────────────────
   {
     key: "no-hardware",
-    group: "The till",
+    group: "The register",
     label: "Takes a payment with no hardware to buy",
     zolto: "Yes — Tap to Pay on the phone you already own",
     zoltoSupported: true,
   },
   {
     key: "item-grid",
-    group: "The till",
-    label: "Your catalogue as a grid in the till",
+    group: "The register",
+    label: "Your catalogue as a grid in the register",
     zolto: "Yes — photo, name and price for every piece",
     zoltoSupported: true,
   },
   {
     key: "twint",
-    group: "The till",
-    label: "TWINT in the same till",
+    group: "The register",
+    label: "TWINT in the same register",
     zolto: "Yes — beside cards and cash, on one screen",
     zoltoSupported: true,
   },
@@ -1453,21 +1464,21 @@ export const CAPABILITIES: Capability[] = [
     // Zolto answers this one badly, on purpose. A matrix that only asks
     // questions we win is a scorecard we wrote for ourselves.
     key: "postfinance",
-    group: "The till",
+    group: "The register",
     label: "PostFinance Pay",
     zolto: "No",
     zoltoSupported: false,
   },
   {
     key: "stock-in-person",
-    group: "The till",
+    group: "The register",
     label: "Stock counts down as you sell in person",
     zolto: "Yes",
     zoltoSupported: true,
   },
   {
     key: "sell-by-amount",
-    group: "The till",
+    group: "The register",
     label: "Sell by amount when it's busy, tidy it up later",
     zolto:
       "Yes — take the tap without tagging the item; at close of day Zolto emails its best guess and one tap confirms it",
@@ -1710,21 +1721,21 @@ export const COMPETITORS: Competitor[] = [
     id: "sumup",
     name: "SumUp",
     summary:
-      "A well-established mobile card-payment company for small merchants and market traders. It offers cheap readers, Tap to Pay on iPhone and Android, a genuinely capable till app with an item catalogue and stock tracking, and a basic online store. Its European merchants contract with SumUp Limited in Dublin, an EU-regulated e-money institution.",
+      "A well-established mobile card-payment company for small merchants and market traders. It offers cheap readers, Tap to Pay on iPhone and Android, a genuinely capable POS app with an item catalogue and stock tracking, and a basic online store. Its European merchants contract with SumUp Limited in Dublin, an EU-regulated e-money institution.",
     betterWhen: [
       "Your customers don't pay by TWINT — SumUp is cheaper and simpler on cards, and setup takes under an hour.",
       "You sell enough on cards for a monthly subscription to beat a per-sale percentage.",
-      "You want a mature till app: variants, modifiers, selling layouts, supplier lists, reconciliation. On pure till features it is further along than Zolto.",
+      "You want a mature POS app: variants, modifiers, selling layouts, supplier lists, reconciliation. On pure point-of-sale features it is further along than Zolto.",
       "You want a decade of track record behind the company taking your money. Zolto does not have one.",
     ],
     zoltoWhen: [
-      "Your customers reach for TWINT first. A SumUp till cannot take it at all — the workaround is a second, separate TWINT setup and a manual reconciliation at the end of the day.",
+      "Your customers reach for TWINT first. A SumUp register cannot take it at all — the workaround is a second, separate TWINT setup and a manual reconciliation at the end of the day.",
       "You sell one-of-a-kind pieces and can't afford to sell the same one twice across two channels.",
       "You want the shop built, written and photographed for you rather than a template to fill in yourself.",
       "You'd rather photograph your notebook than type a catalogue in by hand.",
     ],
     capabilities: [
-      // ── The till ──
+      // ── The register ──
       {
         key: "no-hardware",
         value: "Yes — Tap to Pay, iPhone XS and later / Android 11+",
@@ -1770,7 +1781,7 @@ export const COMPETITORS: Competitor[] = [
       {
         key: "stock-shared",
         value:
-          "Yes — SumUp states the till and Online Store sync automatically. Stock updates when a sale completes, not when a checkout starts.",
+          "Yes — SumUp states the register and Online Store sync automatically. Stock updates when a sale completes, not when a checkout starts.",
         supported: true,
       },
       {
@@ -1854,7 +1865,7 @@ export const COMPETITORS: Competitor[] = [
     ],
     zoltoWhen: [
       "You're one person, and a platform you have to administer is the problem, not the solution.",
-      "You want the till and the catalogue on the phone in your apron without a monthly bill for it.",
+      "You want the register and the catalogue on the phone in your apron without a monthly bill for it.",
       "You'd rather photograph your notebook than fill in a product grid by hand.",
     ],
   },
@@ -1870,13 +1881,13 @@ export const COMPETITORS: Competitor[] = [
       "You want an established Swiss acquiring relationship with formal contract terms.",
     ],
     zoltoWhen: [
-      "You want your products in the till. Tap on Mobile is a payment app — you type in an amount every time, or buy and integrate separate till software.",
+      "You want your products in the register. Tap on Mobile is a payment app — you type in an amount every time, or buy and integrate separate POS software.",
       "You want an online shop, not a checkout to bolt onto a site you commission. Saferpay is a gateway, not a store.",
       "You're one person or a small studio, and a multi-year terminal contract is overkill.",
       "You want to be selling this weekend rather than after a sales process.",
     ],
     capabilities: [
-      // ── The till ──
+      // ── The register ──
       {
         key: "no-hardware",
         value: "Yes — Tap on Mobile, iPhone / Android 12+",
@@ -1885,9 +1896,9 @@ export const COMPETITORS: Competitor[] = [
       {
         key: "item-grid",
         value:
-          "Not on Tap on Mobile — it is payment-only, so you type an amount each time. It integrates app-to-app with third-party till software.",
+          "Not on Tap on Mobile — it is payment-only, so you type an amount each time. It integrates app-to-app with third-party POS software.",
         supported: false,
-        cost: "A catalogue means buying and integrating separate till software",
+        cost: "A catalogue means buying and integrating separate POS software",
         costSourceId: "worldline-tap-on-mobile",
       },
       { key: "twint", value: "Yes", supported: true },
@@ -2048,7 +2059,7 @@ export const ZOLTO_LIMITATIONS: Limitation[] = [
   {
     title: "Taking a card through us is the dearest option on our own table",
     detail:
-      "Swiss-issued cards bill at Stripe's non-EEA rate — 2.9% plus CHF 0.20 — and Zolto adds nothing on top, which still leaves every other in-person option on our comparison cheaper than ours. SumUp's online rate beats ours on every plan too. Two honest responses: take TWINT where you can, which sits in the same till and costs less than half as much; and choose Zolto because it removes the work, not because it removes the fee. If cost per card sale is your deciding number, it decides against us.",
+      "Swiss-issued cards bill at Stripe's non-EEA rate — 2.9% plus CHF 0.20 — and Zolto adds nothing on top, which still leaves every other in-person option on our comparison cheaper than ours. SumUp's online rate beats ours on every plan too. Two honest responses: take TWINT where you can, which sits in the same register and costs less than half as much; and choose Zolto because it removes the work, not because it removes the fee. If cost per card sale is your deciding number, it decides against us.",
   },
   {
     title: "Everything runs on Stripe, and Stripe sets the real price",
@@ -2094,11 +2105,11 @@ export const BUYER_FIT: BuyerQuestion[] = [
     answers: [
       {
         when: "Yes, most of them",
-        then: "SumUp is out, whatever it costs — its till cannot take TWINT at all. That leaves Zolto and Worldline, and the question becomes whether you want your catalogue in the till. It's also the cheapest answer for you: TWINT at 1.3% is the least you can pay to be handed money at a stall without a monthly subscription.",
+        then: "SumUp is out, whatever it costs — its register cannot take TWINT at all. That leaves Zolto and Worldline, and the question becomes whether you want your catalogue in the register. It's also the cheapest answer for you: TWINT at 1.3% is the least you can pay to be handed money at a stall without a monthly subscription.",
       },
       {
         when: "No, they mostly tap a card",
-        then: "Then the card rate is your number, and ours is the highest on this page — Swiss cards bill at Stripe's non-EEA rate and we add nothing to it. SumUp is cheaper and its till app is more mature. Choose Zolto for the shop, the listings and the one inventory, or don't choose it.",
+        then: "Then the card rate is your number, and ours is the highest on this page — Swiss cards bill at Stripe's non-EEA rate and we add nothing to it. SumUp is cheaper and its POS app is more mature. Choose Zolto for the shop, the listings and the one inventory, or don't choose it.",
       },
     ],
   },

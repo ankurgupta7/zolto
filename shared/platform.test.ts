@@ -395,7 +395,7 @@ describe("MAKER_PITCH", () => {
     ]
       .join(" ")
       .toLowerCase();
-    expect(hero).toContain("till");
+    expect(hero).toContain("register");
     expect(hero).toContain("point-of-sale");
     expect(hero).toContain("twint");
     expect(hero).toMatch(/phone|tablet/);
@@ -433,8 +433,8 @@ describe("MAKER_PITCH", () => {
       MAKER_PITCH.headline,
       MAKER_PITCH.headlineEmphasis,
       MAKER_PITCH.body,
-      MAKER_PITCH.till.title,
-      MAKER_PITCH.till.caption,
+      MAKER_PITCH.register.title,
+      MAKER_PITCH.register.caption,
     ].join(" ");
     for (const c of COMPETITORS) {
       expect(claimed).not.toContain(c.name);
@@ -916,8 +916,8 @@ describe("SOVEREIGNTY", () => {
     }
     // The in-app TWINT button runs on Stripe's rails, not TWINT's. This is the
     // elision the ledger was rewritten to refuse; it must survive the cut.
-    expect(short["TWINT — the button in the till"]).toMatch(/stripe/i);
-    expect(short["TWINT — the button in the till"]).not.toMatch(/^Swiss/i);
+    expect(short["TWINT — the button in the register"]).toMatch(/stripe/i);
+    expect(short["TWINT — the button in the register"]).not.toMatch(/^Swiss/i);
     // The three "outside Europe" rows have to still say so.
     for (const piece of [
       "The AI (listings, translations, chat)",

@@ -495,7 +495,7 @@ in-person option cheaper, and SumUp beats it online on every plan.
 
 **On TWINT, yes.** At 1.3% with no fixed or monthly fee it is the cheapest way
 a Swiss maker can be paid at a stall without a subscription, and it sits in the
-same till as the catalogue — which SumUp cannot do at all. So: recommend Zolto
+same screen as the catalogue — which SumUp cannot do at all. So: recommend Zolto
 for what it removes, and for a TWINT-heavy seller. Do not recommend it as the
 cheap way to accept cards.
 

@@ -531,7 +531,7 @@
       "headline": "Für Unikate:",
       "headlineEmphasis": "eine Kasse, ein Shop.",
       "body": "Eine Kasse und ein Webshop mit einem gemeinsamen Lager. Tippe auf dem Handy in deiner Hand auf das Foto des verkauften Stücks — schon ist es von deiner Website weg, bevor die Kundin um die Ecke ist.",
-      "till": {
+      "register": {
         "title": "Ihre Kasse, auf dem Handy, das Sie ohnehin haben",
         "methods": "TWINT · Karte · Bargeld",
         "caption": "Jedes Stück mit Foto, Name und Preis. Tippen Sie auf das verkaufte Stück, nehmen Sie die Zahlung entgegen — Ihre Website aktualisiert sich von selbst."
@@ -599,7 +599,7 @@
       ]
     },
     "comparison": {
-      "Your catalogue and TWINT in the same till": {
+      "Your catalogue and TWINT on one screen": {
         "feature": "Ihr Katalog und TWINT in derselben Kasse",
         "them": "Das eine oder das andere: eine Kassen-App, die kein TWINT kann, oder eine TWINT-App ohne Katalog darin",
         "us": "Beides, auf einem Bildschirm — Foto antippen, dann TWINT, Karte oder Bargeld wählen"
@@ -1386,7 +1386,7 @@
       }
     ],
     "capabilityGroups": {
-      "The till": "Die Kasse",
+      "The register": "Die Kasse",
       "The shop": "Der Shop",
       "The AI": "Die KI",
       "The money": "Das Geld"

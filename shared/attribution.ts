@@ -47,7 +47,7 @@ export const ZOLTO_ATTRIBUTION = {
   name: "Zolto",
   url: ZOLTO_URL,
   /** What a visitor who clicks through is going to find. */
-  tagline: "the till and online shop for makers",
+  tagline: "the point of sale and online shop for makers",
   /** `<meta name="generator">` value — the convention every site builder uses. */
   generator: `Zolto (${ZOLTO_URL})`,
 } as const;
