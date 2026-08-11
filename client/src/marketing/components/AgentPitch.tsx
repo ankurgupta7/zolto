@@ -53,7 +53,10 @@ export function DiscoveryShiftChart({
         viewBox="0 0 360 200"
         className="mt-4 w-full"
         role="img"
-        aria-label={`${decliningLabel} declining, ${risingLabel} rising`}
+        aria-label={`${decliningLabel} declining, ${risingLabel} rising. ${st(
+          "aiNativePitch.chart.crossingLabel",
+          c.crossingLabel,
+        )}`}
       >
         <line
           x1="8"
@@ -93,14 +96,47 @@ export function DiscoveryShiftChart({
         <text x="330" y="196" fill="rgba(255,255,255,0.35)" fontSize="11">
           {c.endYear}
         </text>
+
+        {/* The crossing, labelled on the drawing rather than described under
+            it. (241, 101) is the computed intersection of the two paths above
+            — recompute it if either `d` changes, or the marker will float. The
+            label runs left into the wedge between the curves, which is ~30px
+            tall where it ends and only opens out from there. */}
+        <circle
+          cx="241"
+          cy="101"
+          r="5"
+          fill="none"
+          stroke="var(--brand-accent-light, #d4b45c)"
+          strokeWidth="1.8"
+        />
+        <line
+          x1="206"
+          y1="105"
+          x2="233"
+          y2="102"
+          stroke="var(--brand-accent-light, #d4b45c)"
+          strokeOpacity="0.55"
+          strokeWidth="1"
+        />
+        <text
+          x="202"
+          y="109"
+          textAnchor="end"
+          fill="var(--brand-accent-light, #d4b45c)"
+          fontSize="11"
+        >
+          {st("aiNativePitch.chart.crossingLabel", c.crossingLabel)}
+        </text>
       </svg>
-      <p
-        className={`text-sm leading-relaxed text-white/60 ${
-          dense ? "mt-3" : "mt-4"
-        }`}
-      >
-        {st("aiNativePitch.chart.caption", c.caption)}
-      </p>
+      {/* Off the reel the caption still earns its place — a reader who has
+          navigated to /why-zolto has chosen to be reading. On the homepage the
+          annotation above says it, so the paragraph comes off. */}
+      {!dense && (
+        <p className="mt-4 text-sm leading-relaxed text-white/60">
+          {st("aiNativePitch.chart.caption", c.caption)}
+        </p>
+      )}
     </div>
   );
 }
@@ -206,7 +242,9 @@ export function AiNativeThesis({ dense = false }: { dense?: boolean } = {}) {
           dense ? "mt-5" : "mt-8"
         }`}
       >
-        {st("aiNativePitch.body", AI_NATIVE_PITCH.body)}
+        {dense
+          ? st("aiNativePitch.bodyShort", AI_NATIVE_PITCH.bodyShort)
+          : st("aiNativePitch.body", AI_NATIVE_PITCH.body)}
       </p>
     </>
   );

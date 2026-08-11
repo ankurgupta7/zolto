@@ -18,8 +18,8 @@ import { useMarketingT } from "../lib/marketingI18n";
  */
 export function HeroTill() {
   const { st } = useMarketingT();
-  const till = MAKER_PITCH.till;
-  const title = st("makerPitch.till.title", till.title);
+  const register = MAKER_PITCH.register;
+  const title = st("makerPitch.register.title", register.title);
 
   return (
     <div
@@ -41,11 +41,11 @@ export function HeroTill() {
           className="h-36 w-auto text-[var(--brand-accent-light)] sm:h-56"
         />
         <p className="font-serif text-lg leading-relaxed text-white/80">
-          {st("makerPitch.till.methods", till.methods)}
+          {st("makerPitch.register.methods", register.methods)}
         </p>
       </div>
       <p className="mt-5 text-sm leading-relaxed text-white/60">
-        {st("makerPitch.till.caption", till.caption)}
+        {st("makerPitch.register.caption", register.caption)}
       </p>
     </div>
   );

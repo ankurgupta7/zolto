@@ -8,8 +8,8 @@ afterEach(cleanup);
 describe("HeroTill", () => {
   it("shows the till with its wares and the payment methods", () => {
     render(<HeroTill />);
-    expect(screen.getByText(MAKER_PITCH.till.methods)).toBeTruthy();
-    expect(screen.getByText(MAKER_PITCH.till.caption)).toBeTruthy();
+    expect(screen.getByText(MAKER_PITCH.register.methods)).toBeTruthy();
+    expect(screen.getByText(MAKER_PITCH.register.caption)).toBeTruthy();
   });
 
   it("draws the phone as an accessible image carrying the argument", () => {
@@ -18,7 +18,7 @@ describe("HeroTill", () => {
     // the product, so a screen reader has to get it too.
     const img = screen.getByRole("img");
     expect(img.querySelector("title")?.textContent).toBe(
-      MAKER_PITCH.till.title,
+      MAKER_PITCH.register.title,
     );
   });
 

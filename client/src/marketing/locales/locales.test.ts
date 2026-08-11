@@ -168,6 +168,14 @@ describe("marketing locale files", () => {
         headline: ZERO_COST_POS.headline,
         headlineEmphasis: ZERO_COST_POS.headlineEmphasis,
         body: ZERO_COST_POS.body,
+        bodyShort: ZERO_COST_POS.bodyShort,
+        processorNoteLink: ZERO_COST_POS.processorNoteLink,
+        receipt: {
+          title: ZERO_COST_POS.receipt.title,
+          lines: [...ZERO_COST_POS.receipt.lines],
+          total: ZERO_COST_POS.receipt.total,
+          note: ZERO_COST_POS.receipt.note,
+        },
         includes: [...ZERO_COST_POS.includes],
         catch: ZERO_COST_POS.catch,
       },
@@ -176,10 +184,10 @@ describe("marketing locale files", () => {
         headline: MAKER_PITCH.headline,
         headlineEmphasis: MAKER_PITCH.headlineEmphasis,
         body: MAKER_PITCH.body,
-        till: {
-          title: MAKER_PITCH.till.title,
-          methods: MAKER_PITCH.till.methods,
-          caption: MAKER_PITCH.till.caption,
+        register: {
+          title: MAKER_PITCH.register.title,
+          methods: MAKER_PITCH.register.methods,
+          caption: MAKER_PITCH.register.caption,
         },
       },
       aiNativePitch: {
@@ -187,8 +195,10 @@ describe("marketing locale files", () => {
         headline: AI_NATIVE_PITCH.headline,
         headlineEmphasis: AI_NATIVE_PITCH.headlineEmphasis,
         body: AI_NATIVE_PITCH.body,
+        bodyShort: AI_NATIVE_PITCH.bodyShort,
         chart: {
           title: AI_NATIVE_PITCH.chart.title,
+          crossingLabel: AI_NATIVE_PITCH.chart.crossingLabel,
           decliningLabel: AI_NATIVE_PITCH.chart.decliningLabel,
           risingLabel: AI_NATIVE_PITCH.chart.risingLabel,
           caption: AI_NATIVE_PITCH.chart.caption,
@@ -211,16 +221,23 @@ describe("marketing locale files", () => {
         timeOfDay: s.timeOfDay,
       })),
       cardReaderGag: { items: [...CARD_READER_GAG.items] },
-      // SqueezePlay.tsx renders POSITIONING.squeezePlay. The panels' `sourceId`
-      // is absent on purpose: a citation is a URL and a date, not prose, and it
-      // renders from shared/sources.ts identically in every language.
+      // SqueezePlay.tsx renders POSITIONING.squeezePlay. Two fields are absent
+      // on purpose: `sourceId`, because a citation is a URL and a date rather
+      // than prose and renders from shared/sources.ts identically in every
+      // language; and `vendor`, because "SumUp" is a product name in all four.
       squeezePlay: {
         eyebrow: POSITIONING.squeezePlay.eyebrow,
         headline: POSITIONING.squeezePlay.headline,
         headlineEmphasis: POSITIONING.squeezePlay.headlineEmphasis,
         body: POSITIONING.squeezePlay.body,
+        bodyShort: POSITIONING.squeezePlay.bodyShort,
+        matrix: {
+          grid: POSITIONING.squeezePlay.matrix.grid,
+          twint: POSITIONING.squeezePlay.matrix.twint,
+        },
         panels: POSITIONING.squeezePlay.panels.map((p) => ({
           label: p.label,
+          note: p.note,
           detail: p.detail,
         })),
         claim: POSITIONING.squeezePlay.claim,
@@ -252,9 +269,11 @@ describe("marketing locale files", () => {
         headlineEmphasis: SOVEREIGNTY.headlineEmphasis,
         serving: SOVEREIGNTY.serving,
         body: SOVEREIGNTY.body,
+        bodyShort: SOVEREIGNTY.bodyShort,
         ledger: SOVEREIGNTY.ledger.map((e) => ({
           piece: e.piece,
           today: e.today,
+          todayShort: e.todayShort,
           ...(e.next ? { next: e.next } : {}),
         })),
         why: [...SOVEREIGNTY.why],

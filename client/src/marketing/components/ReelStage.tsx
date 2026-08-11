@@ -169,12 +169,18 @@ function ChapterRail({ label }: { label: string }) {
             onClick={() => stage.scrollToChapter(chapter.id)}
             className="pointer-events-auto group flex items-center justify-end gap-2.5 focus-visible:outline-none"
           >
-            {/* The label rides beside the dot: always there for a mouse or a
-                keyboard, faded out until the post is the one you're in. */}
+            {/* Every label, all the time — not just the active one.
+                Eight words down the edge are the argument's outline, and a
+                reader who can see how much is left tolerates more of it than
+                one being fed a screen at a time with no sense of the end. The
+                inactive ones go muted rather than invisible so the active
+                chapter still reads as the current one at a glance. */}
             <span
               aria-hidden
-              className={`whitespace-nowrap text-[11px] uppercase tracking-[0.16em] text-[var(--brand-accent)] transition-opacity duration-300 group-hover:opacity-100 group-focus-visible:opacity-100 ${
-                active ? "opacity-100" : "opacity-0"
+              className={`whitespace-nowrap text-[11px] uppercase tracking-[0.16em] transition-all duration-300 group-hover:text-[var(--brand-accent)] group-hover:opacity-100 group-focus-visible:text-[var(--brand-accent)] group-focus-visible:opacity-100 ${
+                active
+                  ? "text-[var(--brand-accent)] opacity-100"
+                  : "text-[var(--brand-muted)] opacity-55"
               }`}
             >
               {chapter.label}

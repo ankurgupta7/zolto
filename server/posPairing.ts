@@ -45,7 +45,7 @@ export const POS_SECRET_PROVIDER = "pos";
 
 /**
  * How long a pairing link stays good. Long enough to walk from a laptop to the
- * till and get past the OS "open in Zolto POS?" prompt; short enough that a link
+ * register and get past the OS "open in Zolto POS?" prompt; short enough that a link
  * left in a chat thread is dead by the time anyone else finds it.
  */
 export const PAIRING_TTL_MS = 10 * 60 * 1000;

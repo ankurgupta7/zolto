@@ -67,12 +67,148 @@ export function SqueezePlayArgument({ dense = false }: DenseProps = {}) {
           </span>
         </span>
       </h2>
+      {/* Dense gets the short run-up: the matrix beside it is about to show
+          the same thing, and in a reel the reader cannot skim past a paragraph
+          to find that out. */}
       <p
         className={`leading-relaxed text-[var(--brand-muted-2)] ${
           dense ? "mt-5" : "mt-8"
         }`}
       >
-        {st("squeezePlay.body", sp.body)}
+        {dense
+          ? st("squeezePlay.bodyShort", sp.bodyShort)
+          : st("squeezePlay.body", sp.body)}
+      </p>
+    </div>
+  );
+}
+
+/**
+ * The three tills as a matrix — three products down, two properties across.
+ *
+ * This is the homepage rendering, and it exists because the argument was
+ * already a table: three options scored on the same two questions, written out
+ * as three paragraphs that each named what its subject lacked. Drawn as a grid
+ * the reader sees that only one row has two ticks, which is what `claim` used
+ * to have to say in a sentence — so in dense the claim comes off the page and
+ * the grid makes it instead.
+ *
+ * Both the ticks and the drawing read `has`, so the picture and the score can't
+ * drift apart. The citations move to one footnote line: they belong to the
+ * concessions, and the concessions are now cells.
+ */
+function SqueezeMatrix() {
+  const { t, st } = useMarketingT();
+  const sp = POSITIONING.squeezePlay;
+  const columns = [
+    { key: "grid", label: st("squeezePlay.matrix.grid", sp.matrix.grid) },
+    { key: "twint", label: st("squeezePlay.matrix.twint", sp.matrix.twint) },
+  ] as const;
+  const cited = sp.panels.filter(
+    (p): p is Extract<(typeof sp.panels)[number], { sourceId: string }> =>
+      "sourceId" in p,
+  );
+
+  return (
+    <div data-testid="squeeze-matrix">
+      <table className="w-full border-collapse text-left">
+        <thead>
+          <tr>
+            <th />
+            {columns.map((c) => (
+              <th
+                key={c.key}
+                scope="col"
+                className="w-[27%] border-b border-[var(--brand-border)] pb-2 text-center text-[10px] font-medium uppercase tracking-[0.14em] text-[var(--brand-muted-2)] sm:text-[11px]"
+              >
+                {c.label}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {sp.panels.map((panel, i) => {
+            const isZolto = panel.has.length > 1;
+            return (
+              <tr
+                key={panel.id}
+                data-testid={`squeeze-row-${panel.id}`}
+                className={`border-b border-[var(--brand-border)] last:border-b-0 ${
+                  isZolto ? "bg-[var(--brand-accent)]/[0.09]" : ""
+                }`}
+              >
+                <th scope="row" className="py-2.5 pl-2 pr-3 font-normal">
+                  {/* A product name, so it renders from the constant rather
+                      than the locale — brands don't translate, and a
+                      translatable "SumUp" is a key waiting to drift. */}
+                  <span
+                    className={`block font-serif text-base leading-tight text-[var(--brand-text)] sm:text-[17px] ${
+                      isZolto ? "font-medium" : ""
+                    }`}
+                  >
+                    {panel.vendor}
+                  </span>
+                  <span className="mt-0.5 block text-[12px] leading-snug text-[var(--brand-muted-2)] sm:text-[12.5px]">
+                    {st(`squeezePlay.panels.${i}.note`, panel.note)}
+                  </span>
+                </th>
+                {columns.map((c) => {
+                  const has = (panel.has as readonly string[]).includes(c.key);
+                  return (
+                    <td
+                      key={c.key}
+                      data-testid={`squeeze-cell-${panel.id}-${c.key}`}
+                      data-has={has ? "true" : "false"}
+                      className="py-2.5 text-center align-middle"
+                    >
+                      {/* The glyph is decorative; the cell's meaning is read
+                          out of the row and column headers plus this label. */}
+                      <span
+                        aria-hidden
+                        className={
+                          has
+                            ? "text-lg leading-none text-[var(--brand-accent)]"
+                            : "text-lg leading-none text-[var(--brand-muted)]/45"
+                        }
+                      >
+                        {has ? "✓" : "—"}
+                      </span>
+                      <span className="sr-only">
+                        {t(has ? "squeezePlay.yes" : "squeezePlay.no")}
+                      </span>
+                    </td>
+                  );
+                })}
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+
+      {/* One footnote for both concessions — each was a per-card citation when
+          each concession was a card. */}
+      <p className="mt-3 text-[11px] leading-snug text-[var(--brand-muted)]">
+        {cited.map((panel, n) => (
+          <span key={panel.id}>
+            {n > 0 && " · "}
+            <a
+              href={source(panel.sourceId).url}
+              target="_blank"
+              rel="noreferrer nofollow"
+              className="underline decoration-dotted underline-offset-2 hover:text-[var(--brand-accent)]"
+            >
+              {source(panel.sourceId).label}
+            </a>
+          </span>
+        ))}
+        {cited.length > 0 && (
+          <>
+            {" · "}
+            {t("sources.read", {
+              date: source(cited[0].sourceId).retrievedOn,
+            })}
+          </>
+        )}
       </p>
     </div>
   );
@@ -84,26 +220,22 @@ export function SqueezePlayArgument({ dense = false }: DenseProps = {}) {
  * half, and the argument is a *comparison* — it only works if you can put the
  * panels beside each other.
  *
- * Except in `dense`, where the reel panel this sits in *is already* a horizontal
- * swipe — a second one nested inside it swallows the gesture and strands the
- * reader mid-post. There the three tills become three compact rows instead: the
- * drawing shrinks and moves beside its label, which keeps all three comparable
- * in one glance without a second axis. From `sm` up both shapes are the same
- * three-column grid.
+ * `dense` — the homepage reel — renders SqueezeMatrix instead. Three compact
+ * card-rows were the previous answer to "a nested swipe strands the reader",
+ * and they solved the gesture without solving the reading: 172 words of prose
+ * to score three products on two questions. A grid scores them in six cells.
  */
 export function SqueezePlayTills({ dense = false }: DenseProps = {}) {
   const { t, st } = useMarketingT();
   const sp = POSITIONING.squeezePlay;
 
+  if (dense) return <SqueezeMatrix />;
+
   return (
     <div>
       <ul
         data-testid="squeeze-tills"
-        className={
-          dense
-            ? "grid gap-2 sm:grid-cols-3 sm:gap-3"
-            : "flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 sm:grid sm:snap-none sm:grid-cols-3 sm:gap-8 sm:overflow-visible sm:pb-0"
-        }
+        className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 sm:grid sm:snap-none sm:grid-cols-3 sm:gap-8 sm:overflow-visible sm:pb-0"
       >
         {sp.panels.map((panel, i) => {
           const isZolto = panel.has.length > 1;
@@ -111,11 +243,7 @@ export function SqueezePlayTills({ dense = false }: DenseProps = {}) {
             <li
               key={panel.id}
               data-testid={`squeeze-panel-${panel.id}`}
-              className={`rounded-2xl border ${
-                dense
-                  ? "flex items-center gap-3 p-2 sm:block sm:p-4"
-                  : "min-w-[80%] shrink-0 snap-center p-6 sm:min-w-0 sm:shrink"
-              } ${
+              className={`min-w-[80%] shrink-0 snap-center rounded-2xl border p-6 sm:min-w-0 sm:shrink ${
                 isZolto
                   ? "border-[var(--brand-accent)] bg-white ring-1 ring-[var(--brand-accent)]"
                   : "border-[var(--brand-border)] bg-white/60"
@@ -124,39 +252,21 @@ export function SqueezePlayTills({ dense = false }: DenseProps = {}) {
               <SqueezePlayTill
                 has={panel.has}
                 title={st(`squeezePlay.panels.${i}.label`, panel.label)}
-                className={`w-auto ${
-                  dense ? "h-14 flex-none sm:mx-auto sm:h-24" : "mx-auto h-40"
-                } ${
+                className={`mx-auto h-40 w-auto ${
                   isZolto
                     ? "text-[var(--brand-ink)]"
                     : "text-[var(--brand-muted)]"
                 }`}
               />
-              <div className={dense ? "min-w-0" : ""}>
-                <h3
-                  className={`font-serif leading-snug text-[var(--brand-text)] ${
-                    dense ? "text-base sm:mt-3 sm:text-lg" : "mt-6 text-lg"
-                  }`}
-                >
+              <div>
+                <h3 className="mt-6 font-serif text-lg leading-snug text-[var(--brand-text)]">
                   {st(`squeezePlay.panels.${i}.label`, panel.label)}
                 </h3>
-                <p
-                  className={`text-[var(--brand-muted-2)] ${
-                    dense
-                      ? "mt-1 text-[13px] leading-snug sm:mt-2 sm:text-sm sm:leading-relaxed"
-                      : "mt-2 text-sm leading-relaxed"
-                  }`}
-                >
+                <p className="mt-2 text-sm leading-relaxed text-[var(--brand-muted-2)]">
                   {st(`squeezePlay.panels.${i}.detail`, panel.detail)}
                 </p>
                 {"sourceId" in panel && panel.sourceId && (
-                  <p
-                    className={`text-[var(--brand-muted)] ${
-                      dense
-                        ? "mt-1 text-[11px] leading-snug sm:mt-3 sm:text-xs"
-                        : "mt-3 text-xs"
-                    }`}
-                  >
+                  <p className="mt-3 text-xs text-[var(--brand-muted)]">
                     <a
                       href={source(panel.sourceId).url}
                       target="_blank"
@@ -179,9 +289,7 @@ export function SqueezePlayTills({ dense = false }: DenseProps = {}) {
 
       <p
         data-testid="squeeze-claim"
-        className={`max-w-2xl font-serif leading-snug text-[var(--brand-text)] ${
-          dense ? "mt-2 text-lg sm:mt-4 sm:text-xl" : "mt-10 text-xl"
-        }`}
+        className="mt-10 max-w-2xl font-serif text-xl leading-snug text-[var(--brand-text)]"
       >
         {st("squeezePlay.claim", sp.claim)}
       </p>
