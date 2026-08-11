@@ -1087,18 +1087,22 @@ export const MAKER_PITCH = {
    * inline-block that wrap is invisible to getClientRects() — the signal is
    * the box going full-column-width, not a second rect.
    *
-   * ON "REGISTER". This said "till" until August 2026. "Till" is standard UK
-   * and Irish retail English and is not what this category calls itself in
+   * ON "POS". This said "till" until August 2026. "Till" is standard UK and
+   * Irish retail English and is not what this category calls itself in
    * Switzerland: SumUp ships a product called SumUp Register and markets
    * "SumUp POS"; Worldline's own Swiss English pages say "cash register" and
    * "payment terminal"; the German, French and Italian have always said
-   * Kasse / caisse / cassa. "Point of sale" is the right category noun and
-   * is used as such elsewhere, but it cannot go here — measured at 36px
-   * Cormorant, "a point of sale and a shop." is 361px against the ~330px
-   * ceiling above, and "a cash register and a shop." is 362px. "A register
-   * and a shop." is 294px. The measurement picked the word, not taste.
+   * Kasse / caisse / cassa.
+   *
+   * The category noun spelled out will not fit — measured at 36px Cormorant,
+   * "a point of sale and a shop." is 361px against the ~330px ceiling above,
+   * and "a cash register and a shop." is 362px. The abbreviation does, at
+   * 254px, and it is the one form of the term that is identical in all four
+   * of Zolto's languages. `body` directly beneath opens by spelling it out,
+   * so a reader who does not know the abbreviation is told immediately —
+   * which is why the repetition there is deliberate and should stay.
    */
-  headlineEmphasis: "a register and a shop.",
+  headlineEmphasis: "a POS and a shop.",
   /**
    * Trimmed in the August 2026 copy audit: 50 words to 35.
    *

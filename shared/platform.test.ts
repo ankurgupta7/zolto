@@ -395,7 +395,11 @@ describe("MAKER_PITCH", () => {
     ]
       .join(" ")
       .toLowerCase();
-    expect(hero).toContain("register");
+    // The category noun in both forms: the abbreviation the heading has room
+    // for, and the spelled-out version the body opens with so a reader who
+    // doesn't know "POS" is told immediately. Losing either would leave the
+    // hero naming the product only in words a search wouldn't match.
+    expect(hero).toMatch(/\bpos\b/);
     expect(hero).toContain("point-of-sale");
     expect(hero).toContain("twint");
     expect(hero).toMatch(/phone|tablet/);
