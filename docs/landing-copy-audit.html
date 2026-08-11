@@ -1,4 +1,4 @@
-<title>Cutting 510 words from the Zolto homepage</title>
+<title>Cutting 507 words from the Zolto homepage</title>
 <style>
   :root {
     --ink: #14181c;
@@ -155,6 +155,28 @@
     /* Long identifiers are one unbreakable token and push the page sideways
        on a phone otherwise. */
     overflow-wrap: anywhere;
+  }
+
+  .shipped {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--keep);
+    border: 1px solid var(--keep);
+    background: var(--keep-soft);
+    border-radius: 2px;
+    padding: 4px 9px 3px;
+    margin: 0 0 18px;
+  }
+  .shipped code {
+    background: none;
+    border: 0;
+    padding: 0;
+    font-size: 1em;
+    text-transform: none;
+    letter-spacing: 0.04em;
   }
 
   .lede {
@@ -644,20 +666,23 @@
 
 <header>
   <p class="kicker">Copy audit · client/src/marketing/pages/Landing.tsx</p>
-  <h1>The homepage is <span class="struck">1,380 words</span><br />long. Let's cut 510 of them.</h1>
+  <p class="shipped">Shipped &mdash; branch <code>claude/landing-page-wordiness-qo6z9d</code></p>
+  <h1>The homepage was <span class="struck">1,380 words</span><br />long. It is now 873.</h1>
   <div class="col">
     <p class="lede">
       Measured off the rendered DOM, not the source: every visible word in the
-      eight reel chapters at 1440&times;900. About five and a half minutes of
-      reading before anyone reaches a signup button — and the reel makes that
-      worse rather than better.
+      eight reel chapters at 1440&times;900. It was about five and a half
+      minutes of reading before anyone reached a signup button — and the reel
+      made that worse rather than better. This page is the audit that argued
+      for the cut; every proposal in it has now been built, and the numbers
+      below are the measured result rather than the target.
     </p>
   </div>
 
   <div class="field" id="field" aria-hidden="true"></div>
   <div class="field-legend">
-    <span><i class="swatch" style="background:var(--ink-2);opacity:.55"></i> stays &mdash; 870 words</span>
-    <span><i class="swatch" style="background:var(--cut);opacity:.85"></i> goes &mdash; 510 words</span>
+    <span><i class="swatch" style="background:var(--ink-2);opacity:.55"></i> kept &mdash; 873 words</span>
+    <span><i class="swatch" style="background:var(--cut);opacity:.85"></i> removed &mdash; 507 words</span>
   </div>
 
   <dl class="stats">
@@ -666,16 +691,16 @@
       <dd>1,380<small>Across 8 reel chapters</small></dd>
     </div>
     <div class="stat">
-      <dt>In continuous prose</dt>
-      <dd>879<small>29 blocks of 12+ words</small></dd>
+      <dt>Prose, before &rarr; after</dt>
+      <dd>879&rarr;319<small>29 blocks down to 15</small></dd>
     </div>
     <div class="stat">
-      <dt>Longest single block</dt>
-      <dd>67<small>The free-in-person disclaimer</small></dd>
+      <dt>Reading time</dt>
+      <dd>3:30<small>Down from 5:31 at 250 wpm</small></dd>
     </div>
     <div class="stat">
-      <dt>After the rewrites below</dt>
-      <dd>870<small>&minus;37%, roughly 3:30 of reading</small></dd>
+      <dt>Words now</dt>
+      <dd>873<small>&minus;37%, against an 870 target</small></dd>
     </div>
   </dl>
 </header>
@@ -757,8 +782,8 @@
     <div class="head-rule"></div>
     <h2><span class="num">02</span> Where the words are</h2>
     <p class="sec-intro">
-      Per chapter, as rendered. The hatched part of each bar is what the
-      proposals below remove.
+      Per chapter, as rendered, before and after. The hatched part of each bar
+      is what came out.
     </p>
   </div>
 
@@ -768,8 +793,8 @@
         <tr>
           <th>Chapter</th>
           <th class="barcell"></th>
+          <th class="n">Was</th>
           <th class="n">Now</th>
-          <th class="n">Target</th>
           <th class="n">Cut</th>
         </tr>
       </thead>
@@ -779,7 +804,7 @@
           <td class="name">Whole page</td>
           <td class="barcell"></td>
           <td class="n">1,380</td>
-          <td class="n">870</td>
+          <td class="n">873</td>
           <td class="n delta">&minus;37%</td>
         </tr>
       </tfoot>
@@ -1456,25 +1481,35 @@
 <section>
   <div class="col">
     <div class="head-rule"></div>
-    <h2><span class="num">06</span> If you only do one thing</h2>
+    <h2><span class="num">06</span> What it cost to land</h2>
     <p>
-      Do <strong>A</strong> — the squeeze matrix. It is the largest single cut
-      (135 words), it is the chapter where the current form fights the content
-      hardest, and it needs no copywriting judgement: the facts are already
-      written, they just need to be arranged in a grid instead of narrated.
+      <strong>A</strong> was the largest single cut, as predicted — 137 words,
+      and it needed no copywriting judgement because the facts were already
+      written and only had to be arranged in a grid. It also bought back a
+      swipe: the chapter is one slide now instead of two.
     </p>
     <p>
-      Then <strong>B</strong>, because the 67-word disclaimer is the single
-      block most likely to make a reader stop, and it already has a page to live
-      on.
+      The long-form copy did not go anywhere. Every cut is a
+      <code>bodyShort</code> / <code>todayShort</code> variant the reel uses;
+      <code>llms.txt</code>, the SEO descriptions, the MCP briefs and the
+      dedicated pages still render the full text. For a product whose thesis is
+      being legible to a machine reading the page, gutting the machine-readable
+      version to tidy the human one would have been a strange trade.
+    </p>
+    <h3>The one proposal that was wrong</h3>
+    <p>
+      Cutting <strong>&ldquo;point-of-sale&rdquo;</strong> and
+      <strong>&ldquo;phone&rdquo;</strong> from the hero paragraph saved four
+      words and would have cost the one sentence on the site that says what
+      Zolto is, in the word a buyer would search and an assistant would match
+      on. A test caught it. The hero is 72 words rather than the 66 this
+      document proposed, and that is the right number.
     </p>
     <p class="note">
-      One caution on the order: <code>Landing.test.tsx</code> asserts specific
-      copy and structure, and <code>locales.test.ts</code> checks all four
-      locale files stay in sync — so each rewrite lands in five places (en, de,
-      fr, it, and <code>shared/platform.ts</code> for the pledge and cost
-      strings). Worth doing one chapter per change rather than in a single
-      sweep, with a screenshot each time.
+      Each rewrite landed in five places — en, de, fr, it and
+      <code>shared/platform.ts</code> — and the whole change is 3,270 passing
+      tests, a clean typecheck, and every reel panel still fitting one screen
+      at 375, 393, 768, 1280 and 1440.
     </p>
   </div>
 </section>
@@ -1493,15 +1528,16 @@
 
 <script>
   // ── Chapter budget chart ──────────────────────────────────────
+  // [chapter, before, after] — both measured, not estimated.
   const CHAPTERS = [
-    ["Promise", 86, 66],
-    ["The squeeze", 217, 82],
-    ["Free in person", 169, 91],
-    ["How it works", 162, 146],
-    ["What it costs", 112, 91],
-    ["Trust", 219, 133],
-    ["What's coming", 241, 121],
-    ["Start free", 174, 140],
+    ["Promise", 86, 72],
+    ["The squeeze", 217, 80],
+    ["Free in person", 169, 78],
+    ["How it works", 162, 148],
+    ["What it costs", 112, 96],
+    ["Trust", 219, 140],
+    ["What's coming", 241, 106],
+    ["Start free", 174, 153],
   ];
   const MAX = Math.max(...CHAPTERS.map((c) => c[1]));
   const body = document.getElementById("chartBody");
@@ -1524,7 +1560,7 @@
   // ── Hero word field: 1,380 marks, 660 of them struck ──────────
   const field = document.getElementById("field");
   const TOTAL = 1380;
-  const CUT = 510;
+  const CUT = 507;
   // Deterministic LCG so the field is identical on every load.
   let seed = 20260811;
   const rnd = () => ((seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
