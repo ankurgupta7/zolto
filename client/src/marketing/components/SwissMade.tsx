@@ -57,6 +57,86 @@ interface DenseProps {
   dense?: boolean;
 }
 
+/** Bar segment colours, matched to the chips above so the two read as one key. */
+const BAR: Record<SovereigntyEntry["state"], string> = {
+  swiss: "bg-emerald-700",
+  european: "bg-emerald-500/70",
+  moving: "bg-[var(--brand-accent)]",
+  foreign: "bg-[var(--brand-muted)]",
+};
+
+const BAR_ORDER: SovereigntyEntry["state"][] = [
+  "swiss",
+  "european",
+  "moving",
+  "foreign",
+];
+
+/**
+ * The ledger's shape, before any of its rows are read.
+ *
+ * Nine rows of piece-and-state is a table you have to work through to learn
+ * the one thing the section is actually claiming: mostly there, honest about
+ * the rest. The bar says that at a glance, and then the rows are evidence
+ * rather than homework.
+ *
+ * Counts are computed from the ledger, never typed in — a hardcoded "3 Swiss"
+ * would be a number that quietly goes wrong the first time a row flips state,
+ * which is precisely the event this whole structure exists to advertise.
+ */
+export function SovereigntyBar() {
+  const { t } = useMarketingT();
+  const total = SOVEREIGNTY.ledger.length;
+  const segments = BAR_ORDER.map((state) => ({
+    state,
+    count: SOVEREIGNTY.ledger.filter((e) => e.state === state).length,
+  })).filter((s) => s.count > 0);
+
+  const label = segments
+    .map(
+      (s) =>
+        `${s.count} ${t(`sovereignty.state.${s.state}`, {
+          defaultValue: SOVEREIGNTY_STATE_LABEL[s.state],
+        })}`,
+    )
+    .join(", ");
+
+  return (
+    <div data-testid="sovereignty-bar">
+      <div
+        role="img"
+        aria-label={label}
+        className="flex h-6 overflow-hidden rounded-md"
+      >
+        {segments.map((s) => (
+          <div
+            key={s.state}
+            data-testid={`sovereignty-bar-${s.state}`}
+            data-count={s.count}
+            style={{ width: `${(s.count / total) * 100}%` }}
+            className={`flex items-center justify-center text-[10px] font-medium text-white lining-nums tabular-nums ${BAR[s.state]}`}
+          >
+            {s.count}
+          </div>
+        ))}
+      </div>
+      <ul aria-hidden className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
+        {segments.map((s) => (
+          <li
+            key={s.state}
+            className="flex items-center gap-1.5 text-[11px] text-[var(--brand-muted-2)]"
+          >
+            <span className={`h-2.5 w-2.5 rounded-sm ${BAR[s.state]}`} />
+            {t(`sovereignty.state.${s.state}`, {
+              defaultValue: SOVEREIGNTY_STATE_LABEL[s.state],
+            })}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 /** Where Zolto is from, and who it is built for. */
 export function SwissMadeIntro({ dense = false }: DenseProps = {}) {
   const { st } = useMarketingT();
@@ -79,28 +159,29 @@ export function SwissMadeIntro({ dense = false }: DenseProps = {}) {
           </span>
         </span>
       </h2>
-      {/* Dense reads the two paragraphs as a pair of columns rather than a
-          stack — same words, half the height. */}
-      <div
-        className={
-          dense ? "mt-3 grid gap-3 sm:grid-cols-2 sm:items-baseline" : ""
-        }
-      >
-        <p
-          className={`text-lg leading-relaxed text-[var(--brand-text)] ${
-            dense ? "" : "mt-8"
-          }`}
-        >
-          {st("sovereignty.serving", SOVEREIGNTY.serving)}
-        </p>
-        <p
-          className={`leading-relaxed text-[var(--brand-muted-2)] ${
-            dense ? "" : "mt-4"
-          }`}
-        >
-          {st("sovereignty.body", SOVEREIGNTY.body)}
-        </p>
-      </div>
+      {/* Dense takes one line and the bar. `serving` and `body` between them
+          say "built in Zürich" and "run from Europe" — which is the headline
+          directly above and the ledger's first row directly beside. What the
+          bar cannot say is that the list is complete, so that clause stays. */}
+      {dense ? (
+        <>
+          <p className="mt-3 leading-relaxed text-[var(--brand-text)]">
+            {st("sovereignty.bodyShort", SOVEREIGNTY.bodyShort)}
+          </p>
+          <div className="mt-4">
+            <SovereigntyBar />
+          </div>
+        </>
+      ) : (
+        <>
+          <p className="mt-8 text-lg leading-relaxed text-[var(--brand-text)]">
+            {st("sovereignty.serving", SOVEREIGNTY.serving)}
+          </p>
+          <p className="mt-4 leading-relaxed text-[var(--brand-muted-2)]">
+            {st("sovereignty.body", SOVEREIGNTY.body)}
+          </p>
+        </>
+      )}
     </div>
   );
 }
@@ -174,7 +255,9 @@ export function SwissMadeLedger({
                       : "mt-0.5 text-sm leading-relaxed"
                   }`}
                 >
-                  {st(`sovereignty.ledger.${i}.today`, entry.today)}
+                  {dense
+                    ? st(`sovereignty.ledger.${i}.todayShort`, entry.todayShort)
+                    : st(`sovereignty.ledger.${i}.today`, entry.today)}
                 </p>
               </div>
               <StateChip state={entry.state} />

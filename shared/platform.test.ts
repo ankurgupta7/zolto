@@ -347,6 +347,8 @@ describe("ZERO_COST_POS", () => {
       ZERO_COST_POS.headline,
       ZERO_COST_POS.headlineEmphasis,
       ZERO_COST_POS.body,
+      ZERO_COST_POS.bodyShort,
+      ZERO_COST_POS.processorNoteLink,
       ZERO_COST_POS.catch,
       ...ZERO_COST_POS.includes,
     ]
@@ -361,6 +363,8 @@ describe("ZERO_COST_POS", () => {
       ZERO_COST_POS.headline,
       ZERO_COST_POS.headlineEmphasis,
       ZERO_COST_POS.body,
+      ZERO_COST_POS.bodyShort,
+      ZERO_COST_POS.processorNoteLink,
       ZERO_COST_POS.catch,
       ...ZERO_COST_POS.includes,
     ].join(" ");
@@ -376,11 +380,18 @@ describe("MAKER_PITCH", () => {
     // told what Zolto is, in words they already use, before anything argues
     // for it. These four are the load-bearing ones — the category, the payment
     // method a Swiss maker reaches for first, and the hardware they own.
+    //
+    // The badges are part of the hero as rendered (Landing.tsx puts them under
+    // the CTAs), and TWINT is what they are there to say. Scoping the check to
+    // the hero's *screen* rather than to one constant is what let the August
+    // 2026 audit drop the paragraph's spec list without dropping the promise:
+    // the words still have to be on that screen, just not all in one sentence.
     const hero = [
       MAKER_PITCH.eyebrow,
       MAKER_PITCH.headline,
       MAKER_PITCH.headlineEmphasis,
       MAKER_PITCH.body,
+      ...SOVEREIGNTY.heroBadges,
     ]
       .join(" ")
       .toLowerCase();
@@ -876,10 +887,49 @@ describe("SOVEREIGNTY", () => {
   it("does not describe an aspiration in the present tense", () => {
     // The failure mode this guards is a row whose `today` quietly claims the
     // destination — "Swiss payment processor" in today, with the move in next.
+    // Both lengths, because the homepage renders the short one.
     for (const entry of sovereigntyByState("moving")) {
-      expect(entry.today).not.toMatch(/^Swiss\b/i);
-      expect(entry.today.toLowerCase()).not.toContain("switzerland");
+      for (const today of [entry.today, entry.todayShort]) {
+        expect(today).not.toMatch(/^Swiss\b/i);
+        expect(today.toLowerCase()).not.toContain("switzerland");
+      }
     }
+  });
+
+  it("keeps the awkward part of a row when the row is shortened", () => {
+    // `todayShort` exists to fit a homepage table cell, and the cheapest way
+    // to make a row fit is to drop the clause that makes it unflattering —
+    // which would turn the ledger back into the badge it exists not to be.
+    // Each pin is the specific admission that row is on the page to make.
+    const short = Object.fromEntries(
+      SOVEREIGNTY.ledger.map((e) => [e.piece, e.todayShort]),
+    );
+    for (const entry of SOVEREIGNTY.ledger) {
+      expect(
+        entry.todayShort.length,
+        `${entry.piece} has a short form`,
+      ).toBeGreaterThan(0);
+      expect(
+        entry.todayShort.length,
+        `${entry.piece} short form is actually shorter`,
+      ).toBeLessThanOrEqual(entry.today.length);
+    }
+    // The in-app TWINT button runs on Stripe's rails, not TWINT's. This is the
+    // elision the ledger was rewritten to refuse; it must survive the cut.
+    expect(short["TWINT — the button in the till"]).toMatch(/stripe/i);
+    expect(short["TWINT — the button in the till"]).not.toMatch(/^Swiss/i);
+    // The three "outside Europe" rows have to still say so.
+    for (const piece of [
+      "The AI (listings, translations, chat)",
+      "Account emails",
+    ]) {
+      expect(short[piece], `${piece} still admits where it runs`).toMatch(
+        /outside Europe/i,
+      );
+    }
+    expect(short["Your product photos"]).toMatch(/not guaranteed/i);
+    // And the never-moving row still names the networks.
+    expect(short["Card networks and phone wallets"]).toMatch(/visa/i);
   });
 
   it("names the card networks as permanently foreign rather than omitting them", () => {

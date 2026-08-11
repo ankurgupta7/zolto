@@ -37,11 +37,9 @@
     "howHeading": "Ein Laden. Überall, wo Sie verkaufen.",
     "inventoryTitle": "Ein Inventar, zwei Kanäle",
     "inventoryBody": "Verkaufen Sie am Markt und online aus demselben Katalog. Geht das letzte Stück am Stand weg, verschwindet es in Echtzeit von der Website — keine Doppelerfassung, keine Überverkäufe.",
-    "photoTitle": "Foto knipsen, Angebot erhalten",
-    "photoBody": "Fotografieren Sie ein Stück, und die KI entwirft Titel, Beschreibung und einen Preisvorschlag — in jeder Sprache, in der Sie verkaufen. Sie prüfen und veröffentlichen; die Fleissarbeit ist erledigt.",
+    "photoBody": "Ein Stück fotografieren. Den fertigen Eintrag veröffentlichen.",
     "messyEyebrow": "KI, die mit Chaos klarkommt",
     "messyHeading": "Erst verkaufen. Später sortieren.",
-    "messyBody": "Ein echter Marktstand ist herrliches Chaos. Unterbrechen Sie keinen Verkauf, um jedes Stück zu erfassen — Ihr Handy ist das Kartengerät, die KI das Backoffice, und Sie sind nur da, um schöne Dinge zu verkaufen.",
     "emailFrom": "Von",
     "emailSubjectLabel": "Betreff:",
     "emailSubject": "Ihr Tag — 2 Verkäufe zu bestätigen",
@@ -53,7 +51,7 @@
     "emailConfirm": "Genau das ✓",
     "ctaEyebrow": "bereit, wenn Sie es sind",
     "ctaHeading": "Ihr Shop, diese Woche live.",
-    "ctaBody": "Vor Ort verkaufen ist gratis, für immer. 14 Tage Pro testen, keine Kreditkarte nötig zum Umschauen — und nie ein Kartenlesegerät. Versprochen.",
+    "ctaBody": "Vor Ort gratis, für immer. 14 Tage Pro zum Ausprobieren, und nie ein Kartenlesegerät.",
     "ctaButton": "Shop erstellen →",
     "reel": {
       "railLabel": "Kapitel",
@@ -147,7 +145,7 @@
   "diaryTeaser": {
     "eyebrow": "das Launch-Tagebuch",
     "heading": "Jemand hat das schon gemacht. Hier die ungeschönte Version.",
-    "body": "Eine Zürcher Schmuckdesignerin ging vom reinen Weihnachtsmarkt zum Online-Verkauf — und liess uns aufschreiben, wie es wirklich lief, die zähen Momente inklusive. Keine Growth-Hacks, keine sechsstelligen Screenshots.",
+    "body": "Eine Zürcher Goldschmiedin ging vom Weihnachtsmarkt online — und liess uns aufschreiben, wie es wirklich lief.",
     "readAll": "Das ganze Tagebuch lesen →"
   },
   "cardReaderGag": {
@@ -490,7 +488,7 @@
     },
     "pricingPromise": {
       "headline": "Sie zahlen uns erst, wenn das Internet Sie bezahlt.",
-      "pledge": "Vor Ort verkaufen ist gratis, für immer — Ihr Shop, Ihre Kasse und Ihr Inventar kosten CHF 0/Monat, und auf Zahlungen vor Ort schlägt Zolto nichts drauf. Hier die ehrliche Version: Wir haben schon genug Geld. Wir sind nicht hier, um bei kleinen Kunstschaffenden abzuschöpfen — wir sind hier, damit Sie behalten, was Sie verdienen. Und das ändert sich nicht.",
+      "pledge": "Vor Ort verkaufen ist gratis, für immer — Shop, Kasse und Lager für CHF 0/Monat, und Zolto schlägt nichts auf die Zahlung. Ehrlich gesagt: Wir haben schon genug Geld. Wir sind nicht hier, um kleine Macher abzuschöpfen.",
       "points": [
         "Verkaufen Sie am Markt und zahlen Sie uns nichts, für immer: volles Kassensystem, Inventar-Sync und Ihr Online-Storefront, alles inklusive für CHF 0/Monat.",
         "Online- und KI-Agenten-Bestellungen kosten im Gratis-Plan 1% Gebühr. Keine Online-Verkäufe diesen Monat? Sie zahlen CHF 0. Das war's.",
@@ -512,6 +510,14 @@
       "headline": "Ein ganzer Laden in Ihrer Tasche.",
       "headlineEmphasis": "Für nichts.",
       "body": "Fotos, Namen, Preise, Lagerbestände — Ihr echter Katalog, in der Kasse auf Ihrem Handy. Tippen, Zahlung entgegennehmen. Zusehen, wie alles mit Ihrer Website synchronisiert. Und uns am Monatsende CHF 0.00 bezahlen — und im Monat darauf wieder.",
+      "bodyShort": "Keine Testphase. Keine Einsteigerstufe, die still ausläuft. CHF 0.00 im Monat — diesen Monat und den nächsten auch.",
+      "processorNoteLink": "Karten- und TWINT-Gebühren gehören deinem Zahlungsdienst, nicht uns",
+      "receipt": {
+        "title": "Monatsabrechnung",
+        "lines": ["Kasse", "Produktkatalog", "Bestandsabgleich", "Online-Shop"],
+        "total": "Fällig",
+        "note": "und nächsten Monat wieder"
+      },
       "includes": [
         "Volle Kasse — Tap to Pay, TWINT und Bargeld, auf einem Bildschirm",
         "Jedes Stück mit Foto, Name und Preis",
@@ -524,7 +530,7 @@
       "eyebrow": "Schmuck, Keramik, Marktstand",
       "headline": "Für Unikate:",
       "headlineEmphasis": "eine Kasse, ein Shop.",
-      "body": "Zolto ist eine Kasse und ein Onlineshop mit einem gemeinsamen Lager. Tippen Sie auf das Foto des Stücks, das Sie gerade verkauft haben, nehmen Sie TWINT, Karte oder Bargeld auf dem Handy oder Tablet entgegen, das Sie ohnehin haben — und das letzte Exemplar verschwindet von Ihrer Website, bevor die Kundschaft weitergegangen ist.",
+      "body": "Eine Kasse und ein Webshop mit einem gemeinsamen Lager. Tippe auf dem Handy in deiner Hand auf das Foto des verkauften Stücks — schon ist es von deiner Website weg, bevor die Kundin um die Ecke ist.",
       "till": {
         "title": "Ihre Kasse, auf dem Handy, das Sie ohnehin haben",
         "methods": "TWINT · Karte · Bargeld",
@@ -536,8 +542,10 @@
       "headline": "Ihre nächste Kundschaft",
       "headlineEmphasis": "ist eine KI.",
       "body": "Die Suche hat die letzte Ära der Shops gebaut. Assistenten bauen die nächste — und sie können nur Shops empfehlen, die sie lesen können. Jeder Zolto-Shop liefert llms.txt, MCP und Agenten-Checkout vom ersten Tag an, aktuell gehalten, während sich die Protokolle weiterentwickeln — Ihr Laden gewinnt in den Antworten an Gewicht, während nachgerüstete Websites daraus verschwinden.",
+      "bodyShort": "Empfehlen können sie nur, was sie lesen können. Jeder Zolto-Shop bringt llms.txt, MCP und Agent-Checkout von Tag eins mit.",
       "chart": {
         "title": "wo Käuferinnen und Käufer ihre Suche beginnen",
+        "crossingLabel": "2025 — Assistenten überholen die Suche",
         "decliningLabel": "Suchmaschinen",
         "risingLabel": "KI-Assistenten",
         "caption": "Assistenten empfehlen nur Shops, die sie lesen können. Ein Shop, der für sie unsichtbar ist, kommt in der Antwort nicht vor — egal, wie gut sein SEO war."
@@ -568,18 +576,18 @@
     },
     "sellingFlow": [
       {
-        "title": "Notizbuch scannen",
-        "detail": "Fotografieren Sie Ihre handgeschriebene Bestandsliste. Die KI liest sie in einen echten Katalog ein — Namen, Preise, Mengen.",
+        "title": "Fotografiere deine Bestandsliste",
+        "detail": "Die KI macht daraus einen Katalog.",
         "timeOfDay": "07:40 — der Stand wird aufgebaut"
       },
       {
-        "title": "Zahlung per Tap",
-        "detail": "Betrag eingeben, und die Kundschaft hält Handy oder Karte hin. NFC und TWINT QR — nichts zu kaufen, nichts einzustecken.",
+        "title": "Sie tippen. Du bist bezahlt.",
+        "detail": "NFC und TWINT-QR. Nichts zum Einstecken.",
         "timeOfDay": "11:15 — erster Ansturm"
       },
       {
-        "title": "Am Abend bestätigen",
-        "detail": "Zolto mailt Ihnen, was Sie vermutlich verkauft haben. Antippen zum Bestätigen, und der Bestand synchronisiert über Kasse und Onlineshop.",
+        "title": "Eine Mail. Ein Tipp.",
+        "detail": "Bestand synchron, Stand und Website.",
         "timeOfDay": "18:30 — Zusammenpacken"
       }
     ],
@@ -1078,48 +1086,58 @@
       "headlineEmphasis": "Betrieben aus Europa.",
       "serving": "Zolto wird in Zürich gebaut — zuerst für Schweizer Macherinnen und Macher, dann für Europa und danach für alle anderen, denen gefällt, wie wir es machen.",
       "body": "Wir verschieben jedes Stück von Zolto, das wir selbst in der Hand haben, auf europäische Infrastruktur — und in die Schweiz, wo es eine Schweizer Option gibt, die etwas taugt. Einiges ist schon dort. Einiges noch nicht. Hier ist die ganze Liste, samt der Teile, bei denen wir schlecht dastehen.",
+      "bodyShort": "Jeder Teil von Zolto und wo er heute läuft — auch die, bei denen wir schlecht dastehen.",
       "ledger": [
         {
           "piece": "Das Unternehmen und das Produkt",
-          "today": "In Zürich gebaut, von einer Schweizer Firma"
+          "today": "In Zürich gebaut, von einer Schweizer Firma",
+          "todayShort": "Zürich, Schweizer Firma"
         },
         {
           "piece": "Server und Ihre Datenbank",
           "today": "Hetzner · Europa, meist Deutschland",
+          "todayShort": "Hetzner, Deutschland",
           "next": "Ein Schweizer Rechenzentrum, damit Maschinen und Firma im selben Land sitzen."
         },
         {
           "piece": "TWINT — Ihr eigener QR-Code",
-          "today": "Ihr eigenes TWINT-Konto zu 1,3% — Schweizer Schienen, Ende zu Ende, und wir sehen das Geld nie"
+          "today": "Ihr eigenes TWINT-Konto zu 1,3% — Schweizer Schienen, Ende zu Ende, und wir sehen das Geld nie",
+          "todayShort": "Dein Konto, 1.3%. Wir sehen das Geld nie"
         },
         {
           "piece": "TWINT — der Knopf in der Kasse",
           "today": "Eine Stripe-Zahlung, keine direkte TWINT-Zahlung — Stripes Schienen, zu einem Satz, den Stripe nicht veröffentlicht",
+          "todayShort": "Über Stripe, nicht direkt TWINT",
           "next": "Eine direkte TWINT-Anbindung, damit der Knopf in der App auf denselben Schweizer Schienen läuft wie der QR-Code. TWINT zertifiziert Integratoren, bevor es die Spezifikation herausgibt — das beginnt also als Antrag, nicht als Branch."
         },
         {
           "piece": "Kartenzahlungen und Auszahlungen",
           "today": "Stripe — das Geld geht direkt auf Ihr eigenes Konto, nie auf unseres",
+          "todayShort": "Stripe, direkt auf dein Konto",
           "next": "Ein Schweizer Zahlungsanbieter. Unsere Recherche sagt: pro Verkauf sogar günstiger als heute — der seltene Fall, in dem die prinzipientreue Variante auch die billige ist."
         },
         {
           "piece": "Die KI (Listings, Übersetzungen, Chat)",
           "today": "Ein Modellanbieter ausserhalb Europas",
+          "todayShort": "Modellanbieter ausserhalb Europas",
           "next": "In der Schweiz gehostete Open-Source-Modelle. Unsere KI-Schicht spricht bereits eine Standard-API, das ist der kürzeste Sprung auf dieser Liste — geprüft wird, ob die Qualität hält."
         },
         {
           "piece": "Ihre Produktfotos",
           "today": "Objektspeicher, der noch nicht garantiert europäisch ist",
+          "todayShort": "Speicher nicht garantiert europäisch",
           "next": "Dasselbe europäische Rechenzentrum wie die Server, damit Ihre Fotos und Ihre Bestellungen nicht länger in verschiedenen Rechtsräumen liegen."
         },
         {
           "piece": "Konto-E-Mails",
           "today": "Ein Versanddienst ausserhalb Europas",
+          "todayShort": "Versand ausserhalb Europas",
           "next": "Ein europäischer Versender. Kleine Aufgabe, geringes Risiko, ehrlich gesagt einfach noch nicht erledigt."
         },
         {
           "piece": "Kartennetzwerke und Handy-Wallets",
           "today": "Visa, Mastercard, Apple Pay, Google Pay",
+          "todayShort": "Visa, Mastercard, Apple Pay, Google Pay",
           "next": "Die sind nicht europäisch und werden es nie sein. Wenn ein Verkauf von Anfang bis Ende in der Schweiz bleiben soll, nehmen Sie ihn über Ihren eigenen TWINT-QR-Code — mit 1,3% ohne Fixgebühr ist er auch der günstigste Weg, bezahlt zu werden, der keine Monatskosten trägt, und weniger als die Hälfte dessen, was derselbe Verkauf auf einer Karte kostet."
         }
       ],
@@ -1141,17 +1159,25 @@
       "headline": "Ihr Katalog und TWINT,",
       "headlineEmphasis": "in derselben Kasse.",
       "body": "Jede Kasse in diesem Markt läuft inzwischen auf einem gewöhnlichen Handy — das ist also kein Argument mehr. Hier ist das, was bleibt: die beiden grossen Optionen haben gegenteilige Löcher, und eine Schweizer Macherin fällt in genau eines davon, egal welche sie wählt.",
+      "bodyShort": "Jede Kasse läuft heute auf dem Handy. Die Frage ist also, was drin ist.",
+      "matrix": {
+        "grid": "Dein Katalog",
+        "twint": "TWINT"
+      },
       "panels": [
         {
           "label": "Eine Kasse mit Ihren Sachen darin",
+          "note": "zweites TWINT-Konto, von Hand abgeglichen",
           "detail": "Fotos, Preise, Lagerbestände — und keine Möglichkeit, das Zahlungsmittel anzunehmen, zu dem die Hälfte Ihrer Kundschaft zuerst greift. Der Umweg ist ein zweites, separates TWINT-Setup und ein manueller Abgleich am Abend."
         },
         {
           "label": "Eine Kasse, die TWINT nimmt",
+          "note": "jedes Mal den Betrag eintippen",
           "detail": "TWINT, Karten, ein guter Pauschalsatz — und nichts darin. Es ist eine Zahlungs-App: Sie tippen jedes Mal einen Betrag ein, oder Sie kaufen und integrieren eine separate Kassensoftware obendrauf."
         },
         {
           "label": "Zolto",
+          "note": "Foto antippen, Zahlungsart wählen",
           "detail": "Tippen Sie auf das Foto des echten Objekts, dann wählen Sie TWINT, Karte oder Bargeld auf demselben Bildschirm. Ein Tippen aktualisiert den Bestand hinter Ihrem Stand und auf Ihrer Website zugleich."
         }
       ],
@@ -1425,5 +1451,9 @@
     "partial": "teilweise",
     "notApplicable": "nicht zutreffend",
     "tableCaption": "{{name}} und {{competitor}} Funktion für Funktion verglichen"
+  },
+  "squeezePlay": {
+    "yes": "ja",
+    "no": "nein"
   }
 }

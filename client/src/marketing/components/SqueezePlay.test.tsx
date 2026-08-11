@@ -167,13 +167,55 @@ describe("SqueezePlayTill", () => {
     // No reveal: a panel's content is on screen the moment you arrive, so
     // fading it in reads as jank.
     expect(screen.queryByTestId("scroll-reveal")).toBeNull();
-    expect(screen.getByText(sp.body)).toBeTruthy();
-    expect(screen.getAllByTestId(/^squeeze-panel-/).length).toBe(3);
+    // Dense takes the short run-up and the matrix — the long body and the
+    // spelled-out claim belong to the full band.
+    expect(screen.getByText(sp.bodyShort)).toBeTruthy();
+    expect(screen.queryByText(sp.body)).toBeNull();
+    expect(screen.getByTestId("squeeze-matrix")).toBeTruthy();
+    expect(screen.getAllByTestId(/^squeeze-row-/).length).toBe(3);
+    expect(screen.queryByTestId("squeeze-claim")).toBeNull();
+  });
+
+  it("scores every till in the matrix straight off `has`", () => {
+    // The drawing, the grid and the claim all read the same field, so the
+    // picture can never disagree with the ticks about who is missing what.
+    render(<SqueezePlayTills dense />);
     for (const panel of sp.panels) {
-      expect(screen.getByText(panel.detail)).toBeTruthy();
+      for (const key of ["grid", "twint"] as const) {
+        const cell = screen.getByTestId(`squeeze-cell-${panel.id}-${key}`);
+        const has = (panel.has as readonly string[]).includes(key);
+        expect(cell.dataset.has).toBe(String(has));
+      }
     }
-    // The punchline travels with the evidence, not ahead of it.
-    expect(screen.getByTestId("squeeze-claim").textContent).toContain(sp.claim);
+    // Exactly one row scores on both — which is the whole argument, and the
+    // reason dense can drop the sentence that used to say so.
+    const bothRows = sp.panels.filter((p) => p.has.length > 1);
+    expect(bothRows.length).toBe(1);
+    expect(bothRows[0].id).toBe("both");
+  });
+
+  it("keeps both concessions cited once the cards become cells", () => {
+    // The citation was per-card because the concession was a card. It is now a
+    // cell, so the sources collapse to one footnote — but a concession that
+    // stops being checkable is the one thing this band cannot afford.
+    render(<SqueezePlayTills dense />);
+    const matrix = screen.getByTestId("squeeze-matrix");
+    for (const panel of sp.panels) {
+      if (!("sourceId" in panel && panel.sourceId)) continue;
+      const link = within(matrix).getByText(source(panel.sourceId).label);
+      expect(link.getAttribute("href")).toBe(source(panel.sourceId).url);
+    }
+  });
+
+  it("names the vendor each row is about", () => {
+    // The rows were anonymous while they were paragraphs, which reads as coy
+    // in a grid — and the citation underneath always named the vendor anyway.
+    render(<SqueezePlayTills dense />);
+    for (const panel of sp.panels) {
+      const row = screen.getByTestId(`squeeze-row-${panel.id}`);
+      expect(row.textContent).toContain(panel.vendor);
+      expect(row.textContent).toContain(panel.note);
+    }
   });
 
   it("makes the three tills a swipe row on a phone, outside the reel", () => {
@@ -193,20 +235,14 @@ describe("SqueezePlayTill", () => {
 
   it("never nests a second swipe row inside the reel's own carousel", () => {
     // In the reel the panel around this IS a horizontal snap track. A scroller
-    // inside a scroller swallows the gesture and strands the reader mid-post, so
-    // dense makes the three tills three compact rows — comparable at a glance,
-    // one axis.
-    render(<SqueezePlayTills dense />);
-    const row = screen.getByTestId("squeeze-tills");
-    expect(row.className).not.toContain("snap-x");
-    expect(row.className).not.toContain("overflow-x");
-    expect(row.className).toContain("grid");
-    expect(row.className).toContain("sm:grid-cols-3");
-    for (const panel of screen.getAllByTestId(/^squeeze-panel-/)) {
-      expect(panel.className).not.toContain("snap-center");
-      // A row on a phone (drawing beside its label), a card from sm up.
-      expect(panel.className).toContain("flex");
-      expect(panel.className).toContain("sm:block");
+    // inside a scroller swallows the gesture and strands the reader mid-post.
+    // The matrix has no second axis at all, which is the strongest form of
+    // this guarantee — but assert it rather than assume it.
+    const { container } = render(<SqueezePlayTills dense />);
+    expect(screen.queryByTestId("squeeze-tills")).toBeNull();
+    for (const el of Array.from(container.querySelectorAll("*"))) {
+      expect(el.className.toString()).not.toContain("snap-x");
+      expect(el.className.toString()).not.toContain("overflow-x-auto");
     }
   });
 });

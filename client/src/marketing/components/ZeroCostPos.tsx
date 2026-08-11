@@ -53,14 +53,35 @@ export function ZeroCostPosClaim({ dense = false }: DenseProps = {}) {
       </h2>
       <p
         className={`max-w-lg leading-relaxed text-white/70 ${
-          dense ? "mt-5" : "mt-8"
+          dense ? "mt-5 text-[17px]" : "mt-8"
         }`}
       >
-        {st("zeroCostPos.body", ZERO_COST_POS.body)}
+        {dense
+          ? st("zeroCostPos.bodyShort", ZERO_COST_POS.bodyShort)
+          : st("zeroCostPos.body", ZERO_COST_POS.body)}
       </p>
-      <p className="mt-4 max-w-lg text-sm leading-relaxed text-white/55">
-        {st("zeroCostPos.catch", ZERO_COST_POS.catch)}
-      </p>
+      {/* The catch's second sentence — that your processor still charges its
+          own rate — is the longest block the homepage carried, and /pricing
+          already makes it at length. On the reel it becomes the link; off the
+          reel there is room to say it outright. */}
+      {dense ? (
+        <p className="mt-5">
+          <Link
+            href="/pricing"
+            className="text-sm text-[var(--brand-accent-light)] underline decoration-[var(--brand-accent)] underline-offset-4 transition-colors hover:text-white"
+          >
+            {st(
+              "zeroCostPos.processorNoteLink",
+              ZERO_COST_POS.processorNoteLink,
+            )}{" "}
+            →
+          </Link>
+        </p>
+      ) : (
+        <p className="mt-4 max-w-lg text-sm leading-relaxed text-white/55">
+          {st("zeroCostPos.catch", ZERO_COST_POS.catch)}
+        </p>
+      )}
     </>
   );
 
@@ -77,20 +98,97 @@ export function ZeroCostPosClaim({ dense = false }: DenseProps = {}) {
   return <div>{content}</div>;
 }
 
+/**
+ * The free plan drawn as the statement it produces.
+ *
+ * Every line is what the plan includes, priced; the total is the same CHF 0
+ * the band used to assert, arrived at rather than claimed. A reader who
+ * doubts "free forever" is looking for the line that isn't zero — so the
+ * strongest form of the argument is to show them all of them.
+ *
+ * The zeros render through `formatPrice` and carry `lining-nums`: Cormorant
+ * defaults to oldstyle figures, which sets a 0 at x-height and turns a
+ * column of prices into a column of the letter o.
+ */
+function FreePlanReceipt() {
+  const { t, st } = useMarketingT();
+  const r = ZERO_COST_POS.receipt;
+  const zero = formatPrice(FREE_PLAN.priceChf);
+
+  return (
+    <div data-testid="free-plan-receipt">
+      <div className="flex items-baseline justify-between gap-3 border-b border-white/15 pb-2">
+        <p className="text-[11px] uppercase tracking-[0.2em] text-white/45">
+          {st("zeroCostPos.receipt.title", r.title)}
+        </p>
+        <p className="text-[11px] uppercase tracking-[0.16em] text-white/35">
+          {t("zeroCostPos.planInPerson", {
+            plan: st("plans.free.name", FREE_PLAN.name),
+          })}
+        </p>
+      </div>
+
+      <ul className="mt-3 grid gap-2">
+        {r.lines.map((line, i) => (
+          <li
+            key={line}
+            className="flex items-baseline justify-between gap-4 text-sm text-white/75"
+          >
+            <span>{st(`zeroCostPos.receipt.lines.${i}`, line)}</span>
+            {/* A dotted leader, the way a printed statement runs the eye from
+                the item to the figure. */}
+            <span
+              aria-hidden
+              className="mx-1 h-px min-w-4 flex-1 self-center border-b border-dotted border-white/20"
+            />
+            <span className="font-serif text-white/70 lining-nums tabular-nums">
+              {zero}
+            </span>
+          </li>
+        ))}
+      </ul>
+
+      <div className="mt-3 flex items-baseline justify-between gap-4 border-t border-white/25 pt-3">
+        <p className="text-[11px] uppercase tracking-[0.2em] text-white/55">
+          {st("zeroCostPos.receipt.total", r.total)}
+        </p>
+        <p
+          data-testid="zero-cost-price"
+          className="font-serif text-5xl font-bold text-[var(--brand-accent-light)] lining-nums tabular-nums"
+        >
+          {zero}
+          <span className="ml-1.5 align-baseline text-base font-normal text-white/50">
+            {t("zeroCostPos.perMonth")}
+          </span>
+        </p>
+      </div>
+      <p className="mt-1 text-right font-hand text-xl leading-none text-[var(--brand-accent)]">
+        {st("zeroCostPos.receipt.note", r.note)}
+      </p>
+    </div>
+  );
+}
+
 /** What it costs, stated plainly, with what it buys underneath. */
 export function ZeroCostPosPrice({ dense = false }: DenseProps = {}) {
   const { t, st } = useMarketingT();
 
+  if (dense) {
+    return (
+      <div className="rounded-2xl bg-[var(--brand-ink)] p-6">
+        <FreePlanReceipt />
+        <Link
+          href="/signup"
+          className="mt-5 inline-block rounded-md bg-[var(--brand-accent)] px-6 py-3 text-xs font-medium uppercase tracking-[0.14em] text-[var(--brand-ink)] transition-colors hover:bg-[var(--brand-accent-light)]"
+        >
+          {t("zeroCostPos.startFree")}
+        </Link>
+      </div>
+    );
+  }
+
   const card = (
-    <div
-      className={
-        dense
-          ? // In a reel panel the mahogany is the card: a dark box wrapping a
-            // translucent one is two paddings and no more contrast.
-            "rounded-2xl bg-[var(--brand-ink)] p-6"
-          : "rounded-2xl border border-white/15 bg-white/[0.04] p-7"
-      }
-    >
+    <div className="rounded-2xl border border-white/15 bg-white/[0.04] p-7">
       <p className="text-[11px] uppercase tracking-[0.2em] text-white/45">
         {t("zeroCostPos.planInPerson", {
           plan: st("plans.free.name", FREE_PLAN.name),
@@ -108,7 +206,7 @@ export function ZeroCostPosPrice({ dense = false }: DenseProps = {}) {
           {t("zeroCostPos.perMonth")}
         </span>
       </p>
-      <ul className={`grid ${dense ? "mt-4 gap-2.5" : "mt-6 gap-3"}`}>
+      <ul className="mt-6 grid gap-3">
         {ZERO_COST_POS.includes.map((item, i) => (
           <li
             key={item}
@@ -123,9 +221,7 @@ export function ZeroCostPosPrice({ dense = false }: DenseProps = {}) {
       </ul>
       <Link
         href="/signup"
-        className={`inline-block rounded-md bg-[var(--brand-accent)] px-6 py-3 text-xs font-medium uppercase tracking-[0.14em] text-[var(--brand-ink)] transition-colors hover:bg-[var(--brand-accent-light)] ${
-          dense ? "mt-4" : "mt-7"
-        }`}
+        className="mt-7 inline-block rounded-md bg-[var(--brand-accent)] px-6 py-3 text-xs font-medium uppercase tracking-[0.14em] text-[var(--brand-ink)] transition-colors hover:bg-[var(--brand-accent-light)]"
       >
         {t("zeroCostPos.startFree")}
       </Link>

@@ -33,7 +33,9 @@ function renderLanding() {
  */
 const CHAPTERS = {
   promise: 1,
-  squeeze: 2,
+  // One slide: the argument shrank to a sentence and the tills became a
+  // matrix, so both fit a phone screen together — see Landing.tsx.
+  squeeze: 1,
   "free-in-person": 2,
   product: 3,
   costs: 2,
@@ -110,8 +112,8 @@ describe("Landing — the reel", () => {
         expect(panel.className).toContain("snap-start");
       }
     }
-    // 18 screens on a phone; eight posts' worth of columns on a desktop.
-    expect(document.querySelectorAll("[data-reel-panel]").length).toBe(18);
+    // 17 screens on a phone; eight posts' worth of columns on a desktop.
+    expect(document.querySelectorAll("[data-reel-panel]").length).toBe(17);
     // The grouping rule, asserted rather than described: one claim per post, and
     // never more than three swipes to have read all of it.
     for (const [id, count] of Object.entries(CHAPTERS)) {
@@ -207,7 +209,7 @@ describe("Landing — post 1, the promise", () => {
     // The hero has to name the category and the payment method before it
     // argues anything — this is the regression the whole reorder exists to
     // prevent, so assert the words, not just the heading.
-    expect(screen.getByText(/point-of-sale and a web store/i)).toBeTruthy();
+    expect(screen.getByText(/point-of-sale and a web shop/i)).toBeTruthy();
   });
 
   it("keeps the promise and the video it rests on one slide", () => {
@@ -256,11 +258,18 @@ describe("Landing — post 2, the squeeze, and post 3, its answer", () => {
     renderLanding();
     const squeeze = within(chapter("squeeze"));
     // The band's own `data-testid` went away when it split into slide-sized
-    // parts, so the check is the copy and the three panels of the comparison.
-    expect(squeeze.getByText(POSITIONING.squeezePlay.body)).toBeTruthy();
-    expect(squeeze.getAllByTestId(/^squeeze-panel-/).length).toBe(3);
-    expect(squeeze.getByTestId("squeeze-claim").textContent).toContain(
-      POSITIONING.squeezePlay.claim,
+    // parts, so the check is the copy and the three rows of the comparison.
+    // The homepage takes the short run-up and the matrix: the long body and
+    // the spelled-out claim are what the grid is there to replace.
+    expect(squeeze.getByText(POSITIONING.squeezePlay.bodyShort)).toBeTruthy();
+    expect(squeeze.getAllByTestId(/^squeeze-row-/).length).toBe(3);
+    expect(squeeze.queryByTestId("squeeze-claim")).toBeNull();
+    // Only one row scores on both properties — the argument, drawn.
+    expect(squeeze.getByTestId("squeeze-cell-both-grid").dataset.has).toBe(
+      "true",
+    );
+    expect(squeeze.getByTestId("squeeze-cell-both-twint").dataset.has).toBe(
+      "true",
     );
     // The answer is the *next* post's claim, not this one's — one post, one
     // claim, which is the whole reason these two are no longer one four-slide
@@ -372,10 +381,10 @@ describe("Landing — post 7, what's coming", () => {
     renderLanding();
     const coming = within(chapter("whats-coming"));
     expect(
-      coming.getByRole("heading", { name: /Scan your notebook/i }),
+      coming.getByRole("heading", { name: /Photograph your stock list/i }),
     ).toBeTruthy();
     expect(
-      coming.getByRole("heading", { name: /Confirm at day.s end/i }),
+      coming.getByRole("heading", { name: /One email\. One tap\./i }),
     ).toBeTruthy();
   });
 
@@ -388,7 +397,9 @@ describe("Landing — post 7, what's coming", () => {
     });
     expect(thesis).toBeTruthy();
     expect(coming.getByTestId("ai-native-band")).toBeTruthy();
-    expect(coming.getByText(AI_NATIVE_PITCH.chart.caption)).toBeTruthy();
+    // The caption became a label on the crossing — see DiscoveryShiftChart.
+    expect(coming.getByText(AI_NATIVE_PITCH.chart.crossingLabel)).toBeTruthy();
+    expect(coming.queryByText(AI_NATIVE_PITCH.chart.caption)).toBeNull();
   });
 
   it("links the two bands that moved to /why-zolto", () => {

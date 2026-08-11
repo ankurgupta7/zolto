@@ -95,7 +95,10 @@ describe("HowAnAiBuys", () => {
     expect(screen.getByTestId("ai-native-band").className).toContain(
       "bg-[var(--brand-ink)]",
     );
-    expect(screen.getByText(AI_NATIVE_PITCH.body)).toBeTruthy();
+    // Dense takes the short thesis: the long one narrates the chart beside it
+    // and then adds a claim about the future that /why-zolto is for.
+    expect(screen.getByText(AI_NATIVE_PITCH.bodyShort)).toBeTruthy();
+    expect(screen.queryByText(AI_NATIVE_PITCH.body)).toBeNull();
   });
 
   it("gives the chart its own mahogany when it is a panel of its own", () => {
@@ -103,7 +106,28 @@ describe("HowAnAiBuys", () => {
     expect(container.firstElementChild?.className).toContain(
       "bg-[var(--brand-ink)]",
     );
+  });
+
+  it("labels the crossing on the drawing instead of captioning it", () => {
+    // A paragraph saying two lines cross is a redundant caption. On the reel
+    // the label goes on the curve; off it, the caption still earns its place.
+    render(<DiscoveryShiftChart dense />);
+    expect(screen.getByText(AI_NATIVE_PITCH.chart.crossingLabel)).toBeTruthy();
+    expect(screen.queryByText(AI_NATIVE_PITCH.chart.caption)).toBeNull();
+
+    cleanup();
+    render(<DiscoveryShiftChart />);
     expect(screen.getByText(AI_NATIVE_PITCH.chart.caption)).toBeTruthy();
+  });
+
+  it("tells a screen reader where the curves cross, not just that they do", () => {
+    // The label is <text> inside the svg, which the image role swallows — so
+    // the crossing has to reach the accessible name too or it is sighted-only.
+    render(<DiscoveryShiftChart dense />);
+    const chart = screen.getByRole("img");
+    expect(chart.getAttribute("aria-label")).toContain(
+      AI_NATIVE_PITCH.chart.crossingLabel,
+    );
   });
 
   it("caps the chart's width while it is a slide", () => {

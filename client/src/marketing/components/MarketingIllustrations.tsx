@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Store, Smartphone, Sparkles } from "lucide-react";
 import { SketchArrow } from "@/components/SketchAccents";
+import { SUPPORTED_LANGUAGES } from "@/lib/languages";
 
 /**
  * Marketing illustrations — the "show what Zolto does" visuals for the landing
@@ -236,6 +237,29 @@ export function PhotoToListing() {
           Sterling silver chain, 8&nbsp;mm rainbow moonstone drop. Handmade in
           Zürich.
         </p>
+        {/* "in every language you sell in" — shown rather than said. This is
+            the clause the caption beside the drawing used to spend eight words
+            on; as four ISO codes it needs none, and it needs no translating
+            either, which is why they are codes and not language names. The
+            first is lit because that is the one being displayed. */}
+        <ul
+          data-testid="listing-languages"
+          aria-label="Written in German, French, Italian and English"
+          className="mt-1.5 flex gap-1 sm:mt-2"
+        >
+          {SUPPORTED_LANGUAGES.map((code, i) => (
+            <li
+              key={code}
+              className={`rounded-sm px-1 py-px text-[9px] font-medium uppercase tracking-[0.1em] sm:text-[10px] ${
+                i === 0
+                  ? "bg-[var(--brand-accent)]/20 text-[var(--brand-ink)]"
+                  : "text-[var(--brand-muted)]"
+              }`}
+            >
+              {code}
+            </li>
+          ))}
+        </ul>
         <p className="mt-1.5 font-serif text-base text-[var(--brand-ink)] lining-nums tabular-nums sm:mt-2 sm:text-lg">
           CHF 180
         </p>

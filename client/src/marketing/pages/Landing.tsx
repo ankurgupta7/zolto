@@ -196,12 +196,18 @@ export default function Landing() {
           label={t("landing.reel.squeeze")}
           className="bg-[var(--brand-surface)]"
         >
-          <ReelPanels layout="reel:grid-cols-[1.05fr_0.95fr] reel:items-center reel:gap-8">
+          {/* One slide, not two. The argument and the tills were a panel each
+              while the argument was a 42-word run-up; now that it is one
+              sentence and the tills are a matrix, both fit a phone screen
+              together — and a slide carrying an eyebrow, an h2 and one line
+              costs a swipe to say what the next slide shows. Two columns from
+              md up rebuild the desktop pair out of the same two blocks. */}
+          <ReelPanels>
             <ReelPanel>
-              <SqueezePlayArgument dense />
-            </ReelPanel>
-            <ReelPanel>
-              <SqueezePlayTills dense />
+              <div className="grid content-center gap-5 tall:gap-7 md:grid-cols-[0.95fr_1.05fr] md:items-center md:gap-10">
+                <SqueezePlayArgument dense />
+                <SqueezePlayTills dense />
+              </div>
             </ReelPanel>
           </ReelPanels>
         </ReelChapter>
@@ -227,7 +233,11 @@ export default function Landing() {
         {/* ── 4. How it works — one inventory, photo→listing, and the till the
              hero used to show ── */}
         <ReelChapter id="product" label={t("landing.reel.how")}>
-          <ReelPanels layout="reel:grid-cols-3 reel:gap-10">
+          {/* The photo→listing panel takes the wider column: its drawing is a
+              before/after pair side by side, so at an even third the two
+              halves are ~140px each and the generated listing wraps to one
+              word a line. */}
+          <ReelPanels layout="reel:grid-cols-[0.9fr_1.25fr_0.85fr] reel:gap-8">
             {/* Feature 1 — one inventory, two channels. It carries the post's
                 own heading rather than giving it a screen of its own: a slide
                 with nothing on it but an eyebrow and an h2 costs a swipe and
@@ -255,11 +265,18 @@ export default function Landing() {
               </div>
             </ReelPanel>
 
-            {/* Feature 2 — photo to listing */}
+            {/* Feature 2 — photo to listing. "Sell first. Sort it out later."
+                came down from chapter seven to sit here: it is a claim about
+                what the AI does with a messy stall, and this is the panel that
+                shows it doing it. The body shrank to a caption once the four
+                languages moved inside the drawing. */}
             <ReelPanel>
               <div>
-                <h3 className="font-serif text-2xl text-[var(--brand-text)]">
-                  {t("landing.photoTitle")}
+                <p className="font-hand text-xl leading-none text-[var(--brand-accent)] tall:text-2xl">
+                  {t("landing.messyEyebrow")}
+                </p>
+                <h3 className="mt-1 font-serif text-2xl text-[var(--brand-text)]">
+                  {t("landing.messyHeading")}
                 </h3>
                 <p className="mt-3 text-[15px] leading-relaxed text-[var(--brand-muted-2)]">
                   {t("landing.photoBody")}
@@ -403,23 +420,14 @@ export default function Landing() {
         >
           <ReelPanels layout="reel:grid-cols-[1.05fr_0.85fr_1.1fr] reel:items-center reel:gap-7">
             <>
-              {/* The claim: the messy stall, then the thesis it is heading for.
-                  These were two screens and neither filled one. */}
+              {/* The thesis, on its own. "Sell first. Sort it out later." used
+                  to sit above it, and it is a *product* claim — the AI taking
+                  a messy stall and drafting the listings — which chapter four
+                  already makes beside a drawing of it happening. The heading
+                  moved there and the paragraph went; this post argues one
+                  thing now instead of two. */}
               <ReelPanel>
-                <div className="grid gap-4 tall:gap-5">
-                  <div className="max-w-2xl">
-                    <p className="font-hand text-xl leading-none text-[var(--brand-accent)] tall:text-2xl">
-                      {t("landing.messyEyebrow")}
-                    </p>
-                    <h2 className="mt-1 font-serif text-2xl text-[var(--brand-text)] tall:mt-2 tall:text-3xl sm:text-4xl">
-                      {t("landing.messyHeading")}
-                    </h2>
-                    <p className="mt-2 text-sm text-[var(--brand-muted-2)] tall:mt-3 tall:text-base">
-                      {t("landing.messyBody")}
-                    </p>
-                  </div>
-                  <AiNativeThesis dense />
-                </div>
+                <AiNativeThesis dense />
               </ReelPanel>
               <ReelPanel>
                 <div className="grid gap-4">

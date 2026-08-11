@@ -435,15 +435,45 @@ export const POSITIONING = {
     headlineEmphasis: "in the same till.",
     body: "Every till in this market now runs on an ordinary phone, so that stopped being the argument. Here's the one that's left: the two big options have opposite holes in them, and a Swiss maker falls straight down whichever one they pick.",
     /**
+     * The homepage-reel version of `body`. The reel snaps one screen per
+     * chapter, so a 42-word run-up is read in full before the reader may flick
+     * on — and everything it says is about to be shown by the matrix anyway.
+     * The long form survives on /compare and in llms.txt, where a reader has
+     * chosen to be reading and an assistant needs the reasoning to quote.
+     */
+    bodyShort:
+      "Every till runs on a phone now. So the question is what's in it.",
+    /**
+     * Column headers for the matrix rendering. The two properties are exactly
+     * the two members of `has`, so a column can never appear that no panel can
+     * be scored against.
+     */
+    matrix: {
+      grid: "Your catalogue",
+      twint: "TWINT",
+    },
+    /**
      * Three tills, side by side. Order matters — concede twice, then land it.
-     * `has` drives which illustration variant renders, so the drawing and the
-     * claim cannot disagree about which panel is missing what.
+     * `has` drives which illustration variant renders *and* which cells tick in
+     * the matrix, so the drawing, the grid and the claim cannot disagree about
+     * which panel is missing what.
+     *
+     * `vendor` names the product the row is about. The rows were anonymous
+     * while they were paragraphs ("a till with your things in it"), which reads
+     * as coy in a grid — and the citation underneath has always named the
+     * vendor anyway, so the name was never the part being withheld.
+     *
+     * `note` is the homepage's version of `detail`: the same concession at the
+     * length a table cell can carry. `detail` stays for the full band, where
+     * the argument has room to be made in sentences.
      */
     panels: [
       {
         id: "grid-no-twint",
         has: ["grid"] as const,
+        vendor: "SumUp",
         label: "A till with your things in it",
+        note: "second TWINT setup, reconciled by hand",
         detail:
           "Photos, prices, stock counts — and no way to take the payment method half your customers reach for first. The workaround is a second, separate TWINT setup and a manual reconciliation at the end of the day.",
         sourceId: "sumup-item-catalogue",
@@ -451,7 +481,9 @@ export const POSITIONING = {
       {
         id: "twint-no-grid",
         has: ["twint"] as const,
+        vendor: "Worldline",
         label: "A till that takes TWINT",
+        note: "type in the amount, every time",
         detail:
           "TWINT, cards, a good flat rate — and nothing in it. It's a payment app: you type in an amount every time, or you buy and integrate separate till software to sit on top of it.",
         sourceId: "worldline-tap-on-mobile",
@@ -459,7 +491,9 @@ export const POSITIONING = {
       {
         id: "both",
         has: ["grid", "twint"] as const,
+        vendor: "Zolto",
         label: "Zolto",
+        note: "tap the photo, pick the method",
         detail:
           "Tap the photo of the actual object, then choose TWINT, card or cash on the same screen. One tap updates the stock behind your stall and on your website at once.",
       },
@@ -472,8 +506,16 @@ export const POSITIONING = {
 /** The written pricing pledge — the emotional core of the positioning. */
 export const PRICING_PROMISE = {
   headline: "You don't pay us until the internet pays you.",
+  /**
+   * Trimmed in the August 2026 copy audit. It used to close on "we're here to
+   * help you keep what you earn, and that's not changing", which is the third
+   * restatement of the same promise inside one quotation — and it buried the
+   * line that actually lands. Every substantive claim survives: free in
+   * person, the CHF 0/month figure, nothing added to the payment, and the
+   * reason. Only the restatement went.
+   */
   pledge:
-    "Selling in person is free, forever — your store, POS and inventory cost CHF 0/month, and Zolto adds nothing on in-person payments. Here's the honest version: we already have enough money. We're not here to skim off small makers — we're here to help you keep what you earn, and that's not changing.",
+    "Selling in person is free, forever — store, POS and inventory at CHF 0/month, and Zolto adds nothing to the payment. The honest version: we already have enough money. We're not here to skim off small makers.",
   points: [
     "Sell at the market and pay us nothing, forever: full POS, inventory sync and your online storefront, all included at CHF 0/month.",
     "Online and AI-agent orders carry a 1% fee on the Free plan. No online sales this month? You pay CHF 0. That's it.",
@@ -609,6 +651,48 @@ export const ZERO_COST_POS = {
   headline: "A whole shop in your pocket.",
   headlineEmphasis: "For nothing.",
   body: "Photos, names, prices, stock counts — your actual catalogue, in the till on your phone. Tap to take the payment. Watch it sync to your website. Then pay us CHF 0.00 at the end of the month, and again the month after that.",
+  /**
+   * The homepage-reel version of `body`.
+   *
+   * `body`'s first half — photos, names, prices, stock counts, syncs to your
+   * website — is the `includes` list, which renders in the panel beside it.
+   * Saying it twice on one screen is what the long form was doing, so the
+   * short form keeps only the part the ticklist can't make: that the zero is
+   * not a countdown.
+   */
+  bodyShort:
+    "Not a trial. Not a starter tier that quietly expires. CHF 0.00 a month — this month, and the month after that.",
+  /**
+   * Where the homepage sends a reader who wants `catch`'s second sentence.
+   * /pricing makes that point at greater length as PRICING_PROMISE.points[4],
+   * which survives `restatedByPricingFeeSection` precisely so it renders there.
+   */
+  processorNoteLink: "Card and TWINT rates are your processor's, not ours",
+  /**
+   * The free plan as a bill rather than a boast.
+   *
+   * "Free forever" is a claim, and a claim invites the reader to look for the
+   * catch. An itemised statement that totals CHF 0.00 is the same fact in a
+   * form nobody argues with — and it does the work three phrases used to do
+   * ("forever", "no trial clock", "no starter tier") without saying any of
+   * them, because a monthly statement is self-evidently monthly.
+   *
+   * `lines` are `includes` at receipt length, in the same order, so the two
+   * cannot come to disagree about what the Free plan contains — platform.test
+   * pins the count.
+   */
+  receipt: {
+    title: "monthly statement",
+    lines: [
+      "Point of sale",
+      "Product catalogue",
+      "Inventory sync",
+      "Online storefront",
+    ],
+    total: "Total due",
+    /** In the hand, under the total — the only word doing "forever"'s job. */
+    note: "and again next month",
+  },
   /** Each item must be true of the Free plan — asserted in platform.test.ts. */
   includes: [
     "Full POS — Tap to Pay, TWINT and cash, on one screen",
@@ -687,6 +771,17 @@ export interface SovereigntyEntry {
   piece: string;
   /** Where it runs TODAY. Present tense, honest, no aspiration. */
   today: string;
+  /**
+   * `today` at the length a homepage table cell can carry.
+   *
+   * The homepage renders nine of these in the smallest type on the page, which
+   * is ~90 words of small print nobody reads standing up. Shortening is
+   * deliberate and bounded: it may drop qualifiers a reader can get from the
+   * full row on /made-in-switzerland, and it may NOT drop the part that makes
+   * a row unflattering — "via Stripe, not TWINT directly" is the whole reason
+   * that row exists. platform.test.ts pins the awkward rows for that reason.
+   */
+  todayShort: string;
   state: SovereigntyState;
   /** Where it's going (`moving`), or why it can't (`foreign`). */
   next?: string;
@@ -725,6 +820,17 @@ export const SOVEREIGNTY = {
     "Zolto is built in Zürich, for Swiss makers first, for Europe next, and after that for anyone anywhere who likes how we do things.",
   body: "We're moving every piece of Zolto we control onto European infrastructure, and into Switzerland where there's a Swiss option worth having. Some of it is already there. Some of it isn't yet. Here's the whole list, including the parts that make us look bad.",
   /**
+   * The homepage-reel version of `serving` + `body`, which together were 68
+   * words explaining a table that explains itself. Two of the three things
+   * they said are said twice on the same screen: the headline above already
+   * reads "Made in Switzerland. Run from Europe.", and the ledger's first row
+   * already reads "Built in Zürich, by a Swiss company". What only the prose
+   * could say is the last clause — that the list is complete, unflattering
+   * rows included — so that is what survives.
+   */
+  bodyShort:
+    "Every piece of Zolto, and where it runs today — including the parts that make us look bad.",
+  /**
    * Every piece of the stack, in the order a merchant would care about it.
    * The servers row reads DATA_RESIDENCY so the two can't tell different
    * stories about the same machines.
@@ -733,11 +839,13 @@ export const SOVEREIGNTY = {
     {
       piece: "The company and the product",
       today: "Built in Zürich, by a Swiss company",
+      todayShort: "Zürich, Swiss company",
       state: "swiss",
     },
     {
       piece: "Servers and your database",
       today: `${DATA_RESIDENCY.provider} · ${DATA_RESIDENCY.region}, mostly ${DATA_RESIDENCY.primaryCountry}`,
+      todayShort: `${DATA_RESIDENCY.provider}, ${DATA_RESIDENCY.primaryCountry}`,
       state: "european",
       next: "A Swiss data centre, so the machines and the company share a country.",
     },
@@ -752,42 +860,49 @@ export const SOVEREIGNTY = {
       piece: "TWINT — your own QR code",
       today:
         "Your own TWINT account at 1.3% — Swiss rails, end to end, and we never see the money",
+      todayShort: "Your account, 1.3%. We never see the money",
       state: "swiss",
     },
     {
       piece: "TWINT — the button in the till",
       today:
         "A Stripe payment, not a direct TWINT one — Stripe's rails, at a rate Stripe doesn't publish",
+      todayShort: "Via Stripe, not TWINT directly",
       state: "moving",
       next: "A direct TWINT integration, so the in-app button runs on the same Swiss rails as the QR code. TWINT certifies integrators before releasing the spec, so this starts as an application rather than a branch.",
     },
     {
       piece: "Card payments and payouts",
       today: "Stripe — money goes straight to your own account, never ours",
+      todayShort: "Stripe, straight to your account",
       state: "moving",
       next: "A Swiss payment processor. Our research says it would also be cheaper per sale than what you pay now, which is the rare case of the principled option being the cheap one.",
     },
     {
       piece: "The AI (listings, translations, chat)",
       today: "A model provider outside Europe",
+      todayShort: "Model provider outside Europe",
       state: "moving",
       next: "Swiss-hosted open models. Our AI layer already speaks a standard API, so this is the shortest hop on the list — the thing we're testing is whether the quality holds.",
     },
     {
       piece: "Your product photos",
       today: "Object storage that isn't guaranteed European yet",
+      todayShort: "Storage not guaranteed European",
       state: "moving",
       next: "The same European data centre as the servers, so your photos and your orders stop living in different jurisdictions.",
     },
     {
       piece: "Account emails",
       today: "A sending service outside Europe",
+      todayShort: "Sender outside Europe",
       state: "moving",
       next: "A European sender. Small job, low risk, genuinely just not done yet.",
     },
     {
       piece: "Card networks and phone wallets",
       today: "Visa, Mastercard, Apple Pay, Google Pay",
+      todayShort: "Visa, Mastercard, Apple Pay, Google Pay",
       state: "foreign",
       next: "These are not European and never will be. If you want a sale to stay in Switzerland from end to end, take it over your own TWINT QR — at 1.3% with no fixed fee it is also the cheapest way to be paid that carries no monthly cost, and less than half what the same sale costs on a card.",
     },
@@ -973,7 +1088,22 @@ export const MAKER_PITCH = {
    * the box going full-column-width, not a second rect.
    */
   headlineEmphasis: "a till and a shop.",
-  body: "Zolto is a point-of-sale and a web store that share one inventory. Tap the photo of the piece you just sold, take TWINT, a card or cash on the phone or tablet you already own — and the last one comes off your website before the customer has walked away.",
+  /**
+   * Trimmed in the August 2026 copy audit: 50 words to 35.
+   *
+   * What went is the enumeration — "take TWINT, a card or cash on the phone or
+   * tablet you already own" — because the sovereignty badges directly beneath
+   * already read TWINT BUILT IN and the explainer video beside it is a phone.
+   *
+   * What deliberately stayed is "point-of-sale" and "phone", against the first
+   * draft of this cut. They are not decoration: a reader arriving cold needs
+   * the category in a word they already use, and this is a product whose whole
+   * thesis is being legible to a machine reading the page. "Till" is what a
+   * Swiss maker says; "point-of-sale" is what they'd search, and what an
+   * assistant matches on. Dropping it would have saved four words and cost the
+   * one sentence on the site that says what Zolto is.
+   */
+  body: "A point-of-sale and a web shop that share one inventory. Tap the photo of the piece you just sold on the phone in your hand — it's off your website before the customer has walked away.",
   /** Labels on the hero's till drawing. */
   till: {
     title: "your till, on the phone you already own",
@@ -1003,12 +1133,30 @@ export const AI_NATIVE_PITCH = {
   /** Split so the sketch underline hugs the punchline (see ZERO_COST_POS). */
   headlineEmphasis: "is an AI.",
   body: "Search built the last era of shops. Assistants are building this one — and they can only recommend stores they can read. Every Zolto store ships llms.txt, MCP and agent checkout from day one, kept current as the protocols move, so your shop compounds in the answers while retrofitted websites fade out of them.",
+  /**
+   * The homepage-reel version of `body`. The long form narrates the chart
+   * beside it — two lines crossing, described in a sentence — and then adds
+   * the "compounds in the answers" flourish, which is a claim about the
+   * future that /why-zolto is the place to make. What survives is the only
+   * part a reader has to have: what ships, and that it ships by default.
+   */
+  bodyShort:
+    "They can only recommend a store they can read. Every Zolto store ships llms.txt, MCP and agent checkout from day one.",
   chart: {
     title: "where buyers start their search",
     decliningLabel: "search engines",
     risingLabel: "AI assistants",
     startYear: "2023",
     endYear: "2027",
+    /**
+     * The caption, moved onto the drawing.
+     *
+     * A crossing point explains itself once it is labelled; a paragraph under
+     * a chart saying that two lines cross is the definition of a redundant
+     * caption. The year is the schematic's own midpoint, not a forecast —
+     * same status as the two curves, which carry no numbers on purpose.
+     */
+    crossingLabel: "2025 — assistants overtake search",
     caption:
       "Assistants only recommend stores they can read. A store that's invisible to them isn't in the answer — no matter how good its SEO was.",
   },
@@ -1050,6 +1198,13 @@ export const AI_NATIVE_PITCH = {
 
 export interface SellingStep {
   title: string;
+  /**
+   * One line under the title. Deliberately a caption rather than an
+   * explanation: every beat renders beside a drawing that already shows the
+   * action (DayInTheLife is the only consumer, and it is homepage-only), so
+   * the sentence that described the picture was the picture's third telling —
+   * after the drawing and the title.
+   */
   detail: string;
   /**
    * When in a market day this step happens — the anchor the landing page's
@@ -1066,21 +1221,18 @@ export interface SellingStep {
  */
 export const SELLING_FLOW: SellingStep[] = [
   {
-    title: "Scan your notebook",
-    detail:
-      "Photograph your handwritten stock list. The AI reads it into a real catalogue — names, prices, quantities.",
+    title: "Photograph your stock list",
+    detail: "The AI turns it into a catalogue.",
     timeOfDay: "07:40 — stall going up",
   },
   {
-    title: "Tap to take payment",
-    detail:
-      "Enter an amount and let the customer tap their phone or card. NFC and TWINT QR — nothing to buy or plug in.",
+    title: "They tap. You're paid.",
+    detail: "NFC and TWINT QR. Nothing to plug in.",
     timeOfDay: "11:15 — first rush",
   },
   {
-    title: "Confirm at day's end",
-    detail:
-      "Zolto emails what it thinks you sold. Tap to confirm and stock syncs across your POS and online store.",
+    title: "One email. One tap.",
+    detail: "Stock syncs, stall and website.",
     timeOfDay: "18:30 — packing up",
   },
 ];
