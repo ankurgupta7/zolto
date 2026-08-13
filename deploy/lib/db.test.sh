@@ -214,6 +214,79 @@ RESULT="$(migrations_fingerprint "${FP_DIR}/does-not-exist.sh")"
 assert_eq "$RESULT" "" "an unreadable file yields no fingerprint (update.sh then runs the migrations)"
 rm -rf "${FP_DIR}"
 
+# ── migrate_0047_users_openid_unique ─────────────────────────────────────────
+# The index this restores is what makes upsertUser's onDuplicateKeyUpdate an
+# update instead of an insert. It has to be idempotent (it runs on every
+# deploy) and, above all, non-fatal when duplicate openIds already exist: the
+# ALTER cannot succeed against duplicated data, and run_sql's die() would take
+# the whole deploy down with it.
+#
+# Needs a fake that answers per-query — idx_exists and the duplicate count ask
+# different questions — so it replaces the shared single-answer fake for this
+# section only.
+echo "migrate_0047_users_openid_unique"
+SQL_BIN="$(mktemp -d)"
+cat > "${SQL_BIN}/docker" <<'SQL_DOCKER'
+#!/bin/bash
+echo "$@" >> "${FAKE_CALL_LOG}"
+SQL="${*: -1}"
+case "$SQL" in
+  *"TABLE_CONSTRAINTS"*) echo "${FAKE_IDX:-0}" ;;
+  *"HAVING COUNT(*) > 1"*)
+     [ "${FAKE_DUPES_ERROR:-0}" = "1" ] && exit 1
+     echo "${FAKE_DUPES:-0}" ;;
+  *"ADD CONSTRAINT"*)    : ;;
+esac
+exit 0
+SQL_DOCKER
+chmod +x "${SQL_BIN}/docker"
+OLD_PATH="$PATH"
+export PATH="${SQL_BIN}:${PATH}"
+export FAKE_IDX FAKE_DUPES FAKE_DUPES_ERROR
+MYSQL="$(build_mysql_cmd)"
+
+reset_call_log
+FAKE_IDX=1 FAKE_DUPES=0 FAKE_DUPES_ERROR=0
+OUTPUT=$(migrate_0047_users_openid_unique 2>&1)
+assert_contains "$OUTPUT" "already present" "skips when the index is already there"
+assert_not_contains() { # local: only needed here
+  if [[ "$1" != *"$2"* ]]; then pass "$3"; else fail "$3 (did NOT expect: $2)"; fi
+}
+assert_not_contains "$(cat "${FAKE_CALL_LOG}")" "ADD CONSTRAINT" \
+  "…and issues no ALTER"
+
+reset_call_log
+FAKE_IDX=0 FAKE_DUPES=0
+OUTPUT=$(migrate_0047_users_openid_unique 2>&1)
+assert_contains "$(cat "${FAKE_CALL_LOG}")" "ADD CONSTRAINT \`users_openId_unique\`" \
+  "adds the constraint when it is missing and data is clean"
+assert_contains "$OUTPUT" "0047 restore users_openId_unique" "reports the step"
+
+# The case that must not abort a deploy.
+reset_call_log
+FAKE_IDX=0 FAKE_DUPES=3
+OUTPUT=$(migrate_0047_users_openid_unique 2>&1)
+STATUS=$?
+assert_eq "$STATUS" "0" "returns success when duplicates block the ALTER"
+assert_contains "$OUTPUT" "NOT restored" "says the index was not restored"
+assert_contains "$OUTPUT" "3 openId(s)" "reports how many duplicates are in the way"
+assert_contains "$OUTPUT" "dedupe-users.sh" "points at the tool that fixes it"
+assert_not_contains "$(cat "${FAKE_CALL_LOG}")" "ADD CONSTRAINT" \
+  "…and never attempts the ALTER that would fail"
+
+# An unreadable count must not be read as "zero duplicates" and wave the ALTER
+# through — that is the one way this could still abort a deploy.
+reset_call_log
+FAKE_IDX=0 FAKE_DUPES_ERROR=1
+OUTPUT=$(migrate_0047_users_openid_unique 2>&1)
+assert_contains "$OUTPUT" "could not check" "refuses when the duplicate check itself fails"
+assert_not_contains "$(cat "${FAKE_CALL_LOG}")" "ADD CONSTRAINT" \
+  "…and issues no ALTER on an unknown state"
+
+export PATH="$OLD_PATH"
+rm -rf "${SQL_BIN}"
+MYSQL="$(build_mysql_cmd)"
+
 echo ""
 echo "${PASSES} passed, ${FAILURES} failed"
 [ "$FAILURES" -eq 0 ]

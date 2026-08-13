@@ -683,6 +683,55 @@ migrate_0045_site_imports() {
   fi
 }
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Migration 0047: restore users_openId_unique where it is missing.
+#
+# upsertUser writes every sign-in with onDuplicateKeyUpdate, which in MySQL
+# fires only on a PRIMARY KEY or UNIQUE collision. `users.id` is autoincrement
+# and never supplied, so openId's unique index is the ONLY thing that turns a
+# repeat sign-in into an update. Without it every sign-in INSERTs a new row —
+# the same person accumulating an account per visit, silently, with no error
+# anywhere.
+#
+# The baseline created it (drizzle/0000_baseline_2026_07_05.sql). It then
+# disappeared from drizzle/schema.ts and from the meta snapshots at 0004, while
+# every database kept it, because no generated migration ever emitted the DROP.
+# That is survivable until someone runs `npm run db:sync` (drizzle-kit push
+# --force), which reconciles a live database to schema.ts and would drop what
+# the file no longer declares. schema.ts declares it again; this is the other
+# half, for any database where that already happened.
+#
+# Refuses rather than fails when duplicate openIds exist: ADD CONSTRAINT on
+# duplicated data is an error, and run_sql's die() would abort the whole
+# deploy. Merging duplicate accounts is a judgement call about which row's
+# history to keep, so it warns and leaves the database alone.
+# ─────────────────────────────────────────────────────────────────────────────
+migrate_0047_users_openid_unique() {
+  if [ "$(idx_exists users users_openId_unique)" != "0" ]; then
+    ok "0047 users_openId_unique already present"
+    return
+  fi
+
+  local dupes
+  dupes=$($MYSQL -se "${MYSQL_LOCK_TIMEOUT_SQL}SELECT COUNT(*) FROM
+    (SELECT \`openId\` FROM \`users\` GROUP BY \`openId\` HAVING COUNT(*) > 1) d;" 2>/dev/null || echo "")
+
+  if [ -z "$dupes" ]; then
+    warn "0047 could not check users.openId for duplicates — leaving the index alone"
+    return
+  fi
+
+  if [ "$dupes" != "0" ]; then
+    warn "0047 users_openId_unique NOT restored: ${dupes} openId(s) appear on more than one row."
+    warn "     Every sign-in is creating a new row until this is fixed. Merge the"
+    warn "     duplicates (bash deploy/dedupe-users.sh), then re-run this deploy."
+    return
+  fi
+
+  run_sql "0047 restore users_openId_unique" \
+    "ALTER TABLE \`users\` ADD CONSTRAINT \`users_openId_unique\` UNIQUE(\`openId\`);"
+}
+
 migrate_0036_merchant_verticals() {
   # Per-tenant categories + merchant vertical. Ships
   # drizzle/0017_merchant_verticals.sql and 0018_seed_jewellery_categories.sql:

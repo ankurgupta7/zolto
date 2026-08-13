@@ -230,7 +230,19 @@ export type InsertTenantSecret = typeof tenantSecrets.$inferInsert;
 export const users = mysqlTable("users", {
   id: int("id").autoincrement().primaryKey(),
   tenantId: int("tenant_id").notNull(), // ← NEW: every user belongs to a tenant
-  openId: varchar("openId", { length: 64 }).notNull(),
+  // UNIQUE, and load-bearing: upsertUser writes every sign-in with
+  // onDuplicateKeyUpdate, which in MySQL fires only on a PRIMARY KEY or UNIQUE
+  // collision. `id` is autoincrement and never supplied, so without this index
+  // there is nothing to collide on and each sign-in INSERTs a fresh row
+  // instead of updating one.
+  //
+  // It was dropped from this file (and from the meta snapshots, at 0004) while
+  // the databases kept it, since no generated migration ever emitted the DROP.
+  // That divergence is quiet in one direction and destructive in the other:
+  // `drizzle-kit generate` compares against the snapshot and stays silent,
+  // but `npm run db:sync` (drizzle-kit push --force) reconciles a live
+  // database to THIS file and would have removed it.
+  openId: varchar("openId", { length: 64 }).notNull().unique(),
   name: text("name"),
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
