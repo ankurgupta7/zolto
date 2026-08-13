@@ -2499,6 +2499,87 @@ export async function deleteUserById(id: number): Promise<void> {
   await withDbOrThrow((db) => db.delete(users).where(eq(users.id, id)));
 }
 
+/**
+ * Every users row sharing an email, with the context needed to tell them
+ * apart before deleting one (scripts/dedupe-users.ts).
+ *
+ * `users.email` is deliberately NOT unique — `openId` is. Two rows on one
+ * address is therefore a legal state, and often the correct one:
+ *   • one row per tenant, for an owner who runs two stores;
+ *   • a `pending:<token>` claim row beside the real account, when a signup
+ *     was started and the claim never finished (createPendingTenantAdmin);
+ *   • two providers for one person — `google:<sub>` and a magic link — each
+ *     minting its own openId, and so its own row.
+ * Only the last of those is a duplicate worth deleting, which is why this
+ * returns openId/loginMethod/lastSignedIn rather than just the address.
+ */
+export type DuplicateEmailUser = {
+  id: number;
+  tenantId: number | null;
+  tenantName: string | null;
+  email: string | null;
+  name: string | null;
+  openId: string;
+  role: User["role"];
+  loginMethod: string | null;
+  pendingClaim: boolean;
+  createdAt: Date;
+  lastSignedIn: Date;
+};
+
+export async function getUsersByEmail(
+  email: string,
+): Promise<DuplicateEmailUser[]> {
+  return withDb(async (db) => {
+    const rows = await db
+      .select({
+        id: users.id,
+        tenantId: users.tenantId,
+        tenantName: tenants.name,
+        email: users.email,
+        name: users.name,
+        openId: users.openId,
+        role: users.role,
+        loginMethod: users.loginMethod,
+        createdAt: users.createdAt,
+        lastSignedIn: users.lastSignedIn,
+      })
+      .from(users)
+      .leftJoin(tenants, eq(tenants.id, users.tenantId))
+      // Case-insensitive for the same reason as getStoreUserByEmail: providers
+      // disagree about case, so `A@b.c` and `a@b.c` are one person here.
+      .where(sql`LOWER(${users.email}) = LOWER(${email})`)
+      .orderBy(asc(users.id));
+    return rows.map((r) => ({
+      ...r,
+      pendingClaim: r.openId.startsWith("pending:"),
+    }));
+  }, []);
+}
+
+/**
+ * Addresses held by more than one users row, most-duplicated first. The
+ * survey step — `getUsersByEmail` then shows which row is which.
+ */
+export async function findDuplicateEmails(): Promise<
+  { email: string; count: number }[]
+> {
+  return withDb(async (db) => {
+    const rows = await db
+      .select({
+        email: sql<string>`LOWER(${users.email})`.as("email"),
+        count: sql<number>`COUNT(*)`.as("count"),
+      })
+      .from(users)
+      .where(isNotNull(users.email))
+      .groupBy(sql`LOWER(${users.email})`)
+      .having(sql`COUNT(*) > 1`)
+      .orderBy(desc(sql`COUNT(*)`));
+    // MySQL returns COUNT(*) as a string over some driver configurations.
+    return rows.map((r) => ({ email: r.email, count: Number(r.count) }));
+  }, []);
+}
+
 // ─── Billing (Zolto's own subscription relationship with tenants) ─────────────
 // Distinct from storefront payments: stripeCustomerId/stripeSubscriptionId here
 // belong to Zolto's own Stripe account and bill the MERCHANT for their plan;

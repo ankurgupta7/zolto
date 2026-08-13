@@ -14,6 +14,8 @@ function makeChain(result: unknown) {
     "onDuplicateKeyUpdate",
     "innerJoin",
     "leftJoin",
+    "groupBy",
+    "having",
   ];
   for (const m of methods) chain[m] = () => chain;
   chain.$returningId = () => Promise.resolve(result);
@@ -403,6 +405,61 @@ describe("tenant writes", () => {
     deleteReturns();
     await db.deleteUserById(1);
     expect(dbMock.delete).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("duplicate email lookups", () => {
+  const row = (over: Record<string, unknown> = {}) => ({
+    id: 1,
+    tenantId: 7,
+    tenantName: "Kalakosh",
+    email: "a@b.c",
+    name: "Ada",
+    openId: "google:sub-1",
+    role: "admin",
+    loginMethod: "google",
+    createdAt: new Date("2026-01-01T00:00:00Z"),
+    lastSignedIn: new Date("2026-02-01T00:00:00Z"),
+    ...over,
+  });
+
+  it("getUsersByEmail returns every row on the address", async () => {
+    selectReturns([
+      row(),
+      row({ id: 2, openId: "magic:xyz", loginMethod: "magic" }),
+    ]);
+    const rows = await db.getUsersByEmail("a@b.c");
+    expect(rows).toHaveLength(2);
+    expect(rows.map((r) => r.id)).toEqual([1, 2]);
+    expect(rows[0].tenantName).toBe("Kalakosh");
+  });
+
+  // The whole point of the helper: a pending row is a signup in flight, not a
+  // duplicate, and the caller has to be able to see the difference.
+  it("getUsersByEmail flags unclaimed pending rows", async () => {
+    selectReturns([row(), row({ id: 2, openId: "pending:tok-abc" })]);
+    const rows = await db.getUsersByEmail("a@b.c");
+    expect(rows[0].pendingClaim).toBe(false);
+    expect(rows[1].pendingClaim).toBe(true);
+  });
+
+  it("getUsersByEmail returns [] when the address is unused", async () => {
+    selectReturns([]);
+    expect(await db.getUsersByEmail("nobody@b.c")).toEqual([]);
+  });
+
+  it("findDuplicateEmails coerces the driver's COUNT(*) to a number", async () => {
+    // mysql2 hands back DECIMAL/BIGINT aggregates as strings under some
+    // configurations, which would make `count > 1` comparisons lie.
+    selectReturns([{ email: "a@b.c", count: "3" }]);
+    expect(await db.findDuplicateEmails()).toEqual([
+      { email: "a@b.c", count: 3 },
+    ]);
+  });
+
+  it("findDuplicateEmails returns [] when nothing is duplicated", async () => {
+    selectReturns([]);
+    expect(await db.findDuplicateEmails()).toEqual([]);
   });
 });
 
