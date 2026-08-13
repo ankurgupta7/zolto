@@ -124,6 +124,7 @@ server/discord.ts          → Discord Gateway bot — listens for messages, LLM
 server/stripe.ts           → Stripe Checkout webhook handler (marks orders paid, decrements stock)
 server/pos.ts              → POS Terminal API (market-stall Tap to Pay via Android app)
 server/storage.ts          → S3/R2 file upload helpers (storagePut)
+server/adminShell/         → Interactive terminal admin shell (deploy/admin.sh) — every admin operation in tiers
 client/src/App.tsx         → Routes, Navbar, Footer, CartDrawer, WhatsAppButton
 client/src/lib/trpc.ts     → tRPC client binding
 client/src/pages/          → Home, Shop, ProductDetail, Admin, BulkUpload, CsvImport, Checkout, About, Contact, Policy, Impressum
