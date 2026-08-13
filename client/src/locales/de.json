@@ -68,6 +68,9 @@
     "noPiecesAll": "Die Kollektion wird zusammengestellt. Schauen Sie bald wieder vorbei."
   },
   "discovery": {
+    "searchLabel": "Bestand durchsuchen",
+    "searchPlaceholder": "Nach Name, Beschreibung, Preis, Bestand suchen…",
+    "clearSearch": "Suche löschen",
     "sortBy": "Sortieren nach:",
     "sortNewest": "Neueste zuerst",
     "sortCategory": "Nach Kategorie",
@@ -81,7 +84,9 @@
     "expandAll": "Alle ausklappen",
     "collapseAll": "Alle einklappen",
     "products_one": "{{count}} Produkt",
-    "products_other": "{{count}} Produkte"
+    "products_other": "{{count}} Produkte",
+    "matching_one": "{{count}} von {{total}}",
+    "matching_other": "{{count}} von {{total}}"
   },
   "product": {
     "sold": "Verkauft",

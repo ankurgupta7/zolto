@@ -192,6 +192,15 @@
         "save": "Enregistrer",
         "cancel": "Annuler"
       },
+      "card": {
+        "qty": "Qté",
+        "qtyLabel": "Quantité en stock pour {{name}}"
+      },
+      "search": {
+        "noMatchesTitle": "Rien ne correspond",
+        "noMatchesBody": "Aucun produit de votre stock ne correspond à « {{query}} » — ni par nom, description, prix, catégorie ou stock.",
+        "clearFilter": "Afficher tous les produits"
+      },
       "instagram": {
         "title": "Grille de publications sélectionnées",
         "description": "Collez ci-dessous les URL de publications ou de reels Instagram. Elles apparaîtront sous forme de publications intégrées sur la page d'accueil."

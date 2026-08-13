@@ -191,10 +191,15 @@ if (process.env.SHOT_CLICK) {
     .map((n) => n.trim())
     .filter(Boolean);
   for (const name of names) {
-    await page
-      .getByRole("button", { name: name.trim(), exact: true })
-      .first()
-      .click();
+    // Not every control is a <button> by role: a single-select toggle group
+    // (the catalogue's grid/list switch) is a radiogroup, a tab is a tab. Fall
+    // back to the accessible label so a shot of "what this control does" does
+    // not require reshaping the control to suit the tool.
+    const asButton = page.getByRole("button", { name, exact: true }).first();
+    const target = (await asButton.count())
+      ? asButton
+      : page.getByLabel(name, { exact: true }).first();
+    await target.click();
     await page.waitForTimeout(1200);
   }
 }

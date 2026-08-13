@@ -192,6 +192,15 @@
         "save": "Salva",
         "cancel": "Annulla"
       },
+      "card": {
+        "qty": "Q.tà",
+        "qtyLabel": "Quantità in giacenza per {{name}}"
+      },
+      "search": {
+        "noMatchesTitle": "Nessuna corrispondenza",
+        "noMatchesBody": "Nessun prodotto del suo inventario corrisponde a «{{query}}» — né per nome, descrizione, prezzo, categoria o giacenza.",
+        "clearFilter": "Mostra tutti i prodotti"
+      },
       "instagram": {
         "title": "Griglia di post selezionati",
         "description": "Incolli qui sotto gli URL di post o reel di Instagram. Appariranno come post incorporati sulla home page."

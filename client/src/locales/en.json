@@ -68,6 +68,9 @@
     "noPiecesAll": "The collection is being curated. Check back soon."
   },
   "discovery": {
+    "searchLabel": "Search your inventory",
+    "searchPlaceholder": "Search by name, description, price, stock…",
+    "clearSearch": "Clear search",
     "sortBy": "Sort by:",
     "sortNewest": "Newest First",
     "sortCategory": "By Category",
@@ -81,7 +84,9 @@
     "expandAll": "Expand All",
     "collapseAll": "Collapse All",
     "products_one": "{{count}} product",
-    "products_other": "{{count}} products"
+    "products_other": "{{count}} products",
+    "matching_one": "{{count}} of {{total}}",
+    "matching_other": "{{count}} of {{total}}"
   },
   "product": {
     "sold": "Sold",

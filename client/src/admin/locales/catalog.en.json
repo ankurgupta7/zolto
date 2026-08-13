@@ -190,6 +190,15 @@
         "save": "Save",
         "cancel": "Cancel"
       },
+      "card": {
+        "qty": "Qty",
+        "qtyLabel": "Quantity in stock for {{name}}"
+      },
+      "search": {
+        "noMatchesTitle": "Nothing matches that",
+        "noMatchesBody": "No product in your inventory matches “{{query}}” — not by name, description, price, category or stock.",
+        "clearFilter": "Show all products"
+      },
       "instagram": {
         "title": "Curated Post Grid",
         "description": "Paste Instagram post or reel URLs below. They will appear as embedded posts on the home page."

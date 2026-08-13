@@ -68,6 +68,9 @@
     "noPiecesAll": "La collection est en cours de constitution. Revenez bientôt."
   },
   "discovery": {
+    "searchLabel": "Rechercher dans votre stock",
+    "searchPlaceholder": "Rechercher par nom, description, prix, stock…",
+    "clearSearch": "Effacer la recherche",
     "sortBy": "Trier par :",
     "sortNewest": "Plus récents",
     "sortCategory": "Par catégorie",
@@ -82,7 +85,10 @@
     "collapseAll": "Tout replier",
     "products_one": "{{count}} produit",
     "products_many": "{{count}} produits",
-    "products_other": "{{count}} produits"
+    "products_other": "{{count}} produits",
+    "matching_one": "{{count}} sur {{total}}",
+    "matching_many": "{{count}} sur {{total}}",
+    "matching_other": "{{count}} sur {{total}}"
   },
   "product": {
     "sold": "Vendu",
