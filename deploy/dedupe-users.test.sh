@@ -73,6 +73,7 @@ case "$SQL" in
   *"SELECT tenant_id, role, openId"*)            printf '%s\n' "${FAKE_ROW:-}" ;;
   *"GROUP BY LOWER(email)"*)                     printf '%s\n' "${FAKE_SURVEY:-}" ;;
   *"COUNT(DISTINCT tenant_id)"*)                 echo "${FAKE_TENANTS:-1}" ;;
+  *"role = 'customer'"*)                         echo "${FAKE_PARKED:-0}" ;;
   *"COUNT(*)"*"openId NOT LIKE"*)                echo "${FAKE_REAL:-2}" ;;
   *"LEFT JOIN tenants"*)                         printf '%s\n' "${FAKE_INSPECT:-}" ;;
 esac
@@ -133,8 +134,20 @@ OUT=$(FAKE_INSPECT="${ROW1}"$'\n'"${ROW2}" FAKE_REAL=2 FAKE_TENANTS=1 run --emai
 assert_contains "$OUT" "openId       google:sub-1" "inspect prints the openId that distinguishes rows"
 assert_contains "$OUT" "Looks like a real duplicate" "two rows, one tenant → real duplicate"
 
-OUT=$(FAKE_INSPECT="${ROW1}"$'\n'"${ROW2}" FAKE_REAL=2 FAKE_TENANTS=2 run --email a@b.c)
-assert_contains "$OUT" "more than one store" "two rows, two tenants → not a duplicate"
+STORE2=$'3\t9\tOther Shop\tadmin\tgoogle:sub-2\tAda\ta@b.c\tgoogle\t2026-01-05 00:00\t2026-03-01 00:00'
+OUT=$(FAKE_INSPECT="${ROW1}"$'\n'"${STORE2}" FAKE_REAL=2 FAKE_TENANTS=2 FAKE_PARKED=0 run --email a@b.c)
+assert_contains "$OUT" "more than one store" "two admin rows on two tenants → not a duplicate"
+
+# Regression: the real case from production. An admin on their own tenant plus
+# a magic-link row parked on the platform tenant as a customer. The tenant ids
+# differ, so the old "one row per tenant" test called this legitimate — but it
+# is one person split in two, and the parked row is not a store.
+PARKED=$'14\t1\tZolto Platform\tcustomer\temail:a@b.c\tada\ta@b.c\tmagic_link\t2026-08-09 19:54\t2026-08-13 16:08'
+OUT=$(FAKE_INSPECT="${ROW1}"$'\n'"${PARKED}" FAKE_REAL=2 FAKE_TENANTS=1 FAKE_PARKED=1 run --email a@b.c)
+assert_contains "$OUT" "parking spot, not a store" "flags the parked row inline"
+assert_contains "$OUT" "One person, split across rows" "parked + managing → one person, not two stores"
+assert_not_contains "$OUT" "more than one store" "…and does NOT call it two stores"
+assert_contains "$OUT" "does NOT stay deleted" "warns the parked row comes back on next sign-in"
 
 PENDING=$'2\t7\tKalakosh\tadmin\tpending:tok\tAda\ta@b.c\tpending\t2026-01-05 00:00\t2026-03-01 00:00'
 OUT=$(FAKE_INSPECT="${ROW1}"$'\n'"${PENDING}" FAKE_REAL=1 FAKE_TENANTS=1 run --email a@b.c)

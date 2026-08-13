@@ -103,6 +103,11 @@ read_env() { # read_env NAME → value on stdout, empty if unset
 MYSQL_USER="$(read_env MYSQL_USER)"
 MYSQL_PASSWORD="$(read_env MYSQL_PASSWORD)"
 MYSQL_DATABASE="$(read_env MYSQL_DATABASE)"
+# The platform tenant that upsertUser parks tenant-less sign-ins on. Same
+# default as server/_core/tenant.ts:15 (`Number(process.env.DEFAULT_TENANT_ID) || 1`).
+DEFAULT_TENANT_ID="$(read_env DEFAULT_TENANT_ID)"
+[[ "$DEFAULT_TENANT_ID" =~ ^[0-9]+$ ]] || DEFAULT_TENANT_ID=1
+
 [ -n "$MYSQL_USER" ]     || die "MYSQL_USER missing from ${ENV_FILE}"
 [ -n "$MYSQL_PASSWORD" ] || die "MYSQL_PASSWORD missing from ${ENV_FILE}"
 [ -n "$MYSQL_DATABASE" ] || die "MYSQL_DATABASE missing from ${ENV_FILE}"
@@ -168,6 +173,9 @@ inspect() {
   echo "$rows" | while IFS=$'\t' read -r id tid tname role openid name mail method created lastseen; do
     local flag=""
     case "$openid" in pending:*) flag="   <- unclaimed signup, not a duplicate" ;; esac
+    if [ "$tid" = "${DEFAULT_TENANT_ID}" ] && [ "$role" = "customer" ]; then
+      flag="   <- parking spot, not a store"
+    fi
     printf '  id %s  %-10s tenant %s (%s)\n' "$id" "$role" "$tid" "$tname"
     printf '      openId       %s%s\n' "$openid" "$flag"
     printf '      name/email   %s <%s>\n' "$name" "$mail"
@@ -176,14 +184,40 @@ inspect() {
   done
 
   # Verdict, computed in SQL so the shell doesn't have to re-parse the rows.
-  local real tenants
+  #
+  # `parked` is counted separately and excluded from the "runs more than one
+  # store" test. upsertUser assigns tenantId ?? DEFAULT_TENANT_ID with the
+  # default role `customer` (server/db.ts:176), so a sign-in that carries no
+  # tenant — every magic link, which calls upsertUser without one — lands on
+  # the platform tenant as a customer. That row is the same person, parked;
+  # counting its tenant as "another store" made this report two genuinely
+  # duplicated rows as legitimate.
+  local real tenants parked managing
+  local not_pending="openId NOT LIKE 'pending:%'"
+  local is_parked="tenant_id = ${DEFAULT_TENANT_ID} AND role = 'customer'"
   real=$(q "SELECT COUNT(*) FROM users
-            WHERE LOWER(email)=LOWER('${email_esc}') AND openId NOT LIKE 'pending:%';")
+            WHERE LOWER(email)=LOWER('${email_esc}') AND ${not_pending};")
+  parked=$(q "SELECT COUNT(*) FROM users
+              WHERE LOWER(email)=LOWER('${email_esc}') AND ${not_pending}
+                AND ${is_parked};")
+  managing=$((${real:-0} - ${parked:-0}))
   tenants=$(q "SELECT COUNT(DISTINCT tenant_id) FROM users
-               WHERE LOWER(email)=LOWER('${email_esc}') AND openId NOT LIKE 'pending:%';")
+               WHERE LOWER(email)=LOWER('${email_esc}') AND ${not_pending}
+                 AND NOT (${is_parked});")
+
   if [ "${real:-0}" -lt 2 ]; then
     echo "Not a duplicate: only one real account here (the rest are unclaimed signups)."
-  elif [ "${tenants:-0}" -eq "${real:-0}" ]; then
+  elif [ "${parked:-0}" -gt 0 ] && [ "${managing}" -ge 1 ]; then
+    echo "One person, split across rows. The row(s) marked 'parking spot' are a"
+    echo "sign-in that carried no tenant — every magic link does this — so it landed"
+    echo "on the platform tenant as a customer rather than joining the account that"
+    echo "manages the store."
+    echo ""
+    echo "Deleting the parked row is safe (nothing references it: orders store the"
+    echo "customer's email as text, not a user id), but it does NOT stay deleted —"
+    echo "the next magic-link sign-in recreates it. Signing in with the provider on"
+    echo "the managing row is what actually reaches the store admin."
+  elif [ "${tenants:-0}" -eq "${managing}" ] && [ "${managing}" -ge 2 ]; then
     echo "Probably not a duplicate: one row per tenant — this address runs more than one store."
   else
     echo "Looks like a real duplicate: two rows on the same tenant, different openIds."
