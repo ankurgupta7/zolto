@@ -2,6 +2,16 @@
 /**
  * scripts/dedupe-users.ts — find, inspect, and remove duplicate user rows.
  *
+ * DOCKER DEPLOYMENTS: USE deploy/dedupe-users.sh INSTEAD.
+ * This file cannot run against the compose stack. The runner image copies only
+ * dist/, drizzle/ and drizzle.config.ts, so neither scripts/ nor server/ is in
+ * it; tsx is a devDependency and the runner installs --prod; and the db service
+ * publishes no host port, so a host checkout can't reach MySQL either. The
+ * shell version goes through `docker compose exec -T db mysql`, the same path
+ * every migration in deploy/lib/db.sh uses, and needs nothing added to the
+ * image. This file is for running against a DATABASE_URL you can reach
+ * directly — local development, or a non-containerised deployment.
+ *
  * WHY THIS EXISTS
  * `users.email` is not unique; `users.openId` is. Two rows on one address is
  * therefore a state the schema allows on purpose, and usually it is the right
