@@ -170,6 +170,59 @@ assert_contains "$(cat "${FAKE_CALL_LOG}")" "o''brien@b.c" "escapes a quote in t
 OUT=$(run --nonsense)
 assert_contains "$OUT" "Unknown argument" "rejects unknown flags"
 
+# ── .env parsing: parsed, never executed ─────────────────────────────────────
+# Regression target: this used to `. .env`, which executes the file. A value
+# with $(…) or backticks ran as root, and `KEY= value` (legal to compose,
+# which trims the space) made bash read the value as a command and print
+# "command not found" on every invocation.
+env_case() { # env_case <.env body> [args…] → stdout+stderr
+  local body="$1"; shift
+  local dir; dir="$(mktemp -d)"
+  mkdir -p "${dir}/deploy" && cp "${TARGET}" "${dir}/deploy/dedupe-users.sh"
+  printf '%s\n' "$body" > "${dir}/.env"
+  touch "${dir}/docker-compose.yml"
+  ( cd "$dir" && PATH="${FAKE_BIN_DIR}:${PATH}" FAKE_CALL_LOG="${FAKE_CALL_LOG}" \
+    FAKE_SURVEY="" bash deploy/dedupe-users.sh "$@" 2>&1 )
+  rm -rf "$dir"
+}
+
+BASE=$'MYSQL_USER=zolto_user\nMYSQL_PASSWORD=sekret\nMYSQL_DATABASE=zolto'
+
+OUT=$(env_case "${BASE}"$'\nTENANT_SECRETS_KEY= 9aa5359e6149b7bb')
+assert_not_contains "$OUT" "command not found" "a 'KEY= value' line is not run as a command"
+
+# The dangerous one: sourcing would execute this.
+: > "${FAKE_CALL_LOG}"
+OUT=$(env_case "${BASE}"$'\nEVIL=$(touch /tmp/zolto-dedupe-pwned)')
+assert_not_contains "$OUT" "command not found" "a \$(…) value produces no shell error"
+if [ -e /tmp/zolto-dedupe-pwned ]; then
+  fail "a \$(…) value in .env is NOT executed"
+  rm -f /tmp/zolto-dedupe-pwned
+else
+  pass "a \$(…) value in .env is NOT executed"
+fi
+
+# Values still have to arrive intact, or the connection silently uses the wrong
+# credentials — the failure this whole section exists to prevent.
+: > "${FAKE_CALL_LOG}"
+env_case $'MYSQL_USER = spaced\nMYSQL_PASSWORD="quo ted"\nMYSQL_DATABASE=zolto # inline' --check >/dev/null
+CALLS=$(cat "${FAKE_CALL_LOG}")
+assert_contains "$CALLS" "-uspaced"    "tolerates whitespace around ="
+assert_contains "$CALLS" "-pquo ted"   "keeps a quoted value verbatim, quotes stripped"
+assert_contains "$CALLS" " zolto "     "strips an inline comment from an unquoted value"
+
+: > "${FAKE_CALL_LOG}"
+env_case $'MYSQL_USER=first\nMYSQL_PASSWORD=p\nMYSQL_DATABASE=d\nMYSQL_USER=second' --check >/dev/null
+assert_contains "$(cat "${FAKE_CALL_LOG}")" "-usecond" "last assignment wins, as in compose"
+
+# A '#' inside a quoted password is part of the password, not a comment.
+: > "${FAKE_CALL_LOG}"
+env_case $'MYSQL_USER=u\nMYSQL_PASSWORD="pa#ss"\nMYSQL_DATABASE=d' --check >/dev/null
+assert_contains "$(cat "${FAKE_CALL_LOG}")" "-ppa#ss" "keeps a # inside a quoted password"
+
+OUT=$(env_case $'MYSQL_PASSWORD=p\nMYSQL_DATABASE=d')
+assert_contains "$OUT" "MYSQL_USER missing" "names the missing variable"
+
 # ── Missing .env is a clear error, not a confusing MySQL failure ──────────────
 BARE="$(mktemp -d)"
 mkdir -p "${BARE}/deploy" && cp "${TARGET}" "${BARE}/deploy/dedupe-users.sh"

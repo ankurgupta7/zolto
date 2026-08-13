@@ -69,13 +69,43 @@ if [ -n "$DELETE_ID" ] && ! [[ "$DELETE_ID" =~ ^[0-9]+$ ]]; then
   die "--delete needs a numeric user id, got '${DELETE_ID}'"
 fi
 
-# ── Credentials come from .env, same as update.sh ─────────────────────────────
-[ -f "${REPO_ROOT}/.env" ] || die "No .env at ${REPO_ROOT}/.env — run this from the repo root on the server."
-# shellcheck disable=SC1091
-set -a; . "${REPO_ROOT}/.env"; set +a
-: "${MYSQL_USER:?MYSQL_USER missing from .env}"
-: "${MYSQL_PASSWORD:?MYSQL_PASSWORD missing from .env}"
-: "${MYSQL_DATABASE:?MYSQL_DATABASE missing from .env}"
+# ── Credentials come from .env ───────────────────────────────────────────────
+# Parsed, deliberately NOT sourced. `. .env` EXECUTES the file: a value
+# containing `$(…)` or backticks would run as whatever user invoked this
+# (root, on a typical deploy), and a line like `KEY= value` — legal to docker
+# compose, which trims the space — makes bash read the value as a command and
+# print "command not found". docker compose is the authority on this file's
+# meaning, so this mirrors its rules instead: optional `export`, whitespace
+# around `=`, quoted values kept verbatim, and a ` #` comment stripped only
+# from an unquoted value. Last assignment of a name wins, as in compose.
+ENV_FILE="${REPO_ROOT}/.env"
+[ -f "$ENV_FILE" ] || die "No .env at ${ENV_FILE} — run this from the repo root on the server."
+
+read_env() { # read_env NAME → value on stdout, empty if unset
+  local name="$1" line value
+  line=$(grep -E "^[[:space:]]*(export[[:space:]]+)?${name}[[:space:]]*=" "$ENV_FILE" | tail -n1) || true
+  [ -n "$line" ] || return 0
+  value=${line#*=}
+  # Trim surrounding whitespace.
+  value="${value#"${value%%[![:space:]]*}"}"
+  value="${value%"${value##*[![:space:]]}"}"
+  case "$value" in
+    \"*\") printf '%s' "${value:1:${#value}-2}" ;;   # "quoted" — verbatim
+    \'*\') printf '%s' "${value:1:${#value}-2}" ;;   # 'quoted' — verbatim
+    *)
+      # Unquoted: a ` #` begins a comment. Trim it, then re-trim the tail.
+      value="${value%%[[:space:]]#*}"
+      printf '%s' "${value%"${value##*[![:space:]]}"}"
+      ;;
+  esac
+}
+
+MYSQL_USER="$(read_env MYSQL_USER)"
+MYSQL_PASSWORD="$(read_env MYSQL_PASSWORD)"
+MYSQL_DATABASE="$(read_env MYSQL_DATABASE)"
+[ -n "$MYSQL_USER" ]     || die "MYSQL_USER missing from ${ENV_FILE}"
+[ -n "$MYSQL_PASSWORD" ] || die "MYSQL_PASSWORD missing from ${ENV_FILE}"
+[ -n "$MYSQL_DATABASE" ] || die "MYSQL_DATABASE missing from ${ENV_FILE}"
 
 cd "${REPO_ROOT}" || die "Cannot cd to ${REPO_ROOT}"
 
