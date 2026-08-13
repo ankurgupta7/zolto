@@ -65,6 +65,10 @@ SQL="${*: -1}"
 # above would swallow it.
 case "$SQL" in
   *"DELETE FROM users"*)                         : ;;
+  *"INDEX_NAME = 'users_openId_unique'"*)        echo "${FAKE_INDEX:-1}" ;;
+  *"GROUP BY openId"*)                           echo "${FAKE_DUPE_OPENIDS:-0}" ;;
+  *"SELECT COUNT(*) FROM users;"*)               echo "${FAKE_USER_COUNT:-3}" ;;
+  *"GROUP BY LOWER(email) HAVING"*"d;")          echo "${FAKE_DUPE_EMAILS:-1}" ;;
   *"COUNT(*)"*"role IN ('admin','superadmin')"*) echo "${FAKE_OTHER_ADMINS:-1}" ;;
   *"SELECT tenant_id, role, openId"*)            printf '%s\n' "${FAKE_ROW:-}" ;;
   *"GROUP BY LOWER(email)"*)                     printf '%s\n' "${FAKE_SURVEY:-}" ;;
@@ -136,6 +140,23 @@ PENDING=$'2\t7\tKalakosh\tadmin\tpending:tok\tAda\ta@b.c\tpending\t2026-01-05 00
 OUT=$(FAKE_INSPECT="${ROW1}"$'\n'"${PENDING}" FAKE_REAL=1 FAKE_TENANTS=1 run --email a@b.c)
 assert_contains "$OUT" "unclaimed signup, not a duplicate" "flags the pending row inline"
 assert_contains "$OUT" "Not a duplicate" "one real row → not a duplicate"
+
+# ── --check: the openId constraint diagnostic ────────────────────────────────
+: > "${FAKE_CALL_LOG}"
+OUT=$(FAKE_INDEX=1 FAKE_DUPE_EMAILS=1 run --check)
+assert_contains "$OUT" "users_openId_unique is present" "reports an intact constraint"
+assert_contains "$OUT" "Safe to clean up" "…and says duplicates are the ordinary kind"
+assert_not_contains "$(cat "${FAKE_CALL_LOG}")" "DELETE FROM users" "--check issues no DELETE"
+
+# The constraint being gone is the case that changes what the operator should
+# do, so it has to be unmissable — and it must exit non-zero.
+OUT=$(FAKE_INDEX=0 run --check); RC=$?
+assert_contains "$OUT" "MISSING" "reports a dropped constraint"
+assert_contains "$OUT" "only defers the problem" "warns that deleting rows won't hold"
+[ "$RC" -ne 0 ] && pass "…and exits non-zero" || fail "…and exits non-zero (got ${RC})"
+
+OUT=$(FAKE_INDEX=0 FAKE_DUPE_OPENIDS=4 run --check)
+assert_contains "$OUT" "4 openId(s) are already duplicated" "counts duplicated openIds to merge first"
 
 # ── Input handling ───────────────────────────────────────────────────────────
 OUT=$(run --delete abc)

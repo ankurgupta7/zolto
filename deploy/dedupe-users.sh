@@ -28,10 +28,17 @@
 #     "$MYSQL_DATABASE" > backup-$(date +%F).sql
 #
 #   Usage, from the repo root on the server (where docker-compose.yml and .env are):
+#     bash deploy/dedupe-users.sh --check          # is the openId constraint intact?
 #     bash deploy/dedupe-users.sh                  # survey: every duplicated address
 #     bash deploy/dedupe-users.sh --email a@b.c    # the rows behind one address
 #     bash deploy/dedupe-users.sh --delete 42      # remove exactly that row
 #     bash deploy/dedupe-users.sh --delete 42 --force
+#
+# Start with --check. Credentials are read from .env here rather than from the
+# environment, because .env is loaded by docker compose and is NOT exported
+# into your shell: a hand-written `mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD"`
+# collapses to a bare `-u -p`, where -u swallows -p as its value and mysql
+# prints its usage screen instead of running anything.
 
 set -uo pipefail
 
@@ -46,11 +53,13 @@ die()  { echo "FATAL: $*" >&2; exit 1; }
 EMAIL=""
 DELETE_ID=""
 FORCE=0
+CHECK=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --email)  EMAIL="${2:-}";     shift 2 ;;
     --delete) DELETE_ID="${2:-}"; shift 2 ;;
     --force)  FORCE=1;            shift ;;
+    --check)  CHECK=1;            shift ;;
     -h|--help) sed -n '1,36p' "${BASH_SOURCE[0]}"; exit 0 ;;
     *) die "Unknown argument: $1" ;;
   esac
@@ -153,6 +162,55 @@ inspect() {
   fi
 }
 
+# ── Check ────────────────────────────────────────────────────────────────────
+# Is `users_openId_unique` still on the table?
+#
+# It exists in the baseline schema (drizzle/0000_baseline_2026_07_05.sql:131)
+# but is NOT declared in drizzle/schema.ts, where `.unique()` is otherwise the
+# convention. `npm run db:sync` is `drizzle-kit push --force`, which reconciles
+# the live database to that file — so it would DROP a constraint the file does
+# not declare. Without it, upsertUser's onDuplicateKeyUpdate has nothing to
+# collide on (`id` is autoincrement and never supplied), and every sign-in
+# INSERTs a new row instead of updating one. That turns duplicate users from a
+# one-off into a leak, which is why this is worth checking before deleting
+# anything: with the constraint gone, deleting a row just defers the problem.
+check() {
+  local idx users dupe_openids dupe_emails
+  idx=$(q "SELECT COUNT(*) FROM information_schema.STATISTICS
+           WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users'
+             AND INDEX_NAME = 'users_openId_unique';")
+  users=$(q "SELECT COUNT(*) FROM users;")
+  dupe_openids=$(q "SELECT COUNT(*) FROM (SELECT openId FROM users
+                    GROUP BY openId HAVING COUNT(*) > 1) d;")
+  dupe_emails=$(q "SELECT COUNT(*) FROM (SELECT LOWER(email) FROM users
+                   WHERE email IS NOT NULL
+                   GROUP BY LOWER(email) HAVING COUNT(*) > 1) d;")
+
+  log "users rows                     ${users}"
+  log "addresses on >1 row            ${dupe_emails}"
+  log "openIds on >1 row              ${dupe_openids}"
+  echo ""
+
+  if [ "${idx:-0}" -ge 1 ]; then
+    ok "users_openId_unique is present — sign-in updates the existing row."
+    echo "  Duplicate addresses here are the ordinary kind: one row per sign-in"
+    echo "  provider, or one per tenant. Safe to clean up with --email / --delete."
+  else
+    echo "  MISSING: users_openId_unique is NOT on this table."
+    echo ""
+    echo "  Every sign-in is inserting a new row rather than updating one, so"
+    echo "  deleting duplicates now only defers the problem — they will come back."
+    echo "  Restore the constraint (after clearing duplicate openIds, or the ALTER"
+    echo "  will fail), and add .unique() to users.openId in drizzle/schema.ts so"
+    echo "  the next 'npm run db:sync' does not drop it again."
+    if [ "${dupe_openids:-0}" -gt 0 ]; then
+      echo ""
+      echo "  ${dupe_openids} openId(s) are already duplicated and must be merged first."
+    fi
+    return 1
+  fi
+}
+
 # ── Delete ───────────────────────────────────────────────────────────────────
 remove() {
   local id="$1" row tid role openid mail
@@ -186,7 +244,9 @@ merchant out of their own store. Promote another user first, or pass --force."
   echo "  orders and POS history are tenant-scoped and are unaffected."
 }
 
-if [ -n "$DELETE_ID" ]; then
+if [ "$CHECK" -eq 1 ]; then
+  check
+elif [ -n "$DELETE_ID" ]; then
   remove "$DELETE_ID"
 elif [ -n "$EMAIL" ]; then
   inspect "$EMAIL"
