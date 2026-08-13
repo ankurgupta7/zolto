@@ -2495,8 +2495,67 @@ export async function updateOwnDisplayName(
   );
 }
 
+/**
+ * Bump lastSignedIn on an existing row, touching nothing else. Used when a
+ * magic link signs in as an account minted by another provider — name, email
+ * and loginMethod there belong to that provider and must survive the visit.
+ */
+export async function touchUserLastSignedIn(
+  userId: number,
+  when: Date,
+): Promise<void> {
+  await withDbOrThrow((db) =>
+    db.update(users).set({ lastSignedIn: when }).where(eq(users.id, userId)),
+  );
+}
+
 export async function deleteUserById(id: number): Promise<void> {
   await withDbOrThrow((db) => db.delete(users).where(eq(users.id, id)));
+}
+
+/**
+ * Accounts that MANAGE a store under this email — the lookup behind
+ * magic-link account adoption (server/_core/magicLink.ts).
+ *
+ * Returns every match rather than one, deliberately: with two, the caller
+ * cannot know which store the person meant to sign in to, and adopting the
+ * wrong one drops a merchant into somebody else's admin. Ambiguity has to be
+ * visible to be refused.
+ *
+ * `pending:%` rows are excluded. They are unclaimed-signup placeholders
+ * holding a tenant's admin slot (createPendingTenantAdmin), not logins —
+ * adopting one would hand over a store whose claim token was never presented,
+ * which is the one thing the claim flow exists to require.
+ */
+export async function getManagingUsersByEmail(
+  email: string,
+): Promise<{ id: number; openId: string; tenantId: number; role: string }[]> {
+  return withDb(async (db) => {
+    const rows = await db
+      .select({
+        id: users.id,
+        openId: users.openId,
+        tenantId: users.tenantId,
+        role: users.role,
+      })
+      .from(users)
+      .where(
+        and(
+          // Case-insensitive for the same reason as getStoreUserByEmail:
+          // providers disagree about case, so `A@b.c` and `a@b.c` are one person.
+          sql`LOWER(${users.email}) = LOWER(${email})`,
+          isNotNull(users.tenantId),
+          inArray(users.role, ["superadmin", "admin", "staff"]),
+          sql`${users.openId} NOT LIKE 'pending:%'`,
+        ),
+      )
+      .orderBy(asc(users.id));
+    return rows.flatMap((r) =>
+      r.tenantId == null
+        ? []
+        : [{ id: r.id, openId: r.openId, tenantId: r.tenantId, role: r.role }],
+    );
+  }, []);
 }
 
 /**

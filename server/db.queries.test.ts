@@ -408,6 +408,57 @@ describe("tenant writes", () => {
   });
 });
 
+describe("getManagingUsersByEmail", () => {
+  it("returns every managing row, so ambiguity is visible to the caller", async () => {
+    selectReturns([
+      { id: 12, openId: "google:a", tenantId: 6, role: "admin" },
+      { id: 30, openId: "google:b", tenantId: 9, role: "admin" },
+    ]);
+    const rows = await db.getManagingUsersByEmail("a@b.c");
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toEqual({
+      id: 12,
+      openId: "google:a",
+      tenantId: 6,
+      role: "admin",
+    });
+  });
+
+  // users.tenantId is nullable in the row type even though the query filters
+  // isNotNull; the narrowing must drop stragglers rather than emit tenantId: null
+  // to a caller that is about to sign somebody in.
+  it("drops a row whose tenantId is null", async () => {
+    selectReturns([
+      { id: 12, openId: "google:a", tenantId: null, role: "admin" },
+      { id: 13, openId: "google:b", tenantId: 6, role: "staff" },
+    ]);
+    const rows = await db.getManagingUsersByEmail("a@b.c");
+    expect(rows).toEqual([
+      { id: 13, openId: "google:b", tenantId: 6, role: "staff" },
+    ]);
+  });
+
+  it("returns [] when the address manages nothing", async () => {
+    selectReturns([]);
+    expect(await db.getManagingUsersByEmail("shopper@b.c")).toEqual([]);
+  });
+
+  it("returns [] rather than throwing when the database is down", async () => {
+    dbMock.select.mockImplementation(() => {
+      throw new Error("connection lost");
+    });
+    await expect(db.getManagingUsersByEmail("a@b.c")).resolves.toEqual([]);
+  });
+});
+
+describe("touchUserLastSignedIn", () => {
+  it("updates the row", async () => {
+    updateReturns();
+    await db.touchUserLastSignedIn(12, new Date("2026-08-13T16:08:00Z"));
+    expect(dbMock.update).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe("duplicate email lookups", () => {
   const row = (over: Record<string, unknown> = {}) => ({
     id: 1,

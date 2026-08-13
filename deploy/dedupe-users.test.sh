@@ -147,7 +147,7 @@ OUT=$(FAKE_INSPECT="${ROW1}"$'\n'"${PARKED}" FAKE_REAL=2 FAKE_TENANTS=1 FAKE_PAR
 assert_contains "$OUT" "parking spot, not a store" "flags the parked row inline"
 assert_contains "$OUT" "One person, split across rows" "parked + managing → one person, not two stores"
 assert_not_contains "$OUT" "more than one store" "…and does NOT call it two stores"
-assert_contains "$OUT" "does NOT stay deleted" "warns the parked row comes back on next sign-in"
+assert_contains "$OUT" "adopt an existing account" "explains when the parked row comes back"
 
 PENDING=$'2\t7\tKalakosh\tadmin\tpending:tok\tAda\ta@b.c\tpending\t2026-01-05 00:00\t2026-03-01 00:00'
 OUT=$(FAKE_INSPECT="${ROW1}"$'\n'"${PENDING}" FAKE_REAL=1 FAKE_TENANTS=1 run --email a@b.c)

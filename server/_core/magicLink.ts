@@ -107,16 +107,56 @@ export function registerMagicLinkRoutes(app: Express) {
         const isPlatformAdmin =
           record.email.toLowerCase() === adminEmail.toLowerCase();
 
-        const openId = `email:${record.email}`;
         const name = record.email.split("@")[0] || record.email;
-        await db.upsertUser({
-          openId,
-          name,
-          email: record.email,
-          loginMethod: "magic_link",
-          ...(isPlatformAdmin ? { role: "admin" as const } : {}),
-          lastSignedIn: new Date(),
-        });
+
+        // Sign in as the account this address ALREADY has, when it has one
+        // that manages a store.
+        //
+        // Without this, a link mints `email:<addr>` — a second openId, and so
+        // a second account, for one person. openId is the unique key and the
+        // session JWT carries it (sdk.ts resolves via getUserByOpenId), so the
+        // merchant lands as a stranger: upsertUser parks a tenant-less sign-in
+        // on DEFAULT_TENANT_ID with role `customer` (see its tenantId ?? …),
+        // and their store is nowhere in sight. Assigning the tenant here
+        // instead would leave two admin rows on it — two staff seats, one
+        // human — so the fix belongs at the identity, not the tenancy.
+        //
+        // Safe because both halves are verified: clicking the link proves this
+        // inbox, and the email on the matched row came from its provider and
+        // is not user-editable (see updateOwnDisplayName, which refuses to let
+        // anyone type in an address and "inherit whatever a future
+        // email-keyed lookup grants" — this lookup). The same reasoning
+        // already backs tenant.resumeClaim.
+        //
+        // Two matches means a multi-store owner and no way to tell which store
+        // was meant, so that falls through rather than guessing into the wrong
+        // admin. Nobody with a managing account is affected the other way: a
+        // storefront customer has no match and keeps today's behaviour exactly.
+        const managing = await db.getManagingUsersByEmail(record.email);
+        const adopt = managing.length === 1 ? managing[0] : null;
+        if (managing.length > 1) {
+          console.warn(
+            `[MagicLink] ${managing.length} managing accounts for this address; ` +
+              `signing in as a new identity rather than guessing which store.`,
+          );
+        }
+
+        const openId = adopt ? adopt.openId : `email:${record.email}`;
+        if (adopt) {
+          // Only the timestamp. name/email/loginMethod belong to the provider
+          // this row was minted against; overwriting them would relabel a
+          // Google account as a magic-link one on every use of the fallback.
+          await db.touchUserLastSignedIn(adopt.id, new Date());
+        } else {
+          await db.upsertUser({
+            openId,
+            name,
+            email: record.email,
+            loginMethod: "magic_link",
+            ...(isPlatformAdmin ? { role: "admin" as const } : {}),
+            lastSignedIn: new Date(),
+          });
+        }
 
         const sessionToken = await signSessionJwt(
           openId,
