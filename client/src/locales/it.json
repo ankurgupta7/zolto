@@ -68,6 +68,9 @@
     "noPiecesAll": "La collezione è in fase di allestimento. Torni a trovarci presto."
   },
   "discovery": {
+    "searchLabel": "Cerca nel tuo inventario",
+    "searchPlaceholder": "Cerca per nome, descrizione, prezzo, giacenza…",
+    "clearSearch": "Cancella la ricerca",
     "sortBy": "Ordina per:",
     "sortNewest": "Più recenti",
     "sortCategory": "Per categoria",
@@ -82,7 +85,10 @@
     "collapseAll": "Comprimi tutto",
     "products_one": "{{count}} prodotto",
     "products_many": "{{count}} prodotti",
-    "products_other": "{{count}} prodotti"
+    "products_other": "{{count}} prodotti",
+    "matching_one": "{{count}} di {{total}}",
+    "matching_many": "{{count}} di {{total}}",
+    "matching_other": "{{count}} di {{total}}"
   },
   "product": {
     "sold": "Venduto",

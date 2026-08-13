@@ -2,7 +2,14 @@ import { useTranslation } from "react-i18next";
 // Ensure the shared i18n instance is initialized even when this control is
 // rendered in isolation (e.g. under test) before main.tsx has run.
 import "@/lib/i18n";
-import { LayoutGrid, List, ChevronDown, ChevronUp } from "lucide-react";
+import {
+  LayoutGrid,
+  List,
+  ChevronDown,
+  ChevronUp,
+  Search,
+  X,
+} from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -23,6 +30,11 @@ interface ProductDiscoveryControlsProps {
   expandedCategories: Set<string>;
   onToggleCategory: (category: string) => void;
   totalProducts: number;
+  /** Current filter text. Omit to render without the search box. */
+  searchQuery?: string;
+  onSearchChange?: (query: string) => void;
+  /** How many of `totalProducts` survive the filter. */
+  matchCount?: number;
 }
 
 export default function ProductDiscoveryControls({
@@ -33,12 +45,53 @@ export default function ProductDiscoveryControls({
   expandedCategories,
   onToggleCategory,
   totalProducts,
+  searchQuery,
+  onSearchChange,
+  matchCount,
 }: ProductDiscoveryControlsProps) {
   const { t } = useTranslation();
+  const searchable = onSearchChange !== undefined;
+  const query = searchQuery ?? "";
+  const filtering = query.trim().length > 0;
 
   return (
     <div className="bg-white border border-[var(--brand-border)] p-6 mb-6">
       <div className="flex flex-col gap-4">
+        {/* Filter box — narrows the list in place; there is nowhere to go. */}
+        {searchable && (
+          <div className="relative">
+            <Search
+              size={16}
+              aria-hidden="true"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
+            />
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => onSearchChange?.(e.target.value)}
+              // Escape is how people dismiss a filter; `type="search"` clears
+              // on it in some browsers and not others, so do it here.
+              onKeyDown={(e) => {
+                if (e.key === "Escape") onSearchChange?.("");
+              }}
+              aria-label={t("discovery.searchLabel")}
+              placeholder={t("discovery.searchPlaceholder")}
+              className="w-full border border-[var(--brand-border)] bg-[var(--brand-surface)] pl-10 pr-10 py-2.5 text-sm font-sans text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-[var(--brand-accent)] [&::-webkit-search-cancel-button]:appearance-none"
+            />
+            {filtering && (
+              <button
+                type="button"
+                onClick={() => onSearchChange?.("")}
+                aria-label={t("discovery.clearSearch")}
+                title={t("discovery.clearSearch")}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-muted-foreground hover:text-[var(--brand-ink)] transition-colors"
+              >
+                <X size={15} />
+              </button>
+            )}
+          </div>
+        )}
+
         {/* Top row: Sort and View Mode */}
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-4 flex-wrap">
@@ -107,9 +160,16 @@ export default function ProductDiscoveryControls({
             </div>
           </div>
 
-          {/* Product count */}
-          <div className="text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans">
-            {t("discovery.products", { count: totalProducts })}
+          {/* Product count — while filtering it reports the catch, not the
+              catalogue, so a merchant can see at a glance how much the query
+              actually narrowed things. */}
+          <div className="text-xs uppercase tracking-[0.15em] text-muted-foreground font-sans lining-nums">
+            {filtering && matchCount !== undefined
+              ? t("discovery.matching", {
+                  count: matchCount,
+                  total: totalProducts,
+                })
+              : t("discovery.products", { count: totalProducts })}
           </div>
         </div>
 

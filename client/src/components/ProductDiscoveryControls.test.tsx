@@ -20,12 +20,24 @@ Element.prototype.releasePointerCapture = vi.fn();
 const onSortChange = vi.fn();
 const onViewModeChange = vi.fn();
 const onToggleCategory = vi.fn();
+const onSearchChange = vi.fn();
 
 function renderControls({
   sortBy = "newest" as SortOption,
   viewMode = "grid" as ViewMode,
   totalProducts = 5,
   expandedCategories = new Set<string>(),
+  searchQuery,
+  matchCount,
+  searchable = false,
+}: {
+  sortBy?: SortOption;
+  viewMode?: ViewMode;
+  totalProducts?: number;
+  expandedCategories?: Set<string>;
+  searchQuery?: string;
+  matchCount?: number;
+  searchable?: boolean;
 } = {}) {
   return render(
     <ProductDiscoveryControls
@@ -36,6 +48,9 @@ function renderControls({
       expandedCategories={expandedCategories}
       onToggleCategory={onToggleCategory}
       totalProducts={totalProducts}
+      searchQuery={searchQuery}
+      onSearchChange={searchable ? onSearchChange : undefined}
+      matchCount={matchCount}
     />,
   );
 }
@@ -120,6 +135,114 @@ describe("ProductDiscoveryControls", () => {
     expect(onToggleCategory).toHaveBeenCalledWith("__collapse_all__");
   });
 
+  it("renders labels, titles and the plural count in French", async () => {
+    await i18n.changeLanguage("fr");
+    try {
+      renderControls({ sortBy: "category", totalProducts: 3 });
+      expect(screen.getByText("Trier par :")).toBeTruthy();
+      expect(screen.getByText("Affichage :")).toBeTruthy();
+      expect(screen.getByText("3 produits")).toBeTruthy();
+      expect(screen.getByText("Tout déplier")).toBeTruthy();
+      expect(screen.getByText("Tout replier")).toBeTruthy();
+      expect(screen.getByLabelText("Vue en grille")).toBeTruthy();
+      expect(screen.getByTitle("Vue en liste avec détails")).toBeTruthy();
+      // French has a `many` plural category English lacks; the singular must
+      // still agree at 1.
+      cleanup();
+      renderControls({ totalProducts: 1 });
+      expect(screen.getByText("1 produit")).toBeTruthy();
+    } finally {
+      await i18n.changeLanguage("en");
+    }
+  });
+});
+
+describe("ProductDiscoveryControls — inventory filter", () => {
+  it("renders no search box unless a change handler is supplied", () => {
+    renderControls();
+    expect(screen.queryByLabelText("Search your inventory")).toBeNull();
+  });
+
+  it("emits every keystroke so the list narrows as you type", () => {
+    renderControls({ searchable: true, searchQuery: "" });
+    const box = screen.getByLabelText("Search your inventory");
+    fireEvent.change(box, { target: { value: "silb" } });
+    expect(onSearchChange).toHaveBeenCalledWith("silb");
+  });
+
+  it("shows the current query and does not submit anywhere", () => {
+    const { container } = renderControls({
+      searchable: true,
+      searchQuery: "silber",
+    });
+    expect(
+      (screen.getByLabelText("Search your inventory") as HTMLInputElement)
+        .value,
+    ).toBe("silber");
+    // A filter has no destination — a form would take the merchant off-page.
+    expect(container.querySelector("form")).toBeNull();
+  });
+
+  it("offers a clear button only once something is typed", () => {
+    renderControls({ searchable: true, searchQuery: "" });
+    expect(screen.queryByLabelText("Clear search")).toBeNull();
+    cleanup();
+
+    renderControls({ searchable: true, searchQuery: "silber" });
+    fireEvent.click(screen.getByLabelText("Clear search"));
+    expect(onSearchChange).toHaveBeenCalledWith("");
+  });
+
+  it("treats whitespace as no query at all", () => {
+    renderControls({ searchable: true, searchQuery: "   ", matchCount: 0 });
+    expect(screen.queryByLabelText("Clear search")).toBeNull();
+    // …and reports the whole catalogue, not an empty catch.
+    expect(screen.getByText("5 products")).toBeTruthy();
+  });
+
+  it("clears on Escape", () => {
+    renderControls({ searchable: true, searchQuery: "silber" });
+    fireEvent.keyDown(screen.getByLabelText("Search your inventory"), {
+      key: "Escape",
+    });
+    expect(onSearchChange).toHaveBeenCalledWith("");
+  });
+
+  it("reports the catch against the catalogue while filtering", () => {
+    renderControls({
+      searchable: true,
+      searchQuery: "silber",
+      matchCount: 2,
+      totalProducts: 17,
+    });
+    expect(screen.getByText("2 of 17")).toBeTruthy();
+    expect(screen.queryByText("17 products")).toBeNull();
+  });
+
+  it("falls back to the plain count when no match count is given", () => {
+    renderControls({ searchable: true, searchQuery: "silber" });
+    expect(screen.getByText("5 products")).toBeTruthy();
+  });
+
+  it("translates the filter", async () => {
+    await i18n.changeLanguage("de");
+    try {
+      renderControls({
+        searchable: true,
+        searchQuery: "silber",
+        matchCount: 2,
+        totalProducts: 17,
+      });
+      expect(screen.getByLabelText("Bestand durchsuchen")).toBeTruthy();
+      expect(screen.getByLabelText("Suche löschen")).toBeTruthy();
+      expect(screen.getByText("2 von 17")).toBeTruthy();
+    } finally {
+      await i18n.changeLanguage("en");
+    }
+  });
+});
+
+describe("ProductDiscoveryControls — French plurals", () => {
   it("renders labels, titles and the plural count in French", async () => {
     await i18n.changeLanguage("fr");
     try {

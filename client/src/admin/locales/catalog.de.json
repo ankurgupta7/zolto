@@ -190,6 +190,15 @@
         "save": "Speichern",
         "cancel": "Abbrechen"
       },
+      "card": {
+        "qty": "Anz.",
+        "qtyLabel": "Lagerbestand von {{name}}"
+      },
+      "search": {
+        "noMatchesTitle": "Dazu passt nichts",
+        "noMatchesBody": "Kein Produkt in Ihrem Bestand passt zu „{{query}}“ – weder Name noch Beschreibung, Preis, Kategorie oder Bestand.",
+        "clearFilter": "Alle Produkte anzeigen"
+      },
       "instagram": {
         "title": "Kuratiertes Beitragsraster",
         "description": "Fügen Sie unten URLs von Instagram-Beiträgen oder -Reels ein. Sie erscheinen als eingebettete Beiträge auf der Startseite."
