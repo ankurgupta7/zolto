@@ -35,7 +35,11 @@ export function DiaryTeaser({
         <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
           {t("diaryTeaser.eyebrow")}
         </p>
-        <h2 className="mt-1.5 font-serif text-3xl text-[var(--brand-text)] sm:mt-2">
+        <h2
+          className={`mt-1.5 font-serif text-[var(--brand-text)] sm:mt-2 ${
+            dense ? "text-2xl tall:text-3xl" : "text-3xl"
+          }`}
+        >
           {t("diaryTeaser.heading")}
         </h2>
         {/* On a phone the reel gives this panel one screen for the heading,
@@ -68,7 +72,7 @@ export function DiaryTeaser({
             <Link
               href={`/blog/${post.slug}`}
               className={`group flex h-full flex-col rounded-xl border border-[var(--brand-border)] bg-white transition-colors hover:border-[var(--brand-accent)]/60 ${
-                dense ? "p-3 sm:p-5" : "p-6"
+                dense ? "p-2.5 tall:p-3 sm:p-5" : "p-6"
               }`}
             >
               {/* Dense pairs the eyebrow with the reading time on one line
@@ -121,7 +125,7 @@ export function DiaryTeaser({
       <Link
         href="/blog"
         className={`inline-block text-sm text-[var(--brand-ink)] underline decoration-[var(--brand-accent)] underline-offset-4 transition-colors hover:text-[var(--brand-accent)] ${
-          dense ? "mt-3 sm:mt-6" : "mt-8"
+          dense ? "mt-2 tall:mt-3 sm:mt-6" : "mt-8"
         }`}
       >
         {t("diaryTeaser.readAll")}

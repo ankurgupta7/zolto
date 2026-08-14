@@ -27,14 +27,13 @@ import {
 /**
  * The reel's contract — two axes, and neither of them may trap the reader.
  *
- * Down: a chapter is one post, exactly one screen, and `snap-always` makes one
- * flick advance one post. Sideways: the panels of a post are a horizontal snap
- * track with dots, and `overscroll-x-contain` keeps a swipe at either end from
- * chaining into the browser's back gesture. Above REEL_LAYOUT_QUERY the sideways
- * axis collapses, the panels become columns and the snap strength is measured
- * rather than assumed: a chapter taller than the screen downgrades the whole
- * scroller to proximity, because a mandatory target whose bottom can't be
- * reached is a trap.
+ * Down: a chapter is one post, exactly one screen, and nothing resists the
+ * gesture — the snap is proximity and sets no `scroll-snap-stop`, so a swipe
+ * goes where its momentum takes it and the page settles onto a post after.
+ * Sideways: the panels of a post are a horizontal snap track with dots, with
+ * the edge of the next one showing, and `overscroll-x-contain` keeps a swipe at
+ * either end from chaining into the browser's back gesture. Above
+ * REEL_LAYOUT_QUERY the sideways axis collapses and the panels become columns.
  */
 
 interface FakeEntry {
@@ -226,8 +225,7 @@ describe("ReelStage — structure", () => {
       // forbids a gesture from passing more than one snap point, so it absorbs
       // the fling: however hard the page is thrown it advances exactly one
       // screen, which reads as enormous inertia and made the reel need a fast,
-      // hard swipe to move at all. The snap is mandatory, so a light swipe
-      // still lands cleanly on the next post.
+      // hard swipe to move at all.
       expect(section.className).not.toContain("snap-always");
       // dvh, not svh: filling the screen is the point — the post you leave
       // slides up and this one takes the viewport.
@@ -321,7 +319,7 @@ describe("ReelStage — structure", () => {
     );
     const reelBlock = css.slice(
       css.indexOf("html[data-reel] {"),
-      css.indexOf('html[data-reel="mandatory"]'),
+      css.indexOf('html[data-reel="on"]'),
     );
     expect(reelBlock).not.toMatch(/^\s*scroll-behavior:\s*smooth/m);
     for (const track of screen.queryAllByTestId("reel-track")) {
@@ -464,39 +462,50 @@ describe("ReelStage — snap strength", () => {
     });
   }
 
-  it("snaps hard when every post fits the screen", () => {
+  it("never snaps mandatorily, whatever the posts measure", () => {
+    // `mandatory` forbids the scroller resting anywhere but a snap point, so
+    // the browser resists a gesture leaving the current post and drags it back
+    // if it did not travel far enough. That resistance is the whole of the
+    // "the page feels stuck" problem and no CSS softens it — which is why the
+    // strength is no longer a decision. The reel can afford proximity because
+    // every target is exactly one snapport tall, so any rest position is
+    // within half a screen of one.
     renderReel();
-    setHeights("section", 800);
-    remeasure();
-    expect(document.documentElement.dataset.reel).toBe("mandatory");
-    expect(screen.getByTestId("reel-stage").dataset.reelSnap).toBe("mandatory");
+    for (const h of [800, 1400, 2400]) {
+      setHeights("section", h);
+      remeasure();
+      expect(document.documentElement.dataset.reel).toBe("on");
+      expect(screen.getByTestId("reel-stage").dataset.reelSnap).toBe("on");
+    }
   });
 
-  it("falls back to proximity when a post is taller than the screen", () => {
-    // Mandatory snapping on a target that doesn't fit means its bottom can
-    // never be read — the scroller keeps pulling back to the top. Proximity
-    // still catches at the top of each one.
-    renderReel();
-    setHeights("section", 1400);
-    remeasure();
-    expect(document.documentElement.dataset.reel).toBe("proximity");
-  });
-
-  it("snaps hard below the breakpoint whatever the chapters measure", () => {
-    // In carousel mode a post is one viewport by construction — the CSS says so
-    // — so there is nothing to measure and nothing that can trap the reader.
-    // This is the case that made the first two cuts of this reel stop snapping
-    // on phones and small laptops.
+  it("snaps the same way above and below the layout breakpoint", () => {
+    // The old code measured the chapters and picked mandatory when they fit.
+    // Nothing is measured now, so a resize across the breakpoint cannot leave
+    // the two modes disagreeing about how hard to snap.
     mockMatchMedia({ wide: false });
     renderReel();
     setHeights("section", 2400);
     remeasure();
-    expect(document.documentElement.dataset.reel).toBe("mandatory");
+    expect(document.documentElement.dataset.reel).toBe("on");
 
-    // Above it the same chapters are measured, and these don't fit.
     mockMatchMedia({ wide: true });
     remeasure();
-    expect(document.documentElement.dataset.reel).toBe("proximity");
+    expect(document.documentElement.dataset.reel).toBe("on");
+  });
+
+  it("resolves to a proximity snap in the stylesheet", () => {
+    // The component only says whether to snap; index.css says how hard. A
+    // `mandatory` creeping back into that rule would undo the fix above
+    // without failing any of the assertions on the component.
+    const css = readFileSync(
+      path.resolve(__dirname, "..", "..", "index.css"),
+      "utf8",
+    );
+    expect(css).toMatch(
+      /html\[data-reel="on"\]\s*\{[^}]*scroll-snap-type:\s*y proximity/,
+    );
+    expect(css).not.toContain("scroll-snap-type: y mandatory");
   });
 
   it("switches snapping off entirely under prefers-reduced-motion", () => {
@@ -513,7 +522,7 @@ describe("ReelStage — snap strength", () => {
     const { unmount } = renderReel();
     setHeights("section", 800);
     remeasure();
-    expect(document.documentElement.dataset.reel).toBe("mandatory");
+    expect(document.documentElement.dataset.reel).toBe("on");
     unmount();
     expect(document.documentElement.dataset.reel).toBeUndefined();
   });

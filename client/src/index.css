@@ -87,10 +87,14 @@ html[data-reel] {
      a smooth scroll is actually wanted is the chapter rail, and ReelStage's
      scrollToChapter passes `behavior: "smooth"` itself. */
 }
-html[data-reel="mandatory"] {
-  scroll-snap-type: y mandatory;
-}
-html[data-reel="proximity"] {
+/* Proximity, never mandatory. `mandatory` forbids the scroller coming to rest
+   anywhere but a snap point, so the browser resists a gesture leaving the
+   current post and drags it back if it did not travel far enough — that
+   resistance is the whole of the "this page feels stuck" problem, and no CSS
+   softens it. Proximity costs nothing here because every target is exactly one
+   snapport tall: any rest position is within half a screen of one, so the page
+   still settles to fit. See the snap-strength note in ReelStage.tsx. */
+html[data-reel="on"] {
   scroll-snap-type: y proximity;
 }
 @media (prefers-reduced-motion: reduce) {
