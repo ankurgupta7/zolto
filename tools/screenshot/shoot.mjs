@@ -94,12 +94,11 @@ if (shotLang) {
   }, shotLang);
 }
 
-// SHOT_THEME=light shoots the marketing surface in light mode, and
-// SHOT_LIGHT=porcelain picks which light palette (see the html[data-theme]
-// blocks in client/src/index.css). A theme is exactly the kind of change unit
-// tests are blind to — they assert class names, and every class name here is
-// identical in both themes — so a light-mode change that has not been shot has
-// not been looked at.
+// SHOT_THEME=light shoots the marketing surface in light mode (see the
+// [data-theme="light"] block in client/src/index.css). A theme is exactly the
+// kind of change unit tests are blind to — they assert class names, and every
+// class name here is identical in both themes — so a light-mode change that has
+// not been shot has not been looked at.
 //
 // Seeded into the same storage the app reads rather than stamping the attribute
 // on <html> directly: that way the shot exercises the real preference path, and
@@ -109,14 +108,10 @@ const shotTheme = process.env.SHOT_THEME;
 if (shotTheme && !["light", "dark"].includes(shotTheme)) {
   throw new Error(`SHOT_THEME must be light or dark — got "${shotTheme}"`);
 }
-if (shotTheme || process.env.SHOT_LIGHT) {
-  await page.addInitScript(
-    ({ theme, palette }) => {
-      if (theme) localStorage.setItem("zolto_theme", theme);
-      if (palette) localStorage.setItem("zolto_light_palette", palette);
-    },
-    { theme: shotTheme, palette: process.env.SHOT_LIGHT },
-  );
+if (shotTheme) {
+  await page.addInitScript((theme) => {
+    localStorage.setItem("zolto_theme", theme);
+  }, shotTheme);
 }
 
 const errors = [];
@@ -273,13 +268,10 @@ const painted = await page.evaluate(() => {
   const styles = getComputedStyle(root);
   return {
     theme: root.dataset.theme ?? "dark",
-    palette: root.dataset.light ?? "—",
     band: styles.getPropertyValue("--brand-band").trim(),
   };
 });
-console.log(
-  `theme: ${painted.theme} (palette ${painted.palette}, band ${painted.band})`,
-);
+console.log(`theme: ${painted.theme} (band ${painted.band})`);
 
 if (sections.length === 0) {
   // SHOT_FULLPAGE=0 captures only what is actually on screen — the way to

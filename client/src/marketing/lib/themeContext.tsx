@@ -1,7 +1,6 @@
 import { createContext, useContext } from "react";
 import type { ReactNode } from "react";
 import {
-  DEFAULT_LIGHT_PALETTE,
   DEFAULT_PREFERENCE,
   resolveTheme,
   useMarketingTheme,
@@ -35,7 +34,6 @@ export function useMarketingThemeContext(): MarketingThemeApi {
   return {
     preference: DEFAULT_PREFERENCE,
     theme: resolveTheme(DEFAULT_PREFERENCE, false),
-    palette: DEFAULT_LIGHT_PALETTE,
     setPreference: () => {},
     toggle: () => {},
   };

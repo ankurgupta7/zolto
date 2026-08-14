@@ -5,8 +5,8 @@ import { useCallback, useEffect, useLayoutEffect, useState } from "react";
  *
  * "dark" is the site as it has always looked: an oyster-cream page whose
  * argument is carried by full-bleed mahogany bands. "light" keeps the layout,
- * the type and the gold, and swaps those bands for a tone of the paper — see
- * the `[data-theme="light"]` blocks in index.css for the palettes and for
+ * the type and the gold, and swaps those bands for soft stone on near-white —
+ * see the `[data-theme="light"]` block in index.css for the palette, and for
  * why the band needed tokens of its own.
  *
  * Everything here is scoped to the marketing surface on purpose. The theme is
@@ -21,17 +21,7 @@ export type MarketingTheme = (typeof THEMES)[number];
 export const THEME_PREFERENCES = ["system", "light", "dark"] as const;
 export type ThemePreference = (typeof THEME_PREFERENCES)[number];
 
-/**
- * The light palettes. They differ in one decision — what a statement band
- * becomes once it stops being mahogany — and are offered together while the
- * look is being chosen; expect this list to collapse to the one that is picked.
- */
-export const LIGHT_PALETTES = ["parchment", "porcelain", "goldleaf"] as const;
-export type LightPalette = (typeof LIGHT_PALETTES)[number];
-export const DEFAULT_LIGHT_PALETTE: LightPalette = "parchment";
-
 export const THEME_STORAGE_KEY = "zolto_theme";
-export const PALETTE_STORAGE_KEY = "zolto_light_palette";
 
 /**
  * What a first-time visitor gets, before they have touched the toggle.
@@ -58,13 +48,6 @@ export function isThemePreference(value: unknown): value is ThemePreference {
   );
 }
 
-export function isLightPalette(value: unknown): value is LightPalette {
-  return (
-    typeof value === "string" &&
-    (LIGHT_PALETTES as readonly string[]).includes(value)
-  );
-}
-
 /**
  * Resolve a stored preference against what the OS is asking for.
  *
@@ -84,10 +67,10 @@ export function resolveTheme(
 /**
  * What theme to paint, before the OS is consulted.
  *
- * `?theme=light` picks one and sticks, the same way `?light=` picks a palette:
- * it is how a reviewer sees the other theme on a deployed preview without
- * hunting for the switch, and how the screenshot harness drives one. Storage is
- * best-effort — Safari's private mode throws on read as well as on write.
+ * `?theme=light` picks one and sticks: it is how a reviewer sees the other
+ * theme on a deployed preview without hunting for the switch, and how the
+ * screenshot harness drives one. Storage is best-effort — Safari's private
+ * mode throws on read as well as on write.
  */
 export function readPreference(
   search?: string,
@@ -120,33 +103,6 @@ export function writePreference(
 }
 
 /**
- * Which light palette to paint. `?light=porcelain` picks one and sticks — the
- * only way to review three candidate palettes on a deployed preview without
- * three deploys, and the switch the screenshot harness drives.
- */
-export function readPalette(search?: string, storage?: Storage): LightPalette {
-  const store =
-    storage ?? (typeof localStorage === "undefined" ? undefined : localStorage);
-  const fromUrl = new URLSearchParams(search ?? "").get("light");
-  if (isLightPalette(fromUrl)) {
-    if (store) {
-      try {
-        store.setItem(PALETTE_STORAGE_KEY, fromUrl);
-      } catch {
-        /* as above */
-      }
-    }
-    return fromUrl;
-  }
-  try {
-    const stored = store?.getItem(PALETTE_STORAGE_KEY);
-    return isLightPalette(stored) ? stored : DEFAULT_LIGHT_PALETTE;
-  } catch {
-    return DEFAULT_LIGHT_PALETTE;
-  }
-}
-
-/**
  * Write the theme onto <html>.
  *
  * `data-theme` is removed rather than set to "dark" for the dark theme, so the
@@ -154,17 +110,11 @@ export function readPalette(search?: string, storage?: Storage): LightPalette {
  * keeps the light overrides (and the `html[data-theme] body` ground) off tenant
  * storefronts sharing the same stylesheet.
  */
-export function applyTheme(
-  theme: MarketingTheme,
-  palette: LightPalette,
-  root: HTMLElement,
-): void {
+export function applyTheme(theme: MarketingTheme, root: HTMLElement): void {
   if (theme === "light") {
     root.dataset.theme = "light";
-    root.dataset.light = palette;
   } else {
     delete root.dataset.theme;
-    delete root.dataset.light;
   }
   // Tells the UA which way to paint form controls, scrollbars and the like.
   // Both themes are light-ground surfaces, so this is "light" either way — the
@@ -181,7 +131,6 @@ export interface MarketingThemeApi {
   preference: ThemePreference;
   /** What that resolves to right now. */
   theme: MarketingTheme;
-  palette: LightPalette;
   setPreference: (preference: ThemePreference) => void;
   /** Flip to the other theme, pinning it — the toggle button's action. */
   toggle: () => void;
@@ -203,12 +152,6 @@ export function useMarketingTheme(): MarketingThemeApi {
   const [prefersDark, setPrefersDark] = useState<boolean>(() =>
     typeof window === "undefined" ? false : systemPrefersDark(),
   );
-  const [palette] = useState<LightPalette>(() =>
-    typeof window === "undefined"
-      ? DEFAULT_LIGHT_PALETTE
-      : readPalette(window.location.search),
-  );
-
   // Follow the OS while the preference is "system". Subscribed unconditionally
   // rather than only for "system": a visitor can switch back to it, and a
   // listener attached late would hold a stale value until the next OS change.
@@ -223,8 +166,8 @@ export function useMarketingTheme(): MarketingThemeApi {
   const theme = resolveTheme(preference, prefersDark);
 
   useLayoutEffect(() => {
-    applyTheme(theme, palette, document.documentElement);
-  }, [theme, palette]);
+    applyTheme(theme, document.documentElement);
+  }, [theme]);
 
   const setPreference = useCallback((next: ThemePreference) => {
     setPreferenceState(next);
@@ -242,5 +185,5 @@ export function useMarketingTheme(): MarketingThemeApi {
     });
   }, []);
 
-  return { preference, theme, palette, setPreference, toggle };
+  return { preference, theme, setPreference, toggle };
 }

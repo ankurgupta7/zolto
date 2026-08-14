@@ -14,7 +14,6 @@ import WhyZolto from "@/marketing/pages/WhyZolto";
 import { MarketingShell } from "@/marketing/components/MarketingChrome";
 import {
   applyTheme,
-  readPalette,
   readPreference,
   resolveTheme,
 } from "@/marketing/lib/theme";
@@ -25,14 +24,13 @@ const params = new URLSearchParams(location.search);
 // without it (the bands are what we're checking, and the shell's nav wants
 // network data). So apply it here too — otherwise SHOT_THEME=light would
 // silently shoot the dark surface, which is precisely the bug a light-mode
-// screenshot exists to catch. `?light=goldleaf` and `?theme=light` work as
-// query params as well, for eyeballing in a browser.
+// screenshot exists to catch. `?theme=light` works as a query param too, for
+// eyeballing in a browser.
 applyTheme(
   resolveTheme(
     readPreference(location.search),
     window.matchMedia?.("(prefers-color-scheme: dark)").matches ?? false,
   ),
-  readPalette(location.search),
   document.documentElement,
 );
 

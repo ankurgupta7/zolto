@@ -46,7 +46,6 @@ const wrapper = ({ children }: { children: React.ReactNode }) => (
 beforeEach(() => {
   localStorage.clear();
   document.documentElement.removeAttribute("data-theme");
-  document.documentElement.removeAttribute("data-light");
   stubMatchMedia(false);
 });
 
@@ -88,9 +87,6 @@ describe("useMarketingTheme", () => {
     });
     expect(result.current.theme).toBe("light");
     expect(document.documentElement.getAttribute("data-theme")).toBe("light");
-    expect(document.documentElement.getAttribute("data-light")).toBe(
-      "parchment",
-    );
   });
 
   // Toggling pins a theme: it stops following the OS, which is the whole point

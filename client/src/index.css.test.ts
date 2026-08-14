@@ -51,14 +51,12 @@ describe(".page-enter entrance animation", () => {
 });
 
 /**
- * The light theme is a token contract, and a token the light blocks forget is
+ * The light theme is a token contract, and a token the light block forgets is
  * not a compile error — it is a band that stays mahogany with mahogany text on
- * it, on one page, in one palette, which is exactly the kind of thing a
- * screenshot of the homepage never reveals.
+ * it, on one page, which is exactly the kind of thing a screenshot of the
+ * homepage never reveals.
  */
 describe("light mode", () => {
-  const PALETTES = ["parchment", "porcelain", "goldleaf"] as const;
-
   /** The declarations inside a rule, as a { property: value } map. */
   function tokensIn(selector: string): Record<string, string> {
     const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -73,9 +71,7 @@ describe("light mode", () => {
   }
 
   const base = tokensIn(":root");
-  // The default light palette lives on the bare attribute; the other two add
-  // data-light and inherit everything they don't restate.
-  const parchment = tokensIn('[data-theme="light"]');
+  const light = tokensIn('[data-theme="light"]');
 
   /**
    * Every token whose whole job is "this is the dark half of the palette".
@@ -114,30 +110,28 @@ describe("light mode", () => {
     expect(base["--brand-band-fg"]).toBe("#ffffff");
   });
 
-  it("restates every band token in the default light palette", () => {
+  it("restates every band token, and moves all of them", () => {
     for (const token of BAND_TOKENS) {
-      expect(parchment[token], token).toBeTruthy();
-      expect(parchment[token], token).not.toBe(base[token]);
+      expect(light[token], token).toBeTruthy();
+      expect(light[token], token).not.toBe(base[token]);
     }
   });
 
-  it("gives each palette its own band and its own lockup", () => {
-    const seenBands = new Set([
-      base["--brand-band"],
-      parchment["--brand-band"],
-    ]);
-    const seenTiles = new Set([base["--logo-tile"], parchment["--logo-tile"]]);
-    for (const palette of PALETTES.slice(1)) {
-      const tokens = tokensIn(`[data-theme="light"][data-light="${palette}"]`);
-      expect(tokens["--brand-band"], palette).toBeTruthy();
-      expect(tokens["--logo-tile"], palette).toBeTruthy();
-      seenBands.add(tokens["--brand-band"]);
-      seenTiles.add(tokens["--logo-tile"]);
+  /**
+   * The lockup is themed by token rather than by a second SVG, so the light
+   * block owes the mark a full set — a half-restated one gives a gold Z on a
+   * near-white tile, which is 2.4:1 and disappears at favicon size.
+   */
+  it("recolours the whole lockup, ring included", () => {
+    for (const token of [
+      "--logo-tile",
+      "--logo-mark",
+      "--logo-dot",
+      "--logo-ring",
+    ]) {
+      expect(light[token], token).toBeTruthy();
+      expect(light[token], token).not.toBe(base[token]);
     }
-    // A palette that resolves to the same band as another is not an
-    // alternative, it is a duplicate.
-    expect(seenBands.size).toBe(PALETTES.length + 1);
-    expect(seenTiles.size).toBe(PALETTES.length + 1);
   });
 
   /**
@@ -145,24 +139,19 @@ describe("light mode", () => {
    * paper is invisible; multiply blend with the light gold is grey mud. Either
    * half changing alone is the bug.
    */
-  it("flips the dust to multiply wherever it is painted on paper", () => {
+  it("flips the dust to multiply, since it is painted on paper now", () => {
     expect(base["--particle-blend"]).toBe("screen");
-    for (const palette of PALETTES) {
-      const tokens =
-        palette === "parchment"
-          ? parchment
-          : tokensIn(`[data-theme="light"][data-light="${palette}"]`);
-      expect(tokens["--particle-blend"], palette).toBe("multiply");
-      expect(tokens["--particle-rgb"], palette).toBeTruthy();
-    }
+    expect(light["--particle-blend"]).toBe("multiply");
+    expect(light["--particle-rgb"]).toBeTruthy();
+    expect(light["--particle-rgb"]).not.toBe(base["--particle-rgb"]);
   });
 
   /**
-   * The dark theme is the absence of the attribute. If a light rule were keyed
-   * to `html` only, a component could not be themed in isolation — which is
-   * what the logo review page and any single-band test rely on.
+   * The dark theme is the absence of the attribute. If the light rule were
+   * keyed to `html` only, a component could not be themed in isolation — which
+   * is what the logo review page relies on.
    */
-  it("keys the palettes off the attribute rather than off <html>", () => {
+  it("keys the theme off the attribute rather than off <html>", () => {
     expect(css).toContain('[data-theme="light"] {');
     expect(css).not.toContain('html[data-theme="light"]');
   });

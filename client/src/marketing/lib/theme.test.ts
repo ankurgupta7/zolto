@@ -1,14 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import {
-  DEFAULT_LIGHT_PALETTE,
   DEFAULT_PREFERENCE,
-  LIGHT_PALETTES,
-  PALETTE_STORAGE_KEY,
   THEME_STORAGE_KEY,
   applyTheme,
-  isLightPalette,
   isThemePreference,
-  readPalette,
   readPreference,
   resolveTheme,
   writePreference,
@@ -60,8 +55,8 @@ describe("preference storage", () => {
     expect(readPreference()).toBe(DEFAULT_PREFERENCE);
   });
 
-  // Symmetric with ?light=: the way to see the other theme on a deployed
-  // preview, and how the screenshot harness drives one.
+  // How a reviewer sees the other theme on a deployed preview, and how the
+  // screenshot harness drives one.
   it("takes ?theme= and remembers it", () => {
     expect(readPreference("?theme=light")).toBe("light");
     expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe("light");
@@ -86,34 +81,14 @@ describe("preference storage", () => {
   });
 });
 
-describe("readPalette", () => {
-  beforeEach(() => localStorage.clear());
-
-  it("defaults to parchment", () => {
-    expect(readPalette("")).toBe(DEFAULT_LIGHT_PALETTE);
-  });
-
-  it("takes ?light= and remembers it, so the next page keeps the palette", () => {
-    expect(readPalette("?light=goldleaf")).toBe("goldleaf");
-    expect(localStorage.getItem(PALETTE_STORAGE_KEY)).toBe("goldleaf");
-    expect(readPalette("")).toBe("goldleaf");
-  });
-
-  it("ignores an unknown palette in the URL rather than painting nothing", () => {
-    localStorage.setItem(PALETTE_STORAGE_KEY, "porcelain");
-    expect(readPalette("?light=neon")).toBe("porcelain");
-  });
-});
-
-describe("guards", () => {
-  it("accept exactly the known values", () => {
+describe("isThemePreference", () => {
+  it("accepts exactly the known values", () => {
     expect(isThemePreference("system")).toBe(true);
+    expect(isThemePreference("light")).toBe(true);
+    expect(isThemePreference("dark")).toBe(true);
     expect(isThemePreference("Light")).toBe(false);
+    expect(isThemePreference("sepia")).toBe(false);
     expect(isThemePreference(null)).toBe(false);
-    for (const palette of LIGHT_PALETTES) {
-      expect(isLightPalette(palette)).toBe(true);
-    }
-    expect(isLightPalette("sepia")).toBe(false);
   });
 });
 
@@ -123,10 +98,9 @@ describe("applyTheme", () => {
     root = document.createElement("html");
   });
 
-  it("writes the theme and the palette for light", () => {
-    applyTheme("light", "goldleaf", root);
+  it("writes the theme for light", () => {
+    applyTheme("light", root);
     expect(root.getAttribute("data-theme")).toBe("light");
-    expect(root.getAttribute("data-light")).toBe("goldleaf");
   });
 
   /**
@@ -135,19 +109,18 @@ describe("applyTheme", () => {
    * and tenant storefronts share this stylesheet — so a stray attribute would
    * repaint a merchant's own colours.
    */
-  it("removes the attributes for dark rather than setting data-theme='dark'", () => {
-    applyTheme("light", "parchment", root);
-    applyTheme("dark", "parchment", root);
+  it("removes the attribute for dark rather than setting data-theme='dark'", () => {
+    applyTheme("light", root);
+    applyTheme("dark", root);
     expect(root.hasAttribute("data-theme")).toBe(false);
-    expect(root.hasAttribute("data-light")).toBe(false);
   });
 
   // Both themes are a light *ground* — the mahogany one is a dark band on cream,
   // not a dark UI — so UA-painted chrome should never flip to dark.
   it("keeps color-scheme light in both themes", () => {
-    applyTheme("dark", "parchment", root);
+    applyTheme("dark", root);
     expect(root.style.colorScheme).toBe("light");
-    applyTheme("light", "parchment", root);
+    applyTheme("light", root);
     expect(root.style.colorScheme).toBe("light");
   });
 });

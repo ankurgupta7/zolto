@@ -81,7 +81,7 @@ export default function ParticleField({
     const observer = new MutationObserver(() => setRgb(readParticleRgb()));
     observer.observe(document.documentElement, {
       attributes: true,
-      attributeFilter: ["data-theme", "data-light"],
+      attributeFilter: ["data-theme"],
     });
     return () => observer.disconnect();
   }, []);

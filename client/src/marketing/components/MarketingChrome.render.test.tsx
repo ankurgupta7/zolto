@@ -414,7 +414,6 @@ describe("theme switch", () => {
     vi.unstubAllGlobals();
     localStorage.clear();
     document.documentElement.removeAttribute("data-theme");
-    document.documentElement.removeAttribute("data-light");
   });
 
   function renderShellWithTheme() {
