@@ -429,6 +429,69 @@ docker compose down
 >
 > A plain `docker compose down` does **not** remove containers belonging to a profile that isn't currently enabled, so the standalone Caddy is left running and attached to `zolto_internal`, and the teardown fails with _"Network zolto_internal Resource is still in use"_ (see Troubleshooting).
 
+### Administer the platform from the terminal
+
+Everything the web consoles can do is also available as an interactive shell,
+which is often quicker over SSH than opening a browser — and works when the
+front end is the thing that's broken.
+
+```bash
+bash deploy/admin.sh                    # interactive, read-write
+bash deploy/admin.sh --read-only        # look, don't touch
+bash deploy/admin.sh --store kalakosh   # start pointed at one store
+bash deploy/admin.sh --as you@zolto.ch  # act as a specific platform owner
+```
+
+It asks what you want to do and you pick a number, tier by tier:
+
+```
+Zolto admin
+store: none selected
+
+  1. Stores ›
+  2. Plans, subscriptions & comps ›
+  3. People & access ›
+  4. Catalogue & stock ›
+  5. Orders, payments & reconciliation ›
+  6. Store setup & channels ›
+  7. Platform ›
+
+  [?] help   [q] quit
+  > 4
+
+Zolto admin › Catalogue & stock
+store: Kalakosh (kalakosh)
+
+  1. List products
+  2. Show or hide a product
+  3. Mark a product sold or available
+  4. Set stock quantity
+  5. Delete a product
+  6. Find and clean up duplicates
+  7. Categories ›
+```
+
+At any menu a number picks an option, `[b]` goes back, `[h]` returns to the
+top, `[?]` explains what each option does (and marks the ones that write), and
+`[q]` quits. Anything scoped to a store asks which store the first time and
+remembers it after that; the header always names the store you are acting on.
+
+Two things worth knowing about how it works:
+
+- **It runs inside the app container** (`docker compose exec app node
+dist/admin.js`), so it uses the credentials that are already there. Nothing
+  is copied anywhere to make it work.
+- **It calls the same tRPC procedures the web console calls**, as a real
+  `superadmin` account — so every authorization check still runs, every plan
+  gate and validation rule still applies, and every operator action still
+  writes its `[operator-audit]` line naming who did it. If no account has the
+  superadmin role, the shell says so and stops rather than writing anyway:
+  grant it with `bash deploy/tenant-admin.sh --superadmin <email>`.
+
+`deploy/tenant-admin.sh` remains the tool for the cases where the application
+itself cannot help you — no superadmin exists yet, or a store has no admin at
+all — because it talks to MySQL directly.
+
 ### Reconcile Stripe payments
 
 Card terminals and webhooks can occasionally miss recording a sale locally.

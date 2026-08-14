@@ -86,6 +86,23 @@ describe("user reads", () => {
     expect(await db.getUserByOpenId("nobody")).toBeUndefined();
   });
 
+  it("listPlatformOperators returns every superadmin — the accounts the admin shell may act as", async () => {
+    selectReturns([
+      { id: 1, role: "superadmin", email: "owner@zolto.ch" },
+      { id: 4, role: "superadmin", email: "second@zolto.ch" },
+    ]);
+    const operators = await db.listPlatformOperators();
+    expect(operators.map((u) => u.email)).toEqual([
+      "owner@zolto.ch",
+      "second@zolto.ch",
+    ]);
+  });
+
+  it("listPlatformOperators returns nothing on a platform with no owner, rather than throwing", async () => {
+    selectReturns([]);
+    expect(await db.listPlatformOperators()).toEqual([]);
+  });
+
   it("getStoreUserByEmail returns the store-attached row when found", async () => {
     selectReturns([{ id: 5, tenantId: 7, openId: "google:sub-1" }]);
     expect(await db.getStoreUserByEmail("owner@a.example")).toEqual({

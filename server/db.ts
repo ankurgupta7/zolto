@@ -218,6 +218,29 @@ export async function getUserByOpenId(openId: string) {
   }, undefined);
 }
 
+/**
+ * Every account holding platform ownership (`role = 'superadmin'`).
+ *
+ * The terminal admin shell (server/adminShell) acts *as* one of these people
+ * rather than inventing privilege of its own. It runs on the server with the
+ * database in reach, so nothing physically stops it from writing directly —
+ * but then no operator action would name an actor in the audit log, and the
+ * guards in _core/trpc.ts would be bypassed rather than satisfied. Being
+ * handed a real superadmin row keeps both true, and makes "who did this?"
+ * answerable.
+ */
+export async function listPlatformOperators(): Promise<User[]> {
+  return withDb(
+    (db) =>
+      db
+        .select()
+        .from(users)
+        .where(eq(users.role, "superadmin"))
+        .orderBy(asc(users.id)),
+    [],
+  );
+}
+
 // ─── Magic link tokens (passwordless email sign-in) ────────────────────────────
 
 export async function createMagicLinkToken(entry: {
