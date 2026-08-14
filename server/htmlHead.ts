@@ -1,6 +1,8 @@
 import type { Request } from "express";
 import { isMarketingHost } from "@shared/marketing";
 import { showsZoltoAttribution } from "@shared/attribution";
+import { analyticsSnippet } from "./analytics";
+import { appendToHead } from "./headInject";
 import { injectMarketingHead } from "./marketingSeo";
 import { injectStorefrontHead } from "./storefrontHead";
 import {
@@ -37,10 +39,15 @@ export async function injectHeadForRequest(
     // meant ?surface=marketing never matched.
     const [routePath, search = ""] = req.originalUrl.split("?");
     if (isMarketingHost(host, search)) {
-      return injectMarketingHead(html, routePath, resolveBaseUrl(req));
+      return appendToHead(
+        injectMarketingHead(html, routePath, resolveBaseUrl(req)),
+        analyticsSnippet("marketing"),
+      );
     }
 
     const tenant = await resolveTenantFromRequest(req);
+    // An unresolved host gets no tag: it is neither the marketing site nor a
+    // store, so there is no bucket its page views honestly belong in.
     if (!tenant) return html;
     const settings = await getTenantSettings(tenant.id);
     const storeName = settings?.whiteLabelName || tenant.name;
@@ -75,21 +82,32 @@ export async function injectHeadForRequest(
     };
     const clean = routePath.replace(/\/+$/, "") || "/";
 
+    // Built once and appended to whichever branch below produced the page, so
+    // a new storefront route can never be added without its page views being
+    // counted — the failure mode of the old build-time snippet was exactly
+    // this kind of silent omission.
+    const withAnalytics = (page: string) =>
+      appendToHead(page, analyticsSnippet("storefront"));
+
     const productId = parseProductPath(clean);
     if (productId !== null) {
       const row = await getVisibleProductById(tenant.id, productId);
-      return injectStorefrontSeo(out, routePath, {
-        identity,
-        products: [],
-        product: row ? toProductSeo(row) : null,
-      });
+      return withAnalytics(
+        injectStorefrontSeo(out, routePath, {
+          identity,
+          products: [],
+          product: row ? toProductSeo(row) : null,
+        }),
+      );
     }
 
     const products =
       clean === "/" || clean === "/shop"
         ? (await getVisibleProducts(tenant.id)).map(toProductSeo)
         : [];
-    return injectStorefrontSeo(out, routePath, { identity, products });
+    return withAnalytics(
+      injectStorefrontSeo(out, routePath, { identity, products }),
+    );
   } catch {
     return html;
   }

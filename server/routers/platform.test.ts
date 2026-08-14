@@ -12,6 +12,7 @@ const { dbMock } = vi.hoisted(() => ({
     createTenant: vi.fn(),
     createTenantSettings: vi.fn(),
     setTenantPosApiKeyHash: vi.fn(),
+    getAllAgentHits: vi.fn(),
   },
 }));
 
@@ -107,6 +108,7 @@ const tenantDetail = {
 beforeEach(() => {
   vi.clearAllMocks();
   dbMock.getPlatformMetrics.mockResolvedValue(metrics);
+  dbMock.getAllAgentHits.mockResolvedValue([]);
   dbMock.listTenantsForOperator.mockResolvedValue(tenantRows);
   dbMock.getTenantDetailForOperator.mockResolvedValue(tenantDetail);
   dbMock.setTenantUserRoleByOperator.mockResolvedValue(true);
@@ -549,5 +551,88 @@ describe("platform.rotatePosTestKey", () => {
     const first = await caller.rotatePosTestKey();
     const second = await caller.rotatePosTestKey();
     expect(first.posApiKey).not.toBe(second.posApiKey);
+  });
+});
+
+describe("platform.agentTraffic", () => {
+  const today = new Date().toISOString().slice(0, 10);
+  // tenant_id 0 is the platform surface (zolto.ch's own brief); anything else
+  // is a storefront. See drizzle/schema.ts agentHits for why 0, not NULL.
+  const rows = [
+    {
+      tenantId: 0,
+      day: today,
+      surface: "llms.txt",
+      mcpTool: "",
+      agent: "ChatGPT",
+      count: 4,
+    },
+    {
+      tenantId: 1,
+      day: today,
+      surface: "llms.txt",
+      mcpTool: "",
+      agent: "GPTBot",
+      count: 3,
+    },
+    {
+      tenantId: 2,
+      day: today,
+      surface: "mcp",
+      mcpTool: "create_checkout",
+      agent: "Claude",
+      count: 2,
+    },
+  ];
+
+  it("is refused to everyone but a superadmin", async () => {
+    // It crosses tenants by design — one store's operator must never see
+    // which agents are reading every other store.
+    for (const role of [null, "staff", "admin"]) {
+      await expect(
+        platformRouter.createCaller(ctx(role)).agentTraffic({ days: 30 }),
+      ).rejects.toThrow();
+    }
+    expect(dbMock.getAllAgentHits).not.toHaveBeenCalled();
+  });
+
+  it("totals every surface by default", async () => {
+    dbMock.getAllAgentHits.mockResolvedValue(rows);
+    const res = await platformRouter
+      .createCaller(ctx("superadmin"))
+      .agentTraffic({ days: 30 });
+    expect(res.total).toBe(9);
+    expect(res.storesReached).toBe(2);
+  });
+
+  it("separates zolto.ch's own brief from the storefronts'", async () => {
+    // Two different questions — "is an assistant recommending Zolto to a maker"
+    // versus "is an agent shopping at our merchants" — that would be
+    // uninterpretable summed together.
+    dbMock.getAllAgentHits.mockResolvedValue(rows);
+    const caller = platformRouter.createCaller(ctx("superadmin"));
+
+    const platform = await caller.agentTraffic({ days: 30, scope: "platform" });
+    expect(platform.total).toBe(4);
+    expect(platform.storesReached).toBe(0);
+
+    const stores = await caller.agentTraffic({ days: 30, scope: "stores" });
+    expect(stores.total).toBe(5);
+    expect(stores.storesReached).toBe(2);
+  });
+
+  it("counts assistant fetches apart from background crawling", async () => {
+    dbMock.getAllAgentHits.mockResolvedValue(rows);
+    const res = await platformRouter
+      .createCaller(ctx("superadmin"))
+      .agentTraffic({ days: 30 });
+    // ChatGPT (4) + Claude (2) are on-demand; GPTBot (3) is indexing.
+    expect(res.assistantHits).toBe(6);
+  });
+
+  it("rejects a window outside the supported range", async () => {
+    await expect(
+      platformRouter.createCaller(ctx("superadmin")).agentTraffic({ days: 0 }),
+    ).rejects.toThrow();
   });
 });

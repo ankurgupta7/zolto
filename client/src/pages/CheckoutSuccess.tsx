@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { Link } from "wouter";
 import { useTranslation } from "react-i18next";
 import { CheckCircle2, Loader2 } from "lucide-react";
@@ -6,6 +6,7 @@ import { trpc } from "@/lib/trpc";
 import { useCart } from "@/contexts/CartContext";
 import { formatMinorUnits } from "@/lib/money";
 import OrderReceipt from "@/components/OrderReceipt";
+import { trackCheckoutCompleted } from "@/lib/analytics";
 
 export default function CheckoutSuccess() {
   const { t } = useTranslation();
@@ -37,6 +38,17 @@ export default function CheckoutSuccess() {
   }, [clear]);
 
   const paid = order?.status === "paid";
+
+  // Only once the webhook has actually marked it paid — this page is reached
+  // the moment Stripe redirects, and TWINT settles asynchronously, so counting
+  // on arrival would report every abandoned async payment as a sale. The ref
+  // guards against the status poll re-firing it on a later render.
+  const completionSent = useRef(false);
+  useEffect(() => {
+    if (!paid || completionSent.current || !order) return;
+    completionSent.current = true;
+    trackCheckoutCompleted(order.amountTotal / 100, order.currency);
+  }, [paid, order]);
 
   return (
     <div className="page-enter pt-28 pb-24 min-h-[60vh]">

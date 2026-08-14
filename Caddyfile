@@ -30,6 +30,23 @@
 }
 
 {$SITE_DOMAIN} {
+    # Page-view analytics, served FIRST-PARTY at /_stats.
+    #
+    # Not a convenience. This stack vendors its own webfonts so that viewing a
+    # page sends no request to anyone else (client/index.html, tools/fonts/),
+    # and loading the measurement script from a third-party origin would undo
+    # exactly that. A same-origin path is also the one an ad blocker does not
+    # strip, so the numbers are not quietly wrong for the most privacy-minded
+    # third of visitors.
+    #
+    # handle_path strips the prefix, so /_stats/script.js reaches Umami as
+    # /script.js and the script's own beacon posts back to /_stats/api/send.
+    # Inert unless the analytics profile is running — nothing requests this
+    # path until ANALYTICS_ENDPOINT is set (server/analytics.ts).
+    handle_path /_stats/* {
+        reverse_proxy umami:3000
+    }
+
     # Reverse proxy all traffic to the Node.js app.
     #
     # A deploy recreates the app container while Caddy stays up. For those few
@@ -85,6 +102,15 @@ www.{$SITE_DOMAIN} {
 *.{$SITE_DOMAIN} {
     tls {
         on_demand
+    }
+
+    # Storefronts get the same first-party analytics path as the apex — see
+    # the comment on the {$SITE_DOMAIN} block. Without this a store's page-view
+    # script would have to be loaded cross-origin from zolto.ch, which is both
+    # a third-party request from the shopper's point of view and the thing
+    # blockers strip.
+    handle_path /_stats/* {
+        reverse_proxy umami:3000
     }
 
     # Same restart-tolerance as the apex block above.

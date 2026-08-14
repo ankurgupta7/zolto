@@ -21,6 +21,7 @@ import { registerSeoRoutes } from "../seo";
 import { registerLlmsRoutes } from "../llms";
 import { registerMcpRoutes } from "../mcp";
 import { registerDomainAsk } from "../domainAsk";
+import { registerAgentHitTracking } from "../agentHits";
 import { getDb } from "../db";
 
 /**
@@ -73,6 +74,12 @@ export async function createApp(): Promise<express.Express> {
 
   // Add-to-Slack OAuth callback (writes the workspace bot token to the vault).
   registerSlackOAuthRoutes(app);
+
+  // Count what the AI agents read. Mounted before the machine-facing routes
+  // below (and after express.json, which it needs to name the MCP tool), but it
+  // only ever acts on `res.on("finish")` — so it adds nothing to the latency of
+  // the endpoint agents actually buy through.
+  registerAgentHitTracking(app);
 
   // SEO discovery: /sitemap.xml + /robots.txt (before the SPA catch-all).
   registerSeoRoutes(app);

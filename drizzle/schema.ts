@@ -854,3 +854,58 @@ export const siteImports = mysqlTable("site_imports", {
 
 export type SiteImport = typeof siteImports.$inferSelect;
 export type InsertSiteImport = typeof siteImports.$inferInsert;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// AGENT HITS — who is reading the machine-facing surfaces (server/agentHits.ts)
+// ═══════════════════════════════════════════════════════════════════════════════
+// Zolto publishes /llms.txt, /llms-full.txt and an MCP endpoint on the bet that
+// an AI agent will discover a store and buy from it. `orders.channel = 'agent'`
+// already records the ones that bought; nothing recorded the reach that comes
+// first, and no client-side analytics ever could — an agent fetching /llms.txt
+// never loads the SPA and never runs JavaScript.
+//
+// PRE-AGGREGATED, one row per (store, day, surface, tool, agent), incremented
+// in place. Not a per-request log: /mcp is a hot path an agent can loop on, and
+// an unbounded insert log on it is a disk-fill waiting to happen. The cost of
+// the choice is that individual requests aren't recoverable — deliberate, since
+// nothing here should ever answer a question about one visitor.
+//
+// TWO SENTINELS, both of which exist because MySQL treats NULLs as distinct in
+// a UNIQUE index. A nullable column in the key below would make ON DUPLICATE
+// KEY UPDATE silently never fire for the platform surface or for a non-MCP
+// request — inserting a fresh row per hit and turning the whole table back into
+// the per-request log it is designed not to be:
+//   * tenant_id = 0  → the platform surface (zolto.ch itself), not a store.
+//     No tenants row has id 0, so it can't collide with a real store.
+//   * mcp_tool = ''  → this hit wasn't an MCP tools/call.
+export const agentHits = mysqlTable(
+  "agent_hits",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    /** Store this hit was addressed to, or 0 for the platform surface. */
+    tenantId: int("tenant_id").notNull().default(0),
+    /** UTC `YYYY-MM-DD` (shared/aiAgents.ts dayKey). */
+    day: varchar("day", { length: 10 }).notNull(),
+    /** One of shared/aiAgents.ts AGENT_SURFACES. */
+    surface: varchar("surface", { length: 32 }).notNull(),
+    /** MCP tool name for a tools/call, else ''. */
+    mcpTool: varchar("mcp_tool", { length: 64 }).notNull().default(""),
+    /** Display label from shared/aiAgents.ts classifyAgent, e.g. "GPTBot". */
+    agent: varchar("agent", { length: 64 }).notNull(),
+    count: int("count").notNull().default(0),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (t) => [
+    uniqueIndex("agent_hits_bucket").on(
+      t.tenantId,
+      t.day,
+      t.surface,
+      t.mcpTool,
+      t.agent,
+    ),
+  ],
+);
+
+export type AgentHit = typeof agentHits.$inferSelect;
+export type InsertAgentHit = typeof agentHits.$inferInsert;

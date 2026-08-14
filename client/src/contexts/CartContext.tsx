@@ -7,6 +7,7 @@ import {
   type ReactNode,
 } from "react";
 import type { ProductItem } from "@shared/types";
+import { trackCartAdd } from "@/lib/analytics";
 
 /**
  * Minimal product snapshot kept in the shopping bag. Each Kalakosh piece is
@@ -68,6 +69,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const addItem = (product: ProductItem) => {
     setItems((prev) => {
       if (prev.some((i) => i.id === product.id)) return prev;
+      // Counted here rather than at the button, so every route that adds to the
+      // bag is measured and a duplicate add is not counted twice. Category
+      // only, never the product — see client/src/lib/analytics.ts.
+      trackCartAdd(product.category, prev.length + 1);
       return [
         ...prev,
         {

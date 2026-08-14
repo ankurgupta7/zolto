@@ -24,6 +24,7 @@ import {
   AdminOnly,
   PlanGate,
 } from "@/components/admin/ui";
+import AgentTrafficCard from "@/components/AgentTrafficCard";
 
 /** Swiss regional locale for the active UI language ("it" → "it-CH"). */
 function numberLocale(language: string): string {
@@ -166,6 +167,11 @@ export default function Insights() {
               </ul>
             </SettingsCard>
           )}
+
+          {/* Above the AI narrative because it is measured fact rather than a
+              written interpretation, and because agent reach is the leading
+              indicator for the agent-channel orders counted in the stats above. */}
+          <AgentTrafficCard />
 
           <SettingsCard
             title={t("ops.insights.aiTitle")}
