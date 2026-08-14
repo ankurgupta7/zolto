@@ -2495,8 +2495,148 @@ export async function updateOwnDisplayName(
   );
 }
 
+/**
+ * Bump lastSignedIn on an existing row, touching nothing else. Used when a
+ * magic link signs in as an account minted by another provider — name, email
+ * and loginMethod there belong to that provider and must survive the visit.
+ */
+export async function touchUserLastSignedIn(
+  userId: number,
+  when: Date,
+): Promise<void> {
+  await withDbOrThrow((db) =>
+    db.update(users).set({ lastSignedIn: when }).where(eq(users.id, userId)),
+  );
+}
+
 export async function deleteUserById(id: number): Promise<void> {
   await withDbOrThrow((db) => db.delete(users).where(eq(users.id, id)));
+}
+
+/**
+ * Accounts that MANAGE a store under this email — the lookup behind
+ * magic-link account adoption (server/_core/magicLink.ts).
+ *
+ * Returns every match rather than one, deliberately: with two, the caller
+ * cannot know which store the person meant to sign in to, and adopting the
+ * wrong one drops a merchant into somebody else's admin. Ambiguity has to be
+ * visible to be refused.
+ *
+ * `pending:%` rows are excluded. They are unclaimed-signup placeholders
+ * holding a tenant's admin slot (createPendingTenantAdmin), not logins —
+ * adopting one would hand over a store whose claim token was never presented,
+ * which is the one thing the claim flow exists to require.
+ */
+export async function getManagingUsersByEmail(
+  email: string,
+): Promise<{ id: number; openId: string; tenantId: number; role: string }[]> {
+  return withDb(async (db) => {
+    const rows = await db
+      .select({
+        id: users.id,
+        openId: users.openId,
+        tenantId: users.tenantId,
+        role: users.role,
+      })
+      .from(users)
+      .where(
+        and(
+          // Case-insensitive for the same reason as getStoreUserByEmail:
+          // providers disagree about case, so `A@b.c` and `a@b.c` are one person.
+          sql`LOWER(${users.email}) = LOWER(${email})`,
+          isNotNull(users.tenantId),
+          inArray(users.role, ["superadmin", "admin", "staff"]),
+          sql`${users.openId} NOT LIKE 'pending:%'`,
+        ),
+      )
+      .orderBy(asc(users.id));
+    return rows.flatMap((r) =>
+      r.tenantId == null
+        ? []
+        : [{ id: r.id, openId: r.openId, tenantId: r.tenantId, role: r.role }],
+    );
+  }, []);
+}
+
+/**
+ * Every users row sharing an email, with the context needed to tell them
+ * apart before deleting one (scripts/dedupe-users.ts).
+ *
+ * `users.email` is deliberately NOT unique — `openId` is. Two rows on one
+ * address is therefore a legal state, and often the correct one:
+ *   • one row per tenant, for an owner who runs two stores;
+ *   • a `pending:<token>` claim row beside the real account, when a signup
+ *     was started and the claim never finished (createPendingTenantAdmin);
+ *   • two providers for one person — `google:<sub>` and a magic link — each
+ *     minting its own openId, and so its own row.
+ * Only the last of those is a duplicate worth deleting, which is why this
+ * returns openId/loginMethod/lastSignedIn rather than just the address.
+ */
+export type DuplicateEmailUser = {
+  id: number;
+  tenantId: number | null;
+  tenantName: string | null;
+  email: string | null;
+  name: string | null;
+  openId: string;
+  role: User["role"];
+  loginMethod: string | null;
+  pendingClaim: boolean;
+  createdAt: Date;
+  lastSignedIn: Date;
+};
+
+export async function getUsersByEmail(
+  email: string,
+): Promise<DuplicateEmailUser[]> {
+  return withDb(async (db) => {
+    const rows = await db
+      .select({
+        id: users.id,
+        tenantId: users.tenantId,
+        tenantName: tenants.name,
+        email: users.email,
+        name: users.name,
+        openId: users.openId,
+        role: users.role,
+        loginMethod: users.loginMethod,
+        createdAt: users.createdAt,
+        lastSignedIn: users.lastSignedIn,
+      })
+      .from(users)
+      .leftJoin(tenants, eq(tenants.id, users.tenantId))
+      // Case-insensitive for the same reason as getStoreUserByEmail: providers
+      // disagree about case, so `A@b.c` and `a@b.c` are one person here.
+      .where(sql`LOWER(${users.email}) = LOWER(${email})`)
+      .orderBy(asc(users.id));
+    return rows.map((r) => ({
+      ...r,
+      pendingClaim: r.openId.startsWith("pending:"),
+    }));
+  }, []);
+}
+
+/**
+ * Addresses held by more than one users row, most-duplicated first. The
+ * survey step — `getUsersByEmail` then shows which row is which.
+ */
+export async function findDuplicateEmails(): Promise<
+  { email: string; count: number }[]
+> {
+  return withDb(async (db) => {
+    const rows = await db
+      .select({
+        email: sql<string>`LOWER(${users.email})`.as("email"),
+        count: sql<number>`COUNT(*)`.as("count"),
+      })
+      .from(users)
+      .where(isNotNull(users.email))
+      .groupBy(sql`LOWER(${users.email})`)
+      .having(sql`COUNT(*) > 1`)
+      .orderBy(desc(sql`COUNT(*)`));
+    // MySQL returns COUNT(*) as a string over some driver configurations.
+    return rows.map((r) => ({ email: r.email, count: Number(r.count) }));
+  }, []);
 }
 
 // ─── Billing (Zolto's own subscription relationship with tenants) ─────────────

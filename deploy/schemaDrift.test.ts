@@ -137,3 +137,56 @@ describe("deploy path vs drizzle/schema.ts", () => {
     },
   );
 });
+
+/**
+ * Columns are not the only thing that can drift. `users.openId` carried a
+ * UNIQUE index from the baseline, but the `.unique()` marker was lost from
+ * drizzle/schema.ts (and from the meta snapshots) at 0004 while every database
+ * kept the index, because no generated migration ever emitted the DROP.
+ *
+ * Nothing failed, which is the point: `drizzle-kit generate` diffs against the
+ * snapshot and stayed quiet, and the app worked because the databases still
+ * had the index. The live trap was `npm run db:sync` (drizzle-kit push
+ * --force), which reconciles a database to schema.ts — running it would have
+ * dropped the index. upsertUser writes every sign-in with
+ * onDuplicateKeyUpdate, which in MySQL fires only on a PRIMARY KEY or UNIQUE
+ * collision, and `users.id` is autoincrement and never supplied; with the
+ * index gone there is nothing to collide on and each sign-in INSERTs a new
+ * row. A whole suite of green tests cannot see that.
+ */
+describe("users unique indexes", () => {
+  /** Single-column unique index names declared on a table in schema.ts. */
+  function uniqueColumns(table: MySqlTable): string[] {
+    const config = getTableConfig(table);
+    const names = config.uniqueConstraints.flatMap((c) =>
+      c.columns.map((col) => col.name),
+    );
+    // `.unique()` inline on a column is recorded on the column in some drizzle
+    // versions rather than in uniqueConstraints. Accept either shape.
+    for (const column of config.columns) {
+      if (column.isUnique) names.push(column.name);
+    }
+    return names;
+  }
+
+  it("declares openId UNIQUE — upsertUser's onDuplicateKeyUpdate depends on it", () => {
+    expect(uniqueColumns(schema.users)).toContain("openId");
+  });
+
+  it("has a deploy statement that actually creates that index", () => {
+    // Declaring it in schema.ts only protects `db:sync`. update.sh is the
+    // authoritative path (see this file's header), so it needs its own.
+    const sql = deploySql();
+    expect(sql).toMatch(
+      /(CONSTRAINT `users_openId_unique` UNIQUE|ADD CONSTRAINT `users_openId_unique`)/,
+    );
+  });
+
+  // The other half of the same story. Two rows legitimately share an address —
+  // most sharply during signup, where the `pending:<token>` claim row and the
+  // real account co-exist until finishClaim deletes the pending one. A
+  // UNIQUE(email) would make the sign-in that claims a store fail outright.
+  it("does not declare email UNIQUE — the claim flow needs two rows on one address", () => {
+    expect(uniqueColumns(schema.users)).not.toContain("email");
+  });
+});

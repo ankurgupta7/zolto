@@ -1,5 +1,7 @@
 import { z } from "zod";
+import { TRPCError } from "@trpc/server";
 import { COOKIE_NAME } from "@shared/const";
+import { createRateLimiter } from "./rateLimit";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { requestMagicLink } from "./_core/magicLink";
 import { systemRouter } from "./_core/systemRouter";
@@ -19,6 +21,17 @@ import { migrationRouter } from "./routers/migration";
 import { siteImportRouter } from "./routers/siteImport";
 import { platformRouter } from "./routers/platform";
 
+// Sign-in links, bounded per address and per caller. See requestMagicLink
+// below for why both keys are needed and why the address is checked first.
+const magicLinkEmailLimiter = createRateLimiter({
+  limit: 5,
+  windowMs: 60 * 60 * 1000,
+});
+const magicLinkIpLimiter = createRateLimiter({
+  limit: 20,
+  windowMs: 60 * 60 * 1000,
+});
+
 // ─── App router ───────────────────────────────────────────────────────────────
 
 export const appRouter = router({
@@ -33,6 +46,15 @@ export const appRouter = router({
     // Passwordless fallback for anyone without a Google/Apple account — see
     // server/_core/magicLink.ts for the token + email mechanics and the
     // GET /api/auth/magic-link/callback route that redeems the link.
+    //
+    // Rate limited on both keys, because they bound different harms. Per
+    // address caps how hard one inbox can be flooded — the link only ever
+    // reaches its owner, so the abuse here is mail, not access, and it matters
+    // more now that redeeming one can open a store admin (magicLink.ts). Per
+    // IP caps one caller enumerating many addresses, which per-address limits
+    // alone never see. Address first, so a flood aimed at one inbox is
+    // stopped by the tighter bound whatever it is sent from. Both windows are
+    // generous next to a merchant who mistypes their address twice.
     requestMagicLink: publicProcedure
       .input(
         z.object({
@@ -40,13 +62,29 @@ export const appRouter = router({
           next: z.string().max(512).optional(),
         }),
       )
-      .mutation(({ ctx, input }) =>
-        requestMagicLink({
+      .mutation(async ({ ctx, input }) => {
+        const email = input.email.trim().toLowerCase();
+        for (const gate of [
+          { key: `magic-link:email:${email}`, limiter: magicLinkEmailLimiter },
+          {
+            key: `magic-link:ip:${ctx.req.ip ?? "unknown"}`,
+            limiter: magicLinkIpLimiter,
+          },
+        ]) {
+          const result = await gate.limiter.check(gate.key);
+          if (!result.allowed) {
+            throw new TRPCError({
+              code: "TOO_MANY_REQUESTS",
+              message: `Too many sign-in links requested. Try again in ${result.retryAfterSeconds} seconds.`,
+            });
+          }
+        }
+        return requestMagicLink({
           email: input.email,
           next: input.next,
           req: ctx.req,
-        }),
-      ),
+        });
+      }),
 
     /**
      * Edit your own display name. `protectedProcedure` and scoped to

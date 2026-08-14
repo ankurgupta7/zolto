@@ -1011,6 +1011,19 @@ else
   ok "0046 tenant_settings.hide_zolto_badge already exists"
 fi
 
+# ── 0047: restore users_openId_unique where it went missing ──────────────────
+# The index that makes upsertUser's onDuplicateKeyUpdate an update rather than
+# an insert. Present since the baseline, but absent from drizzle/schema.ts and
+# the meta snapshots since 0004 — so `npm run db:sync` would drop it, and every
+# subsequent sign-in would create a new user row. schema.ts declares it again;
+# this restores it on any database that already lost it.
+#
+# Idempotent, and deliberately non-fatal: with duplicate openIds already present
+# the ALTER cannot succeed, so it warns and leaves the database untouched rather
+# than aborting the deploy. See migrate_0047_users_openid_unique in
+# deploy/lib/db.sh.
+migrate_0047_users_openid_unique
+
 # ── Record the applied migration set ──────────────────────────────────────────
 # Only reached when every migration above succeeded — `set -e` plus run_sql's
 # die() mean a failure never gets this far, so a half-applied schema is never
