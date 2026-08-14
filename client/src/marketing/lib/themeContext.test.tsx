@@ -56,11 +56,28 @@ afterEach(() => {
 });
 
 describe("useMarketingTheme", () => {
-  it("starts on the shipped default and paints no attribute for it", () => {
+  /**
+   * The shipped default is "system", so a first-time visitor's theme is decided
+   * entirely by their OS — and `prefers-color-scheme` reporting light is both
+   * "chose light" and "said nothing", which is the majority case.
+   */
+  it("opens light for a visitor whose OS is not in dark mode", () => {
+    stubMatchMedia(false);
+    const { result } = renderHook(() => useMarketingThemeContext(), {
+      wrapper,
+    });
+    expect(result.current.preference).toBe("system");
+    expect(result.current.theme).toBe("light");
+    expect(document.documentElement.getAttribute("data-theme")).toBe("light");
+  });
+
+  it("keeps the mahogany bands for a visitor whose OS is in dark mode", () => {
+    stubMatchMedia(true);
     const { result } = renderHook(() => useMarketingThemeContext(), {
       wrapper,
     });
     expect(result.current.theme).toBe("dark");
+    // Dark is the absence of the attribute, not data-theme="dark".
     expect(document.documentElement.hasAttribute("data-theme")).toBe(false);
   });
 
@@ -76,17 +93,24 @@ describe("useMarketingTheme", () => {
     );
   });
 
+  // Toggling pins a theme: it stops following the OS, which is the whole point
+  // of touching the switch.
   it("toggles, persists, and repaints <html>", () => {
+    stubMatchMedia(true);
     const { result } = renderHook(() => useMarketingThemeContext(), {
       wrapper,
     });
+    expect(result.current.theme).toBe("dark");
+
     act(() => result.current.toggle());
+    expect(result.current.preference).toBe("light");
     expect(result.current.theme).toBe("light");
     expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe("light");
     expect(document.documentElement.getAttribute("data-theme")).toBe("light");
 
     act(() => result.current.toggle());
     expect(result.current.theme).toBe("dark");
+    expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe("dark");
     expect(document.documentElement.hasAttribute("data-theme")).toBe(false);
   });
 
@@ -139,7 +163,7 @@ describe("useMarketingThemeContext outside a provider", () => {
    */
   it("reads the default instead of throwing", () => {
     const { result } = renderHook(() => useMarketingThemeContext());
-    expect(result.current.theme).toBe("dark");
+    expect(result.current.preference).toBe("system");
     expect(() => result.current.toggle()).not.toThrow();
   });
 });
@@ -165,6 +189,7 @@ describe("one theme, many switches", () => {
   }
 
   it("keeps every consumer of the provider in step", () => {
+    stubMatchMedia(true);
     render(
       <MarketingThemeProvider>
         <TwoSwitches />

@@ -36,13 +36,18 @@ export const PALETTE_STORAGE_KEY = "zolto_light_palette";
 /**
  * What a first-time visitor gets, before they have touched the toggle.
  *
- * Deliberately "dark" — today's look — rather than "system". A marketing site
- * that repaints itself for every visitor whose OS happens to be in light mode
- * is a change to the site's default appearance, not the addition of an option,
- * and that is the site owner's call. Set this to "system" to make the surface
- * follow the operating system instead; nothing else has to change.
+ * "system", by the site owner's decision — so the surface opens light for a
+ * visitor whose OS is in light mode and keeps the mahogany bands for one in
+ * dark mode. Worth being clear about the consequence, because resolveTheme
+ * spells out which way it falls: `prefers-color-scheme` reports light both when
+ * a visitor has chosen light and when they have expressed nothing at all, so
+ * *most* first-time visitors now land on the light surface. That is the
+ * intended change, not a side effect.
+ *
+ * Set this to "dark" to pin today's look for everyone and make light mode
+ * purely opt-in; nothing else has to change.
  */
-export const DEFAULT_PREFERENCE: ThemePreference = "dark";
+export const DEFAULT_PREFERENCE: ThemePreference = "system";
 
 const DARK_QUERY = "(prefers-color-scheme: dark)";
 
@@ -65,7 +70,8 @@ export function isLightPalette(value: unknown): value is LightPalette {
  *
  * Note which way "system" falls: `prefers-color-scheme` reports "light" both
  * when the visitor has chosen light *and* when they have expressed nothing at
- * all, so "system" means "light unless the OS says dark".
+ * all, so "system" means "light unless the OS says dark" — and "system" is the
+ * shipped default, so that is what most first-time visitors get.
  */
 export function resolveTheme(
   preference: ThemePreference,

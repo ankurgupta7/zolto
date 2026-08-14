@@ -80,6 +80,11 @@ The marketing surface has two themes, and a class name is identical in both:
 which light palette (`parchment` is the default; `goldleaf` is the third). Every
 shot prints the theme it actually painted, read back off the DOM. A theme change
 that has not been shot has not been looked at, and no unit test will say so.
+
+A first-time visitor's theme comes from their OS, not from a stored choice —
+`DEFAULT_PREFERENCE` in `marketing/lib/theme.ts` is `"system"` — so a shot with
+no `SHOT_THEME` is shooting one of two possible arrivals. `SHOT_OS=dark` is the
+other one; Playwright defaults to light, which is the majority case in the wild.
 `tools/screenshot/logos.html` stands all four colourways of the brush-Z lockup
 on the nav bars they have to survive, at 32px and at 16px.
 

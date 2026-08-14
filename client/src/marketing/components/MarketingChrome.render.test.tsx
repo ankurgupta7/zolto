@@ -392,7 +392,26 @@ describe("MarketingShell", () => {
 });
 
 describe("theme switch", () => {
+  /**
+   * The shipped default is "system", so what the bar opens on is decided by the
+   * OS — and jsdom has no matchMedia at all. Stub it deliberately rather than
+   * leaning on the fallback, or these tests silently re-assert whatever
+   * `window.matchMedia?.(…) ?? false` happens to mean today.
+   */
+  function stubOsPrefersDark(prefersDark: boolean) {
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn(() => ({
+        matches: prefersDark,
+        media: "(prefers-color-scheme: dark)",
+        addEventListener: () => {},
+        removeEventListener: () => {},
+      })),
+    );
+  }
+
   afterEach(() => {
+    vi.unstubAllGlobals();
     localStorage.clear();
     document.documentElement.removeAttribute("data-theme");
     document.documentElement.removeAttribute("data-light");
@@ -410,6 +429,7 @@ describe("theme switch", () => {
   }
 
   it("puts a switch in the bar that repaints the document", () => {
+    stubOsPrefersDark(true);
     renderShellWithTheme();
     const toggle = screen.getAllByTestId("theme-toggle")[0];
     expect(toggle.getAttribute("data-theme-state")).toBe("dark");
@@ -423,11 +443,26 @@ describe("theme switch", () => {
   });
 
   /**
+   * The bar is the one place the default is visible, so it is worth asserting
+   * here as well as in theme.test.ts: a visitor arriving with an ordinary
+   * light-mode OS gets the light surface without touching anything.
+   */
+  it("opens light, unasked, for a visitor whose OS is not in dark mode", () => {
+    stubOsPrefersDark(false);
+    renderShellWithTheme();
+    expect(
+      screen.getAllByTestId("theme-toggle")[0].getAttribute("data-theme-state"),
+    ).toBe("light");
+    expect(document.documentElement.getAttribute("data-theme")).toBe("light");
+  });
+
+  /**
    * The label names the theme the button switches *to*, and the icon says the
    * same thing — an unlabelled sun is ambiguous to a screen reader in a way it
    * isn't to an eye, so the label is the whole affordance for some visitors.
    */
   it("labels itself with the theme it will switch to", () => {
+    stubOsPrefersDark(true);
     renderShellWithTheme();
     const toggle = screen.getAllByTestId("theme-toggle")[0];
     expect(toggle.getAttribute("aria-label")).toMatch(/light/i);
@@ -443,6 +478,7 @@ describe("theme switch", () => {
    * the language picker was unreachable before it moved into the drawer too.
    */
   it("is reachable from the mobile sheet as well as the bar", async () => {
+    stubOsPrefersDark(false);
     renderNav();
     fireEvent.click(screen.getByRole("button", { name: /menu/i }));
     await waitFor(() =>

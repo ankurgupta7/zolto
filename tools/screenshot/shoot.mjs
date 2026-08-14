@@ -66,6 +66,16 @@ const viewport = (() => {
   return { width: Number(m[1]), height: Number(m[2]) };
 })();
 
+// SHOT_OS=dark makes the browser report `prefers-color-scheme: dark`. The
+// marketing surface's default preference is "system", so the OS — not a stored
+// choice — is what a first-time visitor's theme comes from, and without this
+// the harness can only ever reproduce one of the two arrivals. Playwright
+// defaults to light, which is also the majority case in the wild.
+const shotOs = process.env.SHOT_OS;
+if (shotOs && !["light", "dark"].includes(shotOs)) {
+  throw new Error(`SHOT_OS must be light or dark — got "${shotOs}"`);
+}
+
 const browser = await chromium.launch({ executablePath });
 const page = await browser.newPage({
   viewport,
@@ -73,6 +83,7 @@ const page = await browser.newPage({
   isMobile: viewport.width < 768,
   hasTouch: viewport.width < 768,
   ...(shotLang ? { locale: HTML_LANG[shotLang] } : {}),
+  ...(shotOs ? { colorScheme: shotOs } : {}),
 });
 
 if (shotLang) {

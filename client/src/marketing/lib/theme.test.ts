@@ -38,7 +38,8 @@ describe("resolveTheme", () => {
   /**
    * `prefers-color-scheme` reports light both when the visitor chose light and
    * when they expressed nothing at all, so "system" is "light unless told
-   * otherwise" — which is why it is not the shipped default.
+   * otherwise" — and "system" is the shipped default, which is what makes the
+   * light surface the one most first-time visitors see.
    */
   it("follows the OS only when the preference is 'system'", () => {
     expect(resolveTheme("system", true)).toBe("dark");
@@ -154,12 +155,22 @@ describe("applyTheme", () => {
 describe("the shipped default", () => {
   /**
    * Guards the site's default appearance, which is a product decision rather
-   * than an implementation detail: with "system" here, every visitor whose OS
-   * is not in dark mode lands on the light surface. Change this test in the
-   * same commit that changes the default, deliberately.
+   * than an implementation detail. Change this test in the same commit that
+   * changes the default, deliberately.
    */
-  it("is dark — today's look — so light mode is opt-in", () => {
-    expect(DEFAULT_PREFERENCE).toBe("dark");
+  it("follows the operating system", () => {
+    expect(DEFAULT_PREFERENCE).toBe("system");
+  });
+
+  /**
+   * The consequence, stated rather than left to be discovered: a visitor who
+   * has expressed no OS preference reports light, so the light surface is what
+   * most first-time visitors see. Pinning DEFAULT_PREFERENCE to "dark" is the
+   * one-line way back.
+   */
+  it("means a visitor with no OS preference lands on the light surface", () => {
+    expect(resolveTheme(DEFAULT_PREFERENCE, false)).toBe("light");
+    expect(resolveTheme(DEFAULT_PREFERENCE, true)).toBe("dark");
   });
 });
 
