@@ -86,26 +86,22 @@ describe("HowAnAiBuys", () => {
     expect(screen.getByText(AI_NATIVE_PITCH.footnote)).toBeTruthy();
   });
 
-  it("becomes a mahogany panel in its dense reel rendering", () => {
+  it("becomes a statement band of its own in its dense reel rendering", () => {
     // The homepage reel puts the thesis beside a market day rather than in a
     // band of its own, and on a phone the thesis and its chart are a panel
-    // each — so `dense` carries the mahogany that a light chapter can't lend.
+    // each — so `dense` carries the band ground that a light chapter can't lend.
     const { container } = render(<AiNativeThesis dense />);
     expect(container.querySelector("section")).toBeNull();
-    expect(screen.getByTestId("ai-native-band").className).toContain(
-      "bg-[var(--brand-ink)]",
-    );
+    expect(screen.getByTestId("ai-native-band").className).toContain("bg-band");
     // Dense takes the short thesis: the long one narrates the chart beside it
     // and then adds a claim about the future that /why-zolto is for.
     expect(screen.getByText(AI_NATIVE_PITCH.bodyShort)).toBeTruthy();
     expect(screen.queryByText(AI_NATIVE_PITCH.body)).toBeNull();
   });
 
-  it("gives the chart its own mahogany when it is a panel of its own", () => {
+  it("gives the chart its own band when it is a panel of its own", () => {
     const { container } = render(<DiscoveryShiftChart dense />);
-    expect(container.firstElementChild?.className).toContain(
-      "bg-[var(--brand-ink)]",
-    );
+    expect(container.firstElementChild?.className).toContain("bg-band");
   });
 
   it("labels the crossing on the drawing instead of captioning it", () => {

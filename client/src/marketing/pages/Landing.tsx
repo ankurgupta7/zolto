@@ -102,7 +102,7 @@ export default function Landing() {
         <ReelChapter
           id="promise"
           label={t("landing.reel.promise")}
-          className="bg-[var(--brand-ink)]"
+          className="bg-band"
         >
           {/* One slide, not two: the promise and the thing it promises belong on
               the same screen — the video *is* the argument, and a reader who has
@@ -124,7 +124,7 @@ export default function Landing() {
                   {/* The column, not max-w, is what actually bounds this heading —
                       see MAKER_PITCH.headlineEmphasis for the measurements and for
                       why the underlined phrase has to stay short. */}
-                  <h1 className="mt-2 max-w-2xl font-serif text-3xl leading-[1.1] text-white tall:mt-4 tall:text-4xl sm:text-5xl">
+                  <h1 className="mt-2 max-w-2xl font-serif text-3xl leading-[1.1] text-band-fg tall:mt-4 tall:text-4xl sm:text-5xl">
                     {st("makerPitch.headline", MAKER_PITCH.headline)}{" "}
                     {/* Only the punchline is underlined, so the stroke stays tight
                         to the words however the heading wraps. */}
@@ -138,7 +138,7 @@ export default function Landing() {
                       </span>
                     </span>
                   </h1>
-                  <p className="mt-3 max-w-md text-sm leading-relaxed text-white/70 tall:mt-5 tall:text-base sm:text-lg">
+                  <p className="mt-3 max-w-md text-sm leading-relaxed text-band-fg/70 tall:mt-5 tall:text-base sm:text-lg">
                     {st("makerPitch.body", MAKER_PITCH.body)}
                   </p>
                 </div>
@@ -157,13 +157,13 @@ export default function Landing() {
                   <div className="flex flex-wrap items-center gap-3 sm:gap-4">
                     <Link
                       href="/signup"
-                      className="rounded-md bg-[var(--brand-accent)] px-7 py-3 text-xs font-medium uppercase tracking-[0.14em] text-[var(--brand-ink)] transition-colors hover:bg-[var(--brand-accent-light)]"
+                      className="rounded-md bg-[var(--brand-accent)] px-7 py-3 text-xs font-medium uppercase tracking-[0.14em] text-[var(--brand-accent-fg)] transition-colors hover:bg-[var(--brand-accent-light)]"
                     >
                       {t("landing.startFree")}
                     </Link>
                     <Link
                       href="/pricing"
-                      className="rounded-md border border-white/25 px-7 py-3 text-xs font-medium uppercase tracking-[0.14em] text-white/85 transition-colors hover:border-white hover:text-white"
+                      className="rounded-md border border-band-fg/25 px-7 py-3 text-xs font-medium uppercase tracking-[0.14em] text-band-fg/85 transition-colors hover:border-white hover:text-band-fg"
                     >
                       {t("landing.seePricing")}
                     </Link>
@@ -171,7 +171,7 @@ export default function Landing() {
 
                   {/* Where we're from, above the fold. Three facts, no sentence —
                       the trust chapter does the explaining. */}
-                  <ul className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-[11px] uppercase tracking-[0.16em] text-white/50 tall:mt-6">
+                  <ul className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-[11px] uppercase tracking-[0.16em] text-band-fg/50 tall:mt-6">
                     {SOVEREIGNTY.heroBadges.map((badge, i) => (
                       <li key={badge} className="flex items-center gap-2">
                         <span
@@ -291,7 +291,7 @@ export default function Landing() {
                 mahogany, so on a light chapter it keeps its own dark ground —
                 the same move the CHF 0 claim and the thesis make. */}
             <ReelPanel>
-              <div className="rounded-2xl bg-[var(--brand-ink)]">
+              <div className="rounded-2xl bg-band">
                 <HeroTill />
               </div>
             </ReelPanel>
@@ -312,18 +312,18 @@ export default function Landing() {
                   stacked version is 700px tall (the rotated arrow alone claims
                   a row the width of the card), and a *comparison* that puts
                   the two numbers a swipe apart isn't one. */}
-              <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-2xl bg-[var(--brand-ink-deep)] px-4 py-7 text-center sm:gap-4 sm:p-6">
+              <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-2xl bg-band-deep px-4 py-7 text-center sm:gap-4 sm:p-6">
                 <div>
-                  <p className="text-[10px] uppercase tracking-[0.16em] text-white/45 sm:text-[11px] sm:tracking-[0.2em]">
+                  <p className="text-[10px] uppercase tracking-[0.16em] text-band-fg/45 sm:text-[11px] sm:tracking-[0.2em]">
                     {st("costComparison.themLabel", COST_COMPARISON.themLabel)}
                   </p>
-                  <p className="mt-1.5 whitespace-nowrap font-serif text-2xl font-semibold text-white/55 line-through decoration-[var(--brand-accent)]/60 lining-nums tabular-nums sm:mt-2 sm:text-4xl">
+                  <p className="mt-1.5 whitespace-nowrap font-serif text-2xl font-semibold text-band-fg/55 line-through decoration-[var(--brand-accent)]/60 lining-nums tabular-nums sm:mt-2 sm:text-4xl">
                     CHF{" "}
                     {COST_COMPARISON.themPerYearChf.toLocaleString(
                       numberLocale,
                     )}
                   </p>
-                  <p className="mt-1.5 text-[11px] leading-snug text-white/40 sm:mt-2 sm:text-xs">
+                  <p className="mt-1.5 text-[11px] leading-snug text-band-fg/40 sm:mt-2 sm:text-xs">
                     {st("costComparison.themNote", COST_COMPARISON.themNote)}
                   </p>
                 </div>
@@ -334,13 +334,13 @@ export default function Landing() {
                   →
                 </div>
                 <div>
-                  <p className="text-[10px] uppercase tracking-[0.16em] text-white/45 sm:text-[11px] sm:tracking-[0.2em]">
+                  <p className="text-[10px] uppercase tracking-[0.16em] text-band-fg/45 sm:text-[11px] sm:tracking-[0.2em]">
                     {st("costComparison.usLabel", COST_COMPARISON.usLabel)}
                   </p>
                   <p className="mt-1.5 whitespace-nowrap font-serif text-3xl font-bold text-[var(--brand-accent-light)] lining-nums tabular-nums sm:mt-2 sm:text-5xl">
                     {formatPrice(COST_COMPARISON.usPerMonthChf)}
                   </p>
-                  <p className="mt-1.5 text-[11px] leading-snug text-white/40 sm:mt-2 sm:text-xs">
+                  <p className="mt-1.5 text-[11px] leading-snug text-band-fg/40 sm:mt-2 sm:text-xs">
                     {st("costComparison.usNote", COST_COMPARISON.usNote)}
                   </p>
                 </div>
@@ -456,19 +456,19 @@ export default function Landing() {
         >
           <ReelPanels layout="reel:gap-10">
             <ReelPanel>
-              <div className="rounded-2xl bg-[var(--brand-ink)] px-7 py-10 text-center">
+              <div className="rounded-2xl bg-band px-7 py-10 text-center">
                 <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
                   {t("landing.ctaEyebrow")}
                 </p>
-                <h2 className="mt-3 font-serif text-3xl text-white sm:text-4xl">
+                <h2 className="mt-3 font-serif text-3xl text-band-fg sm:text-4xl">
                   {t("landing.ctaHeading")}
                 </h2>
-                <p className="mx-auto mt-4 max-w-2xl text-white/70">
+                <p className="mx-auto mt-4 max-w-2xl text-band-fg/70">
                   {t("landing.ctaBody")}
                 </p>
                 <Link
                   href="/signup"
-                  className="mt-7 inline-block rounded-md bg-[var(--brand-accent)] px-7 py-3 text-xs font-medium uppercase tracking-[0.14em] text-[var(--brand-ink)] transition-colors hover:bg-[var(--brand-accent-light)]"
+                  className="mt-7 inline-block rounded-md bg-[var(--brand-accent)] px-7 py-3 text-xs font-medium uppercase tracking-[0.14em] text-[var(--brand-accent-fg)] transition-colors hover:bg-[var(--brand-accent-light)]"
                 >
                   {t("landing.ctaButton")}
                 </Link>

@@ -13,7 +13,11 @@
     "goToYourStore": "Accéder à votre boutique",
     "myStore": "Ma boutique",
     "signedInAs": "Connecté en tant que {{email}}",
-    "swissMade": "Suisse"
+    "swissMade": "Suisse",
+    "theme": {
+      "light": "Passer en mode clair",
+      "dark": "Passer en mode sombre"
+    }
   },
   "footer": {
     "copyright": "© {{year}} Zolto — le commerce pour les artisans, fait main à Zurich, conçu pour que plus d'argent reste dans votre poche.",

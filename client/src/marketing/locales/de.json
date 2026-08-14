@@ -13,7 +13,11 @@
     "goToYourStore": "Zu Ihrem Shop",
     "myStore": "Mein Shop",
     "signedInAs": "Angemeldet als {{email}}",
-    "swissMade": "Swiss made"
+    "swissMade": "Swiss made",
+    "theme": {
+      "light": "Zum hellen Modus wechseln",
+      "dark": "Zum dunklen Modus wechseln"
+    }
   },
   "footer": {
     "copyright": "© {{year}} Zolto — Commerce für Kunstschaffende, von Hand gebaut in Zürich, damit mehr Geld in Ihrer Tasche bleibt.",

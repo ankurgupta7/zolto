@@ -103,7 +103,7 @@ export default function WhyZolto() {
                     {g.meta}
                   </span>
                 </span>
-                <span className="ml-auto rounded-md bg-[var(--brand-accent)] px-3.5 py-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--brand-ink)]">
+                <span className="ml-auto rounded-md bg-[var(--brand-accent)] px-3.5 py-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--brand-accent-fg)]">
                   {t("landing.emailConfirm")}
                 </span>
               </div>
@@ -119,7 +119,7 @@ export default function WhyZolto() {
         <div className="flex flex-wrap items-center justify-center gap-4">
           <Link
             href="/signup"
-            className="rounded-md bg-[var(--brand-accent)] px-7 py-3 text-xs font-medium uppercase tracking-[0.14em] text-[var(--brand-ink)] transition-colors hover:bg-[var(--brand-accent-light)]"
+            className="rounded-md bg-[var(--brand-accent)] px-7 py-3 text-xs font-medium uppercase tracking-[0.14em] text-[var(--brand-accent-fg)] transition-colors hover:bg-[var(--brand-accent-light)]"
           >
             {t("landing.startFree")}
           </Link>

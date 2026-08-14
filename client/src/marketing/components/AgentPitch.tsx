@@ -42,11 +42,11 @@ export function DiscoveryShiftChart({
             // translucent card would otherwise borrow from a dark band. Capped
             // like the thesis beside it: the svg is `w-full` over a 1.8 aspect,
             // so an uncapped panel on a 1280px laptop draws a 684px-tall chart.
-            "mx-auto w-full max-w-xl rounded-2xl bg-[var(--brand-ink)] p-5 reel:max-w-none"
-          : "rounded-2xl border border-white/15 bg-white/[0.04] p-7"
+            "mx-auto w-full max-w-xl rounded-2xl bg-band p-5 reel:max-w-none"
+          : "rounded-2xl border border-band-fg/15 bg-band-fg/[0.04] p-7"
       }
     >
-      <p className="text-[11px] uppercase tracking-[0.2em] text-white/45">
+      <p className="text-[11px] uppercase tracking-[0.2em] text-band-fg/45">
         {st("aiNativePitch.chart.title", c.title)}
       </p>
       <svg
@@ -133,7 +133,7 @@ export function DiscoveryShiftChart({
           navigated to /why-zolto has chosen to be reading. On the homepage the
           annotation above says it, so the paragraph comes off. */}
       {!dense && (
-        <p className="mt-4 text-sm leading-relaxed text-white/60">
+        <p className="mt-4 text-sm leading-relaxed text-band-fg/60">
           {st("aiNativePitch.chart.caption", c.caption)}
         </p>
       )}
@@ -151,7 +151,7 @@ export function AgentChatMock() {
   return (
     <div
       data-testid="agent-chat-mock"
-      className="overflow-hidden rounded-2xl border border-white/15 bg-white shadow-[0_24px_60px_-30px_rgba(0,0,0,0.6)]"
+      className="overflow-hidden rounded-2xl border border-black/10 bg-white shadow-[0_24px_60px_-30px_rgba(0,0,0,0.6)]"
     >
       <div className="flex items-center gap-2.5 border-b border-[var(--brand-border)] px-5 py-3">
         <span aria-hidden className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
@@ -220,7 +220,7 @@ export function AiNativeThesis({ dense = false }: { dense?: boolean } = {}) {
       <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
         {st("aiNativePitch.eyebrow", AI_NATIVE_PITCH.eyebrow)}
       </p>
-      <h2 className="mt-3 max-w-xl font-serif text-3xl leading-[1.15] text-white sm:text-4xl">
+      <h2 className="mt-3 max-w-xl font-serif text-3xl leading-[1.15] text-band-fg sm:text-4xl">
         {st("aiNativePitch.headline", AI_NATIVE_PITCH.headline)}{" "}
         {/* Only the punchline is underlined, so the stroke stays tight to
             the words however the heading wraps. */}
@@ -238,7 +238,7 @@ export function AiNativeThesis({ dense = false }: { dense?: boolean } = {}) {
         </span>
       </h2>
       <p
-        className={`max-w-md leading-relaxed text-white/70 ${
+        className={`max-w-md leading-relaxed text-band-fg/70 ${
           dense ? "mt-5" : "mt-8"
         }`}
       >
@@ -256,7 +256,7 @@ export function AiNativeThesis({ dense = false }: { dense?: boolean } = {}) {
         // Capped in panels mode: a full-width panel on a 1280px laptop gives the
         // heading a 1200px measure, which is not a column anyone reads. The
         // reel-mode column already bounds it.
-        className="mx-auto w-full max-w-xl rounded-2xl bg-[var(--brand-ink)] p-5 sm:p-6 reel:max-w-none reel:p-7"
+        className="mx-auto w-full max-w-xl rounded-2xl bg-band p-5 sm:p-6 reel:max-w-none reel:p-7"
       >
         {copy}
       </div>
@@ -270,16 +270,16 @@ export function AgentProofBand() {
   const { st } = useMarketingT();
   const p = AI_NATIVE_PITCH.proof;
   return (
-    <section className="bg-[var(--brand-ink-deep)]">
+    <section className="bg-band-deep">
       <div className="mx-auto grid w-full max-w-6xl items-center gap-10 px-4 py-20 sm:px-6 md:grid-cols-[0.9fr_1.1fr]">
         <ScrollReveal>
           <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
             {st("aiNativePitch.proof.eyebrow", p.eyebrow)}
           </p>
-          <h2 className="mt-3 font-serif text-3xl leading-[1.15] text-white sm:text-4xl">
+          <h2 className="mt-3 font-serif text-3xl leading-[1.15] text-band-fg sm:text-4xl">
             {st("aiNativePitch.proof.headline", p.headline)}
           </h2>
-          <p className="mt-6 max-w-md leading-relaxed text-white/70">
+          <p className="mt-6 max-w-md leading-relaxed text-band-fg/70">
             {st("aiNativePitch.proof.body", p.body)}
           </p>
           <a

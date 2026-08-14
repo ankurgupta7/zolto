@@ -1,15 +1,38 @@
 import { createRoot } from "react-dom/client";
 import { Route, Router } from "wouter";
 import { memoryLocation } from "wouter/memory-location";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { httpBatchLink } from "@trpc/client";
+import superjson from "superjson";
 import "./entry.css";
+import { trpc } from "@/lib/trpc";
 import Landing from "@/marketing/pages/Landing";
 import Sovereignty from "@/marketing/pages/Sovereignty";
 import Pricing from "@/marketing/pages/Pricing";
 import Compare from "@/marketing/pages/Compare";
 import WhyZolto from "@/marketing/pages/WhyZolto";
 import { MarketingShell } from "@/marketing/components/MarketingChrome";
+import {
+  applyTheme,
+  readPreference,
+  resolveTheme,
+} from "@/marketing/lib/theme";
 
 const params = new URLSearchParams(location.search);
+
+// The theme normally arrives with MarketingShell, and the harness mounts pages
+// without it (the bands are what we're checking, and the shell's nav wants
+// network data). So apply it here too — otherwise SHOT_THEME=light would
+// silently shoot the dark surface, which is precisely the bug a light-mode
+// screenshot exists to catch. `?theme=light` works as a query param too, for
+// eyeballing in a browser.
+applyTheme(
+  resolveTheme(
+    readPreference(location.search),
+    window.matchMedia?.("(prefers-color-scheme: dark)").matches ?? false,
+  ),
+  document.documentElement,
+);
 
 // Which page to render. Defaults to the landing page; `?page=sovereignty`
 // shoots /made-in-switzerland. Add a line here when a new marketing page needs
@@ -55,21 +78,53 @@ const Page = () =>
     <Component />
   );
 
-// Renders the real page. MarketingShell's nav queries tRPC for auth, so the
-// page is mounted without the shell by default — the bands themselves are what
-// we're checking, and they take no network data.
+// Renders the real page. The bands are usually what we're checking and they
+// take no network data, so `?shell` is opt-in — but MarketingNav queries tRPC
+// for auth, so asking for the shell without a client throws "Unable to find
+// tRPC Context" and the shot silently comes back blank. Stub the transport the
+// same way signup.tsx does; every query resolves to null, which is exactly the
+// logged-out nav the acquisition page shows a first-time visitor.
+//
+// Shooting the shell is how the nav bar gets looked at at all — the lockup and
+// the theme switch live there and nowhere else.
 const useShell = params.has("shell");
 
+if (useShell) {
+  window.fetch = (async (input: RequestInfo | URL) => {
+    const url = new URL(String(input), location.origin);
+    const paths = url.pathname.replace(/^\/api\/trpc\//, "").split(",");
+    return new Response(
+      JSON.stringify(
+        paths.map(() => ({ result: { data: superjson.serialize(null) } })),
+      ),
+      { status: 200, headers: { "content-type": "application/json" } },
+    );
+  }) as typeof fetch;
+}
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: { retry: false, staleTime: Number.POSITIVE_INFINITY },
+  },
+});
+const trpcClient = trpc.createClient({
+  links: [httpBatchLink({ url: "/api/trpc", transformer: superjson })],
+});
+
 createRoot(document.getElementById("root")!).render(
-  <Router hook={hook}>
-    {useShell ? (
-      <MarketingShell>
-        <Page />
-      </MarketingShell>
-    ) : (
-      <div className="bg-[var(--brand-ground)] font-sans text-[var(--brand-text)]">
-        <Page />
-      </div>
-    )}
-  </Router>,
+  <trpc.Provider client={trpcClient} queryClient={queryClient}>
+    <QueryClientProvider client={queryClient}>
+      <Router hook={hook}>
+        {useShell ? (
+          <MarketingShell>
+            <Page />
+          </MarketingShell>
+        ) : (
+          <div className="bg-[var(--brand-ground)] font-sans text-[var(--brand-text)]">
+            <Page />
+          </div>
+        )}
+      </Router>
+    </QueryClientProvider>
+  </trpc.Provider>,
 );

@@ -138,7 +138,7 @@ function SegmentPage({ segment }: { segment: SegmentType }) {
         <div className="mt-6 flex flex-wrap justify-center gap-3">
           <Link
             href="/signup"
-            className="rounded-md bg-[var(--brand-accent)] px-5 py-2.5 text-xs font-medium uppercase tracking-[0.12em] text-[var(--brand-ink)] transition-colors hover:bg-[var(--brand-accent-light)]"
+            className="rounded-md bg-[var(--brand-accent)] px-5 py-2.5 text-xs font-medium uppercase tracking-[0.12em] text-[var(--brand-accent-fg)] transition-colors hover:bg-[var(--brand-accent-light)]"
           >
             {t("segment.startFree")}
           </Link>
