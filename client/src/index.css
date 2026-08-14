@@ -80,7 +80,12 @@
 
 html[data-reel] {
   scroll-padding-top: var(--nav-height);
-  scroll-behavior: smooth;
+  /* NO `scroll-behavior: smooth` here. It applies to the snap animation and to
+     every scroll the browser makes on its own, so a flick that should settle
+     in one frame instead plays a scripted glide — the second half of the "this
+     page has a lot of inertia" feeling, after scroll-snap-stop. The one place
+     a smooth scroll is actually wanted is the chapter rail, and ReelStage's
+     scrollToChapter passes `behavior: "smooth"` itself. */
 }
 html[data-reel="mandatory"] {
   scroll-snap-type: y mandatory;

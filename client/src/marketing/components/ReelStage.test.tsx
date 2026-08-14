@@ -218,13 +218,17 @@ describe("ReelStage — structure", () => {
     expect(sections.map((s) => s.id)).toEqual(["promise", "squeeze", "trust"]);
   });
 
-  it("makes each chapter one full-viewport post, and one flick one post", () => {
+  it("makes each chapter one full-viewport post that a fling can scroll past", () => {
     renderReel();
     for (const section of Array.from(document.querySelectorAll("section"))) {
       expect(section.className).toContain("snap-start");
-      // `snap-always` is the whole difference between a snappy reel and a long
-      // page that happens to snap: without it a flick sails past three posts.
-      expect(section.className).toContain("snap-always");
+      // Deliberately NOT `snap-always` on this axis. `scroll-snap-stop: always`
+      // forbids a gesture from passing more than one snap point, so it absorbs
+      // the fling: however hard the page is thrown it advances exactly one
+      // screen, which reads as enormous inertia and made the reel need a fast,
+      // hard swipe to move at all. The snap is mandatory, so a light swipe
+      // still lands cleanly on the next post.
+      expect(section.className).not.toContain("snap-always");
       // dvh, not svh: filling the screen is the point — the post you leave
       // slides up and this one takes the viewport.
       expect(section.className).toContain(
@@ -267,15 +271,61 @@ describe("ReelStage — structure", () => {
     for (const panel of Array.from(
       document.querySelectorAll("[data-reel-panel]"),
     )) {
-      // One slide is one screen wide and one post tall.
-      expect(panel.className).toContain("w-full");
+      // A slide is the track's width less `--reel-peek` — the sliver of the
+      // next slide left showing — and one post tall.
+      expect(panel.className).toContain("w-[calc(100%-var(--reel-peek,0px))]");
       expect(panel.className).toContain("h-full");
       expect(panel.className).toContain("shrink-0");
       expect(panel.className).toContain("snap-start");
+      // Sideways DOES keep snap-stop: a post is two or three slides, and a
+      // fling that skipped from the first to the last would skip the argument.
       expect(panel.className).toContain("snap-always");
       // …and steps out of the snapping once it is a column.
       expect(panel.className).toContain("reel:snap-align-none");
       expect(panel.className).toContain("reel:h-auto");
+      // Full width again as a column: the peek is a carousel affordance and
+      // would otherwise shave 24px off every desktop column.
+      expect(panel.className).toContain("reel:w-auto");
+    }
+  });
+
+  it("leaves an edge of the next slide showing, and only where there is one", () => {
+    // A row of dots is a legend, not an affordance — it tells a reader who has
+    // already worked out there is more. The sliver of the next card is what
+    // says "swipe" to a reader who hasn't. A single-slide post gets none of it,
+    // or it would give up measure to hint at a slide that does not exist.
+    renderReel();
+    const tracks = screen.getAllByTestId("reel-track");
+    for (const track of tracks) {
+      const slides = track.querySelectorAll("[data-reel-panel]").length;
+      const peek = (track as HTMLElement).style.getPropertyValue("--reel-peek");
+      if (slides > 1) {
+        expect(track.getAttribute("data-peek")).toBe("true");
+        expect(peek).toBe("1.5rem");
+      } else {
+        expect(track.getAttribute("data-peek")).toBe("false");
+        expect(peek).toBe("0rem");
+      }
+    }
+  });
+
+  it("does not declare a scroll-behavior it also asks for in code", () => {
+    // `scroll-behavior: smooth` applies to the browser's own scrolls, so the
+    // snap settle plays a scripted glide instead of landing — the second half
+    // of the "this page has a lot of inertia" complaint. Both the rail and the
+    // dots pass `behavior: "smooth"` to scrollTo themselves, so the declaration
+    // bought nothing and cost the feel.
+    const css = readFileSync(
+      path.resolve(__dirname, "..", "..", "index.css"),
+      "utf8",
+    );
+    const reelBlock = css.slice(
+      css.indexOf("html[data-reel] {"),
+      css.indexOf('html[data-reel="mandatory"]'),
+    );
+    expect(reelBlock).not.toMatch(/^\s*scroll-behavior:\s*smooth/m);
+    for (const track of screen.queryAllByTestId("reel-track")) {
+      expect(track.className).not.toContain("scroll-smooth");
     }
   });
 
