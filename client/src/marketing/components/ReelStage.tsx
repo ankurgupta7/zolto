@@ -19,9 +19,11 @@ import { useMarketingT } from "../lib/marketingI18n";
  *
  * - **Down** moves between chapters. A chapter is one post: exactly the height
  *   of the viewport, so the one you leave slides up and the next one fills the
- *   screen. The snap is mandatory but does *not* set `scroll-snap-stop`, so a
- *   light swipe lands on the next post and a hard fling carries several — see
- *   the note on ReelChapter for why capping it at one felt like treacle.
+ *   screen. Nothing resists that gesture — the snap is *proximity* and sets no
+ *   `scroll-snap-stop`, so a swipe of any size goes where its momentum takes
+ *   it and the page settles onto a post afterwards. Both of those started out
+ *   as their strict counterparts and both had to go; see the snap-strength
+ *   note in ReelStage and the one on ReelChapter.
  * - **Sideways** moves through the panels *inside* a post, the way a
  *   multi-picture post works, with a row of dots saying where you are, and
  *   with the edge of the next panel showing so there is something to swipe
@@ -40,11 +42,12 @@ import { useMarketingT } from "../lib/marketingI18n";
  *    iOS Safari a nested vertical scroller stops the address bar collapsing and
  *    gets worse momentum. `html[data-reel]` in index.css carries it; this
  *    component only decides the strength.
- * 2. **Strength adapts to what fits.** In carousel mode every post is exactly
- *    one screen, so snapping is always `mandatory`. In column mode chapters are
- *    measured, and one that overflows downgrades the scroller to `proximity` —
- *    a mandatory target taller than the screen is one whose bottom can never be
- *    read. `prefers-reduced-motion` turns snapping off altogether.
+ * 2. **The snap is proximity, and only ever proximity.** It used to measure the
+ *    chapters and pick `mandatory` when they all fit; that measurement is gone,
+ *    because `mandatory` was never the right answer — it is what made the page
+ *    feel like it was fighting the reader, and the property that made it safe
+ *    (every target exactly one snapport tall) is the same property that makes
+ *    proximity land reliably. `prefers-reduced-motion` turns snapping off.
  * 3. **No keyboard interception.** Nothing here listens for keys. PageUp,
  *    PageDown, Home, End, the arrows and tab-to-focus do exactly what the
  *    browser does with them, and every slide is reachable by its dot.
@@ -68,7 +71,8 @@ const SLIDE_THRESHOLD = 0.6;
 export const REEL_LAYOUT_QUERY = "(min-width: 1024px) and (min-height: 820px)";
 const REDUCE_QUERY = "(prefers-reduced-motion: reduce)";
 
-type SnapMode = "mandatory" | "proximity" | "off";
+/** Whether the document scroller snaps at all. Strength is always proximity. */
+type SnapMode = "on" | "off";
 
 function mediaMatches(query: string): boolean {
   if (typeof window === "undefined" || !window.matchMedia) return false;
@@ -232,39 +236,27 @@ export function ReelStage({
   }, []);
 
   // ── Snap strength ─────────────────────────────────────────────────────────
+  //
+  // Proximity, always — never mandatory. This is the whole of the "the page
+  // feels stuck" problem, and it is definitional rather than a tuning matter:
+  // `mandatory` means the scroller may not come to rest anywhere except on a
+  // snap point, so the browser actively resists a gesture leaving the current
+  // one and drags you back if you did not travel far enough. That resistance
+  // IS the friction. There is no CSS knob to soften it.
+  //
+  // Nothing is lost by dropping to proximity here, because of a property this
+  // reel has that an ordinary page does not: every snap target is exactly one
+  // snapport tall, so wherever a scroll comes to rest it is at most half a
+  // screen from a target and comfortably inside the proximity window. The
+  // page still settles to fit — it just stops fighting on the way.
   useEffect(() => {
-    const measure = () => {
-      if (mediaMatches(REDUCE_QUERY) || chapters.length === 0) {
-        setSnapMode("off");
-        return;
-      }
-      // Carousel mode: every post is exactly one screen by construction, so
-      // there is nothing to measure and nothing that can trap the reader.
-      if (!mediaMatches(REEL_LAYOUT_QUERY)) {
-        setSnapMode("mandatory");
-        return;
-      }
-      const band = window.innerHeight - navHeight();
-      const fits = chapters.every((c) => c.el.offsetHeight <= band + 2);
-      setSnapMode(fits ? "mandatory" : "proximity");
-    };
-
+    const measure = () =>
+      setSnapMode(
+        mediaMatches(REDUCE_QUERY) || chapters.length === 0 ? "off" : "on",
+      );
     measure();
     const stopReduce = watchMedia(REDUCE_QUERY, measure);
-    const stopLayout = watchMedia(REEL_LAYOUT_QUERY, measure);
-    window.addEventListener("resize", measure);
-    // Content reflows without a resize too — a language switch, a font landing.
-    const observer =
-      typeof ResizeObserver === "undefined"
-        ? null
-        : new ResizeObserver(measure);
-    for (const chapter of chapters) observer?.observe(chapter.el);
-    return () => {
-      stopReduce();
-      stopLayout();
-      window.removeEventListener("resize", measure);
-      observer?.disconnect();
-    };
+    return stopReduce;
   }, [chapters]);
 
   // The scroller is the document, so the snap declaration goes on <html> — and
