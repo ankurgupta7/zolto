@@ -298,7 +298,7 @@ export default function Onboarding() {
               }
               className={`mt-0.5 grid h-6 w-6 flex-shrink-0 place-items-center rounded-full border text-xs ${
                 task.done
-                  ? "border-[var(--brand-accent)] bg-[var(--brand-accent)] text-[var(--brand-ink)]"
+                  ? "border-[var(--brand-accent)] bg-[var(--brand-accent)] text-[var(--brand-accent-fg)]"
                   : "border-[var(--brand-border-2)] text-transparent"
               }`}
             >
@@ -332,7 +332,7 @@ export default function Onboarding() {
         href={store ? storeAdminUrl(store) : "/admin"}
         className={`mt-8 inline-block rounded-md px-6 py-3 text-xs font-medium uppercase tracking-[0.12em] transition-colors ${
           allDone
-            ? "bg-[var(--brand-accent)] text-[var(--brand-ink)] hover:bg-[var(--brand-accent-light)]"
+            ? "bg-[var(--brand-accent)] text-[var(--brand-accent-fg)] hover:bg-[var(--brand-accent-light)]"
             : "border border-[var(--brand-ink)]/25 text-[var(--brand-ink)] hover:bg-[var(--brand-ink)] hover:text-white"
         }`}
       >

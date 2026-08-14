@@ -46,7 +46,10 @@ describe("ParticleField", () => {
     // must never eat clicks, and must span the viewport behind the chrome
     expect(canvas!.className).toContain("pointer-events-none");
     expect(canvas!.className).toContain("fixed");
-    expect(canvas!.className).toContain("mix-blend-screen");
+    // The blend mode itself is a token now (`.particle-field` in index.css),
+    // because the light theme inverts it — jsdom has no stylesheet, so the
+    // class is all there is to assert here.
+    expect(canvas!.className).toContain("particle-field");
   });
 
   it("portals to the body so a transformed ancestor can't re-anchor it", () => {

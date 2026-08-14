@@ -38,6 +38,21 @@
   --color-ring: oklch(63% 0.09 75);
   --radius: 0.125rem;
 
+  /* ── Statement bands ──────────────────────────────────────────────────────
+     Registered as Tailwind colors (rather than written as `bg-[var(--…)]`)
+     for one reason: the opacity modifier. A band's copy is a tonal scale —
+     `text-band-fg/70`, `border-band-fg/15` — and Tailwind only composes those
+     for a color it knows about. Arbitrary-value syntax would leave every step
+     of that scale hardcoded to white, which is exactly what stopped the
+     marketing surface having a light mode.
+
+     `inline` matters too: it makes `bg-band` compile to `var(--brand-band)`
+     rather than baking today's hex in, so flipping data-theme re-colours the
+     bands with no rebuild. */
+  --color-band: var(--brand-band);
+  --color-band-deep: var(--brand-band-deep);
+  --color-band-fg: var(--brand-band-fg);
+
   /* Typography */
   --font-serif: "Cormorant Garamond", Georgia, "Times New Roman", serif;
   --font-sans: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
@@ -59,6 +74,11 @@
   --brand-text: #1c1714; /* headings / near-black ink */
   --brand-accent: #b8963e; /* gold accent */
   --brand-accent-light: #d4b060;
+  /* What sits *on* a solid accent fill. Every gold CTA wrote `text-[var(
+     --brand-ink)]` for this, which is only right while the accent is a light
+     gold: the light palettes darken it to clear 4.5:1 as body copy on cream,
+     and mahogany-on-bronze is then two darks. */
+  --brand-accent-fg: #2d2620;
   --brand-muted: #7a6d65;
   --brand-muted-2: #6b5e52;
   --brand-ground: #f7f3ee;
@@ -67,6 +87,177 @@
   --brand-surface-3: #f0ebe3;
   --brand-border: #e0d8cc;
   --brand-border-2: #ddd4c9;
+
+  /* ── Statement bands ────────────────────────────────────────────────────────
+     The marketing surface argues in bands: a full-bleed slab that carries one
+     claim, set apart from the cream page around it. Until now that slab was
+     `--brand-ink` and its copy was literally `text-white`, which conflated
+     three different jobs — the band's *surface*, the primary button's *fill*,
+     and the strong *text* colour on a light ground are all mahogany today, but
+     they must part company in a light theme (a sand-coloured button is not a
+     button). So the band gets tokens of its own; `--brand-ink` keeps the other
+     two jobs and stays dark in every theme.
+
+     Media keeps `--brand-ink-deep` deliberately: the explainer poster and the
+     phone mock are dark *artwork*, not bands, and a light frame around dark art
+     reads as a mistake. */
+  --brand-band: #2d2620;
+  --brand-band-deep: #231e19;
+  --brand-band-fg: #ffffff;
+
+  /* ── The brush-Z lockup ─────────────────────────────────────────────────────
+     The mark is one shape in three colours (tile, stroke, dot), so a theme can
+     recolour it without a second SVG — see MarketingChrome.BrushMark. `ring` is
+     a hairline on the tile edge, needed only where the tile is close enough to
+     the page ground to lose its own silhouette. */
+  --logo-tile: #2d2620;
+  --logo-mark: #b8963e;
+  --logo-dot: #f0ebe3;
+  --logo-ring: transparent;
+
+  /* Ambient gold dust (components/ParticleField). Colour and blend are one
+     decision, so they are declared together: screen-blended warm flecks catch
+     light on mahogany, multiply-blended dark ones settle onto paper. */
+  --particle-rgb: 224, 190, 110;
+  --particle-blend: screen;
+  --particle-opacity: 1;
+}
+
+.particle-field {
+  mix-blend-mode: var(--particle-blend, screen);
+  opacity: var(--particle-opacity, 1);
+}
+
+/* ─── Light mode ──────────────────────────────────────────────────────────────── */
+/* The marketing surface, and only it, opts into this by setting data-theme (see    */
+/* marketing/lib/theme.ts). Tenant storefronts never set the attribute, so their    */
+/* palette — which merchants pick themselves, and which TenantProvider writes into  */
+/* these same --brand-* properties — is untouched.                                  */
+/*                                                                                  */
+/* Matched on any element rather than on <html>, so a single component can be       */
+/* themed in isolation — which is what lets a test render one band in both themes,  */
+/* and tools/screenshot/logos.tsx stand four colourways of the lockup on one page.  */
+/* The runtime still writes it onto <html>, so portalled overlays inherit it.       */
+/*                                                                                  */
+/* Three palettes are offered while the look is being chosen; `data-light` picks    */
+/* one and Parchment is the default. They differ in exactly one decision: what a    */
+/* statement band becomes once it stops being mahogany.                             */
+/*                                                                                  */
+/*   parchment  a deeper tone of the paper itself — warmest, closest to today       */
+/*   porcelain  soft stone on near-white — crisp, gallery/Swiss-editorial           */
+/*   goldleaf   the accent promoted to a surface — loudest, most branded            */
+/*                                                                                  */
+/* Gold moves in all three. #b8963e is 2.4:1 on cream — fine for a rule or a fleck, */
+/* and not enough for the eyebrow text, links and CTA fills that also use it once    */
+/* the bands stop being mahogany. So each palette darkens --brand-accent.            */
+/*                                                                                  */
+/* --brand-accent-light goes darker still, which reads as a contradiction and isn't: */
+/* its two jobs are "the emphasised gold" (text on a band) and "the hover step", and */
+/* both invert with the ground. Brighter than the fill is the emphatic direction on  */
+/* mahogany; deeper than the fill is the emphatic direction on paper.                */
+
+[data-theme="light"] {
+  /* ── Parchment (default) ── */
+  --brand-ground: #fbf8f2;
+  --brand-surface: #f2eadc;
+  --brand-surface-2: #ffffff;
+  --brand-surface-3: #f6f0e5;
+  --brand-band: #efe4ce;
+  --brand-band-deep: #e7d9be;
+  --brand-band-fg: #241e18;
+  --brand-text: #201a14;
+  --brand-accent: #8a6a1c;
+  --brand-accent-light: #6f5413;
+  --brand-accent-fg: #fbf8f2;
+  --brand-muted: #6e6153;
+  --brand-muted-2: #55493e;
+  --brand-border: #e4daca;
+  --brand-border-2: #d9ccb6;
+  --particle-rgb: 140, 116, 62;
+  --particle-blend: multiply;
+  /* Multiply on paper is a much blunter instrument than screen on
+     mahogany: at full strength the same field reads as grit rather than
+     as light catching. */
+  --particle-opacity: 0.5;
+  /* Gold tile, mahogany Z — today's lockup with its two colours swapped, which
+     keeps the mark recognisable at 16px instead of inventing a second one. */
+  --logo-tile: #b8963e;
+  --logo-mark: #2d2620;
+  --logo-dot: #fbf8f2;
+  --logo-ring: transparent;
+}
+
+[data-theme="light"][data-light="porcelain"] {
+  --brand-ground: #fcfcfb;
+  --brand-surface: #f4f3f0;
+  --brand-surface-2: #ffffff;
+  --brand-surface-3: #f8f7f4;
+  --brand-band: #efede7;
+  --brand-band-deep: #e6e3db;
+  --brand-band-fg: #1a1714;
+  --brand-text: #16130f;
+  --brand-ink: #1f1b17;
+  --brand-ink-hover: #2c2620;
+  --brand-accent: #8a6c1e;
+  --brand-accent-light: #6e5417;
+  --brand-accent-fg: #fbf8f2;
+  --brand-muted: #6b6660;
+  --brand-muted-2: #4e4943;
+  --brand-border: #e5e2da;
+  --brand-border-2: #d8d4c9;
+  --particle-rgb: 124, 116, 100;
+  --particle-blend: multiply;
+  /* Multiply on paper is a much blunter instrument than screen on
+     mahogany: at full strength the same field reads as grit rather than
+     as light catching. */
+  --particle-opacity: 0.5;
+  /* Near-white tile, near-black Z, gold dot — the quietest of the three; the
+     ring is what stops the tile dissolving into a #fcfcfb nav bar. */
+  --logo-tile: #f1efe9;
+  --logo-mark: #1f1b17;
+  --logo-dot: #a8842c;
+  --logo-ring: #dcd7cb;
+}
+
+[data-theme="light"][data-light="goldleaf"] {
+  --brand-ground: #fbf7ee;
+  --brand-surface: #f4ebd9;
+  --brand-surface-2: #ffffff;
+  --brand-surface-3: #f8f2e5;
+  --brand-band: #c9a94a;
+  --brand-band-deep: #b8963e;
+  --brand-band-fg: #2a2115;
+  --brand-text: #1f1810;
+  --brand-accent: #6e5416;
+  --brand-accent-light: #55400f;
+  --brand-accent-fg: #fbf8f2;
+  --brand-muted: #6b5c46;
+  --brand-muted-2: #52462f;
+  --brand-border: #e7dcc3;
+  --brand-border-2: #dccca9;
+  --particle-rgb: 136, 106, 44;
+  --particle-blend: multiply;
+  /* Multiply on paper is a much blunter instrument than screen on
+     mahogany: at full strength the same field reads as grit rather than
+     as light catching. */
+  --particle-opacity: 0.5;
+  /* The bands are gold here, so a gold tile would say it twice — the mark goes
+     the other way: mahogany on paper, ringed in gold. A gold Z was the obvious
+     first try and it failed at 16px, which is where a favicon lives: gold on
+     cream is 2.4:1, and the whole lockup dissolved into the nav bar. */
+  --logo-tile: #fbf7ee;
+  --logo-mark: #2d2620;
+  --logo-dot: #b8963e;
+  --logo-ring: #c9a94a;
+}
+
+/* The shell paints --brand-ground itself, but the document behind it does not:
+   an overscroll bounce, or a page shorter than the viewport, shows <body>. That
+   is `bg-background` (the oklch scale), which no palette here touches — so
+   without this the rubber-band gap stays oyster cream under every theme. Scoped
+   to `[data-theme]` so tenant storefronts, which never set it, keep theirs. */
+html[data-theme] body {
+  background-color: var(--brand-ground);
 }
 
 /* ─── The homepage reel ───────────────────────────────────────────────────────── */

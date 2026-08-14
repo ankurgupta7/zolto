@@ -24,9 +24,9 @@ export function HeroTill() {
   return (
     <div
       data-testid="hero-till"
-      className="rounded-2xl border border-white/15 bg-white/[0.04] p-7"
+      className="rounded-2xl border border-band-fg/15 bg-band-fg/[0.04] p-7"
     >
-      <p className="text-[11px] uppercase tracking-[0.2em] text-white/45">
+      <p className="text-[11px] uppercase tracking-[0.2em] text-band-fg/45">
         {title}
       </p>
       {/* The payment row sits beside the handset rather than under it, so the
@@ -40,11 +40,11 @@ export function HeroTill() {
           title={title}
           className="h-36 w-auto text-[var(--brand-accent-light)] sm:h-56"
         />
-        <p className="font-serif text-lg leading-relaxed text-white/80">
+        <p className="font-serif text-lg leading-relaxed text-band-fg/80">
           {st("makerPitch.register.methods", register.methods)}
         </p>
       </div>
-      <p className="mt-5 text-sm leading-relaxed text-white/60">
+      <p className="mt-5 text-sm leading-relaxed text-band-fg/60">
         {st("makerPitch.register.caption", register.caption)}
       </p>
     </div>

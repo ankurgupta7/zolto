@@ -71,7 +71,17 @@ print where they landed (`SHOT_PANEL` scrolls both axes — down to the slide's
 post and sideways to the slide, and reports `slide 2/4`). Pair either with
 `SHOT_FULLPAGE=0`. The harness mounts pages without `MarketingShell`, so it
 stands a 4rem sticky header in for the reel — a band 64px taller than production
-would flatter every panel's fit.
+would flatter every panel's fit. Add `?shell` to the URL to mount the real
+chrome instead (tRPC is stubbed to a logged-out visitor) — the nav bar is where
+the lockup and the theme switch live, so it is the only way to look at either.
+
+The marketing surface has two themes, and a class name is identical in both:
+`SHOT_THEME=light` shoots it in light mode and `SHOT_LIGHT=porcelain` picks
+which light palette (`parchment` is the default; `goldleaf` is the third). Every
+shot prints the theme it actually painted, read back off the DOM. A theme change
+that has not been shot has not been looked at, and no unit test will say so.
+`tools/screenshot/logos.html` stands all four colourways of the brush-Z lockup
+on the nav bars they have to survive, at 32px and at 16px.
 
 Ten things it has already caught that every test suite passed straight
 through, and which are worth checking for by eye:

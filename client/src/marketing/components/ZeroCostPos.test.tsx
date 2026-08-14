@@ -77,8 +77,8 @@ describe("ZeroCostPos", () => {
 
   // The band splits in two for the homepage reel, which snaps one screen at a
   // time: the claim is a screen and the price is a screen. Each half carries
-  // its own mahogany, so the statement keeps its ground on a light chapter.
-  it("splits into a claim and a price, each keeping the mahogany", () => {
+  // its own band ground, so the statement keeps it on a light chapter.
+  it("splits into a claim and a price, each keeping the band ground", () => {
     const { hook } = memoryLocation({ path: "/", static: true });
     const { container } = render(
       <Router hook={hook}>
@@ -87,10 +87,8 @@ describe("ZeroCostPos", () => {
       </Router>,
     );
     expect(container.querySelector("section")).toBeNull();
-    // The statement keeps its mahogany — as a panel rather than a full band.
-    expect(screen.getByTestId("zero-cost-pos").className).toContain(
-      "bg-[var(--brand-ink)]",
-    );
+    // The statement keeps its band ground — as a panel, not a full band.
+    expect(screen.getByTestId("zero-cost-pos").className).toContain("bg-band");
     expect(screen.getByTestId("zero-cost-price").textContent).toContain("CHF");
   });
 

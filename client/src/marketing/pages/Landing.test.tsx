@@ -367,7 +367,7 @@ describe("Landing — post 5, what it costs, and post 6, trust", () => {
     // check is that the three columns are unconditional.
     renderLanding();
     const strip = chapter("costs").querySelector<HTMLElement>(
-      "[class*='brand-ink-deep']",
+      "[class*='bg-band-deep']",
     );
     expect(strip).toBeTruthy();
     expect(strip!.className).toContain("grid-cols-[1fr_auto_1fr]");

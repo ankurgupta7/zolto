@@ -150,7 +150,7 @@ export function ExplainerVideo({
           >
             <span
               aria-hidden
-              className="grid h-16 w-16 place-items-center rounded-full bg-[var(--brand-accent)] text-[var(--brand-ink)] shadow-[0_10px_30px_-10px_rgba(0,0,0,0.7)] transition-colors group-hover:bg-[var(--brand-accent-light)]"
+              className="grid h-16 w-16 place-items-center rounded-full bg-[var(--brand-accent)] text-[var(--brand-accent-fg)] shadow-[0_10px_30px_-10px_rgba(0,0,0,0.7)] transition-colors group-hover:bg-[var(--brand-accent-light)]"
             >
               <svg
                 viewBox="0 0 24 24"

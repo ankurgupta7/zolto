@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
 import type { ReactNode } from "react";
-import { Menu, Store } from "lucide-react";
+import { Menu, Moon, Store, Sun } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { storeAdminUrl } from "@/lib/surface";
 import { DATA_RESIDENCY, SOVEREIGNTY } from "@shared/platform";
@@ -23,6 +23,10 @@ import {
 } from "@/components/ui/sheet";
 import { Container } from "./Container";
 import { useMarketingT } from "../lib/marketingI18n";
+import {
+  MarketingThemeProvider,
+  useMarketingThemeContext,
+} from "../lib/themeContext";
 
 /**
  * Zolto marketing chrome — nav + footer.
@@ -95,6 +99,16 @@ export const SIGN_IN_PATH = "/signin";
  * The Zolto brush-Z mark — the signature gold-on-mahogany lockup (matches
  * /favicon.svg + /logo.png). A near-square mahogany tile with a hand-inked gold
  * "Z"; reads at 16px. Inline so it stays crisp at any size.
+ *
+ * The three fills are tokens, not hexes, so a theme recolours the mark without
+ * a second file — the light palettes each take the lockup somewhere different
+ * (see --logo-* in index.css). The fallbacks are today's colours, so the mark
+ * still renders correctly anywhere the stylesheet hasn't loaded.
+ *
+ * `--logo-ring` is a hairline on the tile edge, painted inset by half its width
+ * so it doesn't bleed outside the 200×200 box. It matters only where the tile
+ * is close enough in tone to the page ground to lose its own silhouette; the
+ * default is transparent, which costs nothing.
  */
 export function BrushMark({ className }: { className?: string }) {
   return (
@@ -104,13 +118,55 @@ export function BrushMark({ className }: { className?: string }) {
       role="img"
       aria-label="Zolto"
     >
-      <rect width="200" height="200" rx="20" fill="#2D2620" />
+      <rect
+        x="0.75"
+        y="0.75"
+        width="198.5"
+        height="198.5"
+        rx="19.25"
+        fill="var(--logo-tile, #2D2620)"
+        stroke="var(--logo-ring, transparent)"
+        strokeWidth="1.5"
+      />
       <path
         d="M50 54 C70 50 132 50 150 54 C150 66 120 70 96 84 C78 95 66 110 58 130 C74 138 132 132 152 138 C150 150 120 152 96 150 C74 148 52 150 46 140 C48 120 70 100 96 84 C70 74 54 70 50 54 Z"
-        fill="#B8963E"
+        fill="var(--logo-mark, #B8963E)"
       />
-      <circle cx="163" cy="60" r="6.5" fill="#F0EBE3" />
+      <circle cx="163" cy="60" r="6.5" fill="var(--logo-dot, #F0EBE3)" />
     </svg>
+  );
+}
+
+/**
+ * Light/dark switch for the marketing surface.
+ *
+ * A two-state button rather than a light/dark/system triple: the surface has
+ * one thing to say about itself, and a third state whose meaning is "ask the
+ * operating system" is a setting, not a control. Which of the two a first-time
+ * visitor gets is decided by DEFAULT_PREFERENCE in lib/theme.ts.
+ *
+ * The icon shows the theme it will switch *to*, which is the convention every
+ * OS uses, so the label has to say so explicitly — an unlabelled sun is
+ * ambiguous to a screen reader in a way it isn't to an eye.
+ */
+export function ThemeToggle({ className = "" }: { className?: string }) {
+  const { t } = useMarketingT();
+  const { theme, toggle } = useMarketingThemeContext();
+  const next = theme === "light" ? "dark" : "light";
+  const Icon = next === "light" ? Sun : Moon;
+
+  return (
+    <button
+      type="button"
+      onClick={toggle}
+      data-testid="theme-toggle"
+      data-theme-state={theme}
+      aria-label={t(`nav.theme.${next}`)}
+      title={t(`nav.theme.${next}`)}
+      className={`inline-flex h-8 w-8 items-center justify-center rounded-md border border-[var(--brand-border)] text-[var(--brand-muted-2)] transition-colors hover:border-[var(--brand-ink)]/40 hover:text-[var(--brand-ink)] ${className}`}
+    >
+      <Icon className="h-4 w-4" aria-hidden />
+    </button>
   );
 }
 
@@ -285,9 +341,11 @@ function MobileMenu({
               <SignOutButton className="mt-1 text-sm text-[var(--brand-muted-2)] transition-colors hover:text-[var(--brand-ink)]" />
             </div>
           )}
-          {/* Language picker — the sheet is the only place a phone can reach it. */}
-          <div className="py-3.5">
+          {/* Language picker and theme switch — the sheet is the only place a
+              phone can reach either. */}
+          <div className="flex items-center gap-2 py-3.5">
             <LanguageSwitcher />
+            <ThemeToggle />
           </div>
         </nav>
       </SheetContent>
@@ -333,6 +391,7 @@ export function MarketingNav() {
             </Link>
           ))}
           <LanguageSwitcher />
+          <ThemeToggle />
           <AuthActions />
         </nav>
 
@@ -407,10 +466,18 @@ export function MarketingFooter() {
  */
 export function MarketingShell({ children }: { children: ReactNode }) {
   return (
-    <div className="flex min-h-screen flex-col bg-[var(--brand-ground)] font-sans text-[var(--brand-text)]">
-      <MarketingNav />
-      <main className="flex-1">{children}</main>
-      <MarketingFooter />
-    </div>
+    // The theme provider wraps the shell rather than living in MarketingApp so
+    // that anything rendering the chrome — the app, a test, the screenshot
+    // harness's `?shell` mode — gets a working switch without having to know
+    // about it. It writes data-theme onto <html>, which is also how Radix's
+    // portalled sheet (rendered outside this tree, on <body>) inherits the
+    // palette.
+    <MarketingThemeProvider>
+      <div className="flex min-h-screen flex-col bg-[var(--brand-ground)] font-sans text-[var(--brand-text)]">
+        <MarketingNav />
+        <main className="flex-1">{children}</main>
+        <MarketingFooter />
+      </div>
+    </MarketingThemeProvider>
   );
 }

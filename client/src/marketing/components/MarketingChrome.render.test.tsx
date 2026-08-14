@@ -15,6 +15,7 @@ import {
   MarketingFooter,
   MarketingShell,
   StoreShortcut,
+  BrushMark,
   SIGN_IN_PATH,
 } from "./MarketingChrome";
 import i18n from "@/lib/i18n";
@@ -387,5 +388,95 @@ describe("MarketingShell", () => {
     expect(container.querySelector("header div")?.className).toContain(
       "h-[var(--nav-height)]",
     );
+  });
+});
+
+describe("theme switch", () => {
+  afterEach(() => {
+    localStorage.clear();
+    document.documentElement.removeAttribute("data-theme");
+    document.documentElement.removeAttribute("data-light");
+  });
+
+  function renderShellWithTheme() {
+    const { hook } = memoryLocation({ path: "/pricing", static: true });
+    return render(
+      <Router hook={hook}>
+        <MarketingShell>
+          <p>the page</p>
+        </MarketingShell>
+      </Router>,
+    );
+  }
+
+  it("puts a switch in the bar that repaints the document", () => {
+    renderShellWithTheme();
+    const toggle = screen.getAllByTestId("theme-toggle")[0];
+    expect(toggle.getAttribute("data-theme-state")).toBe("dark");
+    expect(document.documentElement.hasAttribute("data-theme")).toBe(false);
+
+    fireEvent.click(toggle);
+    expect(document.documentElement.getAttribute("data-theme")).toBe("light");
+    expect(
+      screen.getAllByTestId("theme-toggle")[0].getAttribute("data-theme-state"),
+    ).toBe("light");
+  });
+
+  /**
+   * The label names the theme the button switches *to*, and the icon says the
+   * same thing — an unlabelled sun is ambiguous to a screen reader in a way it
+   * isn't to an eye, so the label is the whole affordance for some visitors.
+   */
+  it("labels itself with the theme it will switch to", () => {
+    renderShellWithTheme();
+    const toggle = screen.getAllByTestId("theme-toggle")[0];
+    expect(toggle.getAttribute("aria-label")).toMatch(/light/i);
+    fireEvent.click(toggle);
+    expect(
+      screen.getAllByTestId("theme-toggle")[0].getAttribute("aria-label"),
+    ).toMatch(/dark/i);
+  });
+
+  /**
+   * The phone bar collapses its links into the sheet, and a control that is
+   * only in the desktop row is a control a phone cannot reach — which is how
+   * the language picker was unreachable before it moved into the drawer too.
+   */
+  it("is reachable from the mobile sheet as well as the bar", async () => {
+    renderNav();
+    fireEvent.click(screen.getByRole("button", { name: /menu/i }));
+    await waitFor(() =>
+      expect(screen.getAllByTestId("theme-toggle").length).toBeGreaterThan(1),
+    );
+  });
+});
+
+describe("BrushMark", () => {
+  /**
+   * The lockup is one shape in three themeable fills rather than one SVG per
+   * theme; hardcoding a hex back in would silently pin the mark to mahogany
+   * while every palette around it moved.
+   */
+  it("takes its colours from the logo tokens, with today's as fallbacks", () => {
+    const { container } = render(<BrushMark className="h-8 w-8" />);
+    const svg = container.querySelector("svg")!;
+    expect(svg.querySelector("rect")?.getAttribute("fill")).toBe(
+      "var(--logo-tile, #2D2620)",
+    );
+    expect(svg.querySelector("path")?.getAttribute("fill")).toBe(
+      "var(--logo-mark, #B8963E)",
+    );
+    expect(svg.querySelector("circle")?.getAttribute("fill")).toBe(
+      "var(--logo-dot, #F0EBE3)",
+    );
+  });
+
+  it("keeps the ring inside the 200×200 box so it cannot bleed", () => {
+    // A stroke straddles the path, so a rect at 0,0/200×200 would lose half its
+    // hairline to the viewBox edge — visible as a ring open on all four sides.
+    const { container } = render(<BrushMark />);
+    const rect = container.querySelector("rect")!;
+    expect(rect.getAttribute("x")).toBe("0.75");
+    expect(Number(rect.getAttribute("width"))).toBeLessThan(200);
   });
 });

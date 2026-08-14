@@ -13,7 +13,11 @@
     "goToYourStore": "Go to your store",
     "myStore": "My store",
     "signedInAs": "Signed in as {{email}}",
-    "swissMade": "Swiss-made"
+    "swissMade": "Swiss-made",
+    "theme": {
+      "light": "Switch to light mode",
+      "dark": "Switch to dark mode"
+    }
   },
   "footer": {
     "copyright": "© {{year}} Zolto — commerce for makers, handmade in Zürich, built to keep more money in your pocket.",

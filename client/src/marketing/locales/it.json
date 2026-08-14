@@ -13,7 +13,11 @@
     "goToYourStore": "Vai al Suo negozio",
     "myStore": "Il mio negozio",
     "signedInAs": "Accesso effettuato come {{email}}",
-    "swissMade": "Svizzera"
+    "swissMade": "Svizzera",
+    "theme": {
+      "light": "Passa alla modalità chiara",
+      "dark": "Passa alla modalità scura"
+    }
   },
   "footer": {
     "copyright": "© {{year}} Zolto — commercio per artigiani, fatto a mano a Zurigo, costruito perché più soldi restino nelle Sue tasche.",
