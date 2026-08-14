@@ -33,11 +33,14 @@ import { CartProvider } from "./contexts/CartContext";
 import { TenantProvider } from "./contexts/TenantContext";
 import { useSmoothScroll, lenisRef } from "./hooks/useSmoothScroll";
 import { resolveSurface, type SurfaceResolution } from "./lib/surface";
+import { captureDiscountFromUrl } from "./lib/discountLink";
 import MarketingApp from "./marketing/MarketingApp";
 import { ADMIN_NAV } from "./admin/nav";
 import AdminLayout from "./components/admin/AdminLayout";
 import AdminPlaceholder from "./components/admin/AdminPlaceholder";
 import Storefront from "./pages/admin/Storefront";
+import Testimonials from "./pages/admin/Testimonials";
+import Discounts from "./pages/admin/Discounts";
 import Domain from "./pages/admin/Domain";
 import Channels from "./pages/admin/Channels";
 import Pos from "./pages/admin/Pos";
@@ -97,6 +100,8 @@ const ADMIN_PAGES: Record<string, ComponentType> = {
   orders: Orders,
   reconciliation: Reconciliation,
   storefront: Storefront,
+  testimonials: Testimonials,
+  discounts: Discounts,
   domain: Domain,
   channels: Channels,
   pos: Pos,
@@ -114,11 +119,29 @@ const ADMIN_PAGES: Record<string, ComponentType> = {
   platform: Platform,
 };
 
+/**
+ * Pick a `?discount=` code off the URL and keep it for this visit.
+ *
+ * A merchant's share link lands on any storefront page (usually /shop), but the
+ * code is needed at checkout several navigations later — so it is captured here,
+ * once, wherever the visitor arrives. See lib/discountLink.ts for why the code
+ * lives in sessionStorage rather than localStorage.
+ */
+function CaptureDiscountLink() {
+  const [location] = useLocation();
+  // biome-ignore lint/correctness/useExhaustiveDependencies: re-check on every route change — a share link can be followed mid-visit
+  useEffect(() => {
+    captureDiscountFromUrl(window.location.search);
+  }, [location]);
+  return null;
+}
+
 function StorefrontRouter() {
   useSmoothScroll();
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <ScrollToTop />
+      <CaptureDiscountLink />
       <Navbar />
       <main className="flex-1">
         <Switch>

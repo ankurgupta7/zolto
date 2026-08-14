@@ -327,6 +327,9 @@ describe("checkout.createSession", () => {
     expect(result).toEqual({
       url: "https://checkout.stripe.com/cs_test_new",
       sessionId: "cs_test_new",
+      // No code was given, so nothing came off — the storefront reads this to
+      // decide whether to say so on the confirmation screen.
+      discount: null,
     });
 
     // Runs on the tenant's own connected account — never Zolto's own.

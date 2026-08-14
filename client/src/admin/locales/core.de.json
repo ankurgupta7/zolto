@@ -25,7 +25,9 @@
       "data-privacy": "Daten & Datenschutz",
       "support": "Support",
       "legal-invoices": "Rechtliches & Rechnungen",
-      "platform-metrics": "Plattform-Metriken"
+      "platform-metrics": "Plattform-Metriken",
+      "reviews": "Bewertungen",
+      "discounts": "Rabatte"
     },
     "layout": {
       "navLabel": "Admin-Navigation",
