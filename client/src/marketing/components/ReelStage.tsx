@@ -7,7 +7,7 @@ import {
   useRef,
   useState,
 } from "react";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { Container } from "./Container";
 import { useMarketingT } from "../lib/marketingI18n";
 
@@ -19,13 +19,15 @@ import { useMarketingT } from "../lib/marketingI18n";
  *
  * - **Down** moves between chapters. A chapter is one post: exactly the height
  *   of the viewport, so the one you leave slides up and the next one fills the
- *   screen. `scroll-snap-stop: always` means one flick is one post rather than
- *   four — that is the difference between "snappy" and "a long page that
- *   happens to snap".
+ *   screen. The snap is mandatory but does *not* set `scroll-snap-stop`, so a
+ *   light swipe lands on the next post and a hard fling carries several — see
+ *   the note on ReelChapter for why capping it at one felt like treacle.
  * - **Sideways** moves through the panels *inside* a post, the way a
- *   multi-picture post works, with a row of dots saying where you are. Content
- *   that will not fit a phone screen goes sideways instead of making the post
- *   taller, which is what keeps every post exactly one screen on every phone.
+ *   multi-picture post works, with a row of dots saying where you are, and
+ *   with the edge of the next panel showing so there is something to swipe
+ *   toward. Content that will not fit a phone screen goes sideways instead of
+ *   making the post taller, which is what keeps every post exactly one screen
+ *   on every phone.
  *
  * Above `REEL_LAYOUT_QUERY` — a viewport roomy enough to hold a whole chapter at
  * once — the sideways axis collapses: the panels become the chapter's columns
@@ -404,8 +406,17 @@ export function ReelChapter({
     <ChapterContext.Provider value={value}>
       {/* One post, exactly one screen: `dvh` rather than `svh` because filling
           the viewport is the point — the post you leave slides up and this one
-          takes the whole screen. `snap-always` is what makes one flick advance
-          one post instead of four.
+          takes the whole screen.
+
+          NO `snap-always` on this axis, deliberately. `scroll-snap-stop:
+          always` forbids a scroll from passing more than one snap point per
+          gesture, so it does not merely encourage one-flick-one-post — it
+          *absorbs the fling*. However hard you throw the page it advances
+          exactly one screen, which reads as the page having enormous inertia
+          and is why it used to need a hard, fast swipe to move at all. Without
+          it a gentle swipe still lands on the next post (the snap is
+          mandatory), and a real fling carries several — momentum behaves the
+          way momentum does everywhere else on a phone.
 
           `grid`, never `flex`: index.css carries an unlayered
           `.flex { min-height: 0 }` fix that beats every utility in
@@ -416,7 +427,7 @@ export function ReelChapter({
         id={id}
         data-reel-chapter={id}
         aria-label={label}
-        className={`grid h-[calc(100dvh_-_var(--nav-height))] snap-start snap-always grid-rows-[1fr_auto] overflow-hidden ${className} reel:h-auto reel:min-h-[calc(100dvh_-_var(--nav-height))] reel:grid-rows-none reel:content-center reel:overflow-visible reel:py-5`}
+        className={`grid h-[calc(100dvh_-_var(--nav-height))] snap-start grid-rows-[1fr_auto] overflow-hidden ${className} reel:h-auto reel:min-h-[calc(100dvh_-_var(--nav-height))] reel:grid-rows-none reel:content-center reel:overflow-visible reel:py-5`}
       >
         {children}
       </section>
@@ -525,9 +536,27 @@ export function ReelPanels({
       <Container
         ref={trackRef}
         data-testid="reel-track"
-        // Full-bleed while it is a scroller — the gutter belongs to each slide,
-        // so a swipe carries the whole screen — and the ordinary Container
-        // rhythm again once the panels are columns.
+        data-peek={panels.length > 1 ? "true" : "false"}
+        // `--reel-peek` is how much of the *next* slide stays on screen. A row
+        // of dots is a legend, not an affordance: it tells a reader who has
+        // already noticed there is more, and says nothing to one who hasn't.
+        // A sliver of the next card is the affordance — there is visibly
+        // something to the right, so the swipe suggests itself.
+        //
+        // Zero when there is nothing to page to, or a single-slide post would
+        // give up 24px of measure to hint at a slide that does not exist.
+        style={
+          {
+            "--reel-peek": panels.length > 1 ? "1.5rem" : "0rem",
+          } as CSSProperties
+        }
+        // Near-full-bleed while it is a scroller — the slide carries most of
+        // the gutter, so a swipe carries the whole screen — and the ordinary
+        // Container rhythm again once the panels are columns.
+        //
+        // `scroll-smooth` is gone with the same reasoning as the vertical axis:
+        // scrollToIndex asks for a smooth scroll itself, and leaving it on the
+        // element made every snap settle play an animation.
         //
         // `w-full` is load-bearing, not decorative: Container brings `mx-auto`,
         // and a grid item with auto margins does not stretch to its column, so
@@ -535,7 +564,7 @@ export function ReelPanels({
         // 393px post, clipped by the chapter's overflow-hidden. Every slide
         // looked plausible and every test passed; the right-hand third of the
         // page was simply gone.
-        className={`no-scrollbar flex h-full w-full max-w-none snap-x snap-mandatory overflow-x-auto overscroll-x-contain scroll-smooth px-0 reel:grid reel:h-auto reel:w-auto reel:max-w-6xl reel:snap-none reel:overflow-visible reel:px-6 ${layout}`}
+        className={`no-scrollbar flex h-full w-full max-w-none snap-x snap-mandatory gap-1 overflow-x-auto overscroll-x-contain scroll-px-2 px-2 reel:grid reel:h-auto reel:w-auto reel:max-w-6xl reel:snap-none reel:overflow-visible reel:scroll-px-0 reel:px-6 ${layout}`}
       >
         {children}
       </Container>
@@ -594,11 +623,17 @@ export function ReelPanel({
     <div
       ref={ref}
       data-reel-panel={chapterId ?? ""}
-      // A slide is the width of the track and the height of the post. `overflow-y`
-      // is the safety valve for the rare slide that still doesn't fit (a 375x667
-      // phone, a long translation): it scrolls inside itself rather than being
-      // clipped, and chains to the page once it reaches its end.
-      className={`grid h-full w-full shrink-0 snap-start snap-always content-center overflow-y-auto px-6 py-3 sm:py-6 reel:h-auto reel:w-auto reel:shrink reel:snap-align-none reel:overflow-visible reel:px-0 reel:py-0 ${className}`}
+      // A slide is the width of the track less `--reel-peek` — the sliver of
+      // the next slide left showing so there is something to swipe toward —
+      // and the height of the post. The variable is set by ReelPanels and is
+      // 0 on a single-slide post, so the fallback here is 0 too: a panel
+      // rendered outside a track keeps its full width.
+      //
+      // `overflow-y` is the safety valve for the rare slide that still doesn't
+      // fit (a 375x667 phone, a long translation): it scrolls inside itself
+      // rather than being clipped, and chains to the page once it reaches its
+      // end.
+      className={`grid h-full w-[calc(100%-var(--reel-peek,0px))] shrink-0 snap-start snap-always content-center overflow-y-auto px-3 py-3 sm:py-6 reel:h-auto reel:w-auto reel:shrink reel:snap-align-none reel:overflow-visible reel:px-0 reel:py-0 ${className}`}
     >
       {children}
     </div>
