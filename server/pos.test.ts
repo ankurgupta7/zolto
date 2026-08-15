@@ -85,7 +85,11 @@ vi.mock("./rateLimit", async (importOriginal) => {
   };
 });
 
-import { registerPosRoutes, resetPosPairingRateLimits } from "./pos";
+import {
+  registerPosRoutes,
+  resetPosPairingRateLimits,
+  buildPosSaleDescription,
+} from "./pos";
 import { getDb, markProductsSold } from "./db";
 import { redeemPairingToken } from "./posPairing";
 import { getStripe, isStripeConfigured } from "./stripe";
@@ -101,6 +105,7 @@ function makeFakeDb(
   productRows: Array<{
     id: number;
     price: string;
+    name?: string;
     visible?: boolean;
     sold?: boolean;
     quantity?: number;
@@ -108,6 +113,7 @@ function makeFakeDb(
   }>,
 ) {
   const rows = productRows.map((p) => ({
+    name: `Product ${p.id}`,
     visible: true,
     sold: false,
     quantity: 1,
@@ -639,6 +645,141 @@ describe("POST /api/pos/payment-intent", () => {
     expect(fakeStripe.paymentIntents.create).toHaveBeenCalledWith(
       expect.objectContaining({ amount: 7550 }),
       undefined, // no connected account → platform account
+    );
+  });
+});
+
+// A card_present PaymentIntent has no line items, so `description` is the only
+// field that says what was sold — without it the merchant's dashboard shows an
+// amount and nothing else, and a sale can't be matched to an item.
+describe("buildPosSaleDescription", () => {
+  it("names every item in the sale", () => {
+    expect(buildPosSaleDescription(["Silver Necklace", "Jade Earrings"])).toBe(
+      "POS sale: Silver Necklace, Jade Earrings",
+    );
+  });
+
+  it("collapses repeats into a quantity instead of repeating the name", () => {
+    expect(
+      buildPosSaleDescription([
+        "Jade Earrings",
+        "Silver Ring",
+        "Jade Earrings",
+      ]),
+    ).toBe("POS sale: Jade Earrings ×2, Silver Ring");
+  });
+
+  it("ignores blank and missing names rather than emitting empty entries", () => {
+    expect(
+      buildPosSaleDescription([null, undefined, "  ", "Silver Ring"]),
+    ).toBe("POS sale: Silver Ring");
+  });
+
+  it("falls back to a bare label when nothing is nameable", () => {
+    expect(buildPosSaleDescription([null, ""])).toBe("POS sale");
+  });
+
+  it("summarises a cart too long to name in full, staying inside Stripe's limit", () => {
+    const names = Array.from(
+      { length: 60 },
+      (_, i) => `Handmade Piece Number ${i}`,
+    );
+    const description = buildPosSaleDescription(names);
+
+    expect(description.length).toBeLessThanOrEqual(500);
+    expect(description).toContain("Handmade Piece Number 0");
+    expect(description).toMatch(/\+\d+ more$/);
+  });
+
+  it("truncates a single name longer than the whole budget", () => {
+    const description = buildPosSaleDescription([
+      "x".repeat(900),
+      "Silver Ring",
+    ]);
+
+    expect(description.length).toBeLessThanOrEqual(500);
+    expect(description).toMatch(/…\s\+1 more$/);
+  });
+});
+
+describe("POS Stripe intents — description", () => {
+  const OLD_KEY = process.env.POS_API_KEY;
+
+  beforeEach(() => {
+    process.env.POS_API_KEY = "test-pos-key";
+  });
+
+  afterEach(() => {
+    if (OLD_KEY === undefined) delete process.env.POS_API_KEY;
+    else process.env.POS_API_KEY = OLD_KEY;
+    vi.mocked(getDb).mockReset().mockResolvedValue(null);
+    vi.mocked(getStripe).mockReset().mockReturnValue(null);
+  });
+
+  it("describes the card payment with the catalogue names of what was sold", async () => {
+    vi.mocked(getDb).mockResolvedValueOnce(
+      makeFakeDb([
+        { id: 1, price: "50.00", name: "Silver Necklace" },
+        { id: 2, price: "25.50", name: "Jade Earrings" },
+      ]) as never,
+    );
+    const fakeStripe = makeFakeStripe();
+    vi.mocked(getStripe).mockReturnValueOnce(fakeStripe as never);
+
+    const res = await request(makeApp())
+      .post("/api/pos/payment-intent")
+      .set("x-pos-key", "test-pos-key")
+      .send({ productIds: [1, 2] });
+
+    expect(res.status).toBe(200);
+    expect(fakeStripe.paymentIntents.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        description: "POS sale: Silver Necklace, Jade Earrings",
+      }),
+      undefined,
+    );
+  });
+
+  it("includes custom (non-inventory) items in the description", async () => {
+    vi.mocked(getDb).mockResolvedValueOnce(
+      makeFakeDb([{ id: 1, price: "50.00", name: "Silver Necklace" }]) as never,
+    );
+    const fakeStripe = makeFakeStripe();
+    vi.mocked(getStripe).mockReturnValueOnce(fakeStripe as never);
+
+    const res = await request(makeApp())
+      .post("/api/pos/payment-intent")
+      .set("x-pos-key", "test-pos-key")
+      .send({
+        productIds: [1],
+        customItems: [{ name: "Gift Wrapping", priceRappen: 500 }],
+      });
+
+    expect(res.status).toBe(200);
+    expect(fakeStripe.paymentIntents.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        description: "POS sale: Silver Necklace, Gift Wrapping",
+      }),
+      undefined,
+    );
+  });
+
+  it("describes a TWINT payment the same way", async () => {
+    vi.mocked(getDb).mockResolvedValueOnce(
+      makeFakeDb([{ id: 1, price: "50.00", name: "Silver Necklace" }]) as never,
+    );
+    const fakeStripe = makeFakeTwintStripe();
+    vi.mocked(getStripe).mockReturnValueOnce(fakeStripe as never);
+
+    const res = await request(makeApp())
+      .post("/api/pos/twint-intent")
+      .set("x-pos-key", "test-pos-key")
+      .send({ productIds: [1] });
+
+    expect(res.status).toBe(200);
+    expect(fakeStripe.paymentIntents.create).toHaveBeenCalledWith(
+      expect.objectContaining({ description: "POS sale: Silver Necklace" }),
+      undefined,
     );
   });
 });
