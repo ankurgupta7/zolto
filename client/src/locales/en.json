@@ -122,7 +122,8 @@
     "taxNote": "Swiss delivery only · Free shipping over CHF 50, otherwise CHF 2.",
     "checkout": "Proceed to Checkout",
     "continue": "Continue Shopping",
-    "added": "\"{{name}}\" added to your bag"
+    "added": "\"{{name}}\" added to your bag",
+    "total": "Total"
   },
   "checkout": {
     "title": "Checkout",
@@ -140,7 +141,13 @@
     "securedByStripe": "Payments secured by Stripe — cards & TWINT",
     "clearBag": "Clear bag",
     "unavailable": "Online payment is currently unavailable. Please enquire via WhatsApp.",
-    "error": "Something went wrong starting your payment. Please try again."
+    "error": "Something went wrong starting your payment. Please try again.",
+    "discountLabel": "Discount code",
+    "discountPlaceholder": "Enter a code",
+    "discountApply": "Apply",
+    "discountApplied": "{{code}} applied",
+    "discountRemove": "Remove discount",
+    "discountChecking": "Checking…"
   },
   "policy": {
     "returnsHeading": "Returns & Refunds",
@@ -272,5 +279,19 @@
   "common": {
     "close": "Close",
     "loading": "Loading"
+  },
+  "trust": {
+    "eyebrow": "Kind words",
+    "heading": "What our customers say",
+    "readReviews": "Read our reviews",
+    "onTrustpilot": "on Trustpilot",
+    "starsLabel": "Rated {{score}} out of 5 on Trustpilot",
+    "ratingLabel": "{{count}} out of 5",
+    "reviewCount_one": "{{count}} review",
+    "reviewCount_other": "{{count}} reviews",
+    "source": {
+      "google": "via Google",
+      "trustpilot": "via Trustpilot"
+    }
   }
 }

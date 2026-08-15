@@ -1024,8 +1024,20 @@ fi
 # deploy/lib/db.sh.
 migrate_0047_users_openid_unique
 
-# ── 0048: who is reading the machine-facing surfaces ─────────────────────────
-# Ships drizzle/0029_agent_hits.sql. Zolto publishes /llms.txt and an MCP
+# ── 0048: customer trust — Trustpilot, testimonials, discount codes ──────────
+# Ships drizzle/0029_customer_trust.sql. Two columns on tenant_settings naming
+# the store's Trustpilot business unit, a `testimonials` table for the quotes a
+# merchant publishes at the foot of their home page, and the `discount_codes` /
+# `discount_redemptions` pair behind promotional and friends-and-family codes.
+#
+# Additive throughout: a store with no Trustpilot domain renders no trust band,
+# a store with no testimonial rows renders no quotes, and checkout behaves
+# exactly as before until a code is actually typed in.
+# Idempotent; see migrate_0048_customer_trust in deploy/lib/db.sh.
+migrate_0048_customer_trust
+
+# ── 0049: who is reading the machine-facing surfaces ─────────────────────────
+# Ships drizzle/0030_agent_hits.sql. Zolto publishes /llms.txt and an MCP
 # endpoint on the bet that an AI agent will find a store and buy from it, and
 # `orders.channel = 'agent'` already counts the ones that bought — but nothing
 # counted the reach that comes first, and no browser-side analytics ever could:
@@ -1035,8 +1047,8 @@ migrate_0047_users_openid_unique
 # key is what makes recordAgentHit an update rather than an insert, so it is
 # restored on any database that somehow has the table without it. Additive —
 # nothing reads it until a merchant opens the admin panel. Idempotent; see
-# migrate_0048_agent_hits in deploy/lib/db.sh.
-migrate_0048_agent_hits
+# migrate_0049_agent_hits in deploy/lib/db.sh.
+migrate_0049_agent_hits
 
 # ── Record the applied migration set ──────────────────────────────────────────
 # Only reached when every migration above succeeded — `set -e` plus run_sql's

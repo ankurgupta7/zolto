@@ -36,6 +36,14 @@ vi.mock("@/lib/trpc", () => ({
     products: {
       list: { useQuery: () => ({ data: mocks.products }) },
     },
+    // The trust band at the foot of the page (CustomerTrust, covered by its own
+    // render test). Empty here: this store has published no quotes and
+    // connected no Trustpilot profile, so the section renders nothing and the
+    // assertions below are about the page it has always been.
+    testimonials: { list: { useQuery: () => ({ data: [] }) } },
+    trustpilot: {
+      summary: { useQuery: () => ({ data: { connected: false } }) },
+    },
   },
 }));
 

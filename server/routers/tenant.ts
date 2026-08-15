@@ -2,6 +2,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { MIGRATE_FROM_PROVIDERS, NOT_ADMIN_ERR_MSG } from "@shared/const";
 import { TEMPLATE_IDS, STORE_TEMPLATES } from "@shared/templates";
+import { normaliseTrustpilotDomain } from "@shared/trustpilot";
 import {
   router,
   publicProcedure,
@@ -918,6 +919,14 @@ rationale: one friendly sentence (max 25 words) naming BOTH colors, e.g. "Deep f
         // Hide the "Made with Zolto" credit — the white-label plan feature,
         // enforced below.
         hideZoltoBadge: z.boolean().optional(),
+        // ── Trustpilot ──────────────────────────────────────────────────────
+        // The business unit's domain, as the merchant pastes it — a bare
+        // domain or a full profile URL, both of which normalise to the same
+        // thing (shared/trustpilot.ts). Refused rather than stored when it
+        // isn't a plausible domain: a dead "read our reviews" link reads as a
+        // broken shop, which is worse than no link. Null disconnects.
+        trustpilotDomain: z.string().trim().max(512).nullable().optional(),
+        trustpilotShowRating: z.boolean().optional(),
         // Legal identity for the storefront's Impressum.
         companyLegalName: z.string().trim().max(255).nullable().optional(),
         companyAddress: z.string().trim().max(300).nullable().optional(),
@@ -983,6 +992,30 @@ rationale: one friendly sentence (max 25 words) naming BOTH colors, e.g. "Deep f
       const patch = { ...input };
       for (const field of AUTHORED_TEXT_FIELDS) {
         if (patch[field] === "") patch[field] = null;
+      }
+
+      // Trustpilot: store the canonical bare domain, whatever the merchant
+      // pasted. An unparseable value is refused here rather than saved,
+      // because the storefront turns this column straight into a link — and a
+      // link to a Trustpilot page that doesn't exist reads, to a shopper, as a
+      // shop that made its reviews up.
+      if (input.trustpilotDomain !== undefined) {
+        const raw = input.trustpilotDomain?.trim() ?? "";
+        if (raw === "") {
+          patch.trustpilotDomain = null;
+        } else {
+          const domain = normaliseTrustpilotDomain(raw);
+          if (!domain) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message:
+                "That doesn't look like a Trustpilot profile. Paste your " +
+                "profile link (ch.trustpilot.com/review/…) or the domain you " +
+                "registered with Trustpilot, like example.ch.",
+            });
+          }
+          patch.trustpilotDomain = domain;
+        }
       }
 
       const existing = await db.query.tenantSettings.findFirst({

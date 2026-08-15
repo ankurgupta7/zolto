@@ -177,6 +177,23 @@ export const tenantSettings = mysqlTable("tenant_settings", {
   // tenantSecrets. Null until uploaded, which is what gates the POS's
   // "TWINT (QR)" payment option.
   twintQrUrl: varchar("twint_qr_url", { length: 1024 }),
+  // ── Trustpilot ────────────────────────────────────────────────────────────
+  // A Trustpilot business unit is identified by the domain it was registered
+  // under ("kalakosh.ch"), which is all we need to link a shopper to the
+  // store's reviews and to the review form — no API key, no widget script.
+  // The live star rating additionally needs the platform's own Trustpilot API
+  // key (TRUSTPILOT_API_KEY); without it the storefront shows the link alone
+  // rather than nothing, so the feature degrades instead of breaking.
+  // NULL = this store has no Trustpilot profile connected, and no part of the
+  // trust band renders for it.
+  trustpilotDomain: varchar("trustpilot_domain", { length: 253 }),
+  // Show the rating on the storefront. Separate from having a domain, because
+  // "we are on Trustpilot, and customers who just bought are invited there"
+  // and "our score is good enough to print on the home page" are different
+  // decisions a merchant makes at different times.
+  trustpilotShowRating: boolean("trustpilot_show_rating")
+    .notNull()
+    .default(true),
   // Contact
   contactEmail: varchar("contact_email", { length: 320 }),
   contactPhone: varchar("contact_phone", { length: 32 }),
@@ -909,3 +926,166 @@ export const agentHits = mysqlTable(
 
 export type AgentHit = typeof agentHits.$inferSelect;
 export type InsertAgentHit = typeof agentHits.$inferInsert;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TESTIMONIALS — What a store's own customers said, in their own words
+// ═══════════════════════════════════════════════════════════════════════════════
+// Scoped to a tenant and rendered at the foot of that tenant's home page. The
+// merchant collects these themselves (an email reply, a WhatsApp message, a
+// Google review they were pointed at) and types them in — there is no
+// automatic import, and deliberately so: a quote that arrives here was
+// consciously published by the shop owner, which is what makes them
+// answerable for it.
+//
+// Identity is the whole point of a testimonial, so a row carries as much of it
+// as the customer agreed to give:
+//   author_photo_url — a picture they supplied, shown as the avatar;
+//   google_id        — their Google account id, when the quote came from a
+//                      Google review and the merchant wants that stated.
+// Neither is required; with neither, the avatar falls back to the author's
+// initials. `google_id` is unique per tenant, so the same Google reviewer
+// cannot be entered twice by two different staff members.
+export const testimonials = mysqlTable(
+  "testimonials",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    tenantId: int("tenant_id").notNull(),
+    /** As the customer wants to be credited — "Anna M." is a valid answer. */
+    authorName: varchar("author_name", { length: 120 }).notNull(),
+    /**
+     * Where they are or what they do ("Zürich", "wedding client") — the line
+     * under the name. Optional; a quote reads fine without it.
+     */
+    authorTitle: varchar("author_title", { length: 120 }),
+    /**
+     * The customer's own photo, as a hosted URL (matching logo_url and
+     * hero_image_url, which are URLs rather than uploads on the same admin
+     * surface). NULL renders initials instead.
+     */
+    authorPhotoUrl: varchar("author_photo_url", { length: 1024 }),
+    /**
+     * The customer's Google account id, when the quote came from a Google
+     * review. Stored so a merchant can point at where the review lives and so
+     * the same reviewer is never entered twice — never rendered raw to
+     * shoppers, which is what `source` is for.
+     */
+    googleId: varchar("google_id", { length: 64 }),
+    /** The quote itself, plain text. No markup is rendered anywhere. */
+    quote: text("quote").notNull(),
+    /** 1–5 if the customer gave one; NULL when the quote carries no rating. */
+    rating: int("rating"),
+    /**
+     * Where the words came from. Drives the small provenance line under the
+     * quote ("via Google", "via Trustpilot") — an unattributed quote and a
+     * quote that names its source are read very differently, and only the
+     * merchant knows which this is.
+     */
+    source: mysqlEnum("source", ["manual", "google", "trustpilot"])
+      .default("manual")
+      .notNull(),
+    /**
+     * Unpublished rows stay in the admin list but never reach the storefront —
+     * how a merchant takes a quote down without deleting the record of it.
+     */
+    published: boolean("published").notNull().default(true),
+    sortOrder: int("sort_order").notNull().default(0),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (t) => [uniqueIndex("testimonials_tenant_google").on(t.tenantId, t.googleId)],
+);
+
+export type Testimonial = typeof testimonials.$inferSelect;
+export type InsertTestimonial = typeof testimonials.$inferInsert;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// DISCOUNT CODES — Per-store promotions and friends-and-family codes
+// ═══════════════════════════════════════════════════════════════════════════════
+// One row per code. `code` is unique WITHIN a tenant, not globally: two shops
+// both running "WELCOME10" is normal, and a global unique index would let the
+// first store to claim a word take it away from every other store on the
+// platform.
+//
+// The terms are evaluated by shared/discounts.ts, which is pure — the same
+// arithmetic runs in the admin preview, in the storefront's live check and in
+// the Stripe session that actually charges the card.
+export const discountCodes = mysqlTable(
+  "discount_codes",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    tenantId: int("tenant_id").notNull(),
+    /** Canonical (upper-case) form — see normaliseDiscountCode. */
+    code: varchar("code", { length: 32 }).notNull(),
+    kind: mysqlEnum("kind", ["percent", "amount"]).notNull(),
+    /** Whole percent (1–100) for "percent", minor units for "amount". */
+    value: int("value").notNull(),
+    /**
+     * Only meaningful for a fixed amount: "CHF 10 off" is not "EUR 10 off",
+     * and a code minted in one currency is refused in another rather than
+     * silently discounting more than the merchant wrote.
+     */
+    currency: varchar("currency", { length: 3 }),
+    /** Free-text campaign label ("friends-family", "spring-market"). */
+    campaign: varchar("campaign", { length: 64 }),
+    /** Smallest basket this code applies to, in minor units. NULL = any. */
+    minSubtotalRappen: int("min_subtotal_rappen"),
+    /** NULL = unlimited. 1 = a single-use code, the friends-and-family shape. */
+    maxRedemptions: int("max_redemptions"),
+    /**
+     * Slots taken: confirmed redemptions PLUS live checkout holds. Incremented
+     * by a conditional UPDATE that fails when the limit is reached, which is
+     * what makes "50 codes, 50 customers" hold under concurrency — a read-then-
+     * write check would let two simultaneous checkouts both see 49.
+     */
+    redeemedCount: int("redeemed_count").notNull().default(0),
+    startsAt: timestamp("starts_at"),
+    expiresAt: timestamp("expires_at"),
+    /** Merchant's off switch. Deactivating never deletes the history. */
+    active: boolean("active").notNull().default(true),
+    /** users.id of whoever minted it, for the admin list. */
+    createdBy: int("created_by"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (t) => [uniqueIndex("discount_codes_tenant_code").on(t.tenantId, t.code)],
+);
+
+export type DiscountCode = typeof discountCodes.$inferSelect;
+export type InsertDiscountCode = typeof discountCodes.$inferInsert;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// DISCOUNT REDEMPTIONS — Who spent which code, and on what
+// ═══════════════════════════════════════════════════════════════════════════════
+// A redemption is created as `held` when a Checkout Session is opened, and
+// becomes `confirmed` when that session is paid. The hold is what stops a
+// single-use code being spent twice in the minutes between "pay now" and the
+// webhook; `held_until` matches the session's own expiry, so an abandoned
+// checkout gives the slot back instead of burning the code forever.
+//
+// `stripe_session_id` is unique: a replayed webhook confirms the same row
+// rather than recording a second redemption of the same code.
+export const discountRedemptions = mysqlTable("discount_redemptions", {
+  id: int("id").autoincrement().primaryKey(),
+  tenantId: int("tenant_id").notNull(),
+  discountCodeId: int("discount_code_id").notNull(),
+  /** Set once the order row exists and is paid. */
+  orderId: int("order_id"),
+  stripeSessionId: varchar("stripe_session_id", { length: 255 })
+    .notNull()
+    .unique(),
+  status: mysqlEnum("status", ["held", "confirmed", "released"])
+    .default("held")
+    .notNull(),
+  /** What came off, in minor units — as charged, not as configured. */
+  amountOffRappen: int("amount_off_rappen").notNull(),
+  currency: varchar("currency", { length: 3 }),
+  /** Captured from the paid session, so a merchant can see who used what. */
+  customerEmail: varchar("customer_email", { length: 320 }),
+  /** When an unconfirmed hold stops counting against the redemption limit. */
+  heldUntil: timestamp("held_until"),
+  confirmedAt: timestamp("confirmed_at"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type DiscountRedemption = typeof discountRedemptions.$inferSelect;
+export type InsertDiscountRedemption = typeof discountRedemptions.$inferInsert;

@@ -44,6 +44,7 @@ import {
   releaseProductReservations,
   updateOrderBySessionId,
 } from "./db";
+import { confirmDiscountForSession } from "./discounts";
 import { sendOrderReceipt, sendOwnerOrderEmail } from "./_core/email";
 import { VERTICAL_PRESETS, isVertical } from "@shared/verticals";
 import { notifyOwner } from "./_core/notification";
@@ -155,6 +156,16 @@ export async function fulfillOrder(
   });
 
   await markProductsSold(order.tenantId, productIds);
+
+  // The discount hold placed when this session opened becomes a redemption that
+  // actually happened. Idempotent (guarded on the `held` status), so Stripe's
+  // webhook retries and the admin's manual re-fulfil button don't count twice —
+  // and a no-op for the great majority of orders, which carry no code at all.
+  await confirmDiscountForSession(session.id, {
+    orderId: order.id,
+    customerEmail:
+      session.customer_details?.email ?? order.customerEmail ?? null,
+  });
 
   const customerEmail =
     session.customer_details?.email ?? order.customerEmail ?? null;

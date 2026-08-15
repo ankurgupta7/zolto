@@ -1,5 +1,5 @@
 #!/bin/bash
-# deploy/lib/agent-hits-migration.test.sh — tests for migrate_0048_agent_hits.
+# deploy/lib/agent-hits-migration.test.sh — tests for migrate_0049_agent_hits.
 #
 # Plain bash, no framework and no real DB. Sources db.sh and drives the
 # migration with a fake $MYSQL that answers the information_schema probes from
@@ -72,7 +72,7 @@ MYSQL="fake_mysql"
 echo "Scenario A — agent_hits missing:"
 FAKE_TABLE_EXISTS=0
 : > "$MUT_LOG_FILE"
-migrate_0048_agent_hits
+migrate_0049_agent_hits
 A_LOG="$(cat "$MUT_LOG_FILE")"
 assert_contains "$A_LOG" "CREATE TABLE IF NOT EXISTS \`agent_hits\`" "creates agent_hits"
 
@@ -107,7 +107,7 @@ echo "Scenario B — agent_hits already present (idempotency):"
 FAKE_TABLE_EXISTS=1
 FAKE_INDEX_EXISTS=1
 : > "$MUT_LOG_FILE"
-migrate_0048_agent_hits
+migrate_0049_agent_hits
 B_LOG="$(cat "$MUT_LOG_FILE")"
 assert_not_contains "$B_LOG" "CREATE TABLE" "no CREATE TABLE on re-run"
 assert_not_contains "$B_LOG" "ADD CONSTRAINT" "no index churn on re-run"
@@ -119,7 +119,7 @@ echo "Scenario C — agent_hits present without its unique key:"
 FAKE_TABLE_EXISTS=1
 FAKE_INDEX_EXISTS=0
 : > "$MUT_LOG_FILE"
-migrate_0048_agent_hits
+migrate_0049_agent_hits
 C_LOG="$(cat "$MUT_LOG_FILE")"
 assert_contains "$C_LOG" "ADD CONSTRAINT \`agent_hits_bucket\` UNIQUE" \
   "restores the bucket key so the upsert counts instead of accumulating"

@@ -15,12 +15,14 @@
  *   SHOT_URL="http://localhost:5199/storefront.html?route=/" \
  *     node tools/screenshot/shoot.mjs out/
  *
- * `?route=` picks the page (/, /about, /impressum). `?authored=0` empties the
+ * `?route=` picks the page (/, /about, /impressum, /checkout). `?authored=0` empties the
  * merchant's own copy, which is how every store looked before those fields
  * existed and the state most stores will still be in — worth shooting both.
  * `?whitelabel=1` puts the store on a plan that has switched the "Made with
  * Zolto" footer credit off — the other half of the only footer state that has
- * two answers.
+ * two answers. `?trust=0` empties the customer-trust band at the foot of the
+ * home page — no published quotes, no Trustpilot profile — which is the state
+ * every store starts in and the one where the section must vanish entirely.
  */
 
 import { createRoot } from "react-dom/client";
@@ -37,12 +39,15 @@ import { CartProvider } from "@/contexts/CartContext";
 import Home from "@/pages/Home";
 import About from "@/pages/About";
 import Impressum from "@/pages/Impressum";
+import Checkout from "@/pages/Checkout";
 import Footer from "@/components/Footer";
 
 const params = new URLSearchParams(location.search);
 const route = params.get("route") ?? "/";
 const authored = params.get("authored") !== "0";
 const whitelabel = params.get("whitelabel") === "1";
+/** `?trust=0` shows the home page of a store with no quotes and no Trustpilot. */
+const trust = params.get("trust") !== "0";
 
 /** What the merchant wrote — or nothing, under `?authored=0`. */
 const AUTHORED = authored
@@ -59,6 +64,54 @@ const AUTHORED = authored
       companyRegistration: "CH-270.3.001.234-5",
     }
   : {};
+
+/** Two pieces, so the checkout summary has more than one line. */
+const PRODUCTS_FOR_CART = [
+  {
+    id: 1,
+    name: "Becher «Morgennebel»",
+    nameEn: "Mug «Morning Mist»",
+    nameDe: "Becher «Morgennebel»",
+    price: "45.00",
+    category: "Tassen & Becher",
+  },
+  {
+    id: 2,
+    name: "Schale gross",
+    nameEn: "Large bowl",
+    nameDe: "Schale gross",
+    price: "55.00",
+    category: "Schalen",
+  },
+];
+
+// `?route=/checkout` needs a basket, and the basket lives in localStorage —
+// so seed it before CartProvider mounts and reads it. `?discount=0` leaves the
+// code field empty; by default a code is "carried in" through sessionStorage
+// exactly as a share link leaves it, so the applied state (the discount line
+// and the new total) is captured without any interaction.
+if (route === "/checkout") {
+  localStorage.setItem(
+    "kalakosh_cart",
+    JSON.stringify(
+      PRODUCTS_FOR_CART.map((p) => ({
+        id: p.id,
+        name: p.name,
+        nameEn: p.nameEn,
+        nameDe: p.nameDe,
+        nameFr: null,
+        price: p.price,
+        imageUrl: null,
+        category: p.category,
+      })),
+    ),
+  );
+  if (params.get("discount") !== "0") {
+    sessionStorage.setItem("zolto_discount_code", "FRIENDS-7K3P");
+  } else {
+    sessionStorage.removeItem("zolto_discount_code");
+  }
+}
 
 const PRODUCTS = [
   "Becher «Morgennebel»",
@@ -112,6 +165,70 @@ const RESPONSES: Record<string, unknown> = {
     ...AUTHORED,
   },
   "products.list": PRODUCTS,
+  // The trust band at the foot of the home page. `?trust=0` empties it, which
+  // is the state every store is in until it publishes a quote or connects a
+  // Trustpilot profile — and the one where the whole section must disappear
+  // rather than leave a heading over white space.
+  "testimonials.list": trust
+    ? [
+        {
+          id: 1,
+          authorName: "Anna Meier",
+          authorTitle: "Basel",
+          authorPhotoUrl: null,
+          quote:
+            "Die Schale kam wunderbar verpackt an und ist noch schöner als auf den Bildern.",
+          rating: 5,
+          source: "manual",
+        },
+        {
+          id: 2,
+          authorName: "Beat Suter",
+          authorTitle: "Zürich",
+          authorPhotoUrl: null,
+          quote:
+            "Zweite Bestellung innert eines Monats. Die Glasuren sind einfach anders als alles, was man im Laden findet.",
+          rating: 5,
+          source: "google",
+        },
+        {
+          id: 3,
+          authorName: "Céline Rochat",
+          authorTitle: null,
+          authorPhotoUrl: null,
+          quote: "Schnell geliefert, sorgfältig gearbeitet. Gerne wieder.",
+          rating: 4,
+          source: "trustpilot",
+        },
+      ]
+    : [],
+  "checkout.config": { enabled: true },
+  // What the basket's live check answers for the carried code: 10% off the
+  // CHF 100.00 of pieces seeded above.
+  "discounts.check": {
+    valid: true,
+    code: "FRIENDS-7K3P",
+    amountOffRappen: 1000,
+    subtotalRappen: 10_000,
+    currency: "chf",
+    description: "10% off",
+  },
+  "trustpilot.summary": trust
+    ? {
+        connected: true,
+        domain: "bergblume.ch",
+        profileUrl: "https://ch.trustpilot.com/review/bergblume.ch",
+        reviewUrl: "https://ch.trustpilot.com/evaluate/bergblume.ch",
+        summary: {
+          domain: "bergblume.ch",
+          displayName: "Bergblume Keramik",
+          stars: 4.5,
+          trustScore: 4.6,
+          numberOfReviews: 128,
+          profileUrl: "https://ch.trustpilot.com/review/bergblume.ch",
+        },
+      }
+    : { connected: false },
   // The footer's collection links come from the store's own category list.
   "categories.list": [
     "Tassen & Becher",
@@ -168,6 +285,9 @@ createRoot(document.getElementById("root")!).render(
               </Route>
               <Route path="/impressum">
                 <Impressum />
+              </Route>
+              <Route path="/checkout">
+                <Checkout />
               </Route>
               <Route>
                 <Home />

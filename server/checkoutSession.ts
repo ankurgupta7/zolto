@@ -25,6 +25,12 @@ import {
   PRODUCT_RESERVATION_TTL_MS,
 } from "./db";
 import { getStripe } from "./stripe";
+import {
+  claimDiscount,
+  recordDiscountHold,
+  releaseDiscountClaim,
+  type ClaimedDiscount,
+} from "./discounts";
 
 /** We ship within Switzerland and the EU. */
 const EU_COUNTRIES = [
@@ -80,7 +86,8 @@ export type CheckoutErrorCode =
   | "NOT_CONFIGURED" // Zolto's own Stripe key is missing
   | "NOT_CONNECTED" // this tenant hasn't linked their Stripe account yet
   | "NOT_FOUND" // one or more ids aren't in this store's catalogue
-  | "CONFLICT"; // sold, hidden, or already being bought by someone else
+  | "CONFLICT" // sold, hidden, or already being bought by someone else
+  | "DISCOUNT_REFUSED"; // the code given doesn't apply to this basket
 
 export class CheckoutError extends Error {
   constructor(
@@ -159,6 +166,8 @@ export interface CreateCheckoutResult {
   /** What Zolto took from this order, in Rappen (0 on Pro). */
   platformFeeRappen: number;
   items: { id: number; name: string; price: string }[];
+  /** The code that was applied and what it took off, or null. */
+  discount: { code: string; amountOffRappen: number } | null;
 }
 
 /**
@@ -181,6 +190,12 @@ export async function createStorefrontCheckoutSession(params: {
    * defaults to English.
    */
   locale?: "de" | "en" | "fr" | "it";
+  /**
+   * A discount code the shopper typed, exactly as they typed it. Normalised and
+   * validated here — the storefront's live preview (`discounts.check`) is
+   * advisory, and nothing it returns is trusted at this point.
+   */
+  discountCode?: string;
 }): Promise<CreateCheckoutResult> {
   const { tenant, channel, baseUrl } = params;
 
@@ -272,19 +287,58 @@ export async function createStorefrontCheckoutSession(params: {
     (sum, p) => sum + Math.round(Number(p.price) * 100),
     0,
   );
+  // Free shipping is earned on what the shopper put in the basket, before any
+  // code is applied. A CHF 55 basket with a 20% code still ships free: the
+  // alternative quietly adds CHF 8 back at the last screen, which reads as the
+  // discount not working.
   const chShippingFeeRappen =
     subtotalRappen >= FREE_SHIPPING_THRESHOLD_RAPPEN
       ? 0
       : CH_FLAT_SHIPPING_FEE_RAPPEN;
 
-  const feeRappen = platformFeeRappen(tenant, subtotalRappen);
+  // ── Discount code ───────────────────────────────────────────────────────────
+  // Claimed here, BEFORE the Stripe call, because the claim is what enforces a
+  // redemption limit under concurrency (server/discounts.ts). From this point
+  // on every failure path has to give the slot back, which is what the
+  // try/catch below is for.
+  let claimedDiscount: ClaimedDiscount | null = null;
+  if (params.discountCode?.trim()) {
+    const claim = await claimDiscount({
+      tenantId,
+      rawCode: params.discountCode,
+      subtotalRappen,
+      currency,
+    });
+    if (!claim.ok) {
+      // The basket is already reserved by this point; a refused code must not
+      // leave those pieces held for the next half hour.
+      await releaseProductReservations(tenantId, uniqueIds).catch(() => {});
+      throw new CheckoutError("DISCOUNT_REFUSED", claim.message);
+    }
+    claimedDiscount = claim.discount;
+  }
+
+  const discountedSubtotalRappen =
+    subtotalRappen - (claimedDiscount?.amountOffRappen ?? 0);
+
+  // Set once the claim has been written against a session. The failure path
+  // needs to know which of the two states it is undoing: a bare claim (decrement
+  // the counter) or a recorded hold (mark the row released AND decrement).
+  // Undoing the wrong one decrements twice, and two sweeps of that hand a
+  // merchant's limited promotion extra redemptions it never authorised.
+  let heldSessionId: string | null = null;
+
+  // The platform fee follows the money the merchant actually receives. Charging
+  // 1% of a price nobody paid would make running a promotion cost the merchant
+  // more per franc earned than not running one.
+  const feeRappen = platformFeeRappen(tenant, discountedSubtotalRappen);
 
   // The second argument's `stripeAccount` runs this call on the tenant's own
   // connected Standard account (a "direct charge") using Zolto's platform key
   // — funds settle straight to the tenant, no raw tenant Stripe key ever
   // touches Zolto's servers. application_fee_amount is the platform's cut of
   // that direct charge; omitted entirely when the fee is 0 (Pro plan).
-  const buildParams = (fee: number) => ({
+  const buildParams = (fee: number, couponId: string | null) => ({
     mode: "payment" as const,
     // Credit & debit cards plus TWINT (Swiss mobile payment)
     payment_method_types: ["card", "twint"] as ("card" | "twint")[],
@@ -330,6 +384,13 @@ export async function createStorefrontCheckoutSession(params: {
       },
     ],
     phone_number_collection: { enabled: true },
+    // The discount, as a one-off coupon on the tenant's OWN connected account
+    // (created below). Stripe applies it to the line-item subtotal, never to
+    // the shipping rate — which is the behaviour the free-shipping threshold
+    // above already assumes. Omitted entirely when there is no code, so a
+    // storefront that never runs a promotion sends exactly the parameters it
+    // always did.
+    ...(couponId ? { discounts: [{ coupon: couponId }] } : {}),
     locale: params.locale ?? ("auto" as const),
     // Controls the merchant name shown on TWINT and bank statements. 22-char
     // max. The Stripe account business profile name (on the tenant's OWN
@@ -344,7 +405,13 @@ export async function createStorefrontCheckoutSession(params: {
     },
     success_url: `${baseUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${baseUrl}/checkout/cancel`,
-    metadata: { productIds: uniqueIds.join(","), channel },
+    metadata: {
+      productIds: uniqueIds.join(","),
+      channel,
+      // Recorded on the session so a support question ("why was this order
+      // CHF 12 less?") is answerable from Stripe alone.
+      ...(claimedDiscount ? { discountCode: claimedDiscount.code } : {}),
+    },
     // Matches the reservation TTL above (30 min, Stripe's own minimum for
     // expires_at) so the hold on these pieces never outlives the session that
     // placed it.
@@ -352,14 +419,39 @@ export async function createStorefrontCheckoutSession(params: {
   });
 
   // Wrapped so a Stripe/DB failure after the reservation above doesn't leave a
-  // phantom hold on these pieces until it times out on its own.
+  // phantom hold on these pieces — or on a redemption slot — until it times out
+  // on its own.
   try {
+    // A discount reaches Stripe as a one-off coupon on the tenant's own
+    // connected account: an amount, not a percentage, so the figure Stripe
+    // charges is byte-for-byte the one shared/discounts.ts computed and the one
+    // the basket showed. `duration: "once"` and `max_redemptions: 1` bound the
+    // coupon to this single session — the code's own limit is ours to enforce,
+    // and a coupon left reusable on the merchant's account would be a second,
+    // unmanaged one.
+    let couponId: string | null = null;
+    if (claimedDiscount) {
+      const coupon = await stripe.coupons.create(
+        {
+          amount_off: claimedDiscount.amountOffRappen,
+          currency,
+          duration: "once",
+          name: claimedDiscount.code.slice(0, 40),
+          max_redemptions: 1,
+          metadata: { zoltoDiscountCode: claimedDiscount.code },
+        },
+        { stripeAccount: connectedAccountId },
+      );
+      couponId = coupon.id;
+    }
+
     let chargedFeeRappen = feeRappen;
     let session;
     try {
-      session = await stripe.checkout.sessions.create(buildParams(feeRappen), {
-        stripeAccount: connectedAccountId,
-      });
+      session = await stripe.checkout.sessions.create(
+        buildParams(feeRappen, couponId),
+        { stripeAccount: connectedAccountId },
+      );
     } catch (err) {
       // A rejected application fee fails the ENTIRE session creation, not just
       // the fee — so without this, a Connect misconfiguration would take a
@@ -375,16 +467,29 @@ export async function createStorefrontCheckoutSession(params: {
             `Check the Connect relationship. Original error:`,
           err,
         );
-        session = await stripe.checkout.sessions.create(buildParams(0), {
-          stripeAccount: connectedAccountId,
-        });
+        session = await stripe.checkout.sessions.create(
+          buildParams(0, couponId),
+          { stripeAccount: connectedAccountId },
+        );
         chargedFeeRappen = 0;
       } else {
         throw err;
       }
     }
 
-    const amountTotal = session.amount_total ?? subtotalRappen;
+    const amountTotal = session.amount_total ?? discountedSubtotalRappen;
+
+    // The claim taken above is now tied to a session, with the same expiry, so
+    // an abandoned checkout gives the slot back instead of burning a code.
+    if (claimedDiscount) {
+      await recordDiscountHold({
+        tenantId,
+        discount: claimedDiscount,
+        stripeSessionId: session.id,
+        currency,
+      });
+      heldSessionId = session.id;
+    }
 
     await createOrder({
       tenantId,
@@ -405,9 +510,26 @@ export async function createStorefrontCheckoutSession(params: {
       currency,
       platformFeeRappen: chargedFeeRappen,
       items: items.map((p) => ({ id: p.id, name: p.name, price: p.price })),
+      discount: claimedDiscount
+        ? {
+            code: claimedDiscount.code,
+            amountOffRappen: claimedDiscount.amountOffRappen,
+          }
+        : null,
     };
   } catch (err) {
     await releaseProductReservations(tenantId, uniqueIds).catch(() => {});
+    // The claim was taken before Stripe was called, so anything that failed
+    // after it — the coupon, the session, the order row — has to give the slot
+    // back. Without this a customer who hit a Stripe outage would find their
+    // single-use code already spent when they tried again.
+    if (claimedDiscount) {
+      await releaseDiscountClaim({
+        tenantId,
+        codeId: claimedDiscount.codeId,
+        ...(heldSessionId ? { stripeSessionId: heldSessionId } : {}),
+      });
+    }
     throw err;
   }
 }

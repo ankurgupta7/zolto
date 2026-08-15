@@ -684,9 +684,9 @@ migrate_0045_site_imports() {
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Migration 0048: who is reading the machine-facing surfaces.
+# Migration 0049: who is reading the machine-facing surfaces.
 #
-# Ships drizzle/0029_agent_hits.sql. One pre-aggregated counter per
+# Ships drizzle/0030_agent_hits.sql. One pre-aggregated counter per
 # (store, day, surface, tool, agent) for /llms.txt, /llms-full.txt and /mcp —
 # the reach half of the agent-commerce funnel, whose sale half is already
 # recorded as `orders.channel = 'agent'`.
@@ -702,9 +702,9 @@ migrate_0045_site_imports() {
 # mcp_tool (not an MCP call) would never collide either. Additive and
 # idempotent — nothing reads the table until the admin panel asks.
 # ─────────────────────────────────────────────────────────────────────────────
-migrate_0048_agent_hits() {
+migrate_0049_agent_hits() {
   if [ "$(tbl_exists agent_hits)" = "0" ]; then
-    run_sql "0048 agent_hits table" "
+    run_sql "0049 agent_hits table" "
       CREATE TABLE IF NOT EXISTS \`agent_hits\` (
         \`id\`        int AUTO_INCREMENT NOT NULL,
         \`tenant_id\` int NOT NULL DEFAULT 0,
@@ -719,14 +719,14 @@ migrate_0048_agent_hits() {
         CONSTRAINT \`agent_hits_bucket\` UNIQUE(\`tenant_id\`,\`day\`,\`surface\`,\`mcp_tool\`,\`agent\`)
       );"
   else
-    ok "0048 agent_hits already exists"
+    ok "0049 agent_hits already exists"
     # A database that got the table before the unique key existed would count
     # every hit as a fresh row. Restore it rather than leaving the upsert broken.
     if [ "$(idx_exists agent_hits agent_hits_bucket)" = "0" ]; then
-      run_sql "0048 agent_hits bucket unique index" \
+      run_sql "0049 agent_hits bucket unique index" \
         "ALTER TABLE \`agent_hits\` ADD CONSTRAINT \`agent_hits_bucket\` UNIQUE(\`tenant_id\`,\`day\`,\`surface\`,\`mcp_tool\`,\`agent\`);"
     else
-      ok "0048 agent_hits_bucket already exists"
+      ok "0049 agent_hits_bucket already exists"
     fi
   fi
 }
@@ -852,6 +852,115 @@ migrate_0036_merchant_verticals() {
     WHERE NOT EXISTS (
       SELECT 1 FROM \`tenant_categories\` tc WHERE tc.\`tenant_id\` = t.\`id\`
     );"
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Migration 0048: customer trust — Trustpilot, testimonials, discount codes.
+#
+# Ships drizzle/0029_customer_trust.sql. Three additive features that a store
+# either uses or doesn't; a database that gains these columns and tables and
+# nothing else behaves exactly as it did before.
+#
+# The shapes that matter:
+#   - discount_codes.redeemed_count must be NOT NULL DEFAULT 0. It is only ever
+#     moved by a conditional UPDATE (`WHERE redeemed_count < max_redemptions`),
+#     which is what makes a 50-code promotion hold under concurrent checkouts.
+#     A NULL there makes that comparison NULL — never true — and every
+#     redemption of a limited code would be refused.
+#   - discount_redemptions.stripe_session_id must be UNIQUE. It is the
+#     idempotency key for the Stripe webhook: without it a replayed
+#     checkout.session.completed records a second redemption of the same code
+#     and pushes redeemed_count past what the merchant authorised.
+#   - testimonials' unique index is (tenant_id, google_id), not google_id
+#     alone. MySQL exempts NULL from a unique index, so the many rows with no
+#     Google id are unaffected while the same reviewer can't be entered twice
+#     for one store.
+# ─────────────────────────────────────────────────────────────────────────────
+migrate_0048_customer_trust() {
+  if [ "$(col_exists tenant_settings trustpilot_domain)" = "0" ]; then
+    run_sql "0048 add tenant_settings.trustpilot_domain" \
+      "ALTER TABLE \`tenant_settings\` ADD \`trustpilot_domain\` varchar(253) NULL;"
+  else
+    ok "0048 tenant_settings.trustpilot_domain already exists"
+  fi
+
+  if [ "$(col_exists tenant_settings trustpilot_show_rating)" = "0" ]; then
+    run_sql "0048 add tenant_settings.trustpilot_show_rating" \
+      "ALTER TABLE \`tenant_settings\` ADD \`trustpilot_show_rating\` boolean NOT NULL DEFAULT true;"
+  else
+    ok "0048 tenant_settings.trustpilot_show_rating already exists"
+  fi
+
+  if [ "$(tbl_exists testimonials)" = "0" ]; then
+    run_sql "0048 testimonials table" "
+      CREATE TABLE IF NOT EXISTS \`testimonials\` (
+        \`id\`               int AUTO_INCREMENT NOT NULL,
+        \`tenant_id\`        int NOT NULL,
+        \`author_name\`      varchar(120) NOT NULL,
+        \`author_title\`     varchar(120),
+        \`author_photo_url\` varchar(1024),
+        \`google_id\`        varchar(64),
+        \`quote\`            text NOT NULL,
+        \`rating\`           int,
+        \`source\`           enum('manual','google','trustpilot') NOT NULL DEFAULT 'manual',
+        \`published\`        boolean NOT NULL DEFAULT true,
+        \`sort_order\`       int NOT NULL DEFAULT 0,
+        \`createdAt\`        timestamp NOT NULL DEFAULT (now()),
+        \`updatedAt\`        timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+        CONSTRAINT \`testimonials_id\` PRIMARY KEY(\`id\`),
+        CONSTRAINT \`testimonials_tenant_google\` UNIQUE(\`tenant_id\`,\`google_id\`)
+      );"
+  else
+    ok "0048 testimonials already exists"
+  fi
+
+  if [ "$(tbl_exists discount_codes)" = "0" ]; then
+    run_sql "0048 discount_codes table" "
+      CREATE TABLE IF NOT EXISTS \`discount_codes\` (
+        \`id\`                  int AUTO_INCREMENT NOT NULL,
+        \`tenant_id\`           int NOT NULL,
+        \`code\`                varchar(32) NOT NULL,
+        \`kind\`                enum('percent','amount') NOT NULL,
+        \`value\`               int NOT NULL,
+        \`currency\`            varchar(3),
+        \`campaign\`            varchar(64),
+        \`min_subtotal_rappen\` int,
+        \`max_redemptions\`     int,
+        \`redeemed_count\`      int NOT NULL DEFAULT 0,
+        \`starts_at\`           timestamp NULL,
+        \`expires_at\`          timestamp NULL,
+        \`active\`              boolean NOT NULL DEFAULT true,
+        \`created_by\`          int,
+        \`createdAt\`           timestamp NOT NULL DEFAULT (now()),
+        \`updatedAt\`           timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+        CONSTRAINT \`discount_codes_id\` PRIMARY KEY(\`id\`),
+        CONSTRAINT \`discount_codes_tenant_code\` UNIQUE(\`tenant_id\`,\`code\`)
+      );"
+  else
+    ok "0048 discount_codes already exists"
+  fi
+
+  if [ "$(tbl_exists discount_redemptions)" = "0" ]; then
+    run_sql "0048 discount_redemptions table" "
+      CREATE TABLE IF NOT EXISTS \`discount_redemptions\` (
+        \`id\`                 int AUTO_INCREMENT NOT NULL,
+        \`tenant_id\`          int NOT NULL,
+        \`discount_code_id\`   int NOT NULL,
+        \`order_id\`           int,
+        \`stripe_session_id\`  varchar(255) NOT NULL,
+        \`status\`             enum('held','confirmed','released') NOT NULL DEFAULT 'held',
+        \`amount_off_rappen\`  int NOT NULL,
+        \`currency\`           varchar(3),
+        \`customer_email\`     varchar(320),
+        \`held_until\`         timestamp NULL,
+        \`confirmed_at\`       timestamp NULL,
+        \`createdAt\`          timestamp NOT NULL DEFAULT (now()),
+        CONSTRAINT \`discount_redemptions_id\` PRIMARY KEY(\`id\`),
+        CONSTRAINT \`discount_redemptions_stripe_session_id_unique\` UNIQUE(\`stripe_session_id\`)
+      );"
+  else
+    ok "0048 discount_redemptions already exists"
+  fi
 }
 
 # ─────────────────────────────────────────────────────────────────────────────

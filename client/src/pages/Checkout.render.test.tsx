@@ -19,10 +19,17 @@ const CART_KEY = "kalakosh_cart";
 const mocks = vi.hoisted(() => ({
   createSession: vi.fn(),
   configData: { enabled: true } as { enabled: boolean } | undefined,
+  // The basket's live discount check (`discounts.check`), reached through
+  // trpc.useUtils().…fetch so the panel can ask on demand rather than on every
+  // keystroke.
+  checkDiscount: vi.fn(),
 }));
 
 vi.mock("@/lib/trpc", () => ({
   trpc: {
+    useUtils: () => ({
+      discounts: { check: { fetch: mocks.checkDiscount } },
+    }),
     checkout: {
       config: { useQuery: () => ({ data: mocks.configData }) },
       createSession: {
@@ -86,7 +93,12 @@ const payButton = () =>
 beforeEach(async () => {
   vi.clearAllMocks();
   localStorage.clear();
+  sessionStorage.clear();
   mocks.configData = { enabled: true };
+  mocks.checkDiscount.mockResolvedValue({
+    valid: false,
+    message: "That discount code isn't valid for this basket.",
+  });
   await i18n.changeLanguage("en");
 });
 
@@ -204,5 +216,169 @@ describe("Checkout page", () => {
       .getAllByRole("link")
       .filter((a) => a.getAttribute("href") === "/policy");
     expect(policyLinks.length).toBeGreaterThan(0);
+  });
+});
+
+describe("Checkout discount code", () => {
+  const applyField = () =>
+    screen.getByLabelText(en.checkout.discountLabel) as HTMLInputElement;
+  const applyButton = () =>
+    screen.getByRole("button", { name: en.checkout.discountApply });
+
+  it("offers a code field alongside the bag total", () => {
+    seedCart([ring]);
+    renderCheckout();
+    expect(applyField()).toBeTruthy();
+    expect(applyButton()).toBeTruthy();
+  });
+
+  it("asks the server what the code is worth on THIS basket", async () => {
+    seedCart([ring, earrings]);
+    mocks.checkDiscount.mockResolvedValue({
+      valid: true,
+      code: "WELCOME10",
+      amountOffRappen: 3050,
+      subtotalRappen: 30_500,
+      currency: "chf",
+      description: "10% off",
+    });
+    renderCheckout();
+    fireEvent.change(applyField(), { target: { value: "welcome10" } });
+    fireEvent.click(applyButton());
+    await waitFor(() =>
+      expect(mocks.checkDiscount).toHaveBeenCalledWith({
+        code: "welcome10",
+        productIds: [1, 2],
+      }),
+    );
+  });
+
+  it("shows what came off and the new total", async () => {
+    seedCart([ring, earrings]); // CHF 305.00
+    mocks.checkDiscount.mockResolvedValue({
+      valid: true,
+      code: "WELCOME10",
+      amountOffRappen: 3050,
+      subtotalRappen: 30_500,
+      currency: "chf",
+      description: "10% off",
+    });
+    renderCheckout();
+    fireEvent.change(applyField(), { target: { value: "WELCOME10" } });
+    fireEvent.click(applyButton());
+    await screen.findByText("−CHF 30.50");
+    expect(screen.getByText("CHF 274.50")).toBeTruthy();
+    // The subtotal stays visible: a shopper needs to see both numbers to
+    // believe the discount.
+    expect(screen.getByText("CHF 305.00")).toBeTruthy();
+  });
+
+  it("says why a code was refused, and applies nothing", async () => {
+    seedCart([ring]);
+    mocks.checkDiscount.mockResolvedValue({
+      valid: false,
+      message: "That discount code has expired.",
+    });
+    renderCheckout();
+    fireEvent.change(applyField(), { target: { value: "OLD" } });
+    fireEvent.click(applyButton());
+    await waitFor(() =>
+      expect(toast.error).toHaveBeenCalledWith(
+        "That discount code has expired.",
+      ),
+    );
+    expect(screen.queryByText(/−CHF/)).toBeNull();
+  });
+
+  it("sends the applied code with the checkout session", async () => {
+    seedCart([ring]);
+    mocks.checkDiscount.mockResolvedValue({
+      valid: true,
+      code: "WELCOME10",
+      amountOffRappen: 1850,
+      subtotalRappen: 18_500,
+      currency: "chf",
+      description: "10% off",
+    });
+    mocks.createSession.mockResolvedValue({
+      url: "https://checkout.stripe.com/cs_1",
+      sessionId: "cs_1",
+      discount: { code: "WELCOME10", amountOffRappen: 1850 },
+    });
+    renderCheckout();
+    fireEvent.change(applyField(), { target: { value: "WELCOME10" } });
+    fireEvent.click(applyButton());
+    await screen.findByText("−CHF 18.50");
+
+    fireEvent.click(screen.getByRole("checkbox"));
+    fireEvent.click(payButton());
+    await waitFor(() =>
+      expect(mocks.createSession).toHaveBeenCalledWith(
+        expect.objectContaining({ discountCode: "WELCOME10" }),
+      ),
+    );
+  });
+
+  it("sends no code when none was applied", async () => {
+    seedCart([ring]);
+    mocks.createSession.mockResolvedValue({
+      url: "https://checkout.stripe.com/cs_1",
+      sessionId: "cs_1",
+      discount: null,
+    });
+    renderCheckout();
+    fireEvent.click(screen.getByRole("checkbox"));
+    fireEvent.click(payButton());
+    await waitFor(() =>
+      expect(mocks.createSession.mock.calls[0][0].discountCode).toBeUndefined(),
+    );
+  });
+
+  it("lets the shopper take the code back off", async () => {
+    seedCart([ring]);
+    mocks.checkDiscount.mockResolvedValue({
+      valid: true,
+      code: "WELCOME10",
+      amountOffRappen: 1850,
+      subtotalRappen: 18_500,
+      currency: "chf",
+      description: "10% off",
+    });
+    renderCheckout();
+    fireEvent.change(applyField(), { target: { value: "WELCOME10" } });
+    fireEvent.click(applyButton());
+    await screen.findByText("−CHF 18.50");
+
+    fireEvent.click(screen.getByLabelText(en.checkout.discountRemove));
+    expect(screen.queryByText("−CHF 18.50")).toBeNull();
+    expect(applyField()).toBeTruthy();
+  });
+
+  // The whole point of a share link is that the friend types nothing.
+  it("applies a code carried in from a share link, by itself", async () => {
+    seedCart([ring]);
+    sessionStorage.setItem("zolto_discount_code", "FRIENDS-7K3P");
+    mocks.checkDiscount.mockResolvedValue({
+      valid: true,
+      code: "FRIENDS-7K3P",
+      amountOffRappen: 1850,
+      subtotalRappen: 18_500,
+      currency: "chf",
+      description: "10% off",
+    });
+    renderCheckout();
+    await screen.findByText("−CHF 18.50");
+    expect(mocks.checkDiscount).toHaveBeenCalledWith({
+      code: "FRIENDS-7K3P",
+      productIds: [1],
+    });
+    // Consumed once: a shopper who removes it must not have it reappear.
+    expect(sessionStorage.getItem("zolto_discount_code")).toBeNull();
+  });
+
+  it("does not chase a carried code on an empty basket", () => {
+    sessionStorage.setItem("zolto_discount_code", "FRIENDS-7K3P");
+    renderCheckout();
+    expect(mocks.checkDiscount).not.toHaveBeenCalled();
   });
 });
