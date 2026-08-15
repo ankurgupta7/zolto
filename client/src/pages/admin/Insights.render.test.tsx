@@ -28,6 +28,10 @@ const mocks = vi.hoisted(() => ({
     isFetching: false,
     refetch: vi.fn(),
   },
+  agentTraffic: {
+    data: undefined as Record<string, unknown> | undefined,
+    isLoading: false,
+  },
 }));
 
 vi.mock("@/_core/hooks/useAuth", () => ({ useAuth: () => mocks.authState }));
@@ -36,6 +40,9 @@ vi.mock("@/lib/trpc", () => ({
     insights: {
       summary: { useQuery: () => mocks.summary },
       narrative: { useQuery: () => mocks.narrative },
+      // AgentTrafficCard renders inside this page and would crash the whole
+      // suite on an undefined query rather than failing its own assertion.
+      agentTraffic: { useQuery: () => mocks.agentTraffic },
     },
   },
 }));
@@ -50,6 +57,7 @@ beforeEach(() => {
     isFetching: false,
     refetch: vi.fn(),
   };
+  mocks.agentTraffic = { data: undefined, isLoading: false };
 });
 afterEach(() => cleanup());
 

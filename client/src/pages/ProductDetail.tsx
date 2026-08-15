@@ -10,6 +10,7 @@ import ImageLightbox from "@/components/ImageLightbox";
 import { useCart } from "@/contexts/CartContext";
 import { useTenant } from "@/contexts/TenantContext";
 import { whatsappHref } from "@/lib/branding";
+import { trackProductViewed } from "@/lib/analytics";
 import { productJsonLd } from "@shared/storefront";
 import {
   Carousel,
@@ -54,6 +55,14 @@ export default function ProductDetail() {
     { productId: productId },
     { enabled: !!product },
   );
+
+  // Keyed on the category rather than the product so navigating between two
+  // items in the same category still counts twice, while a re-render of the
+  // same page does not. Category only — never which item (client/src/lib/analytics.ts).
+  const viewedCategory = product?.category;
+  useEffect(() => {
+    if (viewedCategory) trackProductViewed(viewedCategory);
+  }, [viewedCategory, productId]);
 
   useEffect(() => {
     if (!carouselApi) return;

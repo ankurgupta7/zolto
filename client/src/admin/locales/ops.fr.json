@@ -300,6 +300,19 @@
       "doneHidden": "{{count}} sont arrivés masqués faute de prix lisible. Indiquez-en un et ils passent en ligne.",
       "doneFailed": "Impossible d’ajouter : {{names}}",
       "doneAgain": "Importer un autre site"
+    },
+    "agents": {
+      "title": "Agents IA",
+      "description": "Ce que les assistants et robots IA lisent de votre boutique. Ils consultent votre fiche produits et peuvent y acheter — une telle vente apparaît comme une commande en ligne.",
+      "empty": "Aucun agent IA n'a encore lu votre boutique. Votre fiche produits et l'accès d'achat pour agents sont actifs — rien à configurer.",
+      "statReads": "Lectures (30 j)",
+      "statAssistants": "Requêtes d'assistants",
+      "statToolCalls": "Requêtes boutique",
+      "chartSeries": "Lectures",
+      "byAgentTitle": "Qui a lu",
+      "byToolTitle": "Ce qu'ils ont demandé",
+      "kindAssistant": "répond à quelqu'un",
+      "kindCrawler": "indexe"
     }
   }
 }

@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const dbMock = vi.hoisted(() => ({
   getTenantSettings: vi.fn(),
+  getAgentHits: vi.fn(),
 }));
 
 const insightsMock = vi.hoisted(() => ({
@@ -49,6 +50,7 @@ const summary = {
 beforeEach(() => {
   vi.clearAllMocks();
   dbMock.getTenantSettings.mockResolvedValue({ currency: "chf" });
+  dbMock.getAgentHits.mockResolvedValue([]);
   insightsMock.computeInsights.mockResolvedValue(summary);
   insightsMock.generateInsightsNarrative.mockResolvedValue(
     "Observations\n- ...\nActions\n- ...",
@@ -93,6 +95,88 @@ describe("insights.narrative", () => {
   });
 });
 
+describe("insights.agentTraffic", () => {
+  const hits = (day: string) => [
+    {
+      tenantId: 42,
+      day,
+      surface: "llms.txt",
+      mcpTool: "",
+      agent: "GPTBot",
+      count: 3,
+    },
+    {
+      tenantId: 42,
+      day,
+      surface: "mcp",
+      mcpTool: "search_products",
+      agent: "Claude",
+      count: 2,
+    },
+  ];
+
+  it("reads only this store's hits, scoped by ctx.tenant not by input", async () => {
+    dbMock.getAgentHits.mockResolvedValue(hits("2026-08-14"));
+    await insightsRouter.createCaller(ctx("free")).agentTraffic({ days: 30 });
+    expect(dbMock.getAgentHits).toHaveBeenCalledWith(42, expect.any(String));
+  });
+
+  it("summarises reach by agent and by tool", async () => {
+    dbMock.getAgentHits.mockResolvedValue(
+      hits(new Date().toISOString().slice(0, 10)),
+    );
+    const res = await insightsRouter
+      .createCaller(ctx("free"))
+      .agentTraffic({ days: 30 });
+    expect(res.total).toBe(5);
+    expect(res.byAgent).toEqual([
+      { agent: "GPTBot", kind: "crawler", count: 3 },
+      { agent: "Claude", kind: "assistant", count: 2 },
+    ]);
+    expect(res.byTool).toEqual([{ tool: "search_products", count: 2 }]);
+    expect(res.assistantHits).toBe(2);
+  });
+
+  it("is available on the free plan — the numbers are not the Pro tier", async () => {
+    // A merchant deciding whether agent commerce is worth anything to them
+    // cannot be asked to upgrade to find out. Pro buys the narrative.
+    await expect(
+      insightsRouter.createCaller(ctx("free")).agentTraffic({ days: 7 }),
+    ).resolves.toBeDefined();
+  });
+
+  it("emits one bar per requested day", async () => {
+    const res = await insightsRouter
+      .createCaller(ctx("free"))
+      .agentTraffic({ days: 7 });
+    expect(res.byDay).toHaveLength(7);
+    expect(res.days).toBe(7);
+  });
+
+  it("drops rows whose surface is no longer one we chart", async () => {
+    dbMock.getAgentHits.mockResolvedValue([
+      {
+        tenantId: 42,
+        day: "2026-08-14",
+        surface: "retired-surface",
+        mcpTool: "",
+        agent: "GPTBot",
+        count: 9,
+      },
+    ]);
+    const res = await insightsRouter
+      .createCaller(ctx("free"))
+      .agentTraffic({ days: 30 });
+    expect(res.total).toBe(0);
+  });
+
+  it("rejects a window outside the supported range", async () => {
+    await expect(
+      insightsRouter.createCaller(ctx("free")).agentTraffic({ days: 5000 }),
+    ).rejects.toThrow();
+  });
+});
+
 // Regression: insights read ctx.tenant (host-derived) behind a local
 // `adminProcedure.use(requireTenant)` alias with no belongs-to-this-tenant
 // check — so an admin of any store could read another store's revenue,
@@ -108,6 +192,16 @@ describe("insights cross-tenant guard", () => {
     await expect(
       insightsRouter.createCaller(ctx("pro", 999)).narrative(),
     ).rejects.toThrow();
+  });
+
+  it("refuses to report another store's agent traffic", async () => {
+    // The cross-tenant case is the one that silently regresses: ctx.tenant is
+    // host-derived, so an admin of any store could otherwise learn which AI
+    // agents are reading a competitor's catalogue by pointing at its subdomain.
+    await expect(
+      insightsRouter.createCaller(ctx("free", 999)).agentTraffic({ days: 30 }),
+    ).rejects.toThrow();
+    expect(dbMock.getAgentHits).not.toHaveBeenCalled();
   });
 
   it("still serves the store's own admin", async () => {

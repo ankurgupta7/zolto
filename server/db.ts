@@ -17,6 +17,8 @@ import crypto from "node:crypto";
 import type { Pool as MySqlPool, PoolConnection } from "mysql2";
 import * as schema from "../drizzle/schema";
 import {
+  type AgentHit,
+  agentHits,
   type BulkUploadLog,
   bulkUploadLogs,
   type DiscountCode,
@@ -1984,6 +1986,78 @@ export async function clearRateLimitWindows(): Promise<void> {
   await withDb(async (db) => {
     await db.delete(rateLimitWindows);
   }, undefined);
+}
+
+// ─── Agent hits ───────────────────────────────────────────────────────────────
+//
+// The reach half of the agent-commerce funnel: who is reading /llms.txt and
+// calling /mcp. See drizzle/schema.ts `agentHits` for why these are counters
+// rather than a request log, and why `tenantId: 0` / `mcpTool: ""` are
+// sentinels rather than NULL.
+
+/**
+ * Count one hit against its bucket, creating the bucket on first sight.
+ *
+ * Fails open through withDb: this is analytics on the path of the endpoint an
+ * AI agent actually buys through, and a database hiccup must never be the
+ * reason `/llms.txt` or `/mcp` returns an error. A lost count is invisible; a
+ * failed checkout is not.
+ */
+export async function recordAgentHit(bucket: {
+  tenantId: number;
+  day: string;
+  surface: string;
+  mcpTool: string;
+  agent: string;
+}): Promise<void> {
+  await withDb(async (db) => {
+    await db
+      .insert(agentHits)
+      .values({ ...bucket, count: 1 })
+      // Fires on the agent_hits_bucket UNIQUE key. Without that index this
+      // would insert a fresh row per request — see the migration's comment.
+      .onDuplicateKeyUpdate({ set: { count: sql`${agentHits.count} + 1` } });
+  }, undefined);
+}
+
+/**
+ * Every bucket for one store since `sinceDay` (inclusive, UTC `YYYY-MM-DD`).
+ *
+ * `tenantId` is applied as a WHERE, not a filter over a wider read, so a
+ * merchant's query can never touch another store's rows — the caller is
+ * already behind tenantAdminProcedure, and this is the second lock.
+ */
+export async function getAgentHits(
+  tenantId: number,
+  sinceDay: string,
+): Promise<AgentHit[]> {
+  return withDb(
+    async (db) =>
+      db
+        .select()
+        .from(agentHits)
+        .where(
+          and(eq(agentHits.tenantId, tenantId), gte(agentHits.day, sinceDay)),
+        )
+        .orderBy(asc(agentHits.day)),
+    [],
+  );
+}
+
+/**
+ * Every bucket across every store and the platform surface. Superadmin only
+ * (server/routers/platform.ts) — no tenant-facing route may call this.
+ */
+export async function getAllAgentHits(sinceDay: string): Promise<AgentHit[]> {
+  return withDb(
+    async (db) =>
+      db
+        .select()
+        .from(agentHits)
+        .where(gte(agentHits.day, sinceDay))
+        .orderBy(asc(agentHits.day)),
+    [],
+  );
 }
 
 // The person to notify about this tenant's activity (e.g. a paid order) —

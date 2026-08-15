@@ -15,6 +15,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { router, superadminProcedure } from "../_core/trpc";
 import {
+  getAllAgentHits,
   getPlatformMetrics,
   listTenantsForOperator,
   getTenantDetailForOperator,
@@ -29,6 +30,13 @@ import {
 import { runStripeReconciliationForAllTenants } from "../reconciliation";
 import { generatePosApiKey, hashPosApiKey } from "../posApiKey";
 import { PRO_PLAN, REVENUE_SHARE } from "@shared/platform";
+import {
+  dayKey,
+  isAgentSurface,
+  summarizeAgentHits,
+  type AgentHitRow,
+} from "@shared/aiAgents";
+import { PLATFORM_TENANT_ID } from "../agentHits";
 
 /**
  * The platform's own POS test store. Its POS key is what the POS apps' CI
@@ -227,6 +235,60 @@ export const platformRouter = router({
       },
     };
   }),
+
+  /**
+   * Agent traffic across every store AND the platform surface itself.
+   *
+   * The operator's view of the bet the pricing model rests on: are AI agents
+   * reading `/llms.txt` and calling `/mcp` at all, and is it assistants
+   * fetching for a person asking right now or crawlers indexing in the
+   * background? A merchant sees only their own store (insights.agentTraffic);
+   * this crosses tenants by design, which is why it is superadmin-only.
+   *
+   * `platformOnly` splits zolto.ch's own brief — read by an assistant helping
+   * someone choose a shop platform — from the storefronts', which are two
+   * completely different questions that would otherwise be summed into one
+   * uninterpretable number.
+   */
+  agentTraffic: superadminProcedure
+    .input(
+      z.object({
+        days: z.number().int().min(1).max(90).default(30),
+        scope: z.enum(["all", "platform", "stores"]).default("all"),
+      }),
+    )
+    .query(async ({ input }) => {
+      const since = new Date(Date.now() - (input.days - 1) * 86_400_000);
+      const rows = await getAllAgentHits(dayKey(since));
+      const scoped = rows.filter((r) => {
+        if (!isAgentSurface(r.surface)) return false;
+        if (input.scope === "platform")
+          return r.tenantId === PLATFORM_TENANT_ID;
+        if (input.scope === "stores") return r.tenantId !== PLATFORM_TENANT_ID;
+        return true;
+      });
+      const typed: AgentHitRow[] = scoped.map((r) => ({
+        tenantId: r.tenantId,
+        day: r.day,
+        surface: r.surface as AgentHitRow["surface"],
+        mcpTool: r.mcpTool,
+        agent: r.agent,
+        count: r.count,
+      }));
+      // How many distinct stores were read at all — the number that says
+      // whether agent reach is broad or is one enthusiastic merchant.
+      const storesReached = new Set(
+        typed
+          .filter((r) => r.tenantId !== PLATFORM_TENANT_ID)
+          .map((r) => r.tenantId),
+      ).size;
+      return {
+        days: input.days,
+        scope: input.scope,
+        storesReached,
+        ...summarizeAgentHits(typed, input.days),
+      };
+    }),
 
   /**
    * Platform-wide Stripe reconciliation: every tenant that has connected

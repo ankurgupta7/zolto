@@ -9,6 +9,7 @@ import { Trash2, Lock, CreditCard, Tag, X } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { useCart } from "@/contexts/CartContext";
+import { trackCheckoutStarted } from "@/lib/analytics";
 
 /** TWINT wordmark-style badge (text fallback — avoids shipping the trademarked logo). */
 const PaymentBadges = () => (
@@ -105,6 +106,14 @@ export default function Checkout() {
       return;
     }
     setSubmitting(true);
+    // Before the await, so the gap between "pressed Pay" and "paid" is
+    // measurable even when the session never gets created.
+    //
+    // totalAfterDiscount, not total: `total` is the pre-discount subtotal, and
+    // checkout_completed reports what the order was actually charged. Banding
+    // the subtotal here would put the two events in different buckets whenever
+    // a code was used, which is precisely when the funnel is worth reading.
+    trackCheckoutStarted(items.length, totalAfterDiscount);
     try {
       const result = await createSession.mutateAsync({
         productIds: items.map((i) => i.id),

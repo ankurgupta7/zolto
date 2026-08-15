@@ -286,6 +286,19 @@
       "doneHidden": "{{count}} sind ausgeblendet angekommen, weil wir keinen Preis lesen konnten. Preis setzen, dann sind sie live.",
       "doneFailed": "Diese konnten nicht angelegt werden: {{names}}",
       "doneAgain": "Weitere Seite importieren"
+    },
+    "agents": {
+      "title": "KI-Agenten",
+      "description": "Was KI-Assistenten und Crawler aus Ihrem Shop lesen. Sie rufen Ihre Produktübersicht ab und können darüber einkaufen — ein solcher Verkauf erscheint als Online-Bestellung.",
+      "empty": "Noch kein KI-Agent hat Ihren Shop gelesen. Ihre Produktübersicht und der Einkaufszugang für Agenten sind aktiv — Sie müssen nichts einrichten.",
+      "statReads": "Zugriffe (30 T.)",
+      "statAssistants": "Assistenz-Abrufe",
+      "statToolCalls": "Shop-Abfragen",
+      "chartSeries": "Zugriffe",
+      "byAgentTitle": "Wer gelesen hat",
+      "byToolTitle": "Wonach gefragt wurde",
+      "kindAssistant": "beantwortet eine Frage",
+      "kindCrawler": "indexiert"
     }
   }
 }

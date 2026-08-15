@@ -158,3 +158,65 @@ describe("injectHeadForRequest — marketing route resolution", () => {
     expect(out).toBe(SHELL);
   });
 });
+
+// The analytics tag used to be a build-time constant in client/index.html
+// referencing two variables that were defined nowhere, so production shipped a
+// script tag pointing at the literal string `%VITE_ANALYTICS_ENDPOINT%/umami`.
+// It is injected here now; these pin the three properties that failure had.
+describe("injectHeadForRequest — page-view tag", () => {
+  const ID = "11111111-2222-4333-8444-555555555555";
+
+  const withEnv = async <T>(
+    env: Record<string, string>,
+    fn: () => Promise<T>,
+  ): Promise<T> => {
+    const saved = { ...process.env };
+    Object.assign(process.env, env);
+    try {
+      return await fn();
+    } finally {
+      for (const key of Object.keys(env)) {
+        if (saved[key] === undefined) delete process.env[key];
+        else process.env[key] = saved[key];
+      }
+    }
+  };
+
+  it("emits no tag when analytics is unconfigured", async () => {
+    // The default. An unconfigured install must ship no tag at all rather
+    // than a dead one — this is the whole reason the snippet moved server-side.
+    const out = await injectHeadForRequest(fakeReq("/pricing"), SHELL);
+    expect(out).not.toContain("script.js");
+    expect(out).not.toContain("data-website-id");
+  });
+
+  it("injects the marketing tag inside <head> when configured", async () => {
+    const out = await withEnv(
+      { ANALYTICS_ENDPOINT: "/_stats", ANALYTICS_WEBSITE_ID: ID },
+      () => injectHeadForRequest(fakeReq("/pricing"), SHELL),
+    );
+    expect(out).toContain('src="/_stats/script.js"');
+    expect(out).toContain(`data-website-id="${ID}"`);
+    // Inside the head, not appended after </html> where nothing would run it.
+    expect(out.indexOf("script.js")).toBeLessThan(out.indexOf("</head>"));
+  });
+
+  it("leaves the SEO the injector already wrote intact", async () => {
+    const out = await withEnv(
+      { ANALYTICS_ENDPOINT: "/_stats", ANALYTICS_WEBSITE_ID: ID },
+      () => injectHeadForRequest(fakeReq("/pricing"), SHELL),
+    );
+    expect(canonical(out)).toBe("https://zolto.ch/pricing");
+    expect(title(out)).toContain("Pricing");
+  });
+
+  it("emits no tag for a host that is neither the marketing site nor a store", async () => {
+    // resolveTenantFromRequest is mocked to null here, so this is the
+    // unresolved-host path: there is no bucket its views honestly belong in.
+    const out = await injectHeadForRequest(
+      fakeReq("/", "someone-elses-domain.example"),
+      SHELL,
+    );
+    expect(out).not.toContain("script.js");
+  });
+});

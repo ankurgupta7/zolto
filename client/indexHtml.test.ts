@@ -30,8 +30,21 @@ describe("client/index.html third-party requests", () => {
     expect(html).toContain('href="/fonts/fonts.css"');
   });
 
-  it("keeps the cookieless Umami analytics snippet", () => {
-    expect(html).toContain("%VITE_ANALYTICS_ENDPOINT%/umami");
+  // The analytics tag is injected per request by server/analytics.ts. It used
+  // to live here as `%VITE_ANALYTICS_ENDPOINT%/umami`, and neither variable was
+  // defined anywhere in the repo — Vite leaves an undefined %VAR% verbatim, so
+  // production shipped a script tag pointing at that literal string, which fell
+  // through to the SPA catch-all and came back as HTML. Zero data collected,
+  // while the privacy policy promised Umami in four languages.
+  it("bakes in no analytics endpoint — a build-time constant cannot be absent", () => {
+    expect(html).not.toContain("VITE_ANALYTICS_ENDPOINT");
+    expect(html).not.toContain("VITE_ANALYTICS_WEBSITE_ID");
+  });
+
+  it("leaves no unsubstituted Vite placeholder of any kind in the shell", () => {
+    // The general form of the bug above: any `%VITE_FOO%` that nothing defines
+    // ships to production as a literal and fails silently.
+    expect(html).not.toMatch(/%VITE_[A-Z0-9_]+%/);
   });
 });
 
