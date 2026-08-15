@@ -72,7 +72,8 @@ class ProductGridAdapter(
         // Show "X left" badge only when quantity > 1
         if (product.quantity > 1) {
             holder.quantityBadge.visibility = View.VISIBLE
-            holder.quantityBadge.text = "${product.quantity} left"
+            holder.quantityBadge.text = holder.itemView.context
+                .getString(R.string.quantity_badge, product.quantity)
         } else {
             holder.quantityBadge.visibility = View.GONE
         }

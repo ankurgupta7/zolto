@@ -8,11 +8,13 @@ import androidx.lifecycle.viewModelScope
 import ch.zolto.pos.data.ApiService
 import ch.zolto.pos.data.OfflinePaymentManager
 import ch.zolto.pos.data.PosSession
+import ch.zolto.pos.data.ViewModeStore
 import ch.zolto.pos.data.local.toEntity
 import ch.zolto.pos.data.models.Product
 import ch.zolto.pos.data.models.ProductListItem
 import ch.zolto.pos.logic.CategoryLogic
 import ch.zolto.pos.logic.ProductQuery
+import ch.zolto.pos.logic.ViewModePreference
 import kotlinx.coroutines.launch
 
 sealed class UiState<out T> {
@@ -26,6 +28,9 @@ class ProductViewModel(
     // Nullable so the ViewModel can be unit-tested without a Room database.
     private val productDao: ch.zolto.pos.data.local.ProductDao? = null,
     offlineManager: OfflinePaymentManager? = null,
+    // Defaults to no storage so a unit test needs no Context; the app hands
+    // in a SharedPreferences-backed store.
+    private val viewModeStore: ViewModeStore = ViewModeStore.None,
 ) : ViewModel() {
 
     enum class SortMode { NEWEST, CATEGORY, NAME }
@@ -76,7 +81,11 @@ class ProductViewModel(
     private val _sortBy = MutableLiveData(SortMode.NEWEST)
     val sortBy: LiveData<SortMode> = _sortBy
 
-    private val _viewMode = MutableLiveData(ViewMode.GRID)
+    // Opens in whichever layout this cashier last used, defaulting to the
+    // list — see ViewModePreference for why.
+    private val _viewMode = MutableLiveData(
+        ViewMode.valueOf(ViewModePreference.resolve(viewModeStore.read()))
+    )
     val viewMode: LiveData<ViewMode> = _viewMode
 
     private val _expandedCategories = MutableLiveData<Set<String>>(emptySet())
@@ -182,6 +191,7 @@ class ProductViewModel(
     fun setViewMode(mode: ViewMode) {
         if (_viewMode.value == mode) return
         _viewMode.value = mode
+        viewModeStore.write(mode.name)
     }
 
     fun toggleCategoryExpansion(category: String) {
