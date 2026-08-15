@@ -122,7 +122,8 @@
     "taxNote": "Nur Versand innerhalb der Schweiz · Gratisversand ab CHF 50, sonst CHF 2.",
     "checkout": "Zur Kasse",
     "continue": "Weiter einkaufen",
-    "added": "\"{{name}}\" wurde in den Warenkorb gelegt"
+    "added": "\"{{name}}\" wurde in den Warenkorb gelegt",
+    "total": "Total"
   },
   "checkout": {
     "title": "Kasse",
@@ -140,7 +141,13 @@
     "securedByStripe": "Zahlungen sicher über Stripe — Karten & TWINT",
     "clearBag": "Warenkorb leeren",
     "unavailable": "Die Online-Zahlung ist derzeit nicht verfügbar. Bitte fragen Sie per WhatsApp an.",
-    "error": "Beim Starten der Zahlung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut."
+    "error": "Beim Starten der Zahlung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.",
+    "discountLabel": "Rabattcode",
+    "discountPlaceholder": "Code eingeben",
+    "discountApply": "Einlösen",
+    "discountApplied": "{{code}} eingelöst",
+    "discountRemove": "Rabatt entfernen",
+    "discountChecking": "Wird geprüft…"
   },
   "policy": {
     "returnsHeading": "Rückgabe & Rückerstattung",
@@ -272,5 +279,19 @@
   "common": {
     "close": "Schliessen",
     "loading": "Wird geladen"
+  },
+  "trust": {
+    "eyebrow": "Liebe Worte",
+    "heading": "Was unsere Kundinnen und Kunden sagen",
+    "readReviews": "Unsere Bewertungen lesen",
+    "onTrustpilot": "auf Trustpilot",
+    "starsLabel": "Bewertet mit {{score}} von 5 auf Trustpilot",
+    "ratingLabel": "{{count}} von 5",
+    "reviewCount_one": "{{count}} Bewertung",
+    "reviewCount_other": "{{count}} Bewertungen",
+    "source": {
+      "google": "über Google",
+      "trustpilot": "über Trustpilot"
+    }
   }
 }

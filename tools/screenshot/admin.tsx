@@ -35,6 +35,8 @@ import Categories from "@/pages/admin/Categories";
 import AdminImport from "@/pages/admin/Import";
 import Domain from "@/pages/admin/Domain";
 import Storefront from "@/pages/admin/Storefront";
+import Testimonials from "@/pages/admin/Testimonials";
+import Discounts from "@/pages/admin/Discounts";
 import Billing from "@/pages/Billing";
 
 const params = new URLSearchParams(location.search);
@@ -117,6 +119,8 @@ const RESPONSES: Record<string, unknown> = {
     companyAddress: "Musterstrasse 1\n4051 Basel\nSchweiz",
     vatNumber: "CHE-123.456.789 MWST",
     companyRegistration: "CH-270.3.001.234-5",
+    trustpilotDomain: "bergblume.ch",
+    trustpilotShowRating: true,
   },
   // Bergblume is a ceramics studio — its own category list, not jewellery.
   "categories.list": [
@@ -316,6 +320,120 @@ const RESPONSES: Record<string, unknown> = {
 
 // Returning from Stripe: /admin/products/import?imported=5. The card reads the
 // row's status, not the URL, so this is the only way to see the paid state.
+// Reviews page: a connected Trustpilot profile with a live rating, and three
+// published quotes — including one with no photo, which is the common case and
+// the one whose initials-avatar fallback only a screenshot can judge.
+RESPONSES["trustpilot.status"] = {
+  ratingsAvailable: true,
+  domain: "bergblume.ch",
+  showRating: true,
+  profileUrl: "https://ch.trustpilot.com/review/bergblume.ch",
+  reviewUrl: "https://ch.trustpilot.com/evaluate/bergblume.ch",
+  summary: {
+    domain: "bergblume.ch",
+    displayName: "Bergblume Keramik",
+    stars: 4.5,
+    trustScore: 4.6,
+    numberOfReviews: 128,
+    profileUrl: "https://ch.trustpilot.com/review/bergblume.ch",
+  },
+};
+
+RESPONSES["testimonials.adminList"] = [
+  {
+    id: 1,
+    authorName: "Anna Meier",
+    authorTitle: "Basel",
+    authorPhotoUrl: null,
+    googleId: null,
+    quote:
+      "Die Schale kam wunderbar verpackt an und ist noch schöner als auf den Bildern.",
+    rating: 5,
+    source: "manual",
+    published: true,
+    sortOrder: 0,
+  },
+  {
+    id: 2,
+    authorName: "Beat Suter",
+    authorTitle: "Zürich",
+    authorPhotoUrl: null,
+    googleId: "117482910324",
+    quote:
+      "Zweite Bestellung innert eines Monats. Die Glasuren sind einfach anders als alles, was man im Laden findet.",
+    rating: 5,
+    source: "google",
+    published: true,
+    sortOrder: 1,
+  },
+  {
+    id: 3,
+    authorName: "Céline Rochat",
+    authorTitle: null,
+    authorPhotoUrl: null,
+    googleId: null,
+    quote: "Schnell geliefert, sorgfältig gearbeitet. Gerne wieder.",
+    rating: 4,
+    source: "trustpilot",
+    published: false,
+    sortOrder: 2,
+  },
+];
+
+// Discounts page: the three shapes a merchant actually runs — an open
+// campaign code, a batch code partway through its limit, and a single-use
+// friends-and-family code that has been switched off.
+RESPONSES["discounts.list"] = [
+  {
+    id: 1,
+    code: "WELCOME10",
+    kind: "percent",
+    value: 10,
+    currency: null,
+    campaign: "spring",
+    minSubtotalRappen: null,
+    maxRedemptions: null,
+    redeemedCount: 42,
+    startsAt: null,
+    expiresAt: null,
+    active: true,
+    createdAt: "2026-06-01T00:00:00.000Z",
+    description: "10% off",
+  },
+  {
+    id: 2,
+    code: "XMAS-7K3P9QME",
+    kind: "amount",
+    value: 1500,
+    currency: "chf",
+    campaign: "weihnachtsmarkt",
+    minSubtotalRappen: 5000,
+    maxRedemptions: 50,
+    redeemedCount: 23,
+    startsAt: null,
+    expiresAt: "2026-12-24T00:00:00.000Z",
+    active: true,
+    createdAt: "2026-07-14T00:00:00.000Z",
+    description: "CHF 15.00 off",
+  },
+  {
+    id: 3,
+    code: "FRIENDSFAMILY-M4TZ",
+    kind: "percent",
+    value: 25,
+    currency: null,
+    campaign: "friends-family",
+    minSubtotalRappen: null,
+    maxRedemptions: 1,
+    redeemedCount: 1,
+    startsAt: null,
+    expiresAt: null,
+    active: false,
+    createdAt: "2026-08-02T00:00:00.000Z",
+    description: "25% off",
+  },
+];
+
 RESPONSES["siteImport.get"] = {
   ...(RESPONSES["siteImport.preview"] as Record<string, unknown>),
   sourceUrl: "https://bergblume.ch",
@@ -346,6 +464,8 @@ const PAGES: Record<string, React.ComponentType> = {
   keys: Keys,
   domain: Domain,
   storefront: Storefront,
+  testimonials: Testimonials,
+  discounts: Discounts,
 };
 
 // Billing lives outside ADMIN_NAV (it is reached from the account menu), so it

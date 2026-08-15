@@ -19,7 +19,14 @@ import * as schema from "../drizzle/schema";
 import {
   type BulkUploadLog,
   bulkUploadLogs,
+  type DiscountCode,
+  discountCodes,
+  type DiscountRedemption,
+  discountRedemptions,
   type InsertBulkUploadLog,
+  type InsertDiscountCode,
+  type InsertTestimonial,
+  testimonials,
   type InsertOrder,
   type InsertPosAttribution,
   type InsertProduct,
@@ -3253,5 +3260,379 @@ export async function markSiteImportFailed(
           ),
         ),
       ),
+  );
+}
+
+// ─── Testimonials ─────────────────────────────────────────────────────────────
+
+/**
+ * The quotes a storefront actually shows: published only, in the merchant's
+ * chosen order. Scoped to one tenant like every other storefront read — a
+ * quote belongs to the shop it was given to.
+ */
+export async function getPublishedTestimonials(tenantId: number) {
+  return withDb(
+    (db) =>
+      db
+        .select()
+        .from(testimonials)
+        .where(
+          and(
+            eq(testimonials.tenantId, tenantId),
+            eq(testimonials.published, true),
+          ),
+        )
+        .orderBy(asc(testimonials.sortOrder), desc(testimonials.createdAt)),
+    [],
+  );
+}
+
+/** Everything the admin list shows, published or not. */
+export async function getTestimonials(tenantId: number) {
+  return withDb(
+    (db) =>
+      db
+        .select()
+        .from(testimonials)
+        .where(eq(testimonials.tenantId, tenantId))
+        .orderBy(asc(testimonials.sortOrder), desc(testimonials.createdAt)),
+    [],
+  );
+}
+
+export async function createTestimonial(
+  entry: InsertTestimonial & { tenantId: number },
+): Promise<number> {
+  return withDbOrThrow(async (db) => {
+    const inserted = await db.insert(testimonials).values(entry);
+    return (inserted as unknown as { insertId?: number }).insertId ?? 0;
+  });
+}
+
+/**
+ * Edit one quote. The tenant id is part of the WHERE rather than something the
+ * caller is trusted to have checked first, so a mis-scoped router can only ever
+ * update nothing.
+ */
+export async function updateTestimonial(
+  tenantId: number,
+  id: number,
+  patch: Partial<InsertTestimonial>,
+): Promise<boolean> {
+  return withDbOrThrow(async (db) => {
+    const result = await db
+      .update(testimonials)
+      .set({ ...patch, updatedAt: new Date() })
+      .where(and(eq(testimonials.tenantId, tenantId), eq(testimonials.id, id)));
+    const affected = (result as unknown as Array<{ affectedRows?: number }>)[0]
+      ?.affectedRows;
+    return Boolean(affected);
+  });
+}
+
+export async function deleteTestimonial(
+  tenantId: number,
+  id: number,
+): Promise<void> {
+  await withDbOrThrow((db) =>
+    db
+      .delete(testimonials)
+      .where(and(eq(testimonials.tenantId, tenantId), eq(testimonials.id, id))),
+  );
+}
+
+// ─── Discount codes ───────────────────────────────────────────────────────────
+
+/**
+ * How long a checkout may hold a redemption slot. Matches
+ * PRODUCT_RESERVATION_TTL_MS and the Stripe session's own `expires_at`, so a
+ * hold never outlives the session that placed it.
+ */
+export const DISCOUNT_HOLD_TTL_MS = PRODUCT_RESERVATION_TTL_MS;
+
+/** The admin list: every code this store has ever minted, newest first. */
+export async function getDiscountCodes(tenantId: number) {
+  return withDb(
+    (db) =>
+      db
+        .select()
+        .from(discountCodes)
+        .where(eq(discountCodes.tenantId, tenantId))
+        .orderBy(desc(discountCodes.createdAt)),
+    [],
+  );
+}
+
+/**
+ * Look a code up for redemption. The comparison is on the canonical
+ * (upper-case) form — normaliseDiscountCode in shared/discounts.ts is what
+ * every caller must put the shopper's typing through first.
+ */
+export async function getDiscountCodeByCode(
+  tenantId: number,
+  code: string,
+): Promise<DiscountCode | undefined> {
+  return withDb(async (db) => {
+    const rows = await db
+      .select()
+      .from(discountCodes)
+      .where(
+        and(eq(discountCodes.tenantId, tenantId), eq(discountCodes.code, code)),
+      )
+      .limit(1);
+    return rows[0];
+  }, undefined);
+}
+
+/**
+ * Mint codes. Written as one multi-row insert so a batch of 50 is one round
+ * trip, and deliberately NOT `INSERT IGNORE`: a collision with an existing code
+ * must surface, because silently dropping one row of a batch would hand the
+ * merchant 49 codes while telling them they have 50.
+ */
+export async function createDiscountCodes(
+  entries: (InsertDiscountCode & { tenantId: number })[],
+): Promise<void> {
+  if (entries.length === 0) return;
+  await withDbOrThrow((db) => db.insert(discountCodes).values(entries));
+}
+
+export async function updateDiscountCode(
+  tenantId: number,
+  id: number,
+  patch: Partial<InsertDiscountCode>,
+): Promise<boolean> {
+  return withDbOrThrow(async (db) => {
+    const result = await db
+      .update(discountCodes)
+      .set({ ...patch, updatedAt: new Date() })
+      .where(
+        and(eq(discountCodes.tenantId, tenantId), eq(discountCodes.id, id)),
+      );
+    const affected = (result as unknown as Array<{ affectedRows?: number }>)[0]
+      ?.affectedRows;
+    return Boolean(affected);
+  });
+}
+
+/**
+ * Delete a code that has never been used. Codes WITH redemptions are kept —
+ * `discount_redemptions` rows point at them, and a merchant looking at last
+ * month's orders needs to see which code paid for them. The router refuses the
+ * delete in that case and offers deactivation instead.
+ */
+export async function deleteDiscountCode(
+  tenantId: number,
+  id: number,
+): Promise<void> {
+  await withDbOrThrow((db) =>
+    db
+      .delete(discountCodes)
+      .where(
+        and(eq(discountCodes.tenantId, tenantId), eq(discountCodes.id, id)),
+      ),
+  );
+}
+
+/**
+ * Claim one redemption slot on a code, atomically.
+ *
+ * The whole limit mechanism is this single statement: the increment and the
+ * "is there room?" test are the same UPDATE, so two checkouts racing for the
+ * last slot on a one-use code produce exactly one winner. A read-then-write
+ * check would let both see `redeemed_count = 0` and both proceed — which, for
+ * the friends-and-family shape (max_redemptions = 1), is the difference
+ * between a favour and a leak.
+ *
+ * Returns true when a slot was claimed. `max_redemptions IS NULL` means
+ * unlimited and always claims.
+ */
+export async function claimDiscountRedemptionSlot(
+  tenantId: number,
+  codeId: number,
+): Promise<boolean> {
+  return withDbOrThrow(async (db) => {
+    const result = await db
+      .update(discountCodes)
+      .set({ redeemedCount: sql`${discountCodes.redeemedCount} + 1` })
+      .where(
+        and(
+          eq(discountCodes.id, codeId),
+          eq(discountCodes.tenantId, tenantId),
+          eq(discountCodes.active, true),
+          or(
+            isNull(discountCodes.maxRedemptions),
+            lt(discountCodes.redeemedCount, discountCodes.maxRedemptions),
+          ),
+        ),
+      );
+    const affected = (result as unknown as Array<{ affectedRows?: number }>)[0]
+      ?.affectedRows;
+    return Boolean(affected);
+  });
+}
+
+/**
+ * Give a claimed slot back — the checkout failed, or the hold expired without
+ * a payment. Guarded at zero so a double release (a failure path plus the
+ * expiry sweep) can never drive the count negative and silently grant a
+ * merchant's promotion an extra redemption.
+ */
+export async function releaseDiscountRedemptionSlot(
+  tenantId: number,
+  codeId: number,
+): Promise<void> {
+  await withDbOrThrow((db) =>
+    db
+      .update(discountCodes)
+      .set({ redeemedCount: sql`${discountCodes.redeemedCount} - 1` })
+      .where(
+        and(
+          eq(discountCodes.id, codeId),
+          eq(discountCodes.tenantId, tenantId),
+          gt(discountCodes.redeemedCount, 0),
+        ),
+      ),
+  );
+}
+
+/** Record the hold itself, keyed by the Stripe session it belongs to. */
+export async function createDiscountRedemption(entry: {
+  tenantId: number;
+  discountCodeId: number;
+  stripeSessionId: string;
+  amountOffRappen: number;
+  currency: string;
+  heldUntil: Date;
+}): Promise<void> {
+  await withDbOrThrow((db) =>
+    db.insert(discountRedemptions).values({ ...entry, status: "held" }),
+  );
+}
+
+export async function getDiscountRedemptionBySession(
+  stripeSessionId: string,
+): Promise<DiscountRedemption | undefined> {
+  return withDb(async (db) => {
+    const rows = await db
+      .select()
+      .from(discountRedemptions)
+      .where(eq(discountRedemptions.stripeSessionId, stripeSessionId))
+      .limit(1);
+    return rows[0];
+  }, undefined);
+}
+
+/**
+ * Turn a hold into a redemption that actually happened. Guarded on the `held`
+ * status, so a replayed `checkout.session.completed` — Stripe retries, and the
+ * admin's manual re-fulfil button exists — confirms nothing a second time.
+ * Returns true only for the transition that really moved.
+ */
+export async function confirmDiscountRedemption(
+  stripeSessionId: string,
+  details: { orderId?: number | null; customerEmail?: string | null },
+): Promise<boolean> {
+  return withDbOrThrow(async (db) => {
+    const result = await db
+      .update(discountRedemptions)
+      .set({
+        status: "confirmed",
+        confirmedAt: new Date(),
+        orderId: details.orderId ?? null,
+        customerEmail: details.customerEmail ?? null,
+      })
+      .where(
+        and(
+          eq(discountRedemptions.stripeSessionId, stripeSessionId),
+          eq(discountRedemptions.status, "held"),
+        ),
+      );
+    const affected = (result as unknown as Array<{ affectedRows?: number }>)[0]
+      ?.affectedRows;
+    return Boolean(affected);
+  });
+}
+
+/**
+ * Mark a hold released, returning whether THIS call is the one that moved it.
+ *
+ * The boolean is what makes the paired counter decrement safe. Guarded on the
+ * `held` status, so a row already confirmed by a webhook or already released by
+ * an earlier sweep returns false — and the caller then leaves
+ * `redeemed_count` alone instead of handing a merchant's promotion a free
+ * extra redemption on every subsequent pass.
+ */
+export async function markDiscountRedemptionReleased(
+  stripeSessionId: string,
+): Promise<boolean> {
+  return withDbOrThrow(async (db) => {
+    const result = await db
+      .update(discountRedemptions)
+      .set({ status: "released" })
+      .where(
+        and(
+          eq(discountRedemptions.stripeSessionId, stripeSessionId),
+          eq(discountRedemptions.status, "held"),
+        ),
+      );
+    const affected = (result as unknown as Array<{ affectedRows?: number }>)[0]
+      ?.affectedRows;
+    return Boolean(affected);
+  });
+}
+
+/**
+ * Holds whose sessions have come and gone without being paid. The sweep
+ * (server/discounts.ts) releases their slots, which is what stops abandoned
+ * baskets from burning a limited promotion one un-bought checkout at a time.
+ */
+export async function getExpiredDiscountHolds(
+  scope: { tenantId?: number; discountCodeId?: number; limit?: number } = {},
+): Promise<DiscountRedemption[]> {
+  return withDb(
+    (db) =>
+      db
+        .select()
+        .from(discountRedemptions)
+        .where(
+          and(
+            eq(discountRedemptions.status, "held"),
+            isNotNull(discountRedemptions.heldUntil),
+            lt(discountRedemptions.heldUntil, new Date()),
+            ...(scope.tenantId != null
+              ? [eq(discountRedemptions.tenantId, scope.tenantId)]
+              : []),
+            ...(scope.discountCodeId != null
+              ? [eq(discountRedemptions.discountCodeId, scope.discountCodeId)]
+              : []),
+          ),
+        )
+        .limit(scope.limit ?? 200),
+    [],
+  );
+}
+
+/** Confirmed redemptions of one code, for the admin's "who used this" list. */
+export async function getDiscountRedemptions(
+  tenantId: number,
+  discountCodeId: number,
+  limit = 100,
+) {
+  return withDb(
+    (db) =>
+      db
+        .select()
+        .from(discountRedemptions)
+        .where(
+          and(
+            eq(discountRedemptions.tenantId, tenantId),
+            eq(discountRedemptions.discountCodeId, discountCodeId),
+            eq(discountRedemptions.status, "confirmed"),
+          ),
+        )
+        .orderBy(desc(discountRedemptions.confirmedAt))
+        .limit(limit),
+    [],
   );
 }

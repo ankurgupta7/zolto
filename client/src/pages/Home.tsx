@@ -2,6 +2,7 @@ import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import ProductCard from "@/components/ProductCard";
 import ParticleField from "@/components/ParticleField";
+import CustomerTrust from "@/components/CustomerTrust";
 import { useTenant } from "@/contexts/TenantContext";
 import { instagramHref } from "@/lib/branding";
 import { heroCopy, valueProps, pageChrome } from "@/lib/storefrontContent";
@@ -310,6 +311,13 @@ export default function Home() {
             </div>
           </section>
         )}
+
+        {/* ── What other people say ──────────────────────────────────────────
+            Last thing on the page, on purpose: a shopper who has scrolled past
+            the hero, the story and the new arrivals is deciding whether to
+            trust the shop, and this is the answer to that question. Renders
+            nothing for a store with no quotes and no Trustpilot profile. */}
+        <CustomerTrust />
       </div>
     </>
   );

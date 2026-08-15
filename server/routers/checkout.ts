@@ -33,12 +33,16 @@ function resolveBaseUrl(): string {
 /** Checkout failures are transport-agnostic; map them to tRPC codes here. */
 const TRPC_CODE: Record<
   CheckoutErrorCode,
-  "PRECONDITION_FAILED" | "NOT_FOUND" | "CONFLICT"
+  "PRECONDITION_FAILED" | "NOT_FOUND" | "CONFLICT" | "BAD_REQUEST"
 > = {
   NOT_CONFIGURED: "PRECONDITION_FAILED",
   NOT_CONNECTED: "PRECONDITION_FAILED",
   NOT_FOUND: "NOT_FOUND",
   CONFLICT: "CONFLICT",
+  // A refused code is the shopper's input to fix, not a conflict with the
+  // store's state — the basket is untouched and the same request without the
+  // code would succeed.
+  DISCOUNT_REFUSED: "BAD_REQUEST",
 };
 
 export const checkoutRouter = router({
@@ -69,6 +73,11 @@ export const checkoutRouter = router({
         // Storefront language the customer is browsing in — drives the
         // Stripe Checkout page language and the receipt email's language.
         locale: z.enum(["de", "en", "fr", "it"]).optional(),
+        // A discount code as the shopper typed it. Validated server-side
+        // against this store's own codes and this basket's own subtotal — the
+        // basket's live preview (`discounts.check`) is advisory and nothing it
+        // returned is trusted here.
+        discountCode: z.string().trim().max(64).optional(),
       }),
     )
     .mutation(async ({ input, ctx }) => {
@@ -84,9 +93,14 @@ export const checkoutRouter = router({
           productIds: input.productIds,
           channel: input.channel,
           locale: input.locale,
+          discountCode: input.discountCode,
           baseUrl: resolveBaseUrl(),
         });
-        return { url: result.url, sessionId: result.sessionId };
+        return {
+          url: result.url,
+          sessionId: result.sessionId,
+          discount: result.discount,
+        };
       } catch (err) {
         if (err instanceof CheckoutError) {
           throw new TRPCError({

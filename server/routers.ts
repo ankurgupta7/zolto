@@ -20,6 +20,9 @@ import { insightsRouter } from "./routers/insights";
 import { migrationRouter } from "./routers/migration";
 import { siteImportRouter } from "./routers/siteImport";
 import { platformRouter } from "./routers/platform";
+import { testimonialsRouter } from "./routers/testimonials";
+import { trustpilotRouter } from "./routers/trustpilot";
+import { discountsRouter } from "./routers/discounts";
 
 // Sign-in links, bounded per address and per caller. See requestMagicLink
 // below for why both keys are needed and why the address is checked first.
@@ -115,6 +118,9 @@ export const appRouter = router({
   instagram: instagramRouter,
   checkout: checkoutRouter,
   reconciliation: reconciliationRouter,
+  testimonials: testimonialsRouter, // Customer quotes on the storefront
+  trustpilot: trustpilotRouter, // The store's Trustpilot standing
+  discounts: discountsRouter, // Promotional + friends-and-family codes
 });
 
 export type AppRouter = typeof appRouter;

@@ -1024,6 +1024,18 @@ fi
 # deploy/lib/db.sh.
 migrate_0047_users_openid_unique
 
+# ── 0048: customer trust — Trustpilot, testimonials, discount codes ──────────
+# Ships drizzle/0029_customer_trust.sql. Two columns on tenant_settings naming
+# the store's Trustpilot business unit, a `testimonials` table for the quotes a
+# merchant publishes at the foot of their home page, and the `discount_codes` /
+# `discount_redemptions` pair behind promotional and friends-and-family codes.
+#
+# Additive throughout: a store with no Trustpilot domain renders no trust band,
+# a store with no testimonial rows renders no quotes, and checkout behaves
+# exactly as before until a code is actually typed in.
+# Idempotent; see migrate_0048_customer_trust in deploy/lib/db.sh.
+migrate_0048_customer_trust
+
 # ── Record the applied migration set ──────────────────────────────────────────
 # Only reached when every migration above succeeded — `set -e` plus run_sql's
 # die() mean a failure never gets this far, so a half-applied schema is never
