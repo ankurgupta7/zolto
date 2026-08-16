@@ -286,6 +286,19 @@
       "doneHidden": "{{count}} arrived hidden because we could not read a price. Set one and they go live.",
       "doneFailed": "These could not be added: {{names}}",
       "doneAgain": "Import another site"
+    },
+    "agents": {
+      "title": "AI agents",
+      "description": "What AI assistants and crawlers read from your shop. They fetch your product brief and can buy through it — a sale from one lands as an online order.",
+      "empty": "No AI agent has read your shop yet. Your product brief and the agent shopping endpoint are live and waiting — nothing to set up.",
+      "statReads": "Reads (30d)",
+      "statAssistants": "Assistant fetches",
+      "statToolCalls": "Shop queries",
+      "chartSeries": "Reads",
+      "byAgentTitle": "Who read it",
+      "byToolTitle": "What they asked for",
+      "kindAssistant": "answering someone",
+      "kindCrawler": "indexing"
     }
   }
 }

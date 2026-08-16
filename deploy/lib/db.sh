@@ -684,6 +684,54 @@ migrate_0045_site_imports() {
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Migration 0049: who is reading the machine-facing surfaces.
+#
+# Ships drizzle/0030_agent_hits.sql. One pre-aggregated counter per
+# (store, day, surface, tool, agent) for /llms.txt, /llms-full.txt and /mcp —
+# the reach half of the agent-commerce funnel, whose sale half is already
+# recorded as `orders.channel = 'agent'`.
+#
+# The UNIQUE key is the whole migration. server/db.ts recordAgentHit is an
+# INSERT … ON DUPLICATE KEY UPDATE, which in MySQL fires only on a PRIMARY KEY
+# or UNIQUE collision; `id` is autoincrement and never supplied, so without
+# `agent_hits_bucket` every single hit INSERTs a new row and the table becomes
+# an unbounded per-request log on the one endpoint an agent can loop on.
+#
+# Both DEFAULTs are load-bearing for the same reason: MySQL treats NULLs as
+# distinct in a UNIQUE index, so a nullable tenant_id (platform surface) or
+# mcp_tool (not an MCP call) would never collide either. Additive and
+# idempotent — nothing reads the table until the admin panel asks.
+# ─────────────────────────────────────────────────────────────────────────────
+migrate_0049_agent_hits() {
+  if [ "$(tbl_exists agent_hits)" = "0" ]; then
+    run_sql "0049 agent_hits table" "
+      CREATE TABLE IF NOT EXISTS \`agent_hits\` (
+        \`id\`        int AUTO_INCREMENT NOT NULL,
+        \`tenant_id\` int NOT NULL DEFAULT 0,
+        \`day\`       varchar(10) NOT NULL,
+        \`surface\`   varchar(32) NOT NULL,
+        \`mcp_tool\`  varchar(64) NOT NULL DEFAULT '',
+        \`agent\`     varchar(64) NOT NULL,
+        \`count\`     int NOT NULL DEFAULT 0,
+        \`createdAt\` timestamp NOT NULL DEFAULT (now()),
+        \`updatedAt\` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+        CONSTRAINT \`agent_hits_id\` PRIMARY KEY(\`id\`),
+        CONSTRAINT \`agent_hits_bucket\` UNIQUE(\`tenant_id\`,\`day\`,\`surface\`,\`mcp_tool\`,\`agent\`)
+      );"
+  else
+    ok "0049 agent_hits already exists"
+    # A database that got the table before the unique key existed would count
+    # every hit as a fresh row. Restore it rather than leaving the upsert broken.
+    if [ "$(idx_exists agent_hits agent_hits_bucket)" = "0" ]; then
+      run_sql "0049 agent_hits bucket unique index" \
+        "ALTER TABLE \`agent_hits\` ADD CONSTRAINT \`agent_hits_bucket\` UNIQUE(\`tenant_id\`,\`day\`,\`surface\`,\`mcp_tool\`,\`agent\`);"
+    else
+      ok "0049 agent_hits_bucket already exists"
+    fi
+  fi
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Migration 0047: restore users_openId_unique where it is missing.
 #
 # upsertUser writes every sign-in with onDuplicateKeyUpdate, which in MySQL

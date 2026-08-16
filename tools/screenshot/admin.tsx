@@ -35,6 +35,7 @@ import Categories from "@/pages/admin/Categories";
 import AdminImport from "@/pages/admin/Import";
 import Domain from "@/pages/admin/Domain";
 import Storefront from "@/pages/admin/Storefront";
+import Insights from "@/pages/admin/Insights";
 import Testimonials from "@/pages/admin/Testimonials";
 import Discounts from "@/pages/admin/Discounts";
 import Billing from "@/pages/Billing";
@@ -269,6 +270,71 @@ const RESPONSES: Record<string, unknown> = {
     seatLimit: comp === "pro" || plan === "pro" ? 3 : 1,
   },
   "instagram.adminList": [],
+  // Insights page.
+  "insights.summary": {
+    currency: "CHF",
+    catalog: { total: 118, live: 96, sold: 22, avgPrice: 64 },
+    last30d: {
+      onlineOrders: 9,
+      onlineRevenue: 612,
+      posSales: 23,
+      posRevenue: 1480,
+      totalRevenue: 2092,
+      totalUnits: 32,
+    },
+    topSellers: [
+      { name: "Stoneware mug — oat", units: 7, revenue: 294 },
+      { name: "Serving bowl, large", units: 3, revenue: 360 },
+    ],
+    staleStock: [{ name: "Studio seconds box", daysLive: 112, price: 28 }],
+  },
+  // Agent traffic. `?agents=none` shows the empty state instead — a store no
+  // AI has found yet, which is what most stores see on day one and the state
+  // most likely to read as breakage if it were drawn as an empty chart.
+  "insights.agentTraffic":
+    params.get("agents") === "none"
+      ? {
+          days: 30,
+          total: 0,
+          assistantHits: 0,
+          byDay: [],
+          byAgent: [],
+          bySurface: [],
+          byTool: [],
+        }
+      : {
+          days: 30,
+          total: 148,
+          assistantHits: 61,
+          // A plausible month: quiet at first, then a crawler finds the shop.
+          byDay: [
+            2, 0, 1, 3, 2, 4, 1, 0, 2, 5, 3, 6, 4, 2, 7, 5, 9, 4, 6, 8, 3, 5,
+            11, 7, 6, 9, 4, 8, 7, 5,
+          ].map((count, i) => ({
+            day: new Date(Date.now() - (29 - i) * 86_400_000)
+              .toISOString()
+              .slice(0, 10),
+            count,
+          })),
+          byAgent: [
+            { agent: "GPTBot", kind: "crawler", count: 54 },
+            { agent: "ClaudeBot", kind: "crawler", count: 33 },
+            { agent: "ChatGPT", kind: "assistant", count: 31 },
+            { agent: "Claude", kind: "assistant", count: 22 },
+            { agent: "PerplexityBot", kind: "crawler", count: 8 },
+          ],
+          bySurface: [
+            { surface: "llms.txt", count: 87 },
+            { surface: "mcp", count: 49 },
+            { surface: "robots.txt", count: 12 },
+          ],
+          byTool: [
+            { tool: "search_products", count: 28 },
+            { tool: "get_product", count: 14 },
+            { tool: "create_checkout", count: 5 },
+            { tool: "get_store_info", count: 2 },
+          ],
+        },
   // Import page: provider migration cards + existing-product matching.
   "migration.status": {
     stripe: { connected: true, connectAvailable: true },
@@ -464,6 +530,7 @@ const PAGES: Record<string, React.ComponentType> = {
   keys: Keys,
   domain: Domain,
   storefront: Storefront,
+  insights: Insights,
   testimonials: Testimonials,
   discounts: Discounts,
 };

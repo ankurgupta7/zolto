@@ -300,6 +300,19 @@
       "doneHidden": "{{count}} sono arrivati nascosti perché non abbiamo letto un prezzo. Impostalo e vanno online.",
       "doneFailed": "Non è stato possibile aggiungere: {{names}}",
       "doneAgain": "Importa un altro sito"
+    },
+    "agents": {
+      "title": "Agenti IA",
+      "description": "Che cosa leggono dal tuo negozio gli assistenti e i crawler IA. Consultano la scheda dei tuoi prodotti e possono acquistare — una vendita così arriva come ordine online.",
+      "empty": "Nessun agente IA ha ancora letto il tuo negozio. La scheda prodotti e l'accesso d'acquisto per gli agenti sono attivi — non c'è nulla da configurare.",
+      "statReads": "Letture (30 gg)",
+      "statAssistants": "Richieste di assistenti",
+      "statToolCalls": "Interrogazioni",
+      "chartSeries": "Letture",
+      "byAgentTitle": "Chi ha letto",
+      "byToolTitle": "Che cosa hanno chiesto",
+      "kindAssistant": "sta rispondendo a qualcuno",
+      "kindCrawler": "indicizza"
     }
   }
 }

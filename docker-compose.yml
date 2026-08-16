@@ -86,6 +86,16 @@ services:
       # there is deliberately no POS_API_KEY env var)
       STRIPE_POS_WEBHOOK_SECRET: ${STRIPE_POS_WEBHOOK_SECRET}
 
+      # Page-view analytics (server/analytics.ts). All three are optional: with
+      # ANALYTICS_ENDPOINT or ANALYTICS_WEBSITE_ID unset the app injects no
+      # tracking tag at all, which is the default and the right answer for a
+      # self-hoster who wants no measurement. Never VITE_-prefixed — a
+      # build-time constant cannot be absent, and the previous baked-in snippet
+      # shipped a dead script tag on every page for exactly that reason.
+      ANALYTICS_ENDPOINT: ${ANALYTICS_ENDPOINT:-}
+      ANALYTICS_WEBSITE_ID: ${ANALYTICS_WEBSITE_ID:-}
+      ANALYTICS_STOREFRONT_WEBSITE_ID: ${ANALYTICS_STOREFRONT_WEBSITE_ID:-}
+
     depends_on:
       db:
         condition: service_healthy
@@ -124,6 +134,53 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
+    networks:
+      - internal
+
+  # ── Umami (privacy-friendly page-view analytics) ─────────────────────────────────────
+  #
+  # The human half of "who came to the site" — the machine half (AI agents on
+  # /llms.txt and /mcp) is counted by the app itself into `agent_hits`, because
+  # no browser-side script can see traffic that never runs JavaScript.
+  #
+  # Cookieless, no cross-site identifiers, self-hosted on the same MySQL as the
+  # app — which is what the privacy policy already promises visitors in all four
+  # languages (client/src/marketing/locales/*.json). Reached first-party at
+  # /_stats (see Caddyfile) so no visitor IP leaves this infrastructure and no
+  # ad blocker strips it, the same reason the webfonts are vendored.
+  #
+  # Behind a profile: analytics is opt-in for a self-hoster, and the app emits
+  # no tracking tag at all unless ANALYTICS_ENDPOINT and ANALYTICS_WEBSITE_ID
+  # are set (server/analytics.ts).
+  #
+  #   docker compose --profile analytics up -d
+  #
+  # One-time setup: Umami needs its own schema on the shared MySQL. Create it
+  # before first start, then log in at /_stats with admin/umami and change the
+  # password immediately:
+  #   docker compose exec db mysql -uroot -p"$MYSQL_ROOT_PASSWORD" \
+  #     -e "CREATE DATABASE IF NOT EXISTS umami CHARACTER SET utf8mb4; \
+  #         GRANT ALL ON umami.* TO '$MYSQL_USER'@'%'; FLUSH PRIVILEGES;"
+  umami:
+    image: ghcr.io/umami-software/umami:mysql-latest
+    restart: unless-stopped
+    profiles:
+      - analytics
+    environment:
+      DATABASE_TYPE: mysql
+      DATABASE_URL: mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@db:3306/umami
+      # Signs Umami's own session tokens. Unrelated to JWT_SECRET — a separate
+      # secret so rotating one never invalidates the other.
+      APP_SECRET: ${ANALYTICS_APP_SECRET}
+      # Served under a path prefix by Caddy, so Umami has to build its asset
+      # URLs with that prefix rather than from the root.
+      BASE_PATH: /_stats
+      # Zolto never asks a visitor to consent to a cookie because it sets none;
+      # honouring the browser's own signal is the other half of that.
+      DISABLE_TELEMETRY: "1"
+    depends_on:
+      db:
+        condition: service_healthy
     networks:
       - internal
 

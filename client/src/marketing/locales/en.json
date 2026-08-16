@@ -191,7 +191,7 @@
           "heading": "4. Cookies & analytics",
           "body": [
             "The platform sets a single cookie, app_session_id, which keeps you signed in. It is strictly necessary — the service cannot authenticate you without it — so it requires no consent banner and cannot be disabled while using the service. We set no advertising, preference, or third-party tracking cookies.",
-            "We measure page views with Umami, a privacy-focused analytics tool that works without cookies and without cross-site identifiers; it gives us aggregate statistics, not profiles of individual visitors. Webfonts are served from our own infrastructure, so viewing a page sends no request to third-party font networks. During checkout you are redirected to Stripe, which may set its own cookies on its own domain under Stripe's privacy policy."
+            "We measure page views with Umami, a privacy-focused analytics tool that works without cookies and without cross-site identifiers, together with a small number of aggregate interaction events — a product viewed, an item added to the bag, a checkout begun or completed. Those are recorded as categories and rounded price bands, never as an order, an exact amount or a person; the whole of it gives us aggregate statistics, not profiles of individual visitors. Webfonts are served from our own infrastructure, so viewing a page sends no request to third-party font networks. During checkout you are redirected to Stripe, which may set its own cookies on its own domain under Stripe's privacy policy."
           ]
         },
         {
