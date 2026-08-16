@@ -1,12 +1,18 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?><!--
+  One product in the picker's list.
+
+  The name gets the whole width of the row and is allowed to wrap onto a
+  second line — a cashier scanning for "Moonstone pendant, 45cm chain" has to
+  be able to read which piece they are about to tap, and the old row put the
+  price in a competing column and clipped the name to one line. Price, stock
+  and visibility sit on a quieter metadata line underneath instead.
+-->
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/card_product"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginHorizontal="8dp"
-    android:layout_marginVertical="4dp"
-    app:cardCornerRadius="12dp"
+    app:cardCornerRadius="0dp"
     app:cardElevation="0dp"
     app:strokeWidth="0dp"
     app:cardBackgroundColor="@android:color/white">
@@ -14,81 +20,109 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="12dp"
-        android:gravity="center_vertical">
-
-        <com.google.android.material.imageview.ShapeableImageView
-            android:id="@+id/img_product"
-            android:layout_width="60dp"
-            android:layout_height="60dp"
-            android:scaleType="centerCrop"
-            app:shapeAppearanceOverlay="@style/ShapeAppearance.MaterialComponents.SmallComponent"
-            android:src="@drawable/ic_product_placeholder" />
+        android:orientation="vertical">
 
         <LinearLayout
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:layout_marginStart="16dp">
+            android:minHeight="76dp"
+            android:orientation="horizontal"
+            android:paddingHorizontal="16dp"
+            android:paddingVertical="12dp"
+            android:gravity="center_vertical">
 
-            <TextView
-                android:id="@+id/txt_product_name"
-                android:layout_width="wrap_content"
+            <com.google.android.material.imageview.ShapeableImageView
+                android:id="@+id/img_product"
+                android:layout_width="56dp"
+                android:layout_height="56dp"
+                android:scaleType="centerCrop"
+                app:shapeAppearanceOverlay="@style/ShapeAppearance.MaterialComponents.SmallComponent"
+                android:src="@drawable/ic_product_placeholder" />
+
+            <LinearLayout
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                android:textColor="@color/near_black"
-                android:maxLines="1"
-                android:ellipsize="end" />
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:layout_marginStart="14dp">
 
-            <TextView
-                android:id="@+id/txt_product_category"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textSize="12sp"
-                android:textColor="@color/muted_text" />
+                <TextView
+                    android:id="@+id/txt_product_name"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textSize="17sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/deep_text"
+                    android:lineSpacingExtra="1dp"
+                    android:maxLines="2"
+                    android:ellipsize="end" />
 
-        </LinearLayout>
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="3dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
 
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:gravity="end"
-            android:layout_marginStart="8dp">
+                    <TextView
+                        android:id="@+id/txt_product_price"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textSize="14sp"
+                        android:textColor="@color/muted_text" />
 
-            <TextView
-                android:id="@+id/txt_product_price"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                android:textColor="@color/forest_green" />
+                    <TextView
+                        android:id="@+id/txt_quantity_badge"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:paddingHorizontal="6dp"
+                        android:paddingVertical="2dp"
+                        android:background="@color/warm_ivory"
+                        android:textColor="@color/muted_text"
+                        android:visibility="gone" />
 
-            <TextView
-                android:id="@+id/txt_quantity_badge"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textSize="10sp"
-                android:textStyle="bold"
-                android:paddingHorizontal="4dp"
-                android:paddingVertical="2dp"
-                android:background="@color/warm_ivory"
-                android:textColor="@color/near_black"
+                    <!-- Only reachable with "Show Hidden Items" on — flags a
+                         piece the storefront isn't showing. -->
+                    <TextView
+                        android:id="@+id/txt_hidden_badge"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:textSize="10sp"
+                        android:textStyle="bold"
+                        android:paddingHorizontal="6dp"
+                        android:paddingVertical="2dp"
+                        android:background="@color/error_red"
+                        android:text="@string/product_hidden"
+                        android:textColor="@android:color/white"
+                        android:visibility="gone" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+            <ImageView
+                android:id="@+id/img_checkmark"
+                android:layout_width="26dp"
+                android:layout_height="26dp"
+                android:layout_marginStart="12dp"
+                android:src="@drawable/ic_check_circle"
+                app:tint="@color/gold"
+                android:contentDescription="@string/product_selected"
                 android:visibility="gone" />
 
         </LinearLayout>
 
-        <ImageView
-            android:id="@+id/img_checkmark"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:layout_marginStart="12dp"
-            android:src="@drawable/ic_check_circle"
-            app:tint="@color/forest_green"
-            android:visibility="gone" />
+        <!-- Inset to line up with the name rather than cutting under the
+             thumbnail. -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginStart="86dp"
+            android:background="@color/border" />
 
     </LinearLayout>
 

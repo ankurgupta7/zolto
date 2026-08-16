@@ -1,6 +1,9 @@
 import XCTest
 @testable import ZoltoPOS
 
+// Main-actor isolated because the cart tests build a ProductViewModel, whose
+// init is @MainActor. Without this the test target does not compile.
+@MainActor
 final class PriceOverrideAndCustomItemTests: XCTestCase {
 
     // MARK: - PaymentIntentRequest wire format

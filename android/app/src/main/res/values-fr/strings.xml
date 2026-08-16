@@ -21,6 +21,7 @@
     <string name="quantity_badge">%d restant(s)</string>
     <string name="selected_summary">%d sélectionné(s) — CHF %s</string>
     <string name="product_hidden">Masqué</string>
+    <string name="product_selected">Sélectionné</string>
 
     <!-- Sale review -->
     <string name="review_sale">Vérifier la vente</string>

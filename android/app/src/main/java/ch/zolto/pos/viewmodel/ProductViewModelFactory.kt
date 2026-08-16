@@ -5,6 +5,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import ch.zolto.pos.data.ApiService
 import ch.zolto.pos.data.OfflinePaymentManager
+import ch.zolto.pos.data.SharedPrefsViewModeStore
+import ch.zolto.pos.data.ViewModeStore
 
 class ProductViewModelFactory(
     private val api: ApiService,
@@ -14,7 +16,8 @@ class ProductViewModelFactory(
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         @Suppress("UNCHECKED_CAST")
         val offlineManager = context?.let { OfflinePaymentManager(it) }
-        return ProductViewModel(api, productDao, offlineManager) as T
+        val viewModeStore = context?.let { SharedPrefsViewModeStore(it) } ?: ViewModeStore.None
+        return ProductViewModel(api, productDao, offlineManager, viewModeStore) as T
     }
 }
 
