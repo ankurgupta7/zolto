@@ -38,6 +38,7 @@ import Storefront from "@/pages/admin/Storefront";
 import Insights from "@/pages/admin/Insights";
 import Testimonials from "@/pages/admin/Testimonials";
 import Discounts from "@/pages/admin/Discounts";
+import Sales from "@/pages/admin/Sales";
 import Billing from "@/pages/Billing";
 
 const params = new URLSearchParams(location.search);
@@ -500,6 +501,84 @@ RESPONSES["discounts.list"] = [
   },
 ];
 
+// Sales page: a day's takings as a merchant would actually see them — mostly
+// in-person cash and TWINT with real piece names, one online order, and one
+// legacy sale whose line items were never recorded (the "No items recorded"
+// state, which is what this page had to be able to say honestly).
+RESPONSES["sales.list"] = {
+  rows: [
+    {
+      key: "pos-91",
+      id: 91,
+      channel: "pos",
+      reference: "KPOS-91",
+      createdAt: "2026-08-16T12:14:47.000Z",
+      paymentMethod: "cash",
+      currency: "chf",
+      amountMinor: 15000,
+      customerName: null,
+      customerEmail: null,
+      items: [
+        { productId: 4, name: "Serving bowl, large", amountMinor: 12000 },
+        { productId: 9, name: "Bud vase", amountMinor: 3000 },
+      ],
+    },
+    {
+      key: "pos-90",
+      id: 90,
+      channel: "pos",
+      reference: "KPOS-90",
+      createdAt: "2026-08-16T12:01:58.000Z",
+      paymentMethod: "twint",
+      currency: "chf",
+      amountMinor: 18000,
+      customerName: "Beat Suter",
+      customerEmail: null,
+      items: [
+        { productId: 1, name: "Stoneware mug \u2014 oat", amountMinor: 4200 },
+        { productId: 2, name: "Stoneware mug \u2014 slate", amountMinor: 4200 },
+        { productId: 7, name: "Plate, dinner", amountMinor: 9600 },
+      ],
+    },
+    {
+      key: "online-33",
+      id: 33,
+      channel: "online",
+      reference: "#33",
+      createdAt: "2026-08-15T18:22:10.000Z",
+      paymentMethod: "card",
+      currency: "chf",
+      amountMinor: 8000,
+      customerName: "C\u00e9line Rochat",
+      customerEmail: "celine@example.ch",
+      items: [{ productId: 3, name: "Studio seconds box", amountMinor: 0 }],
+    },
+    {
+      key: "pos-88",
+      id: 88,
+      channel: "pos",
+      reference: "KPOS-88",
+      createdAt: "2026-07-12T06:46:22.000Z",
+      paymentMethod: "cash",
+      currency: "chf",
+      amountMinor: 17000,
+      customerName: null,
+      customerEmail: null,
+      items: [],
+    },
+  ],
+  totals: {
+    count: 4,
+    grossMinor: 58000,
+    posCount: 3,
+    posGrossMinor: 50000,
+    onlineCount: 1,
+    onlineGrossMinor: 8000,
+  },
+  paymentMethods: ["card", "cash", "twint"],
+  truncated: false,
+};
+
 RESPONSES["siteImport.get"] = {
   ...(RESPONSES["siteImport.preview"] as Record<string, unknown>),
   sourceUrl: "https://bergblume.ch",
@@ -533,6 +612,7 @@ const PAGES: Record<string, React.ComponentType> = {
   insights: Insights,
   testimonials: Testimonials,
   discounts: Discounts,
+  sales: Sales,
 };
 
 // Billing lives outside ADMIN_NAV (it is reached from the account menu), so it

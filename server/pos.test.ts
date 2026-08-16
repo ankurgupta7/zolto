@@ -71,6 +71,13 @@ vi.mock("./stripe", () => ({
 // error message, and the rate limit.
 vi.mock("./posPairing", () => ({ redeemPairingToken: vi.fn() }));
 
+// Only the send is faked — escapeHtml stays real so the receipt body under
+// test is the one a customer would actually receive.
+vi.mock("./_core/email", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./_core/email")>();
+  return { ...actual, sendTransactionalEmail: vi.fn().mockResolvedValue(true) };
+});
+
 // The pairing limiter's default store is the DB-backed one, and ./db is mocked
 // to have no database. An in-memory store keeps the limit real in tests.
 vi.mock("./rateLimit", async (importOriginal) => {
@@ -93,6 +100,7 @@ import {
 import { getDb, markProductsSold } from "./db";
 import { redeemPairingToken } from "./posPairing";
 import { getStripe, isStripeConfigured } from "./stripe";
+import { sendTransactionalEmail } from "./_core/email";
 
 function makeApp() {
   const app = express();
@@ -1560,24 +1568,36 @@ describe("POST /api/pos/twint-intent on a connected account", () => {
 
 // ─── Sales history + receipts ────────────────────────────────────────────────
 
+/**
+ * Line item rows are shaped as the SELECT sees them AFTER the products join —
+ * `customName` is what the item table itself stores (null for anything sold
+ * out of the catalogue) and `productName` is what the join brings back. The
+ * old mock handed both back under one `name` key, which is why a reader that
+ * never joined looked correct in tests and printed "Item" in production.
+ */
 function makeSalesDb(orders: unknown[], items: unknown[]) {
   const updateSetSpy = vi.fn(() => ({
     where: vi.fn().mockResolvedValue(undefined),
   }));
+  const itemQuery = () => ({
+    where: vi.fn(() => ({
+      orderBy: vi.fn(() => Promise.resolve(items)),
+      then: (resolve: (v: unknown) => unknown) => resolve(items),
+    })),
+  });
   return {
     select: vi.fn(() => ({
-      from: vi.fn((table: unknown) => ({
+      from: vi.fn(() => ({
+        // The item read joins products; the order read doesn't.
+        leftJoin: vi.fn(itemQuery),
         // loadOwnPosOrder's order lookup: where(...).limit(1)
-        where: vi.fn(() => {
-          const isItems = (table as { _: unknown }) === table; // can't distinguish; use call count
-          return {
+        where: vi.fn(() => ({
+          limit: vi.fn(() => Promise.resolve(orders)),
+          orderBy: vi.fn(() => ({
             limit: vi.fn(() => Promise.resolve(orders)),
-            orderBy: vi.fn(() => ({
-              limit: vi.fn(() => Promise.resolve(orders)),
-            })),
-            then: (resolve: (v: unknown) => unknown) => resolve(items),
-          };
-        }),
+          })),
+          then: (resolve: (v: unknown) => unknown) => resolve(items),
+        })),
       })),
     })),
     update: vi.fn(() => ({ set: updateSetSpy })),
@@ -1586,27 +1606,35 @@ function makeSalesDb(orders: unknown[], items: unknown[]) {
 }
 
 describe("GET /api/pos/sales", () => {
+  const PAID_ORDER = {
+    id: 9,
+    status: "paid",
+    paymentMethod: "card",
+    totalRappen: 7550,
+    createdAt: new Date("2026-07-01T10:00:00Z"),
+    invoiceNumber: "KPOS-9",
+    receiptUrl: null,
+    customerName: "Buyer",
+    customerEmail: null,
+    customerPhone: null,
+  };
+
   it("returns paid orders with their line items", async () => {
     const db = makeSalesDb(
+      [PAID_ORDER],
       [
         {
-          id: 9,
-          status: "paid",
-          paymentMethod: "card",
-          totalRappen: 7550,
-          createdAt: new Date("2026-07-01T10:00:00Z"),
-          invoiceNumber: "KPOS-9",
-          receiptUrl: null,
-          customerEmail: null,
-          customerPhone: null,
+          posOrderId: 9,
+          productId: 1,
+          customName: null,
+          productName: "Pearl Ring",
+          priceRappen: 5000,
         },
-      ],
-      [
-        { posOrderId: 9, productId: 1, name: "Pearl Ring", priceRappen: 5000 },
         {
           posOrderId: 9,
           productId: null,
-          name: "Gift wrap",
+          customName: "Gift wrap",
+          productName: null,
           priceRappen: 2550,
         },
       ],
@@ -1620,14 +1648,69 @@ describe("GET /api/pos/sales", () => {
     expect(res.body[0]).toMatchObject({
       id: 9,
       status: "paid",
+      invoiceNumber: "KPOS-9",
       totalRappen: 7550,
       totalChf: "75.50",
       paymentMethod: "card",
+      customerName: "Buyer",
     });
     expect(res.body[0].items).toEqual([
-      { productId: 1, productName: "Pearl Ring", priceRappen: 5000 },
-      { productId: null, productName: "Gift wrap", priceRappen: 2550 },
+      {
+        productId: 1,
+        productName: "Pearl Ring",
+        priceRappen: 5000,
+        priceChf: "50.00",
+      },
+      {
+        productId: null,
+        productName: "Gift wrap",
+        priceRappen: 2550,
+        priceChf: "25.50",
+      },
     ]);
+  });
+
+  // The regression this endpoint shipped with: a catalogue sale stores only
+  // the product id, so without the join every line came back as "Item" and the
+  // POS history could not say what had been sold.
+  it("names catalogue items from the product row, not the (null) item name", async () => {
+    const db = makeSalesDb(
+      [PAID_ORDER],
+      [
+        {
+          posOrderId: 9,
+          productId: 1,
+          customName: null,
+          productName: "Emerald Pendant",
+          priceRappen: 7550,
+        },
+      ],
+    );
+    vi.mocked(getDb).mockResolvedValueOnce(db as never);
+    const res = await request(makeApp())
+      .get("/api/pos/sales")
+      .set("x-pos-key", "test-pos-key");
+    expect(res.body[0].items[0].productName).toBe("Emerald Pendant");
+  });
+
+  it("falls back to a placeholder only when the product row is gone too", async () => {
+    const db = makeSalesDb(
+      [PAID_ORDER],
+      [
+        {
+          posOrderId: 9,
+          productId: 99,
+          customName: null,
+          productName: null,
+          priceRappen: 7550,
+        },
+      ],
+    );
+    vi.mocked(getDb).mockResolvedValueOnce(db as never);
+    const res = await request(makeApp())
+      .get("/api/pos/sales")
+      .set("x-pos-key", "test-pos-key");
+    expect(res.body[0].items[0].productName).toBe("Item");
   });
 });
 
@@ -1648,6 +1731,46 @@ describe("POST /api/pos/send-receipt", () => {
       .set("x-pos-key", "test-pos-key")
       .send({ posOrderId: 9, email: "buyer@example.com" });
     expect(res.status).toBe(404);
+  });
+
+  // The receipt shared the sales history's bug: a catalogue line has no name
+  // of its own, so an unjoined read emailed the customer "Item — CHF 50.00".
+  it("names catalogue items in the emailed receipt", async () => {
+    const db = makeSalesDb(
+      [
+        {
+          id: 9,
+          status: "paid",
+          paymentMethod: "cash",
+          totalRappen: 5000,
+          createdAt: new Date("2026-07-01T10:00:00Z"),
+          invoiceNumber: "KPOS-9",
+          receiptUrl: null,
+          customerName: null,
+          customerEmail: null,
+          customerPhone: null,
+        },
+      ],
+      [
+        {
+          posOrderId: 9,
+          productId: 1,
+          customName: null,
+          productName: "Pearl Ring",
+          priceRappen: 5000,
+        },
+      ],
+    );
+    vi.mocked(getDb).mockResolvedValueOnce(db as never);
+    const res = await request(makeApp())
+      .post("/api/pos/send-receipt")
+      .set("x-pos-key", "test-pos-key")
+      .send({ posOrderId: 9, email: "buyer@example.com" });
+
+    expect(res.status).toBe(200);
+    const { html } = vi.mocked(sendTransactionalEmail).mock.calls.at(-1)![0];
+    expect(html).toContain("Pearl Ring");
+    expect(html).not.toContain(">Item<");
   });
 });
 

@@ -45,6 +45,7 @@ import Domain from "./pages/admin/Domain";
 import Channels from "./pages/admin/Channels";
 import Pos from "./pages/admin/Pos";
 import Orders from "./pages/admin/Orders";
+import Sales from "./pages/admin/Sales";
 import Reconciliation from "./pages/admin/Reconciliation";
 import AdminInsights from "./pages/admin/Insights";
 import AdminImport from "./pages/admin/Import";
@@ -98,6 +99,7 @@ const ADMIN_PAGES: Record<string, ComponentType> = {
   import: AdminImport,
   categories: AdminCategories,
   orders: Orders,
+  sales: Sales,
   reconciliation: Reconciliation,
   storefront: Storefront,
   testimonials: Testimonials,

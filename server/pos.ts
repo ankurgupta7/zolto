@@ -317,6 +317,57 @@ async function resolveSaleLineItems(
 }
 
 // Persists the pos_order + line items, scoped to tenant
+/**
+ * Line items for POS orders with a DISPLAYABLE name on every row.
+ *
+ * `pos_order_items.name` is only filled in for custom (off-catalogue) items —
+ * a catalogue sale stores the product id and leaves the name null, because the
+ * product row already has it. Every reader that skipped the join therefore
+ * showed "Item" (or nothing) where the piece's name belonged: the POS app's
+ * sales history, and the receipt emailed to the customer. Resolve it once,
+ * here, so no caller has to remember. Order is stable (by item id) so a
+ * receipt and a history row list the same sale the same way.
+ */
+async function loadPosOrderItems(
+  db: Db,
+  tenantId: number,
+  posOrderIds: number[],
+): Promise<
+  Array<{
+    posOrderId: number;
+    productId: number | null;
+    name: string;
+    priceRappen: number;
+  }>
+> {
+  if (posOrderIds.length === 0) return [];
+  const rows = await db
+    .select({
+      posOrderId: posOrderItems.posOrderId,
+      productId: posOrderItems.productId,
+      customName: posOrderItems.name,
+      productName: products.name,
+      priceRappen: posOrderItems.priceRappen,
+    })
+    .from(posOrderItems)
+    .leftJoin(products, eq(posOrderItems.productId, products.id))
+    .where(
+      and(
+        eq(posOrderItems.tenantId, tenantId),
+        inArray(posOrderItems.posOrderId, posOrderIds),
+      ),
+    )
+    .orderBy(posOrderItems.id);
+  return rows.map((r) => ({
+    posOrderId: r.posOrderId,
+    productId: r.productId,
+    // A deleted product leaves the join empty, so the last resort still has to
+    // be a placeholder — but it is now a genuine last resort, not the norm.
+    name: r.productName ?? r.customName ?? "Item",
+    priceRappen: r.priceRappen,
+  }));
+}
+
 async function createPosOrder(
   db: Db,
   tenantId: number,
@@ -760,6 +811,10 @@ export function registerPosRoutes(app: Express): void {
           return;
         }
         const { tenantId } = getPosTenant(req);
+        const limit = Math.min(
+          Math.max(parseInt(req.query.limit as string, 10) || 100, 1),
+          500,
+        );
         const orders = await db
           .select()
           .from(posOrders)
@@ -767,34 +822,28 @@ export function registerPosRoutes(app: Express): void {
             and(eq(posOrders.tenantId, tenantId), eq(posOrders.status, "paid")),
           )
           .orderBy(desc(posOrders.createdAt))
-          .limit(100);
+          .limit(limit);
         const orderIds = orders.map((o) => o.id);
-        const items =
-          orderIds.length > 0
-            ? await db
-                .select()
-                .from(posOrderItems)
-                .where(
-                  and(
-                    eq(posOrderItems.tenantId, tenantId),
-                    inArray(posOrderItems.posOrderId, orderIds),
-                  ),
-                )
-            : [];
+        const items = await loadPosOrderItems(db, tenantId, orderIds);
         res.json(
           orders.map((o) => ({
             id: o.id,
             status: o.status,
+            invoiceNumber: o.invoiceNumber ?? `KPOS-${o.id}`,
             totalRappen: o.totalRappen,
             totalChf: (o.totalRappen / 100).toFixed(2),
             paymentMethod: o.paymentMethod,
             createdAt: o.createdAt.toISOString(),
+            customerName: o.customerName,
+            customerEmail: o.customerEmail,
+            customerPhone: o.customerPhone,
             items: items
               .filter((i) => i.posOrderId === o.id)
               .map((i) => ({
                 productId: i.productId,
-                productName: i.name ?? "Item",
+                productName: i.name,
                 priceRappen: i.priceRappen,
+                priceChf: (i.priceRappen / 100).toFixed(2),
               })),
           })),
         );
@@ -818,28 +867,20 @@ export function registerPosRoutes(app: Express): void {
       .limit(1);
     const order = rows[0];
     if (!order) return null;
-    const items = await db
-      .select()
-      .from(posOrderItems)
-      .where(
-        and(
-          eq(posOrderItems.tenantId, tenantId),
-          eq(posOrderItems.posOrderId, posOrderId),
-        ),
-      );
+    const items = await loadPosOrderItems(db, tenantId, [posOrderId]);
     return { db, order, items };
   }
 
   function buildPosReceiptHtml(opts: {
     tenantSlug: string;
     order: typeof posOrders.$inferSelect;
-    items: Array<{ name: string | null; priceRappen: number }>;
+    items: Array<{ name: string; priceRappen: number }>;
   }): string {
     const { order } = opts;
     const rows = opts.items
       .map(
         (i) => `<tr>
-  <td style="padding:4px 8px">${escapeHtml(i.name ?? "Item")}</td>
+  <td style="padding:4px 8px">${escapeHtml(i.name)}</td>
   <td style="padding:4px 8px;text-align:right">CHF ${(i.priceRappen / 100).toFixed(2)}</td>
 </tr>`,
       )

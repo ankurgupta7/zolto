@@ -51,6 +51,7 @@ import {
   staffInvites,
   storageObjects,
   posAttributions,
+  type PosOrder,
   posOrderItems,
   posOrders,
   posPairingTokens,
@@ -852,17 +853,103 @@ export async function getProductsMissingTranslation(tenantId: number) {
 export async function getPaidOrders(
   tenantId: number,
   limit = 200,
+  range?: { from?: Date; to?: Date },
 ): Promise<Order[]> {
   return withDb(
     (db) =>
       db
         .select()
         .from(orders)
-        .where(and(eq(orders.tenantId, tenantId), eq(orders.status, "paid")))
+        .where(
+          and(
+            eq(orders.tenantId, tenantId),
+            eq(orders.status, "paid"),
+            ...(range?.from ? [gte(orders.createdAt, range.from)] : []),
+            ...(range?.to ? [lt(orders.createdAt, range.to)] : []),
+          ),
+        )
         .orderBy(desc(orders.createdAt))
         .limit(limit),
     [],
   );
+}
+
+/** One paid in-person sale, with the line items that made it up. */
+export interface PosSaleWithItems {
+  order: PosOrder;
+  items: Array<{
+    productId: number | null;
+    /** Already resolved: catalogue name, else the cashier's custom name. */
+    name: string;
+    priceRappen: number;
+  }>;
+}
+
+/**
+ * Paid POS sales for a store, newest first, each carrying its line items with
+ * product names already resolved.
+ *
+ * The name join is the whole point: `pos_order_items.name` is null for every
+ * catalogue sale (the product row owns the name), so any caller that reads the
+ * item table alone can only report "Item" — which is exactly what the sales
+ * history and the admin had been showing.
+ */
+export async function getPosSalesWithItems(
+  tenantId: number,
+  opts: { limit?: number; from?: Date; to?: Date } = {},
+): Promise<PosSaleWithItems[]> {
+  return withDb(async (db) => {
+    const orderRows = await db
+      .select()
+      .from(posOrders)
+      .where(
+        and(
+          eq(posOrders.tenantId, tenantId),
+          eq(posOrders.status, "paid"),
+          ...(opts.from ? [gte(posOrders.createdAt, opts.from)] : []),
+          ...(opts.to ? [lt(posOrders.createdAt, opts.to)] : []),
+        ),
+      )
+      .orderBy(desc(posOrders.createdAt))
+      .limit(opts.limit ?? 200);
+    if (orderRows.length === 0) return [];
+
+    const itemRows = await db
+      .select({
+        posOrderId: posOrderItems.posOrderId,
+        productId: posOrderItems.productId,
+        customName: posOrderItems.name,
+        productName: products.name,
+        priceRappen: posOrderItems.priceRappen,
+      })
+      .from(posOrderItems)
+      .leftJoin(products, eq(posOrderItems.productId, products.id))
+      .where(
+        and(
+          eq(posOrderItems.tenantId, tenantId),
+          inArray(
+            posOrderItems.posOrderId,
+            orderRows.map((o) => o.id),
+          ),
+        ),
+      )
+      .orderBy(asc(posOrderItems.id));
+
+    const byOrder = new Map<number, PosSaleWithItems["items"]>();
+    for (const row of itemRows) {
+      const list = byOrder.get(row.posOrderId) ?? [];
+      list.push({
+        productId: row.productId,
+        name: row.productName ?? row.customName ?? "Item",
+        priceRappen: row.priceRappen,
+      });
+      byOrder.set(row.posOrderId, list);
+    }
+    return orderRows.map((order) => ({
+      order,
+      items: byOrder.get(order.id) ?? [],
+    }));
+  }, []);
 }
 
 /**
