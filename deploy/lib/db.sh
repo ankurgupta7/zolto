@@ -702,6 +702,40 @@ migrate_0045_site_imports() {
 # mcp_tool (not an MCP call) would never collide either. Additive and
 # idempotent — nothing reads the table until the admin panel asks.
 # ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────
+# Migration 0050: the web till's scan-to-pay sales.
+#
+# A till sale taken by QR is a Stripe Checkout Session, not a Terminal
+# PaymentIntent — and a session that is still open has NO PaymentIntent, since
+# Stripe creates one only when the customer pays. So `stripePaymentIntentId`,
+# which every other POS path writes at order-creation time and which fulfilment
+# looks orders up by, is necessarily null for a QR sale for the whole window in
+# which the code is on screen. The session id is the only link to Stripe until
+# then; fulfilment matches on it and backfills the PaymentIntent id afterwards,
+# so the order still reconciles like any other.
+#
+# UNIQUE for the same reason the PaymentIntent column is: two orders claiming
+# one payment should be refused by the database, not resolved later. MySQL
+# treats NULLs as distinct in a unique index, so the many rows that never had a
+# session (cash, TWINT-QR, Terminal card) stay legal.
+#
+# Additive; nothing reads it until a merchant opens the till.
+migrate_0050_pos_checkout_session() {
+  if [ "$(col_exists pos_orders stripeCheckoutSessionId)" = "0" ]; then
+    run_sql "0050 add pos_orders.stripeCheckoutSessionId" \
+      "ALTER TABLE \`pos_orders\` ADD \`stripeCheckoutSessionId\` varchar(255) NULL;"
+  else
+    ok "0050 pos_orders.stripeCheckoutSessionId already exists"
+  fi
+
+  if [ "$(idx_exists pos_orders pos_orders_stripeCheckoutSessionId_unique)" = "0" ]; then
+    run_sql "0050 pos_orders.stripeCheckoutSessionId unique" \
+      "ALTER TABLE \`pos_orders\` ADD CONSTRAINT \`pos_orders_stripeCheckoutSessionId_unique\` UNIQUE(\`stripeCheckoutSessionId\`);"
+  else
+    ok "0050 pos_orders_stripeCheckoutSessionId_unique already exists"
+  fi
+}
+
 migrate_0049_agent_hits() {
   if [ "$(tbl_exists agent_hits)" = "0" ]; then
     run_sql "0049 agent_hits table" "

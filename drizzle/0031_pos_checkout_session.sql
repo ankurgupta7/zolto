@@ -1,0 +1,23 @@
+-- The web till's scan-to-pay sales (server/posTill.ts).
+--
+-- A till sale taken by QR is a Stripe Checkout Session, not a Terminal
+-- PaymentIntent, and the two differ in a way that matters here: a Checkout
+-- Session that is still open has NO PaymentIntent. Stripe creates one at the
+-- moment the customer pays. So `stripePaymentIntentId` — which every existing
+-- POS path writes at order-creation time and which fulfilment looks orders up
+-- by — is necessarily null for a QR sale until after the thing we are waiting
+-- for has already happened.
+--
+-- The session id is therefore the only link between Stripe's event and our row
+-- for the whole window in which the QR is on screen. Fulfilment matches on it,
+-- then backfills `stripePaymentIntentId` from the completed session, so a till
+-- sale ends up reconcilable against Stripe's payment list exactly like any
+-- other and `server/reconciliation.ts` keeps working unchanged.
+--
+-- UNIQUE for the same reason the PaymentIntent column is: it is a lookup key
+-- for money, and two orders claiming one payment is a bug we want the database
+-- to refuse rather than a state we want to resolve later. MySQL treats NULLs as
+-- distinct in a unique index, so the many rows that never had a session (cash,
+-- TWINT-QR, Terminal card) stay legal.
+ALTER TABLE `pos_orders` ADD `stripeCheckoutSessionId` varchar(255);--> statement-breakpoint
+ALTER TABLE `pos_orders` ADD CONSTRAINT `pos_orders_stripeCheckoutSessionId_unique` UNIQUE(`stripeCheckoutSessionId`);

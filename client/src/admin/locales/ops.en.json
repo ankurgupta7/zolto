@@ -334,6 +334,47 @@
       "byToolTitle": "What they asked for",
       "kindAssistant": "answering someone",
       "kindCrawler": "indexing"
+    },
+    "till": {
+      "title": "Till",
+      "description": "Ring up a sale and take payment on the spot — card by QR, your own TWINT code, or cash.",
+      "posSettings": "POS settings",
+      "searchPlaceholder": "Search products",
+      "showHidden": "Show hidden",
+      "noMatches": "Nothing matches. Try a different search.",
+      "thisSale": "This sale",
+      "emptyCart": "Tap a product to add it.",
+      "customItem": "Something not in the catalogue",
+      "customName": "Name",
+      "customPrice": "Price",
+      "addCustom": "Add custom item",
+      "priceFor": "Price for {{name}}",
+      "removeItem": "Remove {{name}}",
+      "setPrice": "Set",
+      "resetPrice": "Reset to list price",
+      "total": "Total",
+      "payCard": "Card — show QR",
+      "payTwintQr": "TWINT — our code",
+      "payCash": "Cash",
+      "recording": "Recording…",
+      "askToScan": "Ask the customer to scan",
+      "scanToPay": "Scan to pay",
+      "waitingForPayment": "Waiting for payment…",
+      "cardMethodsNote": "Card, Apple Pay, Google Pay or TWINT — the payment page decides.",
+      "twintQrTitle": "TWINT — pay us directly",
+      "twintQrBody": "The customer enters {{amount}} in their TWINT app.",
+      "twintQrAttestNote": "This one doesn't go through Stripe, so nothing here can confirm it. Check your own TWINT notification first.",
+      "twintQrConfirm": "I've seen the payment — record it",
+      "saleRecorded": "Sale recorded",
+      "notRecorded": "Not recorded",
+      "nextSale": "Next sale",
+      "backToCart": "Back to the cart",
+      "cancel": "Cancel",
+      "method": {
+        "card": "Card",
+        "cash": "Cash",
+        "twint_qr": "TWINT (own code)"
+      }
     }
   }
 }

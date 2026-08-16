@@ -456,6 +456,15 @@ export const posOrders = mysqlTable("pos_orders", {
   stripePaymentIntentId: varchar("stripePaymentIntentId", {
     length: 255,
   }).unique(),
+  // Set instead of the PaymentIntent id for the web till's scan-to-pay sales,
+  // which are Stripe Checkout Sessions rather than Terminal PaymentIntents. A
+  // session that is still open has no PaymentIntent at all — Stripe creates one
+  // only when the customer pays — so `stripePaymentIntentId` cannot be the key
+  // these orders are found by. The webhook matches on this column and backfills
+  // the PaymentIntent id once `checkout.session.completed` says what it is.
+  stripeCheckoutSessionId: varchar("stripeCheckoutSessionId", {
+    length: 255,
+  }).unique(),
   status: mysqlEnum("status", ["pending", "paid", "failed"])
     .default("pending")
     .notNull(),

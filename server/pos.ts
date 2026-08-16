@@ -123,9 +123,16 @@ function isActivelyReserved(p: { reservedUntil?: Date | null }): boolean {
 
 type Db = NonNullable<Awaited<ReturnType<typeof getDb>>>;
 
-type ResolvedLineItem = {
+export type ResolvedLineItem = {
   productId: number | null;
+  // Deliberately null for catalogue items — their name is joined from
+  // `products` at read time, so storing a copy here would let the two drift.
+  // Custom line items have no product row, so the name IS the record.
   name: string | null;
+  // What to call this line where a name has to be shown rather than joined:
+  // the Stripe Checkout page a customer sees after scanning the till's QR.
+  // Always populated, for catalogue and custom items alike.
+  displayName: string;
   priceRappen: number;
 };
 
@@ -197,7 +204,7 @@ export function buildPosSaleDescription(
 
 // Shared by every "build a sale" endpoint so bargained price overrides,
 // custom items, and hidden/sold/stale-cart guards behave identically.
-async function resolveSaleLineItems(
+export async function resolveSaleLineItems(
   db: Db,
   tenantId: number,
   params: {
@@ -285,6 +292,7 @@ async function resolveSaleLineItems(
   const productLineItems: ResolvedLineItem[] = available.map((p) => ({
     productId: p.id,
     name: null,
+    displayName: p.name,
     priceRappen: overrides.has(p.id)
       ? overrides.get(p.id)!
       : Math.round(Number(p.price) * 100),
@@ -292,6 +300,7 @@ async function resolveSaleLineItems(
   const customLineItems: ResolvedLineItem[] = custom.map((item) => ({
     productId: null,
     name: item.name.trim(),
+    displayName: item.name.trim(),
     priceRappen: item.priceRappen,
   }));
   const lineItems = [...productLineItems, ...customLineItems];
@@ -368,11 +377,14 @@ async function loadPosOrderItems(
   }));
 }
 
-async function createPosOrder(
+export async function createPosOrder(
   db: Db,
   tenantId: number,
   params: {
     stripePaymentIntentId: string | null;
+    // Set instead of the PaymentIntent id for the web till's scan-to-pay
+    // sales, where no PaymentIntent exists until the customer actually pays.
+    stripeCheckoutSessionId?: string | null;
     status: "pending" | "paid";
     paymentMethod: "card" | "cash" | "twint" | "twint_qr";
     totalRappen: number;
@@ -385,6 +397,7 @@ async function createPosOrder(
   const inserted = await db.insert(posOrders).values({
     tenantId,
     stripePaymentIntentId: params.stripePaymentIntentId,
+    stripeCheckoutSessionId: params.stripeCheckoutSessionId ?? null,
     status: params.status,
     paymentMethod: params.paymentMethod,
     totalRappen: params.totalRappen,
@@ -416,6 +429,40 @@ async function createPosOrder(
   return posOrderId;
 }
 
+// Flips an already-recorded order to paid and decrements that tenant's stock.
+// Line items were written when the order was created, so fulfilment never has
+// to reconstruct a cart from Stripe metadata.
+//
+// `extraFields` carries anything the confirming event taught us that the order
+// didn't already know — for a Checkout Session, the PaymentIntent id, which
+// only comes into existence when the customer pays.
+async function markPosOrderPaid(
+  db: Db,
+  order: { id: number; tenantId: number; status: string },
+  extraFields: { stripePaymentIntentId?: string } = {},
+): Promise<{ posOrderId: number; alreadyFulfilled: boolean }> {
+  if (order.status === "paid")
+    return { posOrderId: order.id, alreadyFulfilled: true };
+
+  const items = await db
+    .select()
+    .from(posOrderItems)
+    .where(eq(posOrderItems.posOrderId, order.id));
+
+  const productIds = items
+    .map((i) => i.productId)
+    .filter((id): id is number => id !== null);
+
+  await db
+    .update(posOrders)
+    .set({ status: "paid", ...extraFields })
+    .where(eq(posOrders.id, order.id));
+
+  await markProductsSold(order.tenantId, productIds);
+
+  return { posOrderId: order.id, alreadyFulfilled: false };
+}
+
 async function fulfillPosOrder(
   db: Db,
   intent: Stripe.PaymentIntent,
@@ -431,26 +478,52 @@ async function fulfillPosOrder(
     console.warn(`[POS] No pos_order found for intent ${intent.id}`);
     return null;
   }
-  if (order.status === "paid")
-    return { posOrderId: order.id, alreadyFulfilled: true };
 
-  const items = await db
+  return markPosOrderPaid(db, order);
+}
+
+// The web till's scan-to-pay path. A Checkout Session that is still open has no
+// PaymentIntent, so this is the only route by which such a sale can be
+// confirmed — the session id is the sole link between Stripe's event and our
+// row until the moment the customer pays.
+export async function fulfillPosCheckoutSession(
+  db: Db,
+  session: Stripe.Checkout.Session,
+): Promise<{ posOrderId: number; alreadyFulfilled: boolean } | null> {
+  // `checkout.session.completed` fires when the session is submitted, which is
+  // not the same as the money having arrived — a delayed-notification method
+  // can complete a session while the payment is still processing. Only
+  // payment_status "paid" means the piece may leave the stall.
+  if (session.payment_status !== "paid") {
+    console.warn(
+      `[POS] Checkout session ${session.id} completed but payment_status is ` +
+        `"${session.payment_status}" — leaving the order pending`,
+    );
+    return null;
+  }
+
+  const rows = await db
     .select()
-    .from(posOrderItems)
-    .where(eq(posOrderItems.posOrderId, order.id));
+    .from(posOrders)
+    .where(eq(posOrders.stripeCheckoutSessionId, session.id))
+    .limit(1);
 
-  const productIds = items
-    .map((i) => i.productId)
-    .filter((id): id is number => id !== null);
+  const order = rows[0];
+  if (!order) {
+    console.warn(`[POS] No pos_order found for checkout session ${session.id}`);
+    return null;
+  }
 
-  await db
-    .update(posOrders)
-    .set({ status: "paid" })
-    .where(eq(posOrders.id, order.id));
+  const paymentIntentId =
+    typeof session.payment_intent === "string"
+      ? session.payment_intent
+      : (session.payment_intent?.id ?? undefined);
 
-  await markProductsSold(order.tenantId, productIds);
-
-  return { posOrderId: order.id, alreadyFulfilled: false };
+  return markPosOrderPaid(
+    db,
+    order,
+    paymentIntentId ? { stripePaymentIntentId: paymentIntentId } : {},
+  );
 }
 
 export function registerPosWebhook(app: Express): void {
@@ -488,6 +561,17 @@ export function registerPosWebhook(app: Express): void {
             await fulfillPosOrder(
               db,
               event.data.object as Stripe.PaymentIntent,
+            );
+          }
+        } else if (event.type === "checkout.session.completed") {
+          // The web till's scan-to-pay sales. Enable this event on the POS
+          // webhook endpoint alongside payment_intent.succeeded, or QR sales
+          // stay pending until the till's own poll notices.
+          const db = await getDb();
+          if (db) {
+            await fulfillPosCheckoutSession(
+              db,
+              event.data.object as Stripe.Checkout.Session,
             );
           }
         }

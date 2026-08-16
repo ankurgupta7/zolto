@@ -3797,3 +3797,23 @@ export async function getDiscountRedemptions(
     [],
   );
 }
+
+/**
+ * One POS order, scoped to the tenant that owns it — the till polls this while
+ * a scan-to-pay QR is on screen.
+ *
+ * The tenant filter is not decoration. Order ids are sequential across every
+ * store on the platform, so a lookup by id alone would let one merchant watch
+ * (and, through the till's poll, trigger fulfilment of) another's sale simply
+ * by counting.
+ */
+export async function getPosOrderById(tenantId: number, id: number) {
+  return withDb(async (db) => {
+    const rows = await db
+      .select()
+      .from(posOrders)
+      .where(and(eq(posOrders.tenantId, tenantId), eq(posOrders.id, id)))
+      .limit(1);
+    return rows[0] ?? null;
+  }, null);
+}

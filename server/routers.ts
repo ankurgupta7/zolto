@@ -24,6 +24,7 @@ import { testimonialsRouter } from "./routers/testimonials";
 import { trustpilotRouter } from "./routers/trustpilot";
 import { discountsRouter } from "./routers/discounts";
 import { salesRouter } from "./routers/sales";
+import { tillRouter } from "./routers/till";
 
 // Sign-in links, bounded per address and per caller. See requestMagicLink
 // below for why both keys are needed and why the address is checked first.
@@ -119,6 +120,7 @@ export const appRouter = router({
   instagram: instagramRouter,
   checkout: checkoutRouter,
   sales: salesRouter,
+  till: tillRouter,
   reconciliation: reconciliationRouter,
   testimonials: testimonialsRouter, // Customer quotes on the storefront
   trustpilot: trustpilotRouter, // The store's Trustpilot standing

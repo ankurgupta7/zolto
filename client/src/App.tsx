@@ -44,6 +44,7 @@ import Discounts from "./pages/admin/Discounts";
 import Domain from "./pages/admin/Domain";
 import Channels from "./pages/admin/Channels";
 import Pos from "./pages/admin/Pos";
+import Till from "./pages/admin/Till";
 import Orders from "./pages/admin/Orders";
 import Sales from "./pages/admin/Sales";
 import Reconciliation from "./pages/admin/Reconciliation";
@@ -107,6 +108,7 @@ const ADMIN_PAGES: Record<string, ComponentType> = {
   domain: Domain,
   channels: Channels,
   pos: Pos,
+  till: Till,
   insights: AdminInsights,
   // Account plane
   account: ShopProfile,
