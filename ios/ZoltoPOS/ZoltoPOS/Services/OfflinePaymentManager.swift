@@ -57,6 +57,7 @@ class OfflinePaymentManager: ObservableObject {
     /// Records a cash sale locally and immediately attempts to sync if online.
     func recordCashSale(
         productIds: [Int],
+        allowHidden: Bool,
         priceOverrides: [String: Int],
         customItems: [CustomLineItemRequest],
         totalRappen: Int,
@@ -66,7 +67,8 @@ class OfflinePaymentManager: ObservableObject {
             productIds: productIds,
             priceOverrides: priceOverrides,
             customItems: customItems.map { CustomItemPayload(name: $0.name, priceRappen: $0.priceRappen) },
-            paymentMethod: "cash"
+            paymentMethod: "cash",
+            allowHidden: allowHidden
         )
         let tx = PendingTransactionModel(
             transactionType: "cash",
@@ -159,6 +161,9 @@ class OfflinePaymentManager: ObservableObject {
                 let _ = try await ApiService.shared.manualSale(
                     productIds: payload.productIds,
                     paymentMethod: "cash",
+                    // Replaying without this is why a queued sale of a hidden
+                    // piece came back 409 "no longer available" forever.
+                    allowHidden: payload.allowHidden,
                     priceOverrides: payload.priceOverrides,
                     customItems: payload.customItems.map {
                         CustomLineItemRequest(name: $0.name, priceRappen: $0.priceRappen)

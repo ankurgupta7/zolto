@@ -75,10 +75,12 @@ class PaymentViewModel: NSObject, ObservableObject {
     @MainActor
     func startCashPayment(
         productIds: [Int],
+        allowHidden: Bool = false,
         priceOverrides: [String: Int] = [:],
         customItems: [CustomLineItemRequest] = []
     ) {
         self.productIds = productIds
+        self.allowHidden = allowHidden
         status = .recordingCashSale
         let itemCount = productIds.count + customItems.count
 
@@ -87,6 +89,7 @@ class PaymentViewModel: NSObject, ObservableObject {
                 let response = try await ApiService.shared.manualSale(
                     productIds: productIds,
                     paymentMethod: "cash",
+                    allowHidden: allowHidden,
                     priceOverrides: priceOverrides,
                     customItems: customItems
                 )
@@ -96,6 +99,7 @@ class PaymentViewModel: NSObject, ObservableObject {
                 let total = customItems.reduce(0) { $0 + $1.priceRappen }
                 let localId = try? await OfflinePaymentManager.shared.recordCashSale(
                     productIds: productIds,
+                    allowHidden: allowHidden,
                     priceOverrides: priceOverrides,
                     customItems: customItems,
                     totalRappen: total,

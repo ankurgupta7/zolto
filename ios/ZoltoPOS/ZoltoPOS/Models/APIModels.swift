@@ -127,17 +127,23 @@ struct SaleResponse: Codable {
 struct ManualSaleRequest: Codable {
     let productIds: [Int]
     let paymentMethod: String // "cash"
+    /// The cashier's "Show Hidden Items" override. Without it the server's
+    /// availability check rejects any piece that isn't visible on the
+    /// storefront, so a hidden piece could never be sold for cash.
+    let allowHidden: Bool
     let priceOverrides: [String: Int]
     let customItems: [CustomLineItemRequest]
 
     init(
         productIds: [Int],
         paymentMethod: String,
+        allowHidden: Bool = false,
         priceOverrides: [String: Int] = [:],
         customItems: [CustomLineItemRequest] = []
     ) {
         self.productIds = productIds
         self.paymentMethod = paymentMethod
+        self.allowHidden = allowHidden
         self.priceOverrides = priceOverrides
         self.customItems = customItems
     }
