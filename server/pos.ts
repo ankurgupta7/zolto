@@ -130,8 +130,70 @@ type ResolvedLineItem = {
 };
 
 type ResolveSaleResult =
-  | { ok: true; lineItems: ResolvedLineItem[]; totalRappen: number }
+  | {
+      ok: true;
+      lineItems: ResolvedLineItem[];
+      totalRappen: number;
+      // Human-readable summary of what was sold, for the Stripe `description`.
+      description: string;
+    }
   | { ok: false; status: number; error: string };
+
+// A card_present PaymentIntent carries no line items, so without this a POS
+// sale shows up in the merchant's Stripe dashboard as an amount and nothing
+// else — there is no way to tell which piece was sold. Stripe caps
+// `description` at 1000 chars; stay well under it so the dashboard's payment
+// list stays readable.
+const POS_DESCRIPTION_PREFIX = "POS sale";
+const POS_DESCRIPTION_MAX_LENGTH = 500;
+
+// Names of the items in a sale → the one-line description Stripe shows next to
+// the payment. Two of the same name collapse into "Name ×2" rather than
+// repeating, and a cart too long to name in full gets "+N more" so the
+// description stays a summary instead of being cut off mid-word.
+export function buildPosSaleDescription(
+  itemNames: (string | null | undefined)[],
+): string {
+  const counts = new Map<string, number>();
+  for (const raw of itemNames) {
+    const name = (raw ?? "").trim();
+    if (name.length === 0) continue;
+    counts.set(name, (counts.get(name) ?? 0) + 1);
+  }
+
+  const parts = Array.from(counts, ([name, qty]) =>
+    qty > 1 ? `${name} ×${qty}` : name,
+  );
+  // Nothing nameable (every product row missing a name) — still say it was a
+  // POS sale, which is more than the dashboard shows today.
+  if (parts.length === 0) return POS_DESCRIPTION_PREFIX;
+
+  const compose = (shown: string[], omitted: number): string =>
+    `${POS_DESCRIPTION_PREFIX}: ${shown.join(", ")}${
+      omitted > 0 ? ` +${omitted} more` : ""
+    }`;
+
+  const full = compose(parts, 0);
+  if (full.length <= POS_DESCRIPTION_MAX_LENGTH) return full;
+
+  const shown: string[] = [];
+  for (const part of parts) {
+    const candidate = compose(
+      [...shown, part],
+      parts.length - shown.length - 1,
+    );
+    if (candidate.length > POS_DESCRIPTION_MAX_LENGTH) break;
+    shown.push(part);
+  }
+  // A single name longer than the whole budget: hard-truncate it so the
+  // description is still valid rather than dropping the item list entirely.
+  if (shown.length === 0) {
+    const room =
+      POS_DESCRIPTION_MAX_LENGTH - compose(["…"], parts.length - 1).length;
+    shown.push(`${parts[0].slice(0, Math.max(room, 0))}…`);
+  }
+  return compose(shown, parts.length - shown.length);
+}
 
 // Shared by every "build a sale" endpoint so bargained price overrides,
 // custom items, and hidden/sold/stale-cart guards behave identically.
@@ -243,7 +305,15 @@ async function resolveSaleLineItems(
     };
   }
 
-  return { ok: true, lineItems, totalRappen };
+  // Catalogue line items deliberately store `name: null` (the name is joined
+  // from products at read time), so the description is built from the product
+  // rows here rather than from lineItems.
+  const description = buildPosSaleDescription([
+    ...available.map((p) => p.name),
+    ...customLineItems.map((i) => i.name),
+  ]);
+
+  return { ok: true, lineItems, totalRappen, description };
 }
 
 // Persists the pos_order + line items, scoped to tenant
@@ -1029,7 +1099,7 @@ export function registerPosRoutes(app: Express): void {
           res.status(resolved.status).json({ error: resolved.error });
           return;
         }
-        const { lineItems, totalRappen } = resolved;
+        const { lineItems, totalRappen, description } = resolved;
 
         // When the tenant has connected their own Stripe account, card-present
         // intents are created ON that account — Tap to Pay collects with a
@@ -1060,6 +1130,9 @@ export function registerPosRoutes(app: Express): void {
             currency,
             customer: stripeCustomer.id,
             receipt_email: customerEmail || undefined,
+            // Names the items sold, so the merchant's Stripe dashboard shows
+            // what the payment was for instead of just an amount.
+            description,
             payment_method_types: ["card_present"],
             capture_method: "automatic",
             metadata: {
@@ -1140,7 +1213,7 @@ export function registerPosRoutes(app: Express): void {
           res.status(resolved.status).json({ error: resolved.error });
           return;
         }
-        const { lineItems, totalRappen } = resolved;
+        const { lineItems, totalRappen, description } = resolved;
 
         // Same direct-charge pattern as /api/pos/payment-intent above: when the
         // tenant has connected their own Stripe account, the TWINT intent (and
@@ -1166,6 +1239,9 @@ export function registerPosRoutes(app: Express): void {
             currency: "chf",
             customer: stripeCustomer.id,
             receipt_email: customerEmail || undefined,
+            // Same reason as the card intent: without it a TWINT sale is an
+            // amount with no indication of what was bought.
+            description,
             payment_method_types: ["twint"],
             payment_method_data: { type: "twint" },
             confirm: true,
