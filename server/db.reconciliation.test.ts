@@ -160,7 +160,14 @@ describe("rejectStripeReconciliation", () => {
 describe("resolveStripeReconciliationConfirmed", () => {
   it("inserts the sale, decrements stock, and marks the reconciliation confirmed inside one transaction", async () => {
     const tx = makeTxMock();
-    const insertPosOrderChain = makeChain({ insertId: 42 });
+    // The mysql2 driver resolves an insert to [ResultSetHeader, FieldPacket[]],
+    // not to the header alone. The old mock returned a bare header, which is a
+    // shape production never produces — so a reader doing `result.insertId`
+    // passed here and silently got `undefined` against a real database.
+    const insertPosOrderChain = makeChain([
+      { insertId: 42, affectedRows: 1 },
+      [],
+    ]);
     const insertItemChain = makeChain(undefined);
     const updateProductChain = makeChain(undefined);
     const updateReconChain = makeChain(undefined);

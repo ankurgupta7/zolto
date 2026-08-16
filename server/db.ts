@@ -75,6 +75,7 @@ import { ENV } from "./_core/env";
 import { PLANS } from "@shared/platform";
 import { effectivePlan } from "@shared/entitlements";
 import { hashPosApiKey } from "./posApiKey";
+import { insertedId } from "./insertId";
 import {
   DEFAULT_TENANT_ID,
   withTenant,
@@ -1795,8 +1796,13 @@ export async function resolveStripeReconciliationConfirmed(
         totalRappen: amountRappen,
         tenantId: DEFAULT_TENANT_ID,
       });
-      const posOrderId =
-        (inserted as unknown as { insertId?: number }).insertId ?? 0;
+      const posOrderId = insertedId(inserted);
+      // Without an id there is no order to attach the line to, and writing it
+      // against posOrderId 0 would orphan the row against an order that does
+      // not exist — better to fail the transaction and leave stock intact.
+      if (posOrderId === 0) {
+        throw new Error("pos_orders insert returned no id");
+      }
 
       await tx.insert(posOrderItems).values({
         posOrderId,
@@ -3286,7 +3292,7 @@ export async function createSiteImport(entry: {
       extraction: entry.extraction,
       productCount: entry.productCount,
     });
-    return (inserted as unknown as { insertId?: number }).insertId ?? 0;
+    return insertedId(inserted);
   });
 }
 
@@ -3466,7 +3472,7 @@ export async function createTestimonial(
 ): Promise<number> {
   return withDbOrThrow(async (db) => {
     const inserted = await db.insert(testimonials).values(entry);
-    return (inserted as unknown as { insertId?: number }).insertId ?? 0;
+    return insertedId(inserted);
   });
 }
 

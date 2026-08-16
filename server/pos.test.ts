@@ -129,7 +129,17 @@ function makeFakeDb(
   }));
   // Shared across every insert() call so tests can inspect exactly what was
   // written to pos_orders and pos_order_items (in that call order).
-  const insertValuesSpy = vi.fn().mockResolvedValue({ insertId: 99 });
+  //
+  // Shaped as the mysql2 driver really resolves an insert:
+  // [ResultSetHeader, FieldPacket[]], not a bare header. A mock of the bare
+  // header is what let `result.insertId` — undefined against a real database —
+  // pass every test while no POS sale was ever given its line items.
+  const insertValuesSpy = vi
+    .fn()
+    .mockResolvedValue([{ insertId: 99, affectedRows: 1 }, []]);
+  const updateSetSpy = vi.fn(() => ({
+    where: vi.fn().mockResolvedValue(undefined),
+  }));
   return {
     select: vi.fn(() => ({
       from: vi.fn(() => ({
@@ -142,12 +152,9 @@ function makeFakeDb(
     // createPosOrder calls db.update() to set the invoice number (KPOS-{id})
     // after the initial insert. Mock it so tests that reach createPosOrder
     // don't crash with "db.update is not a function".
-    update: vi.fn(() => ({
-      set: vi.fn(() => ({
-        where: vi.fn().mockResolvedValue(undefined),
-      })),
-    })),
+    update: vi.fn(() => ({ set: updateSetSpy })),
     insertValuesSpy,
+    updateSetSpy,
   };
 }
 
@@ -1122,6 +1129,50 @@ describe("POST /api/pos/manual-sale (cash)", () => {
       }),
     );
     expect(markProductsSold).toHaveBeenCalledWith(1, [1]);
+  });
+
+  // The regression that emptied the sales history. createPosOrder read the new
+  // order's id off the driver's [header, fields] tuple as if it were the
+  // header, always got undefined, and fell through its own `posOrderId > 0`
+  // guard — so the order row was written and its line items never were.
+  it("writes the line items for the sale, not just the order row", async () => {
+    const db = makeFakeDb([{ id: 1, price: "50.00" }]);
+    vi.mocked(getDb).mockResolvedValueOnce(db as never);
+
+    const res = await request(makeApp())
+      .post("/api/pos/manual-sale")
+      .set("x-pos-key", "test-pos-key")
+      .send({ productIds: [1] });
+
+    expect(res.status).toBe(200);
+    // Call 1 is the order; call 2 is its line items, against the real id.
+    expect(db.insertValuesSpy).toHaveBeenCalledTimes(2);
+    expect(db.insertValuesSpy).toHaveBeenNthCalledWith(2, [
+      expect.objectContaining({
+        posOrderId: 99,
+        productId: 1,
+        priceRappen: 5000,
+      }),
+    ]);
+    // And the invoice number, which the same guard was swallowing.
+    expect(db.updateSetSpy).toHaveBeenCalledWith({ invoiceNumber: "KPOS-99" });
+  });
+
+  it("fails the sale outright when the insert comes back with no id", async () => {
+    const db = makeFakeDb([{ id: 1, price: "50.00" }]);
+    // No insertId — nothing can be attached to this order, so recording it as
+    // a paid sale with no contents is the one outcome worth refusing.
+    db.insertValuesSpy.mockResolvedValueOnce([{ affectedRows: 0 }, []]);
+    vi.mocked(getDb).mockResolvedValueOnce(db as never);
+
+    const res = await request(makeApp())
+      .post("/api/pos/manual-sale")
+      .set("x-pos-key", "test-pos-key")
+      .send({ productIds: [1] });
+
+    expect(res.status).toBe(500);
+    expect(db.insertValuesSpy).toHaveBeenCalledTimes(1);
+    expect(markProductsSold).not.toHaveBeenCalled();
   });
 
   it("honors a bargained price override and a custom item, same as payment-intent", async () => {

@@ -133,7 +133,7 @@ beforeEach(() => {
     verticalDescription: null,
   });
   db.getTenantCategories.mockResolvedValue(JEWELLERY_CATEGORY_ROWS);
-  db.createProduct.mockResolvedValue({ insertId: 99 });
+  db.createProduct.mockResolvedValue([{ insertId: 99, affectedRows: 1 }, []]);
   db.updateProduct.mockResolvedValue(undefined);
   db.insertBulkUploadLog.mockResolvedValue(undefined);
   storagePut.mockResolvedValue({ url: "https://cdn/x.jpg", key: "k" });
@@ -805,7 +805,10 @@ describe("product locale fields pass through every write path", () => {
   });
 
   it("bulkCreate persists fr/it translations", async () => {
-    db.createProduct.mockResolvedValueOnce({ insertId: 11 });
+    db.createProduct.mockResolvedValueOnce([
+      { insertId: 11, affectedRows: 1 },
+      [],
+    ]);
     await admin().products.bulkCreate({
       products: [
         {
