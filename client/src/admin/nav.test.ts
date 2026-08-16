@@ -117,6 +117,7 @@ describe("groupNavByPlane", () => {
       "import",
       "categories",
       "orders",
+      "sales",
       "reconciliation",
       "storefront",
       "testimonials",
