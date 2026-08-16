@@ -4,7 +4,7 @@ import { renderQrDataUrl } from "./qr";
 describe("renderQrDataUrl", () => {
   it("encodes a URL as a PNG data URL", async () => {
     const dataUrl = await renderQrDataUrl(
-      "https://checkout.stripe.com/c/pay/cs_test_abc123"
+      "https://checkout.stripe.com/c/pay/cs_test_abc123",
     );
     expect(dataUrl.startsWith("data:image/png;base64,")).toBe(true);
     // A real code is several kilobytes; a truncated or blank render is not.

@@ -187,9 +187,10 @@ describe("checkout.session.completed", () => {
   });
 
   it("decrements stock for the store that made the sale, not a fixed one", async () => {
-    const { db } = makeFulfilmentDb({ id: 5, tenantId: 42, status: "pending" }, [
-      { productId: 3 },
-    ]);
+    const { db } = makeFulfilmentDb(
+      { id: 5, tenantId: 42, status: "pending" },
+      [{ productId: 3 }],
+    );
     getDb.mockResolvedValue(db);
 
     await postSession({

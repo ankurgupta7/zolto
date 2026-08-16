@@ -127,7 +127,9 @@ describe("authorisation", () => {
   });
 
   it("refuses when no store can be resolved from the host", async () => {
-    const caller = tillRouter.createCaller(ctx({ role: "admin", tenant: null }));
+    const caller = tillRouter.createCaller(
+      ctx({ role: "admin", tenant: null }),
+    );
     await expect(caller.products({})).rejects.toThrow();
   });
 });

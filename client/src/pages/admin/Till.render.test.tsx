@@ -184,10 +184,9 @@ describe("payment buttons", () => {
 describe("the catalogue", () => {
   it("filters by name as the cashier types", () => {
     render(<Till />);
-    fireEvent.change(
-      screen.getByLabelText("ops.till.searchPlaceholder"),
-      { target: { value: "alpin" } },
-    );
+    fireEvent.change(screen.getByLabelText("ops.till.searchPlaceholder"), {
+      target: { value: "alpin" },
+    });
     expect(screen.queryByText("Vase Bergblume")).toBeNull();
     expect(screen.getByText("Schale Alpin")).toBeTruthy();
   });

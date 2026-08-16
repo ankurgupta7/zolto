@@ -69,11 +69,11 @@ export function parsePriceToRappen(input: string): number | null {
  */
 export function toggleProduct(
   lines: TillCartLine[],
-  product: TillProduct
+  product: TillProduct,
 ): TillCartLine[] {
   const key = String(product.id);
-  const existing = lines.find(line => line.key === key);
-  if (existing) return lines.filter(line => line.key !== key);
+  const existing = lines.find((line) => line.key === key);
+  if (existing) return lines.filter((line) => line.key !== key);
 
   return [
     ...lines,
@@ -88,29 +88,29 @@ export function toggleProduct(
 }
 
 export function removeLine(lines: TillCartLine[], key: string): TillCartLine[] {
-  return lines.filter(line => line.key !== key);
+  return lines.filter((line) => line.key !== key);
 }
 
 /** Applies a bargained price to one line, leaving the list price recorded. */
 export function setLinePrice(
   lines: TillCartLine[],
   key: string,
-  priceRappen: number
+  priceRappen: number,
 ): TillCartLine[] {
-  return lines.map(line =>
-    line.key === key ? { ...line, priceRappen } : line
+  return lines.map((line) =>
+    line.key === key ? { ...line, priceRappen } : line,
   );
 }
 
 /** Restores a bargained line to list price. Custom lines have none, so no-op. */
 export function resetLinePrice(
   lines: TillCartLine[],
-  key: string
+  key: string,
 ): TillCartLine[] {
-  return lines.map(line =>
+  return lines.map((line) =>
     line.key === key && line.listPriceRappen !== null
       ? { ...line, priceRappen: line.listPriceRappen }
-      : line
+      : line,
   );
 }
 
@@ -118,7 +118,7 @@ export function addCustomItem(
   lines: TillCartLine[],
   name: string,
   priceRappen: number,
-  keySuffix: string
+  keySuffix: string,
 ): TillCartLine[] {
   return [
     ...lines,
@@ -173,11 +173,11 @@ export function filterProducts(
   products: TillProduct[],
   search: string,
   category: string | null,
-  extraIncludes: Readonly<Record<string, readonly string[]>> = {}
+  extraIncludes: Readonly<Record<string, readonly string[]>> = {},
 ): TillProduct[] {
   const needle = search.trim().toLowerCase();
 
-  return products.filter(product => {
+  return products.filter((product) => {
     if (category) {
       const allowed = [category, ...(extraIncludes[category] ?? [])];
       if (!allowed.includes(product.category)) return false;
@@ -197,8 +197,8 @@ export function filterProducts(
  */
 export function activeCategories(
   products: TillProduct[],
-  categories: readonly string[]
+  categories: readonly string[],
 ): string[] {
-  const present = new Set(products.map(p => p.category));
-  return categories.filter(category => present.has(category));
+  const present = new Set(products.map((p) => p.category));
+  return categories.filter((category) => present.has(category));
 }

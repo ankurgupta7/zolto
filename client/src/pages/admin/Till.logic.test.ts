@@ -170,13 +170,15 @@ describe("filterProducts", () => {
   ];
 
   it("matches the German name, the English one, and the category", () => {
-    expect(filterProducts(catalogue, "ohrringe", null).map(p => p.id)).toEqual([
-      1,
+    expect(
+      filterProducts(catalogue, "ohrringe", null).map((p) => p.id),
+    ).toEqual([1]);
+    expect(
+      filterProducts(catalogue, "necklace", null).map((p) => p.id),
+    ).toEqual([2]);
+    expect(filterProducts(catalogue, "sets", null).map((p) => p.id)).toEqual([
+      3,
     ]);
-    expect(filterProducts(catalogue, "necklace", null).map(p => p.id)).toEqual([
-      2,
-    ]);
-    expect(filterProducts(catalogue, "sets", null).map(p => p.id)).toEqual([3]);
   });
 
   it("folds extra-included categories into their parent", () => {
@@ -184,7 +186,7 @@ describe("filterProducts", () => {
     const filtered = filterProducts(catalogue, "", "Necklaces", {
       Necklaces: ["Sets"],
     });
-    expect(filtered.map(p => p.id)).toEqual([2, 3]);
+    expect(filtered.map((p) => p.id)).toEqual([2, 3]);
   });
 
   it("returns everything when nothing is being filtered on", () => {
@@ -199,7 +201,7 @@ describe("activeCategories", () => {
       product({ id: 2, category: "Earrings" }),
     ];
     expect(
-      activeCategories(catalogue, ["Earrings", "Necklaces", "Rings"])
+      activeCategories(catalogue, ["Earrings", "Necklaces", "Rings"]),
     ).toEqual(["Earrings", "Necklaces"]);
   });
 });
