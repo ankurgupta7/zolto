@@ -39,6 +39,10 @@ final class ViewModePreferenceTests: XCTestCase {
         }
     }
 
+    // ProductViewModel.init is @MainActor (it subscribes to
+    // OfflinePaymentManager's main-actor publishers), so a test that builds
+    // one has to be main-actor isolated too.
+    @MainActor
     func testViewModelPersistsAndRestoresTheChoice() {
         let defaults = UserDefaults.standard
         let key = ViewModePreference.storageKey

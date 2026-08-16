@@ -39,7 +39,6 @@ class ProductGridAdapter(
         val price: TextView = itemView.findViewById(R.id.txt_product_price)
         val quantityBadge: TextView = itemView.findViewById(R.id.txt_quantity_badge)
         val hiddenBadge: TextView? = itemView.findViewById(R.id.txt_hidden_badge)
-        val categoryText: TextView? = itemView.findViewById(R.id.txt_product_category)
         val checkmark: ImageView = itemView.findViewById(R.id.img_checkmark)
     }
 
@@ -55,7 +54,6 @@ class ProductGridAdapter(
 
         holder.name.text = product.displayName
         holder.price.text = "CHF ${product.priceChf}"
-        holder.categoryText?.text = product.category ?: "Other"
 
         if (product.imageUrl != null) {
             holder.image.load(product.imageUrl) {
