@@ -19,6 +19,7 @@
 import { z } from "zod";
 import { adminProcedure, router } from "../_core/trpc";
 import { getPaidOrders, getPosSalesWithItems, getProductsByIds } from "../db";
+import { MAX_ORDERS_SCANNED, backfillPosLineItems } from "../posBackfill";
 
 /** How many transactions per channel we are willing to pull into memory. */
 const MAX_WINDOW = 1000;
@@ -203,4 +204,32 @@ export const salesRouter = router({
         posSales.length >= input.limit || onlineOrders.length >= input.limit,
     };
   }),
+
+  /**
+   * Reconstruct the line items of POS sales recorded before the insertId fix,
+   * from the descriptions their Stripe payments carry (see posBackfill.ts).
+   *
+   * A mutation because it writes, but it previews by default: `dryRun` is only
+   * false when the caller says so explicitly, so an admin sees the report
+   * before anything lands. Idempotent either way — it only ever looks at
+   * orders that have no line items.
+   *
+   * Scoped through ctx.user.tenantId like every other read here, so this
+   * repairs the caller's OWN store and never the one the host resolves to.
+   */
+  backfillLineItems: adminProcedure
+    .input(
+      z
+        .object({
+          dryRun: z.boolean().default(true),
+          limit: z.number().int().min(1).max(MAX_ORDERS_SCANNED).optional(),
+        })
+        .default({ dryRun: true }),
+    )
+    .mutation(({ ctx, input }) =>
+      backfillPosLineItems(ctx.user.tenantId, {
+        dryRun: input.dryRun,
+        limit: input.limit,
+      }),
+    ),
 });

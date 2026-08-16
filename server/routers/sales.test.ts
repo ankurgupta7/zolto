@@ -1,14 +1,19 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const { dbMock } = vi.hoisted(() => ({
+const { dbMock, backfillMock } = vi.hoisted(() => ({
   dbMock: {
     getPosSalesWithItems: vi.fn(),
     getPaidOrders: vi.fn(),
     getProductsByIds: vi.fn(),
   },
+  backfillMock: vi.fn(),
 }));
 
 vi.mock("../db", () => dbMock);
+vi.mock("../posBackfill", () => ({
+  MAX_ORDERS_SCANNED: 500,
+  backfillPosLineItems: backfillMock,
+}));
 
 import { salesRouter } from "./sales";
 import type { TrpcContext } from "../_core/context";
@@ -309,5 +314,54 @@ describe("sales.list ledger", () => {
     const result = await caller().list({});
 
     expect(result.rows[0].reference).toBe("KPOS-42");
+  });
+});
+
+describe("sales.backfillLineItems", () => {
+  beforeEach(() => {
+    backfillMock.mockResolvedValue({ scanned: 0, restored: 0, skipped: [] });
+  });
+
+  it("rejects a signed-in non-admin", async () => {
+    await expect(
+      salesRouter.createCaller(ctx({ role: "staff" })).backfillLineItems({}),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    expect(backfillMock).not.toHaveBeenCalled();
+  });
+
+  // A repair writes. The cross-tenant case is the one that regresses silently:
+  // an admin of store A pointing at store B's host must repair A, never B.
+  it("repairs the caller's own store, never the host's store", async () => {
+    await salesRouter
+      .createCaller(
+        ctx({
+          role: "admin",
+          userTenantId: OTHER_TENANT_ID,
+          tenant: TENANT_ID,
+        }),
+      )
+      .backfillLineItems({});
+
+    expect(backfillMock).toHaveBeenCalledWith(
+      OTHER_TENANT_ID,
+      expect.anything(),
+    );
+  });
+
+  // Nothing is written until the admin has read a preview and said so.
+  it("previews unless the caller explicitly asks to apply", async () => {
+    const caller = salesRouter.createCaller(ctx({ role: "admin" }));
+
+    await caller.backfillLineItems({});
+    expect(backfillMock).toHaveBeenLastCalledWith(
+      TENANT_ID,
+      expect.objectContaining({ dryRun: true }),
+    );
+
+    await caller.backfillLineItems({ dryRun: false });
+    expect(backfillMock).toHaveBeenLastCalledWith(
+      TENANT_ID,
+      expect.objectContaining({ dryRun: false }),
+    );
   });
 });

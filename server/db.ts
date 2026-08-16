@@ -1690,6 +1690,72 @@ export async function getKnownOrderPaymentIntentIds(
   }, new Set<string>());
 }
 
+/**
+ * Paid POS orders for one store that have no line items at all — the wreckage
+ * left by the insertId bug (server/insertId.ts). Newest first, so a backfill
+ * run that hits its cap has done the most recent, most useful sales.
+ */
+export async function getPaidPosOrdersMissingLineItems(
+  tenantId: number,
+  limit = 500,
+) {
+  return withDb(async (db) => {
+    return db
+      .select({
+        id: posOrders.id,
+        invoiceNumber: posOrders.invoiceNumber,
+        stripePaymentIntentId: posOrders.stripePaymentIntentId,
+        totalRappen: posOrders.totalRappen,
+        createdAt: posOrders.createdAt,
+      })
+      .from(posOrders)
+      .leftJoin(posOrderItems, eq(posOrderItems.posOrderId, posOrders.id))
+      .where(
+        and(
+          eq(posOrders.tenantId, tenantId),
+          eq(posOrders.status, "paid"),
+          isNull(posOrderItems.id),
+        ),
+      )
+      .orderBy(desc(posOrders.createdAt))
+      .limit(limit);
+  }, []);
+}
+
+export async function insertPosOrderItems(
+  tenantId: number,
+  rows: Array<{
+    posOrderId: number;
+    productId: number | null;
+    name: string | null;
+    priceRappen: number;
+  }>,
+): Promise<void> {
+  if (rows.length === 0) return;
+  await withDbOrThrow((db) =>
+    db.insert(posOrderItems).values(rows.map((row) => ({ ...row, tenantId }))),
+  );
+}
+
+/**
+ * The tenant id is part of the WHERE rather than something the caller is
+ * trusted to have checked, so a mis-scoped caller can only ever update nothing.
+ */
+export async function setPosOrderInvoiceNumber(
+  tenantId: number,
+  posOrderId: number,
+  invoiceNumber: string,
+): Promise<void> {
+  await withDbOrThrow((db) =>
+    db
+      .update(posOrders)
+      .set({ invoiceNumber })
+      .where(
+        and(eq(posOrders.id, posOrderId), eq(posOrders.tenantId, tenantId)),
+      ),
+  );
+}
+
 export async function getKnownPosPaymentIntentIds(
   tenantId?: number,
 ): Promise<Set<string>> {

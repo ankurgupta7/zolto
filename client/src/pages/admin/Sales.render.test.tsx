@@ -15,17 +15,27 @@ const mocks = vi.hoisted(() => ({
   data: undefined as unknown,
   isLoading: false,
   lastInput: undefined as unknown,
+  backfillMutate: vi.fn(),
+  backfillPending: false,
 }));
 
 vi.mock("@/_core/hooks/useAuth", () => ({ useAuth: () => mocks.authState }));
+vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 vi.mock("@/lib/trpc", () => ({
   trpc: {
+    useUtils: () => ({ sales: { list: { invalidate: vi.fn() } } }),
     sales: {
       list: {
         useQuery: (input: unknown) => {
           mocks.lastInput = input;
           return { data: mocks.data, isLoading: mocks.isLoading };
         },
+      },
+      backfillLineItems: {
+        useMutation: (opts: { onSuccess: (s: unknown) => void }) => ({
+          mutate: (input: unknown) => mocks.backfillMutate(input, opts),
+          isPending: mocks.backfillPending,
+        }),
       },
     },
   },
@@ -79,6 +89,8 @@ beforeEach(() => {
   mocks.authState.user = { role: "admin" };
   mocks.data = payload();
   mocks.isLoading = false;
+  mocks.backfillPending = false;
+  mocks.backfillMutate = vi.fn();
 });
 afterEach(() => cleanup());
 
@@ -218,5 +230,125 @@ describe("Sales page — translated", () => {
     render(<Sales />);
     expect(screen.getByText("Verkäufe")).toBeTruthy();
     expect(screen.getByText("Bruttoeinnahmen")).toBeTruthy();
+  });
+});
+
+// ─── Recovering items for sales recorded before they were stored ────────────
+
+const RECOVERY = {
+  scanned: 3,
+  withStripePayment: 2,
+  cashUnrecoverable: 1,
+  restored: 1,
+  lineItemsWritten: 2,
+  invoiceNumbersFilled: 3,
+  dryRun: true,
+  skipped: [
+    {
+      posOrderId: 8,
+      totalChf: "130.00",
+      createdAt: "2026-08-15T12:00:00.000Z",
+      names: ["Pearl Ring", "Silver Cuff"],
+      reason: "probably bargained, so per-item prices can't be recovered",
+    },
+  ],
+};
+
+/** Drive the page's own onSuccess with a given summary, as tRPC would. */
+function respondWith(summary: Record<string, unknown>) {
+  mocks.backfillMutate = vi.fn(
+    (_input: unknown, opts: { onSuccess: (s: unknown) => void }) =>
+      opts.onSuccess(summary),
+  );
+}
+
+describe("Sales page — recovering missing items", () => {
+  // The panel only appears when the ledger in view has a sale to repair.
+  beforeEach(() => {
+    mocks.data = payload({ rows: [{ ...POS_ROW, items: [] }] });
+  });
+
+  it("stays out of the way when every sale in view already has its items", () => {
+    mocks.data = payload();
+    render(<Sales />);
+    expect(
+      screen.queryByRole("button", { name: /Check what can be recovered/ }),
+    ).toBeNull();
+  });
+
+  it("previews before it writes: the first run asks for a dry run", () => {
+    respondWith(RECOVERY);
+    render(<Sales />);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: /Check what can be recovered/ }),
+    );
+
+    expect(mocks.backfillMutate).toHaveBeenCalledWith(
+      { dryRun: true },
+      expect.anything(),
+    );
+  });
+
+  it("reports what can and cannot be rebuilt", () => {
+    respondWith(RECOVERY);
+    render(<Sales />);
+    fireEvent.click(
+      screen.getByRole("button", { name: /Check what can be recovered/ }),
+    );
+
+    expect(screen.getByText("Sales missing items")).toBeTruthy();
+    expect(screen.getByText("Cash — unrecoverable")).toBeTruthy();
+    // The names of a sale we could not price are the only record of it left,
+    // so the report has to show them rather than only a count.
+    expect(screen.getByText("Pearl Ring, Silver Cuff")).toBeTruthy();
+    expect(screen.getByText(/probably bargained/)).toBeTruthy();
+  });
+
+  it("only writes once the admin applies the previewed run", () => {
+    respondWith(RECOVERY);
+    render(<Sales />);
+    fireEvent.click(
+      screen.getByRole("button", { name: /Check what can be recovered/ }),
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /^Apply/ }));
+
+    expect(mocks.backfillMutate).toHaveBeenLastCalledWith(
+      { dryRun: false },
+      expect.anything(),
+    );
+  });
+
+  it("confirms the result after applying, with no Apply button left", () => {
+    respondWith({ ...RECOVERY, dryRun: false });
+    render(<Sales />);
+    fireEvent.click(
+      screen.getByRole("button", { name: /Check what can be recovered/ }),
+    );
+
+    expect(screen.getByText("Done. 2 items written.")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /^Apply/ })).toBeNull();
+  });
+
+  it("says plainly when there is nothing left to recover", () => {
+    respondWith({
+      scanned: 0,
+      withStripePayment: 0,
+      cashUnrecoverable: 0,
+      restored: 0,
+      lineItemsWritten: 0,
+      invoiceNumbersFilled: 0,
+      dryRun: true,
+      skipped: [],
+    });
+    render(<Sales />);
+    fireEvent.click(
+      screen.getByRole("button", { name: /Check what can be recovered/ }),
+    );
+
+    expect(
+      screen.getByText(/every sale already has its contents/),
+    ).toBeTruthy();
   });
 });

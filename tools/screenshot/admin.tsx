@@ -579,6 +579,35 @@ RESPONSES["sales.list"] = {
   truncated: false,
 };
 
+// Recovery report: what a real run looks like — some sales rebuildable, some
+// nameable but not priceable, and cash that can never be recovered.
+RESPONSES["sales.backfillLineItems"] = {
+  scanned: 4,
+  withStripePayment: 3,
+  cashUnrecoverable: 1,
+  restored: 2,
+  lineItemsWritten: 3,
+  invoiceNumbersFilled: 4,
+  dryRun: true,
+  skipped: [
+    {
+      posOrderId: 88,
+      totalChf: "170.00",
+      createdAt: "2026-07-12T06:46:22.000Z",
+      names: ["Serving bowl, large", "Bud vase"],
+      reason:
+        "list prices total CHF 150.00 but the sale charged CHF 170.00 \u2014 probably bargained, so per-item prices can't be recovered",
+    },
+    {
+      posOrderId: 84,
+      totalChf: "42.00",
+      createdAt: "2026-07-08T07:51:21.000Z",
+      names: [],
+      reason: "cash sale \u2014 never went through Stripe, nothing to read",
+    },
+  ],
+};
+
 RESPONSES["siteImport.get"] = {
   ...(RESPONSES["siteImport.preview"] as Record<string, unknown>),
   sourceUrl: "https://bergblume.ch",
