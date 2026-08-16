@@ -110,7 +110,6 @@ struct MainView: View {
                                         }
                                     } else {
                                         ProductGridOrList(products: viewModel.filteredProducts)
-                                            .padding(12)
                                     }
                                 }
                                 .refreshable { await viewModel.loadProducts() }
@@ -568,9 +567,14 @@ struct ProductCard: View {
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text(product.displayName)
-                        .font(.system(.footnote, design: .default).weight(.semibold))
+                        .font(.subheadline.weight(.semibold))
                         .foregroundColor(.zoltoInk)
                         .lineLimit(2)
+                        .multilineTextAlignment(.leading)
+                        .fixedSize(horizontal: false, vertical: true)
+                        // Two lines' worth of box whether or not the name
+                        // wraps, so prices sit on one line across a row.
+                        .frame(minHeight: 38, alignment: .topLeading)
 
                     Text(Money.label(product.priceRappen))
                         .font(.footnote)
@@ -594,9 +598,9 @@ struct ProductCard: View {
 struct ProductGridOrList: View {
     let products: [Product]
     @EnvironmentObject var viewModel: ProductViewModel
-    
+
     let columns = [GridItem(.adaptive(minimum: 160), spacing: 12)]
-    
+
     var body: some View {
         if viewModel.viewMode == .grid {
             LazyVGrid(columns: columns, spacing: 12) {
@@ -609,8 +613,12 @@ struct ProductGridOrList: View {
                     }
                 }
             }
+            .padding(12)
         } else {
-            VStack(spacing: 0) {
+            // Deliberately full-bleed and un-inset: side padding, a card
+            // inset and a corner radius all cost width the product name
+            // needs, and the name is the thing being read.
+            LazyVStack(spacing: 0) {
                 ForEach(products) { product in
                     ProductListRow(
                         product: product,
@@ -620,13 +628,11 @@ struct ProductGridOrList: View {
                     }
                     if product != products.last {
                         Divider()
-                            .padding(.leading, 78)
+                            .padding(.leading, ProductListRow.textInset)
                     }
                 }
             }
             .background(Color.white)
-            .cornerRadius(12)
-            .shadow(color: .black.opacity(0.05), radius: 5, x: 0, y: 2)
         }
     }
 }

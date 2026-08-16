@@ -113,7 +113,8 @@ class ProductSectionedAdapter(
 
             if (product.quantity > 1) {
                 quantityBadge.visibility = View.VISIBLE
-                quantityBadge.text = "${product.quantity} left"
+                quantityBadge.text = itemView.context
+                    .getString(R.string.quantity_badge, product.quantity)
             } else {
                 quantityBadge.visibility = View.GONE
             }

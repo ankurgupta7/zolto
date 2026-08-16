@@ -26,16 +26,22 @@ class ProductViewModel: ObservableObject {
         var id: String { self.rawValue }
     }
 
-    enum ViewMode: String, CaseIterable, Identifiable {
-        case grid = "Grid"
-        case list = "List"
-        var id: String { self.rawValue }
-    }
+    /// Defined in Logic/ViewModePreference.swift so the default-and-persist
+    /// rule can be unit-tested without standing up a ViewModel.
+    typealias ViewMode = ProductViewMode
 
     @Published var productsState: UiState<[Product]> = .idle
     @Published var selectedIds: Set<Int> = []
     @Published var sortBy: SortMode = .newest
-    @Published var viewMode: ViewMode = .grid
+    // Opens in whichever layout this cashier last used, defaulting to the
+    // list — see ViewModePreference for why.
+    @Published var viewMode: ViewMode = ViewModePreference.resolve(
+        stored: UserDefaults.standard.string(forKey: ViewModePreference.storageKey)
+    ) {
+        didSet {
+            UserDefaults.standard.set(viewMode.rawValue, forKey: ViewModePreference.storageKey)
+        }
+    }
     @Published var expandedCategories: Set<String> = []
 
     // Category filtering. "All" plus only the non-empty categories, in the
