@@ -385,6 +385,47 @@ describe("getTillOrderStatus", () => {
     expect(markProductsSold).not.toHaveBeenCalled();
   });
 
+  it("fails the order once the session has expired, instead of waiting for good", async () => {
+    // The QR went unscanned for its full 30 minutes. Nothing else will ever
+    // arrive for this session, so a poll that kept returning "pending" would
+    // leave the till spinning and the row looking like a sale in progress.
+    const { db } = makeFakeDb([]);
+    const updateWhere = vi.fn().mockResolvedValue(undefined);
+    const updateSet = vi.fn(() => ({ where: updateWhere }));
+    db.update = vi.fn(() => ({ set: updateSet })) as never;
+    db.select = vi.fn(() => ({
+      from: vi.fn(() => ({
+        where: vi.fn(() => ({
+          limit: () =>
+            Promise.resolve([
+              { id: 5, tenantId: TENANT_ID, status: "pending" },
+            ]),
+        })),
+      })),
+    })) as never;
+    getDb.mockResolvedValue(db);
+    getPosOrderById.mockResolvedValue({
+      id: 5,
+      tenantId: TENANT_ID,
+      status: "pending",
+      totalRappen: 4500,
+      paymentMethod: "card",
+      stripeCheckoutSessionId: "cs_test_123",
+    });
+    const { stripe } = makeFakeStripe({
+      id: "cs_test_123",
+      status: "expired",
+      payment_status: "unpaid",
+    });
+    getStripe.mockReturnValue(stripe);
+
+    const result = await getTillOrderStatus(TENANT, 5);
+
+    expect(result.ok && result.status).toBe("failed");
+    expect(updateSet).toHaveBeenCalledWith({ status: "failed" });
+    expect(markProductsSold).not.toHaveBeenCalled();
+  });
+
   it("keeps waiting when Stripe can't be reached, rather than failing the sale", async () => {
     getPosOrderById.mockResolvedValue({
       id: 5,

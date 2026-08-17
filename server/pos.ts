@@ -494,6 +494,10 @@ export async function fulfillPosCheckoutSession(
   // not the same as the money having arrived — a delayed-notification method
   // can complete a session while the payment is still processing. Only
   // payment_status "paid" means the piece may leave the stall.
+  //
+  // Such an order does not stay pending forever: whichever way the payment
+  // resolves, Stripe follows up with `checkout.session.async_payment_succeeded`
+  // (handled here) or `..._failed` (handled by failPosCheckoutSession).
   if (session.payment_status !== "paid") {
     console.warn(
       `[POS] Checkout session ${session.id} completed but payment_status is ` +
@@ -526,6 +530,155 @@ export async function fulfillPosCheckoutSession(
   );
 }
 
+/**
+ * Closes out a till order whose Checkout Session can no longer be paid.
+ *
+ * Two ways that happens, and neither is reversible: a delayed-notification
+ * payment method reports failure (`checkout.session.async_payment_failed`), or
+ * the session's 30 minutes run out with nobody having paid
+ * (`checkout.session.expired`). Without this the row sits at "pending"
+ * indefinitely, indistinguishable in the sales list from a sale still in
+ * progress at the stall.
+ *
+ * There is nothing to give back on the stock side: a till order decrements
+ * inventory only when it is marked paid, so a sale that never completed never
+ * held anything.
+ *
+ * A paid order is never downgraded. Stripe should not send either event for a
+ * session it has already reported paid, but webhook deliveries can arrive late
+ * and out of order, and marking a completed sale failed would be a worse
+ * outcome than ignoring a stray event.
+ */
+export async function failPosCheckoutSession(
+  db: Db,
+  session: Stripe.Checkout.Session,
+): Promise<{ posOrderId: number; changed: boolean } | null> {
+  const rows = await db
+    .select()
+    .from(posOrders)
+    .where(eq(posOrders.stripeCheckoutSessionId, session.id))
+    .limit(1);
+
+  const order = rows[0];
+  if (!order) {
+    console.warn(`[POS] No pos_order found for checkout session ${session.id}`);
+    return null;
+  }
+
+  if (order.status !== "pending") {
+    console.warn(
+      `[POS] Not failing order ${order.id} for checkout session ` +
+        `${session.id}: it is already "${order.status}"`,
+    );
+    return { posOrderId: order.id, changed: false };
+  }
+
+  await db
+    .update(posOrders)
+    .set({ status: "failed" })
+    .where(eq(posOrders.id, order.id));
+
+  return { posOrderId: order.id, changed: true };
+}
+
+/**
+ * Is this Checkout Session a till sale rather than a storefront one?
+ *
+ * Two pieces of evidence, either sufficient: the till stamps its own sessions,
+ * and a `pos_order` carries the session id from the moment the session is
+ * created. Deliberately not decided by which endpoint delivered the event —
+ * all three can carry a till session, depending on whether the store has
+ * connected its own Stripe account.
+ */
+async function isTillCheckoutSession(
+  db: Db,
+  session: Stripe.Checkout.Session,
+): Promise<boolean> {
+  if (session.metadata?.source === "web_till") return true;
+
+  const rows = await db
+    .select({ id: posOrders.id })
+    .from(posOrders)
+    .where(eq(posOrders.stripeCheckoutSessionId, session.id))
+    .limit(1);
+  return rows.length > 0;
+}
+
+/**
+ * POS fulfilment for a Stripe event, whichever endpoint it arrived at.
+ *
+ * Three endpoints can carry a POS sale, and it must be recorded exactly once by
+ * whichever one gets it:
+ *
+ *   /api/pos/webhook             the platform account's POS endpoint
+ *   /api/stripe/webhook          the platform account's storefront endpoint,
+ *                                which also receives a till session when the
+ *                                store has NOT connected its own Stripe account
+ *   /api/stripe/connect-webhook  events on a tenant's connected account — where
+ *                                a connected store's till sessions and Terminal
+ *                                payments fire, and which no platform-account
+ *                                endpoint ever sees
+ *
+ * Returns true when the event was a POS sale and has been dealt with, so a
+ * caller that shares its endpoint with storefront handling stops there. That
+ * return value is not a nicety: a till session handed on to `fulfillOrder` is
+ * not merely unhandled, it is actively misread. That function's recovery path
+ * reconstructs a missing storefront order from the session's `productIds`
+ * metadata — which the till also sets — under the deployment's
+ * DEFAULT_TENANT_ID, then sells that tenant's stock and emails a receipt for a
+ * sale which already exists in `pos_orders`.
+ *
+ * Claiming is evidence-based: a session is ours if the till stamped it or a
+ * `pos_order` owns it, and a PaymentIntent is ours if a `pos_order` owns it.
+ * Nothing is claimed merely because an endpoint delivered it, so a storefront
+ * sale arriving here still falls through to storefront fulfilment untouched.
+ */
+export async function handlePosStripeEvent(
+  event: Stripe.Event,
+): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+
+  switch (event.type) {
+    case "payment_intent.succeeded": {
+      // The native apps' Terminal taps. Unclaimed if no pos_order owns the
+      // intent, which is what a storefront PaymentIntent looks like from here.
+      const result = await fulfillPosOrder(
+        db,
+        event.data.object as Stripe.PaymentIntent,
+      );
+      return result !== null;
+    }
+
+    // The web till's scan-to-pay sales. Both events matter: `completed` fires
+    // when the session is submitted, which for an immediate method (card,
+    // Apple/Google Pay, TWINT) is also when the money arrives — but for a
+    // delayed-notification method it fires while the payment is still
+    // processing, and `async_payment_succeeded` is the one that says it landed.
+    case "checkout.session.completed":
+    case "checkout.session.async_payment_succeeded": {
+      const session = event.data.object as Stripe.Checkout.Session;
+      if (!(await isTillCheckoutSession(db, session))) return false;
+      await fulfillPosCheckoutSession(db, session);
+      return true;
+    }
+
+    // The other two endings. A delayed payment that fails, or a QR nobody
+    // scanned before the session's 30 minutes ran out — either way the order is
+    // dead and should say so rather than sitting pending for good.
+    case "checkout.session.async_payment_failed":
+    case "checkout.session.expired": {
+      const session = event.data.object as Stripe.Checkout.Session;
+      if (!(await isTillCheckoutSession(db, session))) return false;
+      await failPosCheckoutSession(db, session);
+      return true;
+    }
+
+    default:
+      return false;
+  }
+}
+
 export function registerPosWebhook(app: Express): void {
   app.post(
     "/api/pos/webhook",
@@ -555,26 +708,11 @@ export function registerPosWebhook(app: Express): void {
       }
 
       try {
-        if (event.type === "payment_intent.succeeded") {
-          const db = await getDb();
-          if (db) {
-            await fulfillPosOrder(
-              db,
-              event.data.object as Stripe.PaymentIntent,
-            );
-          }
-        } else if (event.type === "checkout.session.completed") {
-          // The web till's scan-to-pay sales. Enable this event on the POS
-          // webhook endpoint alongside payment_intent.succeeded, or QR sales
-          // stay pending until the till's own poll notices.
-          const db = await getDb();
-          if (db) {
-            await fulfillPosCheckoutSession(
-              db,
-              event.data.object as Stripe.Checkout.Session,
-            );
-          }
-        }
+        // Every event this endpoint handles is handled by the shared dispatch,
+        // so the list of POS events lives in exactly one place — which is also
+        // what `deploy/webhookEvents.test.ts` reads to check the rotation
+        // script subscribes to all of them.
+        await handlePosStripeEvent(event);
       } catch (err) {
         console.error(`[POS] Error handling ${event.type}:`, err);
         res.status(500).send("Webhook handler failed");
