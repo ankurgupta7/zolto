@@ -50,4 +50,59 @@ final class HiddenItemsTests: XCTestCase {
         let decoded = try JSONDecoder().decode(PaymentIntentRequest.self, from: data)
         XCTAssertTrue(decoded.allowHidden)
     }
+
+    // MARK: - Cash sales
+
+    // The card and TWINT paths have always sent allowHidden; the cash path did
+    // not have the field at all, so the backend's availability check
+    // ((allowHidden || visible) && !sold && quantity > 0) refused every hidden
+    // piece sold for cash with a 409 "One or more items are no longer
+    // available".
+    func testManualSaleRequestEncodesAllowHiddenTrue() throws {
+        let request = ManualSaleRequest(
+            productIds: [1],
+            paymentMethod: "cash",
+            allowHidden: true
+        )
+        let json = try JSONSerialization.jsonObject(
+            with: try JSONEncoder().encode(request)
+        ) as? [String: Any]
+
+        XCTAssertEqual(json?["allowHidden"] as? Bool, true)
+    }
+
+    func testManualSaleRequestDefaultsAllowHiddenFalse() throws {
+        let request = ManualSaleRequest(productIds: [1], paymentMethod: "cash")
+        let json = try JSONSerialization.jsonObject(
+            with: try JSONEncoder().encode(request)
+        ) as? [String: Any]
+
+        XCTAssertEqual(json?["allowHidden"] as? Bool, false)
+    }
+
+    // A sale queued offline is replayed from its stored payload, so the
+    // override has to survive the round trip — otherwise the retry is refused
+    // for a reason the cashier already overrode.
+    func testQueuedPayloadRoundTripsAllowHidden() {
+        let payload = PendingTransactionPayload(
+            productIds: [42],
+            paymentMethod: "cash",
+            allowHidden: true
+        )
+        let restored = PendingTransactionSerializer.fromJson(
+            PendingTransactionSerializer.toJson(payload)
+        )
+
+        XCTAssertTrue(restored.allowHidden)
+        XCTAssertEqual(restored.productIds, [42])
+    }
+
+    func testQueuedPayloadDefaultsAllowHiddenFalse() {
+        let restored = PendingTransactionSerializer.fromJson(
+            PendingTransactionSerializer.toJson(
+                PendingTransactionPayload(productIds: [1], paymentMethod: "cash")
+            )
+        )
+        XCTAssertFalse(restored.allowHidden)
+    }
 }

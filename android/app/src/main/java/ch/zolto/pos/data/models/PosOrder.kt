@@ -57,6 +57,11 @@ data class SaleResponse(
 data class ManualSaleRequest(
     @SerializedName("productIds") val productIds: List<Int>,
     @SerializedName("paymentMethod") val paymentMethod: String = "cash",
+    // Same acknowledgement the card and TWINT paths send: the sale may include
+    // a piece hidden from the storefront (see PosSession.showHiddenItems).
+    // Without it the backend's availability check refuses a hidden piece with
+    // 409 "One or more items are no longer available".
+    @SerializedName("allowHidden") val allowHidden: Boolean = false,
     @SerializedName("priceOverrides") val priceOverrides: Map<String, Int> = emptyMap(),
     @SerializedName("customItems") val customItems: List<CustomLineItemRequest> = emptyList(),
     // Customer details for invoice / receipt records.
