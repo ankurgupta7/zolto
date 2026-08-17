@@ -3,6 +3,7 @@ import express from "express";
 import request from "supertest";
 import Stripe from "stripe";
 
+const getDb = vi.fn(async () => null);
 const getOrderBySessionId = vi.fn();
 const markProductsSold = vi.fn();
 const releaseProductReservations = vi.fn();
@@ -17,6 +18,11 @@ const sendOrderReceipt = vi.fn();
 const sendOwnerOrderEmail = vi.fn();
 
 vi.mock("./db", () => ({
+  // Storefront fulfilment asks POS first (a till session on either endpoint
+  // must not be mistaken for a storefront order — see posStripeRouting.test.ts).
+  // With no database the POS dispatch claims nothing, which is what every event
+  // in this file is: an ordinary storefront sale.
+  getDb: (...args: unknown[]) => getDb(...args),
   getOrderBySessionId: (...args: unknown[]) => getOrderBySessionId(...args),
   markProductsSold: (...args: unknown[]) => markProductsSold(...args),
   releaseProductReservations: (...args: unknown[]) =>

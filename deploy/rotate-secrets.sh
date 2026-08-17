@@ -305,7 +305,13 @@ rotate_stripe_webhooks() {
     echo "Backed up $ENV_FILE → $backup"
   fi
 
-  # Keep in step with server/stripe.ts and server/pos.ts.
+  # Keep in step with server/stripe.ts and server/pos.ts — enforced by
+  # deploy/webhookEvents.test.ts.
+  #
+  # The Connect endpoint (/api/stripe/connect-webhook) is NOT rotated here: it
+  # is configured once for the platform under Dashboard → Connect → Webhooks
+  # rather than per deployment. It needs the union of both lists below, since a
+  # connected store's storefront AND POS events all fire on its own account.
   rotate_one_webhook "Checkout webhook" "/api/stripe/webhook" "STRIPE_WEBHOOK_SECRET" \
     checkout.session.completed \
     checkout.session.async_payment_succeeded \

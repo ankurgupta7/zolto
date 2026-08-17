@@ -76,9 +76,11 @@ function eventsSubscribedByScript(): Map<string, Set<string>> {
 
 const CASES = [
   {
+    // The endpoint handler itself branches on nothing — it delegates every
+    // event to this dispatch, which is where the POS event list lives.
     path: "/api/pos/webhook",
     source: "server/pos.ts",
-    fn: "export function registerPosWebhook",
+    fn: "export async function handlePosStripeEvent",
   },
   {
     // Both /api/stripe/webhook and the Connect endpoint dispatch through this
