@@ -41,6 +41,7 @@ import Testimonials from "@/pages/admin/Testimonials";
 import Discounts from "@/pages/admin/Discounts";
 import Sales from "@/pages/admin/Sales";
 import Sheets from "@/pages/admin/Sheets";
+import Reconciliation from "@/pages/admin/Reconciliation";
 import Billing from "@/pages/Billing";
 
 const params = new URLSearchParams(location.search);
@@ -780,6 +781,65 @@ RESPONSES["stockIn.preview"] = {
   ],
 };
 
+// Reconciliation: the state that only exists when email is broken — payments
+// are waiting, the review mail could not be delivered, so the server hands back
+// the review page itself for the console to render in place. There is nothing
+// to look at on this page until the scan has run, so shoot it with
+// SHOT_CLICK="Reconcile Stripe payments". `?mail=ok` shows the ordinary
+// delivered path instead.
+RESPONSES["reconciliation.run"] =
+  params.get("mail") === "ok"
+    ? {
+        scannedSucceededPayments: 6,
+        alreadyRecorded: 4,
+        newPendingReview: 2,
+        newNoCandidates: 0,
+        stillPendingReview: 0,
+        totalPendingReview: 2,
+        emailSent: true,
+        emailError: null,
+        reviewHtml: null,
+      }
+    : {
+        scannedSucceededPayments: 6,
+        alreadyRecorded: 4,
+        newPendingReview: 1,
+        newNoCandidates: 0,
+        stillPendingReview: 1,
+        totalPendingReview: 2,
+        emailSent: false,
+        emailError: "RESEND_API_KEY is not set on this server",
+        // Trimmed from the real buildReconciliationReviewHtml output, so the
+        // frame shows the mail template it will actually carry.
+        reviewHtml: `<!DOCTYPE html><html><head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;background:#FAF8F5;font-family:Arial,sans-serif">
+  <div style="max-width:560px;margin:24px auto;background:#fff;border:1px solid #E0D8CC">
+    <div style="background:#2D2620;padding:24px;text-align:center">
+      <p style="margin:0 0 6px;font-family:Georgia,serif;font-size:22px;letter-spacing:0.22em;color:#B8963E;text-transform:uppercase">Bergblume Keramik</p>
+      <p style="margin:0;font-size:11px;letter-spacing:0.08em;color:#8A7865">Stripe payments needing a match</p>
+    </div>
+    <div style="padding:24px">
+      <p style="margin:0 0 20px;font-size:13px;color:#6B5E52">2 Stripe payments were found with no matching order. Pick the piece each one paid for, or mark it for manual review.</p>
+      <div style="margin-bottom:28px;padding-bottom:24px;border-bottom:1px solid #E0D8CC">
+        <p style="margin:0 0 4px;font-size:13px;color:#2D2620"><strong>CHF 120.00</strong> · 14 Aug 2026, 16:05</p>
+        <p style="margin:0 0 12px;font-size:11px;color:#6B5E52">Stripe payment pi_3PqL2mB has no matching order or POS sale.</p>
+        <table style="width:100%;border-collapse:collapse">
+          <tr>
+            <td style="padding:8px 0;border-bottom:1px solid #F0EAE0;font-size:13px;color:#2D2620">Serving bowl, large — CHF 120.00</td>
+            <td style="padding:8px 0;border-bottom:1px solid #F0EAE0;text-align:right"><a href="#" style="display:inline-block;background:#B8963E;color:#2D2620;text-decoration:none;padding:6px 14px;font-size:12px;text-transform:uppercase;letter-spacing:0.05em">Assign</a></td>
+          </tr>
+          <tr>
+            <td style="padding:8px 0;border-bottom:1px solid #F0EAE0;font-size:13px;color:#2D2620">Milk jug — CHF 45.00</td>
+            <td style="padding:8px 0;border-bottom:1px solid #F0EAE0;text-align:right"><a href="#" style="display:inline-block;background:#B8963E;color:#2D2620;text-decoration:none;padding:6px 14px;font-size:12px;text-transform:uppercase;letter-spacing:0.05em">Assign</a></td>
+          </tr>
+        </table>
+        <p style="margin:12px 0 0"><a href="#" style="font-size:12px;color:#6B5E52">None of these — mark for manual review</a></p>
+      </div>
+    </div>
+  </div>
+</body></html>`,
+      };
+
 RESPONSES["siteImport.get"] = {
   ...(RESPONSES["siteImport.preview"] as Record<string, unknown>),
   sourceUrl: "https://bergblume.ch",
@@ -816,6 +876,7 @@ const PAGES: Record<string, React.ComponentType> = {
   discounts: Discounts,
   sales: Sales,
   sheets: Sheets,
+  reconciliation: Reconciliation,
 };
 
 // Billing lives outside ADMIN_NAV (it is reached from the account menu), so it
