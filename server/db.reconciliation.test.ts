@@ -51,6 +51,7 @@ import {
   getKnownOrderPaymentIntentIds,
   getKnownPosPaymentIntentIds,
   getKnownReconciliationPaymentIntentIds,
+  getPendingStripeReconciliations,
   getStripeReconciliationByToken,
   rejectStripeReconciliation,
   resolveStripeReconciliationConfirmed,
@@ -104,6 +105,31 @@ describe("getKnownReconciliationPaymentIntentIds", () => {
     dbMock.select.mockReturnValue(makeChain([{ id: "pi_r_1" }]));
     const result = await getKnownReconciliationPaymentIntentIds();
     expect(result).toEqual(new Set(["pi_r_1"]));
+  });
+});
+
+describe("getPendingStripeReconciliations", () => {
+  it("returns the rows still awaiting a decision, newest payment first", async () => {
+    const row = { id: 1, stripePaymentIntentId: "pi_1" };
+    const chain = makeChain([row]);
+    dbMock.select.mockReturnValue(chain);
+
+    const result = await getPendingStripeReconciliations(42, 10);
+
+    expect(result).toEqual([row]);
+    // Scoped to the tenant AND filtered to pending_review — a confirmed or
+    // rejected payment must never come back round for a second decision, and
+    // one store's backlog must never surface in another's console.
+    expect(chain.__calls.where).toHaveLength(1);
+    expect(chain.__calls.orderBy).toHaveLength(1);
+    expect(chain.__calls.limit[0]).toEqual([10]);
+  });
+
+  it("falls back to an empty list when the database is unavailable", async () => {
+    dbMock.select.mockImplementation(() => {
+      throw new Error("no db");
+    });
+    expect(await getPendingStripeReconciliations(42)).toEqual([]);
   });
 });
 
