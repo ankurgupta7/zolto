@@ -781,6 +781,81 @@ RESPONSES["stockIn.preview"] = {
   ],
 };
 
+// Reconciliation: the durable queue — what the store still has to decide,
+// independent of whether any email ever arrived. `?queue=empty` shows the page
+// without it.
+RESPONSES["reconciliation.listPending"] =
+  params.get("queue") === "empty"
+    ? { stripe: [], pos: [] }
+    : {
+        stripe: [
+          {
+            id: 3,
+            stripePaymentIntentId: "pi_3PqL2mB",
+            amountRappen: 12000,
+            currency: "chf",
+            stripeCreatedAt: "2026-08-14T16:05:00Z",
+            candidates: [
+              {
+                id: 4,
+                name: "Servierschale, gross",
+                nameEn: "Serving bowl, large",
+                price: "120.00",
+                choiceIndex: 0,
+              },
+              {
+                id: 7,
+                name: "Milchkrug",
+                nameEn: "Milk jug",
+                price: "45.00",
+                choiceIndex: 1,
+              },
+            ],
+          },
+          {
+            id: 4,
+            stripePaymentIntentId: "pi_3PqK9xR",
+            amountRappen: 3400,
+            currency: "chf",
+            stripeCreatedAt: "2026-08-13T10:41:00Z",
+            candidates: [
+              {
+                id: 11,
+                name: "Becher, gesprenkelt",
+                nameEn: "Tumbler, speckled",
+                price: "34.00",
+                choiceIndex: 0,
+              },
+            ],
+          },
+        ],
+        pos: [
+          {
+            id: 5,
+            posOrderItemId: 900,
+            amountRappen: 4500,
+            soldAt: "2026-08-16T11:20:00Z",
+            itemLabel: "Custom",
+            candidates: [
+              {
+                id: 7,
+                name: "Milchkrug",
+                nameEn: "Milk jug",
+                price: "45.00",
+                choiceIndex: 0,
+              },
+              {
+                id: 9,
+                name: "Knospenvase",
+                nameEn: "Bud vase",
+                price: "42.00",
+                choiceIndex: 1,
+              },
+            ],
+          },
+        ],
+      };
+
 // Reconciliation: the state that only exists when email is broken — payments
 // are waiting, the review mail could not be delivered, so the server hands back
 // the review page itself for the console to render in place. There is nothing

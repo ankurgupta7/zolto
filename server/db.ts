@@ -1784,6 +1784,29 @@ export async function getPendingStripeReconciliations(
   );
 }
 
+// By id AND tenant, so the admin console can address a row the merchant is
+// looking at without a mailed token. The tenant predicate is the whole point:
+// ids are sequential and guessable, so it is what stops an admin of store A
+// resolving store B's payment by typing a different number.
+export async function getStripeReconciliationById(
+  tenantId: number,
+  id: number,
+): Promise<StripeReconciliation | undefined> {
+  return withDb(async (db) => {
+    const result = await db
+      .select()
+      .from(stripeReconciliations)
+      .where(
+        and(
+          eq(stripeReconciliations.id, id),
+          eq(stripeReconciliations.tenantId, tenantId),
+        ),
+      )
+      .limit(1);
+    return result.length > 0 ? result[0] : undefined;
+  }, undefined);
+}
+
 export async function getStripeReconciliationByToken(
   token: string,
 ): Promise<StripeReconciliation | undefined> {
@@ -1921,6 +1944,7 @@ export async function createPosAttribution(
 
 /** A queued attribution plus the line it belongs to, enough to rebuild its review. */
 export interface PendingPosAttribution {
+  id: number;
   posOrderItemId: number;
   amountRappen: number;
   candidateProductIds: string;
@@ -1942,6 +1966,7 @@ export async function getPendingPosAttributions(
     (db) =>
       db
         .select({
+          id: posAttributions.id,
           posOrderItemId: posAttributions.posOrderItemId,
           amountRappen: posAttributions.amountRappen,
           candidateProductIds: posAttributions.candidateProductIds,
@@ -1964,6 +1989,24 @@ export async function getPendingPosAttributions(
         .limit(limit),
     [],
   );
+}
+
+// The in-person sibling of getStripeReconciliationById — same tenant predicate,
+// same reason.
+export async function getPosAttributionById(
+  tenantId: number,
+  id: number,
+): Promise<PosAttribution | undefined> {
+  return withDb(async (db) => {
+    const result = await db
+      .select()
+      .from(posAttributions)
+      .where(
+        and(eq(posAttributions.id, id), eq(posAttributions.tenantId, tenantId)),
+      )
+      .limit(1);
+    return result.length > 0 ? result[0] : undefined;
+  }, undefined);
 }
 
 export async function getPosAttributionByToken(

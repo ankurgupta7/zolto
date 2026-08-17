@@ -61,6 +61,8 @@ import {
   getKnownReconciliationPaymentIntentIds,
   getPendingPosAttributions,
   getPendingStripeReconciliations,
+  getPosAttributionById,
+  getStripeReconciliationById,
   getStripeReconciliationByToken,
   rejectStripeReconciliation,
   resolveStripeReconciliationConfirmed,
@@ -144,6 +146,37 @@ describe("getPendingStripeReconciliations", () => {
 
 // The in-person sibling: same "still waiting on the merchant" query, joined
 // back to the POS line so the review can be rebuilt with its date and label.
+// The console addresses a row by id rather than by mailed token, so the tenant
+// predicate on these reads is what replaces the token's secrecy. Ids are
+// sequential and guessable.
+describe("by-id lookups are tenant-scoped", () => {
+  it("asks for the reconciliation by id AND tenant", async () => {
+    const row = { id: 3, tenantId: 42 };
+    const chain = makeChain([row]);
+    dbMock.select.mockReturnValue(chain);
+
+    expect(await getStripeReconciliationById(42, 3)).toEqual(row);
+    // One combined predicate — an id-only lookup would answer for any store.
+    expect(chain.__calls.where).toHaveLength(1);
+    expect(chain.__calls.limit[0]).toEqual([1]);
+  });
+
+  it("returns undefined when the row belongs to another store", async () => {
+    dbMock.select.mockReturnValue(makeChain([]));
+    expect(await getStripeReconciliationById(42, 3)).toBeUndefined();
+    expect(await getPosAttributionById(42, 5)).toBeUndefined();
+  });
+
+  it("asks for the attribution by id AND tenant", async () => {
+    const row = { id: 5, tenantId: 42 };
+    const chain = makeChain([row]);
+    dbMock.select.mockReturnValue(chain);
+
+    expect(await getPosAttributionById(42, 5)).toEqual(row);
+    expect(chain.__calls.where).toHaveLength(1);
+  });
+});
+
 describe("getPendingPosAttributions", () => {
   it("returns the queued attributions still awaiting a decision", async () => {
     const row = { posOrderItemId: 900, amountRappen: 4500 };

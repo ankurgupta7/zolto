@@ -74,6 +74,74 @@ function ReviewPanel({
   );
 }
 
+interface PendingCandidate {
+  id: number;
+  name: string;
+  nameEn: string | null;
+  price: string;
+}
+
+/**
+ * One outstanding item, with its shortlist as buttons.
+ *
+ * This is the durable way to clear the queue: no token, no email, just the
+ * admin's own session. The review-email panel above is the rescue for a scan
+ * that has just failed to send; this list is what is always here.
+ */
+function PendingRow({
+  headline,
+  detail,
+  candidates,
+  busy,
+  noneLabel,
+  onChoose,
+}: {
+  headline: string;
+  detail: string;
+  candidates: PendingCandidate[];
+  busy: boolean;
+  noneLabel: string;
+  onChoose: (productId: number | null) => void;
+}) {
+  return (
+    <li className="border-b py-4 last:border-b-0 last:pb-0 first:pt-0">
+      <p className="text-sm font-medium text-foreground">{headline}</p>
+      <p className="mt-0.5 text-xs text-muted-foreground">{detail}</p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {candidates.map((c) => (
+          <SecondaryButton
+            key={c.id}
+            disabled={busy}
+            onClick={() => onChoose(c.id)}
+          >
+            {c.nameEn ?? c.name}
+            <span className="text-muted-foreground tabular-nums lining-nums">
+              CHF {Number(c.price).toFixed(2)}
+            </span>
+          </SecondaryButton>
+        ))}
+        <SecondaryButton
+          disabled={busy}
+          className="border-dashed text-muted-foreground"
+          onClick={() => onChoose(null)}
+        >
+          {noneLabel}
+        </SecondaryButton>
+      </div>
+    </li>
+  );
+}
+
+/** CHF 120.00 · 14 Aug 2026, 16:05 — the line every pending row leads with. */
+function formatMoneyAndDate(amountRappen: number, at: Date | string): string {
+  const amount = (amountRappen / 100).toFixed(2);
+  const date = new Date(at).toLocaleString(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+  return `CHF ${amount} · ${date}`;
+}
+
 export default function Reconciliation() {
   const { t } = useTranslation("admin");
   const { user } = useAuth();
@@ -81,6 +149,38 @@ export default function Reconciliation() {
   const [stripeReviewHtml, setStripeReviewHtml] = useState<string | null>(null);
   const [posResult, setPosResult] = useState<string | null>(null);
   const [posReviewHtml, setPosReviewHtml] = useState<string | null>(null);
+
+  const pending = trpc.reconciliation.listPending.useQuery();
+
+  // Every scan and every decision changes what is outstanding, so the list is
+  // refetched after each rather than left to go stale behind the merchant.
+  const refreshPending = () => pending.refetch();
+
+  const resolved = (data: {
+    productName: string | null;
+    amountRappen: number;
+  }) => {
+    refreshPending();
+    toast.success(
+      data.productName
+        ? t("ops.reconciliation.pendingAssigned", {
+            name: data.productName,
+            amount: (data.amountRappen / 100).toFixed(2),
+          })
+        : t("ops.reconciliation.pendingSetAside"),
+    );
+  };
+
+  const resolveStripe = trpc.reconciliation.resolveStripe.useMutation({
+    onSuccess: resolved,
+    onError: (e) =>
+      toast.error(e.message || t("ops.reconciliation.pendingFailed")),
+  });
+  const resolvePos = trpc.reconciliation.resolvePos.useMutation({
+    onSuccess: resolved,
+    onError: (e) =>
+      toast.error(e.message || t("ops.reconciliation.pendingFailed")),
+  });
 
   const stripeScan = trpc.reconciliation.run.useMutation({
     onSuccess: (data) => {
@@ -103,6 +203,7 @@ export default function Reconciliation() {
       // The email never left: show its contents here rather than reporting a
       // success the merchant has no way to act on.
       setStripeReviewHtml(data.reviewHtml ?? null);
+      refreshPending();
       if (data.reviewHtml) toast.error(msg);
       else toast.success(msg);
     },
@@ -127,6 +228,7 @@ export default function Reconciliation() {
             : t("ops.reconciliation.posClean", { count: data.scannedLines });
       setPosResult(msg);
       setPosReviewHtml(data.reviewHtml ?? null);
+      refreshPending();
       if (data.reviewHtml) toast.error(msg);
       else toast.success(msg);
     },
@@ -183,6 +285,34 @@ export default function Reconciliation() {
         />
       )}
 
+      {pending.data && pending.data.stripe.length > 0 && (
+        <SettingsCard
+          title={t("ops.reconciliation.pendingStripeTitle")}
+          description={t("ops.reconciliation.pendingStripeDescription")}
+        >
+          <ul>
+            {pending.data.stripe.map((item) => (
+              <PendingRow
+                key={item.id}
+                headline={formatMoneyAndDate(
+                  item.amountRappen,
+                  item.stripeCreatedAt,
+                )}
+                detail={t("ops.reconciliation.pendingStripeRef", {
+                  id: item.stripePaymentIntentId,
+                })}
+                candidates={item.candidates}
+                busy={resolveStripe.isPending}
+                noneLabel={t("ops.reconciliation.pendingNone")}
+                onChoose={(productId) =>
+                  resolveStripe.mutate({ id: item.id, productId })
+                }
+              />
+            ))}
+          </ul>
+        </SettingsCard>
+      )}
+
       <SettingsCard
         title={t("ops.reconciliation.posTitle")}
         description={t("ops.reconciliation.posDescription")}
@@ -220,6 +350,35 @@ export default function Reconciliation() {
           dismissLabel={t("ops.reconciliation.posReviewDismiss")}
           onDismiss={() => setPosReviewHtml(null)}
         />
+      )}
+
+      {pending.data && pending.data.pos.length > 0 && (
+        <SettingsCard
+          title={t("ops.reconciliation.pendingPosTitle")}
+          description={t("ops.reconciliation.pendingPosDescription")}
+        >
+          <ul>
+            {pending.data.pos.map((item) => (
+              <PendingRow
+                key={item.id}
+                headline={formatMoneyAndDate(item.amountRappen, item.soldAt)}
+                detail={
+                  item.itemLabel
+                    ? t("ops.reconciliation.pendingPosLabel", {
+                        label: item.itemLabel,
+                      })
+                    : t("ops.reconciliation.pendingPosNoLabel")
+                }
+                candidates={item.candidates}
+                busy={resolvePos.isPending}
+                noneLabel={t("ops.reconciliation.pendingNone")}
+                onChoose={(productId) =>
+                  resolvePos.mutate({ id: item.id, productId })
+                }
+              />
+            ))}
+          </ul>
+        </SettingsCard>
       )}
     </div>
   );

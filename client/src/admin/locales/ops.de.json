@@ -125,7 +125,18 @@
       "posEmailError": "E-Mail-Versand fehlgeschlagen: {{reason}}",
       "posReviewTitle": "Verkäufe, die auf Bestätigung warten",
       "posReviewDescription": "Die Prüf-E-Mail konnte nicht zugestellt werden — hier ist sie. Tippen Sie das Stück an, das jeweils verkauft wurde, oder markieren Sie es zur manuellen Prüfung; die Links tun genau dasselbe wie in der E-Mail.",
-      "posReviewDismiss": "Ausblenden"
+      "posReviewDismiss": "Ausblenden",
+      "pendingStripeTitle": "Zahlungen, die noch warten",
+      "pendingStripeDescription": "Alle nicht zugeordneten Stripe-Zahlungen, über die Sie noch nicht entschieden haben. Wählen Sie das Stück, für das jeweils bezahlt wurde — ganz ohne E-Mail.",
+      "pendingStripeRef": "Stripe-Zahlung {{id}}, ohne passende Bestellung oder Verkauf vor Ort.",
+      "pendingPosTitle": "Verkäufe, die noch warten",
+      "pendingPosDescription": "Alle Verkäufe vor Ort, die nur als Betrag erfasst und noch keinem Stück zugeordnet wurden.",
+      "pendingPosLabel": "Als „{{label}}“ erfasst, ohne zugeordnetes Stück.",
+      "pendingPosNoLabel": "Nur als Betrag erfasst, ohne zugeordnetes Stück.",
+      "pendingNone": "Keines davon",
+      "pendingAssigned": "CHF {{amount}} als Verkauf von {{name}} erfasst. Bestand aktualisiert.",
+      "pendingSetAside": "Zur manuellen Klärung zurückgestellt. Bestand unverändert.",
+      "pendingFailed": "Diese Entscheidung konnte nicht übernommen werden."
     },
     "pos": {
       "title": "Kasse",

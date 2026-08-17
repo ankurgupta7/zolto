@@ -125,7 +125,18 @@
       "posEmailError": "Email delivery failed: {{reason}}",
       "posReviewTitle": "Sales waiting to be confirmed",
       "posReviewDescription": "The review email could not be delivered, so here it is. Tap the piece each sale was, or mark it for manual review — the links do exactly what the email's would.",
-      "posReviewDismiss": "Hide this"
+      "posReviewDismiss": "Hide this",
+      "pendingStripeTitle": "Payments still waiting",
+      "pendingStripeDescription": "Every unmatched Stripe payment you haven't decided on yet. Pick the piece each one paid for — no email involved.",
+      "pendingStripeRef": "Stripe payment {{id}}, with no matching order or in-person sale.",
+      "pendingPosTitle": "Sales still waiting",
+      "pendingPosDescription": "Every in-person sale rung up as an amount only that you haven't tied to a piece yet.",
+      "pendingPosLabel": "Rung up as “{{label}}” with no piece attached.",
+      "pendingPosNoLabel": "Rung up as an amount only, with no piece attached.",
+      "pendingNone": "None of these",
+      "pendingAssigned": "CHF {{amount}} recorded as a sale of {{name}}. Inventory updated.",
+      "pendingSetAside": "Left for you to sort out. Inventory unchanged.",
+      "pendingFailed": "That decision could not be applied."
     },
     "pos": {
       "title": "Point of sale",

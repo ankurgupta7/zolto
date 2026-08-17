@@ -23,7 +23,6 @@ import {
 import {
   createPosAttribution,
   getPendingPosAttributions,
-  getProductsByIds,
   getTenantAdminContact,
   getTenantById,
   getTenantSettings,
@@ -35,6 +34,7 @@ import {
   sendPosAttributionReviewEmail,
 } from "./_core/email";
 import { MAX_REVIEW_ITEMS, toBaseUrl } from "./reconciliation";
+import { resolveStoredCandidates } from "./pendingReview";
 
 export const POS_ATTRIBUTION_LOOKBACK_DAYS_DEFAULT = 3;
 
@@ -84,50 +84,22 @@ async function collectStillPendingPosItems(
   const older = rows.filter((r) => !fresh.has(r.posOrderItemId));
   if (older.length === 0) return [];
 
-  const idsByRow = older.map((row) =>
-    row.candidateProductIds
-      .split(",")
-      .map((s) => Number.parseInt(s.trim(), 10))
-      .filter((n) => Number.isFinite(n)),
+  const candidatesByRow = await resolveStoredCandidates(tenantId, older);
+
+  return (
+    older
+      .map((row, i) => ({
+        posOrderItemId: row.posOrderItemId,
+        amountRappen: row.amountRappen,
+        soldAt: row.soldAt,
+        itemLabel: row.itemLabel,
+        candidates: candidatesByRow[i],
+        token: row.confirmationToken,
+      }))
+      // Every candidate piece has since been deleted, so there is nothing left to
+      // attribute the sale to. It stays pending for manual handling.
+      .filter((item) => item.candidates.length > 0)
   );
-  const products = await getProductsByIds(
-    tenantId,
-    Array.from(new Set(idsByRow.flat())),
-  );
-  const byId = new Map(products.map((p) => [p.id, p]));
-
-  const items: PosAttributionReviewItem[] = [];
-  older.forEach((row, i) => {
-    const candidates = idsByRow[i]
-      .map((productId, choiceIndex) => {
-        const product = byId.get(productId);
-        return product
-          ? {
-              id: product.id,
-              name: product.name,
-              nameEn: product.nameEn ?? null,
-              price: product.price,
-              choiceIndex,
-            }
-          : null;
-      })
-      .filter((c): c is NonNullable<typeof c> => c !== null);
-
-    // Every candidate piece has since been deleted, so there is nothing left to
-    // attribute the sale to. It stays pending for manual handling.
-    if (candidates.length === 0) return;
-
-    items.push({
-      posOrderItemId: row.posOrderItemId,
-      amountRappen: row.amountRappen,
-      soldAt: row.soldAt,
-      itemLabel: row.itemLabel,
-      candidates,
-      token: row.confirmationToken,
-    });
-  });
-
-  return items;
 }
 
 // `tenantId` scopes the run to one store. The merchant-facing Reconciliation
