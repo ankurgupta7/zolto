@@ -4,7 +4,10 @@ import net from "node:net";
 import { createApp } from "./app";
 import { serveStatic, setupVite } from "./vite";
 import { startChannelIntake } from "../channels";
-import { ensureDailyPosAttributionJob } from "../scheduled";
+import {
+  ensureDailyPosAttributionJob,
+  ensureSheetMirrorSyncJob,
+} from "../scheduled";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise((resolve) => {
@@ -49,9 +52,11 @@ async function startServer() {
 
   // Non-HTTP surfaces, deliberately outside createApp() so in-process app
   // tests never open live sockets or talk to the heartbeat service:
-  // the Discord intake gateway and the nightly POS-attribution schedule.
+  // the Discord intake gateway, the nightly POS-attribution schedule, and the
+  // hourly Google Sheets mirror sweep.
   startChannelIntake();
   void ensureDailyPosAttributionJob();
+  void ensureSheetMirrorSyncJob();
 }
 
 startServer().catch(console.error);

@@ -720,6 +720,48 @@ migrate_0045_site_imports() {
 # session (cash, TWINT-QR, Terminal card) stay legal.
 #
 # Additive; nothing reads it until a merchant opens the till.
+# ─────────────────────────────────────────────────────────────────────────────
+# Migration 0051: sheet_mirrors — the Google Sheets mirror of a store.
+#
+# Ships drizzle/0032_sheet_mirrors.sql. One spreadsheet per store, created and
+# owned by the platform service account and then shared with the merchant.
+#
+# tenant_id's UNIQUE key is the only non-obvious part, and it is load-bearing:
+# upsertSheetMirror (server/db.ts) is an INSERT … ON DUPLICATE KEY UPDATE, which
+# in MySQL fires only on a PRIMARY KEY or UNIQUE collision. `id` is autoincrement
+# and never supplied, so without this index every reconnect INSERTs a second row
+# — two spreadsheets for one store, each looking authoritative to whoever opened
+# it, and getSheetMirror's LIMIT 1 deciding which one the sync keeps refreshing.
+# Restored below on any database that somehow has the table without it.
+# ─────────────────────────────────────────────────────────────────────────────
+migrate_0051_sheet_mirrors() {
+  if [ "$(tbl_exists sheet_mirrors)" = "0" ]; then
+    run_sql "0051 sheet_mirrors table" "
+      CREATE TABLE IF NOT EXISTS \`sheet_mirrors\` (
+        \`id\`               int AUTO_INCREMENT NOT NULL,
+        \`tenant_id\`        int NOT NULL,
+        \`spreadsheet_id\`   varchar(128) NOT NULL,
+        \`spreadsheet_url\`  varchar(512) NOT NULL,
+        \`shared_with\`      varchar(320) NOT NULL,
+        \`stock_in_enabled\` boolean NOT NULL DEFAULT false,
+        \`last_synced_at\`   timestamp NULL,
+        \`last_sync_error\`  text,
+        \`createdAt\`        timestamp NOT NULL DEFAULT (now()),
+        \`updatedAt\`        timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+        CONSTRAINT \`sheet_mirrors_id\` PRIMARY KEY(\`id\`),
+        CONSTRAINT \`sheet_mirrors_tenant_id_unique\` UNIQUE(\`tenant_id\`)
+      );"
+  else
+    ok "0051 sheet_mirrors already exists"
+    if [ "$(idx_exists sheet_mirrors sheet_mirrors_tenant_id_unique)" = "0" ]; then
+      run_sql "0051 sheet_mirrors tenant unique" \
+        "ALTER TABLE \`sheet_mirrors\` ADD CONSTRAINT \`sheet_mirrors_tenant_id_unique\` UNIQUE(\`tenant_id\`);"
+    else
+      ok "0051 sheet_mirrors_tenant_id_unique already exists"
+    fi
+  fi
+}
+
 migrate_0050_pos_checkout_session() {
   if [ "$(col_exists pos_orders stripeCheckoutSessionId)" = "0" ]; then
     run_sql "0050 add pos_orders.stripeCheckoutSessionId" \

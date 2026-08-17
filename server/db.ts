@@ -19,6 +19,7 @@ import * as schema from "../drizzle/schema";
 import {
   type AgentHit,
   agentHits,
+  auditLogs,
   type BulkUploadLog,
   bulkUploadLogs,
   type DiscountCode,
@@ -58,6 +59,8 @@ import {
   type Product,
   productImages,
   products,
+  type SheetMirror,
+  sheetMirrors,
   type SiteImport,
   siteImports,
   type StripeReconciliation,
@@ -3816,4 +3819,250 @@ export async function getPosOrderById(tenantId: number, id: number) {
       .limit(1);
     return rows[0] ?? null;
   }, null);
+}
+
+// ─── Sheet mirrors (Google Sheets mirror of sales + inventory) ────────────────
+//
+// The rows below record only WHERE a store's mirror lives and how the last push
+// went. Nothing the spreadsheet displays is stored here: every tab is rendered
+// from the ledger on each sync (server/sheetMirror.ts), so the sheet can never
+// become a second, disagreeing copy of the truth.
+
+export async function getSheetMirror(
+  tenantId: number,
+): Promise<SheetMirror | null> {
+  return withDb(async (db) => {
+    const rows = await db
+      .select()
+      .from(sheetMirrors)
+      .where(eq(sheetMirrors.tenantId, tenantId))
+      .limit(1);
+    return rows[0] ?? null;
+  }, null);
+}
+
+/** Every connected mirror, for the scheduled sweep. */
+export async function listSheetMirrors(): Promise<SheetMirror[]> {
+  return withDb((db) => db.select().from(sheetMirrors), []);
+}
+
+/**
+ * Record a newly created (or re-created) mirror.
+ *
+ * The upsert relies on `sheet_mirrors_tenant_id_unique`: without that index this
+ * INSERT … ON DUPLICATE KEY UPDATE never collides, and a merchant who pressed
+ * Connect twice would own two spreadsheets, both looking like their books.
+ */
+export async function upsertSheetMirror(entry: {
+  tenantId: number;
+  spreadsheetId: string;
+  spreadsheetUrl: string;
+  sharedWith: string;
+  stockInEnabled: boolean;
+}): Promise<void> {
+  await withDbOrThrow((db) =>
+    db
+      .insert(sheetMirrors)
+      .values({
+        tenantId: entry.tenantId,
+        spreadsheetId: entry.spreadsheetId,
+        spreadsheetUrl: entry.spreadsheetUrl,
+        sharedWith: entry.sharedWith,
+        stockInEnabled: entry.stockInEnabled,
+        lastSyncedAt: null,
+        lastSyncError: null,
+      })
+      .onDuplicateKeyUpdate({
+        set: {
+          spreadsheetId: entry.spreadsheetId,
+          spreadsheetUrl: entry.spreadsheetUrl,
+          sharedWith: entry.sharedWith,
+          stockInEnabled: entry.stockInEnabled,
+          // A reconnect points at a different file, so the previous file's sync
+          // state says nothing about this one.
+          lastSyncedAt: null,
+          lastSyncError: null,
+        },
+      }),
+  );
+}
+
+/**
+ * Stamp the outcome of a push. `error` null means it succeeded — which also
+ * clears any previous failure, so the admin never shows a stale complaint about
+ * a mirror that has since recovered.
+ */
+export async function setSheetMirrorSyncResult(
+  tenantId: number,
+  error: string | null,
+): Promise<void> {
+  await withDbOrThrow((db) =>
+    db
+      .update(sheetMirrors)
+      .set({
+        // Set on failure too: "last attempted" is what makes a stuck mirror
+        // visibly stuck rather than merely never-synced.
+        lastSyncedAt: new Date(),
+        lastSyncError: error ? error.slice(0, 1000) : null,
+      })
+      .where(eq(sheetMirrors.tenantId, tenantId)),
+  );
+}
+
+export async function setSheetMirrorStockIn(
+  tenantId: number,
+  enabled: boolean,
+): Promise<void> {
+  await withDbOrThrow((db) =>
+    db
+      .update(sheetMirrors)
+      .set({ stockInEnabled: enabled })
+      .where(eq(sheetMirrors.tenantId, tenantId)),
+  );
+}
+
+export async function deleteSheetMirror(tenantId: number): Promise<void> {
+  await withDbOrThrow((db) =>
+    db.delete(sheetMirrors).where(eq(sheetMirrors.tenantId, tenantId)),
+  );
+}
+
+// ─── Stock-in: applying an approved sheet edit ────────────────────────────────
+
+export interface StockInChange {
+  productId: number;
+  /** Signed change to apply to `quantity`. 0 for a price-only edit. */
+  quantityDelta: number;
+  /** Absolute new price as a decimal string, or null to leave it alone. */
+  price: string | null;
+}
+
+export interface StockInApplied {
+  productId: number;
+  quantityBefore: number;
+  quantityAfter: number;
+  priceBefore: string;
+  priceAfter: string;
+}
+
+/**
+ * Apply an admin-approved batch of Stock In edits.
+ *
+ * Three deliberate properties, each of which the obvious implementation gets
+ * wrong:
+ *
+ * 1. **Quantity is a DELTA, never an absolute.** The merchant's sheet was read
+ *    at some point in the past; between then and now the till may have sold the
+ *    piece. Writing the sheet's absolute number would silently undo that sale —
+ *    and could resurrect a one-of-a-kind item that is already in a customer's
+ *    bag. `+2 received` composes with concurrent sales; `= 2` fights them.
+ *
+ * 2. **SELECT … FOR UPDATE, then write.** The delta is computed in JS from a
+ *    locked read rather than as `quantity = quantity + n` in SQL, because `sold`
+ *    has to be derived from the resulting quantity in the same statement, and
+ *    MySQL's left-to-right assignment semantics make `sold`'s reference to
+ *    `quantity` mean the pre- or post-update value depending on assignment
+ *    order — a delta applied twice is not a bug worth risking on ordering. The
+ *    row lock also blocks a concurrent POS decrement for the length of the
+ *    transaction, which is what makes the read-then-write safe at all.
+ *
+ * 3. **Reservations are left alone.** `reservedUntil`/`reservedToken` are a live
+ *    online checkout's hold. Receiving stock says nothing about that customer's
+ *    in-flight payment, so clearing it here would let the same piece be sold
+ *    underneath them. `sold` IS updated, because the invariant
+ *    `sold ⇔ quantity <= 0` is shared with setProductQuantity: restocking a
+ *    sold-out item genuinely un-sells it, which is the merchant's whole intent.
+ *
+ * Returns before/after for each row actually changed, for the audit trail.
+ * Products belonging to another tenant, or absent, are skipped rather than
+ * erroring — the caller validated them against a snapshot that may have moved.
+ */
+export async function applyStockInChanges(
+  tenantId: number,
+  changes: StockInChange[],
+): Promise<StockInApplied[]> {
+  if (changes.length === 0) return [];
+  return withDbOrThrow((db) =>
+    db.transaction(async (tx) => {
+      const ids = changes.map((c) => c.productId);
+      const locked = await tx
+        .select({
+          id: products.id,
+          quantity: products.quantity,
+          price: products.price,
+        })
+        .from(products)
+        .where(and(eq(products.tenantId, tenantId), inArray(products.id, ids)))
+        .for("update");
+
+      const current = new Map(locked.map((row) => [row.id, row]));
+      const applied: StockInApplied[] = [];
+
+      for (const change of changes) {
+        const row = current.get(change.productId);
+        if (!row) continue;
+
+        const quantityAfter = Math.max(0, row.quantity + change.quantityDelta);
+        const priceAfter = change.price ?? row.price;
+        if (quantityAfter === row.quantity && priceAfter === row.price)
+          continue;
+
+        await tx
+          .update(products)
+          .set({
+            quantity: quantityAfter,
+            sold: quantityAfter <= 0,
+            price: priceAfter,
+          })
+          .where(
+            and(
+              eq(products.tenantId, tenantId),
+              eq(products.id, change.productId),
+            ),
+          );
+
+        applied.push({
+          productId: change.productId,
+          quantityBefore: row.quantity,
+          quantityAfter,
+          priceBefore: row.price,
+          priceAfter,
+        });
+      }
+
+      return applied;
+    }),
+  );
+}
+
+// ─── Audit log ────────────────────────────────────────────────────────────────
+
+/**
+ * Record an administrative action. Best-effort by design: a failed audit write
+ * must not roll back the change it describes, so this swallows its own errors —
+ * losing a log line is bad, refusing a merchant's approved restock because the
+ * log line failed is worse.
+ */
+export async function insertAuditLog(entry: {
+  tenantId: number;
+  userId: number | null;
+  action: string;
+  resourceType?: string | null;
+  resourceId?: number | null;
+  metadata?: unknown;
+}): Promise<void> {
+  try {
+    await withDbOrThrow((db) =>
+      db.insert(auditLogs).values({
+        tenantId: entry.tenantId,
+        userId: entry.userId,
+        action: entry.action,
+        resourceType: entry.resourceType ?? null,
+        resourceId: entry.resourceId ?? null,
+        metadata: entry.metadata ?? null,
+      }),
+    );
+  } catch (err) {
+    console.error("[Audit] Could not record", entry.action, err);
+  }
 }

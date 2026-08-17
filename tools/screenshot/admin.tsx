@@ -40,6 +40,7 @@ import Insights from "@/pages/admin/Insights";
 import Testimonials from "@/pages/admin/Testimonials";
 import Discounts from "@/pages/admin/Discounts";
 import Sales from "@/pages/admin/Sales";
+import Sheets from "@/pages/admin/Sheets";
 import Billing from "@/pages/Billing";
 
 const params = new URLSearchParams(location.search);
@@ -665,6 +666,120 @@ RESPONSES["sales.list"] = {
   truncated: false,
 };
 
+// Spreadsheet page. `?sheets=` picks which state to paint, because they are
+// genuinely different screens and only one of them can be the default:
+//   new       — no mirror yet, admin signed in with Google (no field to fill)
+//   ask       — no mirror yet, non-Google sign-in (the share-address field)
+//   error     — connected, last refresh failed (the amber banner)
+//   off       — the platform has no service account configured at all
+//   otherwise — connected with the inbound lane live and a diff waiting
+const sheetsState = params.get("sheets") ?? "connected";
+RESPONSES["sheets.status"] = {
+  configured: sheetsState !== "off",
+  // Null only for `ask`: every other state is the ordinary Google-sign-in
+  // admin, whose address we already know and therefore never ask for.
+  googleAccount: sheetsState === "ask" ? null : "anna@bergblume.ch",
+  mirror:
+    sheetsState === "new" || sheetsState === "ask"
+      ? null
+      : {
+          spreadsheetUrl:
+            "https://docs.google.com/spreadsheets/d/1BergblumeKeramik/edit",
+          sharedWith: "anna@bergblume.ch",
+          stockInEnabled: sheetsState !== "error",
+          lastSyncedAt: "2026-08-17T09:00:00.000Z",
+          lastSyncError:
+            sheetsState === "error"
+              ? "File not found: 1BergblumeKeramik"
+              : null,
+        },
+};
+
+// The diff a merchant's Stock In tab would produce after a workshop delivery:
+// two restocks, a price rise, a breakage, one row that already matches, and one
+// mistyped id — so the approve table, the amber set-aside list and the
+// already-matches note are all on screen at once.
+RESPONSES["stockIn.preview"] = {
+  applicable: 4,
+  hash: "9f2c1e7a",
+  rows: [
+    {
+      rowNumber: 3,
+      productId: 4,
+      itemName: "Serving bowl, large",
+      quantityDelta: 6,
+      quantityBefore: 2,
+      quantityAfter: 8,
+      newPrice: null,
+      priceBefore: "120.00",
+      note: "kiln load out Friday",
+      status: "ok",
+    },
+    {
+      rowNumber: 4,
+      productId: 9,
+      itemName: "Bud vase",
+      quantityDelta: 12,
+      quantityBefore: 0,
+      quantityAfter: 12,
+      newPrice: null,
+      priceBefore: "30.00",
+      note: "",
+      status: "ok",
+    },
+    {
+      rowNumber: 5,
+      productId: 11,
+      itemName: "Tumbler, speckled",
+      quantityDelta: 0,
+      quantityBefore: 14,
+      quantityAfter: 14,
+      newPrice: "34.00",
+      priceBefore: "28.00",
+      note: "clay went up",
+      status: "ok",
+    },
+    {
+      rowNumber: 6,
+      productId: 7,
+      itemName: "Milk jug",
+      quantityDelta: -1,
+      quantityBefore: 3,
+      quantityAfter: 2,
+      newPrice: null,
+      priceBefore: "45.00",
+      note: "chipped in transit",
+      status: "ok",
+    },
+    {
+      rowNumber: 7,
+      productId: 2,
+      itemName: "Breakfast plate",
+      quantityDelta: 0,
+      quantityBefore: 9,
+      quantityAfter: 9,
+      newPrice: null,
+      priceBefore: "38.00",
+      note: "counted",
+      status: "no_change",
+      message: "Already matches the catalogue",
+    },
+    {
+      rowNumber: 8,
+      productId: 411,
+      itemName: "",
+      quantityDelta: 0,
+      quantityBefore: null,
+      quantityAfter: null,
+      newPrice: null,
+      priceBefore: null,
+      note: "new glaze test",
+      status: "unknown_product",
+      message: "No product with id 411 in this store",
+    },
+  ],
+};
+
 RESPONSES["siteImport.get"] = {
   ...(RESPONSES["siteImport.preview"] as Record<string, unknown>),
   sourceUrl: "https://bergblume.ch",
@@ -700,6 +815,7 @@ const PAGES: Record<string, React.ComponentType> = {
   testimonials: Testimonials,
   discounts: Discounts,
   sales: Sales,
+  sheets: Sheets,
 };
 
 // Billing lives outside ADMIN_NAV (it is reached from the account menu), so it

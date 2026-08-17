@@ -1098,3 +1098,51 @@ export const discountRedemptions = mysqlTable("discount_redemptions", {
 
 export type DiscountRedemption = typeof discountRedemptions.$inferSelect;
 export type InsertDiscountRedemption = typeof discountRedemptions.$inferInsert;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SHEET MIRRORS — the Google Sheets mirror of a store's sales and inventory
+// ═══════════════════════════════════════════════════════════════════════════════
+// One spreadsheet per store, created and OWNED by the platform service account
+// and then shared with the merchant. A merchant thinks in rows and columns; this
+// gives them that surface (filters, pivots, something to hand an accountant)
+// without moving the ledger out of MySQL.
+//
+// Why the database stays authoritative, in one line each — the reasoning is
+// worth keeping next to the table that could tempt someone to invert it:
+//   - reserveProducts (server/db.ts) is a compare-and-set. The Sheets API has
+//     no conditional write, so two concurrent checkouts both "win" and a
+//     one-of-a-kind piece sells twice.
+//   - a POS sale inserts its order, its items, and decrements stock in one
+//     transaction; Sheets has no rollback.
+//   - orders.stripeSessionId is UNIQUE, which is what makes a retried Stripe
+//     webhook idempotent. A sheet cannot enforce that.
+// So: sheet as interface, database as ledger. Everything here is derived state.
+//
+// `tenant_id` is UNIQUE — one mirror per store. A second row would mean two
+// spreadsheets diverging, each looking authoritative.
+export const sheetMirrors = mysqlTable("sheet_mirrors", {
+  id: int("id").autoincrement().primaryKey(),
+  tenantId: int("tenant_id").notNull().unique(),
+  spreadsheetId: varchar("spreadsheet_id", { length: 128 }).notNull(),
+  spreadsheetUrl: varchar("spreadsheet_url", { length: 512 }).notNull(),
+  /** The merchant address the file was shared with, for the admin to see. */
+  sharedWith: varchar("shared_with", { length: 320 }).notNull(),
+  // Lane 2. False = the merchant is a Drive *reader* and the whole file is
+  // read-only. True = they are a writer, and the read-only tabs are held that
+  // way by protected ranges instead (server/sheetMirror.ts) — Drive has no
+  // per-tab permission, so the protection IS the safety, and flipping this
+  // without re-applying it hands over an editable ledger.
+  stockInEnabled: boolean("stock_in_enabled").notNull().default(false),
+  lastSyncedAt: timestamp("last_synced_at"),
+  /**
+   * Why the last push failed, or NULL after a clean one. Kept rather than only
+   * logged: the merchant is the one who can fix the usual causes (they deleted
+   * the file, or removed their own access), and they never read server logs.
+   */
+  lastSyncError: text("last_sync_error"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type SheetMirror = typeof sheetMirrors.$inferSelect;
+export type InsertSheetMirror = typeof sheetMirrors.$inferInsert;

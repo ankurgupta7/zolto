@@ -1060,6 +1060,19 @@ migrate_0049_agent_hits
 # Idempotent; see migrate_0050_pos_checkout_session in deploy/lib/db.sh.
 migrate_0050_pos_checkout_session
 
+# ── 0051: the Google Sheets mirror ───────────────────────────────────────────
+# Ships drizzle/0032_sheet_mirrors.sql. One spreadsheet per store, owned by the
+# platform service account and shared with the merchant: a surface they can
+# filter, pivot and hand to an accountant, over a ledger that stays in MySQL.
+#
+# Everything in the sheet is derived, and the table records only where it lives
+# plus the outcome of the last push. tenant_id is UNIQUE so a store cannot end
+# up with two spreadsheets drifting apart. Additive — no existing read path
+# touches it, and with GOOGLE_SERVICE_ACCOUNT_* unset (every self-hosted
+# install) the feature is simply absent.
+# Idempotent; see migrate_0051_sheet_mirrors in deploy/lib/db.sh.
+migrate_0051_sheet_mirrors
+
 # ── Record the applied migration set ──────────────────────────────────────────
 # Only reached when every migration above succeeded — `set -e` plus run_sql's
 # die() mean a failure never gets this far, so a half-applied schema is never
