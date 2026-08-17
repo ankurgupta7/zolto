@@ -104,6 +104,13 @@ function getField(raw: Record<string, string>, ...keys: string[]): string {
 }
 
 export interface CsvRow {
+  /**
+   * The product's own id, from the `zolto_id` column the spreadsheet mirror
+   * publishes. Undefined for a hand-written CSV or a file from another platform;
+   * when present the server matches on it instead of on the name, so an item
+   * renamed in the sheet is updated rather than duplicated.
+   */
+  zoltoId?: number;
   name: string;
   nameEn?: string;
   nameFr?: string;
@@ -148,7 +155,13 @@ export function mapRows(
     const qtyStr = getField(r, "quantity", "qty", "stock");
     const quantity = qtyStr ? parseInt(qtyStr, 10) : 1;
 
+    // Not an error when absent or unparseable — an id is an optimisation for
+    // sheets that came from us, and a CSV from anywhere else must still import.
+    const idStr = getField(r, "zoltoId", "zolto_id", "id");
+    const zoltoId = /^\d+$/.test(idStr) ? parseInt(idStr, 10) : undefined;
+
     return {
+      zoltoId: zoltoId && zoltoId > 0 ? zoltoId : undefined,
       name: name || "(empty)",
       nameEn: getField(r, "nameEn", "nameenglish", "name_en") || undefined,
       nameFr: getField(r, "nameFr", "namefrench", "name_fr") || undefined,
@@ -222,9 +235,11 @@ function downloadTemplate(example: {
   category: string;
 }) {
   const headers =
-    "name,nameEn,nameFr,nameIt,description,descriptionEn,descriptionFr,descriptionIt,price,category,quantity,imageUrl";
+    "zolto_id,name,nameEn,nameFr,nameIt,description,descriptionEn,descriptionFr,descriptionIt,price,category,quantity,imageUrl";
   const exampleRow =
-    `"${example.name}","${example.nameEn}","${example.nameFr}","${example.nameIt}",` +
+    // zolto_id blank: a template row is a NEW product. It is filled in only by
+    // the spreadsheet mirror, for items that already exist.
+    `,"${example.name}","${example.nameEn}","${example.nameFr}","${example.nameIt}",` +
     `"${example.description}","${example.descriptionEn}","${example.descriptionFr}","${example.descriptionIt}",` +
     `185,${example.category},1,https://example.com/image.jpg`;
   const blob = new Blob([`${headers}\n${exampleRow}`], { type: "text/csv" });
@@ -643,6 +658,7 @@ export default function CsvImport() {
       try {
         const result = await utils.client.products.csvImport.mutate({
           rows: chunks[i].map((r) => ({
+            zoltoId: r.zoltoId,
             name: r.name,
             nameEn: r.nameEn,
             nameFr: r.nameFr,

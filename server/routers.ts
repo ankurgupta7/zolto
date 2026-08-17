@@ -25,6 +25,8 @@ import { trustpilotRouter } from "./routers/trustpilot";
 import { discountsRouter } from "./routers/discounts";
 import { salesRouter } from "./routers/sales";
 import { tillRouter } from "./routers/till";
+import { sheetsRouter } from "./routers/sheets";
+import { stockInRouter } from "./routers/stockIn";
 
 // Sign-in links, bounded per address and per caller. See requestMagicLink
 // below for why both keys are needed and why the address is checked first.
@@ -120,6 +122,8 @@ export const appRouter = router({
   instagram: instagramRouter,
   checkout: checkoutRouter,
   sales: salesRouter,
+  sheets: sheetsRouter, // Google Sheets mirror of sales + inventory
+  stockIn: stockInRouter, // Merchant-proposed stock/price edits, admin-approved
   till: tillRouter,
   reconciliation: reconciliationRouter,
   testimonials: testimonialsRouter, // Customer quotes on the storefront

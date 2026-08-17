@@ -508,39 +508,78 @@ whenever you suspect a payment is missing.
 
 ## Environment Variable Reference
 
-| Variable                      | Required | Description                                                                                                                                                    |
-| ----------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `MYSQL_*`                     | Yes      | Internal database credentials                                                                                                                                  |
-| `JWT_SECRET`                  | Yes      | Session cookie signing secret (32+ chars)                                                                                                                      |
-| `GOOGLE_CLIENT_ID`            | Yes      | Google OAuth client ID                                                                                                                                         |
-| `GOOGLE_CLIENT_SECRET`        | Yes      | Google OAuth client secret                                                                                                                                     |
-| `ADMIN_EMAIL`                 | Yes      | Google account allowed to log in as admin                                                                                                                      |
-| `DISCORD_BOT_TOKEN`           | Yes      | Discord bot token                                                                                                                                              |
-| `DISCORD_CHANNEL_ID`          | Yes      | Channel to watch for new products                                                                                                                              |
-| `DISCORD_OWNER_USER_ID`       | No       | Your Discord user ID for DM notifications                                                                                                                      |
-| `LLM_BASE_URL`                | Yes      | OpenAI-compatible API base URL                                                                                                                                 |
-| `LLM_API_KEY`                 | Yes      | API key (`ollama` for local Ollama)                                                                                                                            |
-| `LLM_MODEL`                   | Yes      | Model name (e.g. `llama3-8b-8192`)                                                                                                                             |
-| `S3_BUCKET`                   | Yes      | Storage bucket name                                                                                                                                            |
-| `S3_REGION`                   | Yes      | Region (`auto` for R2)                                                                                                                                         |
-| `S3_ACCESS_KEY_ID`            | Yes      | Storage access key                                                                                                                                             |
-| `S3_SECRET_ACCESS_KEY`        | Yes      | Storage secret key                                                                                                                                             |
-| `S3_ENDPOINT`                 | No       | Custom endpoint for non-AWS providers                                                                                                                          |
-| `S3_PUBLIC_URL`               | No       | Public CDN base URL for serving images                                                                                                                         |
-| `STRIPE_SECRET_KEY`           | No       | Stripe secret key — enables card & TWINT checkout                                                                                                              |
-| `STRIPE_WEBHOOK_SECRET`       | No       | Signing secret for `/api/stripe/webhook`                                                                                                                       |
-| `STRIPE_CONNECT_CLIENT_ID`    | No       | Platform's Connect OAuth client ID (`ca_...`) — lets tenants link their own Stripe account                                                                     |
-| `PUBLIC_BASE_URL`             | No       | Canonical site URL — Stripe redirects, Google OAuth's redirect_uri, and recognizing tenant subdomains all key off this                                         |
-| ~~`POS_API_KEY`~~             | —        | **Retired.** POS keys are per-tenant, generated at signup and stored hashed; CI uses the `platform-tests` tenant's key (`deploy/rotate-secrets.sh pos-ci-key`) |
-| `STRIPE_POS_WEBHOOK_SECRET`   | No       | Signing secret for `/api/pos/webhook`                                                                                                                          |
-| `STRIPE_LOCATION_ID`          | No       | Stripe Terminal Location ID served to POS apps at runtime via `GET /api/pos/config` — not baked into builds                                                    |
-| `BACKUP_S3_BUCKET`            | No       | Secondary S3 bucket for database backups                                                                                                                       |
-| `BACKUP_S3_REGION`            | No       | Region for secondary backup bucket                                                                                                                             |
-| `BACKUP_S3_ACCESS_KEY_ID`     | No       | Access key for secondary backup bucket                                                                                                                         |
-| `BACKUP_S3_SECRET_ACCESS_KEY` | No       | Secret key for secondary backup bucket                                                                                                                         |
-| `BACKUP_S3_ENDPOINT`          | No       | Endpoint for secondary backup provider (e.g. Backblaze B2)                                                                                                     |
-| `BACKUP_GITHUB_REPO`          | No       | Private GitHub repo for weekly SQL + CSV backup commits                                                                                                        |
-| `BACKUP_GITHUB_TOKEN`         | No       | Fine-grained PAT with Contents: Read & Write for the backup repo                                                                                               |
+| Variable                       | Required | Description                                                                                                                                                    |
+| ------------------------------ | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `MYSQL_*`                      | Yes      | Internal database credentials                                                                                                                                  |
+| `JWT_SECRET`                   | Yes      | Session cookie signing secret (32+ chars)                                                                                                                      |
+| `GOOGLE_CLIENT_ID`             | Yes      | Google OAuth client ID                                                                                                                                         |
+| `GOOGLE_CLIENT_SECRET`         | Yes      | Google OAuth client secret                                                                                                                                     |
+| `ADMIN_EMAIL`                  | Yes      | Google account allowed to log in as admin                                                                                                                      |
+| `DISCORD_BOT_TOKEN`            | Yes      | Discord bot token                                                                                                                                              |
+| `DISCORD_CHANNEL_ID`           | Yes      | Channel to watch for new products                                                                                                                              |
+| `DISCORD_OWNER_USER_ID`        | No       | Your Discord user ID for DM notifications                                                                                                                      |
+| `LLM_BASE_URL`                 | Yes      | OpenAI-compatible API base URL                                                                                                                                 |
+| `LLM_API_KEY`                  | Yes      | API key (`ollama` for local Ollama)                                                                                                                            |
+| `LLM_MODEL`                    | Yes      | Model name (e.g. `llama3-8b-8192`)                                                                                                                             |
+| `S3_BUCKET`                    | Yes      | Storage bucket name                                                                                                                                            |
+| `S3_REGION`                    | Yes      | Region (`auto` for R2)                                                                                                                                         |
+| `S3_ACCESS_KEY_ID`             | Yes      | Storage access key                                                                                                                                             |
+| `S3_SECRET_ACCESS_KEY`         | Yes      | Storage secret key                                                                                                                                             |
+| `S3_ENDPOINT`                  | No       | Custom endpoint for non-AWS providers                                                                                                                          |
+| `S3_PUBLIC_URL`                | No       | Public CDN base URL for serving images                                                                                                                         |
+| `STRIPE_SECRET_KEY`            | No       | Stripe secret key — enables card & TWINT checkout                                                                                                              |
+| `STRIPE_WEBHOOK_SECRET`        | No       | Signing secret for `/api/stripe/webhook`                                                                                                                       |
+| `STRIPE_CONNECT_CLIENT_ID`     | No       | Platform's Connect OAuth client ID (`ca_...`) — lets tenants link their own Stripe account                                                                     |
+| `PUBLIC_BASE_URL`              | No       | Canonical site URL — Stripe redirects, Google OAuth's redirect_uri, and recognizing tenant subdomains all key off this                                         |
+| ~~`POS_API_KEY`~~              | —        | **Retired.** POS keys are per-tenant, generated at signup and stored hashed; CI uses the `platform-tests` tenant's key (`deploy/rotate-secrets.sh pos-ci-key`) |
+| `STRIPE_POS_WEBHOOK_SECRET`    | No       | Signing secret for `/api/pos/webhook`                                                                                                                          |
+| `STRIPE_LOCATION_ID`           | No       | Stripe Terminal Location ID served to POS apps at runtime via `GET /api/pos/config` — not baked into builds                                                    |
+| `BACKUP_S3_BUCKET`             | No       | Secondary S3 bucket for database backups                                                                                                                       |
+| `BACKUP_S3_REGION`             | No       | Region for secondary backup bucket                                                                                                                             |
+| `BACKUP_S3_ACCESS_KEY_ID`      | No       | Access key for secondary backup bucket                                                                                                                         |
+| `BACKUP_S3_SECRET_ACCESS_KEY`  | No       | Secret key for secondary backup bucket                                                                                                                         |
+| `BACKUP_S3_ENDPOINT`           | No       | Endpoint for secondary backup provider (e.g. Backblaze B2)                                                                                                     |
+| `BACKUP_GITHUB_REPO`           | No       | Private GitHub repo for weekly SQL + CSV backup commits                                                                                                        |
+| `BACKUP_GITHUB_TOKEN`          | No       | Fine-grained PAT with Contents: Read & Write for the backup repo                                                                                               |
+| `GOOGLE_SERVICE_ACCOUNT_EMAIL` | No       | Service account that owns merchants' spreadsheet mirrors (`…@….iam.gserviceaccount.com`). Unset ⇒ the Spreadsheet admin page says the feature is unavailable   |
+| `GOOGLE_SERVICE_ACCOUNT_KEY`   | No       | That account's PKCS#8 private key (the JSON key file's `private_key`). Literal `\n` escapes are tolerated, so a one-line value from a secret store works       |
+
+### Optional: Google Sheets mirrors
+
+Merchants can have their sales and inventory published to a Google Sheet they
+can filter, pivot and hand to an accountant (`/admin/sheets`). It is off unless
+both `GOOGLE_SERVICE_ACCOUNT_*` values above are set, and every install without
+them simply shows the feature as unavailable — nothing else changes.
+
+To enable it: create a Google Cloud project, enable the **Google Sheets API** and
+the **Google Drive API**, create a service account, and download a JSON key.
+`GOOGLE_SERVICE_ACCOUNT_EMAIL` is its `client_email`; `GOOGLE_SERVICE_ACCOUNT_KEY`
+is its `private_key`. No OAuth consent screen and no per-merchant authorisation
+is involved: the service account creates each spreadsheet, keeps ownership of it,
+and shares it with the merchant's own Google address.
+
+Which address is decided from the session, not from a form. An admin who signed
+in to Zolto with Google has already told us their Google identity, so Connect
+asks them nothing — and cannot be pointed at a third party, since there is no
+field to type one into. Admins who signed in by Apple or magic link are asked
+for a Google address explicitly, because Drive can only share to a Google
+account and their sign-in address may not be one.
+
+That ownership split is the security model. The merchant cannot revoke the
+platform's access or delete the file out from under the hourly sync, and the
+read-only tabs are enforced by Drive rather than by application code. The scopes
+requested are `spreadsheets` plus `drive.file` — the latter grants access only to
+files this service account created, so a leaked key cannot reach anything else in
+any Drive.
+
+Ownership is not lock-in: a merchant reading their mirror is a Drive viewer, and
+Google gives viewers File → Download and File → Make a copy, so they can take
+their data out at any time without asking. `/admin/sales` also exports the same
+ledger as CSV independently of this feature.
+
+MySQL remains the ledger throughout; the sheet is a published view of it, and the
+one inbound path (a "Stock In" tab) proposes changes that a store admin approves
+before anything is written.
 
 `PUBLIC_BASE_URL` is technically optional (a single-host deploy without it still works, deriving everything from the incoming request), but strongly recommended once tenant subdomains are in play — see the troubleshooting entry below.
 
