@@ -334,6 +334,47 @@
       "byToolTitle": "Wonach gefragt wurde",
       "kindAssistant": "beantwortet eine Frage",
       "kindCrawler": "indexiert"
+    },
+    "till": {
+      "title": "Kasse",
+      "description": "Verkauf erfassen und direkt kassieren — Karte per QR, dein eigener TWINT-Code oder bar.",
+      "posSettings": "POS-Einstellungen",
+      "searchPlaceholder": "Produkte suchen",
+      "showHidden": "Versteckte anzeigen",
+      "noMatches": "Nichts gefunden. Versuch eine andere Suche.",
+      "thisSale": "Dieser Verkauf",
+      "emptyCart": "Tippe ein Produkt an, um es hinzuzufügen.",
+      "customItem": "Etwas ausserhalb des Katalogs",
+      "customName": "Name",
+      "customPrice": "Preis",
+      "addCustom": "Freie Position hinzufügen",
+      "priceFor": "Preis für {{name}}",
+      "removeItem": "{{name}} entfernen",
+      "setPrice": "Setzen",
+      "resetPrice": "Auf Listenpreis zurücksetzen",
+      "total": "Total",
+      "payCard": "Karte — QR zeigen",
+      "payTwintQr": "TWINT — unser Code",
+      "payCash": "Bar",
+      "recording": "Wird erfasst…",
+      "askToScan": "Kundin oder Kunde scannt",
+      "scanToPay": "Zum Bezahlen scannen",
+      "waitingForPayment": "Warte auf Zahlung…",
+      "cardMethodsNote": "Karte, Apple Pay, Google Pay oder TWINT — die Zahlungsseite entscheidet.",
+      "twintQrTitle": "TWINT — direkt an uns",
+      "twintQrBody": "Die Kundschaft gibt {{amount}} in der TWINT-App ein.",
+      "twintQrAttestNote": "Diese Zahlung läuft nicht über Stripe, hier kann sie also niemand bestätigen. Prüfe zuerst deine eigene TWINT-Meldung.",
+      "twintQrConfirm": "Zahlung gesehen — erfassen",
+      "saleRecorded": "Verkauf erfasst",
+      "notRecorded": "Nicht erfasst",
+      "nextSale": "Nächster Verkauf",
+      "backToCart": "Zurück zum Warenkorb",
+      "cancel": "Abbrechen",
+      "method": {
+        "card": "Karte",
+        "cash": "Bar",
+        "twint_qr": "TWINT (eigener Code)"
+      }
     }
   }
 }

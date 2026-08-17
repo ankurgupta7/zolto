@@ -349,6 +349,47 @@
       "byToolTitle": "Ce qu'ils ont demandé",
       "kindAssistant": "répond à quelqu'un",
       "kindCrawler": "indexe"
+    },
+    "till": {
+      "title": "Caisse",
+      "description": "Enregistrez une vente et encaissez sur place — carte par QR, votre propre code TWINT ou espèces.",
+      "posSettings": "Réglages du point de vente",
+      "searchPlaceholder": "Rechercher des produits",
+      "showHidden": "Afficher les masqués",
+      "noMatches": "Aucun résultat. Essayez une autre recherche.",
+      "thisSale": "Cette vente",
+      "emptyCart": "Touchez un produit pour l'ajouter.",
+      "customItem": "Un article hors catalogue",
+      "customName": "Nom",
+      "customPrice": "Prix",
+      "addCustom": "Ajouter un article libre",
+      "priceFor": "Prix de {{name}}",
+      "removeItem": "Retirer {{name}}",
+      "setPrice": "Valider",
+      "resetPrice": "Revenir au prix courant",
+      "total": "Total",
+      "payCard": "Carte — afficher le QR",
+      "payTwintQr": "TWINT — notre code",
+      "payCash": "Espèces",
+      "recording": "Enregistrement…",
+      "askToScan": "Demandez au client de scanner",
+      "scanToPay": "Scanner pour payer",
+      "waitingForPayment": "En attente du paiement…",
+      "cardMethodsNote": "Carte, Apple Pay, Google Pay ou TWINT — la page de paiement décide.",
+      "twintQrTitle": "TWINT — directement chez nous",
+      "twintQrBody": "Le client saisit {{amount}} dans son application TWINT.",
+      "twintQrAttestNote": "Ce paiement ne passe pas par Stripe, rien ici ne peut donc le confirmer. Vérifiez d'abord votre propre notification TWINT.",
+      "twintQrConfirm": "Paiement vu — enregistrer",
+      "saleRecorded": "Vente enregistrée",
+      "notRecorded": "Non enregistrée",
+      "nextSale": "Vente suivante",
+      "backToCart": "Retour au panier",
+      "cancel": "Annuler",
+      "method": {
+        "card": "Carte",
+        "cash": "Espèces",
+        "twint_qr": "TWINT (code propre)"
+      }
     }
   }
 }

@@ -128,6 +128,13 @@ export const ADMIN_NAV: AdminNavItem[] = [
   },
   { id: "pos", plane: "store", label: "POS", icon: "Nfc", path: "/admin/pos" },
   {
+    id: "till",
+    plane: "store",
+    label: "Till",
+    icon: "Calculator",
+    path: "/admin/till",
+  },
+  {
     id: "insights",
     plane: "store",
     label: "Insights",

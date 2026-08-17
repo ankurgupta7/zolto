@@ -1050,6 +1050,16 @@ migrate_0048_customer_trust
 # migrate_0049_agent_hits in deploy/lib/db.sh.
 migrate_0049_agent_hits
 
+# ── 0050: the web till's scan-to-pay sales ───────────────────────────────────
+# Ships drizzle/0031_pos_checkout_session.sql. A QR sale is a Stripe Checkout
+# Session, and an open session has no PaymentIntent — Stripe makes one only when
+# the customer pays — so fulfilment cannot key on stripePaymentIntentId the way
+# every other POS path does. The session id carries the link until then, and the
+# PaymentIntent id is backfilled once it exists. Additive — nothing reads it
+# until a merchant opens the till.
+# Idempotent; see migrate_0050_pos_checkout_session in deploy/lib/db.sh.
+migrate_0050_pos_checkout_session
+
 # ── Record the applied migration set ──────────────────────────────────────────
 # Only reached when every migration above succeeded — `set -e` plus run_sql's
 # die() mean a failure never gets this far, so a half-applied schema is never
