@@ -666,13 +666,16 @@ export default function Admin() {
 
   const posAttributionMutation = trpc.reconciliation.runPos.useMutation({
     onSuccess: (data) => {
-      if (data.newPendingReview > 0) {
-        toast.success(
+      // Same reasoning as the Stripe scan above: count everything still
+      // awaiting confirmation, and send the merchant to /admin/reconciliation,
+      // which is where an undelivered review email gets rendered in place.
+      if (data.totalPendingReview > 0) {
+        toast[data.emailSent ? "success" : "error"](
           t(
             data.emailSent
               ? "catalog.admin.toasts.posFoundSent"
               : "catalog.admin.toasts.posFoundNotSent",
-            { count: data.newPendingReview },
+            { count: data.totalPendingReview },
           ),
         );
       } else if (data.newNoCandidates > 0) {

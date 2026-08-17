@@ -21,6 +21,7 @@ const mocks = vi.hoisted(() => ({
   stripeOpts: null as MutationOpts | null,
   posOpts: null as MutationOpts | null,
   stripeData: null as Record<string, unknown> | null,
+  posData: null as Record<string, unknown> | null,
 }));
 
 vi.mock("@/_core/hooks/useAuth", () => ({ useAuth: () => mocks.authState }));
@@ -41,7 +42,11 @@ vi.mock("@/lib/trpc", () => ({
       runPos: {
         useMutation: (opts: MutationOpts) => {
           mocks.posOpts = opts;
-          return { mutate: mocks.posMutate, isPending: false };
+          return {
+            mutate: mocks.posMutate,
+            isPending: false,
+            data: mocks.posData,
+          };
         },
       },
     },
@@ -54,7 +59,18 @@ beforeEach(() => {
   mocks.stripeOpts = null;
   mocks.posOpts = null;
   mocks.stripeData = null;
+  mocks.posData = null;
 });
+
+/** Drives the POS mutation's success path the way tRPC would. */
+function posSucceeds(data: Record<string, unknown>) {
+  mocks.posData = data;
+  act(() =>
+    mocks.posOpts!.onSuccess!(
+      data as Record<string, number | boolean | string | null>,
+    ),
+  );
+}
 
 /** Drives the Stripe mutation's success path the way tRPC would. */
 function stripeSucceeds(data: Record<string, unknown>) {
@@ -220,34 +236,87 @@ describe("Reconciliation page", () => {
     render(<Reconciliation />);
     fireEvent.click(screen.getByText("Confirm in-person sales"));
     expect(mocks.posMutate).toHaveBeenCalledWith({});
-    act(() =>
-      mocks.posOpts!.onSuccess!({
-        newPendingReview: 1,
-        newNoCandidates: 0,
-        scannedLines: 4,
-        emailSent: false,
-      }),
-    );
+    posSucceeds({
+      newPendingReview: 1,
+      stillPendingReview: 0,
+      totalPendingReview: 1,
+      newNoCandidates: 0,
+      scannedLines: 4,
+      emailSent: true,
+      emailError: null,
+      reviewHtml: null,
+    });
     expect(
       screen.getByText(
-        "1 sale to confirm — but the review email could not be sent.",
+        "1 sale is waiting to be confirmed — a review email was sent.",
       ),
     ).toBeTruthy();
+  });
+
+  // Same treatment as the Stripe card: an undelivered email is shown rather
+  // than reported as a success the merchant cannot act on.
+  it("renders the POS review page in place when the email could not be sent", () => {
+    render(<Reconciliation />);
+    fireEvent.click(screen.getByText("Confirm in-person sales"));
+    posSucceeds({
+      newPendingReview: 2,
+      stillPendingReview: 1,
+      totalPendingReview: 3,
+      newNoCandidates: 0,
+      scannedLines: 4,
+      emailSent: false,
+      emailError: "RESEND_API_KEY is not set on this server",
+      reviewHtml: "<p>which piece was it</p>",
+    });
+
+    const frame = screen.getByTitle(
+      "Sales waiting to be confirmed",
+    ) as HTMLIFrameElement;
+    expect(frame.getAttribute("srcdoc")).toBe("<p>which piece was it</p>");
+    expect(frame.getAttribute("sandbox")).toBe("allow-forms");
+    expect(
+      screen.getByText(
+        "Email delivery failed: RESEND_API_KEY is not set on this server",
+      ),
+    ).toBeTruthy();
+    expect(toast.error).toHaveBeenCalledWith(
+      "3 sales are waiting to be confirmed — the review email could not be sent, so they are shown below.",
+    );
+  });
+
+  it("hides the in-place POS review page on dismiss", () => {
+    render(<Reconciliation />);
+    fireEvent.click(screen.getByText("Confirm in-person sales"));
+    posSucceeds({
+      newPendingReview: 1,
+      stillPendingReview: 0,
+      totalPendingReview: 1,
+      newNoCandidates: 0,
+      scannedLines: 1,
+      emailSent: false,
+      emailError: "resend down",
+      reviewHtml: "<p>which piece was it</p>",
+    });
+    fireEvent.click(screen.getByText("Hide this"));
+    expect(screen.queryByTitle("Sales waiting to be confirmed")).toBeNull();
   });
 
   it("reports a clean POS scan", () => {
     render(<Reconciliation />);
     fireEvent.click(screen.getByText("Confirm in-person sales"));
-    act(() =>
-      mocks.posOpts!.onSuccess!({
-        newPendingReview: 0,
-        newNoCandidates: 0,
-        scannedLines: 9,
-        emailSent: false,
-      }),
-    );
+    posSucceeds({
+      newPendingReview: 0,
+      stillPendingReview: 0,
+      totalPendingReview: 0,
+      newNoCandidates: 0,
+      scannedLines: 9,
+      emailSent: false,
+      emailError: null,
+      reviewHtml: null,
+    });
     expect(
       screen.getByText("No unattributed in-person sales found (9 checked)."),
     ).toBeTruthy();
+    expect(screen.queryByTitle("Sales waiting to be confirmed")).toBeNull();
   });
 });

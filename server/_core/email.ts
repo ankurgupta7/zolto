@@ -706,7 +706,8 @@ export function buildPosAttributionReviewHtml(
       const candidateRows = item.candidates
         .map((c, index) => {
           const label = escapeHtml(c.nameEn ?? c.name);
-          const url = `${baseUrl}/api/pos-attribution/confirm?token=${encodeURIComponent(item.token)}&choice=${index}`;
+          const choice = c.choiceIndex ?? index;
+          const url = `${baseUrl}/api/pos-attribution/confirm?token=${encodeURIComponent(item.token)}&choice=${choice}`;
           return `
           <tr>
             <td style="padding:8px 0;border-bottom:1px solid ${C.faint};font-family:Arial,sans-serif;font-size:13px;color:${C.brown}">${label} — CHF ${Number(c.price).toFixed(2)}</td>
@@ -768,12 +769,23 @@ export async function sendPosAttributionReviewEmail(
   // day-end sweep addresses each store's own admin. ADMIN_EMAIL remains the
   // fallback for single-tenant self-hosted deployments.
   branding?: Partial<TenantBranding> & { to?: string },
-): Promise<void> {
-  if (items.length === 0) return;
+): Promise<EmailDeliveryResult> {
+  if (items.length === 0) return { sent: false, reason: "Nothing to review" };
 
   const apiKey = process.env.RESEND_API_KEY;
   const to = branding?.to ?? process.env.ADMIN_EMAIL;
-  if (!apiKey || !to) return;
+  // Same trap as the Stripe sibling: returning silently here is indistinguishable
+  // from a delivery, which is how a merchant came to be told an email was sent
+  // that never left the server.
+  if (!apiKey) {
+    return { sent: false, reason: "RESEND_API_KEY is not set on this server" };
+  }
+  if (!to) {
+    return {
+      sent: false,
+      reason: "No recipient address — set a store admin email or ADMIN_EMAIL",
+    };
+  }
 
   const b = resolveBranding(branding);
   const from =
@@ -797,4 +809,6 @@ export async function sendPosAttributionReviewEmail(
     const body = await res.text();
     throw new Error(`Resend API ${res.status}: ${body}`);
   }
+
+  return { sent: true };
 }

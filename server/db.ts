@@ -1919,6 +1919,53 @@ export async function createPosAttribution(
   );
 }
 
+/** A queued attribution plus the line it belongs to, enough to rebuild its review. */
+export interface PendingPosAttribution {
+  posOrderItemId: number;
+  amountRappen: number;
+  candidateProductIds: string;
+  confirmationToken: string;
+  soldAt: Date;
+  itemLabel: string | null;
+}
+
+// Everything this store has been asked to confirm and hasn't yet. Re-running
+// the day-end pass re-surfaces these rather than treating them as settled:
+// `getUnattributedPosLineItems` deliberately drops a line once it has ANY
+// attribution row, so a run whose email never arrived left its lines queued
+// and unaskable — the next run reported nothing to confirm.
+export async function getPendingPosAttributions(
+  tenantId: number,
+  limit = 50,
+): Promise<PendingPosAttribution[]> {
+  return withDb(
+    (db) =>
+      db
+        .select({
+          posOrderItemId: posAttributions.posOrderItemId,
+          amountRappen: posAttributions.amountRappen,
+          candidateProductIds: posAttributions.candidateProductIds,
+          confirmationToken: posAttributions.confirmationToken,
+          soldAt: posOrderItems.createdAt,
+          itemLabel: posOrderItems.name,
+        })
+        .from(posAttributions)
+        .innerJoin(
+          posOrderItems,
+          eq(posOrderItems.id, posAttributions.posOrderItemId),
+        )
+        .where(
+          and(
+            eq(posAttributions.tenantId, tenantId),
+            eq(posAttributions.status, "pending_review"),
+          ),
+        )
+        .orderBy(desc(posOrderItems.createdAt))
+        .limit(limit),
+    [],
+  );
+}
+
 export async function getPosAttributionByToken(
   token: string,
 ): Promise<PosAttribution | undefined> {

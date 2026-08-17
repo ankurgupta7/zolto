@@ -3,7 +3,15 @@ import { describe, expect, it, vi, beforeEach, beforeAll } from "vitest";
 function makeChain(result: unknown) {
   const calls: Record<string, unknown[][]> = {};
   const chain: any = { __calls: calls };
-  const methods = ["from", "where", "limit", "orderBy", "set", "values"];
+  const methods = [
+    "from",
+    "innerJoin",
+    "where",
+    "limit",
+    "orderBy",
+    "set",
+    "values",
+  ];
   for (const m of methods) {
     chain[m] = (...args: unknown[]) => {
       (calls[m] ??= []).push(args);
@@ -51,6 +59,7 @@ import {
   getKnownOrderPaymentIntentIds,
   getKnownPosPaymentIntentIds,
   getKnownReconciliationPaymentIntentIds,
+  getPendingPosAttributions,
   getPendingStripeReconciliations,
   getStripeReconciliationByToken,
   rejectStripeReconciliation,
@@ -130,6 +139,32 @@ describe("getPendingStripeReconciliations", () => {
       throw new Error("no db");
     });
     expect(await getPendingStripeReconciliations(42)).toEqual([]);
+  });
+});
+
+// The in-person sibling: same "still waiting on the merchant" query, joined
+// back to the POS line so the review can be rebuilt with its date and label.
+describe("getPendingPosAttributions", () => {
+  it("returns the queued attributions still awaiting a decision", async () => {
+    const row = { posOrderItemId: 900, amountRappen: 4500 };
+    const chain = makeChain([row]);
+    dbMock.select.mockReturnValue(chain);
+
+    const result = await getPendingPosAttributions(42, 10);
+
+    expect(result).toEqual([row]);
+    // Joined to the line, scoped to the tenant, filtered to pending_review —
+    // a confirmed or rejected sale must never come back for a second decision.
+    expect(chain.__calls.innerJoin).toHaveLength(1);
+    expect(chain.__calls.where).toHaveLength(1);
+    expect(chain.__calls.limit[0]).toEqual([10]);
+  });
+
+  it("falls back to an empty list when the database is unavailable", async () => {
+    dbMock.select.mockImplementation(() => {
+      throw new Error("no db");
+    });
+    expect(await getPendingPosAttributions(42)).toEqual([]);
   });
 });
 
