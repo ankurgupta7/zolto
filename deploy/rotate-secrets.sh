@@ -313,7 +313,11 @@ rotate_stripe_webhooks() {
     checkout.session.expired
 
   rotate_one_webhook "POS webhook" "/api/pos/webhook" "STRIPE_POS_WEBHOOK_SECRET" \
-    payment_intent.succeeded
+    payment_intent.succeeded \
+    checkout.session.completed \
+    checkout.session.async_payment_succeeded \
+    checkout.session.async_payment_failed \
+    checkout.session.expired
 
   step "Done"
   echo "  Restart the service so it picks the new signing secrets up: ./update.sh"

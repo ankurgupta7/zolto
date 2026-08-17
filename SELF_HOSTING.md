@@ -271,7 +271,11 @@ it must also be set. Leave `STRIPE_CONNECT_CLIENT_ID` blank to keep this
 feature disabled.
 
 **POS Terminal / Tap to Pay (optional):**
-The Android and iOS market-stall apps authenticate requests with a POS API key and use Stripe Terminal for in-person payments. Add a second webhook endpoint at `https://yourdomain.com/api/pos/webhook` subscribed to `payment_intent.succeeded`.
+The Android and iOS market-stall apps authenticate requests with a POS API key and use Stripe Terminal for in-person payments. Add a second webhook endpoint at `https://yourdomain.com/api/pos/webhook` subscribed to `payment_intent.succeeded` plus the four Checkout Session events the web till needs: `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed` and `checkout.session.expired`.
+
+The first two confirm a scan-to-pay QR sale (`completed` for cards, Apple/Google Pay and TWINT, which settle immediately; `async_payment_succeeded` for a delayed-notification method, where `completed` fires while the money is still in flight). The last two close out a sale that will never be paid — a failed delayed payment, or a QR nobody scanned within the session's 30 minutes — so the order is marked failed instead of sitting at "pending" forever. `deploy/rotate-secrets.sh` registers all five, and `deploy/webhookEvents.test.ts` fails CI if the script and the handler drift apart.
+
+**A store paying through its own connected Stripe account is different:** the till creates the Checkout Session on that account, so the events fire there and a platform endpoint never sees them. Those sales are confirmed by the till's own poll while the page is open. Wiring `/api/stripe/connect-webhook` into POS fulfilment is the proper fix and has not been done yet.
 
 There is **no `POS_API_KEY` in `.env`**. POS keys are per-tenant: each store's key is generated at signup, returned to that merchant exactly once, and stored only as a SHA-256 hash (`server/posApiKey.ts`), so the platform can never read back a tenant's key — a lost key is rotated, not recovered. Merchants rotate their own from the store admin UI.
 

@@ -78,12 +78,15 @@ function makeFulfilmentDb(
   };
 }
 
-function postSession(session: Record<string, unknown>) {
+function postSession(
+  session: Record<string, unknown>,
+  type = "checkout.session.completed",
+) {
   process.env.STRIPE_POS_WEBHOOK_SECRET = "whsec_pos_test";
   getStripe.mockReturnValue({
     webhooks: {
       constructEvent: vi.fn(() => ({
-        type: "checkout.session.completed",
+        type,
         data: { object: session },
       })),
     },
@@ -200,5 +203,82 @@ describe("checkout.session.completed", () => {
     });
 
     expect(markProductsSold).toHaveBeenCalledWith(42, [3]);
+  });
+});
+
+// A delayed-notification payment method completes its session BEFORE the money
+// arrives, so `completed` deliberately leaves the order pending. These are the
+// events that say how it ended — without them such an order never resolves
+// either way, and neither does a QR nobody scanned.
+describe("the other three endings of a till Checkout Session", () => {
+  it("fulfils the sale when a delayed payment finally succeeds", async () => {
+    const { db, updateSet } = makeFulfilmentDb(
+      { id: 5, tenantId: TENANT_ID, status: "pending" },
+      [{ productId: 1 }],
+    );
+    getDb.mockResolvedValue(db);
+
+    const res = await postSession(
+      { id: "cs_test_1", payment_status: "paid", payment_intent: "pi_test_9" },
+      "checkout.session.async_payment_succeeded",
+    );
+
+    expect(res.status).toBe(200);
+    expect(updateSet).toHaveBeenCalledWith({
+      status: "paid",
+      stripePaymentIntentId: "pi_test_9",
+    });
+    expect(markProductsSold).toHaveBeenCalledWith(TENANT_ID, [1]);
+  });
+
+  it.each([
+    "checkout.session.async_payment_failed",
+    "checkout.session.expired",
+  ])("marks the order failed on %s, and sells nothing", async (type) => {
+    const { db, updateSet } = makeFulfilmentDb(
+      { id: 5, tenantId: TENANT_ID, status: "pending" },
+      [{ productId: 1 }],
+    );
+    getDb.mockResolvedValue(db);
+
+    const res = await postSession(
+      { id: "cs_test_1", status: "expired", payment_status: "unpaid" },
+      type,
+    );
+
+    expect(res.status).toBe(200);
+    expect(updateSet).toHaveBeenCalledWith({ status: "failed" });
+    expect(markProductsSold).not.toHaveBeenCalled();
+  });
+
+  it("never downgrades a paid order, however late a terminal event arrives", async () => {
+    // Webhook deliveries can arrive out of order. Marking a completed sale
+    // failed would be worse than ignoring a stray event.
+    const { db, updateSet } = makeFulfilmentDb(
+      { id: 5, tenantId: TENANT_ID, status: "paid" },
+      [{ productId: 1 }],
+    );
+    getDb.mockResolvedValue(db);
+
+    const res = await postSession(
+      { id: "cs_test_1", status: "expired", payment_status: "unpaid" },
+      "checkout.session.expired",
+    );
+
+    expect(res.status).toBe(200);
+    expect(updateSet).not.toHaveBeenCalled();
+  });
+
+  it("acknowledges a terminal event for a session it has no order for", async () => {
+    const { db, updateSet } = makeFulfilmentDb(undefined, []);
+    getDb.mockResolvedValue(db);
+
+    const res = await postSession(
+      { id: "cs_unknown", status: "expired" },
+      "checkout.session.expired",
+    );
+
+    expect(res.status).toBe(200);
+    expect(updateSet).not.toHaveBeenCalled();
   });
 });

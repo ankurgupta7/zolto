@@ -494,6 +494,10 @@ export async function fulfillPosCheckoutSession(
   // not the same as the money having arrived — a delayed-notification method
   // can complete a session while the payment is still processing. Only
   // payment_status "paid" means the piece may leave the stall.
+  //
+  // Such an order does not stay pending forever: whichever way the payment
+  // resolves, Stripe follows up with `checkout.session.async_payment_succeeded`
+  // (handled here) or `..._failed` (handled by failPosCheckoutSession).
   if (session.payment_status !== "paid") {
     console.warn(
       `[POS] Checkout session ${session.id} completed but payment_status is ` +
@@ -524,6 +528,57 @@ export async function fulfillPosCheckoutSession(
     order,
     paymentIntentId ? { stripePaymentIntentId: paymentIntentId } : {},
   );
+}
+
+/**
+ * Closes out a till order whose Checkout Session can no longer be paid.
+ *
+ * Two ways that happens, and neither is reversible: a delayed-notification
+ * payment method reports failure (`checkout.session.async_payment_failed`), or
+ * the session's 30 minutes run out with nobody having paid
+ * (`checkout.session.expired`). Without this the row sits at "pending"
+ * indefinitely, indistinguishable in the sales list from a sale still in
+ * progress at the stall.
+ *
+ * There is nothing to give back on the stock side: a till order decrements
+ * inventory only when it is marked paid, so a sale that never completed never
+ * held anything.
+ *
+ * A paid order is never downgraded. Stripe should not send either event for a
+ * session it has already reported paid, but webhook deliveries can arrive late
+ * and out of order, and marking a completed sale failed would be a worse
+ * outcome than ignoring a stray event.
+ */
+export async function failPosCheckoutSession(
+  db: Db,
+  session: Stripe.Checkout.Session,
+): Promise<{ posOrderId: number; changed: boolean } | null> {
+  const rows = await db
+    .select()
+    .from(posOrders)
+    .where(eq(posOrders.stripeCheckoutSessionId, session.id))
+    .limit(1);
+
+  const order = rows[0];
+  if (!order) {
+    console.warn(`[POS] No pos_order found for checkout session ${session.id}`);
+    return null;
+  }
+
+  if (order.status !== "pending") {
+    console.warn(
+      `[POS] Not failing order ${order.id} for checkout session ` +
+        `${session.id}: it is already "${order.status}"`,
+    );
+    return { posOrderId: order.id, changed: false };
+  }
+
+  await db
+    .update(posOrders)
+    .set({ status: "failed" })
+    .where(eq(posOrders.id, order.id));
+
+  return { posOrderId: order.id, changed: true };
 }
 
 export function registerPosWebhook(app: Express): void {
@@ -563,13 +618,34 @@ export function registerPosWebhook(app: Express): void {
               event.data.object as Stripe.PaymentIntent,
             );
           }
-        } else if (event.type === "checkout.session.completed") {
-          // The web till's scan-to-pay sales. Enable this event on the POS
-          // webhook endpoint alongside payment_intent.succeeded, or QR sales
-          // stay pending until the till's own poll notices.
+        } else if (
+          event.type === "checkout.session.completed" ||
+          event.type === "checkout.session.async_payment_succeeded"
+        ) {
+          // The web till's scan-to-pay sales. Both events matter: `completed`
+          // fires when the session is submitted, which for an immediate method
+          // (card, Apple/Google Pay, TWINT) is also when the money arrives —
+          // but for a delayed-notification method it fires while the payment is
+          // still processing, and `async_payment_succeeded` is the one that
+          // says it actually landed.
           const db = await getDb();
           if (db) {
             await fulfillPosCheckoutSession(
+              db,
+              event.data.object as Stripe.Checkout.Session,
+            );
+          }
+        } else if (
+          event.type === "checkout.session.async_payment_failed" ||
+          event.type === "checkout.session.expired"
+        ) {
+          // The other two endings. A delayed payment that fails, or a QR
+          // nobody scanned before the session's 30 minutes ran out — either
+          // way the order is dead and should say so rather than sitting
+          // pending for good.
+          const db = await getDb();
+          if (db) {
+            await failPosCheckoutSession(
               db,
               event.data.object as Stripe.Checkout.Session,
             );

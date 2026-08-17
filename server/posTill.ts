@@ -38,6 +38,7 @@ import {
 import { getStripe } from "./stripe";
 import {
   createPosOrder,
+  failPosCheckoutSession,
   fulfillPosCheckoutSession,
   resolveSaleLineItems,
 } from "./pos";
@@ -283,6 +284,18 @@ export async function getTillOrderStatus(
           ok: true,
           posOrderId: order.id,
           status: "paid",
+          totalRappen: order.totalRappen,
+          paymentMethod: order.paymentMethod,
+        };
+      }
+      if (session.status === "expired") {
+        // The QR went unscanned for its full 30 minutes. Say so, so the till
+        // stops waiting and the row stops looking like a sale in progress.
+        await failPosCheckoutSession(db, session as Stripe.Checkout.Session);
+        return {
+          ok: true,
+          posOrderId: order.id,
+          status: "failed",
           totalRappen: order.totalRappen,
           paymentMethod: order.paymentMethod,
         };
