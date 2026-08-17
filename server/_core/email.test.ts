@@ -201,6 +201,28 @@ describe("buildReconciliationReviewHtml", () => {
     expect(html).toContain("CHF 100.00");
   });
 
+  // Items rebuilt from an existing reconciliation row carry the position the
+  // confirm route indexes into, which is not the array position once a deleted
+  // candidate has been dropped.
+  it("uses a candidate's stored choiceIndex for its assign link", () => {
+    const html = buildReconciliationReviewHtml([
+      {
+        ...baseItem,
+        candidates: [
+          {
+            id: 9,
+            name: "Anstecker",
+            nameEn: "Pin",
+            price: "98.00",
+            choiceIndex: 2,
+          },
+        ],
+      },
+    ]);
+    expect(html).toContain("/api/reconciliation/confirm?token=abc123&choice=2");
+    expect(html).not.toContain("choice=0");
+  });
+
   it("combines multiple items into one email", () => {
     const html = buildReconciliationReviewHtml([
       baseItem,
@@ -223,27 +245,42 @@ describe("sendReconciliationReviewEmail", () => {
   it("does nothing when there are no items", async () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
-    await sendReconciliationReviewEmail([]);
+    expect(await sendReconciliationReviewEmail([])).toEqual({
+      sent: false,
+      reason: expect.any(String),
+    });
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("does nothing when RESEND_API_KEY is unset", async () => {
+  // Reporting "nothing happened" as success is what let an unsent review email
+  // pass for a delivered one — the caller has to be able to tell them apart.
+  it("reports the missing key when RESEND_API_KEY is unset", async () => {
     delete process.env.RESEND_API_KEY;
     process.env.ADMIN_EMAIL = "admin@example.com";
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
 
-    await sendReconciliationReviewEmail([{ ...baseItemFor("pi_1") }]);
+    const result = await sendReconciliationReviewEmail([
+      { ...baseItemFor("pi_1") },
+    ]);
+    expect(result).toEqual({
+      sent: false,
+      reason: expect.stringContaining("RESEND_API_KEY"),
+    });
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("does nothing when ADMIN_EMAIL is unset", async () => {
+  it("reports the missing recipient when ADMIN_EMAIL is unset", async () => {
     process.env.RESEND_API_KEY = "re_test";
     delete process.env.ADMIN_EMAIL;
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
 
-    await sendReconciliationReviewEmail([baseItemFor("pi_1")]);
+    const result = await sendReconciliationReviewEmail([baseItemFor("pi_1")]);
+    expect(result).toEqual({
+      sent: false,
+      reason: expect.stringContaining("recipient"),
+    });
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
@@ -253,7 +290,9 @@ describe("sendReconciliationReviewEmail", () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: true });
     vi.stubGlobal("fetch", fetchMock);
 
-    await sendReconciliationReviewEmail([baseItemFor("pi_1")]);
+    expect(await sendReconciliationReviewEmail([baseItemFor("pi_1")])).toEqual({
+      sent: true,
+    });
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [, init] = fetchMock.mock.calls[0];

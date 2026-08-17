@@ -1757,6 +1757,33 @@ export async function createStripeReconciliation(
   );
 }
 
+// Everything this store has been asked to confirm and hasn't yet. A re-run of
+// the reconcile button re-surfaces these rather than treating them as settled:
+// a run that detected payments but failed to deliver its email used to strand
+// them forever, because the next run found the rows in
+// `getKnownReconciliationPaymentIntentIds`, counted them as already recorded,
+// and reported "nothing new to reconcile".
+export async function getPendingStripeReconciliations(
+  tenantId: number,
+  limit = 50,
+): Promise<StripeReconciliation[]> {
+  return withDb(
+    (db) =>
+      db
+        .select()
+        .from(stripeReconciliations)
+        .where(
+          and(
+            eq(stripeReconciliations.tenantId, tenantId),
+            eq(stripeReconciliations.status, "pending_review"),
+          ),
+        )
+        .orderBy(desc(stripeReconciliations.stripeCreatedAt))
+        .limit(limit),
+    [],
+  );
+}
+
 export async function getStripeReconciliationByToken(
   token: string,
 ): Promise<StripeReconciliation | undefined> {

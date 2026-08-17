@@ -8,6 +8,8 @@ const createStripeReconciliation = vi.fn();
 const getTenantsWithConnectedStripe = vi.fn();
 const getTenantAdminContact = vi.fn();
 const getTenantSettings = vi.fn();
+const getPendingStripeReconciliations = vi.fn();
+const getProductsByIds = vi.fn();
 
 vi.mock("./db", () => ({
   getAvailableProductsForMatching: (...args: unknown[]) =>
@@ -24,12 +26,18 @@ vi.mock("./db", () => ({
     getTenantsWithConnectedStripe(...args),
   getTenantAdminContact: (...args: unknown[]) => getTenantAdminContact(...args),
   getTenantSettings: (...args: unknown[]) => getTenantSettings(...args),
+  getPendingStripeReconciliations: (...args: unknown[]) =>
+    getPendingStripeReconciliations(...args),
+  getProductsByIds: (...args: unknown[]) => getProductsByIds(...args),
 }));
 
 const sendReconciliationReviewEmail = vi.fn();
+const buildReconciliationReviewHtml = vi.fn(() => "<html>review</html>");
 vi.mock("./_core/email", () => ({
   sendReconciliationReviewEmail: (...args: unknown[]) =>
     sendReconciliationReviewEmail(...args),
+  buildReconciliationReviewHtml: (...args: unknown[]) =>
+    buildReconciliationReviewHtml(...args),
 }));
 
 const getStripe = vi.fn();
@@ -43,6 +51,7 @@ import {
   NotConnectedError,
   runStripeReconciliationForAllTenants,
   runStripeReconciliationForTenant,
+  toBaseUrl,
 } from "./reconciliation";
 
 const TENANT = {
@@ -114,7 +123,10 @@ beforeEach(() => {
   getKnownReconciliationPaymentIntentIds.mockResolvedValue(new Set());
   getAvailableProductsForMatching.mockResolvedValue([]);
   createStripeReconciliation.mockResolvedValue(undefined);
-  sendReconciliationReviewEmail.mockResolvedValue(undefined);
+  getPendingStripeReconciliations.mockResolvedValue([]);
+  getProductsByIds.mockResolvedValue([]);
+  sendReconciliationReviewEmail.mockResolvedValue({ sent: true });
+  buildReconciliationReviewHtml.mockReturnValue("<html>review</html>");
   getTenantsWithConnectedStripe.mockResolvedValue([]);
   getTenantAdminContact.mockResolvedValue({
     name: "Owner",
@@ -269,6 +281,195 @@ describe("runStripeReconciliation", () => {
     const summary = await runStripeReconciliation();
     expect(summary.emailSent).toBe(false);
     expect(summary.newPendingReview).toBe(1);
+  });
+});
+
+// The button used to be a one-shot: a run that detected payments but could not
+// deliver its email filed the rows anyway, and every later run saw those rows
+// in `getKnownReconciliationPaymentIntentIds`, counted them as already
+// recorded, and reported "nothing to reconcile" — with the merchant never
+// asked, and no way to ask again.
+describe("re-running with work still outstanding", () => {
+  function makePendingRow(overrides: Record<string, unknown> = {}) {
+    return {
+      id: 1,
+      tenantId: TENANT.id,
+      stripePaymentIntentId: "pi_old",
+      amountRappen: 9800,
+      currency: "chf",
+      stripeCreatedAt: new Date("2026-02-01T10:00:00Z"),
+      description: null,
+      paymentMethodType: "card",
+      status: "pending_review",
+      candidateProductIds: "7,8",
+      chosenProductId: null,
+      confirmationToken: "tok_old",
+      resolvedAt: null,
+      createdAt: new Date("2026-02-01T10:00:00Z"),
+      updatedAt: new Date("2026-02-01T10:00:00Z"),
+      ...overrides,
+    };
+  }
+
+  const emptyScan = () => ({
+    paymentIntents: { list: () => makeIntentList([]) },
+  });
+
+  it("re-sends payments an earlier run left unconfirmed, even with nothing new", async () => {
+    getPendingStripeReconciliations.mockResolvedValue([makePendingRow()]);
+    getProductsByIds.mockResolvedValue([
+      makeProduct({ id: 7, name: "Ring", price: "98.00" }),
+      makeProduct({ id: 8, name: "Cuff", price: "95.00" }),
+    ]);
+    getStripe.mockReturnValue(emptyScan());
+
+    const summary = await runStripeReconciliation();
+
+    expect(summary.newPendingReview).toBe(0);
+    expect(summary.stillPendingReview).toBe(1);
+    expect(summary.totalPendingReview).toBe(1);
+    expect(sendReconciliationReviewEmail).toHaveBeenCalledWith(
+      [
+        expect.objectContaining({
+          paymentIntentId: "pi_old",
+          // The original row's token, so the links in the first email and this
+          // one point at the same decision.
+          token: "tok_old",
+        }),
+      ],
+      expect.anything(),
+    );
+  });
+
+  it("keeps a candidate's stored position when an earlier candidate was deleted", async () => {
+    // The confirm route resolves `choice` by indexing into the row's stored
+    // candidateProductIds, so re-numbering the survivors would assign the
+    // payment to the wrong piece.
+    getPendingStripeReconciliations.mockResolvedValue([
+      makePendingRow({ candidateProductIds: "7,8,9" }),
+    ]);
+    getProductsByIds.mockResolvedValue([makeProduct({ id: 9, name: "Pin" })]);
+    getStripe.mockReturnValue(emptyScan());
+
+    await runStripeReconciliation();
+
+    const [items] = sendReconciliationReviewEmail.mock.calls[0];
+    expect(items[0].candidates).toEqual([
+      expect.objectContaining({ id: 9, choiceIndex: 2 }),
+    ]);
+  });
+
+  it("drops a still-pending payment whose candidate pieces have all gone", async () => {
+    getPendingStripeReconciliations.mockResolvedValue([makePendingRow()]);
+    getProductsByIds.mockResolvedValue([]);
+    getStripe.mockReturnValue(emptyScan());
+
+    const summary = await runStripeReconciliation();
+    expect(summary.totalPendingReview).toBe(0);
+    expect(sendReconciliationReviewEmail).not.toHaveBeenCalled();
+  });
+
+  it("does not list a payment twice when this run just created it", async () => {
+    getAvailableProductsForMatching.mockResolvedValue([
+      makeProduct({ id: 7, price: "100.00" }),
+    ]);
+    getPendingStripeReconciliations.mockResolvedValue([
+      makePendingRow({ stripePaymentIntentId: "pi_new" }),
+    ]);
+    getProductsByIds.mockResolvedValue([makeProduct({ id: 7 })]);
+    getStripe.mockReturnValue({
+      paymentIntents: {
+        list: () => makeIntentList([makePaymentIntent({ id: "pi_new" })]),
+      },
+    });
+
+    const summary = await runStripeReconciliation();
+
+    expect(summary.totalPendingReview).toBe(1);
+    expect(summary.stillPendingReview).toBe(0);
+    const [items] = sendReconciliationReviewEmail.mock.calls[0];
+    expect(items).toHaveLength(1);
+  });
+});
+
+// A send that never happened must not read as one — and whatever the merchant
+// was supposed to receive has to reach them some other way.
+describe("when the review email does not go out", () => {
+  const oneUnmatchedPayment = () => {
+    getAvailableProductsForMatching.mockResolvedValue([
+      makeProduct({ id: 7, price: "100.00" }),
+    ]);
+    getStripe.mockReturnValue({
+      paymentIntents: {
+        list: () => makeIntentList([makePaymentIntent({ id: "pi_new" })]),
+      },
+    });
+  };
+
+  it("reports the reason when email is not configured, and returns the review page", async () => {
+    oneUnmatchedPayment();
+    sendReconciliationReviewEmail.mockResolvedValue({
+      sent: false,
+      reason: "RESEND_API_KEY is not set on this server",
+    });
+
+    const summary = await runStripeReconciliation();
+
+    expect(summary.emailSent).toBe(false);
+    expect(summary.emailError).toMatch(/RESEND_API_KEY/);
+    expect(summary.reviewHtml).toBe("<html>review</html>");
+    // Built from the same items and branding the email would have carried, so
+    // the tokens in the page are the live ones.
+    expect(buildReconciliationReviewHtml).toHaveBeenCalledWith(
+      [expect.objectContaining({ paymentIntentId: "pi_new" })],
+      expect.objectContaining({ tenantName: "Aurora" }),
+    );
+  });
+
+  it("returns the review page when Resend rejects the send", async () => {
+    oneUnmatchedPayment();
+    sendReconciliationReviewEmail.mockRejectedValue(
+      new Error("Resend API 422: bad"),
+    );
+
+    const summary = await runStripeReconciliation();
+    expect(summary.emailError).toMatch(/Resend API 422/);
+    expect(summary.reviewHtml).toBe("<html>review</html>");
+  });
+
+  it("returns no review page when the email was delivered", async () => {
+    oneUnmatchedPayment();
+    sendReconciliationReviewEmail.mockResolvedValue({ sent: true });
+
+    const summary = await runStripeReconciliation();
+    expect(summary.emailSent).toBe(true);
+    expect(summary.emailError).toBeNull();
+    expect(summary.reviewHtml).toBeNull();
+    expect(buildReconciliationReviewHtml).not.toHaveBeenCalled();
+  });
+
+  it("leaves a clean scan with nothing to render", async () => {
+    getStripe.mockReturnValue({
+      paymentIntents: { list: () => makeIntentList([]) },
+    });
+
+    const summary = await runStripeReconciliation();
+    expect(summary.totalPendingReview).toBe(0);
+    expect(summary.reviewHtml).toBeNull();
+    expect(summary.emailError).toBeNull();
+  });
+});
+
+describe("toBaseUrl", () => {
+  it("adds a scheme to a bare stored domain", () => {
+    // tenant_settings.publicDomain is stored bare; without this the confirm
+    // links are relative and resolve against whatever page shows them.
+    expect(toBaseUrl("aurora.example")).toBe("https://aurora.example");
+  });
+
+  it("leaves an absolute URL alone and trims a trailing slash", () => {
+    expect(toBaseUrl("https://aurora.example/")).toBe("https://aurora.example");
+    expect(toBaseUrl("http://localhost:3000")).toBe("http://localhost:3000");
   });
 });
 
