@@ -27,9 +27,9 @@ import {
   getKnownPosPaymentIntentIds,
   getKnownReconciliationPaymentIntentIds,
   getPendingStripeReconciliations,
-  getProductsByIds,
   getTenantsWithConnectedStripe,
 } from "./db";
+import { resolveStoredCandidates } from "./pendingReview";
 import {
   buildReconciliationReviewHtml,
   type ReconciliationReviewItem,
@@ -135,49 +135,22 @@ async function collectStillPendingReviewItems(
   const older = rows.filter((r) => !fresh.has(r.stripePaymentIntentId));
   if (older.length === 0) return [];
 
-  const idsByRow = older.map((row) =>
-    row.candidateProductIds
-      .split(",")
-      .map((s) => Number.parseInt(s.trim(), 10))
-      .filter((n) => Number.isFinite(n)),
+  const candidatesByRow = await resolveStoredCandidates(tenantId, older);
+
+  return (
+    older
+      .map((row, i) => ({
+        paymentIntentId: row.stripePaymentIntentId,
+        amountRappen: row.amountRappen,
+        currency: row.currency,
+        stripeCreatedAt: row.stripeCreatedAt,
+        candidates: candidatesByRow[i],
+        token: row.confirmationToken,
+      }))
+      // Every candidate piece has since been deleted, so there is nothing left to
+      // assign the payment to. It stays pending for manual handling.
+      .filter((item) => item.candidates.length > 0)
   );
-  const products = await getProductsByIds(
-    tenantId,
-    Array.from(new Set(idsByRow.flat())),
-  );
-  const byId = new Map(products.map((p) => [p.id, p]));
-
-  const items: ReconciliationReviewItem[] = [];
-  older.forEach((row, i) => {
-    const candidates = idsByRow[i]
-      .map((productId, choiceIndex) => {
-        const product = byId.get(productId);
-        return product ? { product, choiceIndex } : null;
-      })
-      .filter((c): c is { product: Product; choiceIndex: number } => c !== null)
-      .map(({ product, choiceIndex }) => ({
-        id: product.id,
-        name: product.name,
-        nameEn: product.nameEn ?? null,
-        price: product.price,
-        choiceIndex,
-      }));
-
-    // Every candidate piece has since been deleted, so there is nothing left to
-    // assign the payment to. It stays pending for manual handling.
-    if (candidates.length === 0) return;
-
-    items.push({
-      paymentIntentId: row.stripePaymentIntentId,
-      amountRappen: row.amountRappen,
-      currency: row.currency,
-      stripeCreatedAt: row.stripeCreatedAt,
-      candidates,
-      token: row.confirmationToken,
-    });
-  });
-
-  return items;
 }
 
 export class NotConnectedError extends Error {

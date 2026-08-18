@@ -3,7 +3,15 @@ import { describe, expect, it, vi, beforeEach, beforeAll } from "vitest";
 function makeChain(result: unknown) {
   const calls: Record<string, unknown[][]> = {};
   const chain: any = { __calls: calls };
-  const methods = ["from", "where", "limit", "orderBy", "set", "values"];
+  const methods = [
+    "from",
+    "innerJoin",
+    "where",
+    "limit",
+    "orderBy",
+    "set",
+    "values",
+  ];
   for (const m of methods) {
     chain[m] = (...args: unknown[]) => {
       (calls[m] ??= []).push(args);
@@ -51,7 +59,10 @@ import {
   getKnownOrderPaymentIntentIds,
   getKnownPosPaymentIntentIds,
   getKnownReconciliationPaymentIntentIds,
+  getPendingPosAttributions,
   getPendingStripeReconciliations,
+  getPosAttributionById,
+  getStripeReconciliationById,
   getStripeReconciliationByToken,
   rejectStripeReconciliation,
   resolveStripeReconciliationConfirmed,
@@ -130,6 +141,63 @@ describe("getPendingStripeReconciliations", () => {
       throw new Error("no db");
     });
     expect(await getPendingStripeReconciliations(42)).toEqual([]);
+  });
+});
+
+// The in-person sibling: same "still waiting on the merchant" query, joined
+// back to the POS line so the review can be rebuilt with its date and label.
+// The console addresses a row by id rather than by mailed token, so the tenant
+// predicate on these reads is what replaces the token's secrecy. Ids are
+// sequential and guessable.
+describe("by-id lookups are tenant-scoped", () => {
+  it("asks for the reconciliation by id AND tenant", async () => {
+    const row = { id: 3, tenantId: 42 };
+    const chain = makeChain([row]);
+    dbMock.select.mockReturnValue(chain);
+
+    expect(await getStripeReconciliationById(42, 3)).toEqual(row);
+    // One combined predicate — an id-only lookup would answer for any store.
+    expect(chain.__calls.where).toHaveLength(1);
+    expect(chain.__calls.limit[0]).toEqual([1]);
+  });
+
+  it("returns undefined when the row belongs to another store", async () => {
+    dbMock.select.mockReturnValue(makeChain([]));
+    expect(await getStripeReconciliationById(42, 3)).toBeUndefined();
+    expect(await getPosAttributionById(42, 5)).toBeUndefined();
+  });
+
+  it("asks for the attribution by id AND tenant", async () => {
+    const row = { id: 5, tenantId: 42 };
+    const chain = makeChain([row]);
+    dbMock.select.mockReturnValue(chain);
+
+    expect(await getPosAttributionById(42, 5)).toEqual(row);
+    expect(chain.__calls.where).toHaveLength(1);
+  });
+});
+
+describe("getPendingPosAttributions", () => {
+  it("returns the queued attributions still awaiting a decision", async () => {
+    const row = { posOrderItemId: 900, amountRappen: 4500 };
+    const chain = makeChain([row]);
+    dbMock.select.mockReturnValue(chain);
+
+    const result = await getPendingPosAttributions(42, 10);
+
+    expect(result).toEqual([row]);
+    // Joined to the line, scoped to the tenant, filtered to pending_review —
+    // a confirmed or rejected sale must never come back for a second decision.
+    expect(chain.__calls.innerJoin).toHaveLength(1);
+    expect(chain.__calls.where).toHaveLength(1);
+    expect(chain.__calls.limit[0]).toEqual([10]);
+  });
+
+  it("falls back to an empty list when the database is unavailable", async () => {
+    dbMock.select.mockImplementation(() => {
+      throw new Error("no db");
+    });
+    expect(await getPendingPosAttributions(42)).toEqual([]);
   });
 });
 

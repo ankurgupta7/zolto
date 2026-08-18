@@ -3,10 +3,10 @@
  * a clean product match. Two scans, both from the reconciliation.* router:
  *   • Stripe payments missing from our records → email a match request.
  *   • Amount-only in-person sales with no piece attached → email a confirm link.
- * Each scan is re-runnable: the Stripe one re-surfaces everything still
- * unconfirmed, and if its email cannot be delivered it hands back the review
- * page itself, which is rendered below the card so the merchant can click the
- * same links here instead of waiting for mail that is not coming.
+ * Both scans are re-runnable: each re-surfaces everything still unconfirmed, and
+ * if its email cannot be delivered it hands back the review page itself, which
+ * is rendered below the card so the merchant can click the same links here
+ * instead of waiting for mail that is not coming.
  */
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -22,26 +22,165 @@ import {
   AdminOnly,
 } from "@/components/admin/ui";
 
+/**
+ * The undelivered review email, rendered where the merchant is standing.
+ *
+ * The frame is sandboxed with `allow-forms` and nothing else — the confirm
+ * page's button has to submit, but the mail template gets no scripts and no
+ * same-origin access to the admin session around it.
+ */
+function ReviewPanel({
+  html,
+  title,
+  description,
+  dismissLabel,
+  onDismiss,
+}: {
+  html: string;
+  title: string;
+  description: string;
+  dismissLabel: string;
+  onDismiss: () => void;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  // On a phone the panel opens below the fold, which is how a working button
+  // reads as a dead one. `scroll-mt` clears the fixed storefront navbar and the
+  // admin title bar, which would otherwise sit over the panel's own heading.
+  useEffect(() => {
+    ref.current?.scrollIntoView?.({ behavior: "smooth", block: "start" });
+  }, []);
+
+  return (
+    <div ref={ref} className="scroll-mt-32">
+      <SettingsCard
+        title={title}
+        description={description}
+        footer={
+          <SecondaryButton onClick={onDismiss}>
+            <X className="h-4 w-4" />
+            {dismissLabel}
+          </SecondaryButton>
+        }
+      >
+        <iframe
+          title={title}
+          srcDoc={html}
+          sandbox="allow-forms"
+          className="h-[32rem] w-full rounded-md border bg-white"
+        />
+      </SettingsCard>
+    </div>
+  );
+}
+
+interface PendingCandidate {
+  id: number;
+  name: string;
+  nameEn: string | null;
+  price: string;
+}
+
+/**
+ * One outstanding item, with its shortlist as buttons.
+ *
+ * This is the durable way to clear the queue: no token, no email, just the
+ * admin's own session. The review-email panel above is the rescue for a scan
+ * that has just failed to send; this list is what is always here.
+ */
+function PendingRow({
+  headline,
+  detail,
+  candidates,
+  busy,
+  noneLabel,
+  onChoose,
+}: {
+  headline: string;
+  detail: string;
+  candidates: PendingCandidate[];
+  busy: boolean;
+  noneLabel: string;
+  onChoose: (productId: number | null) => void;
+}) {
+  return (
+    <li className="border-b py-4 last:border-b-0 last:pb-0 first:pt-0">
+      <p className="text-sm font-medium text-foreground">{headline}</p>
+      <p className="mt-0.5 text-xs text-muted-foreground">{detail}</p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {candidates.map((c) => (
+          <SecondaryButton
+            key={c.id}
+            disabled={busy}
+            onClick={() => onChoose(c.id)}
+          >
+            {c.nameEn ?? c.name}
+            <span className="text-muted-foreground tabular-nums lining-nums">
+              CHF {Number(c.price).toFixed(2)}
+            </span>
+          </SecondaryButton>
+        ))}
+        <SecondaryButton
+          disabled={busy}
+          className="border-dashed text-muted-foreground"
+          onClick={() => onChoose(null)}
+        >
+          {noneLabel}
+        </SecondaryButton>
+      </div>
+    </li>
+  );
+}
+
+/** CHF 120.00 · 14 Aug 2026, 16:05 — the line every pending row leads with. */
+function formatMoneyAndDate(amountRappen: number, at: Date | string): string {
+  const amount = (amountRappen / 100).toFixed(2);
+  const date = new Date(at).toLocaleString(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+  return `CHF ${amount} · ${date}`;
+}
+
 export default function Reconciliation() {
   const { t } = useTranslation("admin");
   const { user } = useAuth();
   const [stripeResult, setStripeResult] = useState<string | null>(null);
   const [stripeReviewHtml, setStripeReviewHtml] = useState<string | null>(null);
   const [posResult, setPosResult] = useState<string | null>(null);
-  const reviewRef = useRef<HTMLDivElement>(null);
+  const [posReviewHtml, setPosReviewHtml] = useState<string | null>(null);
 
-  // On a phone the review panel opens below the fold, which is how a working
-  // button reads as a dead one. Bring it into view when it appears — its
-  // `scroll-mt` clears the fixed storefront navbar and the admin title bar,
-  // which would otherwise sit over the panel's own heading.
-  useEffect(() => {
-    if (stripeReviewHtml) {
-      reviewRef.current?.scrollIntoView?.({
-        behavior: "smooth",
-        block: "start",
-      });
-    }
-  }, [stripeReviewHtml]);
+  const pending = trpc.reconciliation.listPending.useQuery();
+
+  // Every scan and every decision changes what is outstanding, so the list is
+  // refetched after each rather than left to go stale behind the merchant.
+  const refreshPending = () => pending.refetch();
+
+  const resolved = (data: {
+    productName: string | null;
+    amountRappen: number;
+  }) => {
+    refreshPending();
+    toast.success(
+      data.productName
+        ? t("ops.reconciliation.pendingAssigned", {
+            name: data.productName,
+            amount: (data.amountRappen / 100).toFixed(2),
+          })
+        : t("ops.reconciliation.pendingSetAside"),
+    );
+  };
+
+  const resolveStripe = trpc.reconciliation.resolveStripe.useMutation({
+    onSuccess: resolved,
+    onError: (e) =>
+      toast.error(e.message || t("ops.reconciliation.pendingFailed")),
+  });
+  const resolvePos = trpc.reconciliation.resolvePos.useMutation({
+    onSuccess: resolved,
+    onError: (e) =>
+      toast.error(e.message || t("ops.reconciliation.pendingFailed")),
+  });
 
   const stripeScan = trpc.reconciliation.run.useMutation({
     onSuccess: (data) => {
@@ -64,6 +203,7 @@ export default function Reconciliation() {
       // The email never left: show its contents here rather than reporting a
       // success the merchant has no way to act on.
       setStripeReviewHtml(data.reviewHtml ?? null);
+      refreshPending();
       if (data.reviewHtml) toast.error(msg);
       else toast.success(msg);
     },
@@ -74,12 +214,12 @@ export default function Reconciliation() {
   const posScan = trpc.reconciliation.runPos.useMutation({
     onSuccess: (data) => {
       const msg =
-        data.newPendingReview > 0
+        data.totalPendingReview > 0
           ? t(
               data.emailSent
                 ? "ops.reconciliation.posFoundSent"
                 : "ops.reconciliation.posFoundNotSent",
-              { count: data.newPendingReview },
+              { count: data.totalPendingReview },
             )
           : data.newNoCandidates > 0
             ? t("ops.reconciliation.posNoCandidates", {
@@ -87,7 +227,10 @@ export default function Reconciliation() {
               })
             : t("ops.reconciliation.posClean", { count: data.scannedLines });
       setPosResult(msg);
-      toast.success(msg);
+      setPosReviewHtml(data.reviewHtml ?? null);
+      refreshPending();
+      if (data.reviewHtml) toast.error(msg);
+      else toast.success(msg);
     },
     onError: (e) => toast.error(e.message || t("ops.reconciliation.posFailed")),
   });
@@ -133,31 +276,41 @@ export default function Reconciliation() {
       </SettingsCard>
 
       {stripeReviewHtml && (
-        <div ref={reviewRef} className="scroll-mt-32">
-          <SettingsCard
-            title={t("ops.reconciliation.stripeReviewTitle")}
-            description={t("ops.reconciliation.stripeReviewDescription")}
-            footer={
-              <SecondaryButton onClick={() => setStripeReviewHtml(null)}>
-                <X className="h-4 w-4" />
-                {t("ops.reconciliation.stripeReviewDismiss")}
-              </SecondaryButton>
-            }
-          >
-            {/*
-            The server hands back the review email's own HTML. It is rendered
-            in a sandboxed frame — allow-forms so the confirm page's button
-            works, and no allow-scripts or allow-same-origin, so the mail
-            template cannot reach the admin session around it.
-          */}
-            <iframe
-              title={t("ops.reconciliation.stripeReviewTitle")}
-              srcDoc={stripeReviewHtml}
-              sandbox="allow-forms"
-              className="h-[32rem] w-full rounded-md border bg-white"
-            />
-          </SettingsCard>
-        </div>
+        <ReviewPanel
+          html={stripeReviewHtml}
+          title={t("ops.reconciliation.stripeReviewTitle")}
+          description={t("ops.reconciliation.stripeReviewDescription")}
+          dismissLabel={t("ops.reconciliation.stripeReviewDismiss")}
+          onDismiss={() => setStripeReviewHtml(null)}
+        />
+      )}
+
+      {pending.data && pending.data.stripe.length > 0 && (
+        <SettingsCard
+          title={t("ops.reconciliation.pendingStripeTitle")}
+          description={t("ops.reconciliation.pendingStripeDescription")}
+        >
+          <ul>
+            {pending.data.stripe.map((item) => (
+              <PendingRow
+                key={item.id}
+                headline={formatMoneyAndDate(
+                  item.amountRappen,
+                  item.stripeCreatedAt,
+                )}
+                detail={t("ops.reconciliation.pendingStripeRef", {
+                  id: item.stripePaymentIntentId,
+                })}
+                candidates={item.candidates}
+                busy={resolveStripe.isPending}
+                noneLabel={t("ops.reconciliation.pendingNone")}
+                onChoose={(productId) =>
+                  resolveStripe.mutate({ id: item.id, productId })
+                }
+              />
+            ))}
+          </ul>
+        </SettingsCard>
       )}
 
       <SettingsCard
@@ -180,7 +333,53 @@ export default function Reconciliation() {
             {t("ops.reconciliation.posIdle")}
           </p>
         )}
+        {posScan.data?.emailError && (
+          <p className="mt-2 text-xs text-muted-foreground">
+            {t("ops.reconciliation.posEmailError", {
+              reason: posScan.data.emailError,
+            })}
+          </p>
+        )}
       </SettingsCard>
+
+      {posReviewHtml && (
+        <ReviewPanel
+          html={posReviewHtml}
+          title={t("ops.reconciliation.posReviewTitle")}
+          description={t("ops.reconciliation.posReviewDescription")}
+          dismissLabel={t("ops.reconciliation.posReviewDismiss")}
+          onDismiss={() => setPosReviewHtml(null)}
+        />
+      )}
+
+      {pending.data && pending.data.pos.length > 0 && (
+        <SettingsCard
+          title={t("ops.reconciliation.pendingPosTitle")}
+          description={t("ops.reconciliation.pendingPosDescription")}
+        >
+          <ul>
+            {pending.data.pos.map((item) => (
+              <PendingRow
+                key={item.id}
+                headline={formatMoneyAndDate(item.amountRappen, item.soldAt)}
+                detail={
+                  item.itemLabel
+                    ? t("ops.reconciliation.pendingPosLabel", {
+                        label: item.itemLabel,
+                      })
+                    : t("ops.reconciliation.pendingPosNoLabel")
+                }
+                candidates={item.candidates}
+                busy={resolvePos.isPending}
+                noneLabel={t("ops.reconciliation.pendingNone")}
+                onChoose={(productId) =>
+                  resolvePos.mutate({ id: item.id, productId })
+                }
+              />
+            ))}
+          </ul>
+        </SettingsCard>
+      )}
     </div>
   );
 }

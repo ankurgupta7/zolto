@@ -781,6 +781,81 @@ RESPONSES["stockIn.preview"] = {
   ],
 };
 
+// Reconciliation: the durable queue — what the store still has to decide,
+// independent of whether any email ever arrived. `?queue=empty` shows the page
+// without it.
+RESPONSES["reconciliation.listPending"] =
+  params.get("queue") === "empty"
+    ? { stripe: [], pos: [] }
+    : {
+        stripe: [
+          {
+            id: 3,
+            stripePaymentIntentId: "pi_3PqL2mB",
+            amountRappen: 12000,
+            currency: "chf",
+            stripeCreatedAt: "2026-08-14T16:05:00Z",
+            candidates: [
+              {
+                id: 4,
+                name: "Servierschale, gross",
+                nameEn: "Serving bowl, large",
+                price: "120.00",
+                choiceIndex: 0,
+              },
+              {
+                id: 7,
+                name: "Milchkrug",
+                nameEn: "Milk jug",
+                price: "45.00",
+                choiceIndex: 1,
+              },
+            ],
+          },
+          {
+            id: 4,
+            stripePaymentIntentId: "pi_3PqK9xR",
+            amountRappen: 3400,
+            currency: "chf",
+            stripeCreatedAt: "2026-08-13T10:41:00Z",
+            candidates: [
+              {
+                id: 11,
+                name: "Becher, gesprenkelt",
+                nameEn: "Tumbler, speckled",
+                price: "34.00",
+                choiceIndex: 0,
+              },
+            ],
+          },
+        ],
+        pos: [
+          {
+            id: 5,
+            posOrderItemId: 900,
+            amountRappen: 4500,
+            soldAt: "2026-08-16T11:20:00Z",
+            itemLabel: "Custom",
+            candidates: [
+              {
+                id: 7,
+                name: "Milchkrug",
+                nameEn: "Milk jug",
+                price: "45.00",
+                choiceIndex: 0,
+              },
+              {
+                id: 9,
+                name: "Knospenvase",
+                nameEn: "Bud vase",
+                price: "42.00",
+                choiceIndex: 1,
+              },
+            ],
+          },
+        ],
+      };
+
 // Reconciliation: the state that only exists when email is broken — payments
 // are waiting, the review mail could not be delivered, so the server hands back
 // the review page itself for the console to render in place. There is nothing
@@ -831,6 +906,58 @@ RESPONSES["reconciliation.run"] =
           <tr>
             <td style="padding:8px 0;border-bottom:1px solid #F0EAE0;font-size:13px;color:#2D2620">Milk jug — CHF 45.00</td>
             <td style="padding:8px 0;border-bottom:1px solid #F0EAE0;text-align:right"><a href="#" style="display:inline-block;background:#B8963E;color:#2D2620;text-decoration:none;padding:6px 14px;font-size:12px;text-transform:uppercase;letter-spacing:0.05em">Assign</a></td>
+          </tr>
+        </table>
+        <p style="margin:12px 0 0"><a href="#" style="font-size:12px;color:#6B5E52">None of these — mark for manual review</a></p>
+      </div>
+    </div>
+  </div>
+</body></html>`,
+      };
+
+// The in-person sibling, in the same broken-email state, so both panels on the
+// Reconciliation page can be looked at in one shot:
+// SHOT_CLICK="Reconcile Stripe payments,Confirm in-person sales".
+RESPONSES["reconciliation.runPos"] =
+  params.get("mail") === "ok"
+    ? {
+        scannedLines: 5,
+        newPendingReview: 1,
+        newNoCandidates: 0,
+        stillPendingReview: 0,
+        totalPendingReview: 1,
+        emailSent: true,
+        emailError: null,
+        reviewHtml: null,
+      }
+    : {
+        scannedLines: 5,
+        newPendingReview: 1,
+        newNoCandidates: 0,
+        stillPendingReview: 1,
+        totalPendingReview: 2,
+        emailSent: false,
+        emailError: "RESEND_API_KEY is not set on this server",
+        reviewHtml: `<!DOCTYPE html><html><head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;background:#FAF8F5;font-family:Arial,sans-serif">
+  <div style="max-width:560px;margin:24px auto;background:#fff;border:1px solid #E0D8CC">
+    <div style="background:#2D2620;padding:24px;text-align:center">
+      <p style="margin:0 0 6px;font-family:Georgia,serif;font-size:22px;letter-spacing:0.22em;color:#B8963E;text-transform:uppercase">Bergblume Keramik</p>
+      <p style="margin:0;font-size:11px;letter-spacing:0.08em;color:#8A7865">Your day at the stall · confirm what sold</p>
+    </div>
+    <div style="padding:24px">
+      <p style="margin:0 0 20px;font-size:13px;color:#6B5E52">2 in-person sales were taken as an amount only. Tap the piece each one was, and we'll mark it sold across your store and POS.</p>
+      <div style="margin-bottom:28px;padding-bottom:24px;border-bottom:1px solid #E0D8CC">
+        <p style="margin:0 0 4px;font-size:13px;color:#2D2620"><strong>CHF 45.00</strong> · 16 Aug 2026, 11:20</p>
+        <p style="margin:0 0 12px;font-size:11px;color:#6B5E52">Rung up as "Custom" with no piece attached.</p>
+        <table style="width:100%;border-collapse:collapse">
+          <tr>
+            <td style="padding:8px 0;border-bottom:1px solid #F0EAE0;font-size:13px;color:#2D2620">Milk jug — CHF 45.00</td>
+            <td style="padding:8px 0;border-bottom:1px solid #F0EAE0;text-align:right"><a href="#" style="display:inline-block;background:#B8963E;color:#2D2620;text-decoration:none;padding:6px 14px;font-size:12px;text-transform:uppercase;letter-spacing:0.05em">That's it</a></td>
+          </tr>
+          <tr>
+            <td style="padding:8px 0;border-bottom:1px solid #F0EAE0;font-size:13px;color:#2D2620">Bud vase — CHF 42.00</td>
+            <td style="padding:8px 0;border-bottom:1px solid #F0EAE0;text-align:right"><a href="#" style="display:inline-block;background:#B8963E;color:#2D2620;text-decoration:none;padding:6px 14px;font-size:12px;text-transform:uppercase;letter-spacing:0.05em">That's it</a></td>
           </tr>
         </table>
         <p style="margin:12px 0 0"><a href="#" style="font-size:12px;color:#6B5E52">None of these — mark for manual review</a></p>

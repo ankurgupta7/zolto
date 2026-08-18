@@ -22,15 +22,19 @@ import {
 } from "./reconciliation";
 import {
   createPosAttribution,
+  getPendingPosAttributions,
   getTenantAdminContact,
   getTenantById,
   getTenantSettings,
   getUnattributedPosLineItems,
 } from "./db";
 import {
+  buildPosAttributionReviewHtml,
   type PosAttributionReviewItem,
   sendPosAttributionReviewEmail,
 } from "./_core/email";
+import { MAX_REVIEW_ITEMS, toBaseUrl } from "./reconciliation";
+import { resolveStoredCandidates } from "./pendingReview";
 
 export const POS_ATTRIBUTION_LOOKBACK_DAYS_DEFAULT = 3;
 
@@ -41,8 +45,61 @@ export interface PosAttributionSummary {
   newPendingReview: number;
   /** Lines with no in-stock product close enough in price to guess. */
   newNoCandidates: number;
-  /** Whether the review email was sent (false if nothing needed review, or sending failed). */
+  /**
+   * Lines queued by an EARLIER run that are still unconfirmed, and so are
+   * included in this run's review again. Re-running is deliberately not a
+   * no-op: the first run's email may never have arrived.
+   */
+  stillPendingReview: number;
+  /** Everything in this run's review — `newPendingReview` + `stillPendingReview`. */
+  totalPendingReview: number;
+  /** Whether every store that needed a review email actually got one. */
   emailSent: boolean;
+  /** Why one didn't, when one didn't — unset key, no recipient, API error. */
+  emailError: string | null;
+  /**
+   * The review email's own HTML, handed back when it could not be sent so the
+   * admin console can render it and the merchant can click the same one-click
+   * links in-app. Only for a run scoped to ONE store — a platform-wide sweep
+   * would otherwise return one store's review page to whoever ran it.
+   */
+  reviewHtml: string | null;
+}
+
+/**
+ * Rebuilds review items for attributions an earlier run already queued and
+ * nobody has confirmed yet, skipping the lines this run just created.
+ *
+ * `choiceIndex` is carried through deliberately: the confirm route indexes into
+ * the row's stored `candidateProductIds` (server/posAttributionRoutes.ts), so a
+ * candidate whose product has since been deleted has to leave its slot behind
+ * rather than shift every later link onto the wrong piece.
+ */
+async function collectStillPendingPosItems(
+  tenantId: number,
+  freshItems: PosAttributionReviewItem[],
+): Promise<PosAttributionReviewItem[]> {
+  const rows = await getPendingPosAttributions(tenantId, MAX_REVIEW_ITEMS);
+  const fresh = new Set(freshItems.map((i) => i.posOrderItemId));
+  const older = rows.filter((r) => !fresh.has(r.posOrderItemId));
+  if (older.length === 0) return [];
+
+  const candidatesByRow = await resolveStoredCandidates(tenantId, older);
+
+  return (
+    older
+      .map((row, i) => ({
+        posOrderItemId: row.posOrderItemId,
+        amountRappen: row.amountRappen,
+        soldAt: row.soldAt,
+        itemLabel: row.itemLabel,
+        candidates: candidatesByRow[i],
+        token: row.confirmationToken,
+      }))
+      // Every candidate piece has since been deleted, so there is nothing left to
+      // attribute the sale to. It stays pending for manual handling.
+      .filter((item) => item.candidates.length > 0)
+  );
 }
 
 // `tenantId` scopes the run to one store. The merchant-facing Reconciliation
@@ -103,41 +160,89 @@ export async function runPosAttribution(
     }
   }
 
+  // Anything an earlier run queued and nobody confirmed goes back in the
+  // envelope. Pressing the button twice is not a mistake to guard against —
+  // the first email may have bounced, or never been sent at all — and
+  // getUnattributedPosLineItems deliberately skips those lines, so this is the
+  // only way they are ever asked about again.
+  //
+  // Only for a run scoped to one store: a platform-wide sweep has no single
+  // caller to show a backlog to, and re-reading every tenant's queue would turn
+  // a nightly job into an n-query crawl.
+  let stillPendingCount = 0;
+  if (tenantId !== undefined) {
+    const fresh = reviewItemsByTenant.get(tenantId) ?? [];
+    const stillPending = await collectStillPendingPosItems(tenantId, fresh);
+    if (stillPending.length > 0) {
+      // Newly found lines first, so a long backlog can never crowd out what
+      // this run just picked up. The remainder waits for the next run.
+      const merged = [...fresh, ...stillPending].slice(0, MAX_REVIEW_ITEMS);
+      stillPendingCount = Math.max(0, merged.length - fresh.length);
+      reviewItemsByTenant.set(tenantId, merged);
+    }
+  }
+
   // One review email per store, addressed to that store's own admin with the
   // store's own branding — mirroring runStripeReconciliationForTenant. A
   // failure for one tenant doesn't stop the others' emails going out.
   let emailsSent = 0;
-  for (const [tenantId, items] of Array.from(reviewItemsByTenant.entries())) {
-    try {
-      const [tenant, contact, settings] = await Promise.all([
-        getTenantById(tenantId),
-        getTenantAdminContact(tenantId),
-        getTenantSettings(tenantId),
-      ]);
-      await sendPosAttributionReviewEmail(items, {
-        tenantName: settings?.whiteLabelName ?? tenant?.name,
-        tenantDomain:
-          settings?.publicDomain ??
+  let emailError: string | null = null;
+  let reviewHtml: string | null = null;
+  for (const [id, items] of Array.from(reviewItemsByTenant.entries())) {
+    const [tenant, contact, settings] = await Promise.all([
+      getTenantById(id),
+      getTenantAdminContact(id),
+      getTenantSettings(id),
+    ]);
+    const branding = {
+      tenantName: settings?.whiteLabelName ?? tenant?.name,
+      tenantDomain: toBaseUrl(
+        settings?.publicDomain ??
           process.env.PUBLIC_BASE_URL ??
           "https://zolto.ch",
-        contactEmail: settings?.contactEmail ?? undefined,
-        to: contact?.email ?? undefined,
-      });
-      emailsSent++;
+      ),
+      contactEmail: settings?.contactEmail ?? undefined,
+      to: contact?.email ?? undefined,
+    };
+
+    let reason: string | null = null;
+    try {
+      const result = await sendPosAttributionReviewEmail(items, branding);
+      if (result.sent) emailsSent++;
+      else reason = result.reason;
     } catch (err) {
+      reason = err instanceof Error ? err.message : String(err);
+    }
+
+    if (reason) {
       console.error(
-        `[PosAttribution] Failed to send review email for tenant ${tenantId}:`,
-        err,
+        `[PosAttribution] Review email not delivered for tenant ${id}: ${reason}`,
       );
+      emailError ??= reason;
+      // The merchant still has to be able to act on these, so hand the caller
+      // the very same page the email would have carried — same tokens, same
+      // one-click links — for the admin console to render in place.
+      if (id === tenantId) {
+        reviewHtml = buildPosAttributionReviewHtml(items, branding);
+      }
     }
   }
+
+  const totalPendingReview = Array.from(reviewItemsByTenant.values()).reduce(
+    (sum, items) => sum + items.length,
+    0,
+  );
 
   return {
     scannedLines: lines.length,
     newPendingReview,
     newNoCandidates,
+    stillPendingReview: stillPendingCount,
+    totalPendingReview,
     // True only when every store that needed a review email got one.
     emailSent:
       reviewItemsByTenant.size > 0 && emailsSent === reviewItemsByTenant.size,
+    emailError,
+    reviewHtml,
   };
 }
