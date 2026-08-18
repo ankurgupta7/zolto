@@ -23,6 +23,9 @@ export default defineConfig({
       "client/**/*.test.ts",
       "client/**/*.test.tsx",
       "shared/**/*.test.ts",
+      // One-off maintenance/migration CLIs. Their argument parsing is the part
+      // a mistake is silent in, so it is covered like anything else.
+      "scripts/**/*.test.ts",
       // Static guards over the deploy scripts (deploy/schemaDrift.test.ts) —
       // no DB or Docker needed, so they belong in the ordinary suite.
       "deploy/**/*.test.ts",
