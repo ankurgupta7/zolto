@@ -1073,6 +1073,20 @@ migrate_0050_pos_checkout_session
 # Idempotent; see migrate_0051_sheet_mirrors in deploy/lib/db.sh.
 migrate_0051_sheet_mirrors
 
+# ── 0052: review-link tokens expire, and are spent once ──────────────────────
+# Ships drizzle/0033_review_token_lifetime.sql. The one-click links in the
+# reconciliation and POS-attribution review emails are bearer credentials: they
+# carry no session, so whoever holds the mail can spend them. They had no
+# expiry and outlived the decision they recorded, which made a forwarded or
+# leaked mailbox actionable indefinitely.
+#
+# tokenExpiresAt bounds each link's life (NULL reads as expired, and existing
+# rows are backfilled from createdAt rather than grandfathered), and
+# confirmationToken becomes nullable so the first decision can clear it. The
+# admin console's pending queue is unaffected — it never used tokens.
+# Idempotent; see migrate_0052_review_token_lifetime in deploy/lib/db.sh.
+migrate_0052_review_token_lifetime
+
 # ── Record the applied migration set ──────────────────────────────────────────
 # Only reached when every migration above succeeded — `set -e` plus run_sql's
 # die() mean a failure never gets this far, so a half-applied schema is never

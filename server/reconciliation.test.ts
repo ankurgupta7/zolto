@@ -10,6 +10,7 @@ const getTenantAdminContact = vi.fn();
 const getTenantSettings = vi.fn();
 const getPendingStripeReconciliations = vi.fn();
 const getProductsByIds = vi.fn();
+const extendReviewTokenExpiry = vi.fn();
 
 vi.mock("./db", () => ({
   getAvailableProductsForMatching: (...args: unknown[]) =>
@@ -29,6 +30,8 @@ vi.mock("./db", () => ({
   getPendingStripeReconciliations: (...args: unknown[]) =>
     getPendingStripeReconciliations(...args),
   getProductsByIds: (...args: unknown[]) => getProductsByIds(...args),
+  extendReviewTokenExpiry: (...args: unknown[]) =>
+    extendReviewTokenExpiry(...args),
 }));
 
 const sendReconciliationReviewEmail = vi.fn();
@@ -125,6 +128,7 @@ beforeEach(() => {
   createStripeReconciliation.mockResolvedValue(undefined);
   getPendingStripeReconciliations.mockResolvedValue([]);
   getProductsByIds.mockResolvedValue([]);
+  extendReviewTokenExpiry.mockResolvedValue(undefined);
   sendReconciliationReviewEmail.mockResolvedValue({ sent: true });
   buildReconciliationReviewHtml.mockReturnValue("<html>review</html>");
   getTenantsWithConnectedStripe.mockResolvedValue([]);
@@ -339,6 +343,38 @@ describe("re-running with work still outstanding", () => {
       ],
       expect.anything(),
     );
+  });
+
+  it("restarts the link's clock for everything it re-sends", async () => {
+    // Without this, a re-sent email carries a link dated from the day the
+    // payment was first detected — which for an old backlog item is already
+    // dead on arrival.
+    getPendingStripeReconciliations.mockResolvedValue([makePendingRow()]);
+    getProductsByIds.mockResolvedValue([makeProduct({ id: 7 })]);
+    getStripe.mockReturnValue(emptyScan());
+
+    await runStripeReconciliation();
+
+    const [table, tenantId, ids, expiresAt] =
+      extendReviewTokenExpiry.mock.calls[0];
+    expect(table).toBe("stripe_reconciliations");
+    expect(tenantId).toBe(TENANT.id);
+    expect(ids).toEqual([1]);
+    expect((expiresAt as Date).getTime()).toBeGreaterThan(Date.now());
+  });
+
+  it("does not re-send a row decided between the two queries", async () => {
+    // getPendingStripeReconciliations read it as pending, but the decision
+    // that landed in between cleared its token — there is nothing to mail.
+    getPendingStripeReconciliations.mockResolvedValue([
+      makePendingRow({ confirmationToken: null }),
+    ]);
+    getProductsByIds.mockResolvedValue([makeProduct({ id: 7 })]);
+    getStripe.mockReturnValue(emptyScan());
+
+    const summary = await runStripeReconciliation();
+    expect(summary.totalPendingReview).toBe(0);
+    expect(sendReconciliationReviewEmail).not.toHaveBeenCalled();
   });
 
   it("keeps a candidate's stored position when an earlier candidate was deleted", async () => {

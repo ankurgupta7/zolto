@@ -1788,6 +1788,37 @@ export async function getPendingStripeReconciliations(
 // looking at without a mailed token. The tenant predicate is the whole point:
 // ids are sequential and guessable, so it is what stops an admin of store A
 // resolving store B's payment by typing a different number.
+// Pushes out the expiry on links that are being mailed (or rendered) again by
+// a re-run, so a still-outstanding item's link is live for the same window from
+// the day the merchant last heard about it — not from the day it was first
+// detected, which would arrive already dead.
+export async function extendReviewTokenExpiry(
+  table: "stripe_reconciliations" | "pos_attributions",
+  tenantId: number,
+  ids: number[],
+  expiresAt: Date,
+): Promise<void> {
+  if (ids.length === 0) return;
+  const target =
+    table === "stripe_reconciliations"
+      ? stripeReconciliations
+      : posAttributions;
+  await withDbOrThrow((db) =>
+    db
+      .update(target)
+      .set({ tokenExpiresAt: expiresAt })
+      .where(
+        and(
+          eq(target.tenantId, tenantId),
+          inArray(target.id, ids),
+          // Never revive a spent link: a row whose decision is recorded has a
+          // NULL token, and extending its expiry would be meaningless anyway.
+          eq(target.status, "pending_review"),
+        ),
+      ),
+  );
+}
+
 export async function getStripeReconciliationById(
   tenantId: number,
   id: number,
@@ -1824,7 +1855,15 @@ export async function rejectStripeReconciliation(id: number): Promise<void> {
   await withDbOrThrow((db) =>
     db
       .update(stripeReconciliations)
-      .set({ status: "rejected", resolvedAt: new Date() })
+      .set({
+        status: "rejected",
+        resolvedAt: new Date(),
+        // A decision spends the mailed link: clearing the token stops it being
+        // a credential at all, rather than leaving it in the row for a later
+        // status change (or a leaked mailbox) to make live again.
+        confirmationToken: null,
+        tokenExpiresAt: null,
+      })
       .where(eq(stripeReconciliations.id, id)),
   );
 }
@@ -1872,6 +1911,9 @@ export async function resolveStripeReconciliationConfirmed(
           status: "confirmed",
           chosenProductId: productId,
           resolvedAt: new Date(),
+          // Spent — see rejectStripeReconciliation.
+          confirmationToken: null,
+          tokenExpiresAt: null,
         })
         .where(eq(stripeReconciliations.id, reconciliationId));
     }),
@@ -1948,7 +1990,8 @@ export interface PendingPosAttribution {
   posOrderItemId: number;
   amountRappen: number;
   candidateProductIds: string;
-  confirmationToken: string;
+  /** Null once a decision has spent it — pending rows always carry one. */
+  confirmationToken: string | null;
   soldAt: Date;
   itemLabel: string | null;
 }
@@ -2026,7 +2069,13 @@ export async function rejectPosAttribution(id: number): Promise<void> {
   await withDbOrThrow((db) =>
     db
       .update(posAttributions)
-      .set({ status: "rejected", resolvedAt: new Date() })
+      .set({
+        status: "rejected",
+        resolvedAt: new Date(),
+        // Spent — see rejectStripeReconciliation.
+        confirmationToken: null,
+        tokenExpiresAt: null,
+      })
       .where(eq(posAttributions.id, id)),
   );
 }
@@ -2073,6 +2122,9 @@ export async function resolvePosAttributionConfirmed(
           status: "confirmed",
           chosenProductId: productId,
           resolvedAt: new Date(),
+          // Spent — see rejectStripeReconciliation.
+          confirmationToken: null,
+          tokenExpiresAt: null,
         })
         .where(eq(posAttributions.id, attributionId));
     }),

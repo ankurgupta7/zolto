@@ -557,9 +557,12 @@ export const stripeReconciliations = mysqlTable("stripe_reconciliations", {
     length: 512,
   }).notNull(),
   chosenProductId: int("chosenProductId"),
-  confirmationToken: varchar("confirmationToken", { length: 128 })
-    .notNull()
-    .unique(),
+  // Nullable, and cleared the moment a decision is recorded: the token is a
+  // bearer credential mailed to an inbox, so a spent one must stop being a
+  // credential rather than merely stop being accepted.
+  confirmationToken: varchar("confirmationToken", { length: 128 }).unique(),
+  /** When the mailed link stops working. NULL is treated as expired. */
+  tokenExpiresAt: timestamp("tokenExpiresAt"),
   resolvedAt: timestamp("resolvedAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
@@ -596,9 +599,10 @@ export const posAttributions = mysqlTable("pos_attributions", {
     length: 512,
   }).notNull(),
   chosenProductId: int("chosenProductId"),
-  confirmationToken: varchar("confirmationToken", { length: 128 })
-    .notNull()
-    .unique(),
+  // Cleared on the first decision, same as its Stripe sibling above.
+  confirmationToken: varchar("confirmationToken", { length: 128 }).unique(),
+  /** When the mailed link stops working. NULL is treated as expired. */
+  tokenExpiresAt: timestamp("tokenExpiresAt"),
   resolvedAt: timestamp("resolvedAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
