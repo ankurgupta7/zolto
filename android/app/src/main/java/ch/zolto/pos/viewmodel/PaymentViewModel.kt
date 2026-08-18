@@ -107,6 +107,7 @@ class PaymentViewModel(
                 val response = api.manualSale(
                     ManualSaleRequest(
                         productIds,
+                        allowHidden = PosSession.showHiddenItems,
                         priceOverrides = PosSession.priceOverrides.mapKeys { it.key.toString() },
                         customItems = PosSession.customItems.map {
                             CustomLineItemRequest(name = it.name, priceRappen = it.priceRappen)
@@ -129,6 +130,7 @@ class PaymentViewModel(
                     val localTotal = if (computedTotal > 0) computedTotal else 0
                     val txId = mgr.recordCashSale(
                         productIds = productIds,
+                        allowHidden = PosSession.showHiddenItems,
                         priceOverrides = PosSession.priceOverrides.mapKeys { it.key.toString() },
                         customItems = PosSession.customItems.map {
                             CustomLineItemRequest(name = it.name, priceRappen = it.priceRappen)

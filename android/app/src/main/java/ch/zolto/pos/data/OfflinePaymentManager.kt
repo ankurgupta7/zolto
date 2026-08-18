@@ -43,6 +43,7 @@ class OfflinePaymentManager(context: Context) {
      */
     suspend fun recordCashSale(
         productIds: List<Int>,
+        allowHidden: Boolean,
         priceOverrides: Map<String, Int>,
         customItems: List<CustomLineItemRequest>,
         totalRappen: Int,
@@ -53,6 +54,7 @@ class OfflinePaymentManager(context: Context) {
             priceOverrides = priceOverrides,
             customItems = customItems.map { CustomItemPayload(it.name, it.priceRappen) },
             paymentMethod = "cash",
+            allowHidden = allowHidden,
         )
         val tx = PendingTransactionEntity(
             transactionType = "cash",
@@ -151,6 +153,9 @@ class OfflinePaymentManager(context: Context) {
                         ManualSaleRequest(
                             productIds = payload.productIds,
                             paymentMethod = "cash",
+                            // Replaying without this is why a queued sale of a
+                            // hidden piece came back 409 forever.
+                            allowHidden = payload.allowHidden,
                             priceOverrides = payload.priceOverrides,
                             customItems = payload.customItems.map {
                                 CustomLineItemRequest(it.name, it.priceRappen)

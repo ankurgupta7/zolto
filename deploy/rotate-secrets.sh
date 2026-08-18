@@ -42,11 +42,16 @@ Targets:
                     the same sitting — the old key is dead the moment it is
                     minted.
 
-  stripe-key        Create a fresh restricted Stripe API key (checkout_sessions
-                    + payment_intents only) and write it to .env.
+  stripe-key        Create a fresh restricted Stripe API key scoped to what the
+                    app actually calls (see STRIPE_KEY_PERMISSIONS in this
+                    file), probe it, and write it to .env only if every probe
+                    passes. It does NOT revoke the old key — roll that in the
+                    Dashboard, which is the only thing that ends an exposure.
 
-  stripe-webhooks   Re-create both Stripe webhook endpoints and write their new
-                    signing secrets to .env.
+  stripe-webhooks   Replace both Stripe webhook endpoints and write their new
+                    signing secrets to .env. The replacement is created before
+                    the old one is deleted, so a failure leaves the live
+                    endpoint working rather than leaving the URL bare.
 
   stripe            stripe-key followed by stripe-webhooks.
 
@@ -196,8 +201,63 @@ Copy the whole value the superadmin UI revealed."
 }
 
 # ── Target: stripe-key ────────────────────────────────────────────────────────
+#
+# What the restricted key must be allowed to do, and who needs it. Every entry
+# is <resource>|<probe path>|<what breaks without it>, where the probe is a
+# harmless GET used after minting to prove the grant actually landed.
+#
+# This list is the whole reason the key is dangerous to change casually: it
+# shipped as checkout_sessions + payment_intents alone, which silently omits
+# Terminal — so a rotation produced a key that could take a QR payment but not
+# mint a Tap to Pay connection token, and the Android till stopped working at
+# the next restart with nothing in the rotation output to say why.
+#
+# Derived by inventorying `stripe.*` calls across server/ excluding tests:
+#   checkout.sessions.create/retrieve, coupons.create, customers.create,
+#   paymentIntents.create/list/retrieve, products.list,
+#   terminal.connectionTokens.create, terminal.locations.create
+# plus webhook_endpoints, which this script's own stripe-webhooks target needs.
+# Re-derive it the same way before adding a Stripe call to the app.
+STRIPE_KEY_PERMISSIONS=(
+  "checkout_sessions|/checkout/sessions?limit=1|storefront checkout and the till's scan-to-pay QR"
+  "payment_intents|/payment_intents?limit=1|Terminal card payments and TWINT"
+  "terminal|/terminal/locations?limit=1|Tap to Pay: connection tokens and locations"
+  "customers|/customers?limit=1|customer records attached to sales"
+  "coupons|/coupons?limit=1|discount codes at checkout"
+  "products|/products?limit=1|product lookups"
+  "webhook_endpoints|/webhook_endpoints?limit=1|this script's own stripe-webhooks target"
+)
+
+# Proves the freshly minted key can actually reach everything the app uses,
+# before it is allowed anywhere near .env.
+#
+# A GET is enough: every permission above is requested as `write`, and Stripe's
+# write grant includes read, so a 403 here means the grant is missing entirely
+# — the failure mode that matters. It does not prove write, and cannot without
+# creating real objects.
+verify_stripe_key_permissions() { # verify_stripe_key_permissions <key>
+  local key="$1" entry resource probe why missing=()
+
+  step "Checking the new key can reach everything the app uses"
+  for entry in "${STRIPE_KEY_PERMISSIONS[@]}"; do
+    IFS='|' read -r resource probe why <<<"$entry"
+    if http_json GET "${STRIPE_API}${probe}" -u "${key}:" >/dev/null 2>&1; then
+      ok "$resource"
+    else
+      missing+=("$resource — $why")
+    fi
+  done
+
+  [ "${#missing[@]}" -eq 0 ] && return 0
+
+  warn "The new key cannot reach:"
+  local m
+  for m in "${missing[@]}"; do echo "    - $m"; done
+  return 1
+}
+
 rotate_stripe_key() {
-  local live_key key_name response new_key backup
+  local live_key key_name response new_key backup entry resource perms=()
 
   live_key="$(read_env_var "$ENV_FILE" STRIPE_SECRET_KEY)"
   [ -n "$live_key" ] || die "STRIPE_SECRET_KEY not found in $ENV_FILE"
@@ -211,8 +271,16 @@ Restricted keys cannot mint further keys — this needs the live secret key." ;;
   step "Creating restricted Stripe key '$key_name'"
   echo "  from $(mask_secret "$live_key")"
 
+  for entry in "${STRIPE_KEY_PERMISSIONS[@]}"; do
+    resource="${entry%%|*}"
+    perms+=(-d "permissions[${resource}]=write")
+  done
+
   if [ "$DRY_RUN" -eq 1 ]; then
-    would "POST ${STRIPE_API}/api_keys (checkout_sessions + payment_intents, write)"
+    would "POST ${STRIPE_API}/api_keys (write on: $(
+      printf '%s ' "${STRIPE_KEY_PERMISSIONS[@]%%|*}"
+    ))"
+    would "probe each of those with the new key before adopting it"
     would "write STRIPE_SECRET_KEY to $ENV_FILE"
     return 0
   fi
@@ -222,8 +290,7 @@ Restricted keys cannot mint further keys — this needs the live secret key." ;;
     -u "${live_key}:" \
     -d "name=${key_name}" \
     -d "type=restricted" \
-    -d "permissions[checkout_sessions]=write" \
-    -d "permissions[payment_intents]=write")" ||
+    "${perms[@]}")" ||
     die "Stripe refused to create the key (see above)."
 
   new_key="$(printf '%s' "$response" | json_secret)"
@@ -232,6 +299,15 @@ Restricted keys cannot mint further keys — this needs the live secret key." ;;
 ${response}"
 
   ok "created $(mask_secret "$new_key")"
+
+  # Refuse to adopt a key that cannot do the job. .env keeps the working key,
+  # so the only cost of stopping here is a dead key left in the Dashboard —
+  # far cheaper than a restart onto a key that cannot take a card.
+  verify_stripe_key_permissions "$new_key" || die \
+    "Not writing this key to $ENV_FILE — $ENV_FILE still holds the working one.
+Delete $(mask_secret "$new_key") in the Stripe Dashboard (Developers → API keys),
+grant the missing resources there, and re-run. If Stripe has renamed a
+permission, fix STRIPE_KEY_PERMISSIONS at the top of this file."
 
   backup="$(backup_env_file "$ENV_FILE")"
   set_env_var "$ENV_FILE" STRIPE_SECRET_KEY "$new_key"
@@ -255,26 +331,26 @@ rotate_one_webhook() { # rotate_one_webhook <label> <path> <env_var> <event...>
     return 0
   fi
 
-  # Drop endpoints already pointing at this URL so re-runs don't accumulate
-  # duplicates, each delivering the same event.
+  # Note the endpoints already at this URL, but do NOT delete them yet — see
+  # below. Capturing the ids first is what makes the replacement safe to
+  # create alongside them: only these ids are ever removed, so the new
+  # endpoint cannot delete itself.
   existing="$(http_json GET "${STRIPE_API}/webhook_endpoints?limit=100" -u "${live_key}:")" ||
     die "could not list existing webhook endpoints."
   ids="$(printf '%s' "$existing" | json_endpoint_ids "$target")"
-  if [ -n "$ids" ]; then
-    while IFS= read -r id; do
-      [ -n "$id" ] || continue
-      http_json DELETE "${STRIPE_API}/webhook_endpoints/${id}" -u "${live_key}:" >/dev/null ||
-        die "could not delete endpoint $id."
-      ok "removed old endpoint $id"
-    done <<<"$ids"
-  fi
 
   args=(-d "url=${target}")
   local e
   for e in "${events[@]}"; do args+=(-d "enabled_events[]=${e}"); done
 
+  # Create BEFORE deleting. Stripe allows several endpoints on one URL, so the
+  # replacement can stand beside the old one for a moment — and if this POST
+  # fails (a key without webhook_endpoints write, a typo'd PUBLIC_BASE_URL, a
+  # network blip), the old endpoint is still there and still signing with the
+  # secret .env still holds. Deleting first would turn any of those into an
+  # outage with no webhook delivery at all until someone noticed.
   created="$(http_json POST "${STRIPE_API}/webhook_endpoints" -u "${live_key}:" "${args[@]}")" ||
-    die "could not create the endpoint."
+    die "could not create the endpoint — the existing one at $target is untouched."
   secret="$(printf '%s' "$created" | json_secret)"
   [ -n "$secret" ] ||
     die "endpoint created but no signing secret came back:
@@ -283,6 +359,22 @@ ${created}"
   ok "created endpoint, secret $(mask_secret "$secret")"
   set_env_var "$ENV_FILE" "$env_var" "$secret"
   ok "$env_var → $ENV_FILE"
+
+  # Now retire the ones this replaced. A failure here leaves a duplicate
+  # endpoint rather than none, which is noisy but harmless — the app ignores
+  # deliveries it cannot verify and Stripe stops retrying eventually — so it
+  # is a warning, not a died-halfway rotation.
+  if [ -n "$ids" ]; then
+    while IFS= read -r id; do
+      [ -n "$id" ] || continue
+      if http_json DELETE "${STRIPE_API}/webhook_endpoints/${id}" -u "${live_key}:" >/dev/null; then
+        ok "removed old endpoint $id"
+      else
+        warn "could not delete old endpoint $id — remove it in the Dashboard,
+    or it will keep delivering with a signing secret nothing holds any more."
+      fi
+    done <<<"$ids"
+  fi
 }
 
 rotate_stripe_webhooks() {
@@ -305,7 +397,13 @@ rotate_stripe_webhooks() {
     echo "Backed up $ENV_FILE → $backup"
   fi
 
-  # Keep in step with server/stripe.ts and server/pos.ts.
+  # Keep in step with server/stripe.ts and server/pos.ts — enforced by
+  # deploy/webhookEvents.test.ts.
+  #
+  # The Connect endpoint (/api/stripe/connect-webhook) is NOT rotated here: it
+  # is configured once for the platform under Dashboard → Connect → Webhooks
+  # rather than per deployment. It needs the union of both lists below, since a
+  # connected store's storefront AND POS events all fire on its own account.
   rotate_one_webhook "Checkout webhook" "/api/stripe/webhook" "STRIPE_WEBHOOK_SECRET" \
     checkout.session.completed \
     checkout.session.async_payment_succeeded \
@@ -313,7 +411,11 @@ rotate_stripe_webhooks() {
     checkout.session.expired
 
   rotate_one_webhook "POS webhook" "/api/pos/webhook" "STRIPE_POS_WEBHOOK_SECRET" \
-    payment_intent.succeeded
+    payment_intent.succeeded \
+    checkout.session.completed \
+    checkout.session.async_payment_succeeded \
+    checkout.session.async_payment_failed \
+    checkout.session.expired
 
   step "Done"
   echo "  Restart the service so it picks the new signing secrets up: ./update.sh"

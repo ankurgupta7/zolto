@@ -118,6 +118,7 @@ describe("groupNavByPlane", () => {
       "categories",
       "orders",
       "sales",
+      "sheets",
       "reconciliation",
       "storefront",
       "testimonials",
@@ -125,6 +126,7 @@ describe("groupNavByPlane", () => {
       "domain",
       "channels",
       "pos",
+      "till",
       "insights",
     ]);
     expect(groups[1].items[0].id).toBe("account");

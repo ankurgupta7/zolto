@@ -261,12 +261,14 @@ class ApiService {
     func manualSale(
         productIds: [Int],
         paymentMethod: String,
+        allowHidden: Bool = false,
         priceOverrides: [String: Int] = [:],
         customItems: [CustomLineItemRequest] = []
     ) async throws -> ManualSaleResponse {
         let body = try JSONEncoder().encode(ManualSaleRequest(
             productIds: productIds,
             paymentMethod: paymentMethod,
+            allowHidden: allowHidden,
             priceOverrides: priceOverrides,
             customItems: customItems
         ))

@@ -44,8 +44,10 @@ import Discounts from "./pages/admin/Discounts";
 import Domain from "./pages/admin/Domain";
 import Channels from "./pages/admin/Channels";
 import Pos from "./pages/admin/Pos";
+import Till from "./pages/admin/Till";
 import Orders from "./pages/admin/Orders";
 import Sales from "./pages/admin/Sales";
+import Sheets from "./pages/admin/Sheets";
 import Reconciliation from "./pages/admin/Reconciliation";
 import AdminInsights from "./pages/admin/Insights";
 import AdminImport from "./pages/admin/Import";
@@ -100,6 +102,7 @@ const ADMIN_PAGES: Record<string, ComponentType> = {
   categories: AdminCategories,
   orders: Orders,
   sales: Sales,
+  sheets: Sheets,
   reconciliation: Reconciliation,
   storefront: Storefront,
   testimonials: Testimonials,
@@ -107,6 +110,7 @@ const ADMIN_PAGES: Record<string, ComponentType> = {
   domain: Domain,
   channels: Channels,
   pos: Pos,
+  till: Till,
   insights: AdminInsights,
   // Account plane
   account: ShopProfile,

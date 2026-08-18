@@ -702,6 +702,132 @@ migrate_0045_site_imports() {
 # mcp_tool (not an MCP call) would never collide either. Additive and
 # idempotent — nothing reads the table until the admin panel asks.
 # ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────
+# Migration 0050: the web till's scan-to-pay sales.
+#
+# A till sale taken by QR is a Stripe Checkout Session, not a Terminal
+# PaymentIntent — and a session that is still open has NO PaymentIntent, since
+# Stripe creates one only when the customer pays. So `stripePaymentIntentId`,
+# which every other POS path writes at order-creation time and which fulfilment
+# looks orders up by, is necessarily null for a QR sale for the whole window in
+# which the code is on screen. The session id is the only link to Stripe until
+# then; fulfilment matches on it and backfills the PaymentIntent id afterwards,
+# so the order still reconciles like any other.
+#
+# UNIQUE for the same reason the PaymentIntent column is: two orders claiming
+# one payment should be refused by the database, not resolved later. MySQL
+# treats NULLs as distinct in a unique index, so the many rows that never had a
+# session (cash, TWINT-QR, Terminal card) stay legal.
+#
+# Additive; nothing reads it until a merchant opens the till.
+# ─────────────────────────────────────────────────────────────────────────────
+# Migration 0051: sheet_mirrors — the Google Sheets mirror of a store.
+#
+# Ships drizzle/0032_sheet_mirrors.sql. One spreadsheet per store, created and
+# owned by the platform service account and then shared with the merchant.
+#
+# tenant_id's UNIQUE key is the only non-obvious part, and it is load-bearing:
+# upsertSheetMirror (server/db.ts) is an INSERT … ON DUPLICATE KEY UPDATE, which
+# in MySQL fires only on a PRIMARY KEY or UNIQUE collision. `id` is autoincrement
+# and never supplied, so without this index every reconnect INSERTs a second row
+# — two spreadsheets for one store, each looking authoritative to whoever opened
+# it, and getSheetMirror's LIMIT 1 deciding which one the sync keeps refreshing.
+# Restored below on any database that somehow has the table without it.
+# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────
+# Migration 0052: review-link tokens get a lifetime, and stop existing once spent.
+#
+# The one-click links in the reconciliation and POS-attribution review emails
+# are bearer credentials — whoever holds the mail can spend them, with no login.
+# They had no expiry, and survived in the row after the decision was recorded,
+# so a forwarded or leaked mailbox stayed actionable indefinitely.
+#
+# tokenExpiresAt bounds a link's life (the app treats NULL as expired, so old
+# rows are backfilled from their creation date rather than grandfathered into
+# never expiring), and confirmationToken becomes nullable so a spent token can
+# be cleared outright. MySQL permits many NULLs under a UNIQUE constraint, so
+# uniqueness of live tokens is unaffected. Idempotent.
+migrate_0052_review_token_lifetime() {
+  # Spelled out per table rather than looped: deploy/schemaDrift.test.ts reads
+  # these statements to prove the deploy path creates every column the app
+  # queries, and it cannot see a table name hidden behind a shell variable.
+  if [ "$(tbl_exists stripe_reconciliations)" = "1" ]; then
+    if [ "$(col_exists stripe_reconciliations tokenExpiresAt)" = "0" ]; then
+      run_sql "0052 add stripe_reconciliations.tokenExpiresAt" \
+        "ALTER TABLE \`stripe_reconciliations\` ADD \`tokenExpiresAt\` timestamp NULL;"
+      # Backfill from creation so links already sitting in inboxes get a
+      # definite end, instead of living forever because they predate the column.
+      run_sql "0052 backfill stripe_reconciliations.tokenExpiresAt" \
+        "UPDATE \`stripe_reconciliations\` SET \`tokenExpiresAt\` = DATE_ADD(\`createdAt\`, INTERVAL 14 DAY) WHERE \`tokenExpiresAt\` IS NULL;"
+    else
+      ok "0052 stripe_reconciliations.tokenExpiresAt already exists"
+    fi
+    run_sql "0052 stripe_reconciliations.confirmationToken nullable" \
+      "ALTER TABLE \`stripe_reconciliations\` MODIFY \`confirmationToken\` varchar(128) NULL;"
+  else
+    ok "0052 stripe_reconciliations does not exist yet — skipping"
+  fi
+
+  if [ "$(tbl_exists pos_attributions)" = "1" ]; then
+    if [ "$(col_exists pos_attributions tokenExpiresAt)" = "0" ]; then
+      run_sql "0052 add pos_attributions.tokenExpiresAt" \
+        "ALTER TABLE \`pos_attributions\` ADD \`tokenExpiresAt\` timestamp NULL;"
+      run_sql "0052 backfill pos_attributions.tokenExpiresAt" \
+        "UPDATE \`pos_attributions\` SET \`tokenExpiresAt\` = DATE_ADD(\`createdAt\`, INTERVAL 14 DAY) WHERE \`tokenExpiresAt\` IS NULL;"
+    else
+      ok "0052 pos_attributions.tokenExpiresAt already exists"
+    fi
+    run_sql "0052 pos_attributions.confirmationToken nullable" \
+      "ALTER TABLE \`pos_attributions\` MODIFY \`confirmationToken\` varchar(128) NULL;"
+  else
+    ok "0052 pos_attributions does not exist yet — skipping"
+  fi
+}
+
+migrate_0051_sheet_mirrors() {
+  if [ "$(tbl_exists sheet_mirrors)" = "0" ]; then
+    run_sql "0051 sheet_mirrors table" "
+      CREATE TABLE IF NOT EXISTS \`sheet_mirrors\` (
+        \`id\`               int AUTO_INCREMENT NOT NULL,
+        \`tenant_id\`        int NOT NULL,
+        \`spreadsheet_id\`   varchar(128) NOT NULL,
+        \`spreadsheet_url\`  varchar(512) NOT NULL,
+        \`shared_with\`      varchar(320) NOT NULL,
+        \`stock_in_enabled\` boolean NOT NULL DEFAULT false,
+        \`last_synced_at\`   timestamp NULL,
+        \`last_sync_error\`  text,
+        \`createdAt\`        timestamp NOT NULL DEFAULT (now()),
+        \`updatedAt\`        timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+        CONSTRAINT \`sheet_mirrors_id\` PRIMARY KEY(\`id\`),
+        CONSTRAINT \`sheet_mirrors_tenant_id_unique\` UNIQUE(\`tenant_id\`)
+      );"
+  else
+    ok "0051 sheet_mirrors already exists"
+    if [ "$(idx_exists sheet_mirrors sheet_mirrors_tenant_id_unique)" = "0" ]; then
+      run_sql "0051 sheet_mirrors tenant unique" \
+        "ALTER TABLE \`sheet_mirrors\` ADD CONSTRAINT \`sheet_mirrors_tenant_id_unique\` UNIQUE(\`tenant_id\`);"
+    else
+      ok "0051 sheet_mirrors_tenant_id_unique already exists"
+    fi
+  fi
+}
+
+migrate_0050_pos_checkout_session() {
+  if [ "$(col_exists pos_orders stripeCheckoutSessionId)" = "0" ]; then
+    run_sql "0050 add pos_orders.stripeCheckoutSessionId" \
+      "ALTER TABLE \`pos_orders\` ADD \`stripeCheckoutSessionId\` varchar(255) NULL;"
+  else
+    ok "0050 pos_orders.stripeCheckoutSessionId already exists"
+  fi
+
+  if [ "$(idx_exists pos_orders pos_orders_stripeCheckoutSessionId_unique)" = "0" ]; then
+    run_sql "0050 pos_orders.stripeCheckoutSessionId unique" \
+      "ALTER TABLE \`pos_orders\` ADD CONSTRAINT \`pos_orders_stripeCheckoutSessionId_unique\` UNIQUE(\`stripeCheckoutSessionId\`);"
+  else
+    ok "0050 pos_orders_stripeCheckoutSessionId_unique already exists"
+  fi
+}
+
 migrate_0049_agent_hits() {
   if [ "$(tbl_exists agent_hits)" = "0" ]; then
     run_sql "0049 agent_hits table" "

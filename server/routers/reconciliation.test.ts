@@ -27,6 +27,32 @@ vi.mock("../posAttribution", () => ({
   runPosAttribution: (...args: unknown[]) => runPosAttribution(...args),
 }));
 
+const listPendingReview = vi.fn();
+const resolvePendingStripe = vi.fn();
+const resolvePendingPos = vi.fn();
+
+// PendingResolveError has to be a real class the router can `instanceof`
+// against — that branch is what turns a refusal into the right tRPC code
+// instead of a 500. Hoisted for the same reason NotConnectedError is.
+const { PendingResolveError } = vi.hoisted(() => ({
+  PendingResolveError: class PendingResolveError extends Error {
+    constructor(
+      readonly reason: string,
+      message: string,
+    ) {
+      super(message);
+      this.name = "PendingResolveError";
+    }
+  },
+}));
+
+vi.mock("../pendingReview", () => ({
+  listPendingReview: (...args: unknown[]) => listPendingReview(...args),
+  resolvePendingStripe: (...args: unknown[]) => resolvePendingStripe(...args),
+  resolvePendingPos: (...args: unknown[]) => resolvePendingPos(...args),
+  PendingResolveError,
+}));
+
 import { reconciliationRouter } from "./reconciliation";
 import type { TrpcContext } from "../_core/context";
 
@@ -221,5 +247,120 @@ describe("reconciliation.runPos", () => {
     const caller = reconciliationRouter.createCaller(makeCtx("admin"));
     await expect(caller.runPos({ lookbackDays: 0 })).rejects.toThrow();
     await expect(caller.runPos({ lookbackDays: 31 })).rejects.toThrow();
+  });
+});
+
+// The durable path: what is still outstanding, and clearing it from the
+// console with the admin's own session rather than a mailed bearer token.
+describe("reconciliation.listPending", () => {
+  const queue = { stripe: [], pos: [] };
+
+  it("rejects anonymous callers", async () => {
+    const caller = reconciliationRouter.createCaller(makeCtx(null));
+    await expect(caller.listPending()).rejects.toThrow();
+    expect(listPendingReview).not.toHaveBeenCalled();
+  });
+
+  it("rejects non-admin users", async () => {
+    const caller = reconciliationRouter.createCaller(makeCtx("user"));
+    await expect(caller.listPending()).rejects.toThrow(NOT_ADMIN_ERR_MSG);
+    expect(listPendingReview).not.toHaveBeenCalled();
+  });
+
+  it("lists the CALLER'S store's queue", async () => {
+    listPendingReview.mockResolvedValue(queue);
+    const caller = reconciliationRouter.createCaller(makeCtx("admin"));
+
+    expect(await caller.listPending()).toEqual(queue);
+    expect(listPendingReview).toHaveBeenCalledWith(42);
+  });
+
+  it("refuses an admin of a different store", async () => {
+    // The queue names unmatched payments and their amounts — another
+    // merchant's trading, item by item.
+    const caller = reconciliationRouter.createCaller(makeCtx("admin", 7, 42));
+    await expect(caller.listPending()).rejects.toThrow(NOT_ADMIN_ERR_MSG);
+    expect(listPendingReview).not.toHaveBeenCalled();
+  });
+});
+
+describe("reconciliation.resolveStripe / resolvePos", () => {
+  const applied = { productName: "Silver Ring", amountRappen: 10000 };
+
+  it("applies the decision against the caller's own store", async () => {
+    resolvePendingStripe.mockResolvedValue(applied);
+    const caller = reconciliationRouter.createCaller(makeCtx("admin"));
+
+    expect(await caller.resolveStripe({ id: 3, productId: 7 })).toEqual(
+      applied,
+    );
+    expect(resolvePendingStripe).toHaveBeenCalledWith(42, 3, 7);
+  });
+
+  it("passes a null productId through as 'none of these'", async () => {
+    resolvePendingPos.mockResolvedValue({
+      productName: null,
+      amountRappen: 4500,
+    });
+    const caller = reconciliationRouter.createCaller(makeCtx("admin"));
+
+    await caller.resolvePos({ id: 5, productId: null });
+    expect(resolvePendingPos).toHaveBeenCalledWith(42, 5, null);
+  });
+
+  // This decision decrements stock, so the cross-tenant guard matters more
+  // here than on any read: an admin of store A must not be able to mark store
+  // B's piece sold by guessing a row id.
+  it("refuses an admin of a different store", async () => {
+    const caller = reconciliationRouter.createCaller(makeCtx("admin", 7, 42));
+    await expect(caller.resolveStripe({ id: 3, productId: 7 })).rejects.toThrow(
+      NOT_ADMIN_ERR_MSG,
+    );
+    await expect(caller.resolvePos({ id: 5, productId: 7 })).rejects.toThrow(
+      NOT_ADMIN_ERR_MSG,
+    );
+    expect(resolvePendingStripe).not.toHaveBeenCalled();
+    expect(resolvePendingPos).not.toHaveBeenCalled();
+  });
+
+  it("maps a missing or other-store row to NOT_FOUND", async () => {
+    resolvePendingStripe.mockRejectedValue(
+      new PendingResolveError("not_found", "no longer in your review queue"),
+    );
+    const caller = reconciliationRouter.createCaller(makeCtx("admin"));
+
+    await expect(
+      caller.resolveStripe({ id: 3, productId: 7 }),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+  });
+
+  it("maps an already-decided row to CONFLICT", async () => {
+    resolvePendingStripe.mockRejectedValue(
+      new PendingResolveError("already_handled", "already reviewed"),
+    );
+    const caller = reconciliationRouter.createCaller(makeCtx("admin"));
+
+    await expect(
+      caller.resolveStripe({ id: 3, productId: 7 }),
+    ).rejects.toMatchObject({ code: "CONFLICT" });
+  });
+
+  it("maps a piece outside the shortlist to BAD_REQUEST", async () => {
+    resolvePendingPos.mockRejectedValue(
+      new PendingResolveError("not_a_candidate", "not one of the candidates"),
+    );
+    const caller = reconciliationRouter.createCaller(makeCtx("admin"));
+
+    await expect(
+      caller.resolvePos({ id: 5, productId: 99 }),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+  });
+
+  it("rejects a malformed id", async () => {
+    const caller = reconciliationRouter.createCaller(makeCtx("admin"));
+    await expect(
+      caller.resolveStripe({ id: 0, productId: 7 }),
+    ).rejects.toThrow();
+    expect(resolvePendingStripe).not.toHaveBeenCalled();
   });
 });

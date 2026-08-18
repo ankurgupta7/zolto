@@ -1,19 +1,21 @@
 package ch.zolto.pos
 
-import com.google.gson.Gson
+import ch.zolto.pos.data.local.PendingTransactionPayload
+import ch.zolto.pos.data.local.PendingTransactionSerializer
 import ch.zolto.pos.data.models.ConnectionTokenResponse
 import ch.zolto.pos.data.models.CustomLineItemRequest
+import ch.zolto.pos.data.models.LocationProvisionRequest
+import ch.zolto.pos.data.models.LocationProvisionResponse
 import ch.zolto.pos.data.models.ManualSaleRequest
 import ch.zolto.pos.data.models.ManualSaleResponse
 import ch.zolto.pos.data.models.PaymentIntentRequest
 import ch.zolto.pos.data.models.PaymentIntentResponse
-import ch.zolto.pos.data.models.LocationProvisionRequest
-import ch.zolto.pos.data.models.LocationProvisionResponse
 import ch.zolto.pos.data.models.PosConfigResponse
 import ch.zolto.pos.data.models.SaleRequest
 import ch.zolto.pos.data.models.SaleResponse
 import ch.zolto.pos.data.models.TwintIntentRequest
 import ch.zolto.pos.data.models.TwintIntentResponse
+import com.google.gson.Gson
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -235,6 +237,47 @@ class StripeModelsTest {
     }
 
     // ─── ManualSaleRequest / ManualSaleResponse ──────────────────────────────
+
+    // The card and TWINT paths have always sent allowHidden; the cash path did
+    // not have the field at all, so the backend's availability check
+    // ((allowHidden || visible) && !sold && quantity > 0) refused every hidden
+    // piece sold for cash with 409 "One or more items are no longer available".
+    @Test
+    fun `manualSaleRequest encodes allowHidden flag`() {
+        val request = ManualSaleRequest(
+            productIds = listOf(1),
+            paymentMethod = "cash",
+            allowHidden = true,
+        )
+        val json = gson.toJson(request)
+
+        assertTrue(json.contains(""""allowHidden":true"""))
+    }
+
+    @Test
+    fun `manualSaleRequest defaults allowHidden to false`() {
+        val json = gson.toJson(ManualSaleRequest(productIds = listOf(1), paymentMethod = "cash"))
+
+        assertTrue(json.contains(""""allowHidden":false"""))
+    }
+
+    // A queued sale is replayed from its stored payload, so the override has to
+    // survive the round trip or the retry is refused for a reason the cashier
+    // already overrode.
+    @Test
+    fun `pending payload round-trips allowHidden`() {
+        val payload = PendingTransactionPayload(
+            productIds = listOf(42),
+            paymentMethod = "cash",
+            allowHidden = true,
+        )
+        val restored = PendingTransactionSerializer.fromJson(
+            PendingTransactionSerializer.toJson(payload)
+        )
+
+        assertTrue(restored.allowHidden)
+        assertEquals(listOf(42), restored.productIds)
+    }
 
     @Test
     fun `manualSaleRequest encodes minimal payload`() {

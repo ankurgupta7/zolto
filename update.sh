@@ -1050,6 +1050,43 @@ migrate_0048_customer_trust
 # migrate_0049_agent_hits in deploy/lib/db.sh.
 migrate_0049_agent_hits
 
+# ── 0050: the web till's scan-to-pay sales ───────────────────────────────────
+# Ships drizzle/0031_pos_checkout_session.sql. A QR sale is a Stripe Checkout
+# Session, and an open session has no PaymentIntent — Stripe makes one only when
+# the customer pays — so fulfilment cannot key on stripePaymentIntentId the way
+# every other POS path does. The session id carries the link until then, and the
+# PaymentIntent id is backfilled once it exists. Additive — nothing reads it
+# until a merchant opens the till.
+# Idempotent; see migrate_0050_pos_checkout_session in deploy/lib/db.sh.
+migrate_0050_pos_checkout_session
+
+# ── 0051: the Google Sheets mirror ───────────────────────────────────────────
+# Ships drizzle/0032_sheet_mirrors.sql. One spreadsheet per store, owned by the
+# platform service account and shared with the merchant: a surface they can
+# filter, pivot and hand to an accountant, over a ledger that stays in MySQL.
+#
+# Everything in the sheet is derived, and the table records only where it lives
+# plus the outcome of the last push. tenant_id is UNIQUE so a store cannot end
+# up with two spreadsheets drifting apart. Additive — no existing read path
+# touches it, and with GOOGLE_SERVICE_ACCOUNT_* unset (every self-hosted
+# install) the feature is simply absent.
+# Idempotent; see migrate_0051_sheet_mirrors in deploy/lib/db.sh.
+migrate_0051_sheet_mirrors
+
+# ── 0052: review-link tokens expire, and are spent once ──────────────────────
+# Ships drizzle/0033_review_token_lifetime.sql. The one-click links in the
+# reconciliation and POS-attribution review emails are bearer credentials: they
+# carry no session, so whoever holds the mail can spend them. They had no
+# expiry and outlived the decision they recorded, which made a forwarded or
+# leaked mailbox actionable indefinitely.
+#
+# tokenExpiresAt bounds each link's life (NULL reads as expired, and existing
+# rows are backfilled from createdAt rather than grandfathered), and
+# confirmationToken becomes nullable so the first decision can clear it. The
+# admin console's pending queue is unaffected — it never used tokens.
+# Idempotent; see migrate_0052_review_token_lifetime in deploy/lib/db.sh.
+migrate_0052_review_token_lifetime
+
 # ── Record the applied migration set ──────────────────────────────────────────
 # Only reached when every migration above succeeded — `set -e` plus run_sql's
 # die() mean a failure never gets this far, so a half-applied schema is never

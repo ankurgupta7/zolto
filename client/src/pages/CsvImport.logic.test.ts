@@ -183,6 +183,47 @@ describe("mapRows", () => {
   });
 });
 
+describe("zolto_id round trip", () => {
+  const base = {
+    name: "Moonstone Ring",
+    description: "A lovely ring",
+    price: "185",
+    category: "Rings",
+  };
+
+  /**
+   * parseCsv folds a header to lowercase and strips separators, so mapRows only
+   * ever sees the normalised key. Header spellings are therefore exercised
+   * through parseCsv rather than by handing mapRows a raw column name.
+   */
+  it("reads the id from the header spellings a sheet might carry", () => {
+    for (const header of ["zolto_id", "zoltoId", "ZOLTO ID", "id"]) {
+      const csv = `${header},name,description,price,category\n42,Ring,Nice,185,Rings`;
+      const [row] = mapRows(parseCsv(csv), TEST_CATEGORIES);
+      expect(row.zoltoId, header).toBe(42);
+      expect(row._valid, header).toBe(true);
+    }
+  });
+
+  /**
+   * A hand-written CSV, or one exported from Shopify or Square, has no such
+   * column — those rows must still import, matched by name as before.
+   */
+  it("leaves the id undefined when the column is absent", () => {
+    const [row] = mapRows([base], TEST_CATEGORIES);
+    expect(row.zoltoId).toBeUndefined();
+    expect(row._valid).toBe(true);
+  });
+
+  it("ignores an unusable id rather than failing the row", () => {
+    for (const value of ["", "abc", "0", "-3", "4.5"]) {
+      const [row] = mapRows([{ ...base, zoltoid: value }], TEST_CATEGORIES);
+      expect(row.zoltoId, `zolto_id="${value}"`).toBeUndefined();
+      expect(row._valid, `zolto_id="${value}"`).toBe(true);
+    }
+  });
+});
+
 describe("mapHandwrittenItems", () => {
   it("maps a valid AI-extracted item straight through", () => {
     const [row] = mapHandwrittenItems(

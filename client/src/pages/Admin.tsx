@@ -630,13 +630,18 @@ export default function Admin() {
 
   const reconciliationMutation = trpc.reconciliation.run.useMutation({
     onSuccess: (data) => {
-      if (data.newPendingReview > 0) {
-        toast.success(
+      // Counts everything still awaiting confirmation, not only what this run
+      // discovered — a re-run whose earlier email never arrived has nothing
+      // "new" to report but plenty for the merchant to do. The review page
+      // itself lives on /admin/reconciliation, which is where a failed send
+      // renders it.
+      if (data.totalPendingReview > 0) {
+        toast[data.emailSent ? "success" : "error"](
           t(
             data.emailSent
               ? "catalog.admin.toasts.stripeFoundSent"
               : "catalog.admin.toasts.stripeFoundNotSent",
-            { count: data.newPendingReview },
+            { count: data.totalPendingReview },
           ),
         );
       } else if (data.newNoCandidates > 0) {
@@ -661,13 +666,16 @@ export default function Admin() {
 
   const posAttributionMutation = trpc.reconciliation.runPos.useMutation({
     onSuccess: (data) => {
-      if (data.newPendingReview > 0) {
-        toast.success(
+      // Same reasoning as the Stripe scan above: count everything still
+      // awaiting confirmation, and send the merchant to /admin/reconciliation,
+      // which is where an undelivered review email gets rendered in place.
+      if (data.totalPendingReview > 0) {
+        toast[data.emailSent ? "success" : "error"](
           t(
             data.emailSent
               ? "catalog.admin.toasts.posFoundSent"
               : "catalog.admin.toasts.posFoundNotSent",
-            { count: data.newPendingReview },
+            { count: data.totalPendingReview },
           ),
         );
       } else if (data.newNoCandidates > 0) {

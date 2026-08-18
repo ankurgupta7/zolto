@@ -7,6 +7,9 @@ const sendPosAttributionReviewEmail = vi.fn();
 const getTenantById = vi.fn();
 const getTenantAdminContact = vi.fn();
 const getTenantSettings = vi.fn();
+const getPendingPosAttributions = vi.fn();
+const getProductsByIds = vi.fn();
+const extendReviewTokenExpiry = vi.fn();
 let tokenCounter = 0;
 
 vi.mock("./db", () => ({
@@ -16,16 +19,25 @@ vi.mock("./db", () => ({
   getTenantById: (...a: unknown[]) => getTenantById(...a),
   getTenantAdminContact: (...a: unknown[]) => getTenantAdminContact(...a),
   getTenantSettings: (...a: unknown[]) => getTenantSettings(...a),
+  getPendingPosAttributions: (...a: unknown[]) =>
+    getPendingPosAttributions(...a),
+  getProductsByIds: (...a: unknown[]) => getProductsByIds(...a),
+  extendReviewTokenExpiry: (...a: unknown[]) => extendReviewTokenExpiry(...a),
 }));
 
 vi.mock("./reconciliation", () => ({
   findCandidateProducts: (...a: unknown[]) => findCandidateProducts(...a),
   generateConfirmationToken: () => `tok_${++tokenCounter}`,
+  MAX_REVIEW_ITEMS: 50,
+  toBaseUrl: (d: string) => (/^https?:\/\//i.test(d) ? d : `https://${d}`),
 }));
 
+const buildPosAttributionReviewHtml = vi.fn(() => "<html>review</html>");
 vi.mock("./_core/email", () => ({
   sendPosAttributionReviewEmail: (...a: unknown[]) =>
     sendPosAttributionReviewEmail(...a),
+  buildPosAttributionReviewHtml: (...a: unknown[]) =>
+    buildPosAttributionReviewHtml(...a),
 }));
 
 import { runPosAttribution } from "./posAttribution";
@@ -58,6 +70,11 @@ beforeEach(() => {
     email: `admin-${id}@example.com`,
   }));
   getTenantSettings.mockResolvedValue(undefined);
+  getPendingPosAttributions.mockResolvedValue([]);
+  getProductsByIds.mockResolvedValue([]);
+  extendReviewTokenExpiry.mockResolvedValue(undefined);
+  sendPosAttributionReviewEmail.mockResolvedValue({ sent: true });
+  buildPosAttributionReviewHtml.mockReturnValue("<html>review</html>");
 });
 
 describe("runPosAttribution", () => {
@@ -70,7 +87,11 @@ describe("runPosAttribution", () => {
       scannedLines: 0,
       newPendingReview: 0,
       newNoCandidates: 0,
+      stillPendingReview: 0,
+      totalPendingReview: 0,
       emailSent: false,
+      emailError: null,
+      reviewHtml: null,
     });
     expect(createPosAttribution).not.toHaveBeenCalled();
     expect(sendPosAttributionReviewEmail).not.toHaveBeenCalled();
@@ -106,6 +127,8 @@ describe("runPosAttribution", () => {
       status: "pending_review",
       candidateProductIds: "7,8",
       confirmationToken: "tok_1",
+      // The mailed link is issued with a lifetime, not left open-ended.
+      tokenExpiresAt: expect.any(Date),
     });
     expect(summary.newPendingReview).toBe(1);
     expect(summary.newNoCandidates).toBe(0);
@@ -180,7 +203,7 @@ describe("runPosAttribution", () => {
     findCandidateProducts.mockResolvedValue([product(7, "50.00")]);
     sendPosAttributionReviewEmail
       .mockRejectedValueOnce(new Error("resend down"))
-      .mockResolvedValueOnce(undefined);
+      .mockResolvedValueOnce({ sent: true });
 
     const summary = await runPosAttribution(3);
 
@@ -230,5 +253,192 @@ describe("runPosAttribution", () => {
     // since ≈ now - 5 days, allow a small window for execution time.
     expect(before - since.getTime()).toBeGreaterThanOrEqual(expectedMs - 5000);
     expect(before - since.getTime()).toBeLessThanOrEqual(expectedMs + 5000);
+  });
+});
+
+// Same one-shot trap the Stripe scan had: getUnattributedPosLineItems drops a
+// line as soon as it has ANY attribution row, so a run whose email never
+// arrived left its sales queued and unaskable — every later run reported
+// nothing to confirm while the merchant was still waiting.
+describe("re-running with work still outstanding", () => {
+  function pendingRow(over: Record<string, unknown> = {}) {
+    return {
+      id: 7,
+      posOrderItemId: 900,
+      amountRappen: 4500,
+      candidateProductIds: "7,8",
+      confirmationToken: "tok_old",
+      soldAt: new Date("2026-07-18T15:00:00Z"),
+      itemLabel: "Custom",
+      ...over,
+    };
+  }
+
+  it("re-sends sales an earlier run left unconfirmed, even with nothing new", async () => {
+    getUnattributedPosLineItems.mockResolvedValue([]);
+    getPendingPosAttributions.mockResolvedValue([pendingRow()]);
+    getProductsByIds.mockResolvedValue([
+      product(7, "45.00"),
+      product(8, "44.00"),
+    ]);
+
+    const summary = await runPosAttribution(3, 1);
+
+    expect(summary.newPendingReview).toBe(0);
+    expect(summary.stillPendingReview).toBe(1);
+    expect(summary.totalPendingReview).toBe(1);
+    const [items] = sendPosAttributionReviewEmail.mock.calls[0];
+    // The original row's token, so the links in the first email and this one
+    // point at the same decision.
+    expect(items[0]).toMatchObject({ posOrderItemId: 900, token: "tok_old" });
+  });
+
+  it("restarts the link's clock for everything it re-sends", async () => {
+    getUnattributedPosLineItems.mockResolvedValue([]);
+    getPendingPosAttributions.mockResolvedValue([pendingRow()]);
+    getProductsByIds.mockResolvedValue([product(7, "45.00")]);
+
+    await runPosAttribution(3, 1);
+
+    const [table, tenantId, ids, expiresAt] =
+      extendReviewTokenExpiry.mock.calls[0];
+    expect(table).toBe("pos_attributions");
+    expect(tenantId).toBe(1);
+    expect(ids).toEqual([7]);
+    expect((expiresAt as Date).getTime()).toBeGreaterThan(Date.now());
+  });
+
+  it("does not re-send a sale decided between the two queries", async () => {
+    getUnattributedPosLineItems.mockResolvedValue([]);
+    getPendingPosAttributions.mockResolvedValue([
+      pendingRow({ confirmationToken: null }),
+    ]);
+    getProductsByIds.mockResolvedValue([product(7, "45.00")]);
+
+    const summary = await runPosAttribution(3, 1);
+    expect(summary.totalPendingReview).toBe(0);
+    expect(sendPosAttributionReviewEmail).not.toHaveBeenCalled();
+  });
+
+  it("keeps a candidate's stored position when an earlier candidate was deleted", async () => {
+    // The confirm route resolves `choice` by indexing into the row's stored
+    // candidateProductIds, so re-numbering the survivors would attribute the
+    // sale to the wrong piece.
+    getUnattributedPosLineItems.mockResolvedValue([]);
+    getPendingPosAttributions.mockResolvedValue([
+      pendingRow({ candidateProductIds: "7,8,9" }),
+    ]);
+    getProductsByIds.mockResolvedValue([product(9, "45.00")]);
+
+    await runPosAttribution(3, 1);
+
+    const [items] = sendPosAttributionReviewEmail.mock.calls[0];
+    expect(items[0].candidates).toEqual([
+      expect.objectContaining({ id: 9, choiceIndex: 2 }),
+    ]);
+  });
+
+  it("drops a still-pending sale whose candidate pieces have all gone", async () => {
+    getUnattributedPosLineItems.mockResolvedValue([]);
+    getPendingPosAttributions.mockResolvedValue([pendingRow()]);
+    getProductsByIds.mockResolvedValue([]);
+
+    const summary = await runPosAttribution(3, 1);
+    expect(summary.totalPendingReview).toBe(0);
+    expect(sendPosAttributionReviewEmail).not.toHaveBeenCalled();
+  });
+
+  it("does not list a sale twice when this run just queued it", async () => {
+    getUnattributedPosLineItems.mockResolvedValue([line({ tenantId: 1 })]);
+    findCandidateProducts.mockResolvedValue([product(7, "50.00")]);
+    getPendingPosAttributions.mockResolvedValue([
+      pendingRow({ posOrderItemId: 100 }),
+    ]);
+    getProductsByIds.mockResolvedValue([product(7, "50.00")]);
+
+    const summary = await runPosAttribution(3, 1);
+
+    expect(summary.totalPendingReview).toBe(1);
+    expect(summary.stillPendingReview).toBe(0);
+    const [items] = sendPosAttributionReviewEmail.mock.calls[0];
+    expect(items).toHaveLength(1);
+  });
+
+  // A nightly sweep has no single caller to show a backlog to, and re-reading
+  // every tenant's queue would turn it into an n-query crawl.
+  it("does not re-surface a backlog on a platform-wide sweep", async () => {
+    getUnattributedPosLineItems.mockResolvedValue([line({ tenantId: 1 })]);
+    findCandidateProducts.mockResolvedValue([product(7, "50.00")]);
+
+    await runPosAttribution(3);
+
+    expect(getPendingPosAttributions).not.toHaveBeenCalled();
+  });
+});
+
+// A send that never happened must not read as one — and whatever the merchant
+// was supposed to receive has to reach them some other way.
+describe("when the review email does not go out", () => {
+  const oneUnattributedSale = () => {
+    getUnattributedPosLineItems.mockResolvedValue([line({ tenantId: 1 })]);
+    findCandidateProducts.mockResolvedValue([product(7, "50.00")]);
+  };
+
+  it("reports the reason when email is not configured, and returns the review page", async () => {
+    oneUnattributedSale();
+    sendPosAttributionReviewEmail.mockResolvedValue({
+      sent: false,
+      reason: "RESEND_API_KEY is not set on this server",
+    });
+
+    const summary = await runPosAttribution(3, 1);
+
+    expect(summary.emailSent).toBe(false);
+    expect(summary.emailError).toMatch(/RESEND_API_KEY/);
+    expect(summary.reviewHtml).toBe("<html>review</html>");
+    // Built from the same items and branding the email would have carried, so
+    // the tokens in the page are the live ones.
+    expect(buildPosAttributionReviewHtml).toHaveBeenCalledWith(
+      [expect.objectContaining({ posOrderItemId: 100 })],
+      expect.objectContaining({ to: "admin-1@example.com" }),
+    );
+  });
+
+  it("returns the review page when Resend rejects the send", async () => {
+    oneUnattributedSale();
+    sendPosAttributionReviewEmail.mockRejectedValue(
+      new Error("Resend API 422: bad"),
+    );
+
+    const summary = await runPosAttribution(3, 1);
+    expect(summary.emailError).toMatch(/Resend API 422/);
+    expect(summary.reviewHtml).toBe("<html>review</html>");
+  });
+
+  it("returns no review page when the email was delivered", async () => {
+    oneUnattributedSale();
+    sendPosAttributionReviewEmail.mockResolvedValue({ sent: true });
+
+    const summary = await runPosAttribution(3, 1);
+    expect(summary.emailSent).toBe(true);
+    expect(summary.emailError).toBeNull();
+    expect(summary.reviewHtml).toBeNull();
+    expect(buildPosAttributionReviewHtml).not.toHaveBeenCalled();
+  });
+
+  // One store's review page must never be handed to whoever ran a sweep across
+  // every store.
+  it("withholds the review page on a platform-wide sweep", async () => {
+    oneUnattributedSale();
+    sendPosAttributionReviewEmail.mockResolvedValue({
+      sent: false,
+      reason: "RESEND_API_KEY is not set on this server",
+    });
+
+    const summary = await runPosAttribution(3);
+
+    expect(summary.emailError).toMatch(/RESEND_API_KEY/);
+    expect(summary.reviewHtml).toBeNull();
+    expect(buildPosAttributionReviewHtml).not.toHaveBeenCalled();
   });
 });

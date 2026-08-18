@@ -16,6 +16,7 @@ import {
   resolvePosAttributionConfirmed,
 } from "./db";
 import { escapeHtml } from "./_core/email";
+import { isReviewTokenExpired } from "./reviewToken";
 
 function renderPage(title: string, bodyHtml: string): string {
   return `<!DOCTYPE html>
@@ -31,6 +32,25 @@ function renderPage(title: string, bodyHtml: string): string {
   </div>
 </body>
 </html>`;
+}
+
+/**
+ * The one page for "this link is no longer any good", covering all three ways
+ * that happens: it never existed, it expired, or the sale has already been
+ * confirmed (which clears the token outright — see server/db.ts).
+ *
+ * Deliberately does not say which. Whoever is holding this link may be whoever
+ * the mail leaked to, and telling them whether a token was ever real is an
+ * oracle they should not have. The merchant loses nothing: the same decision is
+ * waiting for them, signed in, on /admin/reconciliation.
+ */
+function deadLink(): [string, string] {
+  return [
+    "Link no longer valid",
+    `<h1 style="font-family:Georgia,serif;font-size:20px">This link is no longer valid</h1>
+     <p>It may have expired, or this sale may already have been confirmed.</p>
+     <p style="color:#6B5E52;font-size:13px">Anything still waiting for you is on the Reconciliation page of your admin console, where you can decide it without a link.</p>`,
+  ];
 }
 
 type Choice = { index: number } | { none: true };
@@ -64,14 +84,14 @@ export function registerPosAttributionRoutes(app: Express): void {
           : undefined;
 
         if (!attribution) {
-          res
-            .status(404)
-            .send(
-              renderPage(
-                "Link not found",
-                `<h1 style="font-family:Georgia,serif;font-size:20px">Link not found</h1><p>This confirmation link is invalid.</p>`,
-              ),
-            );
+          res.status(404).send(renderPage(...deadLink()));
+          return;
+        }
+        // A mailed link is a bearer credential; it stops working after
+        // REVIEW_TOKEN_TTL_DAYS, measured from the last time this sale was
+        // sent to the merchant (server/reviewToken.ts).
+        if (isReviewTokenExpired(attribution)) {
+          res.status(410).send(renderPage(...deadLink()));
           return;
         }
         if (attribution.status !== "pending_review") {
@@ -163,14 +183,14 @@ export function registerPosAttributionRoutes(app: Express): void {
           : undefined;
 
         if (!attribution) {
-          res
-            .status(404)
-            .send(
-              renderPage(
-                "Link not found",
-                `<h1 style="font-family:Georgia,serif;font-size:20px">Link not found</h1><p>This confirmation link is invalid.</p>`,
-              ),
-            );
+          res.status(404).send(renderPage(...deadLink()));
+          return;
+        }
+        // A mailed link is a bearer credential; it stops working after
+        // REVIEW_TOKEN_TTL_DAYS, measured from the last time this sale was
+        // sent to the merchant (server/reviewToken.ts).
+        if (isReviewTokenExpired(attribution)) {
+          res.status(410).send(renderPage(...deadLink()));
           return;
         }
         if (attribution.status !== "pending_review") {

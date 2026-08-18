@@ -3,7 +3,15 @@ import { describe, expect, it, vi, beforeEach, beforeAll } from "vitest";
 function makeChain(result: unknown) {
   const calls: Record<string, unknown[][]> = {};
   const chain: any = { __calls: calls };
-  const methods = ["from", "where", "limit", "orderBy", "set", "values"];
+  const methods = [
+    "from",
+    "innerJoin",
+    "where",
+    "limit",
+    "orderBy",
+    "set",
+    "values",
+  ];
   for (const m of methods) {
     chain[m] = (...args: unknown[]) => {
       (calls[m] ??= []).push(args);
@@ -51,7 +59,14 @@ import {
   getKnownOrderPaymentIntentIds,
   getKnownPosPaymentIntentIds,
   getKnownReconciliationPaymentIntentIds,
+  extendReviewTokenExpiry,
+  getPendingPosAttributions,
+  getPendingStripeReconciliations,
+  getPosAttributionById,
+  getStripeReconciliationById,
   getStripeReconciliationByToken,
+  rejectPosAttribution,
+  resolvePosAttributionConfirmed,
   rejectStripeReconciliation,
   resolveStripeReconciliationConfirmed,
 } from "./db";
@@ -107,6 +122,88 @@ describe("getKnownReconciliationPaymentIntentIds", () => {
   });
 });
 
+describe("getPendingStripeReconciliations", () => {
+  it("returns the rows still awaiting a decision, newest payment first", async () => {
+    const row = { id: 1, stripePaymentIntentId: "pi_1" };
+    const chain = makeChain([row]);
+    dbMock.select.mockReturnValue(chain);
+
+    const result = await getPendingStripeReconciliations(42, 10);
+
+    expect(result).toEqual([row]);
+    // Scoped to the tenant AND filtered to pending_review — a confirmed or
+    // rejected payment must never come back round for a second decision, and
+    // one store's backlog must never surface in another's console.
+    expect(chain.__calls.where).toHaveLength(1);
+    expect(chain.__calls.orderBy).toHaveLength(1);
+    expect(chain.__calls.limit[0]).toEqual([10]);
+  });
+
+  it("falls back to an empty list when the database is unavailable", async () => {
+    dbMock.select.mockImplementation(() => {
+      throw new Error("no db");
+    });
+    expect(await getPendingStripeReconciliations(42)).toEqual([]);
+  });
+});
+
+// The in-person sibling: same "still waiting on the merchant" query, joined
+// back to the POS line so the review can be rebuilt with its date and label.
+// The console addresses a row by id rather than by mailed token, so the tenant
+// predicate on these reads is what replaces the token's secrecy. Ids are
+// sequential and guessable.
+describe("by-id lookups are tenant-scoped", () => {
+  it("asks for the reconciliation by id AND tenant", async () => {
+    const row = { id: 3, tenantId: 42 };
+    const chain = makeChain([row]);
+    dbMock.select.mockReturnValue(chain);
+
+    expect(await getStripeReconciliationById(42, 3)).toEqual(row);
+    // One combined predicate — an id-only lookup would answer for any store.
+    expect(chain.__calls.where).toHaveLength(1);
+    expect(chain.__calls.limit[0]).toEqual([1]);
+  });
+
+  it("returns undefined when the row belongs to another store", async () => {
+    dbMock.select.mockReturnValue(makeChain([]));
+    expect(await getStripeReconciliationById(42, 3)).toBeUndefined();
+    expect(await getPosAttributionById(42, 5)).toBeUndefined();
+  });
+
+  it("asks for the attribution by id AND tenant", async () => {
+    const row = { id: 5, tenantId: 42 };
+    const chain = makeChain([row]);
+    dbMock.select.mockReturnValue(chain);
+
+    expect(await getPosAttributionById(42, 5)).toEqual(row);
+    expect(chain.__calls.where).toHaveLength(1);
+  });
+});
+
+describe("getPendingPosAttributions", () => {
+  it("returns the queued attributions still awaiting a decision", async () => {
+    const row = { posOrderItemId: 900, amountRappen: 4500 };
+    const chain = makeChain([row]);
+    dbMock.select.mockReturnValue(chain);
+
+    const result = await getPendingPosAttributions(42, 10);
+
+    expect(result).toEqual([row]);
+    // Joined to the line, scoped to the tenant, filtered to pending_review —
+    // a confirmed or rejected sale must never come back for a second decision.
+    expect(chain.__calls.innerJoin).toHaveLength(1);
+    expect(chain.__calls.where).toHaveLength(1);
+    expect(chain.__calls.limit[0]).toEqual([10]);
+  });
+
+  it("falls back to an empty list when the database is unavailable", async () => {
+    dbMock.select.mockImplementation(() => {
+      throw new Error("no db");
+    });
+    expect(await getPendingPosAttributions(42)).toEqual([]);
+  });
+});
+
 describe("createStripeReconciliation", () => {
   it("inserts the reconciliation row", async () => {
     const insertChain = makeChain(undefined);
@@ -154,6 +251,10 @@ describe("rejectStripeReconciliation", () => {
     const [setArg] = updateChain.__calls.set[0];
     expect(setArg.status).toBe("rejected");
     expect(setArg.resolvedAt).toBeInstanceOf(Date);
+    // The decision spends the mailed link: it stops existing, rather than
+    // merely stopping being accepted.
+    expect(setArg.confirmationToken).toBeNull();
+    expect(setArg.tokenExpiresAt).toBeNull();
   });
 });
 
@@ -200,5 +301,87 @@ describe("resolveStripeReconciliationConfirmed", () => {
       status: "confirmed",
       chosenProductId: 3,
     });
+  });
+});
+
+// Both halves of the leaked-link fix, at the layer that enforces them.
+describe("a decision spends the mailed token", () => {
+  it("clears the token when a reconciliation is confirmed", async () => {
+    const tx = makeTxMock();
+    const updateReconChain = makeChain(undefined);
+    tx.insert
+      .mockReturnValueOnce(makeChain({ insertId: 1 }))
+      .mockReturnValueOnce(makeChain(undefined));
+    tx.update
+      .mockReturnValueOnce(makeChain(undefined))
+      .mockReturnValueOnce(updateReconChain);
+    dbMock.transaction.mockImplementation(
+      async (cb: (tx: unknown) => unknown) => cb(tx),
+    );
+
+    await resolveStripeReconciliationConfirmed(9, 3, 10000, "pi_1");
+
+    const [setArg] = updateReconChain.__calls.set[0];
+    expect(setArg.status).toBe("confirmed");
+    expect(setArg.confirmationToken).toBeNull();
+    expect(setArg.tokenExpiresAt).toBeNull();
+  });
+
+  it("clears the token when a POS attribution is rejected", async () => {
+    const updateChain = makeChain(undefined);
+    dbMock.update.mockReturnValue(updateChain);
+
+    await rejectPosAttribution(5);
+
+    const [setArg] = updateChain.__calls.set[0];
+    expect(setArg.status).toBe("rejected");
+    expect(setArg.confirmationToken).toBeNull();
+    expect(setArg.tokenExpiresAt).toBeNull();
+  });
+
+  it("clears the token when a POS attribution is confirmed", async () => {
+    const tx = makeTxMock();
+    const updateAttrChain = makeChain(undefined);
+    tx.update
+      .mockReturnValueOnce(makeChain(undefined)) // the line item
+      .mockReturnValueOnce(makeChain(undefined)) // the product's stock
+      .mockReturnValueOnce(updateAttrChain);
+    dbMock.transaction.mockImplementation(
+      async (cb: (tx: unknown) => unknown) => cb(tx),
+    );
+
+    await resolvePosAttributionConfirmed(5, 100, 7, 42);
+
+    const [setArg] = updateAttrChain.__calls.set[0];
+    expect(setArg.status).toBe("confirmed");
+    expect(setArg.confirmationToken).toBeNull();
+    expect(setArg.tokenExpiresAt).toBeNull();
+  });
+});
+
+describe("extendReviewTokenExpiry", () => {
+  it("pushes the expiry out for the rows being re-sent", async () => {
+    const updateChain = makeChain(undefined);
+    dbMock.update.mockReturnValue(updateChain);
+    const expiresAt = new Date("2026-09-01T00:00:00Z");
+
+    await extendReviewTokenExpiry(
+      "stripe_reconciliations",
+      42,
+      [1, 2],
+      expiresAt,
+    );
+
+    expect(updateChain.__calls.set[0][0]).toEqual({
+      tokenExpiresAt: expiresAt,
+    });
+    // Scoped to the tenant, the given ids, and pending_review — a decided row
+    // has no token left, and reviving its clock would be meaningless.
+    expect(updateChain.__calls.where).toHaveLength(1);
+  });
+
+  it("does nothing at all when there is nothing to extend", async () => {
+    await extendReviewTokenExpiry("pos_attributions", 42, [], new Date());
+    expect(dbMock.update).not.toHaveBeenCalled();
   });
 });
