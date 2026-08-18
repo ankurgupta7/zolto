@@ -199,7 +199,9 @@ describe("product reads", () => {
 
 describe("product writes", () => {
   it("createProduct inserts with the tenant applied", async () => {
-    insertReturns({ insertId: 1 });
+    // [ResultSetHeader, FieldPacket[]] — the shape the mysql2 driver really
+    // resolves an insert to (see server/insertId.ts).
+    insertReturns([{ insertId: 1, affectedRows: 1 }, []]);
     await db.createProduct({ tenantId: 7, name: "x" } as never);
     expect(dbMock.insert).toHaveBeenCalledTimes(1);
   });

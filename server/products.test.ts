@@ -31,7 +31,11 @@ vi.mock("./db", () => ({
     updatedAt: new Date(),
   }),
   getAllProducts: vi.fn().mockResolvedValue([]),
-  createProduct: vi.fn().mockResolvedValue({ insertId: 1 }),
+  // [ResultSetHeader, FieldPacket[]] — the shape the mysql2 driver really
+  // resolves an insert to (see server/insertId.ts).
+  createProduct: vi
+    .fn()
+    .mockResolvedValue([{ insertId: 1, affectedRows: 1 }, []]),
   updateProduct: vi.fn().mockResolvedValue(undefined),
   setProductVisibility: vi.fn().mockResolvedValue(undefined),
   deleteProduct: vi.fn().mockResolvedValue(undefined),

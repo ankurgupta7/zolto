@@ -26,6 +26,7 @@ import {
   updateProductTranslations,
   getPaidOrders,
 } from "../db";
+import { insertedId } from "../insertId";
 import {
   assertTenantCategories,
   categoryKeys,
@@ -581,7 +582,7 @@ Return ONLY valid JSON, no markdown, no explanation.`,
             source: "manual",
           });
 
-          newId = (result as { insertId?: number }).insertId;
+          newId = insertedId(result);
           if (!newId) throw new Error("No insertId returned");
           created.push(newId);
         } catch (err) {

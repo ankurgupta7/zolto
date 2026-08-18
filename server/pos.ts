@@ -12,6 +12,7 @@ import {
 } from "./db";
 import { posOrders, posOrderItems, products } from "../drizzle/schema";
 import { getStripe, isStripeConfigured } from "./stripe";
+import { insertedId } from "./insertId";
 import { escapeHtml, sendTransactionalEmail } from "./_core/email";
 import { storagePut } from "./storage";
 import { redeemPairingToken } from "./posPairing";
@@ -406,10 +407,16 @@ export async function createPosOrder(
     customerPhone: params.customerPhone || null,
   });
 
-  const posOrderId =
-    (inserted as unknown as { insertId?: number }).insertId ?? 0;
+  const posOrderId = insertedId(inserted);
+  // Reading this id wrong is what emptied the sales history: the guard below
+  // used to be `if (posOrderId > 0)`, and `posOrderId` was always 0, so no
+  // sale ever got an invoice number OR a single line item. See insertedId().
+  // Failing loudly beats recording a sale nothing can be attached to.
+  if (posOrderId === 0) {
+    throw new Error("pos_orders insert returned no id");
+  }
 
-  if (posOrderId > 0) {
+  {
     await db
       .update(posOrders)
       .set({ invoiceNumber: `KPOS-${posOrderId}` })

@@ -17,12 +17,21 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { DEFAULT_LANGUAGE, matchSupportedLanguage } from "@/lib/languages";
-import { ChevronDown, Download, Receipt, Store, Globe } from "lucide-react";
+import {
+  ChevronDown,
+  Download,
+  Receipt,
+  Store,
+  Globe,
+  History,
+} from "lucide-react";
+import { toast } from "sonner";
 import {
   PageHeader,
   EmptyState,
   LoadingState,
   AdminOnly,
+  PrimaryButton,
   SecondaryButton,
   inputClass,
 } from "@/components/admin/ui";
@@ -124,6 +133,7 @@ export default function Sales() {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [recovery, setRecovery] = useState<RecoverySummary | null>(null);
 
   const query = trpc.sales.list.useQuery(
     {
@@ -137,6 +147,21 @@ export default function Sales() {
     },
     { retry: false },
   );
+
+  const utils = trpc.useUtils();
+  // Reconstructs the line items of sales recorded before they were being
+  // stored, from what their Stripe payments recorded (server/posBackfill.ts).
+  // Previews first: `dryRun` stays true until the admin has read the report.
+  const backfill = trpc.sales.backfillLineItems.useMutation({
+    onSuccess: (summary) => {
+      setRecovery(summary);
+      if (!summary.dryRun) {
+        utils.sales.list.invalidate();
+        toast.success(t("ops.sales.recoverDone", { count: summary.restored }));
+      }
+    },
+    onError: (e) => toast.error(e.message || t("ops.sales.recoverFailed")),
+  });
 
   const rows = useMemo<LedgerRow[]>(() => query.data?.rows ?? [], [query.data]);
   const locale = dateLocale(i18n.language);
@@ -273,6 +298,41 @@ export default function Sales() {
           {t("ops.sales.export")}
         </SecondaryButton>
       </div>
+
+      {/* Recover missing items. Shown when the ledger in view actually contains
+          an unrepaired sale — so a store whose records are whole never sees it
+          — and kept on screen once a run has reported, so the report survives
+          the refetch that follows applying it. */}
+      {(rows.some((r) => r.items.length === 0) || recovery !== null) && (
+        <div className="mb-4 rounded-xl border bg-card p-5">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="text-base font-semibold text-foreground">
+                {t("ops.sales.recoverTitle")}
+              </h2>
+              <p className="mt-1 max-w-xl text-sm text-muted-foreground">
+                {t("ops.sales.recoverDescription")}
+              </p>
+            </div>
+            <SecondaryButton
+              onClick={() => backfill.mutate({ dryRun: true })}
+              loading={backfill.isPending}
+            >
+              <History className="h-4 w-4" />
+              {recovery
+                ? t("ops.sales.recoverRecheck")
+                : t("ops.sales.recoverCheck")}
+            </SecondaryButton>
+          </div>
+          {recovery && (
+            <RecoveryReport
+              summary={recovery}
+              applying={backfill.isPending}
+              onApply={() => backfill.mutate({ dryRun: false })}
+            />
+          )}
+        </div>
+      )}
 
       {query.data?.truncated && (
         <p className="mb-3 text-xs text-muted-foreground">
@@ -443,6 +503,116 @@ function Stat({
         {value}
       </p>
       {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+    </div>
+  );
+}
+
+interface RecoverySummary {
+  scanned: number;
+  withStripePayment: number;
+  cashUnrecoverable: number;
+  restored: number;
+  lineItemsWritten: number;
+  invoiceNumbersFilled: number;
+  dryRun: boolean;
+  skipped: Array<{
+    posOrderId: number;
+    totalChf: string;
+    createdAt: string;
+    names: string[];
+    reason: string;
+  }>;
+}
+
+/**
+ * What the run found. The skipped list is as much the point as the recovered
+ * count: for a sale whose per-item prices can't be established the names are
+ * still known, and this is the only place they exist.
+ */
+function RecoveryReport({
+  summary,
+  onApply,
+  applying,
+}: {
+  summary: RecoverySummary;
+  onApply: () => void;
+  applying: boolean;
+}) {
+  const { t } = useTranslation("admin");
+
+  if (summary.scanned === 0) {
+    return (
+      <p className="mt-4 text-sm text-foreground">
+        {t("ops.sales.recoverNothing")}
+      </p>
+    );
+  }
+
+  return (
+    <div className="mt-4 border-t pt-4">
+      <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <Stat
+          label={t("ops.sales.recoverStatMissing")}
+          value={String(summary.scanned)}
+        />
+        <Stat
+          label={t("ops.sales.recoverStatRebuildable")}
+          value={String(summary.restored)}
+        />
+        <Stat
+          label={t("ops.sales.recoverStatCash")}
+          value={String(summary.cashUnrecoverable)}
+        />
+        <Stat
+          label={t("ops.sales.recoverStatReferences")}
+          value={String(summary.invoiceNumbersFilled)}
+        />
+      </div>
+
+      {summary.skipped.length > 0 && (
+        <div className="mb-4">
+          <p className="mb-2 text-xs uppercase tracking-wide text-muted-foreground">
+            {t("ops.sales.recoverNotRebuilt")}
+          </p>
+          <ul className="max-h-64 space-y-1.5 overflow-y-auto">
+            {summary.skipped.map((item) => (
+              <li
+                key={item.posOrderId}
+                className="flex flex-wrap gap-x-2 text-xs"
+              >
+                <span className="text-foreground">KPOS-{item.posOrderId}</span>
+                <span className="tabular-nums lining-nums text-muted-foreground">
+                  CHF {item.totalChf}
+                </span>
+                {item.names.length > 0 && (
+                  // The names survive even where the prices don't — for these
+                  // sales this line is the only record of what was sold.
+                  <span className="text-foreground">
+                    {item.names.join(", ")}
+                  </span>
+                )}
+                <span className="text-muted-foreground">— {item.reason}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {summary.dryRun ? (
+        <PrimaryButton
+          onClick={onApply}
+          loading={applying}
+          disabled={
+            summary.restored === 0 && summary.invoiceNumbersFilled === 0
+          }
+        >
+          {t("ops.sales.recoverApply", { count: summary.restored })}
+        </PrimaryButton>
+      ) : (
+        <p className="text-sm text-foreground">
+          {t("ops.sales.recoverWritten", { count: summary.lineItemsWritten })}
+        </p>
+      )}
     </div>
   );
 }
