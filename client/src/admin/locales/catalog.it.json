@@ -21,6 +21,11 @@
         "title": "Piano e fatturazione",
         "description": "Di persona è gratis, per sempre. {{fee}} sugli ordini online e da agenti IA — oppure Pro, che la elimina. Di mese in mese, disdetta in qualsiasi momento.",
         "notConfigured": "I piani a pagamento non sono ancora acquistabili su questa installazione (prezzi Stripe non configurati). Tutto ciò che è incluso nel Suo piano attuale continua a funzionare.",
+        "compTitle": "Il tuo negozio è offerto da noi",
+        "compPlan": "Zolto ti offre il piano {{plan}} senza costi — non c'è nulla da pagare.",
+        "compFeeWaived": "Zolto non applica alcuna commissione sui tuoi ordini online e da agenti IA.",
+        "compBadge": "Offerto",
+        "feesWaived": "Commissioni della piattaforma (0% — offerto)",
         "plansTitle": "Piani",
         "current": "Attuale",
         "priceFree": "Gratis",
@@ -186,6 +191,15 @@
         "fieldCategory": "Categoria",
         "save": "Salva",
         "cancel": "Annulla"
+      },
+      "card": {
+        "qty": "Q.tà",
+        "qtyLabel": "Quantità in giacenza per {{name}}"
+      },
+      "search": {
+        "noMatchesTitle": "Nessuna corrispondenza",
+        "noMatchesBody": "Nessun prodotto del suo inventario corrisponde a «{{query}}» — né per nome, descrizione, prezzo, categoria o giacenza.",
+        "clearFilter": "Mostra tutti i prodotti"
       },
       "instagram": {
         "title": "Griglia di post selezionati",

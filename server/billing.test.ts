@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import type Stripe from "stripe";
+import { SITE_IMPORT } from "@shared/platform";
 
 // ── Mocked db + stripe ────────────────────────────────────────────────────────
 
@@ -7,6 +8,7 @@ const getTenantById = vi.fn();
 const getTenantByStripeCustomerId = vi.fn();
 const getTenantByStripeSubscriptionId = vi.fn();
 const updateTenantBilling = vi.fn();
+const markSiteImportPaid = vi.fn();
 
 vi.mock("./db", () => ({
   getTenantById: (...args: unknown[]) => getTenantById(...args),
@@ -14,6 +16,7 @@ vi.mock("./db", () => ({
     getTenantByStripeCustomerId(...args),
   getTenantByStripeSubscriptionId: (...args: unknown[]) =>
     getTenantByStripeSubscriptionId(...args),
+  markSiteImportPaid: (...args: unknown[]) => markSiteImportPaid(...args),
   updateTenantBilling: (...args: unknown[]) => updateTenantBilling(...args),
 }));
 
@@ -26,6 +29,7 @@ vi.mock("./stripe", () => ({
 
 import {
   createPlanCheckoutSession,
+  createSiteImportCheckoutSession,
   handleBillingEvent,
   isBillingConfigured,
   isBillingSession,
@@ -45,7 +49,11 @@ const tenant = {
 beforeEach(() => {
   vi.clearAllMocks();
   process.env.STRIPE_PRICE_PRO = "price_pro";
-  sessionsCreate.mockResolvedValue({ url: "https://checkout.stripe.com/x" });
+  sessionsCreate.mockResolvedValue({
+    id: "cs_x",
+    url: "https://checkout.stripe.com/x",
+  });
+  markSiteImportPaid.mockResolvedValue(true);
 });
 
 afterEach(() => {
@@ -287,6 +295,27 @@ describe("handleBillingEvent", () => {
     });
   });
 
+  // The reason comps live in their own columns rather than in `plan`. A
+  // cancellation for an OLD subscription can land weeks after the platform
+  // owner comped the store; if it could reach the comp columns, the merchant
+  // would silently lose the Pro they were given and start being skimmed again.
+  it("cannot revoke a comp when a stale cancellation lands", async () => {
+    getTenantByStripeSubscriptionId.mockResolvedValue({
+      ...tenant,
+      plan: "pro",
+      compPlan: "pro",
+      compFeeWaived: true,
+    });
+    await handleBillingEvent({
+      type: "customer.subscription.deleted",
+      data: { object: { id: "sub_1", customer: "cus_t7", metadata: {} } },
+    } as Stripe.Event);
+
+    const written = updateTenantBilling.mock.calls.at(-1)?.[1];
+    expect(written).not.toHaveProperty("compPlan");
+    expect(written).not.toHaveProperty("compFeeWaived");
+  });
+
   it("claims subscription invoices without further work (no credit grants)", async () => {
     const claimed = await handleBillingEvent({
       type: "invoice.payment_succeeded",
@@ -307,5 +336,158 @@ describe("handleBillingEvent", () => {
       data: { object: {} },
     } as Stripe.Event);
     expect(claimed).toBe(false);
+  });
+});
+
+// ─── The paid one-time shop import ────────────────────────────────────────────
+
+describe("createSiteImportCheckoutSession", () => {
+  it("charges once, inline, in CHF — never as a subscription", async () => {
+    const result = await createSiteImportCheckoutSession({
+      tenant,
+      siteImportId: 42,
+      priceChf: SITE_IMPORT.priceChf,
+      productCount: 118,
+    });
+
+    expect(result).toEqual({
+      url: "https://checkout.stripe.com/x",
+      sessionId: "cs_x",
+    });
+    const args = sessionsCreate.mock.calls[0][0];
+    // The whole promise of this feature is that it is not a new recurring
+    // line on the merchant's card.
+    expect(args.mode).toBe("payment");
+    expect(args.customer).toBe("cus_t7");
+    expect(args.line_items).toHaveLength(1);
+    expect(args.line_items[0].quantity).toBe(1);
+    expect(args.line_items[0].price_data.currency).toBe("chf");
+    expect(args.line_items[0].price_data.unit_amount).toBe(2000);
+  });
+
+  it("names the product count on the receipt", async () => {
+    await createSiteImportCheckoutSession({
+      tenant,
+      siteImportId: 42,
+      priceChf: 20,
+      productCount: 118,
+    });
+    const args = sessionsCreate.mock.calls[0][0];
+    expect(args.line_items[0].price_data.product_data.description).toContain(
+      "118",
+    );
+  });
+
+  it("carries the import id in metadata so the webhook can find it", async () => {
+    await createSiteImportCheckoutSession({
+      tenant,
+      siteImportId: 42,
+      priceChf: 20,
+      productCount: 3,
+    });
+    const args = sessionsCreate.mock.calls[0][0];
+    expect(args.metadata).toMatchObject({
+      zoltoBilling: "site_import",
+      tenantId: "7",
+      siteImportId: "42",
+    });
+    expect(args.success_url).toContain("/admin/products/import?imported=42");
+    expect(args.cancel_url).toContain("/admin/products/import?cancelled=42");
+  });
+
+  it("is recognised as a billing session, not a storefront one", async () => {
+    await createSiteImportCheckoutSession({
+      tenant,
+      siteImportId: 42,
+      priceChf: 20,
+      productCount: 3,
+    });
+    const args = sessionsCreate.mock.calls[0][0];
+    expect(
+      isBillingSession({ id: "cs_x", metadata: args.metadata } as never),
+    ).toBe(true);
+  });
+
+  it("refuses a tenant with no Stripe customer rather than charging nobody", async () => {
+    await expect(
+      createSiteImportCheckoutSession({
+        tenant: { ...(tenant as object), stripeCustomerId: null } as never,
+        siteImportId: 42,
+        priceChf: 20,
+        productCount: 3,
+      }),
+    ).rejects.toThrow(/customer/i);
+    expect(sessionsCreate).not.toHaveBeenCalled();
+  });
+});
+
+describe("site import webhook", () => {
+  function importSession(
+    meta: Partial<Record<string, string>> = {},
+  ): Stripe.Event {
+    return {
+      type: "checkout.session.completed",
+      data: {
+        object: {
+          id: "cs_import_1",
+          amount_total: 2000,
+          currency: "chf",
+          metadata: {
+            zoltoBilling: "site_import",
+            tenantId: "7",
+            siteImportId: "42",
+            ...meta,
+          },
+        },
+      },
+    } as unknown as Stripe.Event;
+  }
+
+  it("marks the import paid, scoped to the tenant in the metadata", async () => {
+    const claimed = await handleBillingEvent(importSession());
+    expect(claimed).toBe(true);
+    expect(markSiteImportPaid).toHaveBeenCalledWith({
+      id: 42,
+      tenantId: 7,
+      amountCents: 2000,
+      currency: "CHF",
+    });
+  });
+
+  it("marks it paid on async_payment_succeeded too", async () => {
+    const event = importSession();
+    (event as { type: string }).type =
+      "checkout.session.async_payment_succeeded";
+    const claimed = await handleBillingEvent(event);
+    expect(claimed).toBe(true);
+    expect(markSiteImportPaid).toHaveBeenCalledTimes(1);
+  });
+
+  it("stays quiet when a replayed webhook finds the row already moved on", async () => {
+    // Stripe redelivers; the status transition in the db layer is the
+    // idempotency key, and a second delivery must not be treated as an error.
+    markSiteImportPaid.mockResolvedValue(false);
+    const claimed = await handleBillingEvent(importSession());
+    expect(claimed).toBe(true);
+    expect(markSiteImportPaid).toHaveBeenCalledTimes(1);
+  });
+
+  it("never upgrades a plan off a site-import payment", async () => {
+    await handleBillingEvent(importSession());
+    expect(updateTenantBilling).not.toHaveBeenCalled();
+  });
+
+  it("refuses to write anything when the metadata ids are junk", async () => {
+    const claimed = await handleBillingEvent(
+      importSession({ siteImportId: "not-a-number" }),
+    );
+    expect(claimed).toBe(true);
+    expect(markSiteImportPaid).not.toHaveBeenCalled();
+  });
+
+  it("refuses when the tenant id is missing", async () => {
+    const claimed = await handleBillingEvent(importSession({ tenantId: "" }));
+    expect(claimed).toBe(true);
+    expect(markSiteImportPaid).not.toHaveBeenCalled();
   });
 });

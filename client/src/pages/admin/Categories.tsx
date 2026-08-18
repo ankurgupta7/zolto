@@ -406,10 +406,7 @@ export default function Categories() {
               className={inputClass}
             />
           </Field>
-          <Field
-            label={t("store.categories.newDeLabel")}
-            htmlFor="new-cat-de"
-          >
+          <Field label={t("store.categories.newDeLabel")} htmlFor="new-cat-de">
             <input
               id="new-cat-de"
               value={newLabelDe}
@@ -419,10 +416,7 @@ export default function Categories() {
               className={inputClass}
             />
           </Field>
-          <Field
-            label={t("store.categories.newFrLabel")}
-            htmlFor="new-cat-fr"
-          >
+          <Field label={t("store.categories.newFrLabel")} htmlFor="new-cat-fr">
             <input
               id="new-cat-fr"
               value={newLabelFr}
@@ -432,10 +426,7 @@ export default function Categories() {
               className={inputClass}
             />
           </Field>
-          <Field
-            label={t("store.categories.newItLabel")}
-            htmlFor="new-cat-it"
-          >
+          <Field label={t("store.categories.newItLabel")} htmlFor="new-cat-it">
             <input
               id="new-cat-it"
               value={newLabelIt}

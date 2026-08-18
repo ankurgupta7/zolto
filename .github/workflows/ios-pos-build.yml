@@ -6,18 +6,19 @@ name: iOS POS Build & Test
 # commits don't burn macOS runner minutes.
 
 on:
+  # PRs stay path-filtered so web-only PRs don't burn macOS runner minutes.
   pull_request:
     branches: ["main"]
     paths:
       - "ios/ZoltoPOS/**"
       - ".github/workflows/ios-pos-build.yml"
       - ".github/actions/ios-setup/**"
+  # Pushes to main are deliberately NOT path-filtered — merchants download this
+  # build from the rolling release, so every merge has to republish or "latest
+  # main build" stops being true. This does cost macOS minutes on every merge;
+  # that is the price of the download link never being stale.
   push:
     branches: ["main"]
-    paths:
-      - "ios/ZoltoPOS/**"
-      - ".github/workflows/ios-pos-build.yml"
-      - ".github/actions/ios-setup/**"
   workflow_dispatch:
 
 concurrency:
@@ -93,37 +94,6 @@ jobs:
             POS_API_KEY="$POS_API_KEY" \
             | xcpretty --color && exit ${PIPESTATUS[0]}
 
-      # Smoke-test the live POS backend with the platform's own POS test key.
-      # The key is REQUIRED and this check never skips: the superadmin mints
-      # it in the operator console (Platform → POS test key, backed by the
-      # ordinary "platform-tests" tenant) and stores it as the POS_API_KEY
-      # secret. It is a normal per-tenant key with no special rules, so this
-      # exercises the same auth path a merchant's register does.
-      # POS_API_BASE_URL overrides the host for a staging or self-hosted run.
-      - name: Verify POS server health
-        env:
-          POS_API_BASE_URL: ${{ secrets.POS_API_BASE_URL }}
-          POS_API_KEY: ${{ secrets.POS_API_KEY }}
-        run: |
-          POS_API_BASE_URL="${POS_API_BASE_URL:-https://zolto.ch}"
-          if [ -z "${POS_API_KEY}" ]; then
-            echo "::error::POS_API_KEY secret is not set. Mint the platform POS test key (operator console → Platform → POS test key) and store it as the POS_API_KEY secret."
-            exit 1
-          fi
-          echo "Checking POS health at ${POS_API_BASE_URL}/api/pos/health ..."
-          status=$(curl -sS -o /tmp/pos-health.out -w "%{http_code}" \
-            -H "x-pos-key: ${POS_API_KEY}" "${POS_API_BASE_URL}/api/pos/health" || echo "000")
-          echo "HTTP ${status}"; cat /tmp/pos-health.out 2>/dev/null || true; echo
-          if [ "$status" = "200" ]; then
-            echo "POS server healthy."
-          elif [ "$status" = "401" ]; then
-            echo "::error::POS server at ${POS_API_BASE_URL} rejected POS_API_KEY. Rotate the platform POS test key (operator console → Platform → POS test key) and update the secret."
-            exit 1
-          else
-            echo "POS health check failed with status ${status}"
-            exit 1
-          fi
-
       - name: Stage simulator app for Appetize upload
         run: |
           APP=$(find "$RUNNER_TEMP/DerivedData" -name "ZoltoPOS.app" \
@@ -147,6 +117,9 @@ jobs:
   build-unsigned-ipa:
     name: Build Unsigned IPA (Sideload)
     runs-on: macos-15
+    # No IPA — and so no rolling-release publish — from a tree whose tests
+    # did not pass. build-simulator is the job that compiles and tests.
+    needs: build-simulator
     # Only produce the device IPA when merging to main or running manually.
     # PRs only need the simulator build for validation.
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
@@ -190,3 +163,97 @@ jobs:
           name: ZoltoPOS-unsigned
           path: ${{ runner.temp }}/ZoltoPOS-unsigned.ipa
           retention-days: 14
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # Job 3: Publish the IPA to the rolling `pos-latest` release, giving every
+  # tenant's admin a stable, auth-free download URL.
+  #
+  # This IPA is UNSIGNED, so it is not tap-to-install: the merchant re-signs it
+  # with AltServer/Sideloadly from a computer first. The admin UI says so
+  # plainly (client/src/components/admin/PosAppCard.tsx) rather than implying an
+  # App Store install. Making this tap-installable needs an Apple Developer
+  # Program account and App Store Connect secrets so the build can go to
+  # TestFlight — a separate step, not wired here.
+  #
+  # Runs on ubuntu, not macos: it only moves an artifact around.
+  # ────────────────────────────────────────────────────────────────────────────
+  publish:
+    name: Publish IPA to rolling release
+    needs: build-unsigned-ipa
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download unsigned IPA
+        uses: actions/download-artifact@v4
+        with:
+          name: ZoltoPOS-unsigned
+          path: ipa
+
+      - name: Stage asset + build metadata
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          cp ipa/ZoltoPOS-unsigned.ipa dist/ZoltoPOS-latest-unsigned.ipa
+          cat > dist/ios-build.json <<JSON
+          {
+            "platform": "ios",
+            "commit": "${GITHUB_SHA}",
+            "builtAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "runUrl": "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}",
+            "signed": false
+          }
+          JSON
+          cat dist/ios-build.json
+
+      - name: Publish to rolling release
+        uses: ./.github/actions/pos-release-upload
+        with:
+          files: dist/ZoltoPOS-latest-unsigned.ipa dist/ios-build.json
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # Job 4: POS backend smoke test — deliberately NOT upstream of the IPA.
+  # It reports on the live server rather than on the code, so a rotated key or
+  # a deployment blip cannot stop a release build that is otherwise sound.
+  # Runs on ubuntu: it is one curl, and macOS minutes cost roughly ten times
+  # as much.
+  # ────────────────────────────────────────────────────────────────────────────
+  pos-health:
+    name: Verify POS server health
+    runs-on: ubuntu-latest
+    steps:
+      # Smoke-test the live POS backend with the platform's own POS test key.
+      # The key is REQUIRED and this check never skips: the superadmin mints
+      # it in the operator console (Platform → POS test key, backed by the
+      # ordinary "platform-tests" tenant) and stores it as the POS_API_KEY
+      # secret. It is a normal per-tenant key with no special rules, so this
+      # exercises the same auth path a merchant's register does.
+      # POS_API_BASE_URL overrides the host for a staging or self-hosted run.
+      - name: Verify POS server health
+        env:
+          POS_API_BASE_URL: ${{ secrets.POS_API_BASE_URL }}
+          POS_API_KEY: ${{ secrets.POS_API_KEY }}
+        run: |
+          POS_API_BASE_URL="${POS_API_BASE_URL:-https://zolto.ch}"
+          if [ -z "${POS_API_KEY}" ]; then
+            echo "::error::POS_API_KEY secret is not set. Mint the platform POS test key (operator console → Platform → POS test key) and store it as the POS_API_KEY secret."
+            exit 1
+          fi
+          echo "Checking POS health at ${POS_API_BASE_URL}/api/pos/health ..."
+          status=$(curl -sS -o /tmp/pos-health.out -w "%{http_code}" \
+            -H "x-pos-key: ${POS_API_KEY}" "${POS_API_BASE_URL}/api/pos/health" || echo "000")
+          echo "HTTP ${status}"; cat /tmp/pos-health.out 2>/dev/null || true; echo
+          if [ "$status" = "200" ]; then
+            echo "POS server healthy."
+          elif [ "$status" = "401" ]; then
+            echo "::error::POS server at ${POS_API_BASE_URL} rejected POS_API_KEY. Rotate the platform POS test key (operator console → Platform → POS test key) and update the secret."
+            exit 1
+          else
+            echo "POS health check failed with status ${status}"
+            exit 1
+          fi

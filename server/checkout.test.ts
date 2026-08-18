@@ -327,6 +327,9 @@ describe("checkout.createSession", () => {
     expect(result).toEqual({
       url: "https://checkout.stripe.com/cs_test_new",
       sessionId: "cs_test_new",
+      // No code was given, so nothing came off — the storefront reads this to
+      // decide whether to say so on the confirmation screen.
+      discount: null,
     });
 
     // Runs on the tenant's own connected account — never Zolto's own.
@@ -443,9 +446,9 @@ describe("checkout.createSession", () => {
 
     const sessionArgs = checkoutSessionsCreate.mock.calls[0][0];
     // Omitted entirely, not passed as 0 — Pro keeps every online sale.
-    expect(
-      "application_fee_amount" in sessionArgs.payment_intent_data,
-    ).toBe(false);
+    expect("application_fee_amount" in sessionArgs.payment_intent_data).toBe(
+      false,
+    );
     expect(createOrder).toHaveBeenCalledWith(
       expect.objectContaining({ platformFeeRappen: 0 }),
     );

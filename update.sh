@@ -866,6 +866,227 @@ else
   ok "0041 tenant_settings.public_domain already unique"
 fi
 
+# ── 0042: comped stores ───────────────────────────────────────────────────────
+# Ships drizzle/0024_tenant_comps.sql. What the platform owner gives a store for
+# nothing: `comp_plan` grants a plan without a subscription, `comp_fee_waived`
+# takes 0% on its online/agent orders. Kept separate from `plan` — which Stripe's
+# webhooks write — so a late `customer.subscription.deleted` can't revoke a comp
+# and revoking a comp can't remove a plan the merchant pays for. Both are read
+# together via shared/entitlements.ts. NULL + 0 is the existing behaviour of
+# every store, so this is additive. Idempotent.
+if [ "$(col_exists tenants comp_plan)" = "0" ]; then
+  run_sql "0042 add tenants.comp_plan" \
+    "ALTER TABLE \`tenants\` ADD \`comp_plan\` enum('free','pro') NULL;"
+else
+  ok "0042 tenants.comp_plan already exists"
+fi
+
+if [ "$(col_exists tenants comp_fee_waived)" = "0" ]; then
+  run_sql "0042 add tenants.comp_fee_waived" \
+    "ALTER TABLE \`tenants\` ADD \`comp_fee_waived\` boolean NOT NULL DEFAULT false;"
+else
+  ok "0042 tenants.comp_fee_waived already exists"
+fi
+
+if [ "$(col_exists tenants comp_note)" = "0" ]; then
+  run_sql "0042 add tenants.comp_note" \
+    "ALTER TABLE \`tenants\` ADD \`comp_note\` varchar(255) NULL;"
+else
+  ok "0042 tenants.comp_note already exists"
+fi
+
+if [ "$(col_exists tenants comp_granted_at)" = "0" ]; then
+  run_sql "0042 add tenants.comp_granted_at" \
+    "ALTER TABLE \`tenants\` ADD \`comp_granted_at\` timestamp NULL;"
+else
+  ok "0042 tenants.comp_granted_at already exists"
+fi
+
+if [ "$(col_exists tenants comp_granted_by)" = "0" ]; then
+  run_sql "0042 add tenants.comp_granted_by" \
+    "ALTER TABLE \`tenants\` ADD \`comp_granted_by\` int NULL;"
+else
+  ok "0042 tenants.comp_granted_by already exists"
+fi
+
+# ── 0043: merchant-authored storefront content + legal identity ───────────────
+# Ships drizzle/0025_storefront_content.sql. Until now a store could change how
+# its website looked but not a word of what it said: the home hero, the About
+# page and the Impressum were generated templates with the store name
+# interpolated in, and the hero background was one static asset every store
+# shared. These columns are where a merchant's own words go.
+#
+# Every column is NULL for every existing store, and NULL means "keep using the
+# generated copy" rather than "render nothing", so this is additive and a
+# no-op until a merchant writes something. Idempotent.
+if [ "$(col_exists tenant_settings hero_image_url)" = "0" ]; then
+  run_sql "0043 add tenant_settings.hero_image_url" \
+    "ALTER TABLE \`tenant_settings\` ADD \`hero_image_url\` varchar(1024) NULL;"
+else
+  ok "0043 tenant_settings.hero_image_url already exists"
+fi
+
+if [ "$(col_exists tenant_settings hero_headline)" = "0" ]; then
+  run_sql "0043 add tenant_settings.hero_headline" \
+    "ALTER TABLE \`tenant_settings\` ADD \`hero_headline\` varchar(120) NULL;"
+else
+  ok "0043 tenant_settings.hero_headline already exists"
+fi
+
+if [ "$(col_exists tenant_settings hero_subtitle)" = "0" ]; then
+  run_sql "0043 add tenant_settings.hero_subtitle" \
+    "ALTER TABLE \`tenant_settings\` ADD \`hero_subtitle\` varchar(300) NULL;"
+else
+  ok "0043 tenant_settings.hero_subtitle already exists"
+fi
+
+if [ "$(col_exists tenant_settings about_body)" = "0" ]; then
+  run_sql "0043 add tenant_settings.about_body" \
+    "ALTER TABLE \`tenant_settings\` ADD \`about_body\` text NULL;"
+else
+  ok "0043 tenant_settings.about_body already exists"
+fi
+
+# The legal-notice fields. The generated Impressum has always told the merchant
+# they are responsible for adding their company form, registration or VAT number
+# and a registered address — and then gave them nowhere to put them.
+if [ "$(col_exists tenant_settings company_legal_name)" = "0" ]; then
+  run_sql "0043 add tenant_settings.company_legal_name" \
+    "ALTER TABLE \`tenant_settings\` ADD \`company_legal_name\` varchar(255) NULL;"
+else
+  ok "0043 tenant_settings.company_legal_name already exists"
+fi
+
+if [ "$(col_exists tenant_settings company_address)" = "0" ]; then
+  run_sql "0043 add tenant_settings.company_address" \
+    "ALTER TABLE \`tenant_settings\` ADD \`company_address\` text NULL;"
+else
+  ok "0043 tenant_settings.company_address already exists"
+fi
+
+if [ "$(col_exists tenant_settings vat_number)" = "0" ]; then
+  run_sql "0043 add tenant_settings.vat_number" \
+    "ALTER TABLE \`tenant_settings\` ADD \`vat_number\` varchar(64) NULL;"
+else
+  ok "0043 tenant_settings.vat_number already exists"
+fi
+
+if [ "$(col_exists tenant_settings company_registration)" = "0" ]; then
+  run_sql "0043 add tenant_settings.company_registration" \
+    "ALTER TABLE \`tenant_settings\` ADD \`company_registration\` varchar(64) NULL;"
+else
+  ok "0043 tenant_settings.company_registration already exists"
+fi
+
+# ── 0044: one-tap POS register pairing ────────────────────────────────────────
+# Ships drizzle/0026_pos_pairing_tokens.sql. Short-lived single-use tokens so a
+# merchant can pair a register by tapping a link rather than typing a 64-char
+# key into a phone; the key itself stays out of the URL and out of this table.
+# Additive — nothing reads it until a merchant mints a pairing link.
+# Idempotent; see migrate_0044_pos_pairing_tokens in deploy/lib/db.sh.
+migrate_0044_pos_pairing_tokens
+
+# ── 0045: the paid one-time site import ──────────────────────────────────────
+# Ships drizzle/0027_site_imports.sql. One row per attempt at lifting a
+# merchant's existing shop across; the previewed → paid → applied status is what
+# stops a replayed Stripe webhook importing the same catalogue twice. Additive —
+# nothing reads it until a merchant starts an import.
+# Idempotent; see migrate_0045_site_imports in deploy/lib/db.sh.
+migrate_0045_site_imports
+
+# ── 0046: the "Made with Zolto" credit becomes an opt-out ─────────────────────
+# Ships drizzle/0028_zolto_attribution.sql. The platform credit used to be
+# decided entirely by the plan: Free stores carried it (in /llms.txt, and
+# nowhere else), Pro stores dropped it silently. A custom domain is Pro-only, so
+# the storefronts where the Zolto name is least discoverable were the exact ones
+# that never named it — to a shopper, a search crawler or an AI agent.
+#
+# The credit now shows by default on every plan and white-labelling buys the
+# right to switch it off. This column is that switch; DEFAULT false means "show
+# it", which is the new behaviour every existing row wants. Idempotent.
+if [ "$(col_exists tenant_settings hide_zolto_badge)" = "0" ]; then
+  run_sql "0046 add tenant_settings.hide_zolto_badge" \
+    "ALTER TABLE \`tenant_settings\` ADD \`hide_zolto_badge\` boolean NOT NULL DEFAULT false;"
+else
+  ok "0046 tenant_settings.hide_zolto_badge already exists"
+fi
+
+# ── 0047: restore users_openId_unique where it went missing ──────────────────
+# The index that makes upsertUser's onDuplicateKeyUpdate an update rather than
+# an insert. Present since the baseline, but absent from drizzle/schema.ts and
+# the meta snapshots since 0004 — so `npm run db:sync` would drop it, and every
+# subsequent sign-in would create a new user row. schema.ts declares it again;
+# this restores it on any database that already lost it.
+#
+# Idempotent, and deliberately non-fatal: with duplicate openIds already present
+# the ALTER cannot succeed, so it warns and leaves the database untouched rather
+# than aborting the deploy. See migrate_0047_users_openid_unique in
+# deploy/lib/db.sh.
+migrate_0047_users_openid_unique
+
+# ── 0048: customer trust — Trustpilot, testimonials, discount codes ──────────
+# Ships drizzle/0029_customer_trust.sql. Two columns on tenant_settings naming
+# the store's Trustpilot business unit, a `testimonials` table for the quotes a
+# merchant publishes at the foot of their home page, and the `discount_codes` /
+# `discount_redemptions` pair behind promotional and friends-and-family codes.
+#
+# Additive throughout: a store with no Trustpilot domain renders no trust band,
+# a store with no testimonial rows renders no quotes, and checkout behaves
+# exactly as before until a code is actually typed in.
+# Idempotent; see migrate_0048_customer_trust in deploy/lib/db.sh.
+migrate_0048_customer_trust
+
+# ── 0049: who is reading the machine-facing surfaces ─────────────────────────
+# Ships drizzle/0030_agent_hits.sql. Zolto publishes /llms.txt and an MCP
+# endpoint on the bet that an AI agent will find a store and buy from it, and
+# `orders.channel = 'agent'` already counts the ones that bought — but nothing
+# counted the reach that comes first, and no browser-side analytics ever could:
+# an agent fetching /llms.txt never loads the SPA and never runs JavaScript.
+#
+# One pre-aggregated counter per (store, day, surface, tool, agent). The UNIQUE
+# key is what makes recordAgentHit an update rather than an insert, so it is
+# restored on any database that somehow has the table without it. Additive —
+# nothing reads it until a merchant opens the admin panel. Idempotent; see
+# migrate_0049_agent_hits in deploy/lib/db.sh.
+migrate_0049_agent_hits
+
+# ── 0050: the web till's scan-to-pay sales ───────────────────────────────────
+# Ships drizzle/0031_pos_checkout_session.sql. A QR sale is a Stripe Checkout
+# Session, and an open session has no PaymentIntent — Stripe makes one only when
+# the customer pays — so fulfilment cannot key on stripePaymentIntentId the way
+# every other POS path does. The session id carries the link until then, and the
+# PaymentIntent id is backfilled once it exists. Additive — nothing reads it
+# until a merchant opens the till.
+# Idempotent; see migrate_0050_pos_checkout_session in deploy/lib/db.sh.
+migrate_0050_pos_checkout_session
+
+# ── 0051: the Google Sheets mirror ───────────────────────────────────────────
+# Ships drizzle/0032_sheet_mirrors.sql. One spreadsheet per store, owned by the
+# platform service account and shared with the merchant: a surface they can
+# filter, pivot and hand to an accountant, over a ledger that stays in MySQL.
+#
+# Everything in the sheet is derived, and the table records only where it lives
+# plus the outcome of the last push. tenant_id is UNIQUE so a store cannot end
+# up with two spreadsheets drifting apart. Additive — no existing read path
+# touches it, and with GOOGLE_SERVICE_ACCOUNT_* unset (every self-hosted
+# install) the feature is simply absent.
+# Idempotent; see migrate_0051_sheet_mirrors in deploy/lib/db.sh.
+migrate_0051_sheet_mirrors
+
+# ── 0052: review-link tokens expire, and are spent once ──────────────────────
+# Ships drizzle/0033_review_token_lifetime.sql. The one-click links in the
+# reconciliation and POS-attribution review emails are bearer credentials: they
+# carry no session, so whoever holds the mail can spend them. They had no
+# expiry and outlived the decision they recorded, which made a forwarded or
+# leaked mailbox actionable indefinitely.
+#
+# tokenExpiresAt bounds each link's life (NULL reads as expired, and existing
+# rows are backfilled from createdAt rather than grandfathered), and
+# confirmationToken becomes nullable so the first decision can clear it. The
+# admin console's pending queue is unaffected — it never used tokens.
+# Idempotent; see migrate_0052_review_token_lifetime in deploy/lib/db.sh.
+migrate_0052_review_token_lifetime
+
 # ── Record the applied migration set ──────────────────────────────────────────
 # Only reached when every migration above succeeded — `set -e` plus run_sql's
 # die() mean a failure never gets this far, so a half-applied schema is never

@@ -13,6 +13,7 @@ import {
   findCompetitor,
   INCUMBENT_COMPARISON,
   SOVEREIGNTY,
+  AI_NATIVE_PITCH,
 } from "@shared/platform";
 import { authorJsonLd } from "@shared/authors";
 import {
@@ -295,10 +296,45 @@ export function getMarketingSeo(
             ["Compare", "/compare"],
           ]),
         ],
-        noscript: COMPETITORS.map(
-          (c) => `${PLATFORM.name} vs ${c.name}: ${c.summary}`,
-        ).join(" "),
+        // The named-competitor summaries, plus the generic old-guard table that
+        // now renders on this page (it moved off the homepage with the reel).
+        noscript:
+          COMPETITORS.map(
+            (c) => `${PLATFORM.name} vs ${c.name}: ${c.summary}`,
+          ).join(" ") +
+          " " +
+          INCUMBENT_COMPARISON.map(
+            (r) =>
+              `${r.feature} — traditionally: ${r.them}; with ${PLATFORM.name}: ${r.us}.`,
+          ).join(" "),
       };
+    case "/why-zolto": {
+      // The AI-native argument, as its own page: the homepage reel keeps the
+      // thesis band and links here for the proof and the mechanics. Crawlers
+      // get the whole argument in the noscript rather than a teaser — this is
+      // the page an assistant is most likely to be asked to summarise.
+      const title = `Why ${PLATFORM.name} — ${AI_NATIVE_PITCH.headline} ${AI_NATIVE_PITCH.headlineEmphasis}`;
+      const description = AI_NATIVE_PITCH.body;
+      return {
+        path: "/why-zolto",
+        title,
+        description,
+        jsonLd: [
+          ...common,
+          articleNode(base, "/why-zolto", title, description),
+          breadcrumb(base, [
+            ["Home", "/"],
+            ["Why Zolto", "/why-zolto"],
+          ]),
+        ],
+        noscript:
+          `${AI_NATIVE_PITCH.body} ${AI_NATIVE_PITCH.proof.headline} ${AI_NATIVE_PITCH.proof.body} ` +
+          AI_NATIVE_PITCH.steps
+            .map((s) => `${s.k}: ${s.title} — ${s.body}`)
+            .join(" ") +
+          ` ${AI_NATIVE_PITCH.footnote}`,
+      };
+    }
     case "/for":
       return {
         path: "/for",

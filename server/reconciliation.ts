@@ -26,9 +26,14 @@ import {
   getKnownOrderPaymentIntentIds,
   getKnownPosPaymentIntentIds,
   getKnownReconciliationPaymentIntentIds,
+  extendReviewTokenExpiry,
+  getPendingStripeReconciliations,
   getTenantsWithConnectedStripe,
 } from "./db";
+import { resolveStoredCandidates } from "./pendingReview";
+import { reviewTokenExpiry } from "./reviewToken";
 import {
+  buildReconciliationReviewHtml,
   type ReconciliationReviewItem,
   sendReconciliationReviewEmail,
 } from "./_core/email";
@@ -40,9 +45,24 @@ export const RECONCILIATION_LOOKBACK_DAYS_DEFAULT = 30;
 export const MAX_CANDIDATES = 3;
 // Safety cap so a manual run can't run away scanning years of history.
 const MAX_PAYMENT_INTENTS_SCANNED = 500;
+// Ceiling on how many outstanding items one email (or one in-app review panel)
+// carries. Everything above it stays pending and comes back on the next run.
+export const MAX_REVIEW_ITEMS = 50;
 
 export function generateConfirmationToken(): string {
   return crypto.randomBytes(24).toString("hex");
+}
+
+/**
+ * `tenant_settings.publicDomain` is stored bare ("aurora.example"), and the
+ * confirm links are built by concatenation. Without a scheme the href is a
+ * relative path, which resolves against whatever document happens to be
+ * showing the review — nowhere useful from an inbox, and the wrong origin in
+ * the admin console's frame.
+ */
+export function toBaseUrl(domain: string): string {
+  const trimmed = domain.trim().replace(/\/+$/, "");
+  return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
 }
 
 /**
@@ -76,8 +96,78 @@ export interface ReconciliationSummary {
   newPendingReview: number;
   /** Newly detected payments with no in-stock product close enough to guess. */
   newNoCandidates: number;
-  /** Whether the review email was sent (false if nothing needed review, or sending failed). */
+  /**
+   * Payments recorded by an EARLIER run that are still unconfirmed, and so are
+   * included in this run's review again. Re-running is deliberately not a
+   * no-op: the first run's email may never have arrived.
+   */
+  stillPendingReview: number;
+  /** Everything in this run's review — `newPendingReview` + `stillPendingReview`. */
+  totalPendingReview: number;
+  /** Whether the review email was actually delivered to Resend. */
   emailSent: boolean;
+  /** Why it wasn't, when it wasn't — unset key, no recipient, API error. */
+  emailError: string | null;
+  /**
+   * The review email's own HTML, handed back when it could not be sent so the
+   * admin console can render it and the merchant can click the same one-click
+   * links in-app. Null when the email went out (or there was nothing to send).
+   */
+  reviewHtml: string | null;
+}
+
+/**
+ * Rebuilds review items for reconciliations an earlier run already filed and
+ * nobody has confirmed yet, skipping the ones this run just created.
+ *
+ * `choiceIndex` is carried through deliberately: the confirm route indexes into
+ * the row's stored `candidateProductIds` (server/reconciliationRoutes.ts), so a
+ * candidate whose product has since been deleted has to leave its slot behind
+ * rather than shift every later link onto the wrong piece.
+ */
+async function collectStillPendingReviewItems(
+  tenantId: number,
+  freshItems: ReconciliationReviewItem[],
+): Promise<ReconciliationReviewItem[]> {
+  const rows = await getPendingStripeReconciliations(
+    tenantId,
+    MAX_REVIEW_ITEMS,
+  );
+  const fresh = new Set(freshItems.map((i) => i.paymentIntentId));
+  const older = rows.filter((r) => !fresh.has(r.stripePaymentIntentId));
+  if (older.length === 0) return [];
+
+  const candidatesByRow = await resolveStoredCandidates(tenantId, older);
+
+  const items = older
+    .map((row, i) => ({
+      id: row.id,
+      paymentIntentId: row.stripePaymentIntentId,
+      amountRappen: row.amountRappen,
+      currency: row.currency,
+      stripeCreatedAt: row.stripeCreatedAt,
+      candidates: candidatesByRow[i],
+      token: row.confirmationToken,
+    }))
+    // Every candidate piece has since been deleted, so there is nothing left to
+    // assign the payment to. It stays pending for manual handling. A null token
+    // means the row was decided between the two queries — nothing left to ask.
+    .filter(
+      (item): item is typeof item & { token: string } =>
+        item.candidates.length > 0 && item.token !== null,
+    );
+
+  // This run is putting these links in front of the merchant again, so their
+  // clock restarts today. Without this, a re-sent email would carry a link
+  // measured from the day the payment was first detected — often already dead.
+  await extendReviewTokenExpiry(
+    "stripe_reconciliations",
+    tenantId,
+    items.map((item) => item.id),
+    reviewTokenExpiry(),
+  );
+
+  return items.map(({ id: _id, ...item }) => item);
 }
 
 export class NotConnectedError extends Error {
@@ -180,6 +270,9 @@ export async function runStripeReconciliationForTenant(
       status,
       candidateProductIds: candidates.map((p) => p.id).join(","),
       confirmationToken: token,
+      // The mailed link is a bearer credential, so it gets a lifetime from the
+      // moment it is issued (server/reviewToken.ts).
+      tokenExpiresAt: reviewTokenExpiry(),
     });
 
     if (status === "pending_review") {
@@ -202,27 +295,59 @@ export async function runStripeReconciliationForTenant(
     }
   }
 
+  // Anything an earlier run filed and nobody confirmed goes back in the
+  // envelope. Pressing the button twice is not a mistake to guard against —
+  // the first email may have bounced, or never been sent at all — and these
+  // payments are exactly the ones the scan above skipped as "already recorded".
+  const stillPending = await collectStillPendingReviewItems(
+    tenant.id,
+    reviewItems,
+  );
+  // Newly detected payments first, so a long backlog can never crowd out what
+  // this run just found. The remainder stays pending for the next run.
+  const outstanding = [...reviewItems, ...stillPending].slice(
+    0,
+    MAX_REVIEW_ITEMS,
+  );
+
   let emailSent = false;
-  if (reviewItems.length > 0) {
-    try {
-      // Goes to the MERCHANT, not the platform operator: these are their
-      // payments and only they can say which piece was sold.
-      const [contact, settings] = await Promise.all([
-        getTenantAdminContact(tenant.id),
-        getTenantSettings(tenant.id),
-      ]);
-      await sendReconciliationReviewEmail(reviewItems, {
-        tenantName: settings?.whiteLabelName ?? tenant.name,
-        tenantDomain:
-          settings?.publicDomain ??
+  let emailError: string | null = null;
+  let reviewHtml: string | null = null;
+
+  if (outstanding.length > 0) {
+    // Goes to the MERCHANT, not the platform operator: these are their
+    // payments and only they can say which piece was sold.
+    const [contact, settings] = await Promise.all([
+      getTenantAdminContact(tenant.id),
+      getTenantSettings(tenant.id),
+    ]);
+    const branding = {
+      tenantName: settings?.whiteLabelName ?? tenant.name,
+      tenantDomain: toBaseUrl(
+        settings?.publicDomain ??
           process.env.PUBLIC_BASE_URL ??
           "https://zolto.ch",
-        contactEmail: settings?.contactEmail ?? undefined,
-        to: contact?.email ?? undefined,
-      });
-      emailSent = true;
+      ),
+      contactEmail: settings?.contactEmail ?? undefined,
+      to: contact?.email ?? undefined,
+    };
+
+    try {
+      const result = await sendReconciliationReviewEmail(outstanding, branding);
+      emailSent = result.sent;
+      emailError = result.sent ? null : result.reason;
     } catch (err) {
-      console.error("[Reconciliation] Failed to send review email:", err);
+      emailError = err instanceof Error ? err.message : String(err);
+    }
+
+    if (!emailSent) {
+      console.error(
+        `[Reconciliation] Review email not delivered for tenant ${tenant.id}: ${emailError}`,
+      );
+      // The merchant still has to be able to act on these, so hand the caller
+      // the very same page the email would have carried — same tokens, same
+      // one-click links — for the admin console to render in place.
+      reviewHtml = buildReconciliationReviewHtml(outstanding, branding);
     }
   }
 
@@ -231,7 +356,11 @@ export async function runStripeReconciliationForTenant(
     alreadyRecorded,
     newPendingReview,
     newNoCandidates,
+    stillPendingReview: Math.max(0, outstanding.length - reviewItems.length),
+    totalPendingReview: outstanding.length,
     emailSent,
+    emailError,
+    reviewHtml,
   };
 }
 
@@ -240,15 +369,28 @@ export interface PlatformReconciliationSummary {
   tenantsScanned: number;
   /** Tenants whose scan threw — recorded rather than aborting the sweep. */
   tenantsFailed: number;
-  /** Per-tenant results, newest tenant id last. */
+  /**
+   * Per-tenant results, newest tenant id last. `reviewHtml` is dropped: this
+   * is an operator report over every store, and the review page belongs to the
+   * merchant whose console can render it, not in a sweep's JSON. `emailError`
+   * stays, so a store whose mail is misconfigured is visible from here.
+   */
   perTenant: Array<
     { tenantId: number; slug: string; name: string } & (
-      | ({ ok: true } & ReconciliationSummary)
+      | ({ ok: true } & Omit<ReconciliationSummary, "reviewHtml">)
       | { ok: false; error: string }
     )
   >;
   /** Totals across every tenant that succeeded. */
-  totals: Omit<ReconciliationSummary, "emailSent"> & { emailsSent: number };
+  totals: {
+    scannedSucceededPayments: number;
+    alreadyRecorded: number;
+    newPendingReview: number;
+    newNoCandidates: number;
+    stillPendingReview: number;
+    totalPendingReview: number;
+    emailsSent: number;
+  };
 }
 
 /**
@@ -268,13 +410,16 @@ export async function runStripeReconciliationForAllTenants(
     alreadyRecorded: 0,
     newPendingReview: 0,
     newNoCandidates: 0,
+    stillPendingReview: 0,
+    totalPendingReview: 0,
     emailsSent: 0,
   };
   let tenantsFailed = 0;
 
   for (const t of tenants) {
     try {
-      const r = await runStripeReconciliationForTenant(t, lookbackDays);
+      const { reviewHtml: _reviewHtml, ...r } =
+        await runStripeReconciliationForTenant(t, lookbackDays);
       perTenant.push({
         tenantId: t.id,
         slug: t.slug,
@@ -286,6 +431,8 @@ export async function runStripeReconciliationForAllTenants(
       totals.alreadyRecorded += r.alreadyRecorded;
       totals.newPendingReview += r.newPendingReview;
       totals.newNoCandidates += r.newNoCandidates;
+      totals.stillPendingReview += r.stillPendingReview;
+      totals.totalPendingReview += r.totalPendingReview;
       if (r.emailSent) totals.emailsSent += 1;
     } catch (err) {
       tenantsFailed++;

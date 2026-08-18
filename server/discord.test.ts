@@ -129,7 +129,10 @@ describe("parseProductFromMessage", () => {
         }),
       ),
     );
-    const result = await parseProductFromMessage("Moonstone bangle, CHF 220", 1);
+    const result = await parseProductFromMessage(
+      "Moonstone bangle, CHF 220",
+      1,
+    );
     expect(result?.category).toBe("Bangles");
   });
 
@@ -174,9 +177,9 @@ describe("parseProductFromMessage", () => {
     // must not offer it.
     expect(system.content).toContain('"Rings"');
     expect(system.content).not.toContain('"Sets"');
-    expect(call.response_format.json_schema.schema.properties.category.enum).toEqual(
-      ["Necklaces", "Earrings", "Rings", "Bangles", "Other"],
-    );
+    expect(
+      call.response_format.json_schema.schema.properties.category.enum,
+    ).toEqual(["Necklaces", "Earrings", "Rings", "Bangles", "Other"]);
   });
 });
 

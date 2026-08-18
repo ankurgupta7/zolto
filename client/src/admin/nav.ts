@@ -74,6 +74,24 @@ export const ADMIN_NAV: AdminNavItem[] = [
     path: "/admin/orders",
   },
   {
+    id: "sales",
+    plane: "store",
+    label: "Sales",
+    icon: "ScrollText",
+    path: "/admin/sales",
+    requiredRole: "admin",
+  },
+  {
+    id: "sheets",
+    plane: "store",
+    label: "Spreadsheet",
+    icon: "Sheet",
+    path: "/admin/sheets",
+    // Admin, not staff: connecting a mirror shares the store's whole sales
+    // ledger to an email address, and approving a Stock In diff writes stock.
+    requiredRole: "admin",
+  },
+  {
     id: "reconciliation",
     plane: "store",
     label: "Reconciliation",
@@ -86,6 +104,22 @@ export const ADMIN_NAV: AdminNavItem[] = [
     label: "Storefront",
     icon: "Palette",
     path: "/admin/storefront",
+  },
+  {
+    id: "testimonials",
+    plane: "store",
+    label: "Reviews",
+    icon: "Quote",
+    path: "/admin/testimonials",
+    requiredRole: "admin",
+  },
+  {
+    id: "discounts",
+    plane: "store",
+    label: "Discounts",
+    icon: "TicketPercent",
+    path: "/admin/discounts",
+    requiredRole: "admin",
   },
   {
     id: "domain",
@@ -103,6 +137,13 @@ export const ADMIN_NAV: AdminNavItem[] = [
     path: "/admin/channels",
   },
   { id: "pos", plane: "store", label: "POS", icon: "Nfc", path: "/admin/pos" },
+  {
+    id: "till",
+    plane: "store",
+    label: "Till",
+    icon: "Calculator",
+    path: "/admin/till",
+  },
   {
     id: "insights",
     plane: "store",

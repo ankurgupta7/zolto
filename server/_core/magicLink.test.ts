@@ -9,6 +9,8 @@ const { dbMock, sendMagicLinkEmail } = vi.hoisted(() => ({
     getMagicLinkTokenByToken: vi.fn(),
     consumeMagicLinkToken: vi.fn(),
     upsertUser: vi.fn(),
+    getManagingUsersByEmail: vi.fn(),
+    touchUserLastSignedIn: vi.fn(),
   },
   sendMagicLinkEmail: vi.fn(),
 }));
@@ -16,8 +18,14 @@ vi.mock("../db", () => dbMock);
 vi.mock("./email", () => ({ sendMagicLinkEmail }));
 
 import { registerMagicLinkRoutes, requestMagicLink } from "./magicLink";
+import { verifySessionJwt } from "./oauth";
 
-const ENV_KEYS = ["JWT_SECRET", "ADMIN_EMAIL", "PUBLIC_BASE_URL", "RESEND_API_KEY"] as const;
+const ENV_KEYS = [
+  "JWT_SECRET",
+  "ADMIN_EMAIL",
+  "PUBLIC_BASE_URL",
+  "RESEND_API_KEY",
+] as const;
 const originalEnv: Record<string, string | undefined> = {};
 
 function makeApp() {
@@ -43,6 +51,10 @@ beforeEach(() => {
   dbMock.createMagicLinkToken.mockResolvedValue(undefined);
   dbMock.upsertUser.mockResolvedValue(undefined);
   dbMock.consumeMagicLinkToken.mockResolvedValue(undefined);
+  // Default: the address manages nothing, so nothing is adopted. Every test
+  // that cares about adoption sets this itself.
+  dbMock.getManagingUsersByEmail.mockResolvedValue([]);
+  dbMock.touchUserLastSignedIn.mockResolvedValue(undefined);
 });
 
 afterEach(() => {
@@ -192,7 +204,9 @@ describe("GET /api/auth/magic-link/callback", () => {
         role: "admin",
       }),
     );
-    const setCookie = (res.headers["set-cookie"] as unknown as string[]).join(";");
+    const setCookie = (res.headers["set-cookie"] as unknown as string[]).join(
+      ";",
+    );
     expect(setCookie).toContain(`${COOKIE_NAME}=`);
   });
 
@@ -212,5 +226,130 @@ describe("GET /api/auth/magic-link/callback", () => {
     expect(res.headers.location).toBe("/claim/mystore");
     const arg = dbMock.upsertUser.mock.calls[0][0] as Record<string, unknown>;
     expect(arg.role).toBeUndefined();
+  });
+});
+
+/**
+ * Adoption: a link for an address that already manages a store signs in AS
+ * that account instead of minting `email:<addr>`.
+ *
+ * The regression is quiet without these. Creating the second identity throws
+ * nothing and redirects normally — the merchant simply arrives parked on the
+ * platform tenant as a customer, with their store invisible. So each test
+ * below asserts the identity in the issued session cookie, not just which db
+ * call happened.
+ */
+describe("GET /api/auth/magic-link/callback — existing account adoption", () => {
+  const tokenFor = (email: string) => ({
+    id: 7,
+    email,
+    token: "t",
+    next: null,
+    expiresAt: new Date(Date.now() + 60_000),
+    consumedAt: null,
+  });
+
+  /** The openId the issued session actually carries. */
+  async function sessionOpenId(res: { headers: Record<string, unknown> }) {
+    const raw = (res.headers["set-cookie"] as unknown as string[]).find((c) =>
+      c.startsWith(`${COOKIE_NAME}=`),
+    );
+    const jwt = decodeURIComponent(
+      (raw ?? "").slice(COOKIE_NAME.length + 1).split(";")[0],
+    );
+    const session = await verifySessionJwt(jwt, process.env.JWT_SECRET ?? "");
+    return session?.openId;
+  }
+
+  it("signs in as the existing Google account rather than a new identity", async () => {
+    dbMock.getMagicLinkTokenByToken.mockResolvedValue(
+      tokenFor("admin@kalakosh.ch"),
+    );
+    dbMock.getManagingUsersByEmail.mockResolvedValue([
+      { id: 12, openId: "google:115176", tenantId: 6, role: "admin" },
+    ]);
+
+    const res = await request(makeApp()).get(
+      "/api/auth/magic-link/callback?token=t",
+    );
+
+    expect(res.status).toBe(302);
+    expect(await sessionOpenId(res)).toBe("google:115176");
+    expect(dbMock.upsertUser).not.toHaveBeenCalled();
+    expect(dbMock.touchUserLastSignedIn).toHaveBeenCalledWith(
+      12,
+      expect.any(Date),
+    );
+  });
+
+  // name/email/loginMethod on the adopted row belong to the provider that
+  // minted it; a visit through the fallback must not relabel it magic_link.
+  it("touches only lastSignedIn on the adopted row", async () => {
+    dbMock.getMagicLinkTokenByToken.mockResolvedValue(tokenFor("a@b.c"));
+    dbMock.getManagingUsersByEmail.mockResolvedValue([
+      { id: 12, openId: "google:115176", tenantId: 6, role: "admin" },
+    ]);
+    await request(makeApp()).get("/api/auth/magic-link/callback?token=t");
+    expect(dbMock.touchUserLastSignedIn).toHaveBeenCalledTimes(1);
+    expect(dbMock.upsertUser).not.toHaveBeenCalled();
+  });
+
+  it("adopts a staff account too, not just admins", async () => {
+    dbMock.getMagicLinkTokenByToken.mockResolvedValue(tokenFor("s@b.c"));
+    dbMock.getManagingUsersByEmail.mockResolvedValue([
+      { id: 20, openId: "apple:sub-9", tenantId: 6, role: "staff" },
+    ]);
+    const res = await request(makeApp()).get(
+      "/api/auth/magic-link/callback?token=t",
+    );
+    expect(await sessionOpenId(res)).toBe("apple:sub-9");
+  });
+
+  // Two stores, no way to know which was meant. Guessing would drop a
+  // merchant into the wrong store's admin, so it falls back instead.
+  it("does not guess when the address manages more than one store", async () => {
+    dbMock.getMagicLinkTokenByToken.mockResolvedValue(tokenFor("multi@b.c"));
+    dbMock.getManagingUsersByEmail.mockResolvedValue([
+      { id: 12, openId: "google:a", tenantId: 6, role: "admin" },
+      { id: 30, openId: "google:b", tenantId: 9, role: "admin" },
+    ]);
+
+    const res = await request(makeApp()).get(
+      "/api/auth/magic-link/callback?token=t",
+    );
+
+    expect(await sessionOpenId(res)).toBe("email:multi@b.c");
+    expect(dbMock.touchUserLastSignedIn).not.toHaveBeenCalled();
+    expect(dbMock.upsertUser).toHaveBeenCalledTimes(1);
+  });
+
+  // A storefront customer has no managing row: unchanged behaviour, and the
+  // half of the user base that must not be disturbed by any of this.
+  it("still creates the email identity when the address manages nothing", async () => {
+    dbMock.getMagicLinkTokenByToken.mockResolvedValue(tokenFor("shopper@b.c"));
+    dbMock.getManagingUsersByEmail.mockResolvedValue([]);
+
+    const res = await request(makeApp()).get(
+      "/api/auth/magic-link/callback?token=t",
+    );
+
+    expect(await sessionOpenId(res)).toBe("email:shopper@b.c");
+    expect(dbMock.upsertUser).toHaveBeenCalledWith(
+      expect.objectContaining({
+        openId: "email:shopper@b.c",
+        loginMethod: "magic_link",
+      }),
+    );
+    expect(dbMock.touchUserLastSignedIn).not.toHaveBeenCalled();
+  });
+
+  it("looks the address up as sent, leaving case folding to the query", async () => {
+    dbMock.getMagicLinkTokenByToken.mockResolvedValue(
+      tokenFor("Admin@Kalakosh.CH"),
+    );
+    await request(makeApp()).get("/api/auth/magic-link/callback?token=t");
+    expect(dbMock.getManagingUsersByEmail).toHaveBeenCalledWith(
+      "Admin@Kalakosh.CH",
+    );
   });
 });

@@ -291,6 +291,7 @@ struct PaymentView: View {
         case "cash":
             paymentViewModel.startCashPayment(
                 productIds: productIds,
+                allowHidden: allowHidden,
                 priceOverrides: priceOverrides,
                 customItems: customItems
             )

@@ -16,6 +16,7 @@ import {
   SELLING_FLOW,
   monthlyCostAt,
   ZERO_COST_POS,
+  MAKER_PITCH,
   AI_NATIVE_PITCH,
   FREE_PLAN,
   COMPETITORS,
@@ -346,6 +347,8 @@ describe("ZERO_COST_POS", () => {
       ZERO_COST_POS.headline,
       ZERO_COST_POS.headlineEmphasis,
       ZERO_COST_POS.body,
+      ZERO_COST_POS.bodyShort,
+      ZERO_COST_POS.processorNoteLink,
       ZERO_COST_POS.catch,
       ...ZERO_COST_POS.includes,
     ]
@@ -360,6 +363,8 @@ describe("ZERO_COST_POS", () => {
       ZERO_COST_POS.headline,
       ZERO_COST_POS.headlineEmphasis,
       ZERO_COST_POS.body,
+      ZERO_COST_POS.bodyShort,
+      ZERO_COST_POS.processorNoteLink,
       ZERO_COST_POS.catch,
       ...ZERO_COST_POS.includes,
     ].join(" ");
@@ -369,11 +374,84 @@ describe("ZERO_COST_POS", () => {
   });
 });
 
+describe("MAKER_PITCH", () => {
+  it("names the product in the merchant's own nouns", () => {
+    // The whole reason this constant exists: a reader arriving cold has to be
+    // told what Zolto is, in words they already use, before anything argues
+    // for it. These four are the load-bearing ones — the category, the payment
+    // method a Swiss maker reaches for first, and the hardware they own.
+    //
+    // The badges are part of the hero as rendered (Landing.tsx puts them under
+    // the CTAs), and TWINT is what they are there to say. Scoping the check to
+    // the hero's *screen* rather than to one constant is what let the August
+    // 2026 audit drop the paragraph's spec list without dropping the promise:
+    // the words still have to be on that screen, just not all in one sentence.
+    const hero = [
+      MAKER_PITCH.eyebrow,
+      MAKER_PITCH.headline,
+      MAKER_PITCH.headlineEmphasis,
+      MAKER_PITCH.body,
+      ...SOVEREIGNTY.heroBadges,
+    ]
+      .join(" ")
+      .toLowerCase();
+    // The category noun in both forms: the abbreviation the heading has room
+    // for, and the spelled-out version the body opens with so a reader who
+    // doesn't know "POS" is told immediately. Losing either would leave the
+    // hero naming the product only in words a search wouldn't match.
+    expect(hero).toMatch(/\bpos\b/);
+    expect(hero).toContain("point-of-sale");
+    expect(hero).toContain("twint");
+    expect(hero).toMatch(/phone|tablet/);
+  });
+
+  it("keeps the underlined phrase short enough not to wrap on a phone", () => {
+    // A character count is a proxy for a measurement, and a crude one — but
+    // the thing it guards is invisible to every other test here. The emphasis
+    // renders in a 342px column at 36px Cormorant on a 390px phone; past
+    // roughly 330px it wraps inside its own inline-block and the hand-drawn
+    // underline, which is absolutely positioned at w-full, trails across the
+    // column. The DOM is identical either way, so no render test catches it.
+    // 30 characters is comfortably inside that at Cormorant's average advance.
+    // If you need more room, measure it in a browser first — and see the doc
+    // comment on MAKER_PITCH.headlineEmphasis.
+    expect(MAKER_PITCH.headlineEmphasis.length).toBeLessThanOrEqual(30);
+  });
+
+  it("promises only what the Free plan actually ships", () => {
+    // Same contract as ZERO_COST_POS: the hero describes the product a visitor
+    // gets for CHF 0, so every capability it names has to be on FREE_PLAN.
+    const free = FREE_PLAN.features.join(" ").toLowerCase();
+    for (const term of ["pos", "twint", "online store", "inventory sync"]) {
+      expect(free).toContain(term);
+    }
+  });
+
+  it("makes no claim about price or about any competitor", () => {
+    // On card rate Zolto is the dearest option on its own comparison table
+    // (docs/planning/positioning-pricing-revision.md §1). A hero that opened on
+    // "cheaper" would be contradicted by our own page further down, so it
+    // opens on what the thing is instead.
+    const claimed = [
+      MAKER_PITCH.eyebrow,
+      MAKER_PITCH.headline,
+      MAKER_PITCH.headlineEmphasis,
+      MAKER_PITCH.body,
+      MAKER_PITCH.register.title,
+      MAKER_PITCH.register.caption,
+    ].join(" ");
+    for (const c of COMPETITORS) {
+      expect(claimed).not.toContain(c.name);
+    }
+    expect(claimed.toLowerCase()).not.toMatch(/cheape|lowest|save you/);
+  });
+});
+
 describe("AI_NATIVE_PITCH", () => {
   it("promises only the agent surface the Free plan actually ships", () => {
-    // The hero's whole thesis rests on the Free plan's "Found by AI agents"
-    // line — if that ever leaves the free tier, this pitch becomes a paywall
-    // claim and must be rewritten, not silently kept.
+    // The thesis band rests on the Free plan's "Found by AI agents" line — if
+    // that ever leaves the free tier, this pitch becomes a paywall claim and
+    // must be rewritten, not silently kept.
     const free = FREE_PLAN.features.join(" ").toLowerCase();
     for (const term of ["llms.txt", "mcp"]) {
       expect(free).toContain(term);
@@ -813,10 +891,49 @@ describe("SOVEREIGNTY", () => {
   it("does not describe an aspiration in the present tense", () => {
     // The failure mode this guards is a row whose `today` quietly claims the
     // destination — "Swiss payment processor" in today, with the move in next.
+    // Both lengths, because the homepage renders the short one.
     for (const entry of sovereigntyByState("moving")) {
-      expect(entry.today).not.toMatch(/^Swiss\b/i);
-      expect(entry.today.toLowerCase()).not.toContain("switzerland");
+      for (const today of [entry.today, entry.todayShort]) {
+        expect(today).not.toMatch(/^Swiss\b/i);
+        expect(today.toLowerCase()).not.toContain("switzerland");
+      }
     }
+  });
+
+  it("keeps the awkward part of a row when the row is shortened", () => {
+    // `todayShort` exists to fit a homepage table cell, and the cheapest way
+    // to make a row fit is to drop the clause that makes it unflattering —
+    // which would turn the ledger back into the badge it exists not to be.
+    // Each pin is the specific admission that row is on the page to make.
+    const short = Object.fromEntries(
+      SOVEREIGNTY.ledger.map((e) => [e.piece, e.todayShort]),
+    );
+    for (const entry of SOVEREIGNTY.ledger) {
+      expect(
+        entry.todayShort.length,
+        `${entry.piece} has a short form`,
+      ).toBeGreaterThan(0);
+      expect(
+        entry.todayShort.length,
+        `${entry.piece} short form is actually shorter`,
+      ).toBeLessThanOrEqual(entry.today.length);
+    }
+    // The in-app TWINT button runs on Stripe's rails, not TWINT's. This is the
+    // elision the ledger was rewritten to refuse; it must survive the cut.
+    expect(short["TWINT — the button in the register"]).toMatch(/stripe/i);
+    expect(short["TWINT — the button in the register"]).not.toMatch(/^Swiss/i);
+    // The three "outside Europe" rows have to still say so.
+    for (const piece of [
+      "The AI (listings, translations, chat)",
+      "Account emails",
+    ]) {
+      expect(short[piece], `${piece} still admits where it runs`).toMatch(
+        /outside Europe/i,
+      );
+    }
+    expect(short["Your product photos"]).toMatch(/not guaranteed/i);
+    // And the never-moving row still names the networks.
+    expect(short["Card networks and phone wallets"]).toMatch(/visa/i);
   });
 
   it("names the card networks as permanently foreign rather than omitting them", () => {

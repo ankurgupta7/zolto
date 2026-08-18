@@ -16,6 +16,7 @@ import {
   setTitle,
   appendToHead,
 } from "./headInject";
+import { ZOLTO_ATTRIBUTION, ZOLTO_URL } from "@shared/attribution";
 
 export interface StorefrontBranding {
   storeName: string;
@@ -23,6 +24,12 @@ export interface StorefrontBranding {
   metaDescription?: string | null;
   faviconUrl?: string | null;
   primaryColor?: string | null;
+  /**
+   * Whether this store carries the "Made with Zolto" credit
+   * (shared/attribution.ts). Absent means yes — a caller that forgets to pass
+   * it credits the platform rather than silently dropping the credit.
+   */
+  attribution?: boolean;
   /**
    * The slug of the store this host serves, stamped into the shell as
    * `<meta name="zolto-tenant-slug">`. The client can derive the slug itself
@@ -87,6 +94,22 @@ export function injectStorefrontHead(
     out,
     `<link rel="icon" href="${escapeHtml(faviconHref)}" />`,
   );
+
+  // The platform credit, in the two places a machine looks for it. Injected
+  // here rather than in storefrontSeo.ts so it covers EVERY storefront route,
+  // not just the handful with per-route SEO — a crawler landing on any page of
+  // a custom domain should be able to tell what the site is built with.
+  //
+  // `generator` is the convention every site builder uses (and what "what is
+  // this site running?" tooling reads); the rel="author" link is the followable
+  // half, for a crawler that harvests links but not meta.
+  if (b.attribution !== false) {
+    out = appendToHead(
+      out,
+      `<meta name="generator" content="${escapeHtml(ZOLTO_ATTRIBUTION.generator)}" />` +
+        `<link rel="author" href="${ZOLTO_URL}/" title="${escapeHtml(ZOLTO_ATTRIBUTION.name)}" />`,
+    );
+  }
 
   // Which store this host serves, for the SPA's surface resolver.
   if (b.tenantSlug?.trim()) {

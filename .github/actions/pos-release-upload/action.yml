@@ -1,0 +1,67 @@
+name: "Publish POS build to the rolling release"
+description: >
+  Upload a POS app build to the rolling `pos-latest` GitHub Release under a
+  stable asset name, creating the release if it does not exist yet.
+
+# Why a rolling release rather than Actions artifacts: artifacts require a
+# GitHub login to download, so a merchant can never reach one. Release assets
+# on a public repo are fetchable with no auth, and a fixed tag + fixed asset
+# name gives the admin UI a URL that never changes (server/posDownloads.ts).
+#
+# Concurrency: the Android and iOS workflows publish independently and may run
+# at the same time. They only ever touch their OWN assets and never rewrite the
+# shared release body, so there is nothing to race over. That is also why build
+# provenance goes into a per-platform sidecar JSON asset instead of the release
+# notes.
+
+inputs:
+  tag:
+    description: "Release tag to publish under."
+    required: false
+    default: "pos-latest"
+  files:
+    description: "Newline- or space-separated paths to upload."
+    required: true
+  token:
+    description: "Token with contents:write on this repo."
+    required: true
+
+runs:
+  using: composite
+  steps:
+    # `gh release create` fails when the release already exists, which is the
+    # steady state — every merge after the first. Checking first keeps the
+    # failure out of the log so a genuine error stays visible.
+    - name: Ensure the rolling release exists
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        TAG: ${{ inputs.tag }}
+      run: |
+        set -euo pipefail
+        if gh release view "$TAG" >/dev/null 2>&1; then
+          echo "Release $TAG already exists."
+          exit 0
+        fi
+        echo "Creating release $TAG ..."
+        # Notes live in release-notes.md beside this action rather than inline:
+        # a multi-line shell string inside a YAML block scalar can't work, since
+        # the heredoc terminator would have to sit at column 0 and that ends the
+        # scalar (and <<- only strips tabs, not spaces).
+        gh release create "$TAG" \
+          --title "Zolto POS — latest main build" \
+          --notes-file "$GITHUB_ACTION_PATH/release-notes.md"
+
+    - name: Upload assets
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        TAG: ${{ inputs.tag }}
+        FILES: ${{ inputs.files }}
+      run: |
+        set -euo pipefail
+        # shellcheck disable=SC2086 -- deliberate word splitting: FILES is a list.
+        gh release upload "$TAG" $FILES --clobber
+        echo "Uploaded to $TAG:"
+        # shellcheck disable=SC2086
+        for f in $FILES; do echo "  - $(basename "$f") ($(du -h "$f" | cut -f1))"; done

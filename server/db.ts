@@ -17,9 +17,19 @@ import crypto from "node:crypto";
 import type { Pool as MySqlPool, PoolConnection } from "mysql2";
 import * as schema from "../drizzle/schema";
 import {
+  type AgentHit,
+  agentHits,
+  auditLogs,
   type BulkUploadLog,
   bulkUploadLogs,
+  type DiscountCode,
+  discountCodes,
+  type DiscountRedemption,
+  discountRedemptions,
   type InsertBulkUploadLog,
+  type InsertDiscountCode,
+  type InsertTestimonial,
+  testimonials,
   type InsertOrder,
   type InsertPosAttribution,
   type InsertProduct,
@@ -42,11 +52,17 @@ import {
   staffInvites,
   storageObjects,
   posAttributions,
+  type PosOrder,
   posOrderItems,
   posOrders,
+  posPairingTokens,
   type Product,
   productImages,
   products,
+  type SheetMirror,
+  sheetMirrors,
+  type SiteImport,
+  siteImports,
   type StripeReconciliation,
   stripeReconciliations,
   users,
@@ -60,6 +76,7 @@ import {
 import { VERTICAL_PRESETS, isVertical, type Vertical } from "@shared/verticals";
 import { ENV } from "./_core/env";
 import { PLANS } from "@shared/platform";
+import { effectivePlan } from "@shared/entitlements";
 import { hashPosApiKey } from "./posApiKey";
 import {
   DEFAULT_TENANT_ID,
@@ -214,6 +231,29 @@ export async function getUserByOpenId(openId: string) {
   }, undefined);
 }
 
+/**
+ * Every account holding platform ownership (`role = 'superadmin'`).
+ *
+ * The terminal admin shell (server/adminShell) acts *as* one of these people
+ * rather than inventing privilege of its own. It runs on the server with the
+ * database in reach, so nothing physically stops it from writing directly —
+ * but then no operator action would name an actor in the audit log, and the
+ * guards in _core/trpc.ts would be bypassed rather than satisfied. Being
+ * handed a real superadmin row keeps both true, and makes "who did this?"
+ * answerable.
+ */
+export async function listPlatformOperators(): Promise<User[]> {
+  return withDb(
+    (db) =>
+      db
+        .select()
+        .from(users)
+        .where(eq(users.role, "superadmin"))
+        .orderBy(asc(users.id)),
+    [],
+  );
+}
+
 // ─── Magic link tokens (passwordless email sign-in) ────────────────────────────
 
 export async function createMagicLinkToken(entry: {
@@ -251,6 +291,75 @@ export async function consumeMagicLinkToken(id: number): Promise<void> {
       .update(magicLinkTokens)
       .set({ consumedAt: new Date() })
       .where(eq(magicLinkTokens.id, id)),
+  );
+}
+
+// ─── POS pairing tokens (one-tap register setup) ───────────────────────────────
+
+export async function createPosPairingToken(entry: {
+  tenantId: number;
+  token: string;
+  expiresAt: Date;
+}): Promise<void> {
+  await withDbOrThrow((db) =>
+    db.insert(posPairingTokens).values({
+      tenantId: entry.tenantId,
+      token: entry.token,
+      expiresAt: entry.expiresAt,
+    }),
+  );
+}
+
+/**
+ * Claim a pairing token: marks it consumed and reports the tenant it belonged
+ * to, or undefined if it was unknown, expired or already spent.
+ *
+ * Single-use is enforced by the UPDATE's own WHERE clause rather than by
+ * reading the row and then writing it — two registers opening the same link at
+ * the same moment would both pass a read-then-write check, and both would get
+ * live credentials. Here the second UPDATE matches zero rows and is refused.
+ */
+export async function claimPosPairingToken(
+  tokenHash: string,
+): Promise<{ tenantId: number } | undefined> {
+  return withDb(async (db) => {
+    const now = new Date();
+    const result = await db
+      .update(posPairingTokens)
+      .set({ consumedAt: now })
+      .where(
+        and(
+          eq(posPairingTokens.token, tokenHash),
+          isNull(posPairingTokens.consumedAt),
+          gt(posPairingTokens.expiresAt, now),
+        ),
+      );
+    // mysql2 reports how many rows the WHERE actually matched. Zero means some
+    // other request won the race, or the token was never valid.
+    const affected = (result as unknown as Array<{ affectedRows?: number }>)[0]
+      ?.affectedRows;
+    if (!affected) return undefined;
+
+    const rows = await db
+      .select({ tenantId: posPairingTokens.tenantId })
+      .from(posPairingTokens)
+      .where(eq(posPairingTokens.token, tokenHash))
+      .limit(1);
+    return rows[0];
+  }, undefined);
+}
+
+/** Housekeeping: drop spent and expired pairing tokens. */
+export async function deleteStalePosPairingTokens(): Promise<void> {
+  await withDbOrThrow((db) =>
+    db
+      .delete(posPairingTokens)
+      .where(
+        or(
+          isNotNull(posPairingTokens.consumedAt),
+          lt(posPairingTokens.expiresAt, new Date()),
+        ),
+      ),
   );
 }
 
@@ -346,15 +455,16 @@ export async function createProduct(data: WithOptionalTenant<InsertProduct>) {
   // choke point so every intake channel — admin UI, CSV import, bulk photo
   // upload, Discord/WhatsApp/Slack — hits the same limit. Fails open when
   // the tenant row can't be loaded so a broken lookup never blocks writes.
+  // effectivePlan, not tenant.plan: a store the operator has comped onto Pro
+  // gets Pro's catalogue room (shared/entitlements.ts).
   const tenant = await getTenantById(row.tenantId);
-  const cap = tenant
-    ? PLANS.find((p) => p.id === tenant.plan)?.maxProducts
-    : undefined;
+  const plan = tenant ? effectivePlan(tenant) : undefined;
+  const cap = plan ? PLANS.find((p) => p.id === plan)?.maxProducts : undefined;
   if (cap !== undefined) {
     const count = await countTenantProducts(row.tenantId);
     if (count >= cap) {
       throw new Error(
-        `Your catalogue is at its ${cap}-product limit on the ${tenant!.plan} plan — upgrade for more room.`,
+        `Your catalogue is at its ${cap}-product limit on the ${plan} plan — upgrade for more room.`,
       );
     }
   }
@@ -746,17 +856,103 @@ export async function getProductsMissingTranslation(tenantId: number) {
 export async function getPaidOrders(
   tenantId: number,
   limit = 200,
+  range?: { from?: Date; to?: Date },
 ): Promise<Order[]> {
   return withDb(
     (db) =>
       db
         .select()
         .from(orders)
-        .where(and(eq(orders.tenantId, tenantId), eq(orders.status, "paid")))
+        .where(
+          and(
+            eq(orders.tenantId, tenantId),
+            eq(orders.status, "paid"),
+            ...(range?.from ? [gte(orders.createdAt, range.from)] : []),
+            ...(range?.to ? [lt(orders.createdAt, range.to)] : []),
+          ),
+        )
         .orderBy(desc(orders.createdAt))
         .limit(limit),
     [],
   );
+}
+
+/** One paid in-person sale, with the line items that made it up. */
+export interface PosSaleWithItems {
+  order: PosOrder;
+  items: Array<{
+    productId: number | null;
+    /** Already resolved: catalogue name, else the cashier's custom name. */
+    name: string;
+    priceRappen: number;
+  }>;
+}
+
+/**
+ * Paid POS sales for a store, newest first, each carrying its line items with
+ * product names already resolved.
+ *
+ * The name join is the whole point: `pos_order_items.name` is null for every
+ * catalogue sale (the product row owns the name), so any caller that reads the
+ * item table alone can only report "Item" — which is exactly what the sales
+ * history and the admin had been showing.
+ */
+export async function getPosSalesWithItems(
+  tenantId: number,
+  opts: { limit?: number; from?: Date; to?: Date } = {},
+): Promise<PosSaleWithItems[]> {
+  return withDb(async (db) => {
+    const orderRows = await db
+      .select()
+      .from(posOrders)
+      .where(
+        and(
+          eq(posOrders.tenantId, tenantId),
+          eq(posOrders.status, "paid"),
+          ...(opts.from ? [gte(posOrders.createdAt, opts.from)] : []),
+          ...(opts.to ? [lt(posOrders.createdAt, opts.to)] : []),
+        ),
+      )
+      .orderBy(desc(posOrders.createdAt))
+      .limit(opts.limit ?? 200);
+    if (orderRows.length === 0) return [];
+
+    const itemRows = await db
+      .select({
+        posOrderId: posOrderItems.posOrderId,
+        productId: posOrderItems.productId,
+        customName: posOrderItems.name,
+        productName: products.name,
+        priceRappen: posOrderItems.priceRappen,
+      })
+      .from(posOrderItems)
+      .leftJoin(products, eq(posOrderItems.productId, products.id))
+      .where(
+        and(
+          eq(posOrderItems.tenantId, tenantId),
+          inArray(
+            posOrderItems.posOrderId,
+            orderRows.map((o) => o.id),
+          ),
+        ),
+      )
+      .orderBy(asc(posOrderItems.id));
+
+    const byOrder = new Map<number, PosSaleWithItems["items"]>();
+    for (const row of itemRows) {
+      const list = byOrder.get(row.posOrderId) ?? [];
+      list.push({
+        productId: row.productId,
+        name: row.productName ?? row.customName ?? "Item",
+        priceRappen: row.priceRappen,
+      });
+      byOrder.set(row.posOrderId, list);
+    }
+    return orderRows.map((order) => ({
+      order,
+      items: byOrder.get(order.id) ?? [],
+    }));
+  }, []);
 }
 
 /**
@@ -1134,10 +1330,41 @@ export interface OperatorTenantRow {
   createdAt: Date;
   /** Presence only — the account id itself is not the operator's business. */
   stripeConnected: boolean;
+  /**
+   * What this store has been given on the house — null for every ordinary
+   * store. `plan` is the granted plan (`tenants.comp_plan`), NOT the paid one
+   * above; shared/entitlements.ts resolves the pair.
+   */
+  comp: {
+    plan: "free" | "pro" | null;
+    feeWaived: boolean;
+    note: string | null;
+    grantedAt: Date | null;
+  } | null;
   /** Users on this tenant with role admin or superadmin. */
   adminCount: number;
   /** Users on this tenant of any role. */
   userCount: number;
+}
+
+/**
+ * The comp columns as the console renders them, or null when there is nothing
+ * to render. Shared by the list and the detail so the two cannot disagree about
+ * whether a store is on the house.
+ */
+function compSummary(row: {
+  compPlan: "free" | "pro" | null;
+  compFeeWaived: boolean;
+  compNote: string | null;
+  compGrantedAt: Date | null;
+}): OperatorTenantRow["comp"] {
+  if (!row.compPlan && !row.compFeeWaived) return null;
+  return {
+    plan: row.compPlan,
+    feeWaived: row.compFeeWaived,
+    note: row.compNote,
+    grantedAt: row.compGrantedAt,
+  };
 }
 
 export async function listTenantsForOperator(): Promise<OperatorTenantRow[]> {
@@ -1153,6 +1380,10 @@ export async function listTenantsForOperator(): Promise<OperatorTenantRow[]> {
         trialEndsAt: tenants.trialEndsAt,
         createdAt: tenants.createdAt,
         stripeConnectedAccountId: tenants.stripeConnectedAccountId,
+        compPlan: tenants.compPlan,
+        compFeeWaived: tenants.compFeeWaived,
+        compNote: tenants.compNote,
+        compGrantedAt: tenants.compGrantedAt,
       })
       .from(tenants)
       .orderBy(desc(tenants.createdAt));
@@ -1185,6 +1416,7 @@ export async function listTenantsForOperator(): Promise<OperatorTenantRow[]> {
       trialEndsAt: r.trialEndsAt,
       createdAt: r.createdAt,
       stripeConnected: Boolean(r.stripeConnectedAccountId),
+      comp: compSummary(r),
       adminCount: byTenant.get(r.id)?.adminCount ?? 0,
       userCount: byTenant.get(r.id)?.userCount ?? 0,
     }));
@@ -1234,6 +1466,10 @@ export async function getTenantDetailForOperator(
         trialEndsAt: tenants.trialEndsAt,
         createdAt: tenants.createdAt,
         stripeConnectedAccountId: tenants.stripeConnectedAccountId,
+        compPlan: tenants.compPlan,
+        compFeeWaived: tenants.compFeeWaived,
+        compNote: tenants.compNote,
+        compGrantedAt: tenants.compGrantedAt,
         onboardingStep: tenants.onboardingStep,
         referralCode: tenants.referralCode,
       })
@@ -1278,6 +1514,7 @@ export async function getTenantDetailForOperator(
         trialEndsAt: row.trialEndsAt,
         createdAt: row.createdAt,
         stripeConnected: Boolean(row.stripeConnectedAccountId),
+        comp: compSummary(row),
         adminCount: mapped.filter(
           (u) => u.role === "admin" || u.role === "superadmin",
         ).length,
@@ -1343,6 +1580,51 @@ export async function setTenantPlanByOperator(
     if (!target) return false;
 
     await db.update(tenants).set({ plan }).where(eq(tenants.id, tenantId));
+    return true;
+  }, false);
+}
+
+/**
+ * Put a store on the house — or take it off again.
+ *
+ * `plan` here is the plan GRANTED, written to `comp_plan`; the store's own
+ * `tenants.plan` is deliberately untouched, because that column is Stripe's
+ * (server/billing.ts writes it from subscription webhooks). Keeping the grant
+ * in its own column is what stops a cancelled subscription arriving late from
+ * silently revoking a comp, and what stops revoking a comp from taking away a
+ * plan the merchant actually pays for — shared/entitlements.ts resolves the two
+ * into one answer for every gate.
+ *
+ * Passing `plan: null` and `feeWaived: false` revokes the comp entirely and
+ * clears its provenance, so a revoked store is indistinguishable from one that
+ * was never comped.
+ */
+export async function setTenantCompByOperator(args: {
+  tenantId: number;
+  plan: "free" | "pro" | null;
+  feeWaived: boolean;
+  note?: string | null;
+  grantedByUserId?: number | null;
+}): Promise<boolean> {
+  return withDb(async (db) => {
+    const [target] = await db
+      .select({ id: tenants.id })
+      .from(tenants)
+      .where(eq(tenants.id, args.tenantId))
+      .limit(1);
+    if (!target) return false;
+
+    const revoking = args.plan === null && !args.feeWaived;
+    await db
+      .update(tenants)
+      .set({
+        compPlan: args.plan,
+        compFeeWaived: args.feeWaived,
+        compNote: revoking ? null : args.note?.trim() || null,
+        compGrantedAt: revoking ? null : new Date(),
+        compGrantedBy: revoking ? null : (args.grantedByUserId ?? null),
+      })
+      .where(eq(tenants.id, args.tenantId));
     return true;
   }, false);
 }
@@ -1475,6 +1757,87 @@ export async function createStripeReconciliation(
   );
 }
 
+// Everything this store has been asked to confirm and hasn't yet. A re-run of
+// the reconcile button re-surfaces these rather than treating them as settled:
+// a run that detected payments but failed to deliver its email used to strand
+// them forever, because the next run found the rows in
+// `getKnownReconciliationPaymentIntentIds`, counted them as already recorded,
+// and reported "nothing new to reconcile".
+export async function getPendingStripeReconciliations(
+  tenantId: number,
+  limit = 50,
+): Promise<StripeReconciliation[]> {
+  return withDb(
+    (db) =>
+      db
+        .select()
+        .from(stripeReconciliations)
+        .where(
+          and(
+            eq(stripeReconciliations.tenantId, tenantId),
+            eq(stripeReconciliations.status, "pending_review"),
+          ),
+        )
+        .orderBy(desc(stripeReconciliations.stripeCreatedAt))
+        .limit(limit),
+    [],
+  );
+}
+
+// By id AND tenant, so the admin console can address a row the merchant is
+// looking at without a mailed token. The tenant predicate is the whole point:
+// ids are sequential and guessable, so it is what stops an admin of store A
+// resolving store B's payment by typing a different number.
+// Pushes out the expiry on links that are being mailed (or rendered) again by
+// a re-run, so a still-outstanding item's link is live for the same window from
+// the day the merchant last heard about it — not from the day it was first
+// detected, which would arrive already dead.
+export async function extendReviewTokenExpiry(
+  table: "stripe_reconciliations" | "pos_attributions",
+  tenantId: number,
+  ids: number[],
+  expiresAt: Date,
+): Promise<void> {
+  if (ids.length === 0) return;
+  const target =
+    table === "stripe_reconciliations"
+      ? stripeReconciliations
+      : posAttributions;
+  await withDbOrThrow((db) =>
+    db
+      .update(target)
+      .set({ tokenExpiresAt: expiresAt })
+      .where(
+        and(
+          eq(target.tenantId, tenantId),
+          inArray(target.id, ids),
+          // Never revive a spent link: a row whose decision is recorded has a
+          // NULL token, and extending its expiry would be meaningless anyway.
+          eq(target.status, "pending_review"),
+        ),
+      ),
+  );
+}
+
+export async function getStripeReconciliationById(
+  tenantId: number,
+  id: number,
+): Promise<StripeReconciliation | undefined> {
+  return withDb(async (db) => {
+    const result = await db
+      .select()
+      .from(stripeReconciliations)
+      .where(
+        and(
+          eq(stripeReconciliations.id, id),
+          eq(stripeReconciliations.tenantId, tenantId),
+        ),
+      )
+      .limit(1);
+    return result.length > 0 ? result[0] : undefined;
+  }, undefined);
+}
+
 export async function getStripeReconciliationByToken(
   token: string,
 ): Promise<StripeReconciliation | undefined> {
@@ -1492,7 +1855,15 @@ export async function rejectStripeReconciliation(id: number): Promise<void> {
   await withDbOrThrow((db) =>
     db
       .update(stripeReconciliations)
-      .set({ status: "rejected", resolvedAt: new Date() })
+      .set({
+        status: "rejected",
+        resolvedAt: new Date(),
+        // A decision spends the mailed link: clearing the token stops it being
+        // a credential at all, rather than leaving it in the row for a later
+        // status change (or a leaked mailbox) to make live again.
+        confirmationToken: null,
+        tokenExpiresAt: null,
+      })
       .where(eq(stripeReconciliations.id, id)),
   );
 }
@@ -1540,6 +1911,9 @@ export async function resolveStripeReconciliationConfirmed(
           status: "confirmed",
           chosenProductId: productId,
           resolvedAt: new Date(),
+          // Spent — see rejectStripeReconciliation.
+          confirmationToken: null,
+          tokenExpiresAt: null,
         })
         .where(eq(stripeReconciliations.id, reconciliationId));
     }),
@@ -1610,6 +1984,74 @@ export async function createPosAttribution(
   );
 }
 
+/** A queued attribution plus the line it belongs to, enough to rebuild its review. */
+export interface PendingPosAttribution {
+  id: number;
+  posOrderItemId: number;
+  amountRappen: number;
+  candidateProductIds: string;
+  /** Null once a decision has spent it — pending rows always carry one. */
+  confirmationToken: string | null;
+  soldAt: Date;
+  itemLabel: string | null;
+}
+
+// Everything this store has been asked to confirm and hasn't yet. Re-running
+// the day-end pass re-surfaces these rather than treating them as settled:
+// `getUnattributedPosLineItems` deliberately drops a line once it has ANY
+// attribution row, so a run whose email never arrived left its lines queued
+// and unaskable — the next run reported nothing to confirm.
+export async function getPendingPosAttributions(
+  tenantId: number,
+  limit = 50,
+): Promise<PendingPosAttribution[]> {
+  return withDb(
+    (db) =>
+      db
+        .select({
+          id: posAttributions.id,
+          posOrderItemId: posAttributions.posOrderItemId,
+          amountRappen: posAttributions.amountRappen,
+          candidateProductIds: posAttributions.candidateProductIds,
+          confirmationToken: posAttributions.confirmationToken,
+          soldAt: posOrderItems.createdAt,
+          itemLabel: posOrderItems.name,
+        })
+        .from(posAttributions)
+        .innerJoin(
+          posOrderItems,
+          eq(posOrderItems.id, posAttributions.posOrderItemId),
+        )
+        .where(
+          and(
+            eq(posAttributions.tenantId, tenantId),
+            eq(posAttributions.status, "pending_review"),
+          ),
+        )
+        .orderBy(desc(posOrderItems.createdAt))
+        .limit(limit),
+    [],
+  );
+}
+
+// The in-person sibling of getStripeReconciliationById — same tenant predicate,
+// same reason.
+export async function getPosAttributionById(
+  tenantId: number,
+  id: number,
+): Promise<PosAttribution | undefined> {
+  return withDb(async (db) => {
+    const result = await db
+      .select()
+      .from(posAttributions)
+      .where(
+        and(eq(posAttributions.id, id), eq(posAttributions.tenantId, tenantId)),
+      )
+      .limit(1);
+    return result.length > 0 ? result[0] : undefined;
+  }, undefined);
+}
+
 export async function getPosAttributionByToken(
   token: string,
 ): Promise<PosAttribution | undefined> {
@@ -1627,7 +2069,13 @@ export async function rejectPosAttribution(id: number): Promise<void> {
   await withDbOrThrow((db) =>
     db
       .update(posAttributions)
-      .set({ status: "rejected", resolvedAt: new Date() })
+      .set({
+        status: "rejected",
+        resolvedAt: new Date(),
+        // Spent — see rejectStripeReconciliation.
+        confirmationToken: null,
+        tokenExpiresAt: null,
+      })
       .where(eq(posAttributions.id, id)),
   );
 }
@@ -1674,6 +2122,9 @@ export async function resolvePosAttributionConfirmed(
           status: "confirmed",
           chosenProductId: productId,
           resolvedAt: new Date(),
+          // Spent — see rejectStripeReconciliation.
+          confirmationToken: null,
+          tokenExpiresAt: null,
         })
         .where(eq(posAttributions.id, attributionId));
     }),
@@ -1796,6 +2247,78 @@ export async function clearRateLimitWindows(): Promise<void> {
   }, undefined);
 }
 
+// ─── Agent hits ───────────────────────────────────────────────────────────────
+//
+// The reach half of the agent-commerce funnel: who is reading /llms.txt and
+// calling /mcp. See drizzle/schema.ts `agentHits` for why these are counters
+// rather than a request log, and why `tenantId: 0` / `mcpTool: ""` are
+// sentinels rather than NULL.
+
+/**
+ * Count one hit against its bucket, creating the bucket on first sight.
+ *
+ * Fails open through withDb: this is analytics on the path of the endpoint an
+ * AI agent actually buys through, and a database hiccup must never be the
+ * reason `/llms.txt` or `/mcp` returns an error. A lost count is invisible; a
+ * failed checkout is not.
+ */
+export async function recordAgentHit(bucket: {
+  tenantId: number;
+  day: string;
+  surface: string;
+  mcpTool: string;
+  agent: string;
+}): Promise<void> {
+  await withDb(async (db) => {
+    await db
+      .insert(agentHits)
+      .values({ ...bucket, count: 1 })
+      // Fires on the agent_hits_bucket UNIQUE key. Without that index this
+      // would insert a fresh row per request — see the migration's comment.
+      .onDuplicateKeyUpdate({ set: { count: sql`${agentHits.count} + 1` } });
+  }, undefined);
+}
+
+/**
+ * Every bucket for one store since `sinceDay` (inclusive, UTC `YYYY-MM-DD`).
+ *
+ * `tenantId` is applied as a WHERE, not a filter over a wider read, so a
+ * merchant's query can never touch another store's rows — the caller is
+ * already behind tenantAdminProcedure, and this is the second lock.
+ */
+export async function getAgentHits(
+  tenantId: number,
+  sinceDay: string,
+): Promise<AgentHit[]> {
+  return withDb(
+    async (db) =>
+      db
+        .select()
+        .from(agentHits)
+        .where(
+          and(eq(agentHits.tenantId, tenantId), gte(agentHits.day, sinceDay)),
+        )
+        .orderBy(asc(agentHits.day)),
+    [],
+  );
+}
+
+/**
+ * Every bucket across every store and the platform surface. Superadmin only
+ * (server/routers/platform.ts) — no tenant-facing route may call this.
+ */
+export async function getAllAgentHits(sinceDay: string): Promise<AgentHit[]> {
+  return withDb(
+    async (db) =>
+      db
+        .select()
+        .from(agentHits)
+        .where(gte(agentHits.day, sinceDay))
+        .orderBy(asc(agentHits.day)),
+    [],
+  );
+}
+
 // The person to notify about this tenant's activity (e.g. a paid order) —
 // the earliest `role = 'admin'` user row for the tenant, ordered by id so a
 // still-pending claim (see createPendingTenantAdmin) resolves to the same
@@ -1874,6 +2397,37 @@ export async function createTenantSettings(
   data: InsertTenantSetting,
 ): Promise<void> {
   await withDbOrThrow((db) => db.insert(tenantSettings).values(data));
+}
+
+/**
+ * Patch a store's settings by tenant id, creating the row if it is missing.
+ *
+ * tenant.updateSettings does this inline off `ctx.tenant`; this exists for the
+ * callers that are scoped through `ctx.user.tenantId` instead — the shape
+ * CLAUDE.md's authorization table calls the correct use of bare
+ * `adminProcedure` — so they never have to reach for the request's host to
+ * decide whose settings they are writing.
+ */
+export async function upsertTenantSettingsFields(
+  tenantId: number,
+  patch: Partial<InsertTenantSetting>,
+): Promise<void> {
+  if (Object.keys(patch).length === 0) return;
+  await withDbOrThrow(async (db) => {
+    const existing = await db
+      .select({ id: tenantSettings.id })
+      .from(tenantSettings)
+      .where(eq(tenantSettings.tenantId, tenantId))
+      .limit(1);
+    if (existing[0]) {
+      await db
+        .update(tenantSettings)
+        .set({ ...patch, updatedAt: new Date() })
+        .where(eq(tenantSettings.id, existing[0].id));
+    } else {
+      await db.insert(tenantSettings).values({ ...patch, tenantId });
+    }
+  });
 }
 
 // ─── Tenant categories ────────────────────────────────────────────────────────
@@ -2304,8 +2858,148 @@ export async function updateOwnDisplayName(
   );
 }
 
+/**
+ * Bump lastSignedIn on an existing row, touching nothing else. Used when a
+ * magic link signs in as an account minted by another provider — name, email
+ * and loginMethod there belong to that provider and must survive the visit.
+ */
+export async function touchUserLastSignedIn(
+  userId: number,
+  when: Date,
+): Promise<void> {
+  await withDbOrThrow((db) =>
+    db.update(users).set({ lastSignedIn: when }).where(eq(users.id, userId)),
+  );
+}
+
 export async function deleteUserById(id: number): Promise<void> {
   await withDbOrThrow((db) => db.delete(users).where(eq(users.id, id)));
+}
+
+/**
+ * Accounts that MANAGE a store under this email — the lookup behind
+ * magic-link account adoption (server/_core/magicLink.ts).
+ *
+ * Returns every match rather than one, deliberately: with two, the caller
+ * cannot know which store the person meant to sign in to, and adopting the
+ * wrong one drops a merchant into somebody else's admin. Ambiguity has to be
+ * visible to be refused.
+ *
+ * `pending:%` rows are excluded. They are unclaimed-signup placeholders
+ * holding a tenant's admin slot (createPendingTenantAdmin), not logins —
+ * adopting one would hand over a store whose claim token was never presented,
+ * which is the one thing the claim flow exists to require.
+ */
+export async function getManagingUsersByEmail(
+  email: string,
+): Promise<{ id: number; openId: string; tenantId: number; role: string }[]> {
+  return withDb(async (db) => {
+    const rows = await db
+      .select({
+        id: users.id,
+        openId: users.openId,
+        tenantId: users.tenantId,
+        role: users.role,
+      })
+      .from(users)
+      .where(
+        and(
+          // Case-insensitive for the same reason as getStoreUserByEmail:
+          // providers disagree about case, so `A@b.c` and `a@b.c` are one person.
+          sql`LOWER(${users.email}) = LOWER(${email})`,
+          isNotNull(users.tenantId),
+          inArray(users.role, ["superadmin", "admin", "staff"]),
+          sql`${users.openId} NOT LIKE 'pending:%'`,
+        ),
+      )
+      .orderBy(asc(users.id));
+    return rows.flatMap((r) =>
+      r.tenantId == null
+        ? []
+        : [{ id: r.id, openId: r.openId, tenantId: r.tenantId, role: r.role }],
+    );
+  }, []);
+}
+
+/**
+ * Every users row sharing an email, with the context needed to tell them
+ * apart before deleting one (scripts/dedupe-users.ts).
+ *
+ * `users.email` is deliberately NOT unique — `openId` is. Two rows on one
+ * address is therefore a legal state, and often the correct one:
+ *   • one row per tenant, for an owner who runs two stores;
+ *   • a `pending:<token>` claim row beside the real account, when a signup
+ *     was started and the claim never finished (createPendingTenantAdmin);
+ *   • two providers for one person — `google:<sub>` and a magic link — each
+ *     minting its own openId, and so its own row.
+ * Only the last of those is a duplicate worth deleting, which is why this
+ * returns openId/loginMethod/lastSignedIn rather than just the address.
+ */
+export type DuplicateEmailUser = {
+  id: number;
+  tenantId: number | null;
+  tenantName: string | null;
+  email: string | null;
+  name: string | null;
+  openId: string;
+  role: User["role"];
+  loginMethod: string | null;
+  pendingClaim: boolean;
+  createdAt: Date;
+  lastSignedIn: Date;
+};
+
+export async function getUsersByEmail(
+  email: string,
+): Promise<DuplicateEmailUser[]> {
+  return withDb(async (db) => {
+    const rows = await db
+      .select({
+        id: users.id,
+        tenantId: users.tenantId,
+        tenantName: tenants.name,
+        email: users.email,
+        name: users.name,
+        openId: users.openId,
+        role: users.role,
+        loginMethod: users.loginMethod,
+        createdAt: users.createdAt,
+        lastSignedIn: users.lastSignedIn,
+      })
+      .from(users)
+      .leftJoin(tenants, eq(tenants.id, users.tenantId))
+      // Case-insensitive for the same reason as getStoreUserByEmail: providers
+      // disagree about case, so `A@b.c` and `a@b.c` are one person here.
+      .where(sql`LOWER(${users.email}) = LOWER(${email})`)
+      .orderBy(asc(users.id));
+    return rows.map((r) => ({
+      ...r,
+      pendingClaim: r.openId.startsWith("pending:"),
+    }));
+  }, []);
+}
+
+/**
+ * Addresses held by more than one users row, most-duplicated first. The
+ * survey step — `getUsersByEmail` then shows which row is which.
+ */
+export async function findDuplicateEmails(): Promise<
+  { email: string; count: number }[]
+> {
+  return withDb(async (db) => {
+    const rows = await db
+      .select({
+        email: sql<string>`LOWER(${users.email})`.as("email"),
+        count: sql<number>`COUNT(*)`.as("count"),
+      })
+      .from(users)
+      .where(isNotNull(users.email))
+      .groupBy(sql`LOWER(${users.email})`)
+      .having(sql`COUNT(*) > 1`)
+      .orderBy(desc(sql`COUNT(*)`));
+    // MySQL returns COUNT(*) as a string over some driver configurations.
+    return rows.map((r) => ({ email: r.email, count: Number(r.count) }));
+  }, []);
 }
 
 // ─── Billing (Zolto's own subscription relationship with tenants) ─────────────
@@ -2741,4 +3435,803 @@ export async function forgetStorageObject(
         ),
       ),
   );
+}
+
+// ─── Site imports (the paid one-time switch-in) ───────────────────────────────
+
+/**
+ * Record a completed preview. The extraction is stored with it so that the
+ * merchant pays for the result they were actually shown: re-crawling after
+ * payment could return a different shop (a page edited, a product sold out)
+ * from the one they agreed to buy.
+ */
+export async function createSiteImport(entry: {
+  tenantId: number;
+  sourceUrl: string;
+  extraction: unknown;
+  productCount: number;
+}): Promise<number> {
+  return withDbOrThrow(async (db) => {
+    const inserted = await db.insert(siteImports).values({
+      tenantId: entry.tenantId,
+      sourceUrl: entry.sourceUrl,
+      extraction: entry.extraction,
+      productCount: entry.productCount,
+    });
+    return (inserted as unknown as { insertId?: number }).insertId ?? 0;
+  });
+}
+
+/** Read one import, scoped so a tenant can never open another tenant's crawl. */
+export async function getSiteImportForTenant(
+  tenantId: number,
+  id: number,
+): Promise<SiteImport | undefined> {
+  return withDb(async (db) => {
+    const rows = await db
+      .select()
+      .from(siteImports)
+      .where(and(eq(siteImports.tenantId, tenantId), eq(siteImports.id, id)))
+      .limit(1);
+    return rows[0];
+  }, undefined);
+}
+
+/** The most recent import for this tenant, for the admin page's resume state. */
+export async function getLatestSiteImportForTenant(
+  tenantId: number,
+): Promise<SiteImport | undefined> {
+  return withDb(async (db) => {
+    const rows = await db
+      .select()
+      .from(siteImports)
+      .where(eq(siteImports.tenantId, tenantId))
+      .orderBy(desc(siteImports.id))
+      .limit(1);
+    return rows[0];
+  }, undefined);
+}
+
+/** Remember which Checkout Session was opened for this import. */
+export async function setSiteImportCheckoutSession(
+  tenantId: number,
+  id: number,
+  stripeSessionId: string,
+): Promise<void> {
+  await withDbOrThrow((db) =>
+    db
+      .update(siteImports)
+      .set({ stripeSessionId })
+      .where(and(eq(siteImports.tenantId, tenantId), eq(siteImports.id, id))),
+  );
+}
+
+/**
+ * Mark an import paid. Returns true only for the call that actually moved the
+ * row out of `previewed`.
+ *
+ * Stripe retries webhooks, and delivers both `checkout.session.completed` and
+ * `async_payment_succeeded` for the same purchase. The status transition is
+ * the idempotency key: the second delivery matches no rows and reports false,
+ * so the caller does not re-run the import and duplicate the whole catalogue.
+ */
+export async function markSiteImportPaid(entry: {
+  id: number;
+  tenantId: number;
+  amountCents: number | null;
+  currency: string | null;
+}): Promise<boolean> {
+  return withDbOrThrow(async (db) => {
+    const result = await db
+      .update(siteImports)
+      .set({
+        status: "paid",
+        paidAt: new Date(),
+        amountCents: entry.amountCents,
+        currency: entry.currency,
+      })
+      .where(
+        and(
+          eq(siteImports.id, entry.id),
+          eq(siteImports.tenantId, entry.tenantId),
+          eq(siteImports.status, "previewed"),
+        ),
+      );
+    const affected = (result as unknown as Array<{ affectedRows?: number }>)[0]
+      ?.affectedRows;
+    return Boolean(affected);
+  });
+}
+
+/**
+ * Mark an import as landed. Like the payment transition this is guarded by the
+ * status it moves from, so two admins hitting "apply" at once produce one
+ * import and one refusal rather than two copies of every product.
+ */
+export async function markSiteImportApplied(
+  tenantId: number,
+  id: number,
+): Promise<boolean> {
+  return withDbOrThrow(async (db) => {
+    const result = await db
+      .update(siteImports)
+      .set({ status: "applied", appliedAt: new Date() })
+      .where(
+        and(
+          eq(siteImports.id, id),
+          eq(siteImports.tenantId, tenantId),
+          eq(siteImports.status, "paid"),
+        ),
+      );
+    const affected = (result as unknown as Array<{ affectedRows?: number }>)[0]
+      ?.affectedRows;
+    return Boolean(affected);
+  });
+}
+
+/**
+ * Record a failure. Deliberately does not touch a row that already reached
+ * `applied` — a merchant who paid and got their shop must not be shown a
+ * failure because a later step tripped.
+ */
+export async function markSiteImportFailed(
+  tenantId: number,
+  id: number,
+  reason: string,
+): Promise<void> {
+  await withDbOrThrow((db) =>
+    db
+      .update(siteImports)
+      .set({ status: "failed", failureReason: reason.slice(0, 512) })
+      .where(
+        and(
+          eq(siteImports.id, id),
+          eq(siteImports.tenantId, tenantId),
+          or(
+            eq(siteImports.status, "previewed"),
+            eq(siteImports.status, "paid"),
+          ),
+        ),
+      ),
+  );
+}
+
+// ─── Testimonials ─────────────────────────────────────────────────────────────
+
+/**
+ * The quotes a storefront actually shows: published only, in the merchant's
+ * chosen order. Scoped to one tenant like every other storefront read — a
+ * quote belongs to the shop it was given to.
+ */
+export async function getPublishedTestimonials(tenantId: number) {
+  return withDb(
+    (db) =>
+      db
+        .select()
+        .from(testimonials)
+        .where(
+          and(
+            eq(testimonials.tenantId, tenantId),
+            eq(testimonials.published, true),
+          ),
+        )
+        .orderBy(asc(testimonials.sortOrder), desc(testimonials.createdAt)),
+    [],
+  );
+}
+
+/** Everything the admin list shows, published or not. */
+export async function getTestimonials(tenantId: number) {
+  return withDb(
+    (db) =>
+      db
+        .select()
+        .from(testimonials)
+        .where(eq(testimonials.tenantId, tenantId))
+        .orderBy(asc(testimonials.sortOrder), desc(testimonials.createdAt)),
+    [],
+  );
+}
+
+export async function createTestimonial(
+  entry: InsertTestimonial & { tenantId: number },
+): Promise<number> {
+  return withDbOrThrow(async (db) => {
+    const inserted = await db.insert(testimonials).values(entry);
+    return (inserted as unknown as { insertId?: number }).insertId ?? 0;
+  });
+}
+
+/**
+ * Edit one quote. The tenant id is part of the WHERE rather than something the
+ * caller is trusted to have checked first, so a mis-scoped router can only ever
+ * update nothing.
+ */
+export async function updateTestimonial(
+  tenantId: number,
+  id: number,
+  patch: Partial<InsertTestimonial>,
+): Promise<boolean> {
+  return withDbOrThrow(async (db) => {
+    const result = await db
+      .update(testimonials)
+      .set({ ...patch, updatedAt: new Date() })
+      .where(and(eq(testimonials.tenantId, tenantId), eq(testimonials.id, id)));
+    const affected = (result as unknown as Array<{ affectedRows?: number }>)[0]
+      ?.affectedRows;
+    return Boolean(affected);
+  });
+}
+
+export async function deleteTestimonial(
+  tenantId: number,
+  id: number,
+): Promise<void> {
+  await withDbOrThrow((db) =>
+    db
+      .delete(testimonials)
+      .where(and(eq(testimonials.tenantId, tenantId), eq(testimonials.id, id))),
+  );
+}
+
+// ─── Discount codes ───────────────────────────────────────────────────────────
+
+/**
+ * How long a checkout may hold a redemption slot. Matches
+ * PRODUCT_RESERVATION_TTL_MS and the Stripe session's own `expires_at`, so a
+ * hold never outlives the session that placed it.
+ */
+export const DISCOUNT_HOLD_TTL_MS = PRODUCT_RESERVATION_TTL_MS;
+
+/** The admin list: every code this store has ever minted, newest first. */
+export async function getDiscountCodes(tenantId: number) {
+  return withDb(
+    (db) =>
+      db
+        .select()
+        .from(discountCodes)
+        .where(eq(discountCodes.tenantId, tenantId))
+        .orderBy(desc(discountCodes.createdAt)),
+    [],
+  );
+}
+
+/**
+ * Look a code up for redemption. The comparison is on the canonical
+ * (upper-case) form — normaliseDiscountCode in shared/discounts.ts is what
+ * every caller must put the shopper's typing through first.
+ */
+export async function getDiscountCodeByCode(
+  tenantId: number,
+  code: string,
+): Promise<DiscountCode | undefined> {
+  return withDb(async (db) => {
+    const rows = await db
+      .select()
+      .from(discountCodes)
+      .where(
+        and(eq(discountCodes.tenantId, tenantId), eq(discountCodes.code, code)),
+      )
+      .limit(1);
+    return rows[0];
+  }, undefined);
+}
+
+/**
+ * Mint codes. Written as one multi-row insert so a batch of 50 is one round
+ * trip, and deliberately NOT `INSERT IGNORE`: a collision with an existing code
+ * must surface, because silently dropping one row of a batch would hand the
+ * merchant 49 codes while telling them they have 50.
+ */
+export async function createDiscountCodes(
+  entries: (InsertDiscountCode & { tenantId: number })[],
+): Promise<void> {
+  if (entries.length === 0) return;
+  await withDbOrThrow((db) => db.insert(discountCodes).values(entries));
+}
+
+export async function updateDiscountCode(
+  tenantId: number,
+  id: number,
+  patch: Partial<InsertDiscountCode>,
+): Promise<boolean> {
+  return withDbOrThrow(async (db) => {
+    const result = await db
+      .update(discountCodes)
+      .set({ ...patch, updatedAt: new Date() })
+      .where(
+        and(eq(discountCodes.tenantId, tenantId), eq(discountCodes.id, id)),
+      );
+    const affected = (result as unknown as Array<{ affectedRows?: number }>)[0]
+      ?.affectedRows;
+    return Boolean(affected);
+  });
+}
+
+/**
+ * Delete a code that has never been used. Codes WITH redemptions are kept —
+ * `discount_redemptions` rows point at them, and a merchant looking at last
+ * month's orders needs to see which code paid for them. The router refuses the
+ * delete in that case and offers deactivation instead.
+ */
+export async function deleteDiscountCode(
+  tenantId: number,
+  id: number,
+): Promise<void> {
+  await withDbOrThrow((db) =>
+    db
+      .delete(discountCodes)
+      .where(
+        and(eq(discountCodes.tenantId, tenantId), eq(discountCodes.id, id)),
+      ),
+  );
+}
+
+/**
+ * Claim one redemption slot on a code, atomically.
+ *
+ * The whole limit mechanism is this single statement: the increment and the
+ * "is there room?" test are the same UPDATE, so two checkouts racing for the
+ * last slot on a one-use code produce exactly one winner. A read-then-write
+ * check would let both see `redeemed_count = 0` and both proceed — which, for
+ * the friends-and-family shape (max_redemptions = 1), is the difference
+ * between a favour and a leak.
+ *
+ * Returns true when a slot was claimed. `max_redemptions IS NULL` means
+ * unlimited and always claims.
+ */
+export async function claimDiscountRedemptionSlot(
+  tenantId: number,
+  codeId: number,
+): Promise<boolean> {
+  return withDbOrThrow(async (db) => {
+    const result = await db
+      .update(discountCodes)
+      .set({ redeemedCount: sql`${discountCodes.redeemedCount} + 1` })
+      .where(
+        and(
+          eq(discountCodes.id, codeId),
+          eq(discountCodes.tenantId, tenantId),
+          eq(discountCodes.active, true),
+          or(
+            isNull(discountCodes.maxRedemptions),
+            lt(discountCodes.redeemedCount, discountCodes.maxRedemptions),
+          ),
+        ),
+      );
+    const affected = (result as unknown as Array<{ affectedRows?: number }>)[0]
+      ?.affectedRows;
+    return Boolean(affected);
+  });
+}
+
+/**
+ * Give a claimed slot back — the checkout failed, or the hold expired without
+ * a payment. Guarded at zero so a double release (a failure path plus the
+ * expiry sweep) can never drive the count negative and silently grant a
+ * merchant's promotion an extra redemption.
+ */
+export async function releaseDiscountRedemptionSlot(
+  tenantId: number,
+  codeId: number,
+): Promise<void> {
+  await withDbOrThrow((db) =>
+    db
+      .update(discountCodes)
+      .set({ redeemedCount: sql`${discountCodes.redeemedCount} - 1` })
+      .where(
+        and(
+          eq(discountCodes.id, codeId),
+          eq(discountCodes.tenantId, tenantId),
+          gt(discountCodes.redeemedCount, 0),
+        ),
+      ),
+  );
+}
+
+/** Record the hold itself, keyed by the Stripe session it belongs to. */
+export async function createDiscountRedemption(entry: {
+  tenantId: number;
+  discountCodeId: number;
+  stripeSessionId: string;
+  amountOffRappen: number;
+  currency: string;
+  heldUntil: Date;
+}): Promise<void> {
+  await withDbOrThrow((db) =>
+    db.insert(discountRedemptions).values({ ...entry, status: "held" }),
+  );
+}
+
+export async function getDiscountRedemptionBySession(
+  stripeSessionId: string,
+): Promise<DiscountRedemption | undefined> {
+  return withDb(async (db) => {
+    const rows = await db
+      .select()
+      .from(discountRedemptions)
+      .where(eq(discountRedemptions.stripeSessionId, stripeSessionId))
+      .limit(1);
+    return rows[0];
+  }, undefined);
+}
+
+/**
+ * Turn a hold into a redemption that actually happened. Guarded on the `held`
+ * status, so a replayed `checkout.session.completed` — Stripe retries, and the
+ * admin's manual re-fulfil button exists — confirms nothing a second time.
+ * Returns true only for the transition that really moved.
+ */
+export async function confirmDiscountRedemption(
+  stripeSessionId: string,
+  details: { orderId?: number | null; customerEmail?: string | null },
+): Promise<boolean> {
+  return withDbOrThrow(async (db) => {
+    const result = await db
+      .update(discountRedemptions)
+      .set({
+        status: "confirmed",
+        confirmedAt: new Date(),
+        orderId: details.orderId ?? null,
+        customerEmail: details.customerEmail ?? null,
+      })
+      .where(
+        and(
+          eq(discountRedemptions.stripeSessionId, stripeSessionId),
+          eq(discountRedemptions.status, "held"),
+        ),
+      );
+    const affected = (result as unknown as Array<{ affectedRows?: number }>)[0]
+      ?.affectedRows;
+    return Boolean(affected);
+  });
+}
+
+/**
+ * Mark a hold released, returning whether THIS call is the one that moved it.
+ *
+ * The boolean is what makes the paired counter decrement safe. Guarded on the
+ * `held` status, so a row already confirmed by a webhook or already released by
+ * an earlier sweep returns false — and the caller then leaves
+ * `redeemed_count` alone instead of handing a merchant's promotion a free
+ * extra redemption on every subsequent pass.
+ */
+export async function markDiscountRedemptionReleased(
+  stripeSessionId: string,
+): Promise<boolean> {
+  return withDbOrThrow(async (db) => {
+    const result = await db
+      .update(discountRedemptions)
+      .set({ status: "released" })
+      .where(
+        and(
+          eq(discountRedemptions.stripeSessionId, stripeSessionId),
+          eq(discountRedemptions.status, "held"),
+        ),
+      );
+    const affected = (result as unknown as Array<{ affectedRows?: number }>)[0]
+      ?.affectedRows;
+    return Boolean(affected);
+  });
+}
+
+/**
+ * Holds whose sessions have come and gone without being paid. The sweep
+ * (server/discounts.ts) releases their slots, which is what stops abandoned
+ * baskets from burning a limited promotion one un-bought checkout at a time.
+ */
+export async function getExpiredDiscountHolds(
+  scope: { tenantId?: number; discountCodeId?: number; limit?: number } = {},
+): Promise<DiscountRedemption[]> {
+  return withDb(
+    (db) =>
+      db
+        .select()
+        .from(discountRedemptions)
+        .where(
+          and(
+            eq(discountRedemptions.status, "held"),
+            isNotNull(discountRedemptions.heldUntil),
+            lt(discountRedemptions.heldUntil, new Date()),
+            ...(scope.tenantId != null
+              ? [eq(discountRedemptions.tenantId, scope.tenantId)]
+              : []),
+            ...(scope.discountCodeId != null
+              ? [eq(discountRedemptions.discountCodeId, scope.discountCodeId)]
+              : []),
+          ),
+        )
+        .limit(scope.limit ?? 200),
+    [],
+  );
+}
+
+/** Confirmed redemptions of one code, for the admin's "who used this" list. */
+export async function getDiscountRedemptions(
+  tenantId: number,
+  discountCodeId: number,
+  limit = 100,
+) {
+  return withDb(
+    (db) =>
+      db
+        .select()
+        .from(discountRedemptions)
+        .where(
+          and(
+            eq(discountRedemptions.tenantId, tenantId),
+            eq(discountRedemptions.discountCodeId, discountCodeId),
+            eq(discountRedemptions.status, "confirmed"),
+          ),
+        )
+        .orderBy(desc(discountRedemptions.confirmedAt))
+        .limit(limit),
+    [],
+  );
+}
+
+/**
+ * One POS order, scoped to the tenant that owns it — the till polls this while
+ * a scan-to-pay QR is on screen.
+ *
+ * The tenant filter is not decoration. Order ids are sequential across every
+ * store on the platform, so a lookup by id alone would let one merchant watch
+ * (and, through the till's poll, trigger fulfilment of) another's sale simply
+ * by counting.
+ */
+export async function getPosOrderById(tenantId: number, id: number) {
+  return withDb(async (db) => {
+    const rows = await db
+      .select()
+      .from(posOrders)
+      .where(and(eq(posOrders.tenantId, tenantId), eq(posOrders.id, id)))
+      .limit(1);
+    return rows[0] ?? null;
+  }, null);
+}
+
+// ─── Sheet mirrors (Google Sheets mirror of sales + inventory) ────────────────
+//
+// The rows below record only WHERE a store's mirror lives and how the last push
+// went. Nothing the spreadsheet displays is stored here: every tab is rendered
+// from the ledger on each sync (server/sheetMirror.ts), so the sheet can never
+// become a second, disagreeing copy of the truth.
+
+export async function getSheetMirror(
+  tenantId: number,
+): Promise<SheetMirror | null> {
+  return withDb(async (db) => {
+    const rows = await db
+      .select()
+      .from(sheetMirrors)
+      .where(eq(sheetMirrors.tenantId, tenantId))
+      .limit(1);
+    return rows[0] ?? null;
+  }, null);
+}
+
+/** Every connected mirror, for the scheduled sweep. */
+export async function listSheetMirrors(): Promise<SheetMirror[]> {
+  return withDb((db) => db.select().from(sheetMirrors), []);
+}
+
+/**
+ * Record a newly created (or re-created) mirror.
+ *
+ * The upsert relies on `sheet_mirrors_tenant_id_unique`: without that index this
+ * INSERT … ON DUPLICATE KEY UPDATE never collides, and a merchant who pressed
+ * Connect twice would own two spreadsheets, both looking like their books.
+ */
+export async function upsertSheetMirror(entry: {
+  tenantId: number;
+  spreadsheetId: string;
+  spreadsheetUrl: string;
+  sharedWith: string;
+  stockInEnabled: boolean;
+}): Promise<void> {
+  await withDbOrThrow((db) =>
+    db
+      .insert(sheetMirrors)
+      .values({
+        tenantId: entry.tenantId,
+        spreadsheetId: entry.spreadsheetId,
+        spreadsheetUrl: entry.spreadsheetUrl,
+        sharedWith: entry.sharedWith,
+        stockInEnabled: entry.stockInEnabled,
+        lastSyncedAt: null,
+        lastSyncError: null,
+      })
+      .onDuplicateKeyUpdate({
+        set: {
+          spreadsheetId: entry.spreadsheetId,
+          spreadsheetUrl: entry.spreadsheetUrl,
+          sharedWith: entry.sharedWith,
+          stockInEnabled: entry.stockInEnabled,
+          // A reconnect points at a different file, so the previous file's sync
+          // state says nothing about this one.
+          lastSyncedAt: null,
+          lastSyncError: null,
+        },
+      }),
+  );
+}
+
+/**
+ * Stamp the outcome of a push. `error` null means it succeeded — which also
+ * clears any previous failure, so the admin never shows a stale complaint about
+ * a mirror that has since recovered.
+ */
+export async function setSheetMirrorSyncResult(
+  tenantId: number,
+  error: string | null,
+): Promise<void> {
+  await withDbOrThrow((db) =>
+    db
+      .update(sheetMirrors)
+      .set({
+        // Set on failure too: "last attempted" is what makes a stuck mirror
+        // visibly stuck rather than merely never-synced.
+        lastSyncedAt: new Date(),
+        lastSyncError: error ? error.slice(0, 1000) : null,
+      })
+      .where(eq(sheetMirrors.tenantId, tenantId)),
+  );
+}
+
+export async function setSheetMirrorStockIn(
+  tenantId: number,
+  enabled: boolean,
+): Promise<void> {
+  await withDbOrThrow((db) =>
+    db
+      .update(sheetMirrors)
+      .set({ stockInEnabled: enabled })
+      .where(eq(sheetMirrors.tenantId, tenantId)),
+  );
+}
+
+export async function deleteSheetMirror(tenantId: number): Promise<void> {
+  await withDbOrThrow((db) =>
+    db.delete(sheetMirrors).where(eq(sheetMirrors.tenantId, tenantId)),
+  );
+}
+
+// ─── Stock-in: applying an approved sheet edit ────────────────────────────────
+
+export interface StockInChange {
+  productId: number;
+  /** Signed change to apply to `quantity`. 0 for a price-only edit. */
+  quantityDelta: number;
+  /** Absolute new price as a decimal string, or null to leave it alone. */
+  price: string | null;
+}
+
+export interface StockInApplied {
+  productId: number;
+  quantityBefore: number;
+  quantityAfter: number;
+  priceBefore: string;
+  priceAfter: string;
+}
+
+/**
+ * Apply an admin-approved batch of Stock In edits.
+ *
+ * Three deliberate properties, each of which the obvious implementation gets
+ * wrong:
+ *
+ * 1. **Quantity is a DELTA, never an absolute.** The merchant's sheet was read
+ *    at some point in the past; between then and now the till may have sold the
+ *    piece. Writing the sheet's absolute number would silently undo that sale —
+ *    and could resurrect a one-of-a-kind item that is already in a customer's
+ *    bag. `+2 received` composes with concurrent sales; `= 2` fights them.
+ *
+ * 2. **SELECT … FOR UPDATE, then write.** The delta is computed in JS from a
+ *    locked read rather than as `quantity = quantity + n` in SQL, because `sold`
+ *    has to be derived from the resulting quantity in the same statement, and
+ *    MySQL's left-to-right assignment semantics make `sold`'s reference to
+ *    `quantity` mean the pre- or post-update value depending on assignment
+ *    order — a delta applied twice is not a bug worth risking on ordering. The
+ *    row lock also blocks a concurrent POS decrement for the length of the
+ *    transaction, which is what makes the read-then-write safe at all.
+ *
+ * 3. **Reservations are left alone.** `reservedUntil`/`reservedToken` are a live
+ *    online checkout's hold. Receiving stock says nothing about that customer's
+ *    in-flight payment, so clearing it here would let the same piece be sold
+ *    underneath them. `sold` IS updated, because the invariant
+ *    `sold ⇔ quantity <= 0` is shared with setProductQuantity: restocking a
+ *    sold-out item genuinely un-sells it, which is the merchant's whole intent.
+ *
+ * Returns before/after for each row actually changed, for the audit trail.
+ * Products belonging to another tenant, or absent, are skipped rather than
+ * erroring — the caller validated them against a snapshot that may have moved.
+ */
+export async function applyStockInChanges(
+  tenantId: number,
+  changes: StockInChange[],
+): Promise<StockInApplied[]> {
+  if (changes.length === 0) return [];
+  return withDbOrThrow((db) =>
+    db.transaction(async (tx) => {
+      const ids = changes.map((c) => c.productId);
+      const locked = await tx
+        .select({
+          id: products.id,
+          quantity: products.quantity,
+          price: products.price,
+        })
+        .from(products)
+        .where(and(eq(products.tenantId, tenantId), inArray(products.id, ids)))
+        .for("update");
+
+      const current = new Map(locked.map((row) => [row.id, row]));
+      const applied: StockInApplied[] = [];
+
+      for (const change of changes) {
+        const row = current.get(change.productId);
+        if (!row) continue;
+
+        const quantityAfter = Math.max(0, row.quantity + change.quantityDelta);
+        const priceAfter = change.price ?? row.price;
+        if (quantityAfter === row.quantity && priceAfter === row.price)
+          continue;
+
+        await tx
+          .update(products)
+          .set({
+            quantity: quantityAfter,
+            sold: quantityAfter <= 0,
+            price: priceAfter,
+          })
+          .where(
+            and(
+              eq(products.tenantId, tenantId),
+              eq(products.id, change.productId),
+            ),
+          );
+
+        applied.push({
+          productId: change.productId,
+          quantityBefore: row.quantity,
+          quantityAfter,
+          priceBefore: row.price,
+          priceAfter,
+        });
+      }
+
+      return applied;
+    }),
+  );
+}
+
+// ─── Audit log ────────────────────────────────────────────────────────────────
+
+/**
+ * Record an administrative action. Best-effort by design: a failed audit write
+ * must not roll back the change it describes, so this swallows its own errors —
+ * losing a log line is bad, refusing a merchant's approved restock because the
+ * log line failed is worse.
+ */
+export async function insertAuditLog(entry: {
+  tenantId: number;
+  userId: number | null;
+  action: string;
+  resourceType?: string | null;
+  resourceId?: number | null;
+  metadata?: unknown;
+}): Promise<void> {
+  try {
+    await withDbOrThrow((db) =>
+      db.insert(auditLogs).values({
+        tenantId: entry.tenantId,
+        userId: entry.userId,
+        action: entry.action,
+        resourceType: entry.resourceType ?? null,
+        resourceId: entry.resourceId ?? null,
+        metadata: entry.metadata ?? null,
+      }),
+    );
+  } catch (err) {
+    console.error("[Audit] Could not record", entry.action, err);
+  }
 }

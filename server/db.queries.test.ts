@@ -14,6 +14,8 @@ function makeChain(result: unknown) {
     "onDuplicateKeyUpdate",
     "innerJoin",
     "leftJoin",
+    "groupBy",
+    "having",
   ];
   for (const m of methods) chain[m] = () => chain;
   chain.$returningId = () => Promise.resolve(result);
@@ -82,6 +84,23 @@ describe("user reads", () => {
   it("getUserByOpenId returns undefined when not found", async () => {
     selectReturns([]);
     expect(await db.getUserByOpenId("nobody")).toBeUndefined();
+  });
+
+  it("listPlatformOperators returns every superadmin — the accounts the admin shell may act as", async () => {
+    selectReturns([
+      { id: 1, role: "superadmin", email: "owner@zolto.ch" },
+      { id: 4, role: "superadmin", email: "second@zolto.ch" },
+    ]);
+    const operators = await db.listPlatformOperators();
+    expect(operators.map((u) => u.email)).toEqual([
+      "owner@zolto.ch",
+      "second@zolto.ch",
+    ]);
+  });
+
+  it("listPlatformOperators returns nothing on a platform with no owner, rather than throwing", async () => {
+    selectReturns([]);
+    expect(await db.listPlatformOperators()).toEqual([]);
   });
 
   it("getStoreUserByEmail returns the store-attached row when found", async () => {
@@ -403,6 +422,112 @@ describe("tenant writes", () => {
     deleteReturns();
     await db.deleteUserById(1);
     expect(dbMock.delete).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("getManagingUsersByEmail", () => {
+  it("returns every managing row, so ambiguity is visible to the caller", async () => {
+    selectReturns([
+      { id: 12, openId: "google:a", tenantId: 6, role: "admin" },
+      { id: 30, openId: "google:b", tenantId: 9, role: "admin" },
+    ]);
+    const rows = await db.getManagingUsersByEmail("a@b.c");
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toEqual({
+      id: 12,
+      openId: "google:a",
+      tenantId: 6,
+      role: "admin",
+    });
+  });
+
+  // users.tenantId is nullable in the row type even though the query filters
+  // isNotNull; the narrowing must drop stragglers rather than emit tenantId: null
+  // to a caller that is about to sign somebody in.
+  it("drops a row whose tenantId is null", async () => {
+    selectReturns([
+      { id: 12, openId: "google:a", tenantId: null, role: "admin" },
+      { id: 13, openId: "google:b", tenantId: 6, role: "staff" },
+    ]);
+    const rows = await db.getManagingUsersByEmail("a@b.c");
+    expect(rows).toEqual([
+      { id: 13, openId: "google:b", tenantId: 6, role: "staff" },
+    ]);
+  });
+
+  it("returns [] when the address manages nothing", async () => {
+    selectReturns([]);
+    expect(await db.getManagingUsersByEmail("shopper@b.c")).toEqual([]);
+  });
+
+  it("returns [] rather than throwing when the database is down", async () => {
+    dbMock.select.mockImplementation(() => {
+      throw new Error("connection lost");
+    });
+    await expect(db.getManagingUsersByEmail("a@b.c")).resolves.toEqual([]);
+  });
+});
+
+describe("touchUserLastSignedIn", () => {
+  it("updates the row", async () => {
+    updateReturns();
+    await db.touchUserLastSignedIn(12, new Date("2026-08-13T16:08:00Z"));
+    expect(dbMock.update).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("duplicate email lookups", () => {
+  const row = (over: Record<string, unknown> = {}) => ({
+    id: 1,
+    tenantId: 7,
+    tenantName: "Kalakosh",
+    email: "a@b.c",
+    name: "Ada",
+    openId: "google:sub-1",
+    role: "admin",
+    loginMethod: "google",
+    createdAt: new Date("2026-01-01T00:00:00Z"),
+    lastSignedIn: new Date("2026-02-01T00:00:00Z"),
+    ...over,
+  });
+
+  it("getUsersByEmail returns every row on the address", async () => {
+    selectReturns([
+      row(),
+      row({ id: 2, openId: "magic:xyz", loginMethod: "magic" }),
+    ]);
+    const rows = await db.getUsersByEmail("a@b.c");
+    expect(rows).toHaveLength(2);
+    expect(rows.map((r) => r.id)).toEqual([1, 2]);
+    expect(rows[0].tenantName).toBe("Kalakosh");
+  });
+
+  // The whole point of the helper: a pending row is a signup in flight, not a
+  // duplicate, and the caller has to be able to see the difference.
+  it("getUsersByEmail flags unclaimed pending rows", async () => {
+    selectReturns([row(), row({ id: 2, openId: "pending:tok-abc" })]);
+    const rows = await db.getUsersByEmail("a@b.c");
+    expect(rows[0].pendingClaim).toBe(false);
+    expect(rows[1].pendingClaim).toBe(true);
+  });
+
+  it("getUsersByEmail returns [] when the address is unused", async () => {
+    selectReturns([]);
+    expect(await db.getUsersByEmail("nobody@b.c")).toEqual([]);
+  });
+
+  it("findDuplicateEmails coerces the driver's COUNT(*) to a number", async () => {
+    // mysql2 hands back DECIMAL/BIGINT aggregates as strings under some
+    // configurations, which would make `count > 1` comparisons lie.
+    selectReturns([{ email: "a@b.c", count: "3" }]);
+    expect(await db.findDuplicateEmails()).toEqual([
+      { email: "a@b.c", count: 3 },
+    ]);
+  });
+
+  it("findDuplicateEmails returns [] when nothing is duplicated", async () => {
+    selectReturns([]);
+    expect(await db.findDuplicateEmails()).toEqual([]);
   });
 });
 

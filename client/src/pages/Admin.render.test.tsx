@@ -338,6 +338,25 @@ function rowFor(name: string): HTMLElement {
   return screen.getByText(name).closest("tr") as HTMLElement;
 }
 
+function cardFor(name: string): HTMLElement {
+  return screen.getByRole("article", { name });
+}
+
+/** Names of the products currently listed, in the order they render. */
+function listedProducts(): string[] {
+  return ["Silberring", "Bernsteinkette", "Alte Brosche"].filter((n) =>
+    screen.queryAllByText(n).some((el) => el.tagName === "P"),
+  );
+}
+
+function searchBox(): HTMLInputElement {
+  return screen.getByLabelText("Search your inventory") as HTMLInputElement;
+}
+
+function search(query: string) {
+  fireEvent.change(searchBox(), { target: { value: query } });
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.authState.user = { id: 1, role: "admin" };
@@ -600,6 +619,218 @@ describe("Admin page — product row actions", () => {
     fireEvent.click(screen.getByText("Cancel"));
     expect(screen.queryByLabelText("Name (DE) *")).toBeNull();
     expect(mocks.updateMutate).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * The view toggle used to be inert: both settings rendered the identical
+ * table, so "Grid view with thumbnails" was a button that did nothing.
+ */
+describe("Admin page — grid / list view toggle", () => {
+  it("opens on the table, the way the catalogue always has", () => {
+    const { container } = render(<Admin />);
+    expect(container.querySelector("tbody")).toBeTruthy();
+    expect(screen.queryAllByRole("article")).toHaveLength(0);
+  });
+
+  it("replaces the table with thumbnail cards, and puts it back", () => {
+    const { container } = render(<Admin />);
+    fireEvent.click(screen.getByLabelText("Grid view"));
+    expect(container.querySelector("tbody")).toBeNull();
+    expect(screen.getAllByRole("article")).toHaveLength(3);
+    // Every product survives the switch — a view, not a filter.
+    expect(listedProducts()).toEqual([
+      "Silberring",
+      "Bernsteinkette",
+      "Alte Brosche",
+    ]);
+
+    fireEvent.click(screen.getByLabelText("List view"));
+    expect(container.querySelector("tbody")).toBeTruthy();
+    expect(screen.queryAllByRole("article")).toHaveLength(0);
+  });
+
+  it("shows the product's photo, price and status on the card", () => {
+    render(<Admin />);
+    fireEvent.click(screen.getByLabelText("Grid view"));
+    const card = cardFor("Bernsteinkette");
+    expect((within(card).getByRole("img") as HTMLImageElement).src).toBe(
+      "https://img.example/kette.jpg",
+    );
+    expect(within(card).getByText("CHF 240.00")).toBeTruthy();
+    expect(within(card).getByText("Necklaces")).toBeTruthy();
+    expect(within(card).getByText("Visible")).toBeTruthy();
+    // No photo yet — the card falls back to a placeholder rather than a gap.
+    expect(within(cardFor("Silberring")).queryByRole("img")).toBeNull();
+  });
+
+  it("carries the same actions as the row it replaces", () => {
+    render(<Admin />);
+    fireEvent.click(screen.getByLabelText("Grid view"));
+    const card = cardFor("Silberring");
+
+    fireEvent.click(within(card).getByRole("button", { name: "+" }));
+    expect(mocks.setQuantityMutate).toHaveBeenCalledWith({
+      id: 1,
+      quantity: 3,
+    });
+
+    fireEvent.click(within(card).getByTitle("Hide product"));
+    expect(mocks.toggleVisibilityMutate).toHaveBeenCalledWith({
+      id: 1,
+      visible: false,
+    });
+
+    // Delete still takes two taps, on a card as in a row.
+    fireEvent.click(within(card).getByTitle("Delete product"));
+    expect(mocks.deleteMutate).not.toHaveBeenCalled();
+    fireEvent.click(within(card).getByText("Del"));
+    expect(mocks.deleteMutate).toHaveBeenCalledWith({ id: 1 });
+  });
+
+  it("edits a product from its card", () => {
+    render(<Admin />);
+    fireEvent.click(screen.getByLabelText("Grid view"));
+    fireEvent.click(within(cardFor("Silberring")).getByTitle("Edit product"));
+
+    const name = screen.getByLabelText("Name (DE) *") as HTMLInputElement;
+    expect(name.value).toBe("Silberring");
+    fireEvent.change(name, { target: { value: "Neuer Ring" } });
+    fireEvent.click(screen.getByText("Save"));
+    expect(mocks.updateMutate).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 1, name: "Neuer Ring", price: 120 }),
+    );
+    expect(toast.success).toHaveBeenCalledWith("Product updated");
+  });
+
+  it("keeps thumbnails inside the category groups when sorting by category", () => {
+    const { container } = render(<Admin />);
+    fireEvent.click(screen.getByLabelText("Grid view"));
+    fireEvent.keyDown(screen.getByRole("combobox"), { key: "ArrowDown" });
+    fireEvent.keyDown(screen.getByRole("option", { name: "By Category" }), {
+      key: "Enter",
+    });
+    expect(screen.getByRole("button", { name: /Necklaces/ })).toBeTruthy();
+    expect(container.querySelector("tbody")).toBeNull();
+    expect(screen.getAllByRole("article")).toHaveLength(3);
+  });
+});
+
+/**
+ * The filter narrows the catalogue in place — a merchant holding a piece has
+ * to be able to find it by whatever they remember about it, spelled however
+ * they type it, without leaving the page they are working on.
+ */
+describe("Admin page — inventory filter", () => {
+  it("narrows the list to what matches the name", () => {
+    render(<Admin />);
+    search("bernstein");
+    expect(listedProducts()).toEqual(["Bernsteinkette"]);
+  });
+
+  it("survives spelling mistakes", () => {
+    render(<Admin />);
+    search("bernstien"); // swapped pair
+    expect(listedProducts()).toEqual(["Bernsteinkette"]);
+    search("silberrign");
+    expect(listedProducts()).toEqual(["Silberring"]);
+    search("vintge"); // dropped letter, and in the description
+    expect(listedProducts()).toEqual(["Alte Brosche"]);
+  });
+
+  it("matches on price, stock, category and description too", () => {
+    render(<Admin />);
+    search("240");
+    expect(listedProducts()).toEqual(["Bernsteinkette"]);
+    search("brooches");
+    expect(listedProducts()).toEqual(["Alte Brosche"]);
+    expect(searchBox().value).toBe("brooches");
+    search("kette mit");
+    expect(listedProducts()).toEqual(["Bernsteinkette"]);
+  });
+
+  it("matches a translation the row never shows", () => {
+    render(<Admin />);
+    // Rows print the German and English names; the French one lives only in
+    // the database — and the fixture gives it to two of the three products.
+    search("argentée");
+    expect(listedProducts()).toEqual(["Silberring", "Alte Brosche"]);
+    // Typing the accent is optional.
+    search("argentee");
+    expect(listedProducts()).toEqual(["Silberring", "Alte Brosche"]);
+  });
+
+  it("reports the catch against the whole catalogue", () => {
+    render(<Admin />);
+    expect(screen.getByText("3 products")).toBeTruthy();
+    search("bernstein");
+    expect(screen.getByText("1 of 3")).toBeTruthy();
+  });
+
+  it("filters the thumbnail grid as well as the table", () => {
+    render(<Admin />);
+    fireEvent.click(screen.getByLabelText("Grid view"));
+    search("bernstein");
+    expect(screen.getAllByRole("article")).toHaveLength(1);
+    expect(cardFor("Bernsteinkette")).toBeTruthy();
+  });
+
+  it("offers a way back when nothing matches", () => {
+    render(<Admin />);
+    search("zzzzzz");
+    expect(listedProducts()).toEqual([]);
+    expect(screen.getByText("Nothing matches that")).toBeTruthy();
+    expect(
+      screen.getByText(/No product in your inventory matches/),
+    ).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Show all products" }));
+    expect(searchBox().value).toBe("");
+    expect(listedProducts()).toEqual([
+      "Silberring",
+      "Bernsteinkette",
+      "Alte Brosche",
+    ]);
+  });
+
+  it("leaves the catalogue untouched for a whitespace query", () => {
+    render(<Admin />);
+    search("   ");
+    expect(listedProducts()).toEqual([
+      "Silberring",
+      "Bernsteinkette",
+      "Alte Brosche",
+    ]);
+    expect(screen.queryByText("Nothing matches that")).toBeNull();
+  });
+
+  // A collapsed group would hide its own matches, which reads as "the search
+  // found nothing" while the count says otherwise.
+  it("opens the category groups holding matches", () => {
+    render(<Admin />);
+    fireEvent.keyDown(screen.getByRole("combobox"), { key: "ArrowDown" });
+    fireEvent.keyDown(screen.getByRole("option", { name: "By Category" }), {
+      key: "Enter",
+    });
+    fireEvent.click(screen.getByText("Collapse All"));
+    expect(listedProducts()).toEqual([]);
+
+    search("bernstein");
+    expect(listedProducts()).toEqual(["Bernsteinkette"]);
+    // Only the group that matched is left standing.
+    expect(screen.queryByText("Brooches")).toBeNull();
+  });
+
+  it("still lets the merchant act on a filtered row", () => {
+    render(<Admin />);
+    search("bernstein");
+    fireEvent.click(
+      within(rowFor("Bernsteinkette")).getByTitle("Hide product"),
+    );
+    expect(mocks.toggleVisibilityMutate).toHaveBeenCalledWith({
+      id: 2,
+      visible: false,
+    });
   });
 });
 

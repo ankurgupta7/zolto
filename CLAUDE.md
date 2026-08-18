@@ -53,16 +53,41 @@ This renders the real components against the real `index.css` — nothing mocked
 It exists because the full dev server needs a database, which a review sandbox
 usually doesn't have.
 
-Four env vars steer it: `SHOT_URL` picks the entry (`catalog.html` is the
+Env vars steer it: `SHOT_URL` picks the entry (`catalog.html` is the
 catalogue admin page — add `?tour=1` to keep the first-run coach marks —
-and `admin.html?route=…` the settings pages), `SHOT_LANG` the language,
-`SHOT_VIEWPORT=390x844` phone width, and `SHOT_CLICK="Add Product"` clicks a
+and `admin.html?route=…` the settings pages, which render inside the real
+storefront navbar the shell has to clear), `SHOT_LANG` the language,
+`SHOT_VIEWPORT=390x844` phone width, `SHOT_CLICK="Add Product"` clicks a
 control before capturing (comma-separate for a sequence: `"Next,Next"` walks a
-tour along). With `SHOT_FULLPAGE=0` the shot is the viewport only, which is
-what proves an interaction left its result on screen rather than somewhere
-down the page.
+tour along), and `SHOT_SCROLL=1400` leaves the page scrolled down that far.
+With `SHOT_FULLPAGE=0` the shot is the viewport only, which is what proves an
+interaction left its result on screen rather than somewhere down the page —
+and, with `SHOT_SCROLL`, that sticky chrome actually stuck.
 
-Five things it has already caught that every test suite passed straight
+The homepage is a reel of full-viewport posts, each made of panels you swipe
+sideways through, so a full-page shot of it is a 12,000px image nobody can read:
+`SHOT_CHAPTER=4` and `SHOT_PANEL=12` move to one post or one slide first and
+print where they landed (`SHOT_PANEL` scrolls both axes — down to the slide's
+post and sideways to the slide, and reports `slide 2/4`). Pair either with
+`SHOT_FULLPAGE=0`. The harness mounts pages without `MarketingShell`, so it
+stands a 4rem sticky header in for the reel — a band 64px taller than production
+would flatter every panel's fit. Add `?shell` to the URL to mount the real
+chrome instead (tRPC is stubbed to a logged-out visitor) — the nav bar is where
+the lockup and the theme switch live, so it is the only way to look at either.
+
+The marketing surface has two themes, and a class name is identical in both:
+`SHOT_THEME=light` shoots it in light mode. Every shot prints the theme it
+actually painted, read back off the DOM. A theme change that has not been shot
+has not been looked at, and no unit test will say so.
+
+A first-time visitor's theme comes from their OS, not from a stored choice —
+`DEFAULT_PREFERENCE` in `marketing/lib/theme.ts` is `"system"` — so a shot with
+no `SHOT_THEME` is shooting one of two possible arrivals. `SHOT_OS=dark` is the
+other one; Playwright defaults to light, which is the majority case in the wild.
+`tools/screenshot/logos.html` stands both colourways of the brush-Z lockup on
+the nav bars they have to survive, at 32px and at 16px.
+
+Ten things it has already caught that every test suite passed straight
 through, and which are worth checking for by eye:
 
 - **Tailwind emitting no utilities at all.** v4 infers content paths from the
@@ -85,6 +110,39 @@ through, and which are worth checking for by eye:
   page corner. Collapse such a control by _unmounting_ it, not with `hidden`,
   and let `useTourActive()` unfold it while a tour runs — the admin header does
   both. Check it with `SHOT_URL=…/catalog.html?tour=1 SHOT_CLICK="Next,Next"`.
+- **A layout that only works at the viewport it was tuned to.** The homepage
+  reel snapped whole chapters and was measured at 1440x900, where all six fit.
+  It fit nowhere else: 0 of 6 on a phone (a chapter is ~2.8 screens at 393px),
+  2 of 6 on an iPad or a 1280x800 laptop. Snap targets are now viewport-sized
+  panels, and the strength is measured rather than assumed — but the lesson is
+  the measuring: shoot and measure at 375, 393, 768, 1280 and 1440 before
+  believing a full-viewport layout works.
+- **A translucent panel used as an overlay.** The admin sidebar is a column on
+  a desktop and a drawer over the page on a phone — the same `bg-muted/30` that
+  reads as a tint beside content is a window through it, so the form underneath
+  showed through the nav labels. Any element that changes from beside-content to
+  over-content at a breakpoint needs an opaque background on the small side.
+- **A grid item with auto margins silently sized to its content.** The reel's
+  horizontal track is a `Container`, so it arrives with `mx-auto` — and a grid
+  item with auto margins does not stretch to its column. It sized itself to its
+  content instead: a 692px scroller inside a 393px post, the right-hand two
+  thirds clipped by the chapter's `overflow-hidden`, with a plausible-looking
+  first screen and a green test suite. Anything that must fill its grid area
+  needs an explicit `w-full` — and it is worth measuring `clientWidth` against
+  the viewport, not only heights.
+- **A custom variant quietly beating a Tailwind one.** `tall:` (min-height) is
+  registered after Tailwind's own breakpoints, so on a 1440x900 desktop both
+  `tall:` and `md:` match and the _later_ rule wins — the one-inventory node kept
+  its 64px phone size on a desktop, with "INVENTORY" spilling out of the ring.
+  Scope the phone step to `tall:max-md:` whenever an `md:` rule sets the same
+  property, and measure the element rather than trusting the class list.
+- **A swipe row nested inside a swipe track.** `SqueezePlayTills` and
+  `DiaryTeaser` each carried their own `snap-x overflow-x-auto` row for phones.
+  Inside the reel's carousel that is a scroller in a scroller: the inner one
+  eats the gesture and strands the reader mid-post. A component with a
+  phone-swipe variant needs a `dense` shape that stacks or compacts instead —
+  and `Landing.test.tsx` now fails if any `overflow-x-auto` appears inside a
+  reel track.
 
 `fonts loaded: NONE ⚠` in the output means the shot is showing fallback faces
 and proves nothing about typography — the vendored fonts in

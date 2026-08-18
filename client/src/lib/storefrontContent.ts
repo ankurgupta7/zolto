@@ -13,9 +13,17 @@
  * live in the per-language CONTENT record below — one entry per language, so a
  * new string is added in all four places at once rather than via if-chains.
  *
- * This is template copy, not a CMS. Merchant-authored content (custom about text,
- * their own legal terms) is a later enhancement; these builders are the sensible
- * default until then.
+ * A merchant can now override the parts of this that are theirs to write — the
+ * hero headline and subtitle, the About body, and their legal identity — via
+ * `StorefrontContent` below. Everything they leave blank still comes from these
+ * templates, so a store that writes nothing looks exactly as it always has.
+ * What stays template-only is the copy that is about the *platform's* commerce
+ * behaviour rather than the merchant's voice: the FAQ, the terms, and the three
+ * home-page value props.
+ *
+ * One deliberate limit: authored copy is plain text, never markup. No storefront
+ * surface renders merchant-supplied HTML or markdown, and paragraph splitting on
+ * blank lines is enough structure for the two places that take prose.
  */
 import type { Branding } from "./branding";
 import type { SupportedLanguage } from "./languages";
@@ -23,6 +31,88 @@ import type { SupportedLanguage } from "./languages";
 export interface FaqItem {
   question: string;
   answer: string;
+}
+
+/**
+ * What a merchant has written for their own storefront, straight off
+ * `tenant_settings`. Every field is null for a store that has written nothing,
+ * and null always means "fall back to the generated copy" — never "render an
+ * empty page".
+ *
+ * Kept separate from `Branding` on purpose: branding is the themeable chrome
+ * (name, colors, logo, contact channels) that every surface reads, while this
+ * is page content that only the storefront's own pages care about.
+ */
+export interface StorefrontContent {
+  /** Home hero background image. Null → the platform's default `/hero-bg.svg`. */
+  heroImageUrl: string | null;
+  /** Home hero H1. Null → the store name, which is what it has always shown. */
+  heroHeadline: string | null;
+  /** The sentence under the hero H1. Null → the generic template sentence. */
+  heroSubtitle: string | null;
+  /** About page body, blank-line separated into paragraphs. Plain text. */
+  aboutBody: string | null;
+  /** Registered entity name for the imprint, e.g. "Bergblume Keramik GmbH". */
+  companyLegalName: string | null;
+  /** Registered postal address, free-form and possibly multi-line. */
+  companyAddress: string | null;
+  vatNumber: string | null;
+  companyRegistration: string | null;
+}
+
+/** A store that has authored nothing — every page falls back to template copy. */
+export const EMPTY_CONTENT: StorefrontContent = {
+  heroImageUrl: null,
+  heroHeadline: null,
+  heroSubtitle: null,
+  aboutBody: null,
+  companyLegalName: null,
+  companyAddress: null,
+  vatNumber: null,
+  companyRegistration: null,
+};
+
+/** The shape `tenant.getSettings` returns, narrowed to the fields read here. */
+export type ContentSettingsLike = Partial<
+  Record<keyof StorefrontContent, string | null | undefined>
+>;
+
+/** Blank or whitespace-only is "not written", same as null. */
+function authored(value: string | null | undefined): string | null {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : null;
+}
+
+/**
+ * Read a tenant's authored content off its settings row. Mirrors `brandingFrom`
+ * in branding.ts — the settings row is the only source, and anything missing,
+ * null or blank collapses to null so callers only ever branch on null.
+ */
+export function contentFrom(
+  settings: ContentSettingsLike | null | undefined,
+): StorefrontContent {
+  return {
+    heroImageUrl: authored(settings?.heroImageUrl),
+    heroHeadline: authored(settings?.heroHeadline),
+    heroSubtitle: authored(settings?.heroSubtitle),
+    aboutBody: authored(settings?.aboutBody),
+    companyLegalName: authored(settings?.companyLegalName),
+    companyAddress: authored(settings?.companyAddress),
+    vatNumber: authored(settings?.vatNumber),
+    companyRegistration: authored(settings?.companyRegistration),
+  };
+}
+
+/**
+ * Split authored prose into paragraphs on blank lines. A merchant writing in a
+ * textarea separates thoughts with an empty line; single newlines inside a
+ * paragraph are wrapping, not structure, so they collapse to spaces.
+ */
+export function toParagraphs(body: string): string[] {
+  return body
+    .split(/\n\s*\n/)
+    .map((para) => para.trim().replace(/\s*\n\s*/g, " "))
+    .filter(Boolean);
 }
 
 export interface ContentSection {
@@ -77,6 +167,10 @@ interface LangContent {
     title: string;
     operatedBy: (store: string) => string;
     emailLine: (email: string) => string;
+    /** The address is free-form and often multi-line; the label sits above it. */
+    addressLine: (address: string) => string;
+    vatLine: (vat: string) => string;
+    registrationLine: (registration: string) => string;
     responsibility: string;
   };
   chrome: {
@@ -191,6 +285,10 @@ const CONTENT: Record<SupportedLanguage, LangContent> = {
       title: "Legal Notice",
       operatedBy: (store) => `Operated by ${store}.`,
       emailLine: (email) => `Email: ${email}`,
+      addressLine: (address) => `Address:\n${address}`,
+      vatLine: (vat) => `VAT number: ${vat}`,
+      registrationLine: (registration) =>
+        `Commercial register: ${registration}`,
       responsibility:
         "This store is responsible for its own listings, fulfilment, and customer service.",
     },
@@ -305,6 +403,9 @@ const CONTENT: Record<SupportedLanguage, LangContent> = {
       title: "Impressum",
       operatedBy: (store) => `Betrieben von ${store}.`,
       emailLine: (email) => `E-Mail: ${email}`,
+      addressLine: (address) => `Adresse:\n${address}`,
+      vatLine: (vat) => `MWST-Nummer: ${vat}`,
+      registrationLine: (registration) => `Handelsregister: ${registration}`,
       responsibility:
         "Dieser Shop ist selbst für seine Angebote, den Versand und den Kundendienst verantwortlich.",
     },
@@ -419,6 +520,10 @@ const CONTENT: Record<SupportedLanguage, LangContent> = {
       title: "Mentions légales",
       operatedBy: (store) => `Exploité par ${store}.`,
       emailLine: (email) => `E-mail : ${email}`,
+      addressLine: (address) => `Adresse :\n${address}`,
+      vatLine: (vat) => `Numéro de TVA : ${vat}`,
+      registrationLine: (registration) =>
+        `Registre du commerce : ${registration}`,
       responsibility:
         "Cette boutique est responsable de ses propres annonces, de l'expédition et du service client.",
     },
@@ -532,6 +637,10 @@ const CONTENT: Record<SupportedLanguage, LangContent> = {
       title: "Note legali",
       operatedBy: (store) => `Gestito da ${store}.`,
       emailLine: (email) => `E-mail: ${email}`,
+      addressLine: (address) => `Indirizzo:\n${address}`,
+      vatLine: (vat) => `Partita IVA: ${vat}`,
+      registrationLine: (registration) =>
+        `Registro di commercio: ${registration}`,
       responsibility:
         "Questo negozio è responsabile delle proprie inserzioni, della spedizione e del servizio clienti.",
     },
@@ -579,22 +688,38 @@ const VALUE_PROP_ICONS = ["◈", "◇", "○"] as const;
  * Generators
  * ──────────────────────────────────────────────────────────────────────────── */
 
-/** Hero copy for the storefront home. */
+/**
+ * Hero copy for the storefront home. A merchant's own headline and subtitle
+ * win where they wrote one; the rest stays template.
+ *
+ * Authored copy is NOT translated — a merchant writes one headline, and it is
+ * shown to every visitor whatever language they browse in. Machine-translating
+ * a store's own words would be worse than leaving them as written, and the
+ * alternative (a headline per language) is four times the work for a field
+ * most stores will fill in once.
+ */
 export function heroCopy(
   branding: Branding,
   lang: SupportedLanguage = "en",
+  content: StorefrontContent = EMPTY_CONTENT,
 ): {
   badge: string;
   title: string;
   subtitle: string;
+  /** Background image for the hero band; the platform default if unset. */
+  imageUrl: string;
 } {
   const c = CONTENT[lang].hero;
   return {
     badge: c.badge,
-    title: branding.storeName,
-    subtitle: c.subtitle,
+    title: content.heroHeadline ?? branding.storeName,
+    subtitle: content.heroSubtitle ?? c.subtitle,
+    imageUrl: content.heroImageUrl ?? DEFAULT_HERO_IMAGE,
   };
 }
+
+/** The platform's own hero background, used until a store supplies one. */
+export const DEFAULT_HERO_IMAGE = "/hero-bg.svg";
 
 /** Three neutral value props for the home page (replaces the founder story). */
 export function valueProps(
@@ -640,18 +765,35 @@ export function genericFaq(
   return items;
 }
 
-/** Generic "About {store}" content. */
+/**
+ * "About {store}" content — the merchant's own words when they wrote some,
+ * the generic template otherwise. The heading stays templated and translated
+ * either way, so an authored body still sits under "About {store}" in the
+ * visitor's language.
+ */
 export function genericAbout(
   branding: Branding,
   lang: SupportedLanguage = "en",
+  content: StorefrontContent = EMPTY_CONTENT,
 ): {
   title: string;
   paragraphs: string[];
+  /** True when the paragraphs are the merchant's, not the template's. */
+  authored: boolean;
 } {
   const c = CONTENT[lang].about;
+  // An authored body that is only whitespace would render a blank page;
+  // contentFrom already collapses that to null, and toParagraphs dropping
+  // every paragraph is the second guard.
+  const authoredParagraphs = content.aboutBody
+    ? toParagraphs(content.aboutBody)
+    : [];
   return {
     title: c.title(branding.storeName),
-    paragraphs: c.paragraphs(branding.storeName),
+    paragraphs: authoredParagraphs.length
+      ? authoredParagraphs
+      : c.paragraphs(branding.storeName),
+    authored: authoredParagraphs.length > 0,
   };
 }
 
@@ -678,19 +820,43 @@ export function genericTermsSections(
   ];
 }
 
-/** Generic imprint / legal-notice fields. */
+/**
+ * Imprint / legal-notice fields.
+ *
+ * The operator line names the registered entity when the merchant supplied
+ * one ("Bergblume Keramik GmbH") and the trading name otherwise — a legal
+ * notice is about the company, not the shopfront. Address, VAT and register
+ * numbers appear only once entered; `hasCompanyDetails` reports whether the
+ * jurisdiction-specific part is filled in at all, so the page can drop its
+ * "you still need to add these" note once it no longer applies.
+ */
 export function genericImprint(
   branding: Branding,
   lang: SupportedLanguage = "en",
+  content: StorefrontContent = EMPTY_CONTENT,
 ): {
   title: string;
   lines: string[];
+  hasCompanyDetails: boolean;
 } {
   const c = CONTENT[lang].imprint;
-  const lines = [c.operatedBy(branding.storeName)];
+  const operator = content.companyLegalName ?? branding.storeName;
+  const lines = [c.operatedBy(operator)];
+  if (content.companyAddress) lines.push(c.addressLine(content.companyAddress));
   if (branding.contactEmail) lines.push(c.emailLine(branding.contactEmail));
+  if (content.vatNumber) lines.push(c.vatLine(content.vatNumber));
+  if (content.companyRegistration)
+    lines.push(c.registrationLine(content.companyRegistration));
   lines.push(c.responsibility);
-  return { title: c.title, lines };
+
+  // The address is the one detail every jurisdiction asks for, so treat it as
+  // the signal that the merchant has done this rather than requiring all four
+  // (a sole trader may have no register entry and no VAT registration).
+  return {
+    title: c.title,
+    lines,
+    hasCompanyDetails: Boolean(content.companyAddress),
+  };
 }
 
 /**

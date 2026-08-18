@@ -21,6 +21,11 @@
         "title": "Plan & Billing",
         "description": "Free in person, forever. {{fee}} on online & AI-agent orders — or Pro, which removes it. Month-to-month, cancel anytime.",
         "notConfigured": "Paid plans aren't purchasable on this deployment yet (Stripe prices not configured). Everything on your current plan keeps working.",
+        "compTitle": "Your store is on the house",
+        "compPlan": "Zolto has given you the {{plan}} plan at no charge — there's nothing to pay for it.",
+        "compFeeWaived": "Zolto takes no platform fee on your online and AI-agent orders.",
+        "compBadge": "On the house",
+        "feesWaived": "Platform fees (0% — on the house)",
         "plansTitle": "Plans",
         "current": "Current",
         "priceFree": "Free",
@@ -184,6 +189,15 @@
         "fieldCategory": "Category",
         "save": "Save",
         "cancel": "Cancel"
+      },
+      "card": {
+        "qty": "Qty",
+        "qtyLabel": "Quantity in stock for {{name}}"
+      },
+      "search": {
+        "noMatchesTitle": "Nothing matches that",
+        "noMatchesBody": "No product in your inventory matches “{{query}}” — not by name, description, price, category or stock.",
+        "clearFilter": "Show all products"
       },
       "instagram": {
         "title": "Curated Post Grid",

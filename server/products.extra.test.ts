@@ -928,6 +928,116 @@ describe("products.csvImport", () => {
     });
     expect(res.failed).toEqual(["Boom"]);
   });
+
+  // ─── Matching by zolto_id ───────────────────────────────────────────────────
+  // The spreadsheet mirror publishes a `zolto_id` column, and re-importing an
+  // edited sheet is the normal workflow. Under name-only matching a rename was
+  // indistinguishable from a new product, so it silently duplicated.
+
+  it("matches on zoltoId and lets the row carry a rename", async () => {
+    db.getAllProducts.mockResolvedValue([
+      product({ id: 1, name: "Silver ring" }),
+    ]);
+    const res = await admin().products.csvImport({
+      rows: [
+        {
+          zoltoId: 1,
+          name: "Silver ring (small)",
+          description: "d",
+          price: 50,
+          category: "Rings",
+        },
+      ],
+    });
+
+    expect(res).toMatchObject({ created: 0, updated: 1, failed: [] });
+    expect(db.createProduct).not.toHaveBeenCalled();
+    expect(db.updateProduct).toHaveBeenCalledWith(
+      7,
+      1,
+      expect.objectContaining({ name: "Silver ring (small)" }),
+    );
+  });
+
+  it("prefers the id over the name when the two disagree", async () => {
+    db.getAllProducts.mockResolvedValue([
+      product({ id: 1, name: "Silver ring" }),
+      product({ id: 2, name: "Gold stud" }),
+    ]);
+    await admin().products.csvImport({
+      rows: [
+        {
+          zoltoId: 2,
+          // The name matches product 1, but the id says 2. The id wins: it is
+          // the stable key, and a name is what the merchant was editing.
+          name: "Silver ring",
+          description: "d",
+          price: 50,
+          category: "Rings",
+        },
+      ],
+    });
+    expect(db.updateProduct).toHaveBeenCalledWith(7, 2, expect.anything());
+  });
+
+  it("still matches by name when the row carries no id", async () => {
+    db.getAllProducts.mockResolvedValue([
+      product({ id: 1, name: "Silver ring" }),
+    ]);
+    const res = await admin().products.csvImport({
+      rows: [
+        {
+          name: "silver RING",
+          description: "d",
+          price: 50,
+          category: "Rings",
+        },
+      ],
+    });
+    expect(res.updated).toBe(1);
+    expect(db.updateProduct).toHaveBeenCalledWith(7, 1, expect.anything());
+  });
+
+  /**
+   * `getAllProducts` is already tenant-scoped, so an id belonging to another
+   * store is simply absent from the lookup — the row falls through to the name
+   * match instead of writing across tenants.
+   */
+  it("cannot reach another store's product through a foreign id", async () => {
+    db.getAllProducts.mockResolvedValue([
+      product({ id: 1, name: "Silver ring" }),
+    ]);
+    const res = await admin().products.csvImport({
+      rows: [
+        {
+          zoltoId: 8888,
+          name: "Brand new",
+          description: "d",
+          price: 50,
+          category: "Rings",
+        },
+      ],
+    });
+    expect(res).toMatchObject({ created: 1, updated: 0 });
+    expect(db.updateProduct).not.toHaveBeenCalled();
+  });
+
+  it("rejects a non-positive zoltoId at the schema", async () => {
+    db.getAllProducts.mockResolvedValue([]);
+    await expect(
+      admin().products.csvImport({
+        rows: [
+          {
+            zoltoId: 0,
+            name: "x",
+            description: "d",
+            price: 10,
+            category: "Rings",
+          },
+        ],
+      }),
+    ).rejects.toThrow();
+  });
 });
 
 describe("products.parseHandwrittenInventory", () => {

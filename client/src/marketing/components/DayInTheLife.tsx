@@ -53,7 +53,7 @@ function Beat({
     <ScrollReveal
       as="li"
       delay={index * 160}
-      className="relative pb-12 last:pb-0 sm:pl-12"
+      className="relative pb-3.5 last:pb-0 sm:pb-12 sm:pl-12"
     >
       {/* Numbered node, sitting on the spine. */}
       <span className="absolute left-0 top-0 hidden h-8 w-8 items-center justify-center rounded-full border border-[var(--brand-accent)] bg-[var(--brand-surface-2)] font-serif text-sm font-bold text-[var(--brand-ink)] lining-nums tabular-nums sm:flex">
@@ -64,22 +64,22 @@ function Beat({
         ref={ref}
         data-drawn={inView ? "true" : "false"}
         data-testid="day-beat"
-        className="grid items-center gap-6 sm:grid-cols-[1fr_auto]"
+        className="grid items-center gap-2 sm:grid-cols-[1fr_auto] sm:gap-6"
       >
         <div>
           <p className="font-hand text-xl leading-none text-[var(--brand-accent)]">
             {st(`sellingFlow.${index}.timeOfDay`, step.timeOfDay)}
           </p>
-          <h3 className="mt-2 font-serif text-xl text-[var(--brand-text)]">
+          <h3 className="mt-1.5 font-serif text-xl text-[var(--brand-text)] sm:mt-2">
             {st(`sellingFlow.${index}.title`, step.title)}
           </h3>
-          <p className="mt-2 max-w-md text-sm leading-relaxed text-[var(--brand-muted-2)]">
+          <p className="mt-1.5 max-w-md text-[13px] leading-snug text-[var(--brand-muted-2)] sm:mt-2 sm:text-sm sm:leading-relaxed">
             {st(`sellingFlow.${index}.detail`, step.detail)}
           </p>
         </div>
 
         {Scene && (
-          <Scene className="h-28 w-36 shrink-0 justify-self-start text-[var(--brand-accent)] sm:justify-self-end" />
+          <Scene className="h-12 w-16 shrink-0 justify-self-start text-[var(--brand-accent)] sm:h-28 sm:w-36 sm:justify-self-end" />
         )}
       </div>
     </ScrollReveal>

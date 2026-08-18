@@ -36,6 +36,9 @@ const pendingAttribution = {
   candidateProductIds: "7,8",
   chosenProductId: null,
   confirmationToken: "tok_abc",
+  // A mailed link is only live inside its window; a row with no expiry reads as
+  // expired, so every fixture that expects the link to work needs one.
+  tokenExpiresAt: new Date(Date.now() + 7 * 86400 * 1000),
 };
 
 const sampleProduct = {
@@ -145,6 +148,54 @@ describe("POST /api/pos-attribution/confirm", () => {
       .send({ token: "tok_abc", choice: "0" });
 
     expect(res.status).toBe(410);
+    expect(resolvePosAttributionConfirmed).not.toHaveBeenCalled();
+  });
+});
+
+// The in-person sibling of the same two rules — see reconciliationRoutes.test.ts.
+describe("the mailed link's lifetime", () => {
+  it("410s on an expired link, without touching stock", async () => {
+    getPosAttributionByToken.mockResolvedValue({
+      ...pendingAttribution,
+      tokenExpiresAt: new Date(Date.now() - 60_000),
+    });
+    const app = buildApp();
+
+    const get = await request(app).get(
+      "/api/pos-attribution/confirm?token=tok_abc&choice=0",
+    );
+    expect(get.status).toBe(410);
+
+    const post = await request(app)
+      .post("/api/pos-attribution/confirm")
+      .type("form")
+      .send({ token: "tok_abc", choice: "0" });
+    expect(post.status).toBe(410);
+    expect(resolvePosAttributionConfirmed).not.toHaveBeenCalled();
+    expect(rejectPosAttribution).not.toHaveBeenCalled();
+  });
+
+  it("410s on a row whose expiry was never set", async () => {
+    getPosAttributionByToken.mockResolvedValue({
+      ...pendingAttribution,
+      tokenExpiresAt: null,
+    });
+    const app = buildApp();
+    const res = await request(app).get(
+      "/api/pos-attribution/confirm?token=tok_abc&choice=0",
+    );
+    expect(res.status).toBe(410);
+  });
+
+  it("404s once the token has been spent", async () => {
+    getPosAttributionByToken.mockResolvedValue(undefined);
+    const app = buildApp();
+    const res = await request(app)
+      .post("/api/pos-attribution/confirm")
+      .type("form")
+      .send({ token: "tok_abc", choice: "0" });
+
+    expect(res.status).toBe(404);
     expect(resolvePosAttributionConfirmed).not.toHaveBeenCalled();
   });
 });

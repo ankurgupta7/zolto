@@ -69,7 +69,11 @@ export function detectDelimiter(headerLine: string): "," | ";" | "\t" {
       counts[ch]++;
     }
   }
-  if (counts[";"] >= counts[","] && counts[";"] >= counts["\t"] && counts[";"] > 0)
+  if (
+    counts[";"] >= counts[","] &&
+    counts[";"] >= counts["\t"] &&
+    counts[";"] > 0
+  )
     return ";";
   if (counts["\t"] > counts[","]) return "\t";
   return ",";
@@ -199,11 +203,7 @@ const PRESETS: Record<CsvMigrationProvider, ProviderPreset> = {
       "artikel",
     ],
     variantKeys: ["variations", "variante", "varianten", "variant", "option"],
-    descriptionKeys: [
-      "description",
-      "beschreibung",
-      "descrizione",
-    ],
+    descriptionKeys: ["description", "beschreibung", "descrizione"],
     priceKeys: [
       "price",
       "preis",
@@ -326,9 +326,11 @@ export function parseProviderCsv(
   }
 
   const headers = table[0].map(normalizeHeader);
-  const records = table.slice(1).map((cells) =>
-    Object.fromEntries(headers.map((h, i) => [h, cells[i] ?? ""])),
-  );
+  const records = table
+    .slice(1)
+    .map((cells) =>
+      Object.fromEntries(headers.map((h, i) => [h, cells[i] ?? ""])),
+    );
 
   const nameRecognized = preset.nameKeys.some((k) => headers.includes(k));
   if (!nameRecognized) {

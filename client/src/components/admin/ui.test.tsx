@@ -5,7 +5,13 @@ import { memoryLocation } from "wouter/memory-location";
 import i18n from "@/lib/i18n";
 import { ADMIN_NAV } from "@/admin/nav";
 import coreEn from "@/admin/locales/core.en.json";
-import { AdminOnly, EmptyState, LoadingState, PlanGate, navLabelKey } from "./ui";
+import {
+  AdminOnly,
+  EmptyState,
+  LoadingState,
+  PlanGate,
+  navLabelKey,
+} from "./ui";
 
 beforeEach(async () => {
   // Language tests below switch languages; every test starts from English.

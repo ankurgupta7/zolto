@@ -13,6 +13,7 @@ import Admin from "./pages/Admin";
 import Billing from "./pages/Billing";
 import ClaimStaff from "./pages/ClaimStaff";
 import SignIn from "./pages/SignIn";
+import PosPair from "./pages/PosPair";
 import SupportChat from "./components/SupportChat";
 import BulkUpload from "./pages/BulkUpload";
 import CsvImport from "./pages/CsvImport";
@@ -32,15 +33,21 @@ import { CartProvider } from "./contexts/CartContext";
 import { TenantProvider } from "./contexts/TenantContext";
 import { useSmoothScroll, lenisRef } from "./hooks/useSmoothScroll";
 import { resolveSurface, type SurfaceResolution } from "./lib/surface";
+import { captureDiscountFromUrl } from "./lib/discountLink";
 import MarketingApp from "./marketing/MarketingApp";
 import { ADMIN_NAV } from "./admin/nav";
 import AdminLayout from "./components/admin/AdminLayout";
 import AdminPlaceholder from "./components/admin/AdminPlaceholder";
 import Storefront from "./pages/admin/Storefront";
+import Testimonials from "./pages/admin/Testimonials";
+import Discounts from "./pages/admin/Discounts";
 import Domain from "./pages/admin/Domain";
 import Channels from "./pages/admin/Channels";
 import Pos from "./pages/admin/Pos";
+import Till from "./pages/admin/Till";
 import Orders from "./pages/admin/Orders";
+import Sales from "./pages/admin/Sales";
+import Sheets from "./pages/admin/Sheets";
 import Reconciliation from "./pages/admin/Reconciliation";
 import AdminInsights from "./pages/admin/Insights";
 import AdminImport from "./pages/admin/Import";
@@ -94,11 +101,16 @@ const ADMIN_PAGES: Record<string, ComponentType> = {
   import: AdminImport,
   categories: AdminCategories,
   orders: Orders,
+  sales: Sales,
+  sheets: Sheets,
   reconciliation: Reconciliation,
   storefront: Storefront,
+  testimonials: Testimonials,
+  discounts: Discounts,
   domain: Domain,
   channels: Channels,
   pos: Pos,
+  till: Till,
   insights: AdminInsights,
   // Account plane
   account: ShopProfile,
@@ -113,11 +125,29 @@ const ADMIN_PAGES: Record<string, ComponentType> = {
   platform: Platform,
 };
 
+/**
+ * Pick a `?discount=` code off the URL and keep it for this visit.
+ *
+ * A merchant's share link lands on any storefront page (usually /shop), but the
+ * code is needed at checkout several navigations later — so it is captured here,
+ * once, wherever the visitor arrives. See lib/discountLink.ts for why the code
+ * lives in sessionStorage rather than localStorage.
+ */
+function CaptureDiscountLink() {
+  const [location] = useLocation();
+  // biome-ignore lint/correctness/useExhaustiveDependencies: re-check on every route change — a share link can be followed mid-visit
+  useEffect(() => {
+    captureDiscountFromUrl(window.location.search);
+  }, [location]);
+  return null;
+}
+
 function StorefrontRouter() {
   useSmoothScroll();
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <ScrollToTop />
+      <CaptureDiscountLink />
       <Navbar />
       <main className="flex-1">
         <Switch>
@@ -136,6 +166,11 @@ function StorefrontRouter() {
               const.ts getSignInPath) — offers all sign-in methods and returns
               the merchant to ?next=. */}
           <Route path="/signin" component={SignIn} />
+          {/* Where a `zolto://pair` link lands when the register app isn't
+              installed yet. Unauthenticated on purpose: the till phone has never
+              signed in to the admin, and the token in the URL carries the
+              authority. */}
+          <Route path="/pos/pair" component={PosPair} />
           {ADMIN_NAV.map((item) => {
             const Page = ADMIN_PAGES[item.id];
             return (

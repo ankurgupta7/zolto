@@ -3,6 +3,7 @@ import express from "express";
 import request from "supertest";
 import Stripe from "stripe";
 
+const getDb = vi.fn(async () => null);
 const getOrderBySessionId = vi.fn();
 const markProductsSold = vi.fn();
 const releaseProductReservations = vi.fn();
@@ -17,6 +18,11 @@ const sendOrderReceipt = vi.fn();
 const sendOwnerOrderEmail = vi.fn();
 
 vi.mock("./db", () => ({
+  // Storefront fulfilment asks POS first (a till session on either endpoint
+  // must not be mistaken for a storefront order — see posStripeRouting.test.ts).
+  // With no database the POS dispatch claims nothing, which is what every event
+  // in this file is: an ordinary storefront sale.
+  getDb: (...args: unknown[]) => getDb(...args),
   getOrderBySessionId: (...args: unknown[]) => getOrderBySessionId(...args),
   markProductsSold: (...args: unknown[]) => markProductsSold(...args),
   releaseProductReservations: (...args: unknown[]) =>
@@ -32,6 +38,15 @@ vi.mock("./db", () => ({
 
 vi.mock("./_core/notification", () => ({
   notifyOwner: (...args: unknown[]) => notifyOwner(...args),
+}));
+
+// Discount bookkeeping is unit-tested in discounts.test.ts. Mocked here so
+// fulfillment's call into it can be asserted, and so the great majority of
+// orders — which carry no code — are seen to pass through it harmlessly.
+const confirmDiscountForSession = vi.fn(async () => {});
+vi.mock("./discounts", () => ({
+  confirmDiscountForSession: (...args: unknown[]) =>
+    confirmDiscountForSession(...args),
 }));
 
 vi.mock("./_core/email", () => ({
@@ -161,6 +176,23 @@ describe("fulfillOrder", () => {
     expect(markProductsSold).toHaveBeenCalledWith(3, [1, 2]);
     expect(notifyOwner).toHaveBeenCalledTimes(1);
     expect(notifyOwner.mock.calls[0][0].content).toContain("CHF 185.00");
+  });
+
+  it("confirms the discount hold this session was holding", async () => {
+    getOrderBySessionId.mockResolvedValue({ ...baseOrder });
+    await fulfillOrder(makeSession());
+    expect(confirmDiscountForSession).toHaveBeenCalledWith("cs_test_123", {
+      orderId: 1,
+      customerEmail: "buyer@example.com",
+    });
+  });
+
+  // Already-paid orders return before any of this: a webhook Stripe retried
+  // must not confirm a redemption a second time.
+  it("does not re-confirm a discount on an order that was already fulfilled", async () => {
+    getOrderBySessionId.mockResolvedValue({ ...baseOrder, status: "paid" });
+    await fulfillOrder(makeSession());
+    expect(confirmDiscountForSession).not.toHaveBeenCalled();
   });
 
   it("emails the tenant's own admin (not just the platform Discord DM) when one is on file", async () => {

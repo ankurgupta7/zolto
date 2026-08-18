@@ -2,6 +2,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { MIGRATE_FROM_PROVIDERS, NOT_ADMIN_ERR_MSG } from "@shared/const";
 import { TEMPLATE_IDS, STORE_TEMPLATES } from "@shared/templates";
+import { normaliseTrustpilotDomain } from "@shared/trustpilot";
 import {
   router,
   publicProcedure,
@@ -9,8 +10,9 @@ import {
   adminProcedure,
   requireTenant,
   tenantAdminProcedure,
-  PLAN_FEATURES,
+  featuresForTenant,
 } from "../_core/trpc";
+import { entitlementsFor } from "@shared/entitlements";
 import {
   db,
   getTenantBySlug,
@@ -50,6 +52,14 @@ import { buildConnectAuthorizeUrl } from "../stripeConnect";
 import { deriveOnboardingStatus } from "../onboarding";
 import { createRateLimiter } from "../rateLimit";
 import { generatePosApiKey, hashPosApiKey } from "../posApiKey";
+import {
+  buildPairingDeepLink,
+  buildPairingWebLink,
+  canMintPairingToken,
+  mintPairingToken,
+  rememberPosApiKey,
+} from "../posPairing";
+import { getPosDownloads } from "../posDownloads";
 import { tenants, tenantSettings } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
 import crypto from "node:crypto";
@@ -64,6 +74,22 @@ function generateReferralCode(): string {
 
 const HEX_COLOR = /^#[0-9A-Fa-f]{6}$/;
 
+// The merchant-authored text columns on tenant_settings — the store's own
+// words (hero, About, display name) and its legal identity. All share one
+// rule: NULL means "nothing written, use the generated template copy", so
+// updateSettings normalises a submitted blank string to NULL rather than
+// storing an empty one that would read as "written, but empty".
+const AUTHORED_TEXT_FIELDS = [
+  "heroHeadline",
+  "heroSubtitle",
+  "aboutBody",
+  "whiteLabelName",
+  "companyLegalName",
+  "companyAddress",
+  "vatNumber",
+  "companyRegistration",
+] as const;
+
 // Signup accepts the merchant's logo inline (same reasoning as setTwintQr: the
 // merchant has a file, not a URL). SVG is deliberately excluded — a stored SVG
 // served from /uploads can carry script, and nothing here sanitizes it.
@@ -76,6 +102,16 @@ const LOGO_MIME_TYPES = ["image/png", "image/jpeg", "image/webp"] as const;
 // hits the wall fast.
 const logoPaletteLimiter = createRateLimiter({
   limit: 10,
+  windowMs: 60 * 60 * 1000,
+});
+
+// Each pairing link is a live route to a store's POS key, so an admin session
+// cannot mint them without bound. Keyed per tenant rather than per IP: the cost
+// of abuse is a pile of redeemable links for THAT store, and a shared office IP
+// shouldn't make one merchant's minting count against another's. Generous enough
+// to set up several registers in a sitting.
+const posPairingMintLimiter = createRateLimiter({
+  limit: 20,
   windowMs: 60 * 60 * 1000,
 });
 
@@ -168,6 +204,12 @@ export const tenantRouter = router({
         slug: tenant.slug,
         name: tenant.name,
         plan: tenant.plan,
+        // Whether this store is ALLOWED to hide the "Made with Zolto" credit,
+        // not whether it does — the switch itself lives on tenant_settings and
+        // comes back from getSettings. Derived (rather than left to the client
+        // to infer from `plan`) so a comped Pro store is honoured here too;
+        // see shared/entitlements.ts on why `plan` alone is never the gate.
+        whiteLabel: featuresForTenant(tenant).whiteLabel,
       };
     }),
 
@@ -256,10 +298,12 @@ export const tenantRouter = router({
         });
       }
 
-      // 3. Create the tenant with a 14-day trial. The POS key is stored ONLY
-      // as a SHA-256 hash; the plaintext is returned here exactly once (the
-      // tenant enters it into their POS app) and is unrecoverable afterwards —
-      // a lost key is rotated, not retrieved (see rotatePosApiKey below).
+      // 3. Create the tenant with a 14-day trial. `tenants.pos_api_key` holds
+      // ONLY a SHA-256 hash; the plaintext is returned here exactly once (the
+      // tenant enters it into their POS app). A copy is also written to the
+      // encrypted tenant-secrets vault below, which is what lets the merchant
+      // later pair a register by tapping a link — a lost key still can't be
+      // read back out of `tenants`, and is rotated rather than retrieved.
       const posApiKeyPlaintext = generatePosApiKey();
       const trialEndsAt = new Date();
       trialEndsAt.setDate(trialEndsAt.getDate() + 14);
@@ -272,6 +316,11 @@ export const tenantRouter = router({
         trialEndsAt,
         referralCode: generateReferralCode(),
       });
+
+      // Vault the key so one-tap register pairing works from day one. Best
+      // effort on purpose — a deployment with no TENANT_SECRETS_KEY must not
+      // fail a signup over a pairing convenience (see rememberPosApiKey).
+      await rememberPosApiKey(tenantId, posApiKeyPlaintext);
 
       // 4. Settings, seeded with the wizard's branding choices and the
       // vertical's starter category list. The logo is uploaded first so its
@@ -610,8 +659,25 @@ rationale: one friendly sentence (max 25 words) naming BOTH colors, e.g. "Deep f
   }),
 
   // ─── Protected: Get my tenant ──────────────────────────────────────────────
+  /**
+   * `plan` is deliberately the **entitled** plan here, not the raw billing
+   * column — every admin screen that reads this gates on it (Domain, Support,
+   * Billing), and a store the platform owner comped onto Pro pays for Free.
+   * Returning the raw column would have shown a comped merchant an upsell for
+   * the plan they had just been given, which is the same failure the
+   * PLAN_FEATURES note in shared/platform.ts records.
+   *
+   * What the store actually pays for is still here as `paidPlan`, alongside
+   * the rest of `entitlementsFor` — so nothing is hidden, it is just no longer
+   * the field a gate reaches for by accident.
+   *
+   * `compNote` is stripped: it's the operator's own shorthand for why a store
+   * was comped, written for the platform console and not for the merchant.
+   */
   me: publicProcedure.use(requireTenant).query(async ({ ctx }) => {
-    return stripPosApiKey(ctx.tenant);
+    const { compNote: _compNote, ...tenant } = stripPosApiKey(ctx.tenant);
+    const entitlements = entitlementsFor(ctx.tenant);
+    return { ...tenant, ...entitlements, plan: entitlements.effectivePlan };
   }),
 
   // ─── Protected: Which store does the signed-in user belong to? ─────────────
@@ -636,14 +702,68 @@ rationale: one friendly sentence (max 25 words) naming BOTH colors, e.g. "Deep f
   // ─── Admin: rotate the POS API key (show-once) ─────────────────────────────
   // The old key stops working the moment this returns — every POS terminal for
   // this tenant must be reconfigured with the new key. Like signup, the
-  // plaintext is returned exactly once; only its SHA-256 is stored.
+  // plaintext is returned exactly once; only its SHA-256 is stored in `tenants`.
+  //
+  // A copy also goes into the encrypted tenant-secrets vault so the merchant can
+  // pair a register later by tapping a link instead of retyping this key — see
+  // server/posPairing.ts for why that trade was made deliberately.
   rotatePosApiKey: adminProcedure.mutation(async ({ ctx }) => {
     const plaintext = generatePosApiKey();
     await db
       .update(tenants)
       .set({ posApiKey: hashPosApiKey(plaintext) })
       .where(eq(tenants.id, ctx.user.tenantId));
+    await rememberPosApiKey(ctx.user.tenantId, plaintext);
     return { posApiKey: plaintext };
+  }),
+
+  // ─── Where a merchant gets the register app ────────────────────────────────
+  // Platform build info, not tenant data — the same two links for every store —
+  // so this is scoped to "signed in" and nothing more. Resolution, caching and
+  // failure handling all live in server/posDownloads.ts.
+  posDownloads: protectedProcedure.query(async () => {
+    return getPosDownloads();
+  }),
+
+  // ─── Admin: mint a one-tap pairing link ────────────────────────────────────
+  // `adminProcedure`, not `tenantAdminProcedure`, and that is correct here for
+  // the reason CLAUDE.md gives: every read and write below is scoped through
+  // ctx.user.tenantId — the caller's OWN store — and nothing touches ctx.tenant,
+  // so pointing at another store's host cannot retarget it.
+  //
+  // Returns a token that expires in minutes and can be redeemed once. The POS
+  // key itself is never returned here; the app fetches it from /api/pos/pair.
+  createPosPairingToken: adminProcedure.mutation(async ({ ctx }) => {
+    const limit = await posPairingMintLimiter.check(`${ctx.user.tenantId}`);
+    if (!limit.allowed) {
+      throw new TRPCError({
+        code: "TOO_MANY_REQUESTS",
+        message: `Too many pairing links requested. Try again in ${limit.retryAfterSeconds}s.`,
+      });
+    }
+
+    const minted = await mintPairingToken(ctx.user.tenantId);
+    if (!minted.ok) {
+      // Keys minted before the vault write existed cannot be recovered, so the
+      // merchant has to rotate once. Surfaced as a value rather than an error
+      // because it is an expected state with a clear next step, not a fault.
+      return { available: false as const, reason: minted.reason };
+    }
+
+    const origin = getCanonicalOrigin(ctx.req);
+    return {
+      available: true as const,
+      deepLink: buildPairingDeepLink(origin, minted.token),
+      webLink: buildPairingWebLink(origin, minted.token),
+      expiresAt: minted.expiresAt,
+    };
+  }),
+
+  // Can this store pair a register by link at all, or must it rotate first?
+  // Split from the mutation so the UI can render the right affordance without
+  // burning a token to find out.
+  posPairingAvailable: adminProcedure.query(async ({ ctx }) => {
+    return { available: await canMintPairingToken(ctx.user.tenantId) };
   }),
 
   // ─── Admin: Onboarding checklist (derived — see server/onboarding.ts) ──────
@@ -781,10 +901,41 @@ rationale: one friendly sentence (max 25 words) naming BOTH colors, e.g. "Deep f
         // can pull in the new preset via categories.applyPreset.
         vertical: z.enum(VERTICALS).optional(),
         verticalDescription: z.string().trim().max(500).nullable().optional(),
+        // ── Merchant-authored storefront content ────────────────────────────
+        // Nullable, not merely optional: null is how a merchant deletes what
+        // they wrote and goes back to the generated template copy. `.optional()`
+        // alone (as the older branding fields above use) can only ever set a
+        // value, never clear one. Lengths match the columns in drizzle/schema.ts.
+        heroImageUrl: z.string().url().max(1024).nullable().optional(),
+        heroHeadline: z.string().trim().max(120).nullable().optional(),
+        heroSubtitle: z.string().trim().max(300).nullable().optional(),
+        aboutBody: z.string().trim().max(5000).nullable().optional(),
+        // The store's display name on its own storefront, receipts and
+        // notification emails. The column has been read server-side since it
+        // was added (htmlHead.ts, pos.ts, discord.ts, slack.ts, whatsapp.ts,
+        // reconciliation.ts) but was missing from this schema, so nothing
+        // could ever set it.
+        whiteLabelName: z.string().trim().max(255).nullable().optional(),
+        // Hide the "Made with Zolto" credit — the white-label plan feature,
+        // enforced below.
+        hideZoltoBadge: z.boolean().optional(),
+        // ── Trustpilot ──────────────────────────────────────────────────────
+        // The business unit's domain, as the merchant pastes it — a bare
+        // domain or a full profile URL, both of which normalise to the same
+        // thing (shared/trustpilot.ts). Refused rather than stored when it
+        // isn't a plausible domain: a dead "read our reviews" link reads as a
+        // broken shop, which is worse than no link. Null disconnects.
+        trustpilotDomain: z.string().trim().max(512).nullable().optional(),
+        trustpilotShowRating: z.boolean().optional(),
+        // Legal identity for the storefront's Impressum.
+        companyLegalName: z.string().trim().max(255).nullable().optional(),
+        companyAddress: z.string().trim().max(300).nullable().optional(),
+        vatNumber: z.string().trim().max(64).nullable().optional(),
+        companyRegistration: z.string().trim().max(64).nullable().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const features = PLAN_FEATURES[ctx.tenant.plan];
+      const features = featuresForTenant(ctx.tenant);
 
       if (input.publicDomain !== undefined && !features.customDomain) {
         throw new TRPCError({
@@ -809,6 +960,17 @@ rationale: one friendly sentence (max 25 words) naming BOTH colors, e.g. "Deep f
           });
         }
       }
+      // Hiding the platform credit is the white-label feature. Only the *hide*
+      // direction is gated: a store that drops to Free must always be able to
+      // set this back to false, and shared/attribution.ts already ignores a
+      // stale `true` so the credit reappears the moment the plan lapses.
+      if (input.hideZoltoBadge === true && !features.whiteLabel) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message:
+            'Hiding the "Made with Zolto" credit requires the Pro plan. Please upgrade.',
+        });
+      }
       if (
         input.currency !== undefined &&
         input.currency !== "chf" &&
@@ -821,6 +983,41 @@ rationale: one friendly sentence (max 25 words) naming BOTH colors, e.g. "Deep f
         });
       }
 
+      // A merchant who empties one of the authored-content boxes sends "",
+      // which would store a blank string where NULL means "fall back to the
+      // generated copy". Normalising here keeps "has this store written
+      // anything?" a null check everywhere downstream — including the imprint,
+      // which hides its "you still need to add your legal details" note once
+      // the details exist, and must not be fooled by an empty string.
+      const patch = { ...input };
+      for (const field of AUTHORED_TEXT_FIELDS) {
+        if (patch[field] === "") patch[field] = null;
+      }
+
+      // Trustpilot: store the canonical bare domain, whatever the merchant
+      // pasted. An unparseable value is refused here rather than saved,
+      // because the storefront turns this column straight into a link — and a
+      // link to a Trustpilot page that doesn't exist reads, to a shopper, as a
+      // shop that made its reviews up.
+      if (input.trustpilotDomain !== undefined) {
+        const raw = input.trustpilotDomain?.trim() ?? "";
+        if (raw === "") {
+          patch.trustpilotDomain = null;
+        } else {
+          const domain = normaliseTrustpilotDomain(raw);
+          if (!domain) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message:
+                "That doesn't look like a Trustpilot profile. Paste your " +
+                "profile link (ch.trustpilot.com/review/…) or the domain you " +
+                "registered with Trustpilot, like example.ch.",
+            });
+          }
+          patch.trustpilotDomain = domain;
+        }
+      }
+
       const existing = await db.query.tenantSettings.findFirst({
         where: eq(tenantSettings.tenantId, ctx.tenant.id),
       });
@@ -828,12 +1025,12 @@ rationale: one friendly sentence (max 25 words) naming BOTH colors, e.g. "Deep f
       if (existing) {
         await db
           .update(tenantSettings)
-          .set({ ...input, updatedAt: new Date() })
+          .set({ ...patch, updatedAt: new Date() })
           .where(eq(tenantSettings.id, existing.id));
       } else {
         await db.insert(tenantSettings).values({
           tenantId: ctx.tenant.id,
-          ...input,
+          ...patch,
         });
       }
 

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 /**
@@ -7,11 +7,14 @@ import { createPortal } from "react-dom";
  * the scroll-parallax; this supplies the ambient motion).
  *
  * It renders as a fixed, full-viewport canvas that sits *in front of* page
- * content (but below the sticky chrome at z-50) with `mix-blend-mode: screen`.
- * Screen blend means the warm particles glow against the dark mahogany bands
- * (hero, closing CTA) and all but vanish over the light cream sections and
- * product photography — so the effect reads where it flatters and stays out of
- * the way where it wouldn't. `pointer-events: none` keeps it purely decorative.
+ * content (but below the sticky chrome at z-50), blended into it. In the dark
+ * theme that blend is `screen`: the warm particles glow against the mahogany
+ * bands (hero, closing CTA) and all but vanish over the light cream sections
+ * and product photography — so the effect reads where it flatters and stays out
+ * of the way where it wouldn't. The light theme has no mahogany to glow on, so
+ * it inverts the pair (multiply, darker flecks) rather than leaving an empty
+ * canvas; both halves live on `.particle-field` in index.css.
+ * `pointer-events: none` keeps it purely decorative.
  *
  * Motion is paused when the tab is hidden, and honoured `prefers-reduced-motion`
  * renders a single static frame instead of animating.
@@ -43,14 +46,45 @@ interface ParticleFieldProps {
 }
 
 // Warm gold, in the --brand-accent-light family, kept as an "r, g, b" string so
-// per-particle alpha can be composed cheaply.
+// per-particle alpha can be composed cheaply. The fallback for --particle-rgb,
+// which is what actually gets painted (see readParticleRgb).
 const PARTICLE_RGB = "224, 190, 110";
+
+/**
+ * The dust's colour comes from the stylesheet, because the blend mode does.
+ *
+ * Screen blend makes a warm fleck glow on mahogany and vanish on cream, which
+ * is exactly the behaviour this effect wants — until a light theme turns the
+ * bands cream too and the whole field vanishes with them. The light palettes
+ * flip `--particle-blend` to multiply and darken `--particle-rgb`, so the same
+ * canvas paints settling dust instead of catching light. Reading both from CSS
+ * keeps the pairing in one place; getting them out of step is what would show.
+ */
+function readParticleRgb(): string {
+  if (typeof getComputedStyle === "undefined") return PARTICLE_RGB;
+  const value = getComputedStyle(document.documentElement)
+    .getPropertyValue("--particle-rgb")
+    .trim();
+  return value || PARTICLE_RGB;
+}
 
 export default function ParticleField({
   density = 9500,
   className = "",
 }: ParticleFieldProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  // Re-read on a theme switch. Cheaper than a getComputedStyle per frame, and
+  // an observer rather than a prop so the canvas — which is portalled to the
+  // body, outside any theme provider — needs nothing passed down to it.
+  const [rgb, setRgb] = useState(readParticleRgb);
+  useEffect(() => {
+    const observer = new MutationObserver(() => setRgb(readParticleRgb()));
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-theme"],
+    });
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -104,8 +138,8 @@ export default function ParticleField({
       for (const p of particles) {
         // soft glow so each fleck reads as light rather than a flat dot
         const glow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 3);
-        glow.addColorStop(0, `rgba(${PARTICLE_RGB}, ${p.a})`);
-        glow.addColorStop(1, `rgba(${PARTICLE_RGB}, 0)`);
+        glow.addColorStop(0, `rgba(${rgb}, ${p.a})`);
+        glow.addColorStop(1, `rgba(${rgb}, 0)`);
         ctx.fillStyle = glow;
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.r * 3, 0, Math.PI * 2);
@@ -113,7 +147,7 @@ export default function ParticleField({
 
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(${PARTICLE_RGB}, ${Math.min(1, p.a + 0.1)})`;
+        ctx.fillStyle = `rgba(${rgb}, ${Math.min(1, p.a + 0.1)})`;
         ctx.fill();
       }
     };
@@ -180,7 +214,7 @@ export default function ParticleField({
       window.removeEventListener("resize", onResize);
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, [density]);
+  }, [density, rgb]);
 
   if (typeof document === "undefined") return null;
 
@@ -194,7 +228,7 @@ export default function ParticleField({
       ref={canvasRef}
       aria-hidden="true"
       data-testid="particle-field"
-      className={`pointer-events-none fixed inset-0 z-30 mix-blend-screen ${className}`}
+      className={`particle-field pointer-events-none fixed inset-0 z-30 ${className}`}
     />,
     document.body,
   );

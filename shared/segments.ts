@@ -110,7 +110,7 @@ export const SEGMENTS: Segment[] = [
       "storefront",
     ],
     scenario:
-      "A customer messages in German asking whether something's in stock. The listing is already in German, the answer comes back without you, and the stock figure is the same one your till is using.",
+      "A customer messages in German asking whether something's in stock. The listing is already in German, the answer comes back without you, and the stock figure is the same one your register is using.",
   },
 ];
 

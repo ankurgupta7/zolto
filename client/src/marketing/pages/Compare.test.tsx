@@ -28,6 +28,44 @@ describe("Compare — index", () => {
       expect(hrefs).toContain(`/compare/zolto-vs-${c.id}`);
     }
   });
+
+  // These three assertions moved here from Landing.test.tsx with the table
+  // itself: the homepage became a six-chapter reel with no viewport to spare
+  // for a seven-row table, and this index — where the reader is choosing but
+  // hasn't picked a product yet — is the right altitude for the generic one.
+  it("carries the generic old-guard table, row for row", () => {
+    renderCompare("/compare");
+    const table = within(screen.getByTestId("incumbent-comparison"));
+    expect(table.getByText("The old guard")).toBeTruthy();
+    for (const row of INCUMBENT_COMPARISON) {
+      expect(table.getByText(row.feature)).toBeTruthy();
+      expect(table.getByText(row.them)).toBeTruthy();
+      expect(table.getByText(row.us, { exact: false })).toBeTruthy();
+    }
+  });
+
+  it("makes the disruption case without claiming to be the cheapest", () => {
+    // The comparison intro used to open on "a card reader was basically a
+    // status symbol — you're still paying for that era", which stopped being
+    // true when SumUp and Worldline both shipped softPOS. It now concedes the
+    // card rate in its first breath, because the table underneath does too —
+    // and it has to concede the SAME amount. It said "two of them beat us"
+    // while the row beneath it said "every one of them", which is the kind of
+    // gap a reader closes by trusting neither.
+    renderCompare("/compare");
+    expect(
+      screen.getByText(/every one of them beats us on card rate/i),
+    ).toBeTruthy();
+  });
+
+  it("keeps the table's own heading with it", () => {
+    renderCompare("/compare");
+    expect(
+      screen.getByRole("heading", {
+        name: /What you.re actually paying them for/i,
+      }),
+    ).toBeTruthy();
+  });
 });
 
 describe("Compare — per competitor", () => {
@@ -65,7 +103,7 @@ describe("Compare — per competitor", () => {
     // capability matrix. Once the matrix widened from ten payment rows to the
     // whole product, that was the same argument told twice on a page about one
     // named competitor — the second time better. It still renders on the
-    // landing page, where the reader hasn't picked a competitor yet.
+    // /compare index, where the reader hasn't picked a competitor yet.
     renderCompare("/compare/zolto-vs-sumup");
     expect(screen.getByTestId("capability-matrix")).toBeTruthy();
     for (const row of INCUMBENT_COMPARISON) {

@@ -1472,6 +1472,13 @@ Return ONLY valid JSON, no markdown.`,
         rows: z
           .array(
             z.object({
+              /**
+               * The product's own id, from the `zolto_id` column the spreadsheet
+               * mirror publishes (server/sheetMirror.ts). Optional, because a
+               * hand-written CSV or a file exported from another platform has no
+               * such column — but when present it is what the row is matched on.
+               */
+              zoltoId: z.number().int().positive().optional(),
               name: z.string().min(1),
               description: z.string().min(1),
               ...localeCreateFields,
@@ -1491,10 +1498,17 @@ Return ONLY valid JSON, no markdown.`,
         tid,
         input.rows.map((r) => r.category),
       );
-      // Match rows against existing products by name so re-importing the same
-      // sheet (the normal workflow after editing it) updates in place instead
-      // of creating a fresh duplicate row for every already-imported item.
+      // Match rows against existing products so re-importing the same sheet (the
+      // normal workflow after editing it) updates in place instead of creating a
+      // fresh duplicate for every already-imported item.
+      //
+      // By id when the row carries one, and only otherwise by name. Name was the
+      // only key here originally, which made a rename in the sheet indistinguishable
+      // from a new product: editing "Silver ring" to "Silver ring (small)" and
+      // re-importing left the store with both. An id survives a rename, so the
+      // rename lands as an edit — which is what the merchant meant by typing it.
       const existing = await getAllProducts(tid);
+      const byId = new Map(existing.map((p) => [p.id, p]));
       const byName = new Map(
         existing.map((p) => [p.name.trim().toLowerCase(), p]),
       );
@@ -1504,9 +1518,18 @@ Return ONLY valid JSON, no markdown.`,
       const failed: string[] = [];
       for (const row of input.rows) {
         try {
-          const match = byName.get(row.name.trim().toLowerCase());
+          // An id that belongs to another store (or to nothing) is absent from
+          // byId, because `existing` is this tenant's catalogue — so a bad id
+          // falls through to the name match rather than writing across tenants.
+          const match =
+            (row.zoltoId !== undefined ? byId.get(row.zoltoId) : undefined) ??
+            byName.get(row.name.trim().toLowerCase());
           if (match) {
             const patch: Record<string, unknown> = {
+              // Included so an id-matched row can carry a rename. Under the old
+              // name-only matching this was pointless (the name was the key, so
+              // it always already matched) and was therefore never set.
+              name: row.name,
               description: row.description,
               price: String(row.price),
               category: row.category,

@@ -21,7 +21,8 @@ export function AdminPlaceholder({
 }) {
   const { t } = useTranslation("admin");
   const Icon =
-    (icons as unknown as Record<string, icons.LucideIcon>)[icon] ?? icons.Circle;
+    (icons as unknown as Record<string, icons.LucideIcon>)[icon] ??
+    icons.Circle;
   return (
     <div className="flex flex-col items-center justify-center gap-4 py-24 text-center">
       <Icon className="h-10 w-10 text-muted-foreground" aria-hidden="true" />

@@ -27,6 +27,7 @@
     <string name="quantity_badge">%d left</string>
     <string name="selected_summary">%d selected — CHF %s</string>
     <string name="product_hidden">Hidden</string>
+    <string name="product_selected">Selected</string>
 
     <!-- Sale review -->
     <string name="review_sale">Review Sale</string>
@@ -126,6 +127,7 @@
     <string name="setup_key_hint">POS API key</string>
     <string name="setup_connect">Connect</string>
     <string name="setup_checking">Checking…</string>
+    <string name="setup_pairing_link_failed">That pairing link didn’t work — it may have expired or already been used. Generate a new one from your store’s Keys &amp; access page.</string>
 
     <!-- First-time Tap to Pay provisioning -->
     <string name="t2p_provision_title">Card reader setup</string>

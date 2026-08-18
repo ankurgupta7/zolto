@@ -21,6 +21,10 @@ const { dbMock, createStripeCustomer, buildConnectAuthorizeUrl, storagePut } =
       deleteUserById: vi.fn(),
       seedTenantCategories: vi.fn(),
       getTenantSettingsByDomain: vi.fn(),
+      // POS pairing tokens — reached through server/posPairing.ts, which imports
+      // the same ./db module this mock stands in for.
+      createPosPairingToken: vi.fn(),
+      claimPosPairingToken: vi.fn(),
     },
     createStripeCustomer: vi.fn(),
     buildConnectAuthorizeUrl: vi.fn(),
@@ -37,6 +41,7 @@ const vaultMock = vi.hoisted(() => ({
   listTenantSecrets: vi.fn(),
   setTenantSecret: vi.fn(),
   deleteTenantSecret: vi.fn(),
+  getTenantSecret: vi.fn(),
   startGatewayForToken: vi.fn(),
 }));
 vi.mock("../tenantSecrets", () => ({
@@ -44,7 +49,13 @@ vi.mock("../tenantSecrets", () => ({
   listTenantSecrets: vaultMock.listTenantSecrets,
   setTenantSecret: vaultMock.setTenantSecret,
   deleteTenantSecret: vaultMock.deleteTenantSecret,
+  getTenantSecret: vaultMock.getTenantSecret,
 }));
+
+// posDownloads reaches out to GitHub's API. Mocked so the router tests stay
+// offline; its own resolution logic is covered in server/posDownloads.test.ts.
+const getPosDownloads = vi.hoisted(() => vi.fn());
+vi.mock("../posDownloads", () => ({ getPosDownloads }));
 vi.mock("../discord", () => ({
   startGatewayForToken: vaultMock.startGatewayForToken,
 }));
@@ -78,7 +89,14 @@ function ctx(
     tenantId?: number;
     email?: string;
   } | null = null,
-  tenant: { id: number; plan: string } | null = null,
+  tenant: {
+    id: number;
+    plan: string;
+    compPlan?: string | null;
+    compFeeWaived?: boolean;
+    compNote?: string | null;
+    posApiKey?: string;
+  } | null = null,
 ): TrpcContext {
   return {
     req: { protocol: "https", headers: {} } as never,
@@ -1023,6 +1041,64 @@ describe("tenant.getStripeConnectUrl", () => {
   });
 });
 
+describe("tenant.getBySlug", () => {
+  function slugCtx(tenant: Record<string, unknown> | undefined) {
+    dbMock.db.query = {
+      tenants: { findFirst: vi.fn().mockResolvedValue(tenant) },
+    };
+    return tenantRouter.createCaller(ctx());
+  }
+
+  it("tells the storefront whether this store may hide the Zolto credit", async () => {
+    // The storefront footer needs the white-label RIGHT (this) plus the
+    // merchant's switch (from getSettings) — see shared/attribution.ts.
+    const free = await slugCtx({
+      id: 1,
+      slug: "bergblume",
+      name: "Bergblume",
+      plan: "free",
+    }).getBySlug({ slug: "bergblume" });
+    expect(free.whiteLabel).toBe(false);
+
+    const pro = await slugCtx({
+      id: 1,
+      slug: "aurora",
+      name: "Aurora",
+      plan: "pro",
+    }).getBySlug({ slug: "aurora" });
+    expect(pro.whiteLabel).toBe(true);
+  });
+
+  it("honours a comped Pro store, which reading `plan` alone would miss", async () => {
+    const comped = await slugCtx({
+      id: 1,
+      slug: "house",
+      name: "On the house",
+      plan: "free",
+      compPlan: "pro",
+    }).getBySlug({ slug: "house" });
+    expect(comped.plan).toBe("free");
+    expect(comped.whiteLabel).toBe(true);
+  });
+
+  it("never leaks the POS key through the public storefront read", async () => {
+    const res = await slugCtx({
+      id: 1,
+      slug: "bergblume",
+      name: "Bergblume",
+      plan: "free",
+      posApiKey: "secret",
+    }).getBySlug({ slug: "bergblume" });
+    expect(JSON.stringify(res)).not.toContain("secret");
+  });
+
+  it("404s an unknown slug", async () => {
+    await expect(
+      slugCtx(undefined).getBySlug({ slug: "nope" }),
+    ).rejects.toThrow(/not found/i);
+  });
+});
+
 describe("tenant.updateSettings plan gates", () => {
   const admin = { openId: "google:admin", role: "admin", tenantId: 42 };
 
@@ -1084,6 +1160,35 @@ describe("tenant.updateSettings plan gates", () => {
     const { caller, set } = tenantCtx("free");
     await expect(
       caller.updateSettings({ primaryColor: "#2D6B4A", metaTitle: "Hi" }),
+    ).resolves.toEqual({ success: true });
+    expect(set).toHaveBeenCalled();
+  });
+
+  it("rejects hiding the Made with Zolto credit on the free plan", async () => {
+    // The credit is what a Free store pays with; only a white-label plan may
+    // switch it off. shared/attribution.ts ignores a stale `true` anyway, but
+    // the write must not succeed in the first place.
+    const { caller, set } = tenantCtx("free");
+    await expect(
+      caller.updateSettings({ hideZoltoBadge: true }),
+    ).rejects.toThrow(/Pro plan/);
+    expect(set).not.toHaveBeenCalled();
+  });
+
+  it("allows hiding the credit on the Pro plan", async () => {
+    const { caller, set } = tenantCtx("pro");
+    await expect(
+      caller.updateSettings({ hideZoltoBadge: true }),
+    ).resolves.toEqual({ success: true });
+    expect(set).toHaveBeenCalled();
+  });
+
+  it("lets a store on any plan turn the credit back ON", async () => {
+    // Only the hide direction is gated: a store that drops from Pro to Free
+    // must still be able to clear the flag it set while it had the feature.
+    const { caller, set } = tenantCtx("free");
+    await expect(
+      caller.updateSettings({ hideZoltoBadge: false }),
     ).resolves.toEqual({ success: true });
     expect(set).toHaveBeenCalled();
   });
@@ -1166,6 +1271,56 @@ describe("tenant.updateSettings plan gates", () => {
 // its "Admin" heading, so ANY unauthenticated caller who could reach a store's
 // host could rewrite that store's settings — contact email, Discord intake
 // channel, public domain, branding. These pin the guard shut.
+// The client gates (Domain, Support, Billing) all read `plan` off this
+// response, so what it means is a contract and not an implementation detail.
+describe("tenant.me — the plan the admin UI gates on", () => {
+  const admin = { openId: "google:admin", role: "admin", tenantId: 42 };
+  const base = { id: 42, posApiKey: "hashed-secret" };
+
+  it("reports the paid plan for an ordinary store", async () => {
+    const me = await tenantRouter
+      .createCaller(ctx(admin, { ...base, plan: "free" }))
+      .me();
+    expect(me.plan).toBe("free");
+    expect(me.comped).toBe(false);
+  });
+
+  it("reports the comped plan, with the paid one still visible", async () => {
+    const me = await tenantRouter
+      .createCaller(ctx(admin, { ...base, plan: "free", compPlan: "pro" }))
+      .me();
+    expect(me.plan).toBe("pro"); // what the gates read
+    expect(me.paidPlan).toBe("free"); // what Stripe bills
+    expect(me.planComped).toBe(true);
+    expect(me.onlineFeeBps).toBe(0);
+  });
+
+  it("reports a waived fee without inventing a plan grant", async () => {
+    const me = await tenantRouter
+      .createCaller(ctx(admin, { ...base, plan: "free", compFeeWaived: true }))
+      .me();
+    expect(me.plan).toBe("free");
+    expect(me.onlineFeeBps).toBe(0);
+    expect(me.planComped).toBe(false);
+  });
+
+  it("never returns the POS key hash, nor the operator's private note", async () => {
+    const me = await tenantRouter
+      .createCaller(
+        ctx(admin, {
+          ...base,
+          plan: "free",
+          compPlan: "pro",
+          compNote: "friend of the founder",
+        }),
+      )
+      .me();
+    expect(me).not.toHaveProperty("posApiKey");
+    expect(me).not.toHaveProperty("compNote");
+    expect(JSON.stringify(me)).not.toContain("founder");
+  });
+});
+
 describe("tenant.updateSettings authorization", () => {
   function settingsCtx(
     user: { openId: string; role?: string; tenantId?: number } | null,
@@ -1219,6 +1374,19 @@ describe("tenant.updateSettings authorization", () => {
     expect(set).not.toHaveBeenCalled();
   });
 
+  it("refuses an admin of a DIFFERENT store the white-label switch", async () => {
+    // Same cross-tenant shape as above, on the newest gated field: pointing at
+    // store 42's host must not let store 7's admin strip its platform credit.
+    const { caller, set } = settingsCtx(
+      { openId: "google:other", role: "admin", tenantId: 7 },
+      42,
+    );
+    await expect(
+      caller.updateSettings({ hideZoltoBadge: true }),
+    ).rejects.toThrow();
+    expect(set).not.toHaveBeenCalled();
+  });
+
   it("allows this store's own admin", async () => {
     const { caller, set } = settingsCtx({
       openId: "google:admin",
@@ -1242,6 +1410,152 @@ describe("tenant.updateSettings authorization", () => {
       caller.updateSettings({ metaTitle: "Fixed by support" }),
     ).resolves.toEqual({ success: true });
     expect(set).toHaveBeenCalled();
+  });
+});
+
+describe("tenant.updateSettings merchant-authored content", () => {
+  const admin = { openId: "google:admin", role: "admin", tenantId: 42 };
+
+  // `existing: null` is the store that has no tenant_settings row yet — the
+  // insert branch. Not `undefined`, which would re-trigger the default.
+  function settingsCtx(
+    user: Record<string, unknown> | null = admin,
+    tenantId = 42,
+    existing: unknown = { id: 9 },
+  ) {
+    dbMock.db.query = {
+      tenantSettings: { findFirst: vi.fn().mockResolvedValue(existing) },
+    };
+    const where = vi.fn().mockResolvedValue(undefined);
+    const set = vi.fn(() => ({ where }));
+    const values = vi.fn().mockResolvedValue(undefined);
+    dbMock.db.update = vi.fn(() => ({ set }));
+    dbMock.db.insert = vi.fn(() => ({ values }));
+    return {
+      caller: tenantRouter.createCaller(
+        ctx(user, { id: tenantId, plan: "free" }),
+      ),
+      set,
+      values,
+    };
+  }
+
+  it("stores the hero, About and legal fields on every plan", async () => {
+    // None of this is plan-gated: a store's own words are not a paid feature,
+    // and an imprint is a legal obligation rather than an upsell.
+    const { caller, set } = settingsCtx();
+    await expect(
+      caller.updateSettings({
+        heroImageUrl: "https://cdn.example/shopfront.jpg",
+        heroHeadline: "Made by hand",
+        heroSubtitle: "In the old town since 2018",
+        aboutBody: "We opened with one kiln.",
+        whiteLabelName: "Aurora Atelier",
+        companyLegalName: "Aurora Atelier GmbH",
+        companyAddress: "Musterstrasse 1\n8001 Basel",
+        vatNumber: "CHE-123.456.789 MWST",
+        companyRegistration: "CH-020.3.001.234-5",
+      }),
+    ).resolves.toEqual({ success: true });
+    expect(set).toHaveBeenCalledWith(
+      expect.objectContaining({
+        heroHeadline: "Made by hand",
+        aboutBody: "We opened with one kiln.",
+        whiteLabelName: "Aurora Atelier",
+        companyAddress: "Musterstrasse 1\n8001 Basel",
+        vatNumber: "CHE-123.456.789 MWST",
+      }),
+    );
+  });
+
+  // The whole point of `.nullable()` on these fields: a merchant must be able
+  // to delete what they wrote and get the generated copy back. With
+  // `.optional()` alone — as the older branding fields still are — clearing a
+  // box would be indistinguishable from not touching it.
+  it("clears a field back to null", async () => {
+    const { caller, set } = settingsCtx();
+    await caller.updateSettings({ heroHeadline: null, aboutBody: null });
+    expect(set).toHaveBeenCalledWith(
+      expect.objectContaining({ heroHeadline: null, aboutBody: null }),
+    );
+  });
+
+  it("normalises an emptied box to null rather than a blank string", async () => {
+    // "" would read as "written, but empty" downstream — and would fool the
+    // imprint into dropping its "add your legal details" note while showing
+    // no details at all.
+    const { caller, set } = settingsCtx();
+    await caller.updateSettings({
+      heroHeadline: "   ",
+      companyAddress: "",
+      vatNumber: "",
+    });
+    expect(set).toHaveBeenCalledWith(
+      expect.objectContaining({
+        heroHeadline: null,
+        companyAddress: null,
+        vatNumber: null,
+      }),
+    );
+  });
+
+  it("leaves untouched fields out of the update entirely", async () => {
+    const { caller, set } = settingsCtx();
+    await caller.updateSettings({ heroHeadline: "Made by hand" });
+    const patch = set.mock.calls[0][0] as Record<string, unknown>;
+    expect(patch).not.toHaveProperty("aboutBody");
+    expect(patch).not.toHaveProperty("companyAddress");
+  });
+
+  it("writes the same fields when the store has no settings row yet", async () => {
+    const { caller, values } = settingsCtx(admin, 42, null);
+    await caller.updateSettings({ heroHeadline: "Made by hand" });
+    expect(values).toHaveBeenCalledWith(
+      expect.objectContaining({ tenantId: 42, heroHeadline: "Made by hand" }),
+    );
+  });
+
+  it("rejects a banner that is not a URL", async () => {
+    const { caller, set } = settingsCtx();
+    await expect(
+      caller.updateSettings({ heroImageUrl: "shopfront.jpg" }),
+    ).rejects.toThrow();
+    expect(set).not.toHaveBeenCalled();
+  });
+
+  it("rejects copy longer than the column can hold", async () => {
+    // Truncation on the way into MySQL would silently cut a merchant's
+    // sentence in half; a rejection tells them to shorten it themselves.
+    const { caller, set } = settingsCtx();
+    await expect(
+      caller.updateSettings({ heroHeadline: "x".repeat(121) }),
+    ).rejects.toThrow();
+    await expect(
+      caller.updateSettings({ aboutBody: "x".repeat(5001) }),
+    ).rejects.toThrow();
+    expect(set).not.toHaveBeenCalled();
+  });
+
+  it("refuses an admin of a DIFFERENT store", async () => {
+    // The cross-tenant case, which is what actually regresses: a real admin,
+    // but of tenant 7, rewriting tenant 42's home page and legal notice.
+    // Defacing another merchant's storefront needs only the wrong procedure.
+    const { caller, set } = settingsCtx(
+      { openId: "google:other", role: "admin", tenantId: 7 },
+      42,
+    );
+    await expect(
+      caller.updateSettings({ heroHeadline: "Owned" }),
+    ).rejects.toThrow();
+    expect(set).not.toHaveBeenCalled();
+  });
+
+  it("refuses an anonymous caller", async () => {
+    const { caller, set } = settingsCtx(null);
+    await expect(
+      caller.updateSettings({ aboutBody: "Owned" }),
+    ).rejects.toThrow();
+    expect(set).not.toHaveBeenCalled();
   });
 });
 
@@ -1669,5 +1983,174 @@ describe("tenant.domainStatus authorization", () => {
       pointsToUs: false,
     });
     delete process.env.PLATFORM_DOMAIN;
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// POS app downloads + one-tap register pairing
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe("tenant.rotatePosApiKey", () => {
+  function rotateCtx(tenantId = 7) {
+    return ctx({ openId: "google:a", role: "admin", tenantId });
+  }
+
+  beforeEach(() => {
+    // clearAllMocks resets calls but keeps implementations, so restate the
+    // vault defaults — otherwise the "no vault key" case below leaks into every
+    // later test in the file.
+    vaultMock.isTenantSecretsConfigured.mockReturnValue(true);
+    vaultMock.setTenantSecret.mockResolvedValue(undefined);
+    dbMock.db.update = vi.fn(() => ({
+      set: vi.fn(() => ({ where: vi.fn().mockResolvedValue(undefined) })),
+    })) as never;
+  });
+
+  it("returns the plaintext once and vaults a copy for pairing", async () => {
+    const res = await tenantRouter.createCaller(rotateCtx()).rotatePosApiKey();
+
+    expect(res.posApiKey).toMatch(/^[0-9a-f]{64}$/);
+    // The vault copy is what makes a pairing link mintable later without
+    // rotating again and signing every other register out.
+    expect(vaultMock.setTenantSecret).toHaveBeenCalledWith(
+      7,
+      "pos",
+      res.posApiKey,
+    );
+  });
+
+  it("still rotates when the deployment has no vault key", async () => {
+    // A self-hoster without TENANT_SECRETS_KEY must not lose key rotation just
+    // because one-tap pairing is unavailable to them.
+    vaultMock.isTenantSecretsConfigured.mockReturnValue(false);
+    const res = await tenantRouter.createCaller(rotateCtx()).rotatePosApiKey();
+    expect(res.posApiKey).toMatch(/^[0-9a-f]{64}$/);
+    expect(vaultMock.setTenantSecret).not.toHaveBeenCalled();
+  });
+
+  it("still rotates when the vault write itself fails", async () => {
+    vaultMock.setTenantSecret.mockRejectedValue(new Error("vault down"));
+    await expect(
+      tenantRouter.createCaller(rotateCtx()).rotatePosApiKey(),
+    ).resolves.toMatchObject({ posApiKey: expect.any(String) });
+  });
+
+  it("refuses a non-admin", async () => {
+    await expect(
+      tenantRouter
+        .createCaller(ctx({ openId: "google:b", role: "user", tenantId: 7 }))
+        .rotatePosApiKey(),
+    ).rejects.toThrow();
+  });
+});
+
+describe("tenant.posDownloads", () => {
+  it("hands back what the resolver produced, for any signed-in user", async () => {
+    getPosDownloads.mockResolvedValue({
+      android: { url: "https://x.test/a.apk", requiresSideload: false },
+      ios: { url: "https://x.test/a.ipa", requiresSideload: true },
+    });
+    const res = await tenantRouter
+      .createCaller(ctx({ openId: "google:a", role: "user", tenantId: 7 }))
+      .posDownloads();
+    expect(res.android?.url).toBe("https://x.test/a.apk");
+    expect(res.ios?.requiresSideload).toBe(true);
+  });
+
+  it("refuses an anonymous caller", async () => {
+    await expect(
+      tenantRouter.createCaller(ctx()).posDownloads(),
+    ).rejects.toThrow();
+  });
+});
+
+describe("tenant POS pairing links", () => {
+  const admin = { openId: "google:a", role: "admin", tenantId: 7 };
+
+  beforeEach(() => {
+    vaultMock.isTenantSecretsConfigured.mockReturnValue(true);
+    vaultMock.getTenantSecret.mockResolvedValue("k".repeat(64));
+    dbMock.createPosPairingToken.mockResolvedValue(undefined);
+  });
+
+  it("mints a deep link and a web link for the caller's own store", async () => {
+    const res = await tenantRouter
+      .createCaller(ctx(admin))
+      .createPosPairingToken();
+
+    expect(res.available).toBe(true);
+    if (!res.available) return;
+    expect(res.deepLink).toMatch(/^zolto:\/\/pair\?t=/);
+    expect(res.webLink).toContain("/pos/pair?t=");
+    expect(res.expiresAt.getTime()).toBeGreaterThan(Date.now());
+
+    // Stored against tenant 7, and only as a hash.
+    const row = dbMock.createPosPairingToken.mock.calls[0][0];
+    expect(row.tenantId).toBe(7);
+    expect(row.token).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it("never puts the POS key in the link", async () => {
+    // The whole point of the token: a key in a URL lands in history and logs.
+    const key = "k".repeat(64);
+    vaultMock.getTenantSecret.mockResolvedValue(key);
+    const res = await tenantRouter
+      .createCaller(ctx(admin))
+      .createPosPairingToken();
+    if (!res.available) throw new Error("expected a link");
+    expect(res.deepLink).not.toContain(key);
+    expect(res.webLink).not.toContain(key);
+  });
+
+  it("reports needsRotation when the store's key predates the vault", async () => {
+    vaultMock.getTenantSecret.mockResolvedValue(null);
+    const res = await tenantRouter
+      .createCaller(ctx(admin))
+      .createPosPairingToken();
+    expect(res).toEqual({ available: false, reason: "needsRotation" });
+    expect(dbMock.createPosPairingToken).not.toHaveBeenCalled();
+  });
+
+  it("posPairingAvailable answers without minting anything", async () => {
+    await expect(
+      tenantRouter.createCaller(ctx(admin)).posPairingAvailable(),
+    ).resolves.toEqual({ available: true });
+    expect(dbMock.createPosPairingToken).not.toHaveBeenCalled();
+  });
+
+  it("refuses a non-admin and an anonymous caller", async () => {
+    await expect(
+      tenantRouter
+        .createCaller(ctx({ openId: "google:b", role: "user", tenantId: 7 }))
+        .createPosPairingToken(),
+    ).rejects.toThrow();
+    await expect(
+      tenantRouter.createCaller(ctx()).createPosPairingToken(),
+    ).rejects.toThrow();
+    expect(dbMock.createPosPairingToken).not.toHaveBeenCalled();
+  });
+
+  // The cross-tenant case is the one that silently regresses (CLAUDE.md). This
+  // procedure is bare `adminProcedure`, which alone only proves "admin
+  // somewhere" — so what protects store 42 here is that every read and write
+  // goes through ctx.user.tenantId and nothing reads ctx.tenant. Pointing an
+  // admin of store 7 at store 42's host must still only ever mint for store 7.
+  it("mints for the caller's own store even when addressing another store's host", async () => {
+    const res = await tenantRouter
+      .createCaller(ctx(admin, { id: 42, plan: "free" }))
+      .createPosPairingToken();
+
+    expect(res.available).toBe(true);
+    expect(dbMock.createPosPairingToken.mock.calls[0][0].tenantId).toBe(7);
+    expect(vaultMock.getTenantSecret).toHaveBeenCalledWith(7, "pos");
+    expect(vaultMock.getTenantSecret).not.toHaveBeenCalledWith(42, "pos");
+  });
+
+  it("checks availability for the caller's own store, not the addressed host", async () => {
+    await tenantRouter
+      .createCaller(ctx(admin, { id: 42, plan: "free" }))
+      .posPairingAvailable();
+    expect(vaultMock.getTenantSecret).toHaveBeenCalledWith(7, "pos");
+    expect(vaultMock.getTenantSecret).not.toHaveBeenCalledWith(42, "pos");
   });
 });

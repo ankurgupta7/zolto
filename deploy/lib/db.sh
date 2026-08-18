@@ -623,6 +623,289 @@ migrate_0034_magic_link_tokens() {
   fi
 }
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Migration 0044: one-tap POS register pairing.
+#
+# Ships drizzle/0026_pos_pairing_tokens.sql. server/posPairing.ts mints a
+# short-lived single-use token so a merchant can bind a register by tapping a
+# link instead of typing a 64-char key into a phone; without this table minting
+# a pairing link fails on a live deployment. Mirrors the drizzle DDL exactly,
+# including the UNIQUE on `token` that redemption's single-row lookup relies on.
+# Idempotent.
+# ─────────────────────────────────────────────────────────────────────────────
+migrate_0044_pos_pairing_tokens() {
+  if [ "$(tbl_exists pos_pairing_tokens)" = "0" ]; then
+    run_sql "0044 pos_pairing_tokens table" "
+      CREATE TABLE IF NOT EXISTS \`pos_pairing_tokens\` (
+        \`id\`         int AUTO_INCREMENT NOT NULL,
+        \`tenant_id\`  int NOT NULL,
+        \`token\`      varchar(64) NOT NULL,
+        \`expiresAt\`  timestamp NOT NULL,
+        \`consumedAt\` timestamp NULL,
+        \`createdAt\`  timestamp NOT NULL DEFAULT (now()),
+        CONSTRAINT \`pos_pairing_tokens_id\` PRIMARY KEY(\`id\`),
+        CONSTRAINT \`pos_pairing_tokens_token_unique\` UNIQUE(\`token\`)
+      );"
+  else
+    ok "0044 pos_pairing_tokens already exists"
+  fi
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Migration 0045: the paid one-time site import.
+#
+# Ships drizzle/0027_site_imports.sql. server/routers/siteImport.ts writes a row
+# per attempt; without this table the importer's free preview fails outright.
+# `status` carries the previewed → paid → applied order that keeps a replayed
+# Stripe webhook from importing the same shop twice. Idempotent.
+# ─────────────────────────────────────────────────────────────────────────────
+migrate_0045_site_imports() {
+  if [ "$(tbl_exists site_imports)" = "0" ]; then
+    run_sql "0045 site_imports table" "
+      CREATE TABLE IF NOT EXISTS \`site_imports\` (
+        \`id\`                int AUTO_INCREMENT NOT NULL,
+        \`tenant_id\`         int NOT NULL,
+        \`source_url\`        varchar(1024) NOT NULL,
+        \`status\`            enum('previewed','paid','applied','failed') NOT NULL DEFAULT 'previewed',
+        \`extraction\`        json,
+        \`product_count\`     int NOT NULL DEFAULT 0,
+        \`stripe_session_id\` varchar(255),
+        \`amount_cents\`      int,
+        \`currency\`          varchar(3),
+        \`paid_at\`           timestamp NULL,
+        \`applied_at\`        timestamp NULL,
+        \`failure_reason\`    varchar(512),
+        \`createdAt\`         timestamp NOT NULL DEFAULT (now()),
+        CONSTRAINT \`site_imports_id\` PRIMARY KEY(\`id\`)
+      );"
+  else
+    ok "0045 site_imports already exists"
+  fi
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Migration 0049: who is reading the machine-facing surfaces.
+#
+# Ships drizzle/0030_agent_hits.sql. One pre-aggregated counter per
+# (store, day, surface, tool, agent) for /llms.txt, /llms-full.txt and /mcp —
+# the reach half of the agent-commerce funnel, whose sale half is already
+# recorded as `orders.channel = 'agent'`.
+#
+# The UNIQUE key is the whole migration. server/db.ts recordAgentHit is an
+# INSERT … ON DUPLICATE KEY UPDATE, which in MySQL fires only on a PRIMARY KEY
+# or UNIQUE collision; `id` is autoincrement and never supplied, so without
+# `agent_hits_bucket` every single hit INSERTs a new row and the table becomes
+# an unbounded per-request log on the one endpoint an agent can loop on.
+#
+# Both DEFAULTs are load-bearing for the same reason: MySQL treats NULLs as
+# distinct in a UNIQUE index, so a nullable tenant_id (platform surface) or
+# mcp_tool (not an MCP call) would never collide either. Additive and
+# idempotent — nothing reads the table until the admin panel asks.
+# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────
+# Migration 0050: the web till's scan-to-pay sales.
+#
+# A till sale taken by QR is a Stripe Checkout Session, not a Terminal
+# PaymentIntent — and a session that is still open has NO PaymentIntent, since
+# Stripe creates one only when the customer pays. So `stripePaymentIntentId`,
+# which every other POS path writes at order-creation time and which fulfilment
+# looks orders up by, is necessarily null for a QR sale for the whole window in
+# which the code is on screen. The session id is the only link to Stripe until
+# then; fulfilment matches on it and backfills the PaymentIntent id afterwards,
+# so the order still reconciles like any other.
+#
+# UNIQUE for the same reason the PaymentIntent column is: two orders claiming
+# one payment should be refused by the database, not resolved later. MySQL
+# treats NULLs as distinct in a unique index, so the many rows that never had a
+# session (cash, TWINT-QR, Terminal card) stay legal.
+#
+# Additive; nothing reads it until a merchant opens the till.
+# ─────────────────────────────────────────────────────────────────────────────
+# Migration 0051: sheet_mirrors — the Google Sheets mirror of a store.
+#
+# Ships drizzle/0032_sheet_mirrors.sql. One spreadsheet per store, created and
+# owned by the platform service account and then shared with the merchant.
+#
+# tenant_id's UNIQUE key is the only non-obvious part, and it is load-bearing:
+# upsertSheetMirror (server/db.ts) is an INSERT … ON DUPLICATE KEY UPDATE, which
+# in MySQL fires only on a PRIMARY KEY or UNIQUE collision. `id` is autoincrement
+# and never supplied, so without this index every reconnect INSERTs a second row
+# — two spreadsheets for one store, each looking authoritative to whoever opened
+# it, and getSheetMirror's LIMIT 1 deciding which one the sync keeps refreshing.
+# Restored below on any database that somehow has the table without it.
+# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────
+# Migration 0052: review-link tokens get a lifetime, and stop existing once spent.
+#
+# The one-click links in the reconciliation and POS-attribution review emails
+# are bearer credentials — whoever holds the mail can spend them, with no login.
+# They had no expiry, and survived in the row after the decision was recorded,
+# so a forwarded or leaked mailbox stayed actionable indefinitely.
+#
+# tokenExpiresAt bounds a link's life (the app treats NULL as expired, so old
+# rows are backfilled from their creation date rather than grandfathered into
+# never expiring), and confirmationToken becomes nullable so a spent token can
+# be cleared outright. MySQL permits many NULLs under a UNIQUE constraint, so
+# uniqueness of live tokens is unaffected. Idempotent.
+migrate_0052_review_token_lifetime() {
+  # Spelled out per table rather than looped: deploy/schemaDrift.test.ts reads
+  # these statements to prove the deploy path creates every column the app
+  # queries, and it cannot see a table name hidden behind a shell variable.
+  if [ "$(tbl_exists stripe_reconciliations)" = "1" ]; then
+    if [ "$(col_exists stripe_reconciliations tokenExpiresAt)" = "0" ]; then
+      run_sql "0052 add stripe_reconciliations.tokenExpiresAt" \
+        "ALTER TABLE \`stripe_reconciliations\` ADD \`tokenExpiresAt\` timestamp NULL;"
+      # Backfill from creation so links already sitting in inboxes get a
+      # definite end, instead of living forever because they predate the column.
+      run_sql "0052 backfill stripe_reconciliations.tokenExpiresAt" \
+        "UPDATE \`stripe_reconciliations\` SET \`tokenExpiresAt\` = DATE_ADD(\`createdAt\`, INTERVAL 14 DAY) WHERE \`tokenExpiresAt\` IS NULL;"
+    else
+      ok "0052 stripe_reconciliations.tokenExpiresAt already exists"
+    fi
+    run_sql "0052 stripe_reconciliations.confirmationToken nullable" \
+      "ALTER TABLE \`stripe_reconciliations\` MODIFY \`confirmationToken\` varchar(128) NULL;"
+  else
+    ok "0052 stripe_reconciliations does not exist yet — skipping"
+  fi
+
+  if [ "$(tbl_exists pos_attributions)" = "1" ]; then
+    if [ "$(col_exists pos_attributions tokenExpiresAt)" = "0" ]; then
+      run_sql "0052 add pos_attributions.tokenExpiresAt" \
+        "ALTER TABLE \`pos_attributions\` ADD \`tokenExpiresAt\` timestamp NULL;"
+      run_sql "0052 backfill pos_attributions.tokenExpiresAt" \
+        "UPDATE \`pos_attributions\` SET \`tokenExpiresAt\` = DATE_ADD(\`createdAt\`, INTERVAL 14 DAY) WHERE \`tokenExpiresAt\` IS NULL;"
+    else
+      ok "0052 pos_attributions.tokenExpiresAt already exists"
+    fi
+    run_sql "0052 pos_attributions.confirmationToken nullable" \
+      "ALTER TABLE \`pos_attributions\` MODIFY \`confirmationToken\` varchar(128) NULL;"
+  else
+    ok "0052 pos_attributions does not exist yet — skipping"
+  fi
+}
+
+migrate_0051_sheet_mirrors() {
+  if [ "$(tbl_exists sheet_mirrors)" = "0" ]; then
+    run_sql "0051 sheet_mirrors table" "
+      CREATE TABLE IF NOT EXISTS \`sheet_mirrors\` (
+        \`id\`               int AUTO_INCREMENT NOT NULL,
+        \`tenant_id\`        int NOT NULL,
+        \`spreadsheet_id\`   varchar(128) NOT NULL,
+        \`spreadsheet_url\`  varchar(512) NOT NULL,
+        \`shared_with\`      varchar(320) NOT NULL,
+        \`stock_in_enabled\` boolean NOT NULL DEFAULT false,
+        \`last_synced_at\`   timestamp NULL,
+        \`last_sync_error\`  text,
+        \`createdAt\`        timestamp NOT NULL DEFAULT (now()),
+        \`updatedAt\`        timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+        CONSTRAINT \`sheet_mirrors_id\` PRIMARY KEY(\`id\`),
+        CONSTRAINT \`sheet_mirrors_tenant_id_unique\` UNIQUE(\`tenant_id\`)
+      );"
+  else
+    ok "0051 sheet_mirrors already exists"
+    if [ "$(idx_exists sheet_mirrors sheet_mirrors_tenant_id_unique)" = "0" ]; then
+      run_sql "0051 sheet_mirrors tenant unique" \
+        "ALTER TABLE \`sheet_mirrors\` ADD CONSTRAINT \`sheet_mirrors_tenant_id_unique\` UNIQUE(\`tenant_id\`);"
+    else
+      ok "0051 sheet_mirrors_tenant_id_unique already exists"
+    fi
+  fi
+}
+
+migrate_0050_pos_checkout_session() {
+  if [ "$(col_exists pos_orders stripeCheckoutSessionId)" = "0" ]; then
+    run_sql "0050 add pos_orders.stripeCheckoutSessionId" \
+      "ALTER TABLE \`pos_orders\` ADD \`stripeCheckoutSessionId\` varchar(255) NULL;"
+  else
+    ok "0050 pos_orders.stripeCheckoutSessionId already exists"
+  fi
+
+  if [ "$(idx_exists pos_orders pos_orders_stripeCheckoutSessionId_unique)" = "0" ]; then
+    run_sql "0050 pos_orders.stripeCheckoutSessionId unique" \
+      "ALTER TABLE \`pos_orders\` ADD CONSTRAINT \`pos_orders_stripeCheckoutSessionId_unique\` UNIQUE(\`stripeCheckoutSessionId\`);"
+  else
+    ok "0050 pos_orders_stripeCheckoutSessionId_unique already exists"
+  fi
+}
+
+migrate_0049_agent_hits() {
+  if [ "$(tbl_exists agent_hits)" = "0" ]; then
+    run_sql "0049 agent_hits table" "
+      CREATE TABLE IF NOT EXISTS \`agent_hits\` (
+        \`id\`        int AUTO_INCREMENT NOT NULL,
+        \`tenant_id\` int NOT NULL DEFAULT 0,
+        \`day\`       varchar(10) NOT NULL,
+        \`surface\`   varchar(32) NOT NULL,
+        \`mcp_tool\`  varchar(64) NOT NULL DEFAULT '',
+        \`agent\`     varchar(64) NOT NULL,
+        \`count\`     int NOT NULL DEFAULT 0,
+        \`createdAt\` timestamp NOT NULL DEFAULT (now()),
+        \`updatedAt\` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+        CONSTRAINT \`agent_hits_id\` PRIMARY KEY(\`id\`),
+        CONSTRAINT \`agent_hits_bucket\` UNIQUE(\`tenant_id\`,\`day\`,\`surface\`,\`mcp_tool\`,\`agent\`)
+      );"
+  else
+    ok "0049 agent_hits already exists"
+    # A database that got the table before the unique key existed would count
+    # every hit as a fresh row. Restore it rather than leaving the upsert broken.
+    if [ "$(idx_exists agent_hits agent_hits_bucket)" = "0" ]; then
+      run_sql "0049 agent_hits bucket unique index" \
+        "ALTER TABLE \`agent_hits\` ADD CONSTRAINT \`agent_hits_bucket\` UNIQUE(\`tenant_id\`,\`day\`,\`surface\`,\`mcp_tool\`,\`agent\`);"
+    else
+      ok "0049 agent_hits_bucket already exists"
+    fi
+  fi
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Migration 0047: restore users_openId_unique where it is missing.
+#
+# upsertUser writes every sign-in with onDuplicateKeyUpdate, which in MySQL
+# fires only on a PRIMARY KEY or UNIQUE collision. `users.id` is autoincrement
+# and never supplied, so openId's unique index is the ONLY thing that turns a
+# repeat sign-in into an update. Without it every sign-in INSERTs a new row —
+# the same person accumulating an account per visit, silently, with no error
+# anywhere.
+#
+# The baseline created it (drizzle/0000_baseline_2026_07_05.sql). It then
+# disappeared from drizzle/schema.ts and from the meta snapshots at 0004, while
+# every database kept it, because no generated migration ever emitted the DROP.
+# That is survivable until someone runs `npm run db:sync` (drizzle-kit push
+# --force), which reconciles a live database to schema.ts and would drop what
+# the file no longer declares. schema.ts declares it again; this is the other
+# half, for any database where that already happened.
+#
+# Refuses rather than fails when duplicate openIds exist: ADD CONSTRAINT on
+# duplicated data is an error, and run_sql's die() would abort the whole
+# deploy. Merging duplicate accounts is a judgement call about which row's
+# history to keep, so it warns and leaves the database alone.
+# ─────────────────────────────────────────────────────────────────────────────
+migrate_0047_users_openid_unique() {
+  if [ "$(idx_exists users users_openId_unique)" != "0" ]; then
+    ok "0047 users_openId_unique already present"
+    return
+  fi
+
+  local dupes
+  dupes=$($MYSQL -se "${MYSQL_LOCK_TIMEOUT_SQL}SELECT COUNT(*) FROM
+    (SELECT \`openId\` FROM \`users\` GROUP BY \`openId\` HAVING COUNT(*) > 1) d;" 2>/dev/null || echo "")
+
+  if [ -z "$dupes" ]; then
+    warn "0047 could not check users.openId for duplicates — leaving the index alone"
+    return
+  fi
+
+  if [ "$dupes" != "0" ]; then
+    warn "0047 users_openId_unique NOT restored: ${dupes} openId(s) appear on more than one row."
+    warn "     Every sign-in is creating a new row until this is fixed. Merge the"
+    warn "     duplicates (bash deploy/dedupe-users.sh), then re-run this deploy."
+    return
+  fi
+
+  run_sql "0047 restore users_openId_unique" \
+    "ALTER TABLE \`users\` ADD CONSTRAINT \`users_openId_unique\` UNIQUE(\`openId\`);"
+}
+
 migrate_0036_merchant_verticals() {
   # Per-tenant categories + merchant vertical. Ships
   # drizzle/0017_merchant_verticals.sql and 0018_seed_jewellery_categories.sql:
@@ -695,6 +978,115 @@ migrate_0036_merchant_verticals() {
     WHERE NOT EXISTS (
       SELECT 1 FROM \`tenant_categories\` tc WHERE tc.\`tenant_id\` = t.\`id\`
     );"
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Migration 0048: customer trust — Trustpilot, testimonials, discount codes.
+#
+# Ships drizzle/0029_customer_trust.sql. Three additive features that a store
+# either uses or doesn't; a database that gains these columns and tables and
+# nothing else behaves exactly as it did before.
+#
+# The shapes that matter:
+#   - discount_codes.redeemed_count must be NOT NULL DEFAULT 0. It is only ever
+#     moved by a conditional UPDATE (`WHERE redeemed_count < max_redemptions`),
+#     which is what makes a 50-code promotion hold under concurrent checkouts.
+#     A NULL there makes that comparison NULL — never true — and every
+#     redemption of a limited code would be refused.
+#   - discount_redemptions.stripe_session_id must be UNIQUE. It is the
+#     idempotency key for the Stripe webhook: without it a replayed
+#     checkout.session.completed records a second redemption of the same code
+#     and pushes redeemed_count past what the merchant authorised.
+#   - testimonials' unique index is (tenant_id, google_id), not google_id
+#     alone. MySQL exempts NULL from a unique index, so the many rows with no
+#     Google id are unaffected while the same reviewer can't be entered twice
+#     for one store.
+# ─────────────────────────────────────────────────────────────────────────────
+migrate_0048_customer_trust() {
+  if [ "$(col_exists tenant_settings trustpilot_domain)" = "0" ]; then
+    run_sql "0048 add tenant_settings.trustpilot_domain" \
+      "ALTER TABLE \`tenant_settings\` ADD \`trustpilot_domain\` varchar(253) NULL;"
+  else
+    ok "0048 tenant_settings.trustpilot_domain already exists"
+  fi
+
+  if [ "$(col_exists tenant_settings trustpilot_show_rating)" = "0" ]; then
+    run_sql "0048 add tenant_settings.trustpilot_show_rating" \
+      "ALTER TABLE \`tenant_settings\` ADD \`trustpilot_show_rating\` boolean NOT NULL DEFAULT true;"
+  else
+    ok "0048 tenant_settings.trustpilot_show_rating already exists"
+  fi
+
+  if [ "$(tbl_exists testimonials)" = "0" ]; then
+    run_sql "0048 testimonials table" "
+      CREATE TABLE IF NOT EXISTS \`testimonials\` (
+        \`id\`               int AUTO_INCREMENT NOT NULL,
+        \`tenant_id\`        int NOT NULL,
+        \`author_name\`      varchar(120) NOT NULL,
+        \`author_title\`     varchar(120),
+        \`author_photo_url\` varchar(1024),
+        \`google_id\`        varchar(64),
+        \`quote\`            text NOT NULL,
+        \`rating\`           int,
+        \`source\`           enum('manual','google','trustpilot') NOT NULL DEFAULT 'manual',
+        \`published\`        boolean NOT NULL DEFAULT true,
+        \`sort_order\`       int NOT NULL DEFAULT 0,
+        \`createdAt\`        timestamp NOT NULL DEFAULT (now()),
+        \`updatedAt\`        timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+        CONSTRAINT \`testimonials_id\` PRIMARY KEY(\`id\`),
+        CONSTRAINT \`testimonials_tenant_google\` UNIQUE(\`tenant_id\`,\`google_id\`)
+      );"
+  else
+    ok "0048 testimonials already exists"
+  fi
+
+  if [ "$(tbl_exists discount_codes)" = "0" ]; then
+    run_sql "0048 discount_codes table" "
+      CREATE TABLE IF NOT EXISTS \`discount_codes\` (
+        \`id\`                  int AUTO_INCREMENT NOT NULL,
+        \`tenant_id\`           int NOT NULL,
+        \`code\`                varchar(32) NOT NULL,
+        \`kind\`                enum('percent','amount') NOT NULL,
+        \`value\`               int NOT NULL,
+        \`currency\`            varchar(3),
+        \`campaign\`            varchar(64),
+        \`min_subtotal_rappen\` int,
+        \`max_redemptions\`     int,
+        \`redeemed_count\`      int NOT NULL DEFAULT 0,
+        \`starts_at\`           timestamp NULL,
+        \`expires_at\`          timestamp NULL,
+        \`active\`              boolean NOT NULL DEFAULT true,
+        \`created_by\`          int,
+        \`createdAt\`           timestamp NOT NULL DEFAULT (now()),
+        \`updatedAt\`           timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+        CONSTRAINT \`discount_codes_id\` PRIMARY KEY(\`id\`),
+        CONSTRAINT \`discount_codes_tenant_code\` UNIQUE(\`tenant_id\`,\`code\`)
+      );"
+  else
+    ok "0048 discount_codes already exists"
+  fi
+
+  if [ "$(tbl_exists discount_redemptions)" = "0" ]; then
+    run_sql "0048 discount_redemptions table" "
+      CREATE TABLE IF NOT EXISTS \`discount_redemptions\` (
+        \`id\`                 int AUTO_INCREMENT NOT NULL,
+        \`tenant_id\`          int NOT NULL,
+        \`discount_code_id\`   int NOT NULL,
+        \`order_id\`           int,
+        \`stripe_session_id\`  varchar(255) NOT NULL,
+        \`status\`             enum('held','confirmed','released') NOT NULL DEFAULT 'held',
+        \`amount_off_rappen\`  int NOT NULL,
+        \`currency\`           varchar(3),
+        \`customer_email\`     varchar(320),
+        \`held_until\`         timestamp NULL,
+        \`confirmed_at\`       timestamp NULL,
+        \`createdAt\`          timestamp NOT NULL DEFAULT (now()),
+        CONSTRAINT \`discount_redemptions_id\` PRIMARY KEY(\`id\`),
+        CONSTRAINT \`discount_redemptions_stripe_session_id_unique\` UNIQUE(\`stripe_session_id\`)
+      );"
+  else
+    ok "0048 discount_redemptions already exists"
+  fi
 }
 
 # ─────────────────────────────────────────────────────────────────────────────

@@ -25,6 +25,25 @@ export const tenants = mysqlTable("tenants", {
   // free / pro. Signup defaults to "free". Free carries the 1% platform fee
   // on online/agent orders; Pro removes it (see PLANS[].onlineFeeBps).
   plan: mysqlEnum("plan", ["free", "pro"]).default("free").notNull(),
+  // ── Comps: what the platform owner gives this store for nothing ───────────
+  // Derived through shared/entitlements.ts, never read raw. `plan` above is
+  // what Stripe bills and Stripe writes; these three are what we granted, kept
+  // apart so a late `customer.subscription.deleted` can't quietly revoke a comp
+  // (and so revoking a comp can't take away something the merchant bought).
+  //
+  // comp_plan: the plan this store is entitled to without paying — NULL for
+  // every ordinary store.
+  compPlan: mysqlEnum("comp_plan", ["free", "pro"]),
+  // comp_fee_waived: take no platform fee on this store's online/agent orders,
+  // whatever plan it is on. Separate from comp_plan because "don't skim this
+  // merchant" and "give this merchant Pro" are separate favours.
+  compFeeWaived: boolean("comp_fee_waived").default(false).notNull(),
+  // Why, in the operator's own words — rendered in the console next to the
+  // grant, so a comp found six months later can be judged rather than guessed.
+  compNote: varchar("comp_note", { length: 255 }),
+  compGrantedAt: timestamp("comp_granted_at"),
+  /** users.id of the superadmin who granted it. */
+  compGrantedBy: int("comp_granted_by"),
   stripeCustomerId: varchar("stripe_customer_id", { length: 255 }),
   stripeSubscriptionId: varchar("stripe_subscription_id", { length: 255 }),
   // Stripe Connect (Standard) account for THIS tenant's own storefront
@@ -91,6 +110,39 @@ export const tenantSettings = mysqlTable("tenant_settings", {
   metaDescription: text("meta_description"),
   // Branding
   whiteLabelName: varchar("white_label_name", { length: 255 }),
+  // Hide the "Made with Zolto" credit in the storefront footer, its
+  // <meta name="generator">, its JSON-LD creator node, /llms.txt and the MCP
+  // store info. Only honoured on a white-label plan — shared/attribution.ts
+  // owns the gate, and a Free store's `true` here is ignored rather than
+  // enforced, so a downgrade restores the credit without a data migration.
+  hideZoltoBadge: boolean("hide_zolto_badge").notNull().default(false),
+  // ── Merchant-authored storefront content ──────────────────────────────────
+  // Every column here is NULL for a store that has written nothing, and NULL
+  // means "use the generated template copy" (client/src/lib/storefrontContent.ts)
+  // rather than "render an empty page". That is what keeps a store that never
+  // opens the Storefront page looking exactly as it did before these existed.
+  //
+  // The home page's hero background. A hosted URL rather than an upload, to
+  // match logo_url on the same admin card.
+  heroImageUrl: varchar("hero_image_url", { length: 1024 }),
+  // The hero's H1 and the sentence under it. NULL headline falls back to the
+  // store name, which is what the hero has always shown.
+  heroHeadline: varchar("hero_headline", { length: 120 }),
+  heroSubtitle: varchar("hero_subtitle", { length: 300 }),
+  // The About page's body, as plain prose. Blank lines separate paragraphs —
+  // the page renders each as its own <p>, exactly like the generated copy it
+  // replaces. Deliberately not markdown: nothing else in the storefront
+  // renders merchant HTML, and keeping it plain text keeps it that way.
+  aboutBody: text("about_body"),
+  // ── Legal identity, for the storefront's Impressum ────────────────────────
+  // The imprint page has always told the merchant they are responsible for
+  // adding their company form, registration/VAT numbers and registered
+  // address; these are where those go. Public by design — an imprint is a
+  // published document, not private data.
+  companyLegalName: varchar("company_legal_name", { length: 255 }),
+  companyAddress: text("company_address"),
+  vatNumber: varchar("vat_number", { length: 64 }),
+  companyRegistration: varchar("company_registration", { length: 64 }),
   // The store's custom domain (Pro). Unique because it decides which store a
   // request is served from (server/tenantResolve.ts) — two rows claiming the
   // same hostname means the winner is whichever row LIMIT 1 happens to return.
@@ -125,6 +177,23 @@ export const tenantSettings = mysqlTable("tenant_settings", {
   // tenantSecrets. Null until uploaded, which is what gates the POS's
   // "TWINT (QR)" payment option.
   twintQrUrl: varchar("twint_qr_url", { length: 1024 }),
+  // ── Trustpilot ────────────────────────────────────────────────────────────
+  // A Trustpilot business unit is identified by the domain it was registered
+  // under ("kalakosh.ch"), which is all we need to link a shopper to the
+  // store's reviews and to the review form — no API key, no widget script.
+  // The live star rating additionally needs the platform's own Trustpilot API
+  // key (TRUSTPILOT_API_KEY); without it the storefront shows the link alone
+  // rather than nothing, so the feature degrades instead of breaking.
+  // NULL = this store has no Trustpilot profile connected, and no part of the
+  // trust band renders for it.
+  trustpilotDomain: varchar("trustpilot_domain", { length: 253 }),
+  // Show the rating on the storefront. Separate from having a domain, because
+  // "we are on Trustpilot, and customers who just bought are invited there"
+  // and "our score is good enough to print on the home page" are different
+  // decisions a merchant makes at different times.
+  trustpilotShowRating: boolean("trustpilot_show_rating")
+    .notNull()
+    .default(true),
   // Contact
   contactEmail: varchar("contact_email", { length: 320 }),
   contactPhone: varchar("contact_phone", { length: 32 }),
@@ -178,7 +247,19 @@ export type InsertTenantSecret = typeof tenantSecrets.$inferInsert;
 export const users = mysqlTable("users", {
   id: int("id").autoincrement().primaryKey(),
   tenantId: int("tenant_id").notNull(), // ← NEW: every user belongs to a tenant
-  openId: varchar("openId", { length: 64 }).notNull(),
+  // UNIQUE, and load-bearing: upsertUser writes every sign-in with
+  // onDuplicateKeyUpdate, which in MySQL fires only on a PRIMARY KEY or UNIQUE
+  // collision. `id` is autoincrement and never supplied, so without this index
+  // there is nothing to collide on and each sign-in INSERTs a fresh row
+  // instead of updating one.
+  //
+  // It was dropped from this file (and from the meta snapshots, at 0004) while
+  // the databases kept it, since no generated migration ever emitted the DROP.
+  // That divergence is quiet in one direction and destructive in the other:
+  // `drizzle-kit generate` compares against the snapshot and stays silent,
+  // but `npm run db:sync` (drizzle-kit push --force) reconciles a live
+  // database to THIS file and would have removed it.
+  openId: varchar("openId", { length: 64 }).notNull().unique(),
   name: text("name"),
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
@@ -375,6 +456,15 @@ export const posOrders = mysqlTable("pos_orders", {
   stripePaymentIntentId: varchar("stripePaymentIntentId", {
     length: 255,
   }).unique(),
+  // Set instead of the PaymentIntent id for the web till's scan-to-pay sales,
+  // which are Stripe Checkout Sessions rather than Terminal PaymentIntents. A
+  // session that is still open has no PaymentIntent at all — Stripe creates one
+  // only when the customer pays — so `stripePaymentIntentId` cannot be the key
+  // these orders are found by. The webhook matches on this column and backfills
+  // the PaymentIntent id once `checkout.session.completed` says what it is.
+  stripeCheckoutSessionId: varchar("stripeCheckoutSessionId", {
+    length: 255,
+  }).unique(),
   status: mysqlEnum("status", ["pending", "paid", "failed"])
     .default("pending")
     .notNull(),
@@ -467,9 +557,12 @@ export const stripeReconciliations = mysqlTable("stripe_reconciliations", {
     length: 512,
   }).notNull(),
   chosenProductId: int("chosenProductId"),
-  confirmationToken: varchar("confirmationToken", { length: 128 })
-    .notNull()
-    .unique(),
+  // Nullable, and cleared the moment a decision is recorded: the token is a
+  // bearer credential mailed to an inbox, so a spent one must stop being a
+  // credential rather than merely stop being accepted.
+  confirmationToken: varchar("confirmationToken", { length: 128 }).unique(),
+  /** When the mailed link stops working. NULL is treated as expired. */
+  tokenExpiresAt: timestamp("tokenExpiresAt"),
   resolvedAt: timestamp("resolvedAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
@@ -506,9 +599,10 @@ export const posAttributions = mysqlTable("pos_attributions", {
     length: 512,
   }).notNull(),
   chosenProductId: int("chosenProductId"),
-  confirmationToken: varchar("confirmationToken", { length: 128 })
-    .notNull()
-    .unique(),
+  // Cleared on the first decision, same as its Stripe sibling above.
+  confirmationToken: varchar("confirmationToken", { length: 128 }).unique(),
+  /** When the mailed link stops working. NULL is treated as expired. */
+  tokenExpiresAt: timestamp("tokenExpiresAt"),
   resolvedAt: timestamp("resolvedAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
@@ -712,3 +806,347 @@ export const magicLinkTokens = mysqlTable("magic_link_tokens", {
 
 export type MagicLinkToken = typeof magicLinkTokens.$inferSelect;
 export type InsertMagicLinkToken = typeof magicLinkTokens.$inferInsert;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// POS PAIRING TOKENS — one-tap register setup
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// Short-lived, single-use tokens that let a merchant bind a register by tapping
+// a link (`zolto://pair?t=…`) instead of typing a 64-char key on a phone.
+//
+// The token exists so the POS key itself never travels in a URL, where it would
+// land in browser history, server access logs and Referer headers. The app
+// redeems the token at POST /api/pos/pair and gets the key over TLS in a
+// response body instead.
+//
+// Deliberately stores NO key: redemption reads the tenant's key from the
+// encrypted tenant_secrets vault (provider "pos"). So a dump of this table
+// yields nothing usable, and — like magic_link_tokens above — only the SHA-256
+// of the token is stored, so even a leaked row can't be redeemed.
+export const posPairingTokens = mysqlTable("pos_pairing_tokens", {
+  id: int("id").autoincrement().primaryKey(),
+  tenantId: int("tenant_id").notNull(),
+  // SHA-256 of the token handed to the merchant, never the token itself.
+  token: varchar("token", { length: 64 }).notNull().unique(),
+  expiresAt: timestamp("expiresAt").notNull(),
+  // Set by a conditional UPDATE … WHERE consumedAt IS NULL, which is what makes
+  // single-use hold under two devices redeeming the same link at once.
+  consumedAt: timestamp("consumedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type PosPairingToken = typeof posPairingTokens.$inferSelect;
+export type InsertPosPairingToken = typeof posPairingTokens.$inferInsert;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SITE IMPORTS — the paid one-time switch-in (shared/platform.ts SITE_IMPORT)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// One attempt at lifting a merchant's existing shop into Zolto. The row IS the
+// state machine, and its order is the whole point of the feature's pricing:
+//
+//   previewed → paid → applied
+//
+// The crawl and the extraction happen at `previewed`, for free, and the merchant
+// sees everything that was found before a payment is asked for. That is what
+// makes charging CHF 20 defensible: nobody pays for a crawl that came back
+// empty. `paid` is written only by the Stripe webhook, never by the client, and
+// `applied` is set once the rows have actually landed in the catalogue — so a
+// double-submit or a replayed webhook can't import the same shop twice.
+export const siteImports = mysqlTable("site_imports", {
+  id: int("id").autoincrement().primaryKey(),
+  tenantId: int("tenant_id").notNull(),
+  /** The URL the merchant gave us, normalised to an origin + path. */
+  sourceUrl: varchar("source_url", { length: 1024 }).notNull(),
+  status: mysqlEnum("status", ["previewed", "paid", "applied", "failed"])
+    .default("previewed")
+    .notNull(),
+  /**
+   * The extraction, as JSON (products, profile, categories, warnings). Held so
+   * the merchant can pay, leave, come back and still get the result they were
+   * shown — re-crawling after payment could return something different from
+   * what they agreed to buy.
+   */
+  extraction: json("extraction"),
+  /** Denormalised for the admin list and for support, without parsing the JSON. */
+  productCount: int("product_count").default(0).notNull(),
+  /** Set at checkout, matched by the webhook. */
+  stripeSessionId: varchar("stripe_session_id", { length: 255 }),
+  /** Charged amount in cents, recorded as charged rather than as configured. */
+  amountCents: int("amount_cents"),
+  currency: varchar("currency", { length: 3 }),
+  paidAt: timestamp("paid_at"),
+  appliedAt: timestamp("applied_at"),
+  /** What went wrong, for support. Never shown raw to the merchant. */
+  failureReason: varchar("failure_reason", { length: 512 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type SiteImport = typeof siteImports.$inferSelect;
+export type InsertSiteImport = typeof siteImports.$inferInsert;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// AGENT HITS — who is reading the machine-facing surfaces (server/agentHits.ts)
+// ═══════════════════════════════════════════════════════════════════════════════
+// Zolto publishes /llms.txt, /llms-full.txt and an MCP endpoint on the bet that
+// an AI agent will discover a store and buy from it. `orders.channel = 'agent'`
+// already records the ones that bought; nothing recorded the reach that comes
+// first, and no client-side analytics ever could — an agent fetching /llms.txt
+// never loads the SPA and never runs JavaScript.
+//
+// PRE-AGGREGATED, one row per (store, day, surface, tool, agent), incremented
+// in place. Not a per-request log: /mcp is a hot path an agent can loop on, and
+// an unbounded insert log on it is a disk-fill waiting to happen. The cost of
+// the choice is that individual requests aren't recoverable — deliberate, since
+// nothing here should ever answer a question about one visitor.
+//
+// TWO SENTINELS, both of which exist because MySQL treats NULLs as distinct in
+// a UNIQUE index. A nullable column in the key below would make ON DUPLICATE
+// KEY UPDATE silently never fire for the platform surface or for a non-MCP
+// request — inserting a fresh row per hit and turning the whole table back into
+// the per-request log it is designed not to be:
+//   * tenant_id = 0  → the platform surface (zolto.ch itself), not a store.
+//     No tenants row has id 0, so it can't collide with a real store.
+//   * mcp_tool = ''  → this hit wasn't an MCP tools/call.
+export const agentHits = mysqlTable(
+  "agent_hits",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    /** Store this hit was addressed to, or 0 for the platform surface. */
+    tenantId: int("tenant_id").notNull().default(0),
+    /** UTC `YYYY-MM-DD` (shared/aiAgents.ts dayKey). */
+    day: varchar("day", { length: 10 }).notNull(),
+    /** One of shared/aiAgents.ts AGENT_SURFACES. */
+    surface: varchar("surface", { length: 32 }).notNull(),
+    /** MCP tool name for a tools/call, else ''. */
+    mcpTool: varchar("mcp_tool", { length: 64 }).notNull().default(""),
+    /** Display label from shared/aiAgents.ts classifyAgent, e.g. "GPTBot". */
+    agent: varchar("agent", { length: 64 }).notNull(),
+    count: int("count").notNull().default(0),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (t) => [
+    uniqueIndex("agent_hits_bucket").on(
+      t.tenantId,
+      t.day,
+      t.surface,
+      t.mcpTool,
+      t.agent,
+    ),
+  ],
+);
+
+export type AgentHit = typeof agentHits.$inferSelect;
+export type InsertAgentHit = typeof agentHits.$inferInsert;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TESTIMONIALS — What a store's own customers said, in their own words
+// ═══════════════════════════════════════════════════════════════════════════════
+// Scoped to a tenant and rendered at the foot of that tenant's home page. The
+// merchant collects these themselves (an email reply, a WhatsApp message, a
+// Google review they were pointed at) and types them in — there is no
+// automatic import, and deliberately so: a quote that arrives here was
+// consciously published by the shop owner, which is what makes them
+// answerable for it.
+//
+// Identity is the whole point of a testimonial, so a row carries as much of it
+// as the customer agreed to give:
+//   author_photo_url — a picture they supplied, shown as the avatar;
+//   google_id        — their Google account id, when the quote came from a
+//                      Google review and the merchant wants that stated.
+// Neither is required; with neither, the avatar falls back to the author's
+// initials. `google_id` is unique per tenant, so the same Google reviewer
+// cannot be entered twice by two different staff members.
+export const testimonials = mysqlTable(
+  "testimonials",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    tenantId: int("tenant_id").notNull(),
+    /** As the customer wants to be credited — "Anna M." is a valid answer. */
+    authorName: varchar("author_name", { length: 120 }).notNull(),
+    /**
+     * Where they are or what they do ("Zürich", "wedding client") — the line
+     * under the name. Optional; a quote reads fine without it.
+     */
+    authorTitle: varchar("author_title", { length: 120 }),
+    /**
+     * The customer's own photo, as a hosted URL (matching logo_url and
+     * hero_image_url, which are URLs rather than uploads on the same admin
+     * surface). NULL renders initials instead.
+     */
+    authorPhotoUrl: varchar("author_photo_url", { length: 1024 }),
+    /**
+     * The customer's Google account id, when the quote came from a Google
+     * review. Stored so a merchant can point at where the review lives and so
+     * the same reviewer is never entered twice — never rendered raw to
+     * shoppers, which is what `source` is for.
+     */
+    googleId: varchar("google_id", { length: 64 }),
+    /** The quote itself, plain text. No markup is rendered anywhere. */
+    quote: text("quote").notNull(),
+    /** 1–5 if the customer gave one; NULL when the quote carries no rating. */
+    rating: int("rating"),
+    /**
+     * Where the words came from. Drives the small provenance line under the
+     * quote ("via Google", "via Trustpilot") — an unattributed quote and a
+     * quote that names its source are read very differently, and only the
+     * merchant knows which this is.
+     */
+    source: mysqlEnum("source", ["manual", "google", "trustpilot"])
+      .default("manual")
+      .notNull(),
+    /**
+     * Unpublished rows stay in the admin list but never reach the storefront —
+     * how a merchant takes a quote down without deleting the record of it.
+     */
+    published: boolean("published").notNull().default(true),
+    sortOrder: int("sort_order").notNull().default(0),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (t) => [uniqueIndex("testimonials_tenant_google").on(t.tenantId, t.googleId)],
+);
+
+export type Testimonial = typeof testimonials.$inferSelect;
+export type InsertTestimonial = typeof testimonials.$inferInsert;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// DISCOUNT CODES — Per-store promotions and friends-and-family codes
+// ═══════════════════════════════════════════════════════════════════════════════
+// One row per code. `code` is unique WITHIN a tenant, not globally: two shops
+// both running "WELCOME10" is normal, and a global unique index would let the
+// first store to claim a word take it away from every other store on the
+// platform.
+//
+// The terms are evaluated by shared/discounts.ts, which is pure — the same
+// arithmetic runs in the admin preview, in the storefront's live check and in
+// the Stripe session that actually charges the card.
+export const discountCodes = mysqlTable(
+  "discount_codes",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    tenantId: int("tenant_id").notNull(),
+    /** Canonical (upper-case) form — see normaliseDiscountCode. */
+    code: varchar("code", { length: 32 }).notNull(),
+    kind: mysqlEnum("kind", ["percent", "amount"]).notNull(),
+    /** Whole percent (1–100) for "percent", minor units for "amount". */
+    value: int("value").notNull(),
+    /**
+     * Only meaningful for a fixed amount: "CHF 10 off" is not "EUR 10 off",
+     * and a code minted in one currency is refused in another rather than
+     * silently discounting more than the merchant wrote.
+     */
+    currency: varchar("currency", { length: 3 }),
+    /** Free-text campaign label ("friends-family", "spring-market"). */
+    campaign: varchar("campaign", { length: 64 }),
+    /** Smallest basket this code applies to, in minor units. NULL = any. */
+    minSubtotalRappen: int("min_subtotal_rappen"),
+    /** NULL = unlimited. 1 = a single-use code, the friends-and-family shape. */
+    maxRedemptions: int("max_redemptions"),
+    /**
+     * Slots taken: confirmed redemptions PLUS live checkout holds. Incremented
+     * by a conditional UPDATE that fails when the limit is reached, which is
+     * what makes "50 codes, 50 customers" hold under concurrency — a read-then-
+     * write check would let two simultaneous checkouts both see 49.
+     */
+    redeemedCount: int("redeemed_count").notNull().default(0),
+    startsAt: timestamp("starts_at"),
+    expiresAt: timestamp("expires_at"),
+    /** Merchant's off switch. Deactivating never deletes the history. */
+    active: boolean("active").notNull().default(true),
+    /** users.id of whoever minted it, for the admin list. */
+    createdBy: int("created_by"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (t) => [uniqueIndex("discount_codes_tenant_code").on(t.tenantId, t.code)],
+);
+
+export type DiscountCode = typeof discountCodes.$inferSelect;
+export type InsertDiscountCode = typeof discountCodes.$inferInsert;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// DISCOUNT REDEMPTIONS — Who spent which code, and on what
+// ═══════════════════════════════════════════════════════════════════════════════
+// A redemption is created as `held` when a Checkout Session is opened, and
+// becomes `confirmed` when that session is paid. The hold is what stops a
+// single-use code being spent twice in the minutes between "pay now" and the
+// webhook; `held_until` matches the session's own expiry, so an abandoned
+// checkout gives the slot back instead of burning the code forever.
+//
+// `stripe_session_id` is unique: a replayed webhook confirms the same row
+// rather than recording a second redemption of the same code.
+export const discountRedemptions = mysqlTable("discount_redemptions", {
+  id: int("id").autoincrement().primaryKey(),
+  tenantId: int("tenant_id").notNull(),
+  discountCodeId: int("discount_code_id").notNull(),
+  /** Set once the order row exists and is paid. */
+  orderId: int("order_id"),
+  stripeSessionId: varchar("stripe_session_id", { length: 255 })
+    .notNull()
+    .unique(),
+  status: mysqlEnum("status", ["held", "confirmed", "released"])
+    .default("held")
+    .notNull(),
+  /** What came off, in minor units — as charged, not as configured. */
+  amountOffRappen: int("amount_off_rappen").notNull(),
+  currency: varchar("currency", { length: 3 }),
+  /** Captured from the paid session, so a merchant can see who used what. */
+  customerEmail: varchar("customer_email", { length: 320 }),
+  /** When an unconfirmed hold stops counting against the redemption limit. */
+  heldUntil: timestamp("held_until"),
+  confirmedAt: timestamp("confirmed_at"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type DiscountRedemption = typeof discountRedemptions.$inferSelect;
+export type InsertDiscountRedemption = typeof discountRedemptions.$inferInsert;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SHEET MIRRORS — the Google Sheets mirror of a store's sales and inventory
+// ═══════════════════════════════════════════════════════════════════════════════
+// One spreadsheet per store, created and OWNED by the platform service account
+// and then shared with the merchant. A merchant thinks in rows and columns; this
+// gives them that surface (filters, pivots, something to hand an accountant)
+// without moving the ledger out of MySQL.
+//
+// Why the database stays authoritative, in one line each — the reasoning is
+// worth keeping next to the table that could tempt someone to invert it:
+//   - reserveProducts (server/db.ts) is a compare-and-set. The Sheets API has
+//     no conditional write, so two concurrent checkouts both "win" and a
+//     one-of-a-kind piece sells twice.
+//   - a POS sale inserts its order, its items, and decrements stock in one
+//     transaction; Sheets has no rollback.
+//   - orders.stripeSessionId is UNIQUE, which is what makes a retried Stripe
+//     webhook idempotent. A sheet cannot enforce that.
+// So: sheet as interface, database as ledger. Everything here is derived state.
+//
+// `tenant_id` is UNIQUE — one mirror per store. A second row would mean two
+// spreadsheets diverging, each looking authoritative.
+export const sheetMirrors = mysqlTable("sheet_mirrors", {
+  id: int("id").autoincrement().primaryKey(),
+  tenantId: int("tenant_id").notNull().unique(),
+  spreadsheetId: varchar("spreadsheet_id", { length: 128 }).notNull(),
+  spreadsheetUrl: varchar("spreadsheet_url", { length: 512 }).notNull(),
+  /** The merchant address the file was shared with, for the admin to see. */
+  sharedWith: varchar("shared_with", { length: 320 }).notNull(),
+  // Lane 2. False = the merchant is a Drive *reader* and the whole file is
+  // read-only. True = they are a writer, and the read-only tabs are held that
+  // way by protected ranges instead (server/sheetMirror.ts) — Drive has no
+  // per-tab permission, so the protection IS the safety, and flipping this
+  // without re-applying it hands over an editable ledger.
+  stockInEnabled: boolean("stock_in_enabled").notNull().default(false),
+  lastSyncedAt: timestamp("last_synced_at"),
+  /**
+   * Why the last push failed, or NULL after a clean one. Kept rather than only
+   * logged: the merchant is the one who can fix the usual causes (they deleted
+   * the file, or removed their own access), and they never read server logs.
+   */
+  lastSyncError: text("last_sync_error"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type SheetMirror = typeof sheetMirrors.$inferSelect;
+export type InsertSheetMirror = typeof sheetMirrors.$inferInsert;

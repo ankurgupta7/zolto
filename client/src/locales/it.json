@@ -68,6 +68,9 @@
     "noPiecesAll": "La collezione è in fase di allestimento. Torni a trovarci presto."
   },
   "discovery": {
+    "searchLabel": "Cerca nel tuo inventario",
+    "searchPlaceholder": "Cerca per nome, descrizione, prezzo, giacenza…",
+    "clearSearch": "Cancella la ricerca",
     "sortBy": "Ordina per:",
     "sortNewest": "Più recenti",
     "sortCategory": "Per categoria",
@@ -82,7 +85,10 @@
     "collapseAll": "Comprimi tutto",
     "products_one": "{{count}} prodotto",
     "products_many": "{{count}} prodotti",
-    "products_other": "{{count}} prodotti"
+    "products_other": "{{count}} prodotti",
+    "matching_one": "{{count}} di {{total}}",
+    "matching_many": "{{count}} di {{total}}",
+    "matching_other": "{{count}} di {{total}}"
   },
   "product": {
     "sold": "Venduto",
@@ -118,7 +124,8 @@
     "taxNote": "Consegna solo in Svizzera · Spedizione gratuita a partire da CHF 50, altrimenti CHF 2.",
     "checkout": "Vai alla cassa",
     "continue": "Continua gli acquisti",
-    "added": "\"{{name}}\" è stato aggiunto al carrello"
+    "added": "\"{{name}}\" è stato aggiunto al carrello",
+    "total": "Totale"
   },
   "checkout": {
     "title": "Cassa",
@@ -136,7 +143,13 @@
     "securedByStripe": "Pagamenti protetti da Stripe — carte & TWINT",
     "clearBag": "Svuota il carrello",
     "unavailable": "Il pagamento online non è al momento disponibile. La preghiamo di contattarci via WhatsApp.",
-    "error": "Si è verificato un errore durante l'avvio del pagamento. La preghiamo di riprovare."
+    "error": "Si è verificato un errore durante l'avvio del pagamento. La preghiamo di riprovare.",
+    "discountLabel": "Codice sconto",
+    "discountPlaceholder": "Inserisci un codice",
+    "discountApply": "Applica",
+    "discountApplied": "{{code}} applicato",
+    "discountRemove": "Rimuovi lo sconto",
+    "discountChecking": "Verifica…"
   },
   "policy": {
     "returnsHeading": "Resi e rimborsi",
@@ -178,7 +191,9 @@
     "copyright": "© {{year}} {{store}}. Tutti i diritti riservati.",
     "swissQuality": "Selezionato con cura",
     "policy": "Condizioni di vendita e reso",
-    "impressum": "Impressum"
+    "impressum": "Impressum",
+    "madeWith": "Realizzato con",
+    "madeWithTitle": "Questo negozio è realizzato con {{platform}} — la cassa e il negozio online per artigiani"
   },
   "bulkUpload": {
     "adminBadge": "Admin",
@@ -266,5 +281,19 @@
   "common": {
     "close": "Chiudi",
     "loading": "Caricamento"
+  },
+  "trust": {
+    "eyebrow": "Grazie di cuore",
+    "heading": "Cosa dicono i nostri clienti",
+    "readReviews": "Leggi le nostre recensioni",
+    "onTrustpilot": "su Trustpilot",
+    "starsLabel": "Valutato {{score}} su 5 su Trustpilot",
+    "ratingLabel": "{{count}} su 5",
+    "reviewCount_one": "{{count}} recensione",
+    "reviewCount_other": "{{count}} recensioni",
+    "source": {
+      "google": "tramite Google",
+      "trustpilot": "tramite Trustpilot"
+    }
   }
 }

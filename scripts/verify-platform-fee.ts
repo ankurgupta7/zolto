@@ -46,7 +46,10 @@
 // Anything already in the real environment still wins.
 import "dotenv/config";
 import Stripe from "stripe";
-import { platformFeeRappen, isPlatformFeeRejection } from "../server/checkoutSession";
+import {
+  platformFeeRappen,
+  isPlatformFeeRejection,
+} from "../server/checkoutSession";
 import {
   chf,
   summarise,
@@ -112,7 +115,11 @@ async function assertStripeReachable(): Promise<void> {
     await stripe.balance.retrieve();
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    if (/invalid json|ENOTFOUND|ECONNREFUSED|ETIMEDOUT|socket hang up|403/i.test(msg)) {
+    if (
+      /invalid json|ENOTFOUND|ECONNREFUSED|ETIMEDOUT|socket hang up|403/i.test(
+        msg,
+      )
+    ) {
       fail(
         `cannot reach api.stripe.com — ${msg}\n\n` +
           "This is a network problem, NOT a fee problem: nothing below would be " +
@@ -174,7 +181,9 @@ async function runCase(
   } catch (err) {
     const recognised = isPlatformFeeRejection(err);
     line(`  Stripe REFUSED the charge.`);
-    line(`    error:            ${err instanceof Error ? err.message : String(err)}`);
+    line(
+      `    error:            ${err instanceof Error ? err.message : String(err)}`,
+    );
     line(`    recognised as a fee rejection by our classifier: ${recognised}`);
     return {
       observation: {
@@ -265,7 +274,9 @@ async function listAccounts(): Promise<void> {
   for (const a of accounts.data) {
     const usable = a.charges_enabled ? "USABLE" : "not usable";
     line(`  ${a.id}  ${usable}`);
-    line(`      charges_enabled=${a.charges_enabled}  details_submitted=${a.details_submitted}`);
+    line(
+      `      charges_enabled=${a.charges_enabled}  details_submitted=${a.details_submitted}`,
+    );
     line(`      country=${a.country}  type=${a.type}`);
     const due = a.requirements?.currently_due ?? [];
     if (due.length) line(`      still required: ${due.join(", ")}`);
@@ -304,7 +315,7 @@ async function main() {
   for (const plan of ["free", "pro"] as const) {
     // The expectation comes from production's own function, so this script
     // cannot pass while checkout would fail.
-    const feeRappen = platformFeeRappen(plan, SUBTOTAL_RAPPEN);
+    const feeRappen = platformFeeRappen({ plan }, SUBTOTAL_RAPPEN);
     const { observation, paymentIntentId } = await runCase(
       `${plan.toUpperCase()} plan — expect ${chf(feeRappen)}`,
       account,
@@ -328,12 +339,16 @@ async function main() {
   line(`\n${"═".repeat(66)}`);
   if (pass) {
     line(" ✅ The platform fee works end to end against real Stripe.");
-    line("    Free-plan orders are charged; Pro-plan orders are not; the money");
+    line(
+      "    Free-plan orders are charged; Pro-plan orders are not; the money",
+    );
     line("    lands on the platform account. This was the launch blocker.");
   } else {
     line(` ❌ FAILED: ${failed.join(", ")}`);
     line("    Read the case above — the message says which of the two failure");
-    line("    modes this is and what to change. Do NOT launch the Free plan on");
+    line(
+      "    modes this is and what to change. Do NOT launch the Free plan on",
+    );
     line("    the assumption that the fee is collected.");
   }
   line("═".repeat(66));

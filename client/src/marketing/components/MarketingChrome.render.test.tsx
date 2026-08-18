@@ -13,7 +13,9 @@ import { DATA_RESIDENCY, SOVEREIGNTY } from "@shared/platform";
 import {
   MarketingNav,
   MarketingFooter,
+  MarketingShell,
   StoreShortcut,
+  BrushMark,
   SIGN_IN_PATH,
 } from "./MarketingChrome";
 import i18n from "@/lib/i18n";
@@ -350,5 +352,166 @@ describe("MarketingFooter", () => {
       .map((a) => a.getAttribute("href"));
     expect(hrefs).toContain("/legal/privacy");
     expect(hrefs).toContain("/legal/terms");
+  });
+});
+
+describe("MarketingShell", () => {
+  function renderShell(path: string) {
+    const { hook } = memoryLocation({ path, static: true });
+    return render(
+      <Router hook={hook}>
+        <MarketingShell>
+          <p>the page</p>
+        </MarketingShell>
+      </Router>,
+    );
+  }
+
+  it("gives every page a main landmark and the footer, homepage included", () => {
+    // The homepage reel briefly rendered its own copy of both, because it
+    // snapped inside a nested scroller whose overscroll-contain made an outside
+    // footer unreachable. Snapping moved to the document scroller, so the
+    // footer is ordinary content below the last chapter again.
+    for (const path of ["/", "/pricing"]) {
+      const { container, unmount } = renderShell(path);
+      expect(container.querySelectorAll("main").length, path).toBe(1);
+      expect(container.querySelectorAll("footer").length, path).toBe(1);
+      expect(screen.getByText("the page")).toBeTruthy();
+      unmount();
+    }
+  });
+
+  it("sizes the nav from the token the reel measures against", () => {
+    // A bar that grew without --nav-height following would leave every panel
+    // short by the difference, and a second panel peeking in at the bottom.
+    const { container } = renderShell("/pricing");
+    expect(container.querySelector("header div")?.className).toContain(
+      "h-[var(--nav-height)]",
+    );
+  });
+});
+
+describe("theme switch", () => {
+  /**
+   * The shipped default is "system", so what the bar opens on is decided by the
+   * OS — and jsdom has no matchMedia at all. Stub it deliberately rather than
+   * leaning on the fallback, or these tests silently re-assert whatever
+   * `window.matchMedia?.(…) ?? false` happens to mean today.
+   */
+  function stubOsPrefersDark(prefersDark: boolean) {
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn(() => ({
+        matches: prefersDark,
+        media: "(prefers-color-scheme: dark)",
+        addEventListener: () => {},
+        removeEventListener: () => {},
+      })),
+    );
+  }
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    localStorage.clear();
+    document.documentElement.removeAttribute("data-theme");
+  });
+
+  function renderShellWithTheme() {
+    const { hook } = memoryLocation({ path: "/pricing", static: true });
+    return render(
+      <Router hook={hook}>
+        <MarketingShell>
+          <p>the page</p>
+        </MarketingShell>
+      </Router>,
+    );
+  }
+
+  it("puts a switch in the bar that repaints the document", () => {
+    stubOsPrefersDark(true);
+    renderShellWithTheme();
+    const toggle = screen.getAllByTestId("theme-toggle")[0];
+    expect(toggle.getAttribute("data-theme-state")).toBe("dark");
+    expect(document.documentElement.hasAttribute("data-theme")).toBe(false);
+
+    fireEvent.click(toggle);
+    expect(document.documentElement.getAttribute("data-theme")).toBe("light");
+    expect(
+      screen.getAllByTestId("theme-toggle")[0].getAttribute("data-theme-state"),
+    ).toBe("light");
+  });
+
+  /**
+   * The bar is the one place the default is visible, so it is worth asserting
+   * here as well as in theme.test.ts: a visitor arriving with an ordinary
+   * light-mode OS gets the light surface without touching anything.
+   */
+  it("opens light, unasked, for a visitor whose OS is not in dark mode", () => {
+    stubOsPrefersDark(false);
+    renderShellWithTheme();
+    expect(
+      screen.getAllByTestId("theme-toggle")[0].getAttribute("data-theme-state"),
+    ).toBe("light");
+    expect(document.documentElement.getAttribute("data-theme")).toBe("light");
+  });
+
+  /**
+   * The label names the theme the button switches *to*, and the icon says the
+   * same thing — an unlabelled sun is ambiguous to a screen reader in a way it
+   * isn't to an eye, so the label is the whole affordance for some visitors.
+   */
+  it("labels itself with the theme it will switch to", () => {
+    stubOsPrefersDark(true);
+    renderShellWithTheme();
+    const toggle = screen.getAllByTestId("theme-toggle")[0];
+    expect(toggle.getAttribute("aria-label")).toMatch(/light/i);
+    fireEvent.click(toggle);
+    expect(
+      screen.getAllByTestId("theme-toggle")[0].getAttribute("aria-label"),
+    ).toMatch(/dark/i);
+  });
+
+  /**
+   * The phone bar collapses its links into the sheet, and a control that is
+   * only in the desktop row is a control a phone cannot reach — which is how
+   * the language picker was unreachable before it moved into the drawer too.
+   */
+  it("is reachable from the mobile sheet as well as the bar", async () => {
+    stubOsPrefersDark(false);
+    renderNav();
+    fireEvent.click(screen.getByRole("button", { name: /menu/i }));
+    await waitFor(() =>
+      expect(screen.getAllByTestId("theme-toggle").length).toBeGreaterThan(1),
+    );
+  });
+});
+
+describe("BrushMark", () => {
+  /**
+   * The lockup is one shape in three themeable fills rather than one SVG per
+   * theme; hardcoding a hex back in would silently pin the mark to mahogany
+   * while every palette around it moved.
+   */
+  it("takes its colours from the logo tokens, with today's as fallbacks", () => {
+    const { container } = render(<BrushMark className="h-8 w-8" />);
+    const svg = container.querySelector("svg")!;
+    expect(svg.querySelector("rect")?.getAttribute("fill")).toBe(
+      "var(--logo-tile, #2D2620)",
+    );
+    expect(svg.querySelector("path")?.getAttribute("fill")).toBe(
+      "var(--logo-mark, #B8963E)",
+    );
+    expect(svg.querySelector("circle")?.getAttribute("fill")).toBe(
+      "var(--logo-dot, #F0EBE3)",
+    );
+  });
+
+  it("keeps the ring inside the 200×200 box so it cannot bleed", () => {
+    // A stroke straddles the path, so a rect at 0,0/200×200 would lose half its
+    // hairline to the viewBox edge — visible as a ring open on all four sides.
+    const { container } = render(<BrushMark />);
+    const rect = container.querySelector("rect")!;
+    expect(rect.getAttribute("x")).toBe("0.75");
+    expect(Number(rect.getAttribute("width"))).toBeLessThan(200);
   });
 });

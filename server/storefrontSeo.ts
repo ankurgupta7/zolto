@@ -6,9 +6,11 @@ import {
   breadcrumbJsonLd,
   shopCollectionJsonLd,
   productJsonLd,
+  attributionJsonLd,
   isInStock,
 } from "@shared/storefront";
 import { normalizeBaseUrl } from "@shared/marketing";
+import { ZOLTO_URL, zoltoCreditSentence } from "@shared/attribution";
 import {
   escapeHtml,
   setMetaContent,
@@ -121,7 +123,11 @@ export function getStorefrontSeo(
   const currency = identity.currency;
   const base = normalizeBaseUrl(identity.baseUrl);
 
-  const common = [storeJsonLd(identity), websiteJsonLd(identity)];
+  const common = [
+    storeJsonLd(identity),
+    websiteJsonLd(identity),
+    ...attributionJsonLd(identity),
+  ];
   const inStock = products.filter(isInStock);
 
   const productId = parseProductPath(clean);
@@ -277,10 +283,20 @@ export function injectStorefrontSeo(
       renderJsonLd(seo.jsonLd),
   );
 
+  // The credit, as real markup a non-JS crawler can read and follow. The
+  // React footer renders the same line for everyone else — this is the copy
+  // that reaches the AI crawlers, which are the ones that never run our JS.
+  const credit =
+    data.identity.attribution === false
+      ? ""
+      : `<p>${escapeHtml(zoltoCreditSentence(data.identity.storeName))} ` +
+        `<a href="${ZOLTO_URL}/">${escapeHtml(ZOLTO_URL)}</a></p>`;
+
   out = appendAfterRoot(
     out,
     `<noscript><h1>${escapeHtml(seo.title)}</h1><p>${escapeHtml(seo.noscript)}</p>` +
-      `<p><a href="${base}/shop">Shop</a> · <a href="${base}/llms.txt">llms.txt</a></p></noscript>`,
+      `<p><a href="${base}/shop">Shop</a> · <a href="${base}/llms.txt">llms.txt</a></p>` +
+      `${credit}</noscript>`,
   );
 
   return out;

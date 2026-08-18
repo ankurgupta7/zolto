@@ -1,0 +1,1607 @@
+<title>Cutting 507 words from the Zolto homepage</title>
+<style>
+  :root {
+    --ink: #14181c;
+    --ink-2: #3b444c;
+    --muted: #6d7981;
+    --paper: #e7eaec;
+    --card: #f7f9fa;
+    --card-2: #eef2f4;
+    --rule: #ccd4d9;
+    --rule-soft: #dde3e6;
+    --cut: #b0362a;
+    --cut-soft: rgba(176, 54, 42, 0.1);
+    --keep: #24614f;
+    --keep-soft: rgba(36, 97, 79, 0.1);
+
+    --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+      "Liberation Mono", monospace;
+    --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+      Helvetica, Arial, sans-serif;
+    --font-serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia,
+      serif;
+
+    /* Zolto's own tokens, verbatim from client/src/index.css. Constant in both
+       themes — these are swatches of a brand, not part of this document. */
+    --z-ink: #2d2620;
+    --z-ink-deep: #231e19;
+    --z-text: #1c1714;
+    --z-accent: #b8963e;
+    --z-accent-light: #d4b060;
+    --z-muted-2: #6b5e52;
+    --z-surface: #ede7df;
+    --z-surface-2: #faf8f4;
+    --z-border: #e0d8cc;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ink: #dfe4e8;
+      --ink-2: #a9b4bb;
+      --muted: #78848c;
+      --paper: #0f1317;
+      --card: #171c21;
+      --card-2: #1d232a;
+      --rule: #2c353c;
+      --rule-soft: #232a30;
+      --cut: #e07a68;
+      --cut-soft: rgba(224, 122, 104, 0.13);
+      --keep: #62b195;
+      --keep-soft: rgba(98, 177, 149, 0.13);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ink: #dfe4e8;
+    --ink-2: #a9b4bb;
+    --muted: #78848c;
+    --paper: #0f1317;
+    --card: #171c21;
+    --card-2: #1d232a;
+    --rule: #2c353c;
+    --rule-soft: #232a30;
+    --cut: #e07a68;
+    --cut-soft: rgba(224, 122, 104, 0.13);
+    --keep: #62b195;
+    --keep-soft: rgba(98, 177, 149, 0.13);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-size: 16.5px;
+    line-height: 1.62;
+    margin: 0;
+    padding: 0 24px 120px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* One centred 1080px shell; the measured column is left-aligned inside it so
+     prose and figures share a left edge. */
+  body > header,
+  body > section,
+  body > footer { max-width: 1080px; margin-left: auto; margin-right: auto; }
+  .col { max-width: 68ch; margin: 0; }
+  .wide { max-width: 100%; margin: 0; }
+
+  /* ── type scale ─────────────────────────────────────────────── */
+  h1, h2, h3 { text-wrap: balance; }
+
+  h1 {
+    font-family: var(--font-mono);
+    font-size: clamp(30px, 5.2vw, 52px);
+    line-height: 1.04;
+    letter-spacing: -0.035em;
+    font-weight: 600;
+    margin: 0 0 18px;
+  }
+  h1 .struck {
+    position: relative;
+    color: var(--muted);
+  }
+  h1 .struck::after {
+    content: "";
+    position: absolute;
+    left: -0.04em; right: -0.04em; top: 52%;
+    height: 3px;
+    background: var(--cut);
+    transform: scaleX(var(--strike, 1));
+    transform-origin: left;
+  }
+
+  h2 {
+    font-family: var(--font-mono);
+    font-size: 15px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: var(--ink);
+    margin: 0 0 6px;
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+  }
+  h2 .num {
+    color: var(--cut);
+    font-size: 13px;
+    letter-spacing: 0.06em;
+  }
+
+  h3 {
+    font-family: var(--font-sans);
+    font-size: 19px;
+    line-height: 1.35;
+    font-weight: 640;
+    letter-spacing: -0.011em;
+    margin: 0 0 8px;
+  }
+
+  p { margin: 0 0 16px; }
+  a { color: var(--ink); text-decoration-color: var(--cut); text-underline-offset: 3px; }
+  a:focus-visible, summary:focus-visible {
+    outline: 2px solid var(--cut);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+  strong { font-weight: 640; }
+  code, .mono { font-family: var(--font-mono); font-size: 0.88em; }
+  code {
+    background: var(--card-2);
+    border: 1px solid var(--rule-soft);
+    border-radius: 3px;
+    padding: 1px 5px;
+    /* Long identifiers are one unbreakable token and push the page sideways
+       on a phone otherwise. */
+    overflow-wrap: anywhere;
+  }
+
+  .shipped {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--keep);
+    border: 1px solid var(--keep);
+    background: var(--keep-soft);
+    border-radius: 2px;
+    padding: 4px 9px 3px;
+    margin: 0 0 18px;
+  }
+  .shipped code {
+    background: none;
+    border: 0;
+    padding: 0;
+    font-size: 1em;
+    text-transform: none;
+    letter-spacing: 0.04em;
+  }
+
+  .lede {
+    font-size: 19px;
+    line-height: 1.55;
+    color: var(--ink-2);
+  }
+  .kicker {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.19em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 20px;
+    /* The file path is one unbreakable token, wider than a small phone. */
+    overflow-wrap: anywhere;
+  }
+  .note {
+    font-size: 14.5px;
+    line-height: 1.55;
+    color: var(--muted);
+  }
+
+  section { margin-top: 76px; }
+  section > .col > .head-rule {
+    height: 1px;
+    background: var(--rule);
+    margin: 0 0 26px;
+  }
+  .sec-intro { margin-bottom: 34px; }
+
+  /* ── hero word field ────────────────────────────────────────── */
+  header { padding: 74px 0 0; }
+
+  .field {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 5px;
+    align-content: flex-start;
+    margin: 30px 0 14px;
+  }
+  .w {
+    height: 5px;
+    border-radius: 1px;
+    background: var(--ink-2);
+    opacity: 0.5;
+    flex: none;
+  }
+  .w.cut {
+    background: var(--cut);
+    opacity: 0.85;
+    transition: opacity 0.55s ease, transform 0.55s ease;
+  }
+  /* The struck words stay faintly visible: the point is the density of what
+     goes, not an empty gap where it was. */
+  .field.reduced .w.cut { opacity: 0.26; transform: scaleX(0.3); transform-origin: left; }
+
+  .field-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 26px;
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+  }
+  .field-legend span { display: flex; align-items: center; gap: 8px; }
+  .swatch { width: 22px; height: 6px; border-radius: 1px; }
+
+  /* ── stat row ───────────────────────────────────────────────── */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+    margin: 40px 0 0;
+  }
+  .stat { background: var(--card); padding: 16px 18px 18px; }
+  .stat dt {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 8px;
+  }
+  .stat dd {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: 27px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+  .stat dd small {
+    display: block;
+    font-family: var(--font-sans);
+    font-size: 13px;
+    font-weight: 400;
+    letter-spacing: 0;
+    color: var(--muted);
+    margin-top: 7px;
+    line-height: 1.4;
+  }
+
+  /* ── budget chart ───────────────────────────────────────────── */
+  .chart {
+    border: 1px solid var(--rule);
+    background: var(--card);
+    padding: 22px 24px 18px;
+    overflow-x: auto;
+  }
+  .chart table {
+    border-collapse: collapse;
+    width: 100%;
+    min-width: 560px;
+    font-variant-numeric: tabular-nums;
+  }
+  .chart th {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 500;
+    text-align: left;
+    padding: 0 0 12px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .chart th.n, .chart td.n { text-align: right; }
+  .chart td {
+    padding: 9px 0;
+    border-bottom: 1px solid var(--rule-soft);
+    vertical-align: middle;
+  }
+  .chart tr:last-child td { border-bottom: 0; }
+  .chart .name { font-size: 14.5px; padding-right: 18px; white-space: nowrap; }
+  .chart .n { font-family: var(--font-mono); font-size: 13.5px; padding-left: 16px; }
+  .chart .n.delta { color: var(--cut); }
+  .chart .barcell { width: 100%; }
+  .bar { display: flex; height: 13px; }
+  .bar i { display: block; height: 100%; }
+  .bar .keep { background: var(--ink-2); opacity: 0.62; }
+  .bar .gone {
+    background: repeating-linear-gradient(
+      -45deg, var(--cut) 0 1.5px, transparent 1.5px 5px
+    );
+    border-right: 1px solid var(--cut);
+  }
+  .chart tfoot td {
+    border-top: 1px solid var(--rule);
+    border-bottom: 0;
+    padding-top: 12px;
+    font-weight: 640;
+  }
+  .chart tfoot .n { font-weight: 600; }
+
+  /* ── move tags ──────────────────────────────────────────────── */
+  .tag {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    border: 1px solid var(--rule);
+    color: var(--ink-2);
+    padding: 3px 8px 2px;
+    border-radius: 2px;
+    background: var(--card-2);
+    white-space: nowrap;
+  }
+  .moves {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+  }
+  .move { background: var(--card); padding: 15px 17px 17px; }
+  .move .tag { margin-bottom: 10px; }
+  .move p { margin: 0; font-size: 14.5px; line-height: 1.5; color: var(--ink-2); }
+
+  /* ── proposal blocks ────────────────────────────────────────── */
+  .prop { margin-top: 44px; }
+  .prop-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 14px;
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: 10px;
+    margin-bottom: 16px;
+  }
+  .prop-head .title {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    letter-spacing: 0.03em;
+    font-weight: 600;
+    margin-right: auto;
+  }
+  .count {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+  }
+  .count b { font-weight: 600; color: var(--keep); }
+  .count s { color: var(--cut); text-decoration-color: var(--cut); }
+  .count em { font-style: normal; color: var(--muted); }
+
+  /* two-up before/after */
+  .ba {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+    margin: 18px 0 0;
+  }
+  @media (min-width: 800px) { .ba { grid-template-columns: 1fr 1fr; align-items: start; } }
+  .ba > figure { margin: 0; min-width: 0; }
+  .ba figcaption, .single figcaption {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--rule);
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .ba figcaption .wc { color: var(--ink-2); }
+  .single { margin: 18px 0 0; }
+
+  /* ── the Zolto swatch: a mockup pasted onto the page ────────── */
+  .z {
+    background: var(--z-surface-2);
+    border: 1px solid var(--z-border);
+    color: var(--z-text);
+    font-family: var(--font-sans);
+    padding: 22px 22px 24px;
+    border-radius: 4px;
+    box-shadow: 0 1px 0 var(--rule);
+    overflow-x: auto;
+  }
+  .z.dark {
+    background: var(--z-ink);
+    border-color: var(--z-ink-deep);
+    color: #fff;
+  }
+  .z.warm { background: var(--z-surface); border-color: var(--z-border); }
+  .z .eyebrow {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: 15px;
+    color: var(--z-accent);
+    margin: 0 0 6px;
+    letter-spacing: 0.01em;
+  }
+  .z h4 {
+    font-family: var(--font-serif);
+    font-weight: 400;
+    font-size: 27px;
+    line-height: 1.14;
+    margin: 0 0 12px;
+    letter-spacing: -0.006em;
+    color: inherit;
+  }
+  .z.dark h4 { color: #fff; }
+  .z h5 {
+    font-family: var(--font-serif);
+    font-weight: 400;
+    font-size: 18px;
+    margin: 0 0 6px;
+    color: inherit;
+  }
+  .z p {
+    font-size: 14.5px;
+    line-height: 1.62;
+    color: var(--z-muted-2);
+    margin: 0 0 12px;
+  }
+  .z.dark p { color: rgba(255, 255, 255, 0.72); }
+  .z p:last-child { margin-bottom: 0; }
+  .z .underline {
+    display: block;
+    height: 2px;
+    width: 168px;
+    background: var(--z-accent);
+    border-radius: 2px;
+    margin: -6px 0 12px;
+    opacity: 0.85;
+  }
+  .z .src {
+    font-size: 11.5px;
+    color: var(--z-muted-2);
+    opacity: 0.75;
+    margin: 0;
+  }
+  .z .zlink {
+    font-size: 13.5px;
+    color: var(--z-text);
+    text-decoration: underline;
+    text-decoration-color: var(--z-accent);
+    text-underline-offset: 4px;
+  }
+  .z.dark .zlink { color: var(--z-accent-light); text-decoration-color: var(--z-accent); }
+
+  /* matrix mockup. Tables carry an explicit colour rather than inheriting it
+     from .z — inheritance into a table is the one thing quirks mode drops. */
+  .zmatrix {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 380px;
+    color: var(--z-text);
+  }
+  .zmatrix th, .zmatrix td { text-align: left; padding: 11px 10px; }
+  .zmatrix thead th {
+    font-size: 10.5px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--z-muted-2);
+    font-weight: 500;
+    border-bottom: 1px solid var(--z-border);
+    padding-bottom: 8px;
+  }
+  .zmatrix th.c, .zmatrix td.c { text-align: center; width: 92px; }
+  .zmatrix tbody tr { border-bottom: 1px solid var(--z-border); }
+  .zmatrix tbody tr:last-child { border-bottom: 0; }
+  .zmatrix .who {
+    font-family: var(--font-serif);
+    font-size: 17px;
+    line-height: 1.2;
+  }
+  .zmatrix .who small {
+    display: block;
+    font-family: var(--font-sans);
+    font-size: 12.5px;
+    color: var(--z-muted-2);
+    margin-top: 3px;
+    letter-spacing: 0.01em;
+  }
+  .zmatrix .yes { color: var(--z-accent); font-size: 19px; line-height: 1; }
+  .zmatrix .no { color: var(--z-muted-2); opacity: 0.45; font-size: 19px; line-height: 1; }
+  .zmatrix tr.mine { background: rgba(184, 150, 62, 0.09); }
+  .zmatrix tr.mine .who { font-weight: 500; }
+
+  /* ledger mockup */
+  .zledger {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 340px;
+    color: var(--z-text);
+  }
+  .zledger td { padding: 8px 8px; border-bottom: 1px solid var(--z-border); font-size: 14px; }
+  .zledger tr:last-child td { border-bottom: 0; }
+  .zledger .piece { font-family: var(--font-serif); font-size: 15.5px; }
+  .zledger .det { color: var(--z-muted-2); font-size: 13px; }
+  .zledger .st { text-align: right; white-space: nowrap; }
+  .pill {
+    display: inline-block;
+    font-size: 10px;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    padding: 3px 9px 2px;
+    border-radius: 999px;
+    border: 1px solid var(--z-border);
+    color: var(--z-muted-2);
+  }
+  .pill.ok { border-color: #9dc4b0; color: #3d7a5f; background: #eef6f1; }
+  .pill.mv { border-color: var(--z-border); background: #f4efe6; }
+
+  /* stacked residency bar */
+  .resbar { display: flex; height: 26px; border-radius: 3px; overflow: hidden; margin: 4px 0 10px; }
+  .resbar i {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: 0.08em;
+    color: #fff;
+  }
+  .resbar .s1 { background: #3d7a5f; }
+  .resbar .s2 { background: #7fa38c; }
+  .resbar .s3 { background: var(--z-accent); }
+  .resbar .s4 { background: #9c8f80; }
+  .reskey {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 16px;
+    font-size: 11.5px;
+    color: var(--z-muted-2);
+  }
+  .reskey span { display: flex; align-items: center; gap: 6px; }
+  .reskey b { width: 9px; height: 9px; border-radius: 2px; display: inline-block; }
+
+  /* chart annotation mockup */
+  .zchart { position: relative; }
+  .zchart svg { display: block; width: 100%; height: auto; }
+
+  /* day-in-the-life mockup */
+  .zsteps { display: grid; gap: 14px; }
+  .zstep { display: grid; grid-template-columns: 26px 1fr; gap: 12px; align-items: start; }
+  .zstep .dot {
+    width: 24px; height: 24px; border-radius: 999px;
+    border: 1px solid var(--z-accent);
+    color: var(--z-accent);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-family: var(--font-mono);
+  }
+  .zstep .when {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: 13.5px;
+    color: var(--z-accent);
+    margin: 0 0 1px;
+  }
+  .zstep .what { font-family: var(--font-serif); font-size: 17px; margin: 0 0 2px; }
+  .zstep .how { font-size: 13.5px; color: var(--z-muted-2); margin: 0; line-height: 1.5; }
+
+  /* price strip (the benchmark) */
+  .zstrip {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 14px;
+    text-align: center;
+  }
+  .zstrip .lab {
+    font-size: 10px; letter-spacing: 0.17em; text-transform: uppercase;
+    color: rgba(255,255,255,0.45); margin: 0 0 6px;
+  }
+  .zstrip .big {
+    font-family: var(--font-serif);
+    font-variant-numeric: lining-nums tabular-nums;
+    margin: 0 0 6px;
+  }
+  .zstrip .them .big { font-size: 30px; color: rgba(255,255,255,0.55); text-decoration: line-through; text-decoration-color: rgba(184,150,62,0.6); }
+  .zstrip .us .big { font-size: 38px; color: var(--z-accent-light); font-weight: 600; }
+  .zstrip .sub { font-size: 11.5px; color: rgba(255,255,255,0.4); margin: 0; line-height: 1.4; }
+  .zstrip .arrow { color: var(--z-accent); font-size: 24px; }
+
+  /* ── misc ───────────────────────────────────────────────────── */
+  .cutblock {
+    border-left: 2px solid var(--cut);
+    background: var(--cut-soft);
+    padding: 10px 14px;
+    margin: 0 0 14px;
+    font-size: 14.5px;
+    line-height: 1.55;
+    color: var(--ink-2);
+  }
+  .cutblock .mono { display: block; color: var(--cut); font-size: 10.5px; letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 5px; }
+
+  ul.tight { margin: 0 0 16px; padding-left: 20px; }
+  ul.tight li { margin-bottom: 7px; }
+
+  details {
+    border: 1px solid var(--rule);
+    background: var(--card);
+    padding: 12px 16px;
+    margin-bottom: 10px;
+  }
+  summary {
+    cursor: pointer;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    letter-spacing: 0.02em;
+  }
+  details[open] summary { margin-bottom: 12px; }
+
+  footer {
+    margin-top: 90px;
+    border-top: 1px solid var(--rule);
+    padding-top: 22px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .w.cut { transition: none; }
+  }
+</style>
+
+<header>
+  <p class="kicker">Copy audit · client/src/marketing/pages/Landing.tsx</p>
+  <p class="shipped">Shipped &mdash; branch <code>claude/landing-page-wordiness-qo6z9d</code></p>
+  <h1>The homepage was <span class="struck">1,380 words</span><br />long. It is now 873.</h1>
+  <div class="col">
+    <p class="lede">
+      Measured off the rendered DOM, not the source: every visible word in the
+      eight reel chapters at 1440&times;900. It was about five and a half
+      minutes of reading before anyone reached a signup button — and the reel
+      made that worse rather than better. This page is the audit that argued
+      for the cut; every proposal in it has now been built, and the numbers
+      below are the measured result rather than the target.
+    </p>
+  </div>
+
+  <div class="field" id="field" aria-hidden="true"></div>
+  <div class="field-legend">
+    <span><i class="swatch" style="background:var(--ink-2);opacity:.55"></i> kept &mdash; 873 words</span>
+    <span><i class="swatch" style="background:var(--cut);opacity:.85"></i> removed &mdash; 507 words</span>
+  </div>
+
+  <dl class="stats">
+    <div class="stat">
+      <dt>Words on the page</dt>
+      <dd>1,380<small>Across 8 reel chapters</small></dd>
+    </div>
+    <div class="stat">
+      <dt>Prose, before &rarr; after</dt>
+      <dd>879&rarr;319<small>29 blocks down to 15</small></dd>
+    </div>
+    <div class="stat">
+      <dt>Reading time</dt>
+      <dd>3:30<small>Down from 5:31 at 250 wpm</small></dd>
+    </div>
+    <div class="stat">
+      <dt>Words now</dt>
+      <dd>873<small>&minus;37%, against an 870 target</small></dd>
+    </div>
+  </dl>
+</header>
+
+<section>
+  <div class="col">
+    <div class="head-rule"></div>
+    <h2><span class="num">01</span> Why it feels heavier than it counts</h2>
+    <div class="sec-intro">
+      <p>
+        1,380 words is a lot for a homepage, but it is not absurd on its own.
+        What makes it tiring is the format it is delivered in. The reel is
+        eight posts, and <em>a post is exactly one screen</em> — snap scrolling,
+        one flick per chapter, as documented at the top of
+        <code>Landing.tsx</code>.
+      </p>
+      <p>
+        On an ordinary scrolling page, extra words are cheap: the eye skips
+        them and the reader stays in motion. A snap reel removes that escape
+        hatch. Every post is a full stop the reader has to clear before earning
+        the next flick, so the page collects <strong>eight forced reading
+        stops</strong> instead of one long scroll a reader can triage. The same
+        word count costs more here than it would anywhere else on the site.
+        That is why it reads as tiring even to someone who reads a lot.
+      </p>
+      <p>
+        The second thing the numbers show: the page is trying to
+        <em>win an argument</em> rather than earn a click. Five of the eight
+        chapters open with an objection and answer it — the competitors have
+        holes, the free tier is genuinely free, the pledge is sincere, the
+        infrastructure list includes the bad parts, AI search is real. Every one
+        of those arguments already has a page built for it:
+        <code>/pricing</code>, <code>/compare</code>, <code>/why-zolto</code>,
+        <code>/sovereignty</code> and the launch diary. The homepage's job is to
+        state the claim well enough that one of those links gets clicked.
+      </p>
+    </div>
+
+    <h3>The page already contains its own answer</h3>
+    <p>
+      The best band on this page, per word, is the cost strip in chapter five:
+      two numbers, an arrow, 24 words of supporting text, and the argument is
+      over. Nobody has to read it — they see it.
+    </p>
+  </div>
+
+  <div class="wide single">
+    <figcaption><span>Chapter 5 · the benchmark to aim at</span><span class="wc">37 words &mdash; 24 of them prose</span></figcaption>
+    <div class="z dark">
+      <div class="zstrip">
+        <div class="them">
+          <p class="lab">A year of fixed costs elsewhere</p>
+          <p class="big">CHF 447</p>
+          <p class="sub">SumUp Payments Plus at CHF 29/month for a year, plus a CHF 99 Solo reader</p>
+        </div>
+        <div class="arrow" aria-hidden="true">&rarr;</div>
+        <div class="us">
+          <p class="lab">A month with Zolto</p>
+          <p class="big">CHF 25</p>
+          <p class="sub">no hardware · cancel anytime · your Stripe, your money</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col">
+    <p style="margin-top:18px">
+      Three chapters earlier, the same page spends
+      <strong>172 prose words</strong> making a comparison that is structurally
+      identical — three options, two properties, one winner — and it makes it in
+      three columns of running text. That gap is the whole audit. The rest of
+      this document applies the cost strip's method to the other seven chapters.
+    </p>
+  </div>
+</section>
+
+<section>
+  <div class="col">
+    <div class="head-rule"></div>
+    <h2><span class="num">02</span> Where the words are</h2>
+    <p class="sec-intro">
+      Per chapter, as rendered, before and after. The hatched part of each bar
+      is what came out.
+    </p>
+  </div>
+
+  <div class="wide chart">
+    <table>
+      <thead>
+        <tr>
+          <th>Chapter</th>
+          <th class="barcell"></th>
+          <th class="n">Was</th>
+          <th class="n">Now</th>
+          <th class="n">Cut</th>
+        </tr>
+      </thead>
+      <tbody id="chartBody"></tbody>
+      <tfoot>
+        <tr>
+          <td class="name">Whole page</td>
+          <td class="barcell"></td>
+          <td class="n">1,380</td>
+          <td class="n">873</td>
+          <td class="n delta">&minus;37%</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  <div class="col">
+    <p class="note" style="margin-top:14px">
+      Reproduce with <code>node tools/screenshot/shoot.mjs</code>'s browser: load
+      <code>localhost:5199</code>, then count <code>innerText</code> words per
+      <code>section[id]</code>. The measuring script is worth keeping — a word
+      budget only holds if it is checked.
+    </p>
+  </div>
+</section>
+
+<section>
+  <div class="col">
+    <div class="head-rule"></div>
+    <h2><span class="num">03</span> Four moves</h2>
+    <p class="sec-intro">
+      Every proposal below is one of these. Naming them makes the edits
+      arguable one at a time instead of as a wholesale rewrite.
+    </p>
+  </div>
+  <div class="wide moves">
+    <div class="move">
+      <span class="tag">Cut</span>
+      <p>Say it once. Most long paragraphs here make a point and then defend it against an objection the reader has not raised yet.</p>
+    </div>
+    <div class="move">
+      <span class="tag">Table</span>
+      <p>Parallel prose is a table someone forgot to draw. Three options described in three paragraphs is a matrix.</p>
+    </div>
+    <div class="move">
+      <span class="tag">Caption</span>
+      <p>Where a figure already exists, the paragraph beside it is usually narrating it. Shrink the words to a label on the drawing.</p>
+    </div>
+    <div class="move">
+      <span class="tag">Defer</span>
+      <p>Move the long version to the page built for it. The links are already in the nav; the homepage only has to make them worth clicking.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="col">
+    <div class="head-rule"></div>
+    <h2><span class="num">04</span> The rewrites</h2>
+    <p class="sec-intro">
+      Mockups are rough — real faces are Cormorant Garamond, Caveat and Inter;
+      these stand in with the nearest system equivalents. The palette and the
+      proportions are the real ones. Counts on each pair are
+      <em>every word in the panel</em> — eyebrows, headings, labels and links
+      included — measured the same way as the page itself, so before and after
+      are like for like.
+    </p>
+  </div>
+
+  <!-- ── A. THE SQUEEZE ───────────────────────────────────────── -->
+  <div class="wide prop">
+    <div class="prop-head">
+      <span class="title">A &nbsp;·&nbsp; The squeeze &nbsp;·&nbsp; chapter 2</span>
+      <span class="tag">Table</span>
+      <span class="count"><s>197</s> &rarr; <b>62</b> <em>&minus;69%</em></span>
+    </div>
+    <div class="col">
+      <p>
+        The single biggest win on the page. Three cards, each a short paragraph,
+        each describing a product by what it lacks — with a 42-word run-up and a
+        26-word summary that restates all three. Read at 1440px the cards are
+        narrow columns of nine-word lines, which is the most tiring shape text
+        can take.
+      </p>
+      <p>
+        It is a comparison of three options across two properties. Draw it and
+        the argument is over before anyone starts reading — and the summary
+        sentence at the bottom becomes unnecessary, because the reader can see
+        that only one row has two ticks.
+      </p>
+    </div>
+
+    <div class="ba">
+      <figure>
+        <figcaption><span>Now</span><span class="wc">197 words</span></figcaption>
+        <div class="z">
+          <p class="eyebrow">the one that isn't a tie</p>
+          <h4>Your catalogue and TWINT, in the same till.</h4>
+          <span class="underline"></span>
+          <p>
+            Every till in this market now runs on an ordinary phone, so that
+            stopped being the argument. Here's the one that's left: the two big
+            options have opposite holes in them, and a Swiss maker falls
+            straight down whichever one they pick.
+          </p>
+          <h5>A till with your things in it</h5>
+          <p>
+            Photos, prices, stock counts — and no way to take the payment
+            method half your customers reach for first. The workaround is a
+            second, separate TWINT setup and a manual reconciliation at the end
+            of the day.
+          </p>
+          <h5>A till that takes TWINT</h5>
+          <p>
+            TWINT, cards, a good flat rate — and nothing in it. It's a payment
+            app: you type in an amount every time, or you buy and integrate
+            separate till software to sit on top of it.
+          </p>
+          <h5>Zolto</h5>
+          <p>
+            Tap the photo of the actual object, then choose TWINT, card or cash
+            on the same screen. One tap updates the stock behind your stall and
+            on your website at once.
+          </p>
+          <p class="src">
+            Of the three ways a Swiss maker can take a payment at a stall today,
+            only one puts the catalogue and TWINT on the same screen.
+          </p>
+        </div>
+      </figure>
+
+      <figure>
+        <figcaption><span>Proposed</span><span class="wc">62 words</span></figcaption>
+        <div class="z">
+          <p class="eyebrow">the one that isn't a tie</p>
+          <h4>Your catalogue and TWINT, in the same till.</h4>
+          <span class="underline"></span>
+          <p style="margin-bottom:18px">
+            Every till runs on a phone now. So the question is what's
+            <em>in</em> it.
+          </p>
+          <table class="zmatrix">
+            <thead>
+              <tr>
+                <th></th>
+                <th class="c">Your catalogue</th>
+                <th class="c">TWINT</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="who">SumUp<small>second TWINT setup, reconciled by hand</small></td>
+                <td class="c"><span class="yes">&#10003;</span></td>
+                <td class="c"><span class="no">&mdash;</span></td>
+              </tr>
+              <tr>
+                <td class="who">Worldline<small>type in the amount, every time</small></td>
+                <td class="c"><span class="no">&mdash;</span></td>
+                <td class="c"><span class="yes">&#10003;</span></td>
+              </tr>
+              <tr class="mine">
+                <td class="who">Zolto<small>tap the photo, pick the method</small></td>
+                <td class="c"><span class="yes">&#10003;</span></td>
+                <td class="c"><span class="yes">&#10003;</span></td>
+              </tr>
+            </tbody>
+          </table>
+          <p class="src" style="margin-top:14px">
+            SumUp help centre · Worldline Tap on Mobile (CH) · read 2026-08-06
+          </p>
+        </div>
+      </figure>
+    </div>
+
+    <div class="col" style="margin-top:18px">
+      <p class="note">
+        Keeps every fact, both citations and the ordering. What it drops is the
+        <em>narration</em> of the comparison. On a phone the matrix is also
+        better behaved than three cards: it is one panel instead of a
+        sideways swipe.
+      </p>
+    </div>
+  </div>
+
+  <!-- ── B. FREE IN PERSON ────────────────────────────────────── -->
+  <div class="wide prop">
+    <div class="prop-head">
+      <span class="title">B &nbsp;·&nbsp; Free in person &nbsp;·&nbsp; chapter 3</span>
+      <span class="tag">Cut</span>
+      <span class="tag">Defer</span>
+      <span class="count"><s>120</s> &rarr; <b>42</b> <em>&minus;65%</em></span>
+    </div>
+    <div class="col">
+      <p>
+        The left card carries 110 words; the ticklist beside it says the same
+        thing in a form nobody has to read. The second paragraph — 67 words, the
+        longest block on the homepage — is a payment-processing disclaimer. It
+        is honest and it should exist, but it belongs on
+        <code>/pricing</code>, which already restates the pledge via
+        <code>PRICING_PROMISE.restatedByPricingFeeSection</code>.
+      </p>
+    </div>
+
+    <div class="ba">
+      <figure>
+        <figcaption><span>Now</span><span class="wc">120 words in this card</span></figcaption>
+        <div class="z dark">
+          <p class="eyebrow">the bit people re-read</p>
+          <h4>A whole shop in your pocket. For nothing.</h4>
+          <span class="underline"></span>
+          <p>
+            Photos, names, prices, stock counts — your actual catalogue, in the
+            till on your phone. Tap to take the payment. Watch it sync to your
+            website. Then pay us CHF 0.00 at the end of the month, and again the
+            month after that.
+          </p>
+          <p>
+            No trial clock. No starter tier that quietly expires. The only thing
+            we ever charge for is the online sales we bring you — and if there
+            aren't any, there's nothing to charge. Whoever processes your card
+            and TWINT payments still charges their own rate, the same as they
+            would anywhere else; that bill is between you and them, and we don't
+            take a slice of it.
+          </p>
+        </div>
+      </figure>
+
+      <figure>
+        <figcaption><span>Proposed</span><span class="wc">42 words in this card</span></figcaption>
+        <div class="z dark">
+          <p class="eyebrow">the bit people re-read</p>
+          <h4>A whole shop in your pocket. For nothing.</h4>
+          <span class="underline"></span>
+          <p style="font-size:16px">
+            Not a trial. Not a starter tier that quietly expires.
+            <span style="color:#fff">CHF 0.00 a month</span> — this month, and
+            the month after that.
+          </p>
+          <p style="margin-top:22px">
+            <a class="zlink" href="#b">Card and TWINT rates are your processor's, not ours &rarr;</a>
+          </p>
+        </div>
+      </figure>
+    </div>
+
+    <div class="col" style="margin-top:18px">
+      <div class="cutblock">
+        <span class="mono">Cut here, moved to /pricing</span>
+        &ldquo;Whoever processes your card and TWINT payments still charges
+        their own rate, the same as they would anywhere else; that bill is
+        between you and them, and we don't take a slice of it.&rdquo;
+      </div>
+      <p class="note">
+        The four ticks in the panel beside it already carry &ldquo;photos, names,
+        prices, stock counts&rdquo; and &ldquo;syncs to your website&rdquo;, so
+        the first paragraph was saying it twice on one screen.
+      </p>
+    </div>
+  </div>
+
+  <!-- ── C. TRUST ─────────────────────────────────────────────── -->
+  <div class="wide prop">
+    <div class="prop-head">
+      <span class="title">C &nbsp;·&nbsp; Trust &nbsp;·&nbsp; chapter 6</span>
+      <span class="tag">Caption</span>
+      <span class="tag">Table</span>
+      <span class="count"><s>219</s> &rarr; <b>133</b> <em>&minus;39%</em></span>
+    </div>
+    <div class="col">
+      <p>
+        The ledger is the right idea already — nine rows, a badge each, the
+        embarrassing ones included. Two things weigh it down. The 68-word
+        intro beside it explains a table that explains itself, and each row
+        carries a full sentence of detail where a phrase would do (90 words of
+        detail across nine cells, in the smallest type on the page).
+      </p>
+      <p>
+        I would <strong>not</strong> hide the detail — it is the credibility.
+        Cut each cell to a phrase and add a residency bar above the table, so
+        the shape of the answer lands before any row is read.
+      </p>
+    </div>
+
+    <div class="ba">
+      <figure>
+        <figcaption><span>Now &mdash; intro column</span><span class="wc">77 words</span></figcaption>
+        <div class="z warm">
+          <p class="eyebrow">made in switzerland</p>
+          <h4>Made in Switzerland. Run from Europe.</h4>
+          <span class="underline"></span>
+          <p>
+            Zolto is built in Zürich, for Swiss makers first, for Europe next,
+            and after that for anyone anywhere who likes how we do things.
+          </p>
+          <p>
+            We're moving every piece of Zolto we control onto European
+            infrastructure, and into Switzerland where there's a Swiss option
+            worth having. Some of it is already there. Some of it isn't yet.
+            Here's the whole list, including the parts that make us look bad.
+          </p>
+        </div>
+      </figure>
+
+      <figure>
+        <figcaption><span>Proposed &mdash; intro + residency bar</span><span class="wc">38 words</span></figcaption>
+        <div class="z warm">
+          <p class="eyebrow">made in switzerland</p>
+          <h4>Made in Switzerland. Run from Europe.</h4>
+          <span class="underline"></span>
+          <p style="margin-bottom:16px">
+            Every piece of Zolto, and where it runs today — including the parts
+            that make us look bad.
+          </p>
+          <div class="resbar" role="img" aria-label="Three pieces Swiss today, one European today, four moving, one never will be">
+            <i class="s1" style="width:30%">3</i>
+            <i class="s2" style="width:11.1%">1</i>
+            <i class="s3" style="width:44.4%">4</i>
+            <i class="s4" style="width:14.5%">1</i>
+          </div>
+          <div class="reskey">
+            <span><b style="background:#3d7a5f"></b> Swiss today</span>
+            <span><b style="background:#7fa38c"></b> European today</span>
+            <span><b style="background:#b8963e"></b> Moving</span>
+            <span><b style="background:#9c8f80"></b> Never will be</span>
+          </div>
+        </div>
+      </figure>
+    </div>
+
+    <div class="single wide" style="margin-top:22px">
+      <figcaption><span>Proposed &mdash; ledger rows, detail trimmed to a phrase</span><span class="wc">136 &rarr; 89 words</span></figcaption>
+      <div class="z warm">
+        <table class="zledger">
+          <tbody>
+            <tr>
+              <td class="piece">The company and the product</td>
+              <td class="det">Zürich, Swiss company</td>
+              <td class="st"><span class="pill ok">Swiss today</span></td>
+            </tr>
+            <tr>
+              <td class="piece">Servers and your database</td>
+              <td class="det">Hetzner, Germany</td>
+              <td class="st"><span class="pill ok">European today</span></td>
+            </tr>
+            <tr>
+              <td class="piece">TWINT — your own QR code</td>
+              <td class="det">Your account, 1.3%. We never see the money</td>
+              <td class="st"><span class="pill ok">Swiss today</span></td>
+            </tr>
+            <tr>
+              <td class="piece">TWINT — the button in the till</td>
+              <td class="det">Via Stripe, not TWINT directly</td>
+              <td class="st"><span class="pill mv">Moving</span></td>
+            </tr>
+            <tr>
+              <td class="piece">Card payments and payouts</td>
+              <td class="det">Stripe, straight to your account</td>
+              <td class="st"><span class="pill mv">Moving</span></td>
+            </tr>
+            <tr>
+              <td class="piece">The AI</td>
+              <td class="det">Model provider outside Europe</td>
+              <td class="st"><span class="pill mv">Moving</span></td>
+            </tr>
+            <tr>
+              <td class="piece">Your product photos</td>
+              <td class="det">Storage not guaranteed European</td>
+              <td class="st"><span class="pill mv">Moving</span></td>
+            </tr>
+            <tr>
+              <td class="piece">Account emails</td>
+              <td class="det">Sender outside Europe</td>
+              <td class="st"><span class="pill mv">Moving</span></td>
+            </tr>
+            <tr>
+              <td class="piece">Card networks and wallets</td>
+              <td class="det">Visa, Mastercard, Apple Pay, Google Pay</td>
+              <td class="st"><span class="pill">Never will be</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="note" style="margin-top:12px">
+        &ldquo;Zolto is built in Zürich, for Swiss makers first, for Europe next…&rdquo;
+        is a good line, but it is the same claim as the h2 above it and the top
+        row of the table below it — three times on one screen.
+      </p>
+    </div>
+  </div>
+
+  <!-- ── D. WHAT'S COMING ─────────────────────────────────────── -->
+  <div class="wide prop">
+    <div class="prop-head">
+      <span class="title">D &nbsp;·&nbsp; What's coming &nbsp;·&nbsp; chapter 7</span>
+      <span class="tag">Cut</span>
+      <span class="tag">Caption</span>
+      <span class="count"><s>241</s> &rarr; <b>121</b> <em>&minus;50%</em></span>
+    </div>
+    <div class="col">
+      <p>
+        The wordiest chapter, and the only one carrying three separate
+        arguments: a product claim (&ldquo;Sell first. Sort it out later.&rdquo;),
+        a market thesis (&ldquo;Your next customer is an AI.&rdquo;) and a
+        walkthrough of a market day. Three claims on one post is why it needs
+        241 words.
+      </p>
+      <ul class="tight">
+        <li>
+          <strong>&ldquo;Sell first. Sort it out later.&rdquo;</strong> (39 words)
+          is a product claim about the AI drafting listings — the same claim
+          chapter 4's photo&rarr;listing panel already makes, with a drawing.
+          Move the headline there and cut the paragraph.
+        </li>
+        <li>
+          <strong>The thesis paragraph</strong> (54 words) narrates the chart
+          next to it. The chart shows two lines crossing; a paragraph saying
+          two lines cross is the definition of a redundant caption.
+        </li>
+        <li>
+          <strong>The day-in-the-life steps</strong> average 20 words each
+          beside icons that already show the action. Imperative fragments do it
+          in eight.
+        </li>
+      </ul>
+    </div>
+
+    <div class="ba">
+      <figure>
+        <figcaption><span>Now &mdash; chart caption + thesis</span><span class="wc">83 words</span></figcaption>
+        <div class="z dark">
+          <div class="zchart">
+            <svg viewBox="0 0 340 150" role="img" aria-label="Two lines crossing: search engines falling, AI assistants rising, between 2023 and 2027">
+              <text x="8" y="16" fill="rgba(255,255,255,.5)" font-size="9" letter-spacing="1.4">SEARCH ENGINES</text>
+              <text x="228" y="52" fill="#d4b060" font-size="9" letter-spacing="1.4">AI ASSISTANTS</text>
+              <path d="M12 34 C 110 40, 200 92, 328 116" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="1.6" stroke-dasharray="4 4" />
+              <path d="M12 124 C 120 122, 210 88, 328 32" fill="none" stroke="#b8963e" stroke-width="2" />
+              <line x1="12" y1="140" x2="328" y2="140" stroke="rgba(255,255,255,.15)" />
+              <text x="12" y="150" fill="rgba(255,255,255,.4)" font-size="8">2023</text>
+              <text x="308" y="150" fill="rgba(255,255,255,.4)" font-size="8">2027</text>
+            </svg>
+          </div>
+          <p style="margin-top:14px">
+            Assistants only recommend stores they can read. A store that's
+            invisible to them isn't in the answer — no matter how good its SEO
+            was.
+          </p>
+          <p style="font-size:13.5px">
+            Search built the last era of shops. Assistants are building this one
+            — and they can only recommend stores they can read. Every Zolto
+            store ships llms.txt, MCP and agent checkout from day one, kept
+            current as the protocols move, so your shop compounds in the answers
+            while retrofitted websites fade out of them.
+          </p>
+        </div>
+      </figure>
+
+      <figure>
+        <figcaption><span>Proposed &mdash; annotate the crossing</span><span class="wc">38 words</span></figcaption>
+        <div class="z dark">
+          <div class="zchart">
+            <svg viewBox="0 0 340 150" role="img" aria-label="Two lines crossing at 2025, labelled: assistants overtake search">
+              <text x="8" y="16" fill="rgba(255,255,255,.5)" font-size="9" letter-spacing="1.4">SEARCH ENGINES</text>
+              <text x="228" y="52" fill="#d4b060" font-size="9" letter-spacing="1.4">AI ASSISTANTS</text>
+              <path d="M12 34 C 110 40, 200 92, 328 116" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="1.6" stroke-dasharray="4 4" />
+              <path d="M12 124 C 120 122, 210 88, 328 32" fill="none" stroke="#b8963e" stroke-width="2" />
+              <!-- Marker sits on the computed intersection of the two curves
+                   (207.2, 84.2); the label runs left into the empty wedge
+                   between them so it clears both axis labels. -->
+              <circle cx="207.2" cy="84.2" r="4.5" fill="none" stroke="#d4b060" stroke-width="1.5" />
+              <line x1="190" y1="84.2" x2="201.5" y2="84.2" stroke="rgba(212,176,96,.55)" stroke-width="1" />
+              <text x="186" y="87.5" fill="#d4b060" font-size="9.5" text-anchor="end">2025 — assistants overtake search</text>
+              <line x1="12" y1="140" x2="328" y2="140" stroke="rgba(255,255,255,.15)" />
+              <text x="12" y="150" fill="rgba(255,255,255,.4)" font-size="8">2023</text>
+              <text x="308" y="150" fill="rgba(255,255,255,.4)" font-size="8">2027</text>
+            </svg>
+          </div>
+          <p style="margin-top:16px; font-size:15.5px; color:rgba(255,255,255,.8)">
+            They can only recommend a store they can read. Every Zolto store
+            ships <span style="color:#fff">llms.txt, MCP and agent
+            checkout</span> from day one.
+          </p>
+          <p style="margin-top:14px">
+            <a class="zlink" href="#d">How an AI finds, asks and buys &rarr;</a>
+          </p>
+        </div>
+      </figure>
+    </div>
+
+    <div class="ba" style="margin-top:24px">
+      <figure>
+        <figcaption><span>Now &mdash; a market day</span><span class="wc">81 words</span></figcaption>
+        <div class="z">
+          <div class="zsteps">
+            <div class="zstep">
+              <span class="dot">1</span>
+              <div>
+                <p class="when">07:40 — stall going up</p>
+                <p class="what">Scan your notebook</p>
+                <p class="how">Photograph your handwritten stock list. The AI reads it into a real catalogue — names, prices, quantities.</p>
+              </div>
+            </div>
+            <div class="zstep">
+              <span class="dot">2</span>
+              <div>
+                <p class="when">11:15 — first rush</p>
+                <p class="what">Tap to take payment</p>
+                <p class="how">Enter an amount and let the customer tap their phone or card. NFC and TWINT QR — nothing to buy or plug in.</p>
+              </div>
+            </div>
+            <div class="zstep">
+              <span class="dot">3</span>
+              <div>
+                <p class="when">18:30 — packing up</p>
+                <p class="what">Confirm at day's end</p>
+                <p class="how">Zolto emails what it thinks you sold. Tap to confirm and stock syncs across your POS and online store.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </figure>
+
+      <figure>
+        <figcaption><span>Proposed &mdash; fragments under the icons</span><span class="wc">45 words</span></figcaption>
+        <div class="z">
+          <div class="zsteps">
+            <div class="zstep">
+              <span class="dot">1</span>
+              <div>
+                <p class="when">07:40 — stall going up</p>
+                <p class="what">Photograph your stock list</p>
+                <p class="how">The AI turns it into a catalogue.</p>
+              </div>
+            </div>
+            <div class="zstep">
+              <span class="dot">2</span>
+              <div>
+                <p class="when">11:15 — first rush</p>
+                <p class="what">They tap. You're paid.</p>
+                <p class="how">NFC and TWINT QR. Nothing to plug in.</p>
+              </div>
+            </div>
+            <div class="zstep">
+              <span class="dot">3</span>
+              <div>
+                <p class="when">18:30 — packing up</p>
+                <p class="what">One email. One tap.</p>
+                <p class="how">Stock syncs, stall and website.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </figure>
+    </div>
+  </div>
+
+  <!-- ── E. HERO + PLEDGE ─────────────────────────────────────── -->
+  <div class="wide prop">
+    <div class="prop-head">
+      <span class="title">E &nbsp;·&nbsp; The two paragraphs worth keeping</span>
+      <span class="tag">Cut</span>
+      <span class="count"><s>104</s> &rarr; <b>63</b> <em>&minus;39%</em></span>
+    </div>
+    <div class="col">
+      <p>
+        The hero body and the pledge are the only long paragraphs on the page
+        that earn their length. Neither should be cut to a fragment — but both
+        are currently one sentence longer than they need to be.
+      </p>
+    </div>
+
+    <div class="ba">
+      <figure>
+        <figcaption><span>Hero body &mdash; now</span><span class="wc">49 words</span></figcaption>
+        <div class="z dark">
+          <p style="font-size:16px">
+            Zolto is a point-of-sale and a web store that share one inventory.
+            Tap the photo of the piece you just sold, take TWINT, a card or cash
+            on the phone or tablet you already own — and the last one comes off
+            your website before the customer has walked away.
+          </p>
+        </div>
+      </figure>
+      <figure>
+        <figcaption><span>Hero body &mdash; proposed</span><span class="wc">29 words</span></figcaption>
+        <div class="z dark">
+          <p style="font-size:16px">
+            A till and a web shop that share one inventory. Tap the photo of the
+            piece you just sold — it's off your website before the customer has
+            walked away.
+          </p>
+        </div>
+      </figure>
+    </div>
+
+    <div class="col" style="margin-top:16px">
+      <p class="note">
+        &ldquo;TWINT, a card or cash on the phone or tablet you already own&rdquo;
+        is the clause that goes: the three sovereignty badges below already say
+        <span class="mono">TWINT BUILT IN</span>, and the video beside it shows
+        the phone. A hero paragraph should not carry a spec list.
+      </p>
+    </div>
+
+    <div class="ba" style="margin-top:24px">
+      <figure>
+        <figcaption><span>Pledge &mdash; now</span><span class="wc">55 words</span></figcaption>
+        <div class="z">
+          <p class="eyebrow">our pledge to makers</p>
+          <p style="font-family:var(--font-serif);font-size:17px;color:var(--z-text);line-height:1.45">
+            &ldquo;Selling in person is free, forever — your store, POS and
+            inventory cost CHF 0/month, and Zolto adds nothing on in-person
+            payments. Here's the honest version: we already have enough money.
+            We're not here to skim off small makers — we're here to help you
+            keep what you earn, and that's not changing.&rdquo;
+          </p>
+        </div>
+      </figure>
+      <figure>
+        <figcaption><span>Pledge &mdash; proposed</span><span class="wc">34 words</span></figcaption>
+        <div class="z">
+          <p class="eyebrow">our pledge to makers</p>
+          <p style="font-family:var(--font-serif);font-size:19px;color:var(--z-text);line-height:1.45">
+            &ldquo;Selling in person is free, forever. Zolto adds nothing to an
+            in-person payment. The honest version: we already have enough money,
+            and we're not here to skim off small makers.&rdquo;
+          </p>
+        </div>
+      </figure>
+    </div>
+
+    <div class="col" style="margin-top:16px">
+      <p class="note">
+        &ldquo;we're here to help you keep what you earn, and that's not
+        changing&rdquo; is the third restatement of the same promise in one
+        quotation. Cutting it makes &ldquo;we already have enough money&rdquo;
+        the last thing before the signature, which is the line that lands.
+      </p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="col">
+    <div class="head-rule"></div>
+    <h2><span class="num">05</span> Three more things to draw</h2>
+    <p class="sec-intro">
+      Beyond the rewrites above — places where a figure would replace prose that
+      is currently doing a diagram's job.
+    </p>
+
+    <h3>An eight-dot rail with real labels</h3>
+    <p>
+      The reel already has a chapter rail down the right edge, but its labels
+      only appear for the active post. Turning it into a persistent
+      eight-word outline (<span class="mono">Promise · Squeeze · Free · How ·
+      Cost · Trust · Coming · Start</span>) tells a reader where the argument
+      goes without them having to read it to find out. Readers tolerate more
+      text when they can see how much is left.
+    </p>
+
+    <h3>The free plan as a receipt</h3>
+    <p>
+      Chapter 3's claim is fundamentally &ldquo;the invoice says zero.&rdquo;
+      Drawing an actual monthly statement — line items for POS, storefront,
+      inventory, all at CHF 0.00, with a total rule — makes the claim in a form
+      that is unarguable, and it removes the need to say
+      &ldquo;forever&rdquo;, &ldquo;no trial clock&rdquo; and &ldquo;no starter
+      tier&rdquo; in words. Fits the existing illustration style in
+      <code>MarketingIllustrations.tsx</code>.
+    </p>
+
+    <h3>Photo &rarr; listing as one drawn frame, not a paragraph</h3>
+    <p>
+      The <code>PhotoToListing</code> figure already shows a phone photo turning
+      into a titled, priced, described listing. The 31-word paragraph above it
+      describes that transformation in words first. Add the four languages as
+      small flags or codes <em>inside</em> the drawing and the paragraph becomes
+      a caption: <em>&ldquo;Photograph a piece. Publish the listing it
+      writes.&rdquo;</em> — nine words.
+    </p>
+  </div>
+</section>
+
+<section>
+  <div class="col">
+    <div class="head-rule"></div>
+    <h2><span class="num">06</span> What it cost to land</h2>
+    <p>
+      <strong>A</strong> was the largest single cut, as predicted — 137 words,
+      and it needed no copywriting judgement because the facts were already
+      written and only had to be arranged in a grid. It also bought back a
+      swipe: the chapter is one slide now instead of two.
+    </p>
+    <p>
+      The long-form copy did not go anywhere. Every cut is a
+      <code>bodyShort</code> / <code>todayShort</code> variant the reel uses;
+      <code>llms.txt</code>, the SEO descriptions, the MCP briefs and the
+      dedicated pages still render the full text. For a product whose thesis is
+      being legible to a machine reading the page, gutting the machine-readable
+      version to tidy the human one would have been a strange trade.
+    </p>
+    <h3>The one proposal that was wrong</h3>
+    <p>
+      Cutting <strong>&ldquo;point-of-sale&rdquo;</strong> and
+      <strong>&ldquo;phone&rdquo;</strong> from the hero paragraph saved four
+      words and would have cost the one sentence on the site that says what
+      Zolto is, in the word a buyer would search and an assistant would match
+      on. A test caught it. The hero is 72 words rather than the 66 this
+      document proposed, and that is the right number.
+    </p>
+    <p class="note">
+      Each rewrite landed in five places — en, de, fr, it and
+      <code>shared/platform.ts</code> — and the whole change is 3,270 passing
+      tests, a clean typecheck, and every reel panel still fitting one screen
+      at 375, 393, 768, 1280 and 1440.
+    </p>
+  </div>
+</section>
+
+<footer>
+  <p class="note col">
+    Page word counts measured from the rendered DOM at 1440&times;900, English,
+    <span class="mono">2026-08-11</span>. Chapter totals include labels, badges
+    and figure text, not just prose; the 879-word prose figure counts only
+    blocks of 12 words or more. Mockup counts were measured the same way, off
+    the mockups on this page. Chapter targets are the current total minus the
+    verified saving from each rewrite — chapters 4 and 8 carry only the small
+    edits noted in §05 and §04E, which is why they move least.
+  </p>
+</footer>
+
+<script>
+  // ── Chapter budget chart ──────────────────────────────────────
+  // [chapter, before, after] — both measured, not estimated.
+  const CHAPTERS = [
+    ["Promise", 86, 72],
+    ["The squeeze", 217, 80],
+    ["Free in person", 169, 78],
+    ["How it works", 162, 148],
+    ["What it costs", 112, 96],
+    ["Trust", 219, 140],
+    ["What's coming", 241, 106],
+    ["Start free", 174, 153],
+  ];
+  const MAX = Math.max(...CHAPTERS.map((c) => c[1]));
+  const body = document.getElementById("chartBody");
+  for (const [name, now, target] of CHAPTERS) {
+    const tr = document.createElement("tr");
+    const pct = (n) => ((n / MAX) * 100).toFixed(1) + "%";
+    tr.innerHTML =
+      '<td class="name">' + name + "</td>" +
+      '<td class="barcell"><span class="bar">' +
+      '<i class="keep" style="width:' + pct(target) + '"></i>' +
+      '<i class="gone" style="width:' + pct(now - target) + '"></i>' +
+      "</span></td>" +
+      '<td class="n">' + now + "</td>" +
+      '<td class="n">' + target + "</td>" +
+      '<td class="n delta">&minus;' +
+      Math.round(((now - target) / now) * 100) + "%</td>";
+    body.appendChild(tr);
+  }
+
+  // ── Hero word field: 1,380 marks, 660 of them struck ──────────
+  const field = document.getElementById("field");
+  const TOTAL = 1380;
+  const CUT = 507;
+  // Deterministic LCG so the field is identical on every load.
+  let seed = 20260811;
+  const rnd = () => ((seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
+  const marks = [];
+  for (let i = 0; i < TOTAL; i++) {
+    const el = document.createElement("i");
+    el.className = "w";
+    // Word-length distribution: mostly short, occasional long one.
+    const r = rnd();
+    el.style.width = Math.round(7 + r * r * 27) + "px";
+    field.appendChild(el);
+    marks.push(el);
+  }
+  // Choose which marks go, spread evenly through the field.
+  const idx = marks.map((_, i) => i);
+  for (let i = idx.length - 1; i > 0; i--) {
+    const j = Math.floor(rnd() * (i + 1));
+    [idx[i], idx[j]] = [idx[j], idx[i]];
+  }
+  for (const i of idx.slice(0, CUT)) marks[i].classList.add("cut");
+
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const strike = document.querySelector("h1 .struck");
+  if (reduce) {
+    field.classList.add("reduced");
+    if (strike) strike.style.setProperty("--strike", "1");
+  } else {
+    if (strike) {
+      strike.style.setProperty("--strike", "0");
+      strike.style.setProperty("transition", "none");
+    }
+    requestAnimationFrame(() => {
+      if (strike) {
+        strike.animate(
+          [{ transform: "scaleX(0)" }, { transform: "scaleX(1)" }],
+          { duration: 520, delay: 700, easing: "cubic-bezier(.2,.7,.3,1)", fill: "forwards" }
+        );
+        // Keep the final state after the animation hands back.
+        setTimeout(() => strike.style.setProperty("--strike", "1"), 1180);
+      }
+      setTimeout(() => field.classList.add("reduced"), 1250);
+    });
+  }
+</script>

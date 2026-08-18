@@ -1,10 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import {
-  render,
-  screen,
-  fireEvent,
-  cleanup,
-} from "@testing-library/react";
+import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import Storefront from "./Storefront";
 
 const mocks = vi.hoisted(() => ({
@@ -114,10 +109,16 @@ describe("Storefront page", () => {
 
   it("saves changed settings", () => {
     render(<Storefront />);
-    fireEvent.change(screen.getByPlaceholderText("Your store — handcrafted items"), {
-      target: { value: "New title" },
-    });
-    fireEvent.click(screen.getAllByText("Save changes")[1]);
+    fireEvent.change(
+      screen.getByPlaceholderText("Your store — handcrafted items"),
+      {
+        target: { value: "New title" },
+      },
+    );
+    // Card order is Branding, Home & About, SEO — every button runs the same
+    // handler and submits the whole form, so the index only picks which card
+    // the click came from.
+    fireEvent.click(screen.getAllByText("Save changes")[2]);
     expect(mocks.save).toHaveBeenCalledWith(
       expect.objectContaining({ metaTitle: "New title" }),
     );
@@ -130,5 +131,133 @@ describe("Storefront page", () => {
     });
     fireEvent.click(screen.getAllByText("Save changes")[0]);
     expect(mocks.save).not.toHaveBeenCalled();
+  });
+});
+
+describe("Storefront page — merchant-authored content", () => {
+  it("prefills the display name, hero and About body from settings", () => {
+    mocks.settingsData = {
+      ...mocks.settingsData,
+      whiteLabelName: "Kalakosh Zürich",
+      heroImageUrl: "https://cdn.example/shopfront.jpg",
+      heroHeadline: "Made by hand",
+      heroSubtitle: "In the old town since 2018",
+      aboutBody: "We opened with one kiln.",
+    };
+    render(<Storefront />);
+    expect(screen.getByDisplayValue("Kalakosh Zürich")).toBeTruthy();
+    expect(screen.getByDisplayValue("Made by hand")).toBeTruthy();
+    expect(screen.getByDisplayValue("In the old town since 2018")).toBeTruthy();
+    expect(screen.getByDisplayValue("We opened with one kiln.")).toBeTruthy();
+  });
+
+  it("saves what the merchant wrote", () => {
+    render(<Storefront />);
+    fireEvent.change(screen.getByLabelText("Home headline"), {
+      target: { value: "Made by hand" },
+    });
+    fireEvent.change(screen.getByLabelText("About page"), {
+      target: { value: "First para.\n\nSecond para." },
+    });
+    fireEvent.click(screen.getAllByText("Save changes")[1]);
+    expect(mocks.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        heroHeadline: "Made by hand",
+        aboutBody: "First para.\n\nSecond para.",
+      }),
+    );
+  });
+
+  // The behaviour that makes this safe to try: emptying a box has to delete
+  // the text and bring the generated copy back. `undefined` would leave the
+  // old text live while the field looked cleared.
+  it("sends null for a field the merchant emptied, not undefined", () => {
+    mocks.settingsData = {
+      ...mocks.settingsData,
+      heroHeadline: "Made by hand",
+      aboutBody: "We opened with one kiln.",
+    };
+    render(<Storefront />);
+    fireEvent.change(screen.getByLabelText("Home headline"), {
+      target: { value: "" },
+    });
+    fireEvent.change(screen.getByLabelText("About page"), {
+      target: { value: "   " },
+    });
+    fireEvent.click(screen.getAllByText("Save changes")[1]);
+    expect(mocks.save).toHaveBeenCalledWith(
+      expect.objectContaining({ heroHeadline: null, aboutBody: null }),
+    );
+  });
+
+  it("rejects a banner image that is not a URL before saving", () => {
+    render(<Storefront />);
+    fireEvent.change(screen.getByLabelText("Home banner image"), {
+      target: { value: "shopfront.jpg" },
+    });
+    fireEvent.click(screen.getAllByText("Save changes")[1]);
+    expect(mocks.save).not.toHaveBeenCalled();
+  });
+
+  it("previews the banner only once it is a usable URL", () => {
+    render(<Storefront />);
+    expect(screen.queryByAltText("Banner preview")).toBeNull();
+    fireEvent.change(screen.getByLabelText("Home banner image"), {
+      target: { value: "https://cdn.example/shopfront.jpg" },
+    });
+    expect(screen.getByAltText("Banner preview").getAttribute("src")).toBe(
+      "https://cdn.example/shopfront.jpg",
+    );
+  });
+});
+
+describe("Storefront page — the Made with Zolto credit", () => {
+  beforeEach(() => {
+    mocks.meData = { slug: "kalakosh", name: "Kalakosh", plan: "pro" };
+    mocks.settingsData = { primaryColor: "#8B6914", hideZoltoBadge: false };
+  });
+
+  it("shows the credit as on by default and lets Pro switch it off", () => {
+    render(<Storefront />);
+    const toggle = screen.getByLabelText(/Made with Zolto/) as HTMLInputElement;
+    // The checkbox is "show the credit", so the stored flag is inverted.
+    expect(toggle.checked).toBe(true);
+    expect(toggle.disabled).toBe(false);
+
+    fireEvent.click(toggle);
+    fireEvent.click(screen.getAllByText("Save changes")[3]);
+    expect(mocks.save).toHaveBeenCalledWith(
+      expect.objectContaining({ hideZoltoBadge: true }),
+    );
+  });
+
+  it("reflects a store that has already hidden it", () => {
+    mocks.settingsData = { primaryColor: "#8B6914", hideZoltoBadge: true };
+    render(<Storefront />);
+    expect(
+      (screen.getByLabelText(/Made with Zolto/) as HTMLInputElement).checked,
+    ).toBe(false);
+  });
+
+  it("locks the switch on Free and explains what unlocks it", () => {
+    mocks.meData = { slug: "kalakosh", name: "Kalakosh", plan: "free" };
+    render(<Storefront />);
+    expect(
+      (screen.getByLabelText(/Made with Zolto/) as HTMLInputElement).disabled,
+    ).toBe(true);
+    expect(screen.getByText(/part of Pro/)).toBeTruthy();
+  });
+
+  it("never sends a hide the server would reject, even from a stale setting", () => {
+    // A store that dropped to Free still has hide_zolto_badge = true in the
+    // row. Echoing it back would 403 the whole save and lose the merchant's
+    // unrelated edits on this page.
+    mocks.meData = { slug: "kalakosh", name: "Kalakosh", plan: "free" };
+    mocks.settingsData = { primaryColor: "#8B6914", hideZoltoBadge: true };
+    render(<Storefront />);
+    fireEvent.click(screen.getAllByText("Save changes")[0]);
+    expect(mocks.save).toHaveBeenCalledWith(
+      expect.objectContaining({ hideZoltoBadge: false }),
+    );
   });
 });

@@ -68,6 +68,9 @@
     "noPiecesAll": "The collection is being curated. Check back soon."
   },
   "discovery": {
+    "searchLabel": "Search your inventory",
+    "searchPlaceholder": "Search by name, description, price, stock…",
+    "clearSearch": "Clear search",
     "sortBy": "Sort by:",
     "sortNewest": "Newest First",
     "sortCategory": "By Category",
@@ -81,7 +84,9 @@
     "expandAll": "Expand All",
     "collapseAll": "Collapse All",
     "products_one": "{{count}} product",
-    "products_other": "{{count}} products"
+    "products_other": "{{count}} products",
+    "matching_one": "{{count}} of {{total}}",
+    "matching_other": "{{count}} of {{total}}"
   },
   "product": {
     "sold": "Sold",
@@ -117,7 +122,8 @@
     "taxNote": "Swiss delivery only · Free shipping over CHF 50, otherwise CHF 2.",
     "checkout": "Proceed to Checkout",
     "continue": "Continue Shopping",
-    "added": "\"{{name}}\" added to your bag"
+    "added": "\"{{name}}\" added to your bag",
+    "total": "Total"
   },
   "checkout": {
     "title": "Checkout",
@@ -135,7 +141,13 @@
     "securedByStripe": "Payments secured by Stripe — cards & TWINT",
     "clearBag": "Clear bag",
     "unavailable": "Online payment is currently unavailable. Please enquire via WhatsApp.",
-    "error": "Something went wrong starting your payment. Please try again."
+    "error": "Something went wrong starting your payment. Please try again.",
+    "discountLabel": "Discount code",
+    "discountPlaceholder": "Enter a code",
+    "discountApply": "Apply",
+    "discountApplied": "{{code}} applied",
+    "discountRemove": "Remove discount",
+    "discountChecking": "Checking…"
   },
   "policy": {
     "returnsHeading": "Returns & Refunds",
@@ -177,7 +189,9 @@
     "copyright": "© {{year}} {{store}}. All rights reserved.",
     "swissQuality": "Curated with care",
     "policy": "Sales & Returns Policy",
-    "impressum": "Legal Notice"
+    "impressum": "Legal Notice",
+    "madeWith": "Made with",
+    "madeWithTitle": "This shop is made with {{platform}} — the till and online shop for makers"
   },
   "bulkUpload": {
     "adminBadge": "Admin",
@@ -265,5 +279,19 @@
   "common": {
     "close": "Close",
     "loading": "Loading"
+  },
+  "trust": {
+    "eyebrow": "Kind words",
+    "heading": "What our customers say",
+    "readReviews": "Read our reviews",
+    "onTrustpilot": "on Trustpilot",
+    "starsLabel": "Rated {{score}} out of 5 on Trustpilot",
+    "ratingLabel": "{{count}} out of 5",
+    "reviewCount_one": "{{count}} review",
+    "reviewCount_other": "{{count}} reviews",
+    "source": {
+      "google": "via Google",
+      "trustpilot": "via Trustpilot"
+    }
   }
 }

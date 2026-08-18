@@ -101,7 +101,7 @@ export default function SignIn() {
           {store.data ? (
             <a
               href={storeAdminUrl(store.data.slug)}
-              className="rounded-md bg-[var(--brand-accent)] px-7 py-3 text-center text-xs font-medium uppercase tracking-[0.14em] text-[var(--brand-ink)] transition-colors hover:bg-[var(--brand-accent-light)]"
+              className="rounded-md bg-[var(--brand-accent)] px-7 py-3 text-center text-xs font-medium uppercase tracking-[0.14em] text-[var(--brand-accent-fg)] transition-colors hover:bg-[var(--brand-accent-light)]"
             >
               {t("signin.continueTo", { store: store.data.name })}
             </a>
@@ -110,14 +110,14 @@ export default function SignIn() {
             // beats offering a second signup that would only be refused.
             <Link
               href={finishSetupHref(pendingStore.slug)}
-              className="rounded-md bg-[var(--brand-accent)] px-7 py-3 text-center text-xs font-medium uppercase tracking-[0.14em] text-[var(--brand-ink)] transition-colors hover:bg-[var(--brand-accent-light)]"
+              className="rounded-md bg-[var(--brand-accent)] px-7 py-3 text-center text-xs font-medium uppercase tracking-[0.14em] text-[var(--brand-accent-fg)] transition-colors hover:bg-[var(--brand-accent-light)]"
             >
               {t("signin.finishSetup", { store: pendingStore.name })}
             </Link>
           ) : (
             <Link
               href="/signup"
-              className="rounded-md bg-[var(--brand-accent)] px-7 py-3 text-center text-xs font-medium uppercase tracking-[0.14em] text-[var(--brand-ink)] transition-colors hover:bg-[var(--brand-accent-light)]"
+              className="rounded-md bg-[var(--brand-accent)] px-7 py-3 text-center text-xs font-medium uppercase tracking-[0.14em] text-[var(--brand-accent-fg)] transition-colors hover:bg-[var(--brand-accent-light)]"
             >
               {t("signin.createStore")}
             </Link>
@@ -151,7 +151,7 @@ export default function SignIn() {
           </p>
           <Link
             href={finishSetupHref(pendingStore.slug)}
-            className="mt-8 inline-block rounded-md bg-[var(--brand-accent)] px-7 py-3 text-xs font-medium uppercase tracking-[0.14em] text-[var(--brand-ink)] transition-colors hover:bg-[var(--brand-accent-light)]"
+            className="mt-8 inline-block rounded-md bg-[var(--brand-accent)] px-7 py-3 text-xs font-medium uppercase tracking-[0.14em] text-[var(--brand-accent-fg)] transition-colors hover:bg-[var(--brand-accent-light)]"
           >
             {t("signin.finishSetup", { store: pendingStore.name })}
           </Link>
@@ -165,7 +165,7 @@ export default function SignIn() {
         </p>
         <Link
           href="/signup"
-          className="mt-8 inline-block rounded-md bg-[var(--brand-accent)] px-7 py-3 text-xs font-medium uppercase tracking-[0.14em] text-[var(--brand-ink)] transition-colors hover:bg-[var(--brand-accent-light)]"
+          className="mt-8 inline-block rounded-md bg-[var(--brand-accent)] px-7 py-3 text-xs font-medium uppercase tracking-[0.14em] text-[var(--brand-accent-fg)] transition-colors hover:bg-[var(--brand-accent-light)]"
         >
           {t("signin.createStore")}
         </Link>

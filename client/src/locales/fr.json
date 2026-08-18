@@ -68,6 +68,9 @@
     "noPiecesAll": "La collection est en cours de constitution. Revenez bientôt."
   },
   "discovery": {
+    "searchLabel": "Rechercher dans votre stock",
+    "searchPlaceholder": "Rechercher par nom, description, prix, stock…",
+    "clearSearch": "Effacer la recherche",
     "sortBy": "Trier par :",
     "sortNewest": "Plus récents",
     "sortCategory": "Par catégorie",
@@ -82,7 +85,10 @@
     "collapseAll": "Tout replier",
     "products_one": "{{count}} produit",
     "products_many": "{{count}} produits",
-    "products_other": "{{count}} produits"
+    "products_other": "{{count}} produits",
+    "matching_one": "{{count}} sur {{total}}",
+    "matching_many": "{{count}} sur {{total}}",
+    "matching_other": "{{count}} sur {{total}}"
   },
   "product": {
     "sold": "Vendu",
@@ -118,7 +124,8 @@
     "taxNote": "Livraison en Suisse uniquement · Livraison gratuite dès CHF 50, sinon CHF 2.",
     "checkout": "Passer à la caisse",
     "continue": "Continuer vos achats",
-    "added": "\"{{name}}\" a été ajouté à votre panier"
+    "added": "\"{{name}}\" a été ajouté à votre panier",
+    "total": "Total"
   },
   "checkout": {
     "title": "Caisse",
@@ -136,7 +143,13 @@
     "securedByStripe": "Paiements sécurisés par Stripe — cartes & TWINT",
     "clearBag": "Vider le panier",
     "unavailable": "Le paiement en ligne est momentanément indisponible. Veuillez nous contacter via WhatsApp.",
-    "error": "Une erreur est survenue lors du lancement du paiement. Veuillez réessayer."
+    "error": "Une erreur est survenue lors du lancement du paiement. Veuillez réessayer.",
+    "discountLabel": "Code de réduction",
+    "discountPlaceholder": "Saisir un code",
+    "discountApply": "Appliquer",
+    "discountApplied": "{{code}} appliqué",
+    "discountRemove": "Retirer la réduction",
+    "discountChecking": "Vérification…"
   },
   "policy": {
     "returnsHeading": "Retours & remboursements",
@@ -178,7 +191,9 @@
     "copyright": "© {{year}} {{store}}. Tous droits réservés.",
     "swissQuality": "Sélectionné avec soin",
     "policy": "Conditions de vente et de retour",
-    "impressum": "Mentions légales"
+    "impressum": "Mentions légales",
+    "madeWith": "Réalisé avec",
+    "madeWithTitle": "Cette boutique est réalisée avec {{platform}} — la caisse et la boutique en ligne des artisans"
   },
   "bulkUpload": {
     "adminBadge": "Admin",
@@ -266,5 +281,20 @@
   "common": {
     "close": "Fermer",
     "loading": "Chargement"
+  },
+  "trust": {
+    "eyebrow": "Merci à vous",
+    "heading": "Ce que disent nos clientes et clients",
+    "readReviews": "Lire nos avis",
+    "onTrustpilot": "sur Trustpilot",
+    "starsLabel": "Noté {{score}} sur 5 sur Trustpilot",
+    "ratingLabel": "{{count}} sur 5",
+    "reviewCount_one": "{{count}} avis",
+    "reviewCount_other": "{{count}} avis",
+    "reviewCount_many": "{{count}} avis",
+    "source": {
+      "google": "via Google",
+      "trustpilot": "via Trustpilot"
+    }
   }
 }

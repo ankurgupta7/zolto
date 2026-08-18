@@ -56,7 +56,8 @@ const STATE_COOKIE = "apple_oauth_state";
 
 let jwks: ReturnType<typeof createRemoteJWKSet> | null = null;
 function getAppleJwks() {
-  if (!jwks) jwks = createRemoteJWKSet(new URL("https://appleid.apple.com/auth/keys"));
+  if (!jwks)
+    jwks = createRemoteJWKSet(new URL("https://appleid.apple.com/auth/keys"));
   return jwks;
 }
 
@@ -97,16 +98,18 @@ async function buildClientSecret(config: {
 }): Promise<string> {
   const key = await importPKCS8(config.privateKey, "ES256");
   const nowSec = Math.floor(Date.now() / 1000);
-  return new SignJWT({})
-    .setProtectedHeader({ alg: "ES256", kid: config.keyId })
-    .setIssuer(config.teamId)
-    .setIssuedAt(nowSec)
-    // Minted fresh on every token exchange, so 5 minutes is plenty — well
-    // under Apple's 6-month maximum.
-    .setExpirationTime(nowSec + 5 * 60)
-    .setAudience("https://appleid.apple.com")
-    .setSubject(config.clientId)
-    .sign(key);
+  return (
+    new SignJWT({})
+      .setProtectedHeader({ alg: "ES256", kid: config.keyId })
+      .setIssuer(config.teamId)
+      .setIssuedAt(nowSec)
+      // Minted fresh on every token exchange, so 5 minutes is plenty — well
+      // under Apple's 6-month maximum.
+      .setExpirationTime(nowSec + 5 * 60)
+      .setAudience("https://appleid.apple.com")
+      .setSubject(config.clientId)
+      .sign(key)
+  );
 }
 
 // ── Apple API helpers ────────────────────────────────────────────────────────
@@ -161,7 +164,9 @@ async function verifyAppleIdToken(
 function parseAppleUserName(raw: unknown): string | null {
   if (typeof raw !== "string") return null;
   try {
-    const parsed = JSON.parse(raw) as { name?: { firstName?: string; lastName?: string } };
+    const parsed = JSON.parse(raw) as {
+      name?: { firstName?: string; lastName?: string };
+    };
     const first = parsed.name?.firstName?.trim();
     const last = parsed.name?.lastName?.trim();
     const full = [first, last].filter(Boolean).join(" ");
@@ -241,7 +246,9 @@ export function registerAppleOAuthRoutes(app: Express) {
     const cookieOptions = getSessionCookieOptions(req);
     if (!expectedState || !returnedState || expectedState !== returnedState) {
       res.clearCookie(STATE_COOKIE, cookieOptions);
-      res.status(400).send("Invalid or expired sign-in attempt. Please try again.");
+      res
+        .status(400)
+        .send("Invalid or expired sign-in attempt. Please try again.");
       return;
     }
     res.clearCookie(STATE_COOKIE, cookieOptions);
@@ -265,7 +272,8 @@ export function registerAppleOAuthRoutes(app: Express) {
         clientId,
       );
 
-      const sub = typeof idTokenPayload.sub === "string" ? idTokenPayload.sub : null;
+      const sub =
+        typeof idTokenPayload.sub === "string" ? idTokenPayload.sub : null;
       if (!sub) throw new Error("Apple id_token is missing sub");
       const email =
         typeof idTokenPayload.email === "string" ? idTokenPayload.email : null;

@@ -18,9 +18,10 @@ const mocks = vi.hoisted(() => ({
     string,
     unknown
   > | null,
-  secrets: { vaultConfigured: false, secrets: [] as Array<
-    Record<string, unknown>
-  > } as Record<string, unknown> | null,
+  secrets: {
+    vaultConfigured: false,
+    secrets: [] as Array<Record<string, unknown>>,
+  } as Record<string, unknown> | null,
   setSecret: vi.fn(),
   deleteSecret: vi.fn(),
 }));
@@ -226,9 +227,7 @@ describe("Channels page — own bot credentials", () => {
 
   it("warns and disables the inputs when the deployment has no vault", () => {
     render(<Channels />);
-    expect(
-      screen.getByText(/no secrets vault configured/i),
-    ).toBeTruthy();
+    expect(screen.getByText(/no secrets vault configured/i)).toBeTruthy();
     expect(discordBotTokenInput().disabled).toBe(true);
   });
 });

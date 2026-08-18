@@ -13,7 +13,11 @@
     "goToYourStore": "Go to your store",
     "myStore": "My store",
     "signedInAs": "Signed in as {{email}}",
-    "swissMade": "Swiss-made"
+    "swissMade": "Swiss-made",
+    "theme": {
+      "light": "Switch to light mode",
+      "dark": "Switch to dark mode"
+    }
   },
   "footer": {
     "copyright": "© {{year}} Zolto — commerce for makers, handmade in Zürich, built to keep more money in your pocket.",
@@ -31,17 +35,15 @@
     "pledgeSignature": "— the Zolto team",
     "comparisonEyebrow": "the honest comparison",
     "comparisonHeading": "What you’re actually paying them for.",
-    "comparisonBody": "These are real products with real strengths, and at a stall every one of them beats us on card rate. What follows is where the models genuinely differ — what's in the till, who builds the shop, and where the money and the data end up.",
+    "comparisonBody": "These are real products with real strengths, and at a stall every one of them beats us on card rate. What follows is where the models genuinely differ — what's in the register, who builds the shop, and where the money and the data end up.",
     "colOldGuard": "The old guard",
     "howEyebrow": "here’s how it works",
     "howHeading": "One shop. Everywhere you sell.",
     "inventoryTitle": "One inventory, two channels",
     "inventoryBody": "Sell at the market and online from the same catalogue. Sell the last one at your stall and it comes off the website in real time — no double entry, no oversells.",
-    "photoTitle": "Snap a photo, get a listing",
-    "photoBody": "Photograph a piece and the AI drafts the title, description and a suggested price — in every language you sell in. You review and publish; the busywork is done for you.",
+    "photoBody": "Photograph a piece. Publish the listing it writes.",
     "messyEyebrow": "AI that’s fine with messy",
     "messyHeading": "Sell first. Sort it out later.",
-    "messyBody": "A real market stall is glorious chaos. Don’t stop mid-sale to tag every piece — your phone’s the card machine, the AI’s the back office, and you’re just there to sell cool stuff.",
     "emailFrom": "From",
     "emailSubjectLabel": "Subject:",
     "emailSubject": "Your day — 2 sales to confirm",
@@ -53,8 +55,25 @@
     "emailConfirm": "That’s it ✓",
     "ctaEyebrow": "ready when you are",
     "ctaHeading": "Your store, live this week.",
-    "ctaBody": "Free to sell in person, forever. 14-day trial on Pro, no credit card needed to poke around — and no card reader, ever. Promise.",
-    "ctaButton": "Create your store →"
+    "ctaBody": "Free in person, forever. 14 days of Pro to try, and no card reader, ever.",
+    "ctaButton": "Create your store →",
+    "reel": {
+      "railLabel": "Chapters",
+      "slide": "Slide {{n}} of {{total}}",
+      "promise": "Promise",
+      "squeeze": "The squeeze",
+      "freeInPerson": "Free in person",
+      "how": "How it works",
+      "whatItCosts": "What it costs",
+      "trust": "Trust",
+      "whatsComing": "What's coming",
+      "startFree": "Start free",
+      "whyZoltoLink": "How an AI finds, asks and buys →"
+    },
+    "video": {
+      "caption": "Two minutes, from empty shop to first sale.",
+      "play": "Play the Zolto explainer"
+    }
   },
   "pricing": {
     "eyebrow": "fair & simple",
@@ -130,7 +149,7 @@
   "diaryTeaser": {
     "eyebrow": "the launch diary",
     "heading": "Someone already did this. Here’s the unedited version.",
-    "body": "A Zurich jeweller went from Christmas-market-only to selling online, and let us write down how it actually went — the slow bits included. No growth hacks, no six-figure screenshots.",
+    "body": "A Zurich jeweller went from Christmas-market-only to online, and let us write down how it actually went.",
     "readAll": "Read the whole diary →"
   },
   "cardReaderGag": {
@@ -172,7 +191,7 @@
           "heading": "4. Cookies & analytics",
           "body": [
             "The platform sets a single cookie, app_session_id, which keeps you signed in. It is strictly necessary — the service cannot authenticate you without it — so it requires no consent banner and cannot be disabled while using the service. We set no advertising, preference, or third-party tracking cookies.",
-            "We measure page views with Umami, a privacy-focused analytics tool that works without cookies and without cross-site identifiers; it gives us aggregate statistics, not profiles of individual visitors. Webfonts are served from our own infrastructure, so viewing a page sends no request to third-party font networks. During checkout you are redirected to Stripe, which may set its own cookies on its own domain under Stripe's privacy policy."
+            "We measure page views with Umami, a privacy-focused analytics tool that works without cookies and without cross-site identifiers, together with a small number of aggregate interaction events — a product viewed, an item added to the bag, a checkout begun or completed. Those are recorded as categories and rounded price bands, never as an order, an exact amount or a person; the whole of it gives us aggregate statistics, not profiles of individual visitors. Webfonts are served from our own infrastructure, so viewing a page sends no request to third-party font networks. During checkout you are redirected to Stripe, which may set its own cookies on its own domain under Stripe's privacy policy."
           ]
         },
         {
@@ -351,6 +370,10 @@
     "buyerFitIntro": "Answer these before you read another comparison. Two of the three can rule us out, and it is better that you find that out here than after you have moved your catalogue.",
     "limitationsHeading": "Where {{name}} falls short"
   },
+  "whyZolto": {
+    "metaTitle": "Why {{name}} — ready for the AI that shops for your customer",
+    "metaDescription": "How a customer's assistant finds your shop, checks what's in stock and buys — and what {{name}} already does about it today."
+  },
   "signup": {
     "eyebrow": "let’s begin",
     "heading": "Create your store",
@@ -459,7 +482,7 @@
           "0% platform fee — keep every online sale",
           "Unmetered AI — photos, descriptions, chat",
           "Your own custom domain + managed SSL",
-          "Your brand only — no \"runs on Zolto\"",
+          "White-label switch — hide the \"Made with Zolto\" credit",
           "Advanced analytics & AI insights",
           "3 staff seats",
           "Priority human support",
@@ -469,13 +492,14 @@
     },
     "pricingPromise": {
       "headline": "You don't pay us until the internet pays you.",
-      "pledge": "Selling in person is free, forever — your store, POS and inventory cost CHF 0/month, and Zolto adds nothing on in-person payments. Here's the honest version: we already have enough money. We're not here to skim off small makers — we're here to help you keep what you earn, and that's not changing.",
+      "pledge": "Selling in person is free, forever — store, POS and inventory at CHF 0/month, and Zolto adds nothing to the payment. The honest version: we already have enough money. We're not here to skim off small makers.",
       "points": [
         "Sell at the market and pay us nothing, forever: full POS, inventory sync and your online storefront, all included at CHF 0/month.",
         "Online and AI-agent orders carry a 1% fee on the Free plan. No online sales this month? You pay CHF 0. That's it.",
         "Pro (CHF 25/month) kills the 1% fee entirely and unlocks unmetered AI. Selling past roughly CHF 2,500/month online? Pro's cheaper — we'll tell you in-app the moment it's worth switching.",
         "We'll never nickel-and-dime your AI usage. Talk to it as much as you want — plans scale on products, photos and storage, not on how chatty you get.",
-        "What we charge is not what a sale costs. Your payment provider takes its own cut and that money goes to them, not to us — and on card rate alone we are not the cheapest way to get paid in Switzerland. We'd rather show you the whole stack and let you do the arithmetic."
+        "What we charge is not what a sale costs. Your payment provider takes its own cut and that money goes to them, not to us — and on card rate alone we are not the cheapest way to get paid in Switzerland. We'd rather show you the whole stack and let you do the arithmetic.",
+        "One thing costs extra, once: CHF 20 to lift your whole existing shop — products, stock, photos, categories, your story — off your old site and into Zolto in about a minute. That buys real machine time reading your site, not rent on a row in a database. Incumbents charge you monthly for storing what you already own; we charge once for the work of moving it, and never again."
       ]
     },
     "costComparison": {
@@ -489,7 +513,20 @@
       "eyebrow": "the bit people re-read",
       "headline": "A whole shop in your pocket.",
       "headlineEmphasis": "For nothing.",
-      "body": "Photos, names, prices, stock counts — your actual catalogue, in the till on your phone. Tap to take the payment. Watch it sync to your website. Then pay us CHF 0.00 at the end of the month, and again the month after that.",
+      "body": "Photos, names, prices, stock counts — your actual catalogue, in the register on your phone. Tap to take the payment. Watch it sync to your website. Then pay us CHF 0.00 at the end of the month, and again the month after that.",
+      "bodyShort": "Not a trial. Not a starter tier that quietly expires. CHF 0.00 a month — this month, and the month after that.",
+      "processorNoteLink": "Card and TWINT rates are your processor's, not ours",
+      "receipt": {
+        "title": "monthly statement",
+        "lines": [
+          "Point of sale",
+          "Product catalogue",
+          "Inventory sync",
+          "Online storefront"
+        ],
+        "total": "Total due",
+        "note": "and again next month"
+      },
       "includes": [
         "Full POS — Tap to Pay, TWINT and cash, on one screen",
         "Every piece with its photo, name and price",
@@ -498,13 +535,26 @@
       ],
       "catch": "No trial clock. No starter tier that quietly expires. The only thing we ever charge for is the online sales we bring you — and if there aren't any, there's nothing to charge. Whoever processes your card and TWINT payments still charges their own rate, the same as they would anywhere else; that bill is between you and them, and we don't take a slice of it."
     },
+    "makerPitch": {
+      "eyebrow": "jewellers, potters, stallholders",
+      "headline": "For one-of-a-kind things:",
+      "headlineEmphasis": "a POS and a shop.",
+      "body": "A point-of-sale and a web shop that share one inventory. Tap the photo of the piece you just sold on the phone in your hand — it's off your website before the customer has walked away.",
+      "register": {
+        "title": "your register, on the phone you already own",
+        "methods": "TWINT · Cards · Cash",
+        "caption": "Every piece with its photo, name and price. Tap the one you sold, take the payment, and your website updates itself."
+      }
+    },
     "aiNativePitch": {
       "eyebrow": "commerce is moving into the chat window",
       "headline": "Your next customer",
       "headlineEmphasis": "is an AI.",
       "body": "Search built the last era of shops. Assistants are building this one — and they can only recommend stores they can read. Every Zolto store ships llms.txt, MCP and agent checkout from day one, kept current as the protocols move, so your shop compounds in the answers while retrofitted websites fade out of them.",
+      "bodyShort": "They can only recommend a store they can read. Every Zolto store ships llms.txt, MCP and agent checkout from day one.",
       "chart": {
         "title": "where buyers start their search",
+        "crossingLabel": "2025 — assistants overtake search",
         "decliningLabel": "search engines",
         "risingLabel": "AI assistants",
         "caption": "Assistants only recommend stores they can read. A store that's invisible to them isn't in the answer — no matter how good its SEO was."
@@ -535,18 +585,18 @@
     },
     "sellingFlow": [
       {
-        "title": "Scan your notebook",
-        "detail": "Photograph your handwritten stock list. The AI reads it into a real catalogue — names, prices, quantities.",
+        "title": "Photograph your stock list",
+        "detail": "The AI turns it into a catalogue.",
         "timeOfDay": "07:40 — stall going up"
       },
       {
-        "title": "Tap to take payment",
-        "detail": "Enter an amount and let the customer tap their phone or card. NFC and TWINT QR — nothing to buy or plug in.",
+        "title": "They tap. You're paid.",
+        "detail": "NFC and TWINT QR. Nothing to plug in.",
         "timeOfDay": "11:15 — first rush"
       },
       {
-        "title": "Confirm at day's end",
-        "detail": "Zolto emails what it thinks you sold. Tap to confirm and stock syncs across your POS and online store.",
+        "title": "One email. One tap.",
+        "detail": "Stock syncs, stall and website.",
         "timeOfDay": "18:30 — packing up"
       }
     ],
@@ -558,15 +608,15 @@
       ]
     },
     "comparison": {
-      "Your catalogue and TWINT in the same till": {
-        "feature": "Your catalogue and TWINT in the same till",
-        "them": "One or the other: a till app that can't take TWINT, or a TWINT app with no catalogue in it",
+      "Your catalogue and TWINT on one screen": {
+        "feature": "Your catalogue and TWINT on one screen",
+        "them": "One or the other: a POS app that can't take TWINT, or a TWINT app with no catalogue in it",
         "us": "Both, on one screen — tap the photo, then choose TWINT, card or cash"
       },
       "What a sale costs": {
         "feature": "What a sale costs",
         "them": "Their rate, all in — and at a stall, every one of them beats ours on cards",
-        "us": "Your processor's rate, plus 0% from us in person and 1% online on Free — so take TWINT, which is in the same till"
+        "us": "Your processor's rate, plus 0% from us in person and 1% online on Free — so take TWINT, which is on the same screen"
       },
       "Building the store": {
         "feature": "Building the store",
@@ -743,7 +793,7 @@
           "Selling to customers in more than one language means writing everything twice.",
           "Answering the same questions about opening hours, sizing and shipping eats the day."
         ],
-        "scenario": "A customer messages in German asking whether something's in stock. The listing is already in German, the answer comes back without you, and the stock figure is the same one your till is using."
+        "scenario": "A customer messages in German asking whether something's in stock. The listing is already in German, the answer comes back without you, and the stock figure is the same one your register is using."
       }
     },
     "features": {
@@ -896,15 +946,15 @@
         ]
       },
       "sumup": {
-        "summary": "A well-established mobile card-payment company for small merchants and market traders. It offers cheap readers, Tap to Pay on iPhone and Android, a genuinely capable till app with an item catalogue and stock tracking, and a basic online store. Its European merchants contract with SumUp Limited in Dublin, an EU-regulated e-money institution.",
+        "summary": "A well-established mobile card-payment company for small merchants and market traders. It offers cheap readers, Tap to Pay on iPhone and Android, a genuinely capable POS app with an item catalogue and stock tracking, and a basic online store. Its European merchants contract with SumUp Limited in Dublin, an EU-regulated e-money institution.",
         "betterWhen": [
           "Your customers don't pay by TWINT — SumUp is cheaper and simpler on cards, and setup takes under an hour.",
           "You sell enough on cards for a monthly subscription to beat a per-sale percentage.",
-          "You want a mature till app: variants, modifiers, selling layouts, supplier lists, reconciliation. On pure till features it is further along than Zolto.",
+          "You want a mature POS app: variants, modifiers, selling layouts, supplier lists, reconciliation. On pure point-of-sale features it is further along than Zolto.",
           "You want a decade of track record behind the company taking your money. Zolto does not have one."
         ],
         "zoltoWhen": [
-          "Your customers reach for TWINT first. A SumUp till cannot take it at all — the workaround is a second, separate TWINT setup and a manual reconciliation at the end of the day.",
+          "Your customers reach for TWINT first. A SumUp register cannot take it at all — the workaround is a second, separate TWINT setup and a manual reconciliation at the end of the day.",
           "You sell one-of-a-kind pieces and can't afford to sell the same one twice across two channels.",
           "You want the shop built, written and photographed for you rather than a template to fill in yourself.",
           "You'd rather photograph your notebook than type a catalogue in by hand."
@@ -918,7 +968,7 @@
           "sell-by-amount": "You can charge an amount, but nothing reconciles it afterwards",
           "online-store": "Yes — a basic online store and payment links",
           "builds-storefront": "No — a template you fill in yourself",
-          "stock-shared": "Yes — SumUp states the till and Online Store sync automatically. Stock updates when a sale completes, not when a checkout starts.",
+          "stock-shared": "Yes — SumUp states the register and Online Store sync automatically. Stock updates when a sale completes, not when a checkout starts.",
           "multilingual": "You write every listing, in every language, yourself",
           "setup": "Under an hour — faster than ours",
           "ai-listings": "No",
@@ -947,7 +997,7 @@
         ],
         "zoltoWhen": [
           "You're one person, and a platform you have to administer is the problem, not the solution.",
-          "You want the till and the catalogue on the phone in your apron without a monthly bill for it.",
+          "You want the register and the catalogue on the phone in your apron without a monthly bill for it.",
           "You'd rather photograph your notebook than fill in a product grid by hand."
         ]
       },
@@ -960,14 +1010,14 @@
           "You want an established Swiss acquiring relationship with formal contract terms."
         ],
         "zoltoWhen": [
-          "You want your products in the till. Tap on Mobile is a payment app — you type in an amount every time, or buy and integrate separate till software.",
+          "You want your products in the register. Tap on Mobile is a payment app — you type in an amount every time, or buy and integrate separate POS software.",
           "You want an online shop, not a checkout to bolt onto a site you commission. Saferpay is a gateway, not a store.",
           "You're one person or a small studio, and a multi-year terminal contract is overkill.",
           "You want to be selling this weekend rather than after a sales process."
         ],
         "capabilities": {
           "no-hardware": "Yes — Tap on Mobile, iPhone / Android 12+",
-          "item-grid": "Not on Tap on Mobile — it is payment-only, so you type an amount each time. It integrates app-to-app with third-party till software.",
+          "item-grid": "Not on Tap on Mobile — it is payment-only, so you type an amount each time. It integrates app-to-app with third-party POS software.",
           "twint": "Yes",
           "postfinance": "Yes — the only one of the three that supports it",
           "stock-in-person": "Not applicable — there is no catalogue to count against",
@@ -994,7 +1044,7 @@
           "SIX Group, which bought 27% of Worldline as part of the SIX Payment Services deal, booked an impairment of roughly CHF 550 million in November 2025, declined to take part in Worldline's capital increase, gave up its board seat, and reclassified the holding from a strategic to a financial investment."
         ],
         "costs": {
-          "item-grid": "A catalogue means buying and integrating separate till software",
+          "item-grid": "A catalogue means buying and integrating separate POS software",
           "online-store": "Saferpay Go / Easy / Flex at CHF 9.95 / 19.95 / 39.95 per month plus a one-time CHF 49–299, on top of acquiring — and you still pay someone to build the site",
           "setup": "Sales-led onboarding, not self-serve",
           "card-rate": "Terminal pricing is a negotiation, and terminal contracts are typically multi-year"
@@ -1045,48 +1095,58 @@
       "headlineEmphasis": "Run from Europe.",
       "serving": "Zolto is built in Zürich, for Swiss makers first, for Europe next, and after that for anyone anywhere who likes how we do things.",
       "body": "We're moving every piece of Zolto we control onto European infrastructure, and into Switzerland where there's a Swiss option worth having. Some of it is already there. Some of it isn't yet. Here's the whole list, including the parts that make us look bad.",
+      "bodyShort": "Every piece of Zolto, and where it runs today — including the parts that make us look bad.",
       "ledger": [
         {
           "piece": "The company and the product",
-          "today": "Built in Zürich, by a Swiss company"
+          "today": "Built in Zürich, by a Swiss company",
+          "todayShort": "Zürich, Swiss company"
         },
         {
           "piece": "Servers and your database",
           "today": "Hetzner · Europe, mostly Germany",
+          "todayShort": "Hetzner, Germany",
           "next": "A Swiss data centre, so the machines and the company share a country."
         },
         {
           "piece": "TWINT — your own QR code",
-          "today": "Your own TWINT account at 1.3% — Swiss rails, end to end, and we never see the money"
+          "today": "Your own TWINT account at 1.3% — Swiss rails, end to end, and we never see the money",
+          "todayShort": "Your account, 1.3%. We never see the money"
         },
         {
-          "piece": "TWINT — the button in the till",
+          "piece": "TWINT — the button in the register",
           "today": "A Stripe payment, not a direct TWINT one — Stripe's rails, at a rate Stripe doesn't publish",
+          "todayShort": "Via Stripe, not TWINT directly",
           "next": "A direct TWINT integration, so the in-app button runs on the same Swiss rails as the QR code. TWINT certifies integrators before releasing the spec, so this starts as an application rather than a branch."
         },
         {
           "piece": "Card payments and payouts",
           "today": "Stripe — money goes straight to your own account, never ours",
+          "todayShort": "Stripe, straight to your account",
           "next": "A Swiss payment processor. Our research says it would also be cheaper per sale than what you pay now, which is the rare case of the principled option being the cheap one."
         },
         {
           "piece": "The AI (listings, translations, chat)",
           "today": "A model provider outside Europe",
+          "todayShort": "Model provider outside Europe",
           "next": "Swiss-hosted open models. Our AI layer already speaks a standard API, so this is the shortest hop on the list — the thing we're testing is whether the quality holds."
         },
         {
           "piece": "Your product photos",
           "today": "Object storage that isn't guaranteed European yet",
+          "todayShort": "Storage not guaranteed European",
           "next": "The same European data centre as the servers, so your photos and your orders stop living in different jurisdictions."
         },
         {
           "piece": "Account emails",
           "today": "A sending service outside Europe",
+          "todayShort": "Sender outside Europe",
           "next": "A European sender. Small job, low risk, genuinely just not done yet."
         },
         {
           "piece": "Card networks and phone wallets",
           "today": "Visa, Mastercard, Apple Pay, Google Pay",
+          "todayShort": "Visa, Mastercard, Apple Pay, Google Pay",
           "next": "These are not European and never will be. If you want a sale to stay in Switzerland from end to end, take it over your own TWINT QR — at 1.3% with no fixed fee it is also the cheapest way to be paid that carries no monthly cost, and less than half what the same sale costs on a card."
         }
       ],
@@ -1106,19 +1166,27 @@
     "squeezePlay": {
       "eyebrow": "the one that isn't a tie",
       "headline": "Your catalogue and TWINT,",
-      "headlineEmphasis": "in the same till.",
-      "body": "Every till in this market now runs on an ordinary phone, so that stopped being the argument. Here's the one that's left: the two big options have opposite holes in them, and a Swiss maker falls straight down whichever one they pick.",
+      "headlineEmphasis": "on one screen.",
+      "body": "Every register in this market now runs on an ordinary phone, so that stopped being the argument. Here's the one that's left: the two big options have opposite holes in them, and a Swiss maker falls straight down whichever one they pick.",
+      "bodyShort": "Every register runs on a phone now. So the question is what's in it.",
+      "matrix": {
+        "grid": "Your catalogue",
+        "twint": "TWINT"
+      },
       "panels": [
         {
-          "label": "A till with your things in it",
+          "label": "A register with your things in it",
+          "note": "second TWINT setup, reconciled by hand",
           "detail": "Photos, prices, stock counts — and no way to take the payment method half your customers reach for first. The workaround is a second, separate TWINT setup and a manual reconciliation at the end of the day."
         },
         {
-          "label": "A till that takes TWINT",
-          "detail": "TWINT, cards, a good flat rate — and nothing in it. It's a payment app: you type in an amount every time, or you buy and integrate separate till software to sit on top of it."
+          "label": "A register that takes TWINT",
+          "note": "type in the amount, every time",
+          "detail": "TWINT, cards, a good flat rate — and nothing in it. It's a payment app: you type in an amount every time, or you buy and integrate separate POS software to sit on top of it."
         },
         {
           "label": "Zolto",
+          "note": "tap the photo, pick the method",
           "detail": "Tap the photo of the actual object, then choose TWINT, card or cash on the same screen. One tap updates the stock behind your stall and on your website at once."
         }
       ],
@@ -1127,7 +1195,7 @@
     "rates": {
       "zolto-twint-qr": {
         "label": "TWINT — your own QR, your own TWINT account",
-        "caveat": "This is the merchant's own TWINT QR: the money never passes through Stripe or Zolto, and the sale is recorded in the till rather than captured by it."
+        "caveat": "This is the merchant's own TWINT QR: the money never passes through Stripe or Zolto, and the sale is recorded in the register rather than captured by it."
       },
       "sumup-payments-plus": {
         "label": "Payments Plus (CHF 29/mo)",
@@ -1145,7 +1213,7 @@
       },
       "zolto-card": {
         "label": "Tap to Pay — card",
-        "caveat": "Swiss-issued cards fall in Stripe's non-EEA bucket, confirmed with Stripe. Zolto adds nothing on top — this is Stripe's rate — but it makes cards the dearest way to take a payment at your stall. If your customer offers TWINT, take it: same till, same tap, less than half the cost."
+        "caveat": "Swiss-issued cards fall in Stripe's non-EEA bucket, confirmed with Stripe. Zolto adds nothing on top — this is Stripe's rate — but it makes cards the dearest way to take a payment at your stall. If your customer offers TWINT, take it: same register, same tap, less than half the cost."
       },
       "sumup-online": {
         "label": "Online store checkout",
@@ -1175,11 +1243,11 @@
         "zolto": "Yes — Tap to Pay on the phone you already own"
       },
       "item-grid": {
-        "label": "Your catalogue as a grid in the till",
+        "label": "Your catalogue as a grid in the register",
         "zolto": "Yes — photo, name and price for every piece"
       },
       "twint": {
-        "label": "TWINT in the same till",
+        "label": "TWINT in the same register",
         "zolto": "Yes — beside cards and cash, on one screen"
       },
       "postfinance": {
@@ -1266,7 +1334,7 @@
       },
       {
         "title": "Taking a card through us is the dearest option on our own table",
-        "detail": "Swiss-issued cards bill at Stripe's non-EEA rate — 2.9% plus CHF 0.20 — and Zolto adds nothing on top, which still leaves every other in-person option on our comparison cheaper than ours. SumUp's online rate beats ours on every plan too. Two honest responses: take TWINT where you can, which sits in the same till and costs less than half as much; and choose Zolto because it removes the work, not because it removes the fee. If cost per card sale is your deciding number, it decides against us."
+        "detail": "Swiss-issued cards bill at Stripe's non-EEA rate — 2.9% plus CHF 0.20 — and Zolto adds nothing on top, which still leaves every other in-person option on our comparison cheaper than ours. SumUp's online rate beats ours on every plan too. Two honest responses: take TWINT where you can, which sits in the same register and costs less than half as much; and choose Zolto because it removes the work, not because it removes the fee. If cost per card sale is your deciding number, it decides against us."
       },
       {
         "title": "Everything runs on Stripe, and Stripe sets the real price",
@@ -1291,11 +1359,11 @@
         "answers": [
           {
             "when": "Yes, most of them",
-            "then": "SumUp is out, whatever it costs — its till cannot take TWINT at all. That leaves Zolto and Worldline, and the question becomes whether you want your catalogue in the till. It's also the cheapest answer for you: TWINT at 1.3% is the least you can pay to be handed money at a stall without a monthly subscription."
+            "then": "SumUp is out, whatever it costs — its register cannot take TWINT at all. That leaves Zolto and Worldline, and the question becomes whether you want your catalogue in the register. It's also the cheapest answer for you: TWINT at 1.3% is the least you can pay to be handed money at a stall without a monthly subscription."
           },
           {
             "when": "No, they mostly tap a card",
-            "then": "Then the card rate is your number, and ours is the highest on this page — Swiss cards bill at Stripe's non-EEA rate and we add nothing to it. SumUp is cheaper and its till app is more mature. Choose Zolto for the shop, the listings and the one inventory, or don't choose it."
+            "then": "Then the card rate is your number, and ours is the highest on this page — Swiss cards bill at Stripe's non-EEA rate and we add nothing to it. SumUp is cheaper and its POS app is more mature. Choose Zolto for the shop, the listings and the one inventory, or don't choose it."
           }
         ]
       },
@@ -1327,7 +1395,7 @@
       }
     ],
     "capabilityGroups": {
-      "The till": "The till",
+      "The register": "The register",
       "The shop": "The shop",
       "The AI": "The AI",
       "The money": "The money"
@@ -1371,8 +1439,12 @@
   },
   "costOfAcceptance": {
     "heading": "What one CHF {{basket}} sale costs",
+    "headingInPerson": "What one CHF {{basket}} sale costs in person",
+    "headingOnline": "What one CHF {{basket}} sale costs online",
     "intro": "Cheapest first. Zolto is not at the top, and that is the point — on card rate every other option here beats us. Every figure links to where it came from and the date it was read.",
     "tableCaption": "Cost of a CHF {{basket}} sale on each option, cheapest first",
+    "tableCaptionInPerson": "Cost of a CHF {{basket}} sale taken in person on each option, cheapest first",
+    "tableCaptionOnline": "Cost of a CHF {{basket}} sale taken online on each option, cheapest first",
     "colOption": "How you take the money",
     "colCost": "Cost of the sale",
     "colRate": "Effective rate",
@@ -1388,5 +1460,9 @@
     "partial": "partly",
     "notApplicable": "not applicable",
     "tableCaption": "{{name}} and {{competitor}} compared feature by feature"
+  },
+  "squeezePlay": {
+    "yes": "yes",
+    "no": "no"
   }
 }

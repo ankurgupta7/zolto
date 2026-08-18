@@ -12,6 +12,20 @@ import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { AlertTriangle, Search, ExternalLink } from "lucide-react";
 import { PageHeader, LoadingState, inputClass } from "@/components/admin/ui";
+import { effectivePlan } from "@shared/entitlements";
+import type { PlanId } from "@shared/platform";
+
+/** The plan a listed store actually gets, comp included. */
+function effectivePlanOf(t: {
+  plan: string;
+  comp: { plan: "free" | "pro" | null; feeWaived: boolean } | null;
+}): PlanId {
+  return effectivePlan({
+    plan: t.plan,
+    compPlan: t.comp?.plan ?? null,
+    compFeeWaived: t.comp?.feeWaived ?? false,
+  });
+}
 
 function StatusPill({
   children,
@@ -145,9 +159,26 @@ export default function Stores() {
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    <StatusPill tone={t.plan === "pro" ? "good" : "neutral"}>
-                      {t.plan}
-                    </StatusPill>
+                    {/* The plan the store is ENTITLED to, with the grant said
+                        out loud beside it — a comped Pro looks exactly like a
+                        paying Pro otherwise, which is how a comp gets left on
+                        a store for a year without anyone noticing. */}
+                    <div className="flex flex-wrap items-center gap-1">
+                      <StatusPill
+                        tone={effectivePlanOf(t) === "pro" ? "good" : "neutral"}
+                      >
+                        {effectivePlanOf(t)}
+                      </StatusPill>
+                      {t.comp && (
+                        <StatusPill tone="warn">
+                          {t.comp.plan && t.comp.feeWaived
+                            ? "comped · 0%"
+                            : t.comp.plan
+                              ? "comped"
+                              : "0% fee"}
+                        </StatusPill>
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-3">
                     <StatusPill

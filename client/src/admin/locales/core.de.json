@@ -10,11 +10,14 @@
       "import": "Import",
       "categories": "Kategorien",
       "orders": "Bestellungen",
+      "sales": "Verkäufe",
+      "spreadsheet": "Tabelle",
       "reconciliation": "Abgleich",
       "storefront": "Schaufenster",
       "domain": "Domain",
       "channels": "Kanäle",
       "pos": "POS",
+      "till": "Kasse",
       "insights": "Statistiken",
       "shop-profile": "Shop-Profil",
       "my-account": "Mein Konto",
@@ -25,7 +28,9 @@
       "data-privacy": "Daten & Datenschutz",
       "support": "Support",
       "legal-invoices": "Rechtliches & Rechnungen",
-      "platform-metrics": "Plattform-Metriken"
+      "platform-metrics": "Plattform-Metriken",
+      "reviews": "Bewertungen",
+      "discounts": "Rabatte"
     },
     "layout": {
       "navLabel": "Admin-Navigation",
@@ -57,7 +62,18 @@
       "firstLaunch": "Was die App beim ersten Start abfragt",
       "step1": "1. Server",
       "copyServer": "Serveradresse kopieren",
-      "step2": "2. Ihr POS-API-Schlüssel"
+      "step2": "2. Ihr POS-API-Schlüssel",
+      "checking": "Suche nach einem {{platform}}-Build…",
+      "iosSideloadNote": "Der iPhone-Build ist nicht von Apple signiert und lässt sich daher nicht direkt über diesen Link installieren. Lade ihn auf einem Computer herunter und installiere ihn mit AltStore oder Sideloadly. Android installiert direkt.",
+      "orPairInOneTap": "Oder überspringe beide Schritte: Erstelle unter „Schlüssel & Zugriff“ einen Kopplungslink und tippe ihn auf dem Kassenhandy an — die App konfiguriert sich selbst."
+    },
+    "posPair": {
+      "title": "Diese Kasse einrichten",
+      "description": "Dieser Link verbindet dieses Gerät mit deinem Shop. Wenn die Zolto-POS-App installiert ist, sollte sie sich bereits öffnen.",
+      "openApp": "In Zolto POS öffnen",
+      "noAppYet": "Du hast die App noch nicht?",
+      "installThenNewLink": "Kopplungslinks laufen nach wenigen Minuten ab. Erstelle nach der Installation unter „Schlüssel & Zugriff“ einen neuen.",
+      "missingToken": "Dieser Kopplungslink ist unvollständig. Erstelle unter „Schlüssel & Zugriff“ einen neuen."
     }
   }
 }

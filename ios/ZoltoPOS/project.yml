@@ -61,6 +61,16 @@ targets:
         NSLocationAlwaysAndWhenInUseUsageDescription: "Location is required for Stripe Terminal payment processing compliance."
         NFCReaderUsageDescription: "NFC is required for Tap to Pay on iPhone."
         NSCameraUsageDescription: "The camera is used to scan your store's POS pairing QR code."
+        # One-tap pairing: `zolto://pair?t=<token>&url=<origin>` launches this
+        # app already bound to the merchant's store (see Logic/Pairing.swift).
+        # A custom scheme rather than a Universal Link because an
+        # apple-app-site-association needs a stable team id, which an unsigned
+        # sideloaded build does not have. Custom schemes work when sideloaded.
+        CFBundleURLTypes:
+          - CFBundleURLName: ch.zolto.pos.pairing
+            CFBundleTypeRole: Editor
+            CFBundleURLSchemes:
+              - zolto
         UIRequiredDeviceCapabilities:
           - armv7
         POS_BASE_URL: "$(POS_BASE_URL)"

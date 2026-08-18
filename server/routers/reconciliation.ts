@@ -6,8 +6,75 @@ import {
   runStripeReconciliationForTenant,
 } from "../reconciliation";
 import { runPosAttribution } from "../posAttribution";
+import {
+  listPendingReview,
+  PendingResolveError,
+  resolvePendingPos,
+  resolvePendingStripe,
+} from "../pendingReview";
+
+/**
+ * Turns a resolve failure into the tRPC code that matches what happened. All
+ * four are the merchant's own store's business — nothing here distinguishes
+ * "no such row" from "another store's row", because `pendingReview` scopes
+ * every read by tenant and both arrive as not_found.
+ */
+function asTrpcError(err: PendingResolveError): TRPCError {
+  const code =
+    err.reason === "not_found"
+      ? "NOT_FOUND"
+      : err.reason === "not_a_candidate"
+        ? "BAD_REQUEST"
+        : "CONFLICT";
+  return new TRPCError({ code, message: err.message });
+}
+
+const resolveInput = z.object({
+  id: z.number().int().positive(),
+  /** null is "none of these" — leave it for manual handling, touch no stock. */
+  productId: z.number().int().positive().nullable(),
+});
 
 export const reconciliationRouter = router({
+  // Everything the store has been asked to confirm and hasn't, for the console
+  // to render directly. This is the durable path: the scans' review emails can
+  // go missing, but this list is always there and needs no token.
+  listPending: tenantAdminProcedure.query(async ({ ctx }) => {
+    return await listPendingReview(ctx.tenant.id);
+  }),
+
+  // Assign an unmatched Stripe payment to a piece (or set it aside). The
+  // emailed one-click links do the same thing via a bearer token; this does it
+  // with the admin's own session.
+  resolveStripe: tenantAdminProcedure
+    .input(resolveInput)
+    .mutation(async ({ ctx, input }) => {
+      try {
+        return await resolvePendingStripe(
+          ctx.tenant.id,
+          input.id,
+          input.productId,
+        );
+      } catch (err) {
+        if (err instanceof PendingResolveError) throw asTrpcError(err);
+        throw err;
+      }
+    }),
+
+  resolvePos: tenantAdminProcedure
+    .input(resolveInput)
+    .mutation(async ({ ctx, input }) => {
+      try {
+        return await resolvePendingPos(
+          ctx.tenant.id,
+          input.id,
+          input.productId,
+        );
+      } catch (err) {
+        if (err instanceof PendingResolveError) throw asTrpcError(err);
+        throw err;
+      }
+    }),
   // Scan the merchant's OWN connected Stripe account for succeeded payments
   // with no local counterpart, shortlist candidate products from their own
   // catalogue, and email them to confirm.

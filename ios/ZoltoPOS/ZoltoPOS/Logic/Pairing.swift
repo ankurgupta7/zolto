@@ -40,6 +40,47 @@ enum Pairing {
         return s
     }
 
+    /// A one-tap pairing link's contents: an opaque token plus the server to
+    /// redeem it against.
+    struct PairingLink: Equatable {
+        /// Single-use, minutes-long. Exchanged for the real key at
+        /// POST /api/pos/pair — it is not itself a POS key.
+        var token: String
+        /// Where to redeem. Present in every link the admin mints, since a fresh
+        /// install knows no host; falls back to `defaultBaseURL` when absent.
+        var baseURL: String
+    }
+
+    /// Parses a deep link the merchant tapped in their admin:
+    /// `zolto://pair?t=<token>&url=https://their-store.zolto.ch`
+    ///
+    /// Kept separate from `parseQrPayload` because the two carry different
+    /// things: a QR payload embeds the POS key itself, while this carries only a
+    /// redeemable token. Conflating them would let a `key=` link masquerade as a
+    /// pairing token and vice versa.
+    static func parsePairingLink(_ url: URL) -> PairingLink? {
+        guard url.scheme?.lowercased() == "zolto" else { return nil }
+        // `zolto://pair?…` puts "pair" in the host; a stray `zolto:/pair?…`
+        // puts it in the path. Accept either rather than failing on a form the
+        // OS may hand us.
+        let action = (url.host ?? url.path.trimmingCharacters(in: CharacterSet(charactersIn: "/")))
+            .lowercased()
+        guard action == "pair" else { return nil }
+
+        guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false) else {
+            return nil
+        }
+        let items = components.queryItems ?? []
+        let rawToken = items.first { ["t", "token"].contains($0.name.lowercased()) }?.value
+        guard let rawToken, let token = normalizeKey(rawToken) else { return nil }
+
+        let rawURL = items.first {
+            ["url", "server", "baseurl", "base_url"].contains($0.name.lowercased())
+        }?.value
+        let baseURL = rawURL.flatMap(normalizeBaseURL) ?? defaultBaseURL
+        return PairingLink(token: token, baseURL: baseURL)
+    }
+
     /// Extracts credentials from a scanned QR payload. Accepted forms:
     /// - the bare key itself (what "Keys & access" shows today)
     /// - a URL with `key`/`posKey` (and optionally `url`/`server`/`baseUrl`)

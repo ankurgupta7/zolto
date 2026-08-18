@@ -50,22 +50,34 @@ export default function Pricing() {
             <h2 className="font-serif text-2xl text-[var(--brand-text)]">
               {st("pricingPromise.headline", PRICING_PROMISE.headline)}
             </h2>
-            <p className="mt-3 font-serif text-lg italic leading-snug text-[var(--brand-muted-2)]">
+            <p className="mt-3 font-serif text-lg italic leading-snug text-[var(--brand-muted-2)] lining-nums">
               &ldquo;
               {st("pricingPromise.pledge", PRICING_PROMISE.pledge)}&rdquo;
             </p>
+            {/* Only the pledge points the fee section further down does not
+                already make — see PRICING_PROMISE.restatedByPricingFeeSection.
+                The original index is carried through the filter because it is
+                the translation key. */}
             <ul className="mt-5 grid gap-2.5">
-              {PRICING_PROMISE.points.map((point, i) => (
-                <li
-                  key={point}
-                  className="flex gap-2.5 text-sm leading-relaxed text-[var(--brand-muted-2)]"
-                >
-                  <span aria-hidden className="text-[var(--brand-accent)]">
-                    —
-                  </span>
-                  {st(`pricingPromise.points.${i}`, point)}
-                </li>
-              ))}
+              {PRICING_PROMISE.points
+                .map((point, i) => ({ point, i }))
+                .filter(
+                  ({ i }) =>
+                    !(
+                      PRICING_PROMISE.restatedByPricingFeeSection as readonly number[]
+                    ).includes(i),
+                )
+                .map(({ point, i }) => (
+                  <li
+                    key={point}
+                    className="flex gap-2.5 text-sm leading-relaxed text-[var(--brand-muted-2)]"
+                  >
+                    <span aria-hidden className="text-[var(--brand-accent)]">
+                      —
+                    </span>
+                    {st(`pricingPromise.points.${i}`, point)}
+                  </li>
+                ))}
             </ul>
           </div>
           <div className="shrink-0 rounded-xl border border-[var(--brand-border)] bg-white px-8 py-6 text-center">
@@ -100,8 +112,12 @@ export default function Pricing() {
       <div className="mx-auto mt-16 max-w-3xl">
         <CostOfAcceptance channel="in-person" />
       </div>
+      {/* The second table names its channel in its own heading and drops the
+          framing paragraphs: the intro and the monthly-fee footnote are about
+          the comparison, not about one channel, and printing them again under
+          an identical heading read as the page repeating itself. */}
       <div className="mx-auto mt-14 max-w-3xl">
-        <CostOfAcceptance channel="online" />
+        <CostOfAcceptance channel="online" showFraming={false} />
       </div>
 
       {/* Plan cards — two boxes only */}
@@ -148,7 +164,7 @@ export default function Pricing() {
               href={`/signup?plan=${plan.id}`}
               className={`mt-8 rounded-md px-4 py-2.5 text-center text-xs font-medium uppercase tracking-[0.12em] transition-colors ${
                 plan.highlight
-                  ? "bg-[var(--brand-accent)] text-[var(--brand-ink)] hover:bg-[var(--brand-accent-light)]"
+                  ? "bg-[var(--brand-accent)] text-[var(--brand-accent-fg)] hover:bg-[var(--brand-accent-light)]"
                   : "border border-[var(--brand-ink)]/25 text-[var(--brand-ink)] hover:bg-[var(--brand-ink)] hover:text-white"
               }`}
             >

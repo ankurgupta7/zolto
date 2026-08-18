@@ -10,11 +10,14 @@
       "import": "Import",
       "categories": "Categories",
       "orders": "Orders",
+      "sales": "Sales",
+      "spreadsheet": "Spreadsheet",
       "reconciliation": "Reconciliation",
       "storefront": "Storefront",
       "domain": "Domain",
       "channels": "Channels",
       "pos": "POS",
+      "till": "Till",
       "insights": "Insights",
       "shop-profile": "Shop profile",
       "my-account": "My account",
@@ -25,7 +28,9 @@
       "data-privacy": "Data & privacy",
       "support": "Support",
       "legal-invoices": "Legal & invoices",
-      "platform-metrics": "Platform metrics"
+      "platform-metrics": "Platform metrics",
+      "reviews": "Reviews",
+      "discounts": "Discounts"
     },
     "layout": {
       "navLabel": "Admin navigation",
@@ -57,7 +62,18 @@
       "firstLaunch": "What the app asks for on first launch",
       "step1": "1. Server",
       "copyServer": "Copy server address",
-      "step2": "2. Your POS API key"
+      "step2": "2. Your POS API key",
+      "checking": "Checking for a {{platform}} build…",
+      "iosSideloadNote": "The iPhone build is not signed by Apple, so it cannot install straight from this link. Download it on a computer and install it with AltStore or Sideloadly. Android installs directly.",
+      "orPairInOneTap": "Or skip both steps: generate a pairing link on Keys & access and tap it on the till phone — the app configures itself."
+    },
+    "posPair": {
+      "title": "Set up this register",
+      "description": "This link binds this device to your store. If the Zolto POS app is installed it should already be opening.",
+      "openApp": "Open in Zolto POS",
+      "noAppYet": "Don’t have the app yet?",
+      "installThenNewLink": "Pairing links expire after a few minutes, so once the app is installed, generate a fresh one from Keys & access.",
+      "missingToken": "This pairing link is incomplete. Generate a new one from your store’s Keys & access page."
     }
   }
 }

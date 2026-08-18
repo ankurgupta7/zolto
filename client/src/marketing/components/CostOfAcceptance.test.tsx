@@ -65,7 +65,7 @@ describe("CostOfAcceptance", () => {
     render(<CostOfAcceptance channel="in-person" />);
     const row = screen.getByTestId("cost-row-zolto-card").textContent!;
     expect(row).toMatch(/adds nothing on top/i);
-    expect(row).toMatch(/take it: same till/i);
+    expect(row).toMatch(/take it: same register/i);
   });
 
   it("links every row to its source, with the date it was read", () => {
@@ -92,6 +92,53 @@ describe("CostOfAcceptance", () => {
     expect(screen.getByTestId("cost-of-acceptance-note").textContent).toMatch(
       /decide the winner/i,
     );
+  });
+
+  it("names the channel in the heading, so two tables aren't titled alike", () => {
+    // Caught by screenshot: the pricing page stacks both channels, and both
+    // said "What one CHF 25 sale costs" — the second table read as the first
+    // one printed twice.
+    const { unmount } = render(<CostOfAcceptance channel="in-person" />);
+    expect(
+      screen.getByRole("heading", { name: /sale costs in person/i }),
+    ).toBeTruthy();
+    unmount();
+
+    render(<CostOfAcceptance channel="online" />);
+    expect(
+      screen.getByRole("heading", { name: /sale costs online/i }),
+    ).toBeTruthy();
+    // The sr-only caption is channel-specific too: two tables on one page must
+    // not announce themselves identically to a screen reader.
+    expect(screen.getByText(/sale taken online on each option/i)).toBeTruthy();
+  });
+
+  it("keeps the generic heading when no channel is named", () => {
+    render(<CostOfAcceptance provider="worldline" />);
+    expect(
+      screen.getByRole("heading", { name: /^What one CHF \d+ sale costs$/i }),
+    ).toBeTruthy();
+  });
+
+  it("can drop the framing paragraphs a second table would repeat verbatim", () => {
+    render(<CostOfAcceptance channel="online" showFraming={false} />);
+    // Table, heading and the negotiated list stay — only the two paragraphs
+    // that frame the comparison as a whole go.
+    expect(screen.getAllByTestId(/^cost-row-/).length).toBeGreaterThan(0);
+    expect(
+      screen.getByRole("heading", { name: /sale costs online/i }),
+    ).toBeTruthy();
+    expect(screen.getByTestId("negotiated-offerings")).toBeTruthy();
+    expect(screen.queryByTestId("cost-of-acceptance-note")).toBeNull();
+    // Matched on a phrase unique to the intro: "cheapest first" also ends the
+    // sr-only table caption, which stays either way.
+    expect(screen.queryByText(/Zolto is not at the top/i)).toBeNull();
+  });
+
+  it("shows both framing paragraphs by default", () => {
+    render(<CostOfAcceptance channel="online" />);
+    expect(screen.getByTestId("cost-of-acceptance-note")).toBeTruthy();
+    expect(screen.getByText(/Zolto is not at the top/i)).toBeTruthy();
   });
 
   it("shows negotiated options with no number rather than an invented one", () => {

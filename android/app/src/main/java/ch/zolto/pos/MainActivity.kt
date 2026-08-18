@@ -93,7 +93,7 @@ class MainActivity : AppCompatActivity() {
         )
         // Start with the flat adapter; the sort observer will switch if needed.
         binding.recyclerProducts.adapter = flatAdapter
-        updateLayoutManager(viewModel.viewMode.value ?: ProductViewModel.ViewMode.GRID)
+        updateLayoutManager(viewModel.viewMode.value ?: ProductViewModel.ViewMode.LIST)
     }
 
     private fun setupDiscoveryControls() {
@@ -111,7 +111,7 @@ class MainActivity : AppCompatActivity() {
 
         // Setup View Toggle
         binding.btnToggleView.setOnClickListener {
-            val currentMode = viewModel.viewMode.value ?: ProductViewModel.ViewMode.GRID
+            val currentMode = viewModel.viewMode.value ?: ProductViewModel.ViewMode.LIST
             val newMode = if (currentMode == ProductViewModel.ViewMode.GRID)
                 ProductViewModel.ViewMode.LIST else ProductViewModel.ViewMode.GRID
             viewModel.setViewMode(newMode)
@@ -137,14 +137,26 @@ class MainActivity : AppCompatActivity() {
                 GridLayoutManager(this, spanCount)
             }
             binding.recyclerProducts.layoutManager = layoutManager
-            binding.btnToggleView.setImageResource(android.R.drawable.ic_menu_sort_by_size)
+            // Cards are their own tiles and want breathing room around them.
+            setRecyclerInset(dp(8))
+            // The button shows the layout it switches to, not the current one.
+            binding.btnToggleView.setImageResource(R.drawable.ic_view_list)
         } else {
             binding.recyclerProducts.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this)
-            binding.btnToggleView.setImageResource(android.R.drawable.ic_menu_gallery)
+            // List rows run edge to edge: side padding is width the product
+            // name would rather have.
+            setRecyclerInset(0)
+            binding.btnToggleView.setImageResource(R.drawable.ic_view_grid)
         }
         flatAdapter.setViewMode(mode == ProductViewModel.ViewMode.LIST)
         sectionedAdapter.setViewMode(mode == ProductViewModel.ViewMode.LIST)
     }
+
+    private fun setRecyclerInset(px: Int) {
+        binding.recyclerProducts.setPadding(px, px, px, px)
+    }
+
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
     private fun setupObservers() {
         viewModel.products.observe(this) { state ->
@@ -200,7 +212,7 @@ class MainActivity : AppCompatActivity() {
                     || !wantSectioned && currentAdapter != flatAdapter
             if (needSwitch) {
                 binding.recyclerProducts.adapter = if (wantSectioned) sectionedAdapter else flatAdapter
-                updateLayoutManager(viewModel.viewMode.value ?: ProductViewModel.ViewMode.GRID)
+                updateLayoutManager(viewModel.viewMode.value ?: ProductViewModel.ViewMode.LIST)
                 // Re-submit data so the newly attached adapter has content immediately.
                 if (wantSectioned) {
                     viewModel.displayItems.value?.let { sectionedAdapter.submitList(it) }
@@ -218,7 +230,7 @@ class MainActivity : AppCompatActivity() {
                     || !wantSectioned && currentAdapter != flatAdapter
             if (needSwitch) {
                 binding.recyclerProducts.adapter = if (wantSectioned) sectionedAdapter else flatAdapter
-                updateLayoutManager(viewModel.viewMode.value ?: ProductViewModel.ViewMode.GRID)
+                updateLayoutManager(viewModel.viewMode.value ?: ProductViewModel.ViewMode.LIST)
                 if (wantSectioned) {
                     viewModel.displayItems.value?.let { sectionedAdapter.submitList(it) }
                 } else {

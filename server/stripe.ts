@@ -44,10 +44,14 @@ import {
   releaseProductReservations,
   updateOrderBySessionId,
 } from "./db";
+import { confirmDiscountForSession } from "./discounts";
 import { sendOrderReceipt, sendOwnerOrderEmail } from "./_core/email";
 import { VERTICAL_PRESETS, isVertical } from "@shared/verticals";
 import { notifyOwner } from "./_core/notification";
 import { handleBillingEvent } from "./billing";
+// Same shape of cycle as ./billing above (pos.ts imports getStripe from here):
+// both sides are function declarations called at runtime, never at module load.
+import { handlePosStripeEvent } from "./pos";
 
 let _stripe: Stripe | null = null;
 
@@ -155,6 +159,16 @@ export async function fulfillOrder(
   });
 
   await markProductsSold(order.tenantId, productIds);
+
+  // The discount hold placed when this session opened becomes a redemption that
+  // actually happened. Idempotent (guarded on the `held` status), so Stripe's
+  // webhook retries and the admin's manual re-fulfil button don't count twice —
+  // and a no-op for the great majority of orders, which carry no code at all.
+  await confirmDiscountForSession(session.id, {
+    orderId: order.id,
+    customerEmail:
+      session.customer_details?.email ?? order.customerEmail ?? null,
+  });
 
   const customerEmail =
     session.customer_details?.email ?? order.customerEmail ?? null;
@@ -277,6 +291,20 @@ async function handleStripeEvent(
   // account are not Zolto's billing relationship. Anything billing doesn't
   // claim falls through to storefront order handling below.
   if (source === "platform" && (await handleBillingEvent(event))) return;
+
+  // POS sales are fulfilled against `pos_orders`, not storefront `orders`, and
+  // they reach this handler from BOTH endpoints: on the platform webhook when
+  // the store has not connected its own Stripe account, and on the Connect
+  // webhook when it has — the till and the native apps create their sessions
+  // and PaymentIntents on whichever account the store is paid through.
+  //
+  // Asked before storefront handling, and on both sources, because passing a
+  // till session to `fulfillOrder` does not merely fail to help: its recovery
+  // path reconstructs a phantom storefront order from the `productIds` metadata
+  // the till also sets, under DEFAULT_TENANT_ID, and sells that tenant's stock.
+  // POS claims only what its own rows or the till's metadata prove is a POS
+  // sale, so storefront sales fall straight through.
+  if (await handlePosStripeEvent(event)) return;
 
   switch (event.type) {
     case "checkout.session.completed":

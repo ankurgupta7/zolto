@@ -175,9 +175,9 @@ describe("storage", () => {
       // Checking `used > limit` instead of `used + incoming > limit` would let
       // an unbounded single upload through on a nearly-full account.
       getTenantStorageBytesMock.mockResolvedValue(5 * GB - 1);
-      await expect(storagePut(1, "a.png", Buffer.alloc(2))).rejects.toBeInstanceOf(
-        StorageQuotaError,
-      );
+      await expect(
+        storagePut(1, "a.png", Buffer.alloc(2)),
+      ).rejects.toBeInstanceOf(StorageQuotaError);
       expect(sendMock).not.toHaveBeenCalled();
     });
 
@@ -219,7 +219,9 @@ describe("storage", () => {
       expect(tenantId).toBe(1);
       expect(bytes).toBe(42);
       // Must be the suffixed key from the PutObjectCommand, not the input path.
-      const cmd = sendMock.mock.calls[0][0] as { input: Record<string, unknown> };
+      const cmd = sendMock.mock.calls[0][0] as {
+        input: Record<string, unknown>;
+      };
       expect(key).toBe(cmd.input.Key);
       expect(key).not.toBe("photos/x.png");
     });

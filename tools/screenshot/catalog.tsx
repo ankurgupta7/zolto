@@ -31,6 +31,21 @@ if (!new URLSearchParams(location.search).has("tour")) {
   markTourCompleted(ADMIN_TOUR_ID);
 }
 
+/**
+ * Stand-in product photos. The sandbox has no network, so a remote URL would
+ * render as a broken image and the thumbnail grid — the whole point of the
+ * grid shot — would prove nothing about how a real photo sits in a card.
+ */
+const photo = (hue: number) =>
+  "data:image/svg+xml;utf8," +
+  encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600">` +
+      `<rect width="600" height="600" fill="hsl(${hue} 24% 82%)"/>` +
+      `<circle cx="300" cy="300" r="150" fill="hsl(${hue} 30% 68%)"/>` +
+      `<circle cx="300" cy="300" r="90" fill="hsl(${hue} 24% 82%)"/>` +
+      `</svg>`,
+  );
+
 const product = (over: Record<string, unknown> = {}) => ({
   id: 1,
   name: "Silberring",
@@ -113,23 +128,59 @@ const RESPONSES: Record<string, unknown> = {
       sortOrder: i,
     }),
   ),
+  // Enough rows to fill more than one line of the thumbnail grid, with a
+  // mix of photographed and un-photographed stock and one hidden piece.
   "products.adminList": [
-    product(),
+    product({ imageUrl: photo(200) }),
     product({
       id: 2,
       name: "Goldkette",
       nameEn: "Gold Chain",
+      description: "Kette aus Gold",
       price: "240.00",
       category: "Necklaces",
+      imageUrl: photo(40),
     }),
     product({
       id: 3,
       name: "Brosche",
       nameEn: "Brooch",
+      description: "Vintage Brosche",
       price: "90.00",
       quantity: 0,
       sold: true,
       visible: false,
+      imageUrl: photo(340),
+    }),
+    product({
+      id: 4,
+      name: "Mondstein Ohrringe",
+      nameEn: "Moonstone Earrings",
+      description: "Zarte Ohrringe mit Mondstein",
+      price: "185.50",
+      category: "Earrings",
+      quantity: 4,
+      imageUrl: photo(270),
+    }),
+    product({
+      id: 5,
+      name: "Bernsteinkette",
+      nameEn: null,
+      description: "Kette mit Bernstein",
+      price: "1200.00",
+      category: "Necklaces",
+      quantity: 1,
+      imageUrl: photo(80),
+    }),
+    // No photograph yet — the card has to hold its shape without one.
+    product({
+      id: 6,
+      name: "Silberarmband",
+      nameEn: "Silver Bracelet",
+      description: "Schlichtes Armband aus Silber",
+      price: "95.00",
+      category: "Other",
+      quantity: 7,
     }),
   ],
   "products.getBulkLogs": [],

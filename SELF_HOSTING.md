@@ -95,6 +95,7 @@ Both stacks are independent — separate databases, separate deploys — they on
    ```
 
    Replace `<zolto-app-container-name>` with whatever the Zolto app container is actually named on the shared network (check `docker compose ps` in the Zolto stack — commonly `zolto-app-1` or similar). If the Kalakosh-ch Caddy already has its own `on_demand_tls` global block for something else, Caddy only allows one `ask` URL for the whole instance — you'll need to point that single `ask` at an endpoint that can distinguish Kalakosh's own on-demand hosts from Zolto's tenant subdomains (or fold the check into whichever service already backs it).
+
 3. The `/api/domain-ask` endpoint already reads `PUBLIC_BASE_URL` (which you set to `https://zolto.kalakosh.ch` in step 3 above) to know the platform's root domain, so no extra Zolto-side config is needed — it'll recognize `blah.zolto.kalakosh.ch` and check `blah` against the tenants table correctly once the DNS and Caddy block above are in place.
 
 To run Zolto **standalone** instead (its own domain/IP with its own Caddy), see [Step 7 — Configure Caddy](#step-7--configure-caddy) and start it with `docker compose --profile standalone up -d`.
@@ -249,7 +250,7 @@ customers are routed to the WhatsApp enquiry flow instead.
 
 **Stripe Connect (optional — lets tenants link their own Stripe account):**
 Separate from the platform's own `STRIPE_SECRET_KEY` above: Stripe Connect lets
-each *tenant* link their own Stripe account so their storefront's checkout and
+each _tenant_ link their own Stripe account so their storefront's checkout and
 POS/Tap to Pay payouts go directly to them, not through the platform account.
 Without it, tenant admins see "Stripe Connect isn't set up on the platform yet"
 when they try to connect on the admin page — this is expected until configured.
@@ -270,7 +271,13 @@ it must also be set. Leave `STRIPE_CONNECT_CLIENT_ID` blank to keep this
 feature disabled.
 
 **POS Terminal / Tap to Pay (optional):**
-The Android and iOS market-stall apps authenticate requests with a POS API key and use Stripe Terminal for in-person payments. Add a second webhook endpoint at `https://yourdomain.com/api/pos/webhook` subscribed to `payment_intent.succeeded`.
+The Android and iOS market-stall apps authenticate requests with a POS API key and use Stripe Terminal for in-person payments. Add a second webhook endpoint at `https://yourdomain.com/api/pos/webhook` subscribed to `payment_intent.succeeded` plus the four Checkout Session events the web till needs: `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed` and `checkout.session.expired`.
+
+The first two confirm a scan-to-pay QR sale (`completed` for cards, Apple/Google Pay and TWINT, which settle immediately; `async_payment_succeeded` for a delayed-notification method, where `completed` fires while the money is still in flight). The last two close out a sale that will never be paid — a failed delayed payment, or a QR nobody scanned within the session's 30 minutes — so the order is marked failed instead of sitting at "pending" forever. `deploy/rotate-secrets.sh` registers all five, and `deploy/webhookEvents.test.ts` fails CI if the script and the handler drift apart.
+
+**A store paying through its own connected Stripe account sends its POS events somewhere else.** The till and the native apps create the session (or the Terminal PaymentIntent) _on that account_, so the events fire there, and a platform-account endpoint never sees them however it is subscribed. Those events arrive at the **Connect** endpoint instead — configured once for the platform under Dashboard → Connect → Webhooks, not per deployment, which is why `deploy/rotate-secrets.sh` does not manage it. Subscribe `https://yourdomain.com/api/stripe/connect-webhook` to the same five events plus the storefront ones, and set `STRIPE_CONNECT_WEBHOOK_SECRET` to its signing secret.
+
+POS fulfilment now runs from whichever endpoint delivers the event, claiming only what the till's metadata or a `pos_orders` row proves is a POS sale. That claim check is load-bearing rather than tidy: `fulfillOrder`'s recovery path reconstructs a missing storefront order from a session's `productIds` metadata, which the till also sets, under `DEFAULT_TENANT_ID` — so before this, a till sale at a store on the platform account produced a phantom storefront order against the default tenant, sold that tenant's stock, and emailed a second receipt.
 
 There is **no `POS_API_KEY` in `.env`**. POS keys are per-tenant: each store's key is generated at signup, returned to that merchant exactly once, and stored only as a SHA-256 hash (`server/posApiKey.ts`), so the platform can never read back a tenant's key — a lost key is rotated, not recovered. Merchants rotate their own from the store admin UI.
 
@@ -426,7 +433,70 @@ docker compose down
 > docker compose --profile standalone down
 > ```
 >
-> A plain `docker compose down` does **not** remove containers belonging to a profile that isn't currently enabled, so the standalone Caddy is left running and attached to `zolto_internal`, and the teardown fails with *"Network zolto_internal Resource is still in use"* (see Troubleshooting).
+> A plain `docker compose down` does **not** remove containers belonging to a profile that isn't currently enabled, so the standalone Caddy is left running and attached to `zolto_internal`, and the teardown fails with _"Network zolto_internal Resource is still in use"_ (see Troubleshooting).
+
+### Administer the platform from the terminal
+
+Everything the web consoles can do is also available as an interactive shell,
+which is often quicker over SSH than opening a browser — and works when the
+front end is the thing that's broken.
+
+```bash
+bash deploy/admin.sh                    # interactive, read-write
+bash deploy/admin.sh --read-only        # look, don't touch
+bash deploy/admin.sh --store kalakosh   # start pointed at one store
+bash deploy/admin.sh --as you@zolto.ch  # act as a specific platform owner
+```
+
+It asks what you want to do and you pick a number, tier by tier:
+
+```
+Zolto admin
+store: none selected
+
+  1. Stores ›
+  2. Plans, subscriptions & comps ›
+  3. People & access ›
+  4. Catalogue & stock ›
+  5. Orders, payments & reconciliation ›
+  6. Store setup & channels ›
+  7. Platform ›
+
+  [?] help   [q] quit
+  > 4
+
+Zolto admin › Catalogue & stock
+store: Kalakosh (kalakosh)
+
+  1. List products
+  2. Show or hide a product
+  3. Mark a product sold or available
+  4. Set stock quantity
+  5. Delete a product
+  6. Find and clean up duplicates
+  7. Categories ›
+```
+
+At any menu a number picks an option, `[b]` goes back, `[h]` returns to the
+top, `[?]` explains what each option does (and marks the ones that write), and
+`[q]` quits. Anything scoped to a store asks which store the first time and
+remembers it after that; the header always names the store you are acting on.
+
+Two things worth knowing about how it works:
+
+- **It runs inside the app container** (`docker compose exec app node
+dist/admin.js`), so it uses the credentials that are already there. Nothing
+  is copied anywhere to make it work.
+- **It calls the same tRPC procedures the web console calls**, as a real
+  `superadmin` account — so every authorization check still runs, every plan
+  gate and validation rule still applies, and every operator action still
+  writes its `[operator-audit]` line naming who did it. If no account has the
+  superadmin role, the shell says so and stops rather than writing anyway:
+  grant it with `bash deploy/tenant-admin.sh --superadmin <email>`.
+
+`deploy/tenant-admin.sh` remains the tool for the cases where the application
+itself cannot help you — no superadmin exists yet, or a store has no admin at
+all — because it talks to MySQL directly.
 
 ### Reconcile Stripe payments
 
@@ -444,39 +514,78 @@ whenever you suspect a payment is missing.
 
 ## Environment Variable Reference
 
-| Variable                      | Required | Description                                                                                                 |
-| ----------------------------- | -------- | ----------------------------------------------------------------------------------------------------------- |
-| `MYSQL_*`                     | Yes      | Internal database credentials                                                                               |
-| `JWT_SECRET`                  | Yes      | Session cookie signing secret (32+ chars)                                                                   |
-| `GOOGLE_CLIENT_ID`            | Yes      | Google OAuth client ID                                                                                      |
-| `GOOGLE_CLIENT_SECRET`        | Yes      | Google OAuth client secret                                                                                  |
-| `ADMIN_EMAIL`                 | Yes      | Google account allowed to log in as admin                                                                   |
-| `DISCORD_BOT_TOKEN`           | Yes      | Discord bot token                                                                                           |
-| `DISCORD_CHANNEL_ID`          | Yes      | Channel to watch for new products                                                                           |
-| `DISCORD_OWNER_USER_ID`       | No       | Your Discord user ID for DM notifications                                                                   |
-| `LLM_BASE_URL`                | Yes      | OpenAI-compatible API base URL                                                                              |
-| `LLM_API_KEY`                 | Yes      | API key (`ollama` for local Ollama)                                                                         |
-| `LLM_MODEL`                   | Yes      | Model name (e.g. `llama3-8b-8192`)                                                                          |
-| `S3_BUCKET`                   | Yes      | Storage bucket name                                                                                         |
-| `S3_REGION`                   | Yes      | Region (`auto` for R2)                                                                                      |
-| `S3_ACCESS_KEY_ID`            | Yes      | Storage access key                                                                                          |
-| `S3_SECRET_ACCESS_KEY`        | Yes      | Storage secret key                                                                                          |
-| `S3_ENDPOINT`                 | No       | Custom endpoint for non-AWS providers                                                                       |
-| `S3_PUBLIC_URL`               | No       | Public CDN base URL for serving images                                                                      |
-| `STRIPE_SECRET_KEY`           | No       | Stripe secret key — enables card & TWINT checkout                                                           |
-| `STRIPE_WEBHOOK_SECRET`       | No       | Signing secret for `/api/stripe/webhook`                                                                    |
-| `STRIPE_CONNECT_CLIENT_ID`    | No       | Platform's Connect OAuth client ID (`ca_...`) — lets tenants link their own Stripe account                  |
-| `PUBLIC_BASE_URL`             | No       | Canonical site URL — Stripe redirects, Google OAuth's redirect_uri, and recognizing tenant subdomains all key off this |
-| ~~`POS_API_KEY`~~             | —        | **Retired.** POS keys are per-tenant, generated at signup and stored hashed; CI uses the `platform-tests` tenant's key (`deploy/rotate-secrets.sh pos-ci-key`) |
-| `STRIPE_POS_WEBHOOK_SECRET`   | No       | Signing secret for `/api/pos/webhook`                                                                       |
-| `STRIPE_LOCATION_ID`          | No       | Stripe Terminal Location ID served to POS apps at runtime via `GET /api/pos/config` — not baked into builds |
-| `BACKUP_S3_BUCKET`            | No       | Secondary S3 bucket for database backups                                                                    |
-| `BACKUP_S3_REGION`            | No       | Region for secondary backup bucket                                                                          |
-| `BACKUP_S3_ACCESS_KEY_ID`     | No       | Access key for secondary backup bucket                                                                      |
-| `BACKUP_S3_SECRET_ACCESS_KEY` | No       | Secret key for secondary backup bucket                                                                      |
-| `BACKUP_S3_ENDPOINT`          | No       | Endpoint for secondary backup provider (e.g. Backblaze B2)                                                  |
-| `BACKUP_GITHUB_REPO`          | No       | Private GitHub repo for weekly SQL + CSV backup commits                                                     |
-| `BACKUP_GITHUB_TOKEN`         | No       | Fine-grained PAT with Contents: Read & Write for the backup repo                                            |
+| Variable                       | Required | Description                                                                                                                                                    |
+| ------------------------------ | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `MYSQL_*`                      | Yes      | Internal database credentials                                                                                                                                  |
+| `JWT_SECRET`                   | Yes      | Session cookie signing secret (32+ chars)                                                                                                                      |
+| `GOOGLE_CLIENT_ID`             | Yes      | Google OAuth client ID                                                                                                                                         |
+| `GOOGLE_CLIENT_SECRET`         | Yes      | Google OAuth client secret                                                                                                                                     |
+| `ADMIN_EMAIL`                  | Yes      | Google account allowed to log in as admin                                                                                                                      |
+| `DISCORD_BOT_TOKEN`            | Yes      | Discord bot token                                                                                                                                              |
+| `DISCORD_CHANNEL_ID`           | Yes      | Channel to watch for new products                                                                                                                              |
+| `DISCORD_OWNER_USER_ID`        | No       | Your Discord user ID for DM notifications                                                                                                                      |
+| `LLM_BASE_URL`                 | Yes      | OpenAI-compatible API base URL                                                                                                                                 |
+| `LLM_API_KEY`                  | Yes      | API key (`ollama` for local Ollama)                                                                                                                            |
+| `LLM_MODEL`                    | Yes      | Model name (e.g. `llama3-8b-8192`)                                                                                                                             |
+| `S3_BUCKET`                    | Yes      | Storage bucket name                                                                                                                                            |
+| `S3_REGION`                    | Yes      | Region (`auto` for R2)                                                                                                                                         |
+| `S3_ACCESS_KEY_ID`             | Yes      | Storage access key                                                                                                                                             |
+| `S3_SECRET_ACCESS_KEY`         | Yes      | Storage secret key                                                                                                                                             |
+| `S3_ENDPOINT`                  | No       | Custom endpoint for non-AWS providers                                                                                                                          |
+| `S3_PUBLIC_URL`                | No       | Public CDN base URL for serving images                                                                                                                         |
+| `STRIPE_SECRET_KEY`            | No       | Stripe secret key — enables card & TWINT checkout                                                                                                              |
+| `STRIPE_WEBHOOK_SECRET`        | No       | Signing secret for `/api/stripe/webhook`                                                                                                                       |
+| `STRIPE_CONNECT_CLIENT_ID`     | No       | Platform's Connect OAuth client ID (`ca_...`) — lets tenants link their own Stripe account                                                                     |
+| `PUBLIC_BASE_URL`              | No       | Canonical site URL — Stripe redirects, Google OAuth's redirect_uri, and recognizing tenant subdomains all key off this                                         |
+| ~~`POS_API_KEY`~~              | —        | **Retired.** POS keys are per-tenant, generated at signup and stored hashed; CI uses the `platform-tests` tenant's key (`deploy/rotate-secrets.sh pos-ci-key`) |
+| `STRIPE_POS_WEBHOOK_SECRET`    | No       | Signing secret for `/api/pos/webhook`                                                                                                                          |
+| `STRIPE_LOCATION_ID`           | No       | Stripe Terminal Location ID served to POS apps at runtime via `GET /api/pos/config` — not baked into builds                                                    |
+| `BACKUP_S3_BUCKET`             | No       | Secondary S3 bucket for database backups                                                                                                                       |
+| `BACKUP_S3_REGION`             | No       | Region for secondary backup bucket                                                                                                                             |
+| `BACKUP_S3_ACCESS_KEY_ID`      | No       | Access key for secondary backup bucket                                                                                                                         |
+| `BACKUP_S3_SECRET_ACCESS_KEY`  | No       | Secret key for secondary backup bucket                                                                                                                         |
+| `BACKUP_S3_ENDPOINT`           | No       | Endpoint for secondary backup provider (e.g. Backblaze B2)                                                                                                     |
+| `BACKUP_GITHUB_REPO`           | No       | Private GitHub repo for weekly SQL + CSV backup commits                                                                                                        |
+| `BACKUP_GITHUB_TOKEN`          | No       | Fine-grained PAT with Contents: Read & Write for the backup repo                                                                                               |
+| `GOOGLE_SERVICE_ACCOUNT_EMAIL` | No       | Service account that owns merchants' spreadsheet mirrors (`…@….iam.gserviceaccount.com`). Unset ⇒ the Spreadsheet admin page says the feature is unavailable   |
+| `GOOGLE_SERVICE_ACCOUNT_KEY`   | No       | That account's PKCS#8 private key (the JSON key file's `private_key`). Literal `\n` escapes are tolerated, so a one-line value from a secret store works       |
+
+### Optional: Google Sheets mirrors
+
+Merchants can have their sales and inventory published to a Google Sheet they
+can filter, pivot and hand to an accountant (`/admin/sheets`). It is off unless
+both `GOOGLE_SERVICE_ACCOUNT_*` values above are set, and every install without
+them simply shows the feature as unavailable — nothing else changes.
+
+To enable it: create a Google Cloud project, enable the **Google Sheets API** and
+the **Google Drive API**, create a service account, and download a JSON key.
+`GOOGLE_SERVICE_ACCOUNT_EMAIL` is its `client_email`; `GOOGLE_SERVICE_ACCOUNT_KEY`
+is its `private_key`. No OAuth consent screen and no per-merchant authorisation
+is involved: the service account creates each spreadsheet, keeps ownership of it,
+and shares it with the merchant's own Google address.
+
+Which address is decided from the session, not from a form. An admin who signed
+in to Zolto with Google has already told us their Google identity, so Connect
+asks them nothing — and cannot be pointed at a third party, since there is no
+field to type one into. Admins who signed in by Apple or magic link are asked
+for a Google address explicitly, because Drive can only share to a Google
+account and their sign-in address may not be one.
+
+That ownership split is the security model. The merchant cannot revoke the
+platform's access or delete the file out from under the hourly sync, and the
+read-only tabs are enforced by Drive rather than by application code. The scopes
+requested are `spreadsheets` plus `drive.file` — the latter grants access only to
+files this service account created, so a leaked key cannot reach anything else in
+any Drive.
+
+Ownership is not lock-in: a merchant reading their mirror is a Drive viewer, and
+Google gives viewers File → Download and File → Make a copy, so they can take
+their data out at any time without asking. `/admin/sales` also exports the same
+ledger as CSV independently of this feature.
+
+MySQL remains the ledger throughout; the sheet is a published view of it, and the
+one inbound path (a "Stock In" tab) proposes changes that a store admin approves
+before anything is written.
 
 `PUBLIC_BASE_URL` is technically optional (a single-host deploy without it still works, deriving everything from the incoming request), but strongly recommended once tenant subdomains are in play — see the troubleshooting entry below.
 
@@ -498,18 +607,21 @@ Ensure your domain's DNS A record points to the correct server IP and has propag
 
 **`ERR_SSL_PROTOCOL_ERROR` on a tenant subdomain (e.g. `blah.zolto.ch`)**
 Almost always one of:
+
 - No wildcard DNS record. An `A` record for the apex (`zolto.ch`) does **not** cover subdomains — you also need `*.zolto.ch` pointing at the server IP (see Step 7).
 - `blah` isn't an actual tenant slug yet, or the tenant record hasn't propagated to the DB the app is reading. Caddy's on-demand TLS refuses to mint a cert for hostnames `/api/domain-ask` doesn't recognize — check `docker compose logs app` for `[DomainAsk]` lines, or ask the endpoint directly: `docker compose exec app curl -s "http://localhost:3000/api/domain-ask?domain=blah.zolto.ch" -o /dev/null -w '%{http_code}\n'` (200 = tenant found, 404 = no such slug).
 - DNS hasn't propagated yet after adding the wildcard record — give it a few minutes and retry.
 
 **"Error 400: redirect_uri_mismatch" signing in with Google on a tenant subdomain (e.g. `blah.zolto.ch`)**
 Google OAuth requires an exact, pre-registered redirect URI and doesn't support wildcard subdomains, so the app always routes the OAuth round-trip through **`PUBLIC_BASE_URL`'s own host** — never whichever tenant subdomain the merchant started from. This error means that host mismatch is happening anyway, which points to `PUBLIC_BASE_URL` not being set (or set wrong) in `.env`:
+
 - Set `PUBLIC_BASE_URL=https://zolto.ch` (or `https://zolto.kalakosh.ch` if running alongside Kalakosh-ch) and restart the app.
 - Confirm Google Cloud Console's Authorized redirect URIs list contains exactly `https://<PUBLIC_BASE_URL host>/api/oauth/callback` — one entry covers every tenant, current and future.
 - The tenant is then redirected back to their own subdomain automatically after login (the session cookie is scoped to the whole `*.zolto.ch` family once `PUBLIC_BASE_URL` is set, not just the one host that issued it).
 
 **A tenant admin's "Connect Stripe" fails or redirects with `stripeConnect=error` on a tenant subdomain (e.g. `blah.zolto.ch`)**
 Same class of issue as the Google `redirect_uri_mismatch` above: Stripe also requires an exact, pre-registered redirect URI with no wildcard subdomains, so the app always routes the Connect OAuth round-trip through **`PUBLIC_BASE_URL`'s own host**, never whichever tenant subdomain the admin clicked "Connect Stripe" from.
+
 - Set `PUBLIC_BASE_URL=https://zolto.ch` (or `https://zolto.kalakosh.ch` if running alongside Kalakosh-ch) and restart the app.
 - Confirm the Stripe Dashboard's Connect OAuth settings list the redirect URI exactly as `https://<PUBLIC_BASE_URL host>/api/stripe/connect/callback` — one entry covers every tenant, current and future.
 - If `PUBLIC_BASE_URL` is unset entirely, the app falls back to the request's own host — this works only for whichever single host happens to match what's registered in Stripe, and fails for every other tenant subdomain.

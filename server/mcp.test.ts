@@ -253,6 +253,60 @@ describe("MCP tools", () => {
     });
   });
 
+  it("get_store_info tells an agent the store is made with Zolto", async () => {
+    // The agent-facing half of the credit: an assistant that reaches a store
+    // over MCP should be able to answer "what is this built on?" without
+    // scraping HTML. shared/attribution.ts owns the wording.
+    const r = await call("get_store_info");
+    expect(r.structuredContent?.poweredBy).toMatchObject({
+      name: "Zolto",
+      url: "https://zolto.ch",
+    });
+  });
+
+  it("get_store_info omits the credit for a white-labelled store that opted out", async () => {
+    const hidden = buildCtx(products, {
+      tenant: { ...tenant, plan: "pro" } as Tenant,
+      deps: {
+        getVisibleProducts: vi.fn(async () => products),
+        getVisibleProductById: vi.fn(async () => undefined),
+        createCheckout,
+        getPublicStores,
+        getTenantSettings: vi.fn(async () => ({ hideZoltoBadge: true })),
+      } as unknown as McpDeps,
+    });
+    const res = await handleMcpMessage(
+      req("tools/call", { name: "get_store_info", arguments: {} }),
+      hidden,
+    );
+    const sc = (res?.result as { structuredContent: Record<string, unknown> })
+      .structuredContent;
+    expect(sc.poweredBy).toBeUndefined();
+    // Everything the agent actually needs to shop is still there.
+    expect(sc).toMatchObject({ name: "Kalakosh", availableProducts: 3 });
+  });
+
+  it("get_store_info keeps the credit when the same switch is set on Free", async () => {
+    // A Free store cannot opt out — the switch is inert without the plan
+    // feature, so a lapsed Pro store's leftover `true` cannot suppress it.
+    const free = buildCtx(products, {
+      deps: {
+        getVisibleProducts: vi.fn(async () => products),
+        getVisibleProductById: vi.fn(async () => undefined),
+        createCheckout,
+        getPublicStores,
+        getTenantSettings: vi.fn(async () => ({ hideZoltoBadge: true })),
+      } as unknown as McpDeps,
+    });
+    const res = await handleMcpMessage(
+      req("tools/call", { name: "get_store_info", arguments: {} }),
+      free,
+    );
+    const sc = (res?.result as { structuredContent: Record<string, unknown> })
+      .structuredContent;
+    expect(sc.poweredBy).toMatchObject({ name: "Zolto" });
+  });
+
   it("unknown tool returns an invalid-params error", async () => {
     const res = await handleMcpMessage(
       req("tools/call", { name: "delete_everything", arguments: {} }),
@@ -763,6 +817,10 @@ const mocks = vi.hoisted(() => {
     getVisibleProducts: vi.fn(),
     getVisibleProductById: vi.fn(),
     getPublicStores: vi.fn(async () => []),
+    // get_store_info reads the white-label opt-out from here. Undefined (no
+    // settings row) is the shape a store that never opened the admin has, and
+    // means "credited" — see shared/attribution.ts.
+    getTenantSettings: vi.fn(async () => undefined),
     getOrCreateRateLimitWindow: vi.fn(
       async (key: string, now: number, windowMs: number) => {
         const existing = rateLimitRows.get(key);
@@ -788,6 +846,7 @@ vi.mock("./db", () => ({
   getVisibleProducts: (...a: unknown[]) => mocks.getVisibleProducts(...a),
   getVisibleProductById: (...a: unknown[]) => mocks.getVisibleProductById(...a),
   getPublicStores: (...a: unknown[]) => mocks.getPublicStores(...a),
+  getTenantSettings: (...a: unknown[]) => mocks.getTenantSettings(...a),
   getOrCreateRateLimitWindow: (...a: unknown[]) =>
     mocks.getOrCreateRateLimitWindow(...(a as [string, number, number])),
   clearRateLimitWindows: () => mocks.clearRateLimitWindows(),

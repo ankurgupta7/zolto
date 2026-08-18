@@ -26,6 +26,21 @@ struct ConnectionTokenResponse: Codable {
 ///
 /// `storeName` / `logoUrl` / `currency` are the paired store's identity —
 /// optional so the app still decodes older server responses that predate them.
+/// What POST /api/pos/pair returns when a one-tap pairing token is redeemed.
+/// `apiKey` is the store's real POS key and must go straight to the Keychain via
+/// StoreSession — never logged, never shown on screen.
+struct PairingRedemption: Codable, Equatable {
+    let apiKey: String
+    let storeName: String?
+    let storeSlug: String?
+
+    init(apiKey: String, storeName: String? = nil, storeSlug: String? = nil) {
+        self.apiKey = apiKey
+        self.storeName = storeName
+        self.storeSlug = storeSlug
+    }
+}
+
 struct PosConfigResponse: Codable {
     let locationId: String
     let tenantSlug: String?
@@ -112,17 +127,23 @@ struct SaleResponse: Codable {
 struct ManualSaleRequest: Codable {
     let productIds: [Int]
     let paymentMethod: String // "cash"
+    /// The cashier's "Show Hidden Items" override. Without it the server's
+    /// availability check rejects any piece that isn't visible on the
+    /// storefront, so a hidden piece could never be sold for cash.
+    let allowHidden: Bool
     let priceOverrides: [String: Int]
     let customItems: [CustomLineItemRequest]
 
     init(
         productIds: [Int],
         paymentMethod: String,
+        allowHidden: Bool = false,
         priceOverrides: [String: Int] = [:],
         customItems: [CustomLineItemRequest] = []
     ) {
         self.productIds = productIds
         self.paymentMethod = paymentMethod
+        self.allowHidden = allowHidden
         self.priceOverrides = priceOverrides
         self.customItems = customItems
     }

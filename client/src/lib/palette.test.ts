@@ -99,7 +99,9 @@ describe("derivePalette with a secondary color", () => {
     const goldHue = hexToHsl("#B8963E")!.h;
     const inkHue = hexToHsl(p["--brand-ink"])!.h;
 
-    expect(Math.abs(hexToHsl(p["--brand-accent"])!.h - goldHue)).toBeLessThan(6);
+    expect(Math.abs(hexToHsl(p["--brand-accent"])!.h - goldHue)).toBeLessThan(
+      6,
+    );
     expect(
       Math.abs(hexToHsl(p["--brand-accent-light"])!.h - goldHue),
     ).toBeLessThan(6);

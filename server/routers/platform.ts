@@ -15,11 +15,13 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { router, superadminProcedure } from "../_core/trpc";
 import {
+  getAllAgentHits,
   getPlatformMetrics,
   listTenantsForOperator,
   getTenantDetailForOperator,
   setTenantUserRoleByOperator,
   setTenantPlanByOperator,
+  setTenantCompByOperator,
   getTenantBySlug,
   createTenant,
   createTenantSettings,
@@ -28,6 +30,13 @@ import {
 import { runStripeReconciliationForAllTenants } from "../reconciliation";
 import { generatePosApiKey, hashPosApiKey } from "../posApiKey";
 import { PRO_PLAN, REVENUE_SHARE } from "@shared/platform";
+import {
+  dayKey,
+  isAgentSurface,
+  summarizeAgentHits,
+  type AgentHitRow,
+} from "@shared/aiAgents";
+import { PLATFORM_TENANT_ID } from "../agentHits";
 
 /**
  * The platform's own POS test store. Its POS key is what the POS apps' CI
@@ -136,6 +145,49 @@ export const platformRouter = router({
     }),
 
   /**
+   * Put a store on the house: give it a plan it doesn't pay for, waive Zolto's
+   * cut of its online/agent orders, or both.
+   *
+   * This is the deliberate, recorded version of what `setTenantPlan` does by
+   * hand. `setTenantPlan` edits `tenants.plan` — the column Stripe's webhooks
+   * own — so a plan moved there is both indistinguishable from a paid one and
+   * liable to be reset by a subscription event arriving later. A comp lives in
+   * its own columns, survives that, and reads as a grant on both consoles:
+   * the merchant is told their Pro is a gift rather than being offered the
+   * chance to buy it again (billing.createPlanCheckout refuses them).
+   *
+   * `plan: null` + `waiveOnlineFee: false` revokes. Revoking never touches the
+   * store's paid plan, so a comped merchant who has since subscribed keeps
+   * exactly what they are paying for.
+   */
+  setTenantComp: superadminProcedure
+    .input(
+      z.object({
+        tenantId: z.number().int().positive(),
+        /** The plan granted for free. null = grant no plan. */
+        plan: z.enum(["free", "pro"]).nullable(),
+        /** Take 0% on this store's online/agent orders, whatever its plan. */
+        waiveOnlineFee: z.boolean(),
+        /** Why — shown next to the grant in the console. */
+        note: z.string().trim().max(255).optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      auditOperatorAction(ctx.user?.id, "setTenantComp", input);
+      const ok = await setTenantCompByOperator({
+        tenantId: input.tenantId,
+        plan: input.plan,
+        feeWaived: input.waiveOnlineFee,
+        note: input.note ?? null,
+        grantedByUserId: ctx.user?.id ?? null,
+      });
+      if (!ok) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "No such store." });
+      }
+      return { success: true };
+    }),
+
+  /**
    * Rotate (provisioning on first use) the platform's POS test key — the
    * operator's counterpart to the merchant-facing tenant.rotatePosApiKey.
    *
@@ -183,6 +235,60 @@ export const platformRouter = router({
       },
     };
   }),
+
+  /**
+   * Agent traffic across every store AND the platform surface itself.
+   *
+   * The operator's view of the bet the pricing model rests on: are AI agents
+   * reading `/llms.txt` and calling `/mcp` at all, and is it assistants
+   * fetching for a person asking right now or crawlers indexing in the
+   * background? A merchant sees only their own store (insights.agentTraffic);
+   * this crosses tenants by design, which is why it is superadmin-only.
+   *
+   * `platformOnly` splits zolto.ch's own brief — read by an assistant helping
+   * someone choose a shop platform — from the storefronts', which are two
+   * completely different questions that would otherwise be summed into one
+   * uninterpretable number.
+   */
+  agentTraffic: superadminProcedure
+    .input(
+      z.object({
+        days: z.number().int().min(1).max(90).default(30),
+        scope: z.enum(["all", "platform", "stores"]).default("all"),
+      }),
+    )
+    .query(async ({ input }) => {
+      const since = new Date(Date.now() - (input.days - 1) * 86_400_000);
+      const rows = await getAllAgentHits(dayKey(since));
+      const scoped = rows.filter((r) => {
+        if (!isAgentSurface(r.surface)) return false;
+        if (input.scope === "platform")
+          return r.tenantId === PLATFORM_TENANT_ID;
+        if (input.scope === "stores") return r.tenantId !== PLATFORM_TENANT_ID;
+        return true;
+      });
+      const typed: AgentHitRow[] = scoped.map((r) => ({
+        tenantId: r.tenantId,
+        day: r.day,
+        surface: r.surface as AgentHitRow["surface"],
+        mcpTool: r.mcpTool,
+        agent: r.agent,
+        count: r.count,
+      }));
+      // How many distinct stores were read at all — the number that says
+      // whether agent reach is broad or is one enthusiastic merchant.
+      const storesReached = new Set(
+        typed
+          .filter((r) => r.tenantId !== PLATFORM_TENANT_ID)
+          .map((r) => r.tenantId),
+      ).size;
+      return {
+        days: input.days,
+        scope: input.scope,
+        storesReached,
+        ...summarizeAgentHits(typed, input.days),
+      };
+    }),
 
   /**
    * Platform-wide Stripe reconciliation: every tenant that has connected

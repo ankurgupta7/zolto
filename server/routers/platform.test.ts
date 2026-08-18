@@ -7,10 +7,12 @@ const { dbMock } = vi.hoisted(() => ({
     getTenantDetailForOperator: vi.fn(),
     setTenantUserRoleByOperator: vi.fn(),
     setTenantPlanByOperator: vi.fn(),
+    setTenantCompByOperator: vi.fn(),
     getTenantBySlug: vi.fn(),
     createTenant: vi.fn(),
     createTenantSettings: vi.fn(),
     setTenantPosApiKeyHash: vi.fn(),
+    getAllAgentHits: vi.fn(),
   },
 }));
 
@@ -106,10 +108,12 @@ const tenantDetail = {
 beforeEach(() => {
   vi.clearAllMocks();
   dbMock.getPlatformMetrics.mockResolvedValue(metrics);
+  dbMock.getAllAgentHits.mockResolvedValue([]);
   dbMock.listTenantsForOperator.mockResolvedValue(tenantRows);
   dbMock.getTenantDetailForOperator.mockResolvedValue(tenantDetail);
   dbMock.setTenantUserRoleByOperator.mockResolvedValue(true);
   dbMock.setTenantPlanByOperator.mockResolvedValue(true);
+  dbMock.setTenantCompByOperator.mockResolvedValue(true);
 });
 
 // This endpoint replaced `tenant.list`, which shipped as a publicProcedure
@@ -275,6 +279,95 @@ describe("platform.setTenantPlan", () => {
       platformRouter
         .createCaller(ctx("superadmin"))
         .setTenantPlan({ tenantId: 999, plan: "pro" }),
+    ).rejects.toThrow(/No such store/);
+  });
+});
+
+describe("platform.setTenantComp", () => {
+  // The favour the whole feature exists for: Pro for nothing, and no cut of
+  // this store's online sales.
+  it("comps a store onto Pro with the fee waived", async () => {
+    const res = await platformRouter
+      .createCaller(ctx("superadmin"))
+      .setTenantComp({
+        tenantId: 2,
+        plan: "pro",
+        waiveOnlineFee: true,
+        note: "design partner",
+      });
+    expect(dbMock.setTenantCompByOperator).toHaveBeenCalledWith({
+      tenantId: 2,
+      plan: "pro",
+      feeWaived: true,
+      note: "design partner",
+      grantedByUserId: 1,
+    });
+    expect(res.success).toBe(true);
+  });
+
+  it("waives the fee without granting a plan", async () => {
+    await platformRouter.createCaller(ctx("superadmin")).setTenantComp({
+      tenantId: 2,
+      plan: null,
+      waiveOnlineFee: true,
+    });
+    expect(dbMock.setTenantCompByOperator).toHaveBeenCalledWith(
+      expect.objectContaining({ plan: null, feeWaived: true }),
+    );
+  });
+
+  it("revokes with a null plan and no waiver", async () => {
+    await platformRouter.createCaller(ctx("superadmin")).setTenantComp({
+      tenantId: 2,
+      plan: null,
+      waiveOnlineFee: false,
+    });
+    expect(dbMock.setTenantCompByOperator).toHaveBeenCalledWith(
+      expect.objectContaining({ plan: null, feeWaived: false }),
+    );
+  });
+
+  it("records who granted it, for the audit trail", async () => {
+    await platformRouter.createCaller(ctx("superadmin")).setTenantComp({
+      tenantId: 2,
+      plan: "pro",
+      waiveOnlineFee: false,
+    });
+    expect(dbMock.setTenantCompByOperator).toHaveBeenCalledWith(
+      expect.objectContaining({ grantedByUserId: 1 }),
+    );
+  });
+
+  // Giving away the platform's revenue is the most consequential button in the
+  // console. An admin of ANOTHER store reaching it would be able to comp
+  // themselves — the cross-tenant case CLAUDE.md warns regresses silently.
+  it("is superadmin only — a store admin cannot comp anyone, including itself", async () => {
+    for (const role of [null, "customer", "staff", "admin"]) {
+      await expect(
+        platformRouter
+          .createCaller(ctx(role))
+          .setTenantComp({ tenantId: 7, plan: "pro", waiveOnlineFee: true }),
+      ).rejects.toThrow();
+    }
+    expect(dbMock.setTenantCompByOperator).not.toHaveBeenCalled();
+  });
+
+  it("rejects a plan id that is not in the schema", async () => {
+    await expect(
+      platformRouter.createCaller(ctx("superadmin")).setTenantComp({
+        tenantId: 2,
+        plan: "enterprise",
+        waiveOnlineFee: false,
+      } as never),
+    ).rejects.toThrow();
+  });
+
+  it("404s on a store that does not exist", async () => {
+    dbMock.setTenantCompByOperator.mockResolvedValue(false);
+    await expect(
+      platformRouter
+        .createCaller(ctx("superadmin"))
+        .setTenantComp({ tenantId: 999, plan: "pro", waiveOnlineFee: true }),
     ).rejects.toThrow(/No such store/);
   });
 });
@@ -458,5 +551,88 @@ describe("platform.rotatePosTestKey", () => {
     const first = await caller.rotatePosTestKey();
     const second = await caller.rotatePosTestKey();
     expect(first.posApiKey).not.toBe(second.posApiKey);
+  });
+});
+
+describe("platform.agentTraffic", () => {
+  const today = new Date().toISOString().slice(0, 10);
+  // tenant_id 0 is the platform surface (zolto.ch's own brief); anything else
+  // is a storefront. See drizzle/schema.ts agentHits for why 0, not NULL.
+  const rows = [
+    {
+      tenantId: 0,
+      day: today,
+      surface: "llms.txt",
+      mcpTool: "",
+      agent: "ChatGPT",
+      count: 4,
+    },
+    {
+      tenantId: 1,
+      day: today,
+      surface: "llms.txt",
+      mcpTool: "",
+      agent: "GPTBot",
+      count: 3,
+    },
+    {
+      tenantId: 2,
+      day: today,
+      surface: "mcp",
+      mcpTool: "create_checkout",
+      agent: "Claude",
+      count: 2,
+    },
+  ];
+
+  it("is refused to everyone but a superadmin", async () => {
+    // It crosses tenants by design — one store's operator must never see
+    // which agents are reading every other store.
+    for (const role of [null, "staff", "admin"]) {
+      await expect(
+        platformRouter.createCaller(ctx(role)).agentTraffic({ days: 30 }),
+      ).rejects.toThrow();
+    }
+    expect(dbMock.getAllAgentHits).not.toHaveBeenCalled();
+  });
+
+  it("totals every surface by default", async () => {
+    dbMock.getAllAgentHits.mockResolvedValue(rows);
+    const res = await platformRouter
+      .createCaller(ctx("superadmin"))
+      .agentTraffic({ days: 30 });
+    expect(res.total).toBe(9);
+    expect(res.storesReached).toBe(2);
+  });
+
+  it("separates zolto.ch's own brief from the storefronts'", async () => {
+    // Two different questions — "is an assistant recommending Zolto to a maker"
+    // versus "is an agent shopping at our merchants" — that would be
+    // uninterpretable summed together.
+    dbMock.getAllAgentHits.mockResolvedValue(rows);
+    const caller = platformRouter.createCaller(ctx("superadmin"));
+
+    const platform = await caller.agentTraffic({ days: 30, scope: "platform" });
+    expect(platform.total).toBe(4);
+    expect(platform.storesReached).toBe(0);
+
+    const stores = await caller.agentTraffic({ days: 30, scope: "stores" });
+    expect(stores.total).toBe(5);
+    expect(stores.storesReached).toBe(2);
+  });
+
+  it("counts assistant fetches apart from background crawling", async () => {
+    dbMock.getAllAgentHits.mockResolvedValue(rows);
+    const res = await platformRouter
+      .createCaller(ctx("superadmin"))
+      .agentTraffic({ days: 30 });
+    // ChatGPT (4) + Claude (2) are on-demand; GPTBot (3) is indexing.
+    expect(res.assistantHits).toBe(6);
+  });
+
+  it("rejects a window outside the supported range", async () => {
+    await expect(
+      platformRouter.createCaller(ctx("superadmin")).agentTraffic({ days: 0 }),
+    ).rejects.toThrow();
   });
 });

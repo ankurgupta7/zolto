@@ -32,19 +32,19 @@ export default function Sovereignty() {
 
   return (
     <>
-      <section className="bg-[var(--brand-ink)]">
+      <section className="bg-band">
         <Container width="4xl" className="py-20">
           <p className="font-hand text-2xl leading-none text-[var(--brand-accent)]">
             {st("sovereignty.eyebrow", SOVEREIGNTY.eyebrow)}
           </p>
-          <h1 className="mt-3 max-w-2xl font-serif text-4xl leading-[1.1] text-white sm:text-5xl">
+          <h1 className="mt-3 max-w-2xl font-serif text-4xl leading-[1.1] text-band-fg sm:text-5xl">
             {st("sovereignty.headline", SOVEREIGNTY.headline)}{" "}
             {st("sovereignty.headlineEmphasis", SOVEREIGNTY.headlineEmphasis)}
           </h1>
-          <p className="mt-8 max-w-2xl text-lg leading-relaxed text-white/80">
+          <p className="mt-8 max-w-2xl text-lg leading-relaxed text-band-fg/80">
             {st("sovereignty.serving", SOVEREIGNTY.serving)}
           </p>
-          <p className="mt-4 max-w-2xl leading-relaxed text-white/60">
+          <p className="mt-4 max-w-2xl leading-relaxed text-band-fg/60">
             {st("sovereignty.body", SOVEREIGNTY.body)}
           </p>
         </Container>
@@ -117,17 +117,17 @@ export default function Sovereignty() {
       {/* The hosting detail — and, in its caveat, what still leaves Europe. */}
       <DataResidency />
 
-      <section className="bg-[var(--brand-ink)]">
+      <section className="bg-band">
         <Container width="4xl" className="py-20 text-center">
-          <h2 className="font-serif text-3xl text-white sm:text-4xl">
+          <h2 className="font-serif text-3xl text-band-fg sm:text-4xl">
             {t("sovereigntyPage.ctaTitle")}
           </h2>
-          <p className="mx-auto mt-4 max-w-xl text-white/70">
+          <p className="mx-auto mt-4 max-w-xl text-band-fg/70">
             {t("sovereigntyPage.ctaBody")}
           </p>
           <Link
             href="/signup"
-            className="mt-8 inline-block rounded-md bg-[var(--brand-accent)] px-7 py-3 text-xs font-medium uppercase tracking-[0.14em] text-[var(--brand-ink)] transition-colors hover:bg-[var(--brand-accent-light)]"
+            className="mt-8 inline-block rounded-md bg-[var(--brand-accent)] px-7 py-3 text-xs font-medium uppercase tracking-[0.14em] text-[var(--brand-accent-fg)] transition-colors hover:bg-[var(--brand-accent-light)]"
           >
             {t("sovereigntyPage.ctaButton")}
           </Link>

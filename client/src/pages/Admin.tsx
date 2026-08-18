@@ -34,6 +34,8 @@ import {
   Camera,
   SlidersHorizontal,
   ChevronDown,
+  Search,
+  SearchX,
 } from "lucide-react";
 import { SignInOptions } from "@/components/SignInOptions";
 import type { ProductCategory } from "@shared/types";
@@ -52,6 +54,13 @@ import ProductDiscoveryControls, {
   type ViewMode,
 } from "@/components/ProductDiscoveryControls";
 import ProductCategoryGroup from "@/components/ProductCategoryGroup";
+import ProductCard from "@/components/admin/ProductCard";
+import ProductEditFields from "@/components/admin/ProductEditFields";
+import {
+  useProductAdminActions,
+  type AdminProduct,
+} from "@/components/admin/useProductAdminActions";
+import { fuzzyFilter } from "@/lib/fuzzyFilter";
 import { Link } from "wouter";
 import { HelpCircle } from "lucide-react";
 import GuidedTour from "@/components/GuidedTour";
@@ -78,158 +87,44 @@ const EMPTY_FORM: AddForm = {
   quantity: "1",
 };
 
-interface EditForm {
-  name: string;
-  nameEn: string;
-  nameFr: string;
-  nameIt: string;
-  description: string;
-  descriptionEn: string;
-  descriptionFr: string;
-  descriptionIt: string;
-  price: string;
-  category: ProductCategory;
-}
+// ─── Product Grid ─────────────────────────────────────────────────────────────
 
-// Translation inputs rendered for the edit row; the primary name/description
-// (German by convention) keep their own required fields.
-const EDIT_LOCALES = [
-  { code: "EN", nameKey: "nameEn", descKey: "descriptionEn" },
-  { code: "FR", nameKey: "nameFr", descKey: "descriptionFr" },
-  { code: "IT", nameKey: "nameIt", descKey: "descriptionIt" },
-] as const;
+/**
+ * The thumbnail view's layout. One column on a phone: a card carries a stock
+ * stepper and three icon buttons, and squeezing two of those into a 390px
+ * screen leaves neither tappable.
+ */
+function ProductGrid({
+  products,
+  onRefetch,
+}: {
+  products: AdminProduct[];
+  onRefetch: () => void;
+}) {
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      {products.map((product) => (
+        <ProductCard key={product.id} product={product} onRefetch={onRefetch} />
+      ))}
+    </div>
+  );
+}
 
 // ─── Product Row ──────────────────────────────────────────────────────────────
 
 interface ProductRowProps {
-  product: {
-    id: number;
-    name: string;
-    nameEn: string | null;
-    nameFr: string | null;
-    nameIt: string | null;
-    description: string;
-    descriptionEn: string | null;
-    descriptionFr: string | null;
-    descriptionIt: string | null;
-    price: string;
-    category: string;
-    imageUrl: string | null;
-    visible: boolean;
-    sold: boolean;
-    quantity: number;
-    source: string;
-  };
+  product: AdminProduct;
   onRefetch: () => void;
 }
 
+/**
+ * The catalogue's table skin. Its state and mutations live in
+ * `useProductAdminActions` and its editor in `ProductEditFields`, both shared
+ * with the thumbnail card — the two views have to stay one product.
+ */
 function ProductRow({ product, onRefetch }: ProductRowProps) {
   const { t } = useTranslation("admin");
-  // Store's own category keys (server-driven, per-tenant).
-  const CATEGORIES = useCategories().categories.map((c) => c.key);
-  const [qtyValue, setQtyValue] = useState(String(product.quantity));
-  const [editing, setEditing] = useState(false);
-  const [editForm, setEditForm] = useState<EditForm>({
-    name: product.name,
-    nameEn: product.nameEn ?? "",
-    nameFr: product.nameFr ?? "",
-    nameIt: product.nameIt ?? "",
-    description: product.description,
-    descriptionEn: product.descriptionEn ?? "",
-    descriptionFr: product.descriptionFr ?? "",
-    descriptionIt: product.descriptionIt ?? "",
-    price: String(Number(product.price).toFixed(2)),
-    category: product.category as ProductCategory,
-  });
-  const [confirmingDelete, setConfirmingDelete] = useState(false);
-
-  useEffect(() => {
-    setQtyValue(String(product.quantity));
-  }, [product.quantity]);
-
-  const qtyMutation = trpc.products.setQuantity.useMutation({
-    onSuccess: onRefetch,
-    onError: () => toast.error(t("catalog.admin.toasts.quantityFailed")),
-  });
-
-  const toggleMutation = trpc.products.toggleVisibility.useMutation({
-    onSuccess: onRefetch,
-    onError: () => toast.error(t("catalog.admin.toasts.visibilityFailed")),
-  });
-
-  const deleteMutation = trpc.products.delete.useMutation({
-    onSuccess: () => {
-      onRefetch();
-      toast.success(t("catalog.admin.toasts.productDeleted"));
-    },
-    onError: () => toast.error(t("catalog.admin.toasts.productDeleteFailed")),
-  });
-
-  const updateMutation = trpc.products.update.useMutation({
-    onSuccess: () => {
-      onRefetch();
-      setEditing(false);
-      toast.success(t("catalog.admin.toasts.productUpdated"));
-    },
-    onError: () => toast.error(t("catalog.admin.toasts.productUpdateFailed")),
-  });
-
-  const commitQty = () => {
-    const n = parseInt(qtyValue, 10);
-    if (Number.isNaN(n) || n < 0) {
-      setQtyValue(String(product.quantity));
-      return;
-    }
-    if (n === product.quantity) return;
-    qtyMutation.mutate({ id: product.id, quantity: n });
-  };
-
-  const handleSaveEdit = () => {
-    const price = parseFloat(editForm.price);
-    if (!editForm.name.trim() || !editForm.description.trim()) {
-      toast.error(t("catalog.admin.toasts.nameDescriptionRequired"));
-      return;
-    }
-    if (Number.isNaN(price) || price <= 0) {
-      toast.error(t("catalog.admin.toasts.enterValidPrice"));
-      return;
-    }
-    updateMutation.mutate({
-      id: product.id,
-      name: editForm.name.trim(),
-      nameEn: editForm.nameEn.trim() || null,
-      nameFr: editForm.nameFr.trim() || null,
-      nameIt: editForm.nameIt.trim() || null,
-      description: editForm.description.trim(),
-      descriptionEn: editForm.descriptionEn.trim() || null,
-      descriptionFr: editForm.descriptionFr.trim() || null,
-      descriptionIt: editForm.descriptionIt.trim() || null,
-      price,
-      category: editForm.category,
-    });
-  };
-
-  const startEdit = () => {
-    setEditForm({
-      name: product.name,
-      nameEn: product.nameEn ?? "",
-      nameFr: product.nameFr ?? "",
-      nameIt: product.nameIt ?? "",
-      description: product.description,
-      descriptionEn: product.descriptionEn ?? "",
-      descriptionFr: product.descriptionFr ?? "",
-      descriptionIt: product.descriptionIt ?? "",
-      price: String(Number(product.price).toFixed(2)),
-      category: product.category as ProductCategory,
-    });
-    setEditing(true);
-  };
-
-  const isBusy =
-    qtyMutation.isPending ||
-    toggleMutation.isPending ||
-    deleteMutation.isPending ||
-    updateMutation.isPending;
+  const a = useProductAdminActions(product, onRefetch);
 
   return (
     <>
@@ -280,7 +175,9 @@ function ProductRow({ product, onRefetch }: ProductRowProps) {
 
         {/* Price */}
         <td className="px-4 py-4">
-          <span className="font-serif text-[var(--brand-ink)] text-sm">
+          {/* Cormorant defaults to oldstyle figures, which drops the 2 and 0
+              of "CHF 1200.00" below the baseline and reads as "I2oo.oo". */}
+          <span className="font-serif text-[var(--brand-ink)] text-sm lining-nums">
             CHF {Number(product.price).toFixed(2)}
           </span>
         </td>
@@ -290,12 +187,8 @@ function ProductRow({ product, onRefetch }: ProductRowProps) {
           <div className="flex items-center gap-1">
             <button
               type="button"
-              onClick={() => {
-                const n = Math.max(0, (parseInt(qtyValue, 10) || 0) - 1);
-                setQtyValue(String(n));
-                qtyMutation.mutate({ id: product.id, quantity: n });
-              }}
-              disabled={isBusy || parseInt(qtyValue, 10) <= 0}
+              onClick={() => a.stepQty(-1)}
+              disabled={a.isBusy || parseInt(a.qtyValue, 10) <= 0}
               className="w-6 h-6 flex items-center justify-center border border-[var(--brand-ink)]/20 text-muted-foreground hover:border-[var(--brand-ink)] hover:text-foreground transition-colors disabled:opacity-30 text-sm leading-none"
             >
               −
@@ -303,9 +196,9 @@ function ProductRow({ product, onRefetch }: ProductRowProps) {
             <input
               type="number"
               min="0"
-              value={qtyValue}
-              onChange={(e) => setQtyValue(e.target.value)}
-              onBlur={commitQty}
+              value={a.qtyValue}
+              onChange={(e) => a.setQtyValue(e.target.value)}
+              onBlur={a.commitQty}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   (e.target as HTMLInputElement).blur();
@@ -315,12 +208,8 @@ function ProductRow({ product, onRefetch }: ProductRowProps) {
             />
             <button
               type="button"
-              onClick={() => {
-                const n = (parseInt(qtyValue, 10) || 0) + 1;
-                setQtyValue(String(n));
-                qtyMutation.mutate({ id: product.id, quantity: n });
-              }}
-              disabled={isBusy}
+              onClick={() => a.stepQty(1)}
+              disabled={a.isBusy}
               className="w-6 h-6 flex items-center justify-center border border-[var(--brand-ink)]/20 text-muted-foreground hover:border-[var(--brand-ink)] hover:text-foreground transition-colors disabled:opacity-30 text-sm leading-none"
             >
               +
@@ -345,13 +234,13 @@ function ProductRow({ product, onRefetch }: ProductRowProps) {
             {/* Edit */}
             <button
               type="button"
-              onClick={() => (editing ? setEditing(false) : startEdit())}
+              onClick={() => (a.editing ? a.setEditing(false) : a.startEdit())}
               title={
-                editing
+                a.editing
                   ? t("catalog.admin.row.cancelEditTitle")
                   : t("catalog.admin.row.editTitle")
               }
-              className={`p-2 transition-colors ${editing ? "text-[var(--brand-accent)]" : "text-muted-foreground hover:text-[var(--brand-ink)]"}`}
+              className={`p-2 transition-colors ${a.editing ? "text-[var(--brand-accent)]" : "text-muted-foreground hover:text-[var(--brand-ink)]"}`}
             >
               <Pencil size={15} />
             </button>
@@ -359,13 +248,8 @@ function ProductRow({ product, onRefetch }: ProductRowProps) {
             {/* Toggle visibility */}
             <button
               type="button"
-              onClick={() =>
-                toggleMutation.mutate({
-                  id: product.id,
-                  visible: !product.visible,
-                })
-              }
-              disabled={isBusy}
+              onClick={a.toggleVisible}
+              disabled={a.isBusy}
               title={
                 product.visible
                   ? t("catalog.admin.row.hideTitle")
@@ -373,7 +257,7 @@ function ProductRow({ product, onRefetch }: ProductRowProps) {
               }
               className="p-2 text-muted-foreground hover:text-[var(--brand-ink)] transition-colors disabled:opacity-40"
             >
-              {toggleMutation.isPending ? (
+              {a.toggleMutation.isPending ? (
                 <Loader2 size={15} className="animate-spin" />
               ) : product.visible ? (
                 <EyeOff size={15} />
@@ -383,22 +267,19 @@ function ProductRow({ product, onRefetch }: ProductRowProps) {
             </button>
 
             {/* Delete */}
-            {confirmingDelete ? (
+            {a.confirmingDelete ? (
               <div className="flex items-center gap-1 ml-1">
                 <button
                   type="button"
-                  onClick={() => {
-                    setConfirmingDelete(false);
-                    deleteMutation.mutate({ id: product.id });
-                  }}
-                  disabled={deleteMutation.isPending}
+                  onClick={a.confirmDelete}
+                  disabled={a.deleteMutation.isPending}
                   className="px-2 py-1 text-[11px] uppercase tracking-wide font-sans text-white bg-red-600 hover:bg-red-700 transition-colors"
                 >
                   {t("catalog.admin.row.confirmDelete")}
                 </button>
                 <button
                   type="button"
-                  onClick={() => setConfirmingDelete(false)}
+                  onClick={() => a.setConfirmingDelete(false)}
                   className="px-2 py-1 text-[11px] font-sans text-muted-foreground hover:text-foreground transition-colors"
                 >
                   {t("catalog.admin.row.cancelDelete")}
@@ -407,12 +288,12 @@ function ProductRow({ product, onRefetch }: ProductRowProps) {
             ) : (
               <button
                 type="button"
-                onClick={() => setConfirmingDelete(true)}
-                disabled={isBusy}
+                onClick={() => a.setConfirmingDelete(true)}
+                disabled={a.isBusy}
                 title={t("catalog.admin.row.deleteTitle")}
                 className="p-2 text-muted-foreground hover:text-red-600 transition-colors disabled:opacity-40"
               >
-                {deleteMutation.isPending ? (
+                {a.deleteMutation.isPending ? (
                   <Loader2 size={15} className="animate-spin" />
                 ) : (
                   <Trash2 size={15} />
@@ -424,153 +305,17 @@ function ProductRow({ product, onRefetch }: ProductRowProps) {
       </tr>
 
       {/* Inline edit row */}
-      {editing && (
+      {a.editing && (
         <tr className="border-b border-[var(--brand-border)] bg-[var(--brand-surface-2)]">
           <td colSpan={6} className="px-6 py-5">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-              <div>
-                <label
-                  htmlFor={`edit-name-${product.id}`}
-                  className="block text-[10px] uppercase tracking-[0.12em] text-foreground font-sans mb-1"
-                >
-                  {t("catalog.admin.row.fieldName", { code: "DE" })} *
-                </label>
-                <input
-                  id={`edit-name-${product.id}`}
-                  type="text"
-                  value={editForm.name}
-                  onChange={(e) =>
-                    setEditForm((f) => ({ ...f, name: e.target.value }))
-                  }
-                  className="w-full border border-[var(--brand-ink)]/20 px-3 py-2 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] bg-white"
-                />
-              </div>
-              {EDIT_LOCALES.map(({ code, nameKey }) => (
-                <div key={nameKey}>
-                  <label
-                    htmlFor={`edit-${nameKey}-${product.id}`}
-                    className="block text-[10px] uppercase tracking-[0.12em] text-foreground font-sans mb-1"
-                  >
-                    {t("catalog.admin.row.fieldName", { code })}
-                  </label>
-                  <input
-                    id={`edit-${nameKey}-${product.id}`}
-                    type="text"
-                    value={editForm[nameKey]}
-                    onChange={(e) =>
-                      setEditForm((f) => ({ ...f, [nameKey]: e.target.value }))
-                    }
-                    className="w-full border border-[var(--brand-ink)]/20 px-3 py-2 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] bg-white"
-                  />
-                </div>
-              ))}
-              <div>
-                <label
-                  htmlFor={`edit-price-${product.id}`}
-                  className="block text-[10px] uppercase tracking-[0.12em] text-foreground font-sans mb-1"
-                >
-                  {t("catalog.admin.row.fieldPrice")} *
-                </label>
-                <input
-                  id={`edit-price-${product.id}`}
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={editForm.price}
-                  onChange={(e) =>
-                    setEditForm((f) => ({ ...f, price: e.target.value }))
-                  }
-                  className="w-full border border-[var(--brand-ink)]/20 px-3 py-2 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] bg-white"
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor={`edit-category-${product.id}`}
-                  className="block text-[10px] uppercase tracking-[0.12em] text-foreground font-sans mb-1"
-                >
-                  {t("catalog.admin.row.fieldCategory")} *
-                </label>
-                <select
-                  id={`edit-category-${product.id}`}
-                  value={editForm.category}
-                  onChange={(e) =>
-                    setEditForm((f) => ({
-                      ...f,
-                      category: e.target.value as ProductCategory,
-                    }))
-                  }
-                  className="w-full border border-[var(--brand-ink)]/20 px-3 py-2 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] bg-white"
-                >
-                  {CATEGORIES.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label
-                  htmlFor={`edit-description-${product.id}`}
-                  className="block text-[10px] uppercase tracking-[0.12em] text-foreground font-sans mb-1"
-                >
-                  {t("catalog.admin.row.fieldDescription", { code: "DE" })} *
-                </label>
-                <textarea
-                  id={`edit-description-${product.id}`}
-                  value={editForm.description}
-                  onChange={(e) =>
-                    setEditForm((f) => ({ ...f, description: e.target.value }))
-                  }
-                  rows={3}
-                  className="w-full border border-[var(--brand-ink)]/20 px-3 py-2 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] bg-white resize-none"
-                />
-              </div>
-              {EDIT_LOCALES.map(({ code, descKey }) => (
-                <div key={descKey}>
-                  <label
-                    htmlFor={`edit-${descKey}-${product.id}`}
-                    className="block text-[10px] uppercase tracking-[0.12em] text-foreground font-sans mb-1"
-                  >
-                    {t("catalog.admin.row.fieldDescription", { code })}
-                  </label>
-                  <textarea
-                    id={`edit-${descKey}-${product.id}`}
-                    value={editForm[descKey]}
-                    onChange={(e) =>
-                      setEditForm((f) => ({
-                        ...f,
-                        [descKey]: e.target.value,
-                      }))
-                    }
-                    rows={3}
-                    className="w-full border border-[var(--brand-ink)]/20 px-3 py-2 text-sm font-sans focus:outline-none focus:border-[var(--brand-accent)] bg-white resize-none"
-                  />
-                </div>
-              ))}
-            </div>
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={handleSaveEdit}
-                disabled={updateMutation.isPending}
-                className="flex items-center gap-2 bg-[var(--brand-ink)] text-white px-6 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:bg-[var(--brand-ink-hover)] transition-colors disabled:opacity-60"
-              >
-                {updateMutation.isPending ? (
-                  <Loader2 size={13} className="animate-spin" />
-                ) : (
-                  <Check size={13} />
-                )}
-                {t("catalog.admin.row.save")}
-              </button>
-              <button
-                type="button"
-                onClick={() => setEditing(false)}
-                className="flex items-center gap-2 border border-[var(--brand-ink)]/20 text-muted-foreground px-6 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:border-[var(--brand-ink)] hover:text-foreground transition-colors"
-              >
-                <X size={13} />
-                {t("catalog.admin.row.cancel")}
-              </button>
-            </div>
+            <ProductEditFields
+              productId={product.id}
+              form={a.editForm}
+              setForm={a.setEditForm}
+              onSave={a.handleSaveEdit}
+              onCancel={() => a.setEditing(false)}
+              saving={a.updateMutation.isPending}
+            />
           </td>
         </tr>
       )}
@@ -626,7 +371,10 @@ export default function Admin() {
   const addFormRef = useRef<HTMLDivElement | null>(null);
   const [form, setForm] = useState<AddForm>(EMPTY_FORM);
   const [sortBy, setSortBy] = useState<SortOption>("newest");
-  const [viewMode, setViewMode] = useState<ViewMode>("grid");
+  // The table is what the catalogue has always opened on, so it stays the
+  // default; the grid toggle is the one that changes what you see.
+  const [viewMode, setViewMode] = useState<ViewMode>("list");
+  const [searchQuery, setSearchQuery] = useState("");
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
     new Set(),
   );
@@ -740,6 +488,30 @@ export default function Admin() {
     // "newest" — server already returns newest-first, preserve order
     return copy;
   }, [products, sortBy]);
+
+  // The search box narrows the same list in place — it never navigates. Every
+  // column the merchant can see is searchable, plus the translated names and
+  // descriptions they cannot: looking up "brooch" should find the piece even
+  // when the row reads "Brosche". Matching is typo-tolerant, so a half-
+  // remembered name still lands.
+  const visibleProducts = useMemo(
+    () =>
+      fuzzyFilter(sortedProducts, searchQuery, (p) => [
+        p.name,
+        p.nameEn,
+        p.nameFr,
+        p.nameIt,
+        p.description,
+        p.descriptionEn,
+        p.descriptionFr,
+        p.descriptionIt,
+        p.price,
+        p.category,
+        p.quantity,
+      ]),
+    [sortedProducts, searchQuery],
+  );
+  const isSearching = searchQuery.trim().length > 0;
 
   const { data: bulkLogs, isLoading: bulkLogsLoading } =
     trpc.products.getBulkLogs.useQuery(undefined, {
@@ -858,13 +630,18 @@ export default function Admin() {
 
   const reconciliationMutation = trpc.reconciliation.run.useMutation({
     onSuccess: (data) => {
-      if (data.newPendingReview > 0) {
-        toast.success(
+      // Counts everything still awaiting confirmation, not only what this run
+      // discovered — a re-run whose earlier email never arrived has nothing
+      // "new" to report but plenty for the merchant to do. The review page
+      // itself lives on /admin/reconciliation, which is where a failed send
+      // renders it.
+      if (data.totalPendingReview > 0) {
+        toast[data.emailSent ? "success" : "error"](
           t(
             data.emailSent
               ? "catalog.admin.toasts.stripeFoundSent"
               : "catalog.admin.toasts.stripeFoundNotSent",
-            { count: data.newPendingReview },
+            { count: data.totalPendingReview },
           ),
         );
       } else if (data.newNoCandidates > 0) {
@@ -889,13 +666,16 @@ export default function Admin() {
 
   const posAttributionMutation = trpc.reconciliation.runPos.useMutation({
     onSuccess: (data) => {
-      if (data.newPendingReview > 0) {
-        toast.success(
+      // Same reasoning as the Stripe scan above: count everything still
+      // awaiting confirmation, and send the merchant to /admin/reconciliation,
+      // which is where an undelivered review email gets rendered in place.
+      if (data.totalPendingReview > 0) {
+        toast[data.emailSent ? "success" : "error"](
           t(
             data.emailSent
               ? "catalog.admin.toasts.posFoundSent"
               : "catalog.admin.toasts.posFoundNotSent",
-            { count: data.newPendingReview },
+            { count: data.totalPendingReview },
           ),
         );
       } else if (data.newNoCandidates > 0) {
@@ -1727,17 +1507,45 @@ export default function Admin() {
                 }
               }}
               totalProducts={products.length}
+              matchCount={visibleProducts.length}
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
             />
-            {sortBy === "category" ? (
+            {visibleProducts.length === 0 ? (
+              /* ── Nothing matched the filter ── */
+              <div className="bg-white border border-[var(--brand-border)] text-center py-20 px-6">
+                <SearchX
+                  size={28}
+                  className="mx-auto mb-4 text-[var(--brand-accent)]/40"
+                />
+                <h3 className="font-serif text-foreground text-xl mb-2">
+                  {t("catalog.admin.search.noMatchesTitle")}
+                </h3>
+                <p className="text-muted-foreground text-sm font-sans mb-6">
+                  {t("catalog.admin.search.noMatchesBody", {
+                    query: searchQuery.trim(),
+                  })}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="inline-flex items-center gap-2 border border-[var(--brand-ink)] text-[var(--brand-ink)] px-6 py-2.5 text-xs uppercase tracking-[0.15em] font-sans hover:bg-[var(--brand-ink)] hover:text-white transition-colors"
+                >
+                  {t("catalog.admin.search.clearFilter")}
+                </button>
+              </div>
+            ) : sortBy === "category" ? (
               /* ── Category-grouped view ── */
               <div className="space-y-2">
                 {CATEGORIES.filter((cat) =>
-                  sortedProducts.some((p) => p.category === cat),
+                  visibleProducts.some((p) => p.category === cat),
                 ).map((cat) => {
-                  const catProducts = sortedProducts.filter(
+                  const catProducts = visibleProducts.filter(
                     (p) => p.category === cat,
                   );
-                  const isExpanded = expandedCategories.has(cat);
+                  // A collapsed group would swallow its own matches, so a
+                  // running filter opens every group that has one.
+                  const isExpanded = isSearching || expandedCategories.has(cat);
                   return (
                     <ProductCategoryGroup
                       key={cat}
@@ -1753,23 +1561,35 @@ export default function Admin() {
                       }
                       productCount={catProducts.length}
                     >
-                      <div className="overflow-x-auto">
-                        <table className="w-full">
-                          <tbody>
-                            {catProducts.map((product) => (
-                              <ProductRow
-                                key={product.id}
-                                product={product}
-                                onRefetch={refetch}
-                              />
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
+                      {viewMode === "grid" ? (
+                        <div className="p-4">
+                          <ProductGrid
+                            products={catProducts}
+                            onRefetch={refetch}
+                          />
+                        </div>
+                      ) : (
+                        <div className="overflow-x-auto">
+                          <table className="w-full">
+                            <tbody>
+                              {catProducts.map((product) => (
+                                <ProductRow
+                                  key={product.id}
+                                  product={product}
+                                  onRefetch={refetch}
+                                />
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
                     </ProductCategoryGroup>
                   );
                 })}
               </div>
+            ) : viewMode === "grid" ? (
+              /* ── Thumbnail grid (newest / name) ── */
+              <ProductGrid products={visibleProducts} onRefetch={refetch} />
             ) : (
               /* ── Flat table view (newest / name) ── */
               <div className="bg-white border border-[var(--brand-border)] overflow-hidden">
@@ -1798,7 +1618,7 @@ export default function Admin() {
                       </tr>
                     </thead>
                     <tbody>
-                      {sortedProducts.map((product) => (
+                      {visibleProducts.map((product) => (
                         <ProductRow
                           key={product.id}
                           product={product}

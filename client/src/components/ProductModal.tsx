@@ -194,9 +194,9 @@ export default function ProductModal({ product, open, onClose }: Props) {
         {/* Details — scrolls if taller than remaining viewport space */}
         <div className="flex-1 min-h-0 overflow-y-auto p-5">
           <span
-            className={`inline-block text-[10px] uppercase tracking-[0.2em] px-2 py-0.5 mb-3 font-sans ${
-              categoryColor(product.category)
-            }`}
+            className={`inline-block text-[10px] uppercase tracking-[0.2em] px-2 py-0.5 mb-3 font-sans ${categoryColor(
+              product.category,
+            )}`}
           >
             {product.category}
           </span>

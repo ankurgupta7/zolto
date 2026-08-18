@@ -40,6 +40,17 @@ describe("PhotoToListing", () => {
     expect(container.querySelector(".lucide-camera")).toBeNull();
     expect(container.textContent).not.toContain("◇");
   });
+
+  it("keeps before and after side by side at every width", () => {
+    // Stacked, the pair is 550px on a 375px phone — most of the screen a reel
+    // panel has — and a before/after only reads as a comparison when both
+    // frames are visible at once. jsdom has no viewport, so the check is that
+    // the columns are unconditional rather than an `sm:` upgrade.
+    const { container } = render(<PhotoToListing />);
+    const grid = container.firstElementChild!;
+    expect(grid.className).toContain("grid-cols-[1fr_auto_1fr]");
+    expect(grid.className).not.toContain("sm:grid-cols-");
+  });
 });
 
 describe("NecklaceSketch", () => {

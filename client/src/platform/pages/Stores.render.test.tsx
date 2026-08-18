@@ -14,6 +14,12 @@ type Row = {
   stripeConnected: boolean;
   adminCount: number;
   userCount: number;
+  comp: {
+    plan: "free" | "pro" | null;
+    feeWaived: boolean;
+    note: string | null;
+    grantedAt: Date | null;
+  } | null;
 };
 
 function row(over: Partial<Row> = {}): Row {
@@ -29,6 +35,7 @@ function row(over: Partial<Row> = {}): Row {
     stripeConnected: false,
     adminCount: 1,
     userCount: 2,
+    comp: null,
     ...over,
   };
 }
@@ -145,5 +152,52 @@ describe("Stores — states", () => {
     mocks.data = [];
     render(<Stores />);
     expect(screen.getByText("No stores yet.")).toBeTruthy();
+  });
+});
+
+// A comped store looks exactly like a paying Pro store on this list unless the
+// grant is said out loud — which is how a comp gets left on for a year.
+describe("Stores — comps", () => {
+  it("lists the plan the store is entitled to, and marks it as a comp", () => {
+    mocks.data = [
+      row({
+        plan: "free",
+        comp: { plan: "pro", feeWaived: true, note: null, grantedAt: null },
+      }),
+    ];
+    render(<Stores />);
+    expect(screen.getByText("pro")).toBeTruthy();
+    expect(screen.getByText("comped · 0%")).toBeTruthy();
+  });
+
+  it("distinguishes a bare fee waiver from a granted plan", () => {
+    mocks.data = [
+      row({
+        plan: "free",
+        comp: { plan: null, feeWaived: true, note: null, grantedAt: null },
+      }),
+    ];
+    render(<Stores />);
+    expect(screen.getByText("free")).toBeTruthy();
+    expect(screen.getByText("0% fee")).toBeTruthy();
+  });
+
+  it("marks a granted plan that still pays the fee", () => {
+    mocks.data = [
+      row({
+        plan: "free",
+        comp: { plan: "pro", feeWaived: false, note: null, grantedAt: null },
+      }),
+    ];
+    render(<Stores />);
+    expect(screen.getByText("comped")).toBeTruthy();
+  });
+
+  it("leaves an ordinary paying store unmarked", () => {
+    mocks.data = [row({ plan: "pro" })];
+    render(<Stores />);
+    expect(screen.getByText("pro")).toBeTruthy();
+    expect(screen.queryByText(/comped/)).toBeNull();
+    expect(screen.queryByText("0% fee")).toBeNull();
   });
 });
