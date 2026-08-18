@@ -734,6 +734,56 @@ migrate_0045_site_imports() {
 # it, and getSheetMirror's LIMIT 1 deciding which one the sync keeps refreshing.
 # Restored below on any database that somehow has the table without it.
 # ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────
+# Migration 0052: review-link tokens get a lifetime, and stop existing once spent.
+#
+# The one-click links in the reconciliation and POS-attribution review emails
+# are bearer credentials — whoever holds the mail can spend them, with no login.
+# They had no expiry, and survived in the row after the decision was recorded,
+# so a forwarded or leaked mailbox stayed actionable indefinitely.
+#
+# tokenExpiresAt bounds a link's life (the app treats NULL as expired, so old
+# rows are backfilled from their creation date rather than grandfathered into
+# never expiring), and confirmationToken becomes nullable so a spent token can
+# be cleared outright. MySQL permits many NULLs under a UNIQUE constraint, so
+# uniqueness of live tokens is unaffected. Idempotent.
+migrate_0052_review_token_lifetime() {
+  # Spelled out per table rather than looped: deploy/schemaDrift.test.ts reads
+  # these statements to prove the deploy path creates every column the app
+  # queries, and it cannot see a table name hidden behind a shell variable.
+  if [ "$(tbl_exists stripe_reconciliations)" = "1" ]; then
+    if [ "$(col_exists stripe_reconciliations tokenExpiresAt)" = "0" ]; then
+      run_sql "0052 add stripe_reconciliations.tokenExpiresAt" \
+        "ALTER TABLE \`stripe_reconciliations\` ADD \`tokenExpiresAt\` timestamp NULL;"
+      # Backfill from creation so links already sitting in inboxes get a
+      # definite end, instead of living forever because they predate the column.
+      run_sql "0052 backfill stripe_reconciliations.tokenExpiresAt" \
+        "UPDATE \`stripe_reconciliations\` SET \`tokenExpiresAt\` = DATE_ADD(\`createdAt\`, INTERVAL 14 DAY) WHERE \`tokenExpiresAt\` IS NULL;"
+    else
+      ok "0052 stripe_reconciliations.tokenExpiresAt already exists"
+    fi
+    run_sql "0052 stripe_reconciliations.confirmationToken nullable" \
+      "ALTER TABLE \`stripe_reconciliations\` MODIFY \`confirmationToken\` varchar(128) NULL;"
+  else
+    ok "0052 stripe_reconciliations does not exist yet — skipping"
+  fi
+
+  if [ "$(tbl_exists pos_attributions)" = "1" ]; then
+    if [ "$(col_exists pos_attributions tokenExpiresAt)" = "0" ]; then
+      run_sql "0052 add pos_attributions.tokenExpiresAt" \
+        "ALTER TABLE \`pos_attributions\` ADD \`tokenExpiresAt\` timestamp NULL;"
+      run_sql "0052 backfill pos_attributions.tokenExpiresAt" \
+        "UPDATE \`pos_attributions\` SET \`tokenExpiresAt\` = DATE_ADD(\`createdAt\`, INTERVAL 14 DAY) WHERE \`tokenExpiresAt\` IS NULL;"
+    else
+      ok "0052 pos_attributions.tokenExpiresAt already exists"
+    fi
+    run_sql "0052 pos_attributions.confirmationToken nullable" \
+      "ALTER TABLE \`pos_attributions\` MODIFY \`confirmationToken\` varchar(128) NULL;"
+  else
+    ok "0052 pos_attributions does not exist yet — skipping"
+  fi
+}
+
 migrate_0051_sheet_mirrors() {
   if [ "$(tbl_exists sheet_mirrors)" = "0" ]; then
     run_sql "0051 sheet_mirrors table" "

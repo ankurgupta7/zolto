@@ -36,6 +36,9 @@ const pendingReconciliation = {
   candidateProductIds: "7,8",
   chosenProductId: null,
   confirmationToken: "tok_abc",
+  // A mailed link is only live inside its window; a row with no expiry reads as
+  // expired, so every fixture that expects the link to work needs one.
+  tokenExpiresAt: new Date(Date.now() + 7 * 86400 * 1000),
 };
 
 const sampleProduct = {
@@ -229,5 +232,71 @@ describe("POST /api/reconciliation/confirm", () => {
       .send({ token: "tok_abc", choice: "not-a-number" });
 
     expect(res.status).toBe(400);
+  });
+});
+
+// A mailed link is a bearer credential: whoever holds the message can spend it
+// with no login. These two rules are what bound that — it stops working after
+// a while, and it stops existing once used (server/reviewToken.ts, server/db.ts).
+describe("the mailed link's lifetime", () => {
+  it("410s on an expired link, without applying anything", async () => {
+    getStripeReconciliationByToken.mockResolvedValue({
+      ...pendingReconciliation,
+      tokenExpiresAt: new Date(Date.now() - 60_000),
+    });
+    const app = buildApp();
+
+    const get = await request(app).get(
+      "/api/reconciliation/confirm?token=tok_abc&choice=0",
+    );
+    expect(get.status).toBe(410);
+
+    const post = await request(app)
+      .post("/api/reconciliation/confirm")
+      .type("form")
+      .send({ token: "tok_abc", choice: "0" });
+    expect(post.status).toBe(410);
+    expect(resolveStripeReconciliationConfirmed).not.toHaveBeenCalled();
+    expect(rejectStripeReconciliation).not.toHaveBeenCalled();
+  });
+
+  it("410s on a row whose expiry was never set, rather than treating it as eternal", async () => {
+    getStripeReconciliationByToken.mockResolvedValue({
+      ...pendingReconciliation,
+      tokenExpiresAt: null,
+    });
+    const app = buildApp();
+    const res = await request(app).get(
+      "/api/reconciliation/confirm?token=tok_abc&choice=0",
+    );
+    expect(res.status).toBe(410);
+  });
+
+  it("404s once the token has been spent, since the decision cleared it", async () => {
+    // The first decision nulls confirmationToken, so the lookup finds nothing —
+    // a replayed link is indistinguishable from one that never existed.
+    getStripeReconciliationByToken.mockResolvedValue(undefined);
+    const app = buildApp();
+    const res = await request(app)
+      .post("/api/reconciliation/confirm")
+      .type("form")
+      .send({ token: "tok_abc", choice: "0" });
+
+    expect(res.status).toBe(404);
+    expect(resolveStripeReconciliationConfirmed).not.toHaveBeenCalled();
+  });
+
+  it("says nothing about which of the three it was, and points at the console", async () => {
+    // Whoever holds a leaked link must not learn whether the token was ever
+    // real; the merchant is sent to the signed-in queue instead.
+    getStripeReconciliationByToken.mockResolvedValue(undefined);
+    const app = buildApp();
+    const res = await request(app).get(
+      "/api/reconciliation/confirm?token=whatever&choice=0",
+    );
+
+    expect(res.text).toContain("no longer valid");
+    expect(res.text).toContain("admin console");
+    expect(res.text).not.toMatch(/not found|expired already|invalid token/i);
   });
 });

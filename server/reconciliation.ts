@@ -26,10 +26,12 @@ import {
   getKnownOrderPaymentIntentIds,
   getKnownPosPaymentIntentIds,
   getKnownReconciliationPaymentIntentIds,
+  extendReviewTokenExpiry,
   getPendingStripeReconciliations,
   getTenantsWithConnectedStripe,
 } from "./db";
 import { resolveStoredCandidates } from "./pendingReview";
+import { reviewTokenExpiry } from "./reviewToken";
 import {
   buildReconciliationReviewHtml,
   type ReconciliationReviewItem,
@@ -137,20 +139,35 @@ async function collectStillPendingReviewItems(
 
   const candidatesByRow = await resolveStoredCandidates(tenantId, older);
 
-  return (
-    older
-      .map((row, i) => ({
-        paymentIntentId: row.stripePaymentIntentId,
-        amountRappen: row.amountRappen,
-        currency: row.currency,
-        stripeCreatedAt: row.stripeCreatedAt,
-        candidates: candidatesByRow[i],
-        token: row.confirmationToken,
-      }))
-      // Every candidate piece has since been deleted, so there is nothing left to
-      // assign the payment to. It stays pending for manual handling.
-      .filter((item) => item.candidates.length > 0)
+  const items = older
+    .map((row, i) => ({
+      id: row.id,
+      paymentIntentId: row.stripePaymentIntentId,
+      amountRappen: row.amountRappen,
+      currency: row.currency,
+      stripeCreatedAt: row.stripeCreatedAt,
+      candidates: candidatesByRow[i],
+      token: row.confirmationToken,
+    }))
+    // Every candidate piece has since been deleted, so there is nothing left to
+    // assign the payment to. It stays pending for manual handling. A null token
+    // means the row was decided between the two queries — nothing left to ask.
+    .filter(
+      (item): item is typeof item & { token: string } =>
+        item.candidates.length > 0 && item.token !== null,
+    );
+
+  // This run is putting these links in front of the merchant again, so their
+  // clock restarts today. Without this, a re-sent email would carry a link
+  // measured from the day the payment was first detected — often already dead.
+  await extendReviewTokenExpiry(
+    "stripe_reconciliations",
+    tenantId,
+    items.map((item) => item.id),
+    reviewTokenExpiry(),
   );
+
+  return items.map(({ id: _id, ...item }) => item);
 }
 
 export class NotConnectedError extends Error {
@@ -253,6 +270,9 @@ export async function runStripeReconciliationForTenant(
       status,
       candidateProductIds: candidates.map((p) => p.id).join(","),
       confirmationToken: token,
+      // The mailed link is a bearer credential, so it gets a lifetime from the
+      // moment it is issued (server/reviewToken.ts).
+      tokenExpiresAt: reviewTokenExpiry(),
     });
 
     if (status === "pending_review") {

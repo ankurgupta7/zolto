@@ -59,11 +59,14 @@ import {
   getKnownOrderPaymentIntentIds,
   getKnownPosPaymentIntentIds,
   getKnownReconciliationPaymentIntentIds,
+  extendReviewTokenExpiry,
   getPendingPosAttributions,
   getPendingStripeReconciliations,
   getPosAttributionById,
   getStripeReconciliationById,
   getStripeReconciliationByToken,
+  rejectPosAttribution,
+  resolvePosAttributionConfirmed,
   rejectStripeReconciliation,
   resolveStripeReconciliationConfirmed,
 } from "./db";
@@ -248,6 +251,10 @@ describe("rejectStripeReconciliation", () => {
     const [setArg] = updateChain.__calls.set[0];
     expect(setArg.status).toBe("rejected");
     expect(setArg.resolvedAt).toBeInstanceOf(Date);
+    // The decision spends the mailed link: it stops existing, rather than
+    // merely stopping being accepted.
+    expect(setArg.confirmationToken).toBeNull();
+    expect(setArg.tokenExpiresAt).toBeNull();
   });
 });
 
@@ -287,5 +294,87 @@ describe("resolveStripeReconciliationConfirmed", () => {
       status: "confirmed",
       chosenProductId: 3,
     });
+  });
+});
+
+// Both halves of the leaked-link fix, at the layer that enforces them.
+describe("a decision spends the mailed token", () => {
+  it("clears the token when a reconciliation is confirmed", async () => {
+    const tx = makeTxMock();
+    const updateReconChain = makeChain(undefined);
+    tx.insert
+      .mockReturnValueOnce(makeChain({ insertId: 1 }))
+      .mockReturnValueOnce(makeChain(undefined));
+    tx.update
+      .mockReturnValueOnce(makeChain(undefined))
+      .mockReturnValueOnce(updateReconChain);
+    dbMock.transaction.mockImplementation(
+      async (cb: (tx: unknown) => unknown) => cb(tx),
+    );
+
+    await resolveStripeReconciliationConfirmed(9, 3, 10000, "pi_1");
+
+    const [setArg] = updateReconChain.__calls.set[0];
+    expect(setArg.status).toBe("confirmed");
+    expect(setArg.confirmationToken).toBeNull();
+    expect(setArg.tokenExpiresAt).toBeNull();
+  });
+
+  it("clears the token when a POS attribution is rejected", async () => {
+    const updateChain = makeChain(undefined);
+    dbMock.update.mockReturnValue(updateChain);
+
+    await rejectPosAttribution(5);
+
+    const [setArg] = updateChain.__calls.set[0];
+    expect(setArg.status).toBe("rejected");
+    expect(setArg.confirmationToken).toBeNull();
+    expect(setArg.tokenExpiresAt).toBeNull();
+  });
+
+  it("clears the token when a POS attribution is confirmed", async () => {
+    const tx = makeTxMock();
+    const updateAttrChain = makeChain(undefined);
+    tx.update
+      .mockReturnValueOnce(makeChain(undefined)) // the line item
+      .mockReturnValueOnce(makeChain(undefined)) // the product's stock
+      .mockReturnValueOnce(updateAttrChain);
+    dbMock.transaction.mockImplementation(
+      async (cb: (tx: unknown) => unknown) => cb(tx),
+    );
+
+    await resolvePosAttributionConfirmed(5, 100, 7, 42);
+
+    const [setArg] = updateAttrChain.__calls.set[0];
+    expect(setArg.status).toBe("confirmed");
+    expect(setArg.confirmationToken).toBeNull();
+    expect(setArg.tokenExpiresAt).toBeNull();
+  });
+});
+
+describe("extendReviewTokenExpiry", () => {
+  it("pushes the expiry out for the rows being re-sent", async () => {
+    const updateChain = makeChain(undefined);
+    dbMock.update.mockReturnValue(updateChain);
+    const expiresAt = new Date("2026-09-01T00:00:00Z");
+
+    await extendReviewTokenExpiry(
+      "stripe_reconciliations",
+      42,
+      [1, 2],
+      expiresAt,
+    );
+
+    expect(updateChain.__calls.set[0][0]).toEqual({
+      tokenExpiresAt: expiresAt,
+    });
+    // Scoped to the tenant, the given ids, and pending_review — a decided row
+    // has no token left, and reviving its clock would be meaningless.
+    expect(updateChain.__calls.where).toHaveLength(1);
+  });
+
+  it("does nothing at all when there is nothing to extend", async () => {
+    await extendReviewTokenExpiry("pos_attributions", 42, [], new Date());
+    expect(dbMock.update).not.toHaveBeenCalled();
   });
 });

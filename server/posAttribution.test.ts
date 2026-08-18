@@ -9,6 +9,7 @@ const getTenantAdminContact = vi.fn();
 const getTenantSettings = vi.fn();
 const getPendingPosAttributions = vi.fn();
 const getProductsByIds = vi.fn();
+const extendReviewTokenExpiry = vi.fn();
 let tokenCounter = 0;
 
 vi.mock("./db", () => ({
@@ -21,6 +22,7 @@ vi.mock("./db", () => ({
   getPendingPosAttributions: (...a: unknown[]) =>
     getPendingPosAttributions(...a),
   getProductsByIds: (...a: unknown[]) => getProductsByIds(...a),
+  extendReviewTokenExpiry: (...a: unknown[]) => extendReviewTokenExpiry(...a),
 }));
 
 vi.mock("./reconciliation", () => ({
@@ -70,6 +72,7 @@ beforeEach(() => {
   getTenantSettings.mockResolvedValue(undefined);
   getPendingPosAttributions.mockResolvedValue([]);
   getProductsByIds.mockResolvedValue([]);
+  extendReviewTokenExpiry.mockResolvedValue(undefined);
   sendPosAttributionReviewEmail.mockResolvedValue({ sent: true });
   buildPosAttributionReviewHtml.mockReturnValue("<html>review</html>");
 });
@@ -124,6 +127,8 @@ describe("runPosAttribution", () => {
       status: "pending_review",
       candidateProductIds: "7,8",
       confirmationToken: "tok_1",
+      // The mailed link is issued with a lifetime, not left open-ended.
+      tokenExpiresAt: expect.any(Date),
     });
     expect(summary.newPendingReview).toBe(1);
     expect(summary.newNoCandidates).toBe(0);
@@ -258,6 +263,7 @@ describe("runPosAttribution", () => {
 describe("re-running with work still outstanding", () => {
   function pendingRow(over: Record<string, unknown> = {}) {
     return {
+      id: 7,
       posOrderItemId: 900,
       amountRappen: 4500,
       candidateProductIds: "7,8",
@@ -285,6 +291,33 @@ describe("re-running with work still outstanding", () => {
     // The original row's token, so the links in the first email and this one
     // point at the same decision.
     expect(items[0]).toMatchObject({ posOrderItemId: 900, token: "tok_old" });
+  });
+
+  it("restarts the link's clock for everything it re-sends", async () => {
+    getUnattributedPosLineItems.mockResolvedValue([]);
+    getPendingPosAttributions.mockResolvedValue([pendingRow()]);
+    getProductsByIds.mockResolvedValue([product(7, "45.00")]);
+
+    await runPosAttribution(3, 1);
+
+    const [table, tenantId, ids, expiresAt] =
+      extendReviewTokenExpiry.mock.calls[0];
+    expect(table).toBe("pos_attributions");
+    expect(tenantId).toBe(1);
+    expect(ids).toEqual([7]);
+    expect((expiresAt as Date).getTime()).toBeGreaterThan(Date.now());
+  });
+
+  it("does not re-send a sale decided between the two queries", async () => {
+    getUnattributedPosLineItems.mockResolvedValue([]);
+    getPendingPosAttributions.mockResolvedValue([
+      pendingRow({ confirmationToken: null }),
+    ]);
+    getProductsByIds.mockResolvedValue([product(7, "45.00")]);
+
+    const summary = await runPosAttribution(3, 1);
+    expect(summary.totalPendingReview).toBe(0);
+    expect(sendPosAttributionReviewEmail).not.toHaveBeenCalled();
   });
 
   it("keeps a candidate's stored position when an earlier candidate was deleted", async () => {
