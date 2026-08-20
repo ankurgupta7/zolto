@@ -143,7 +143,7 @@ can discover products via MCP and easy browsing."
     `list_features`, `get_pricing`, `how_to_start`, `list_faqs`,
     `list_resources` — so an AI assistant helping a prospective shop owner can
     discover Gwinn's features/pricing and how to sign up, and recommend it.
-- **Brand logo + per-tenant favicons** — a brush-Z mark (`client/public/logo.*`,
+- **Brand logo + per-tenant favicons** — a brush-G mark (`client/public/logo.*`,
   `favicon.svg/png`, multi-size `favicon.ico`, 1200×630 `og-image.png`) wired into
   the nav, `<head>`, and JSON-LD/OG. Storefronts no longer inherit Gwinn's icon:
   `server/storefrontHead.ts` rewrites each storefront's `<head>` to its own

@@ -1,0 +1,59 @@
+<!doctype html>
+<!--
+  Raster source for the brand marks. Every PNG in client/public/ and the
+  Android drawable is rendered from this one page by tools/brand/render.mjs, so
+  the tile, the stroke and the spark cannot drift between the SVG and the
+  bitmaps the way the previous rebrand let them (android/.../zolto_logo.png was
+  still the *Kalakosh* wordmark, renamed but never redrawn).
+
+  Each block is sized exactly to its output and tagged with an id the renderer
+  clips to.
+-->
+<html>
+<head><meta charset="utf-8"><link rel="stylesheet" href="/fonts/fonts.css">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box }
+  body { background:#888 }
+  .block { display:flex; align-items:center; justify-content:center; }
+  #tile1024 { width:1024px; height:1024px }
+  #tile96   { width:96px;   height:96px }
+  /* Resized by render.mjs once per .ico frame. */
+  #tileScalable { width:48px; height:48px }
+  #wordmark { width:480px; height:112px; background:#2D2620; gap:18px }
+  #wordmark .name { font-family:"Cormorant Garamond",Georgia,serif; font-size:52px; color:#F0EBE3; letter-spacing:.01em }
+  #og { width:1920px; height:1008px; background:#2D2620; justify-content:space-between; padding:0 150px }
+  #og .kicker { font-family:Inter,system-ui,sans-serif; font-size:34px; letter-spacing:.22em; color:#B8963E; font-weight:600 }
+  #og .name { font-family:"Cormorant Garamond",Georgia,serif; font-size:190px; color:#F0EBE3; line-height:1; margin:34px 0 46px }
+  #og .sub { font-family:Inter,system-ui,sans-serif; font-size:52px; line-height:1.35; color:#DCD7CB; max-width:1010px }
+  #og .rule { width:210px; height:7px; background:#B8963E; margin-top:64px }
+</style>
+</head>
+<body>
+<script>
+  // One definition of the mark, injected everywhere it is needed.
+  const MARK = (size, tile, mark, dot, radius) => `
+    <svg viewBox="0 0 200 200" width="${size}" height="${size}">
+      <rect width="200" height="200" rx="${radius}" fill="${tile}"/>
+      <path d="M143 68 C126 52 92 50 71 68 C48 88 46 126 68 144 C90 162 126 156 140 137 C145 130 146 122 145 114 L107 116"
+            fill="none" stroke="${mark}" stroke-width="18"
+            stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="166" cy="56" r="6.5" fill="${dot}"/>
+    </svg>`;
+  const GOLD = ["#2D2620", "#B8963E", "#F0EBE3"];
+  document.write(`
+    <div class="block" id="tile1024">${MARK(1024, ...GOLD, 20)}</div>
+    <div class="block" id="tile96">${MARK(96, ...GOLD, 20)}</div>
+    <div class="block" id="tileScalable">${MARK(48, ...GOLD, 20)}</div>
+    <div class="block" id="wordmark">${MARK(72, ...GOLD, 20)}<span class="name">Gwinn</span></div>
+    <div class="block" id="og">
+      <div>
+        <div class="kicker">AI-RUN COMMERCE FOR MAKERS</div>
+        <div class="name">Gwinn</div>
+        <div class="sub">An online store and point-of-sale that share one inventory — handmade selling, without the tech.</div>
+        <div class="rule"></div>
+      </div>
+      ${MARK(420, "#2D2620", "#B8963E", "#F0EBE3", 20)}
+    </div>`);
+</script>
+</body>
+</html>

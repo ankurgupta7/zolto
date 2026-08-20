@@ -80,13 +80,17 @@
     <path d="M1006 610 q64 -40 128 0" />
   </g>
 
-  <!-- The brush-Z mark, small, bottom right -->
+  <!-- The brush-G mark, small, bottom right -->
   <g transform="translate(1360 830) scale(0.6)">
     <rect width="200" height="200" rx="20" fill="#2D2620" fill-opacity="0.9" />
     <path
-      d="M50 54 C70 50 132 50 150 54 C150 66 120 70 96 84 C78 95 66 110 58 130 C74 138 132 132 152 138 C150 150 120 152 96 150 C74 148 52 150 46 140 C48 120 70 100 96 84 C70 74 54 70 50 54 Z"
-      fill="#B8963E"
+      d="M143 68 C126 52 92 50 71 68 C48 88 46 126 68 144 C90 162 126 156 140 137 C145 130 146 122 145 114 L107 116"
+      fill="none"
+      stroke="#B8963E"
+      stroke-width="18"
+      stroke-linecap="round"
+      stroke-linejoin="round"
     />
-    <circle cx="163" cy="60" r="6.5" fill="#F0EBE3" />
+    <circle cx="166" cy="56" r="6.5" fill="#F0EBE3" />
   </g>
 </svg>

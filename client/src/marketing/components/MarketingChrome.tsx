@@ -97,12 +97,12 @@ export function LanguageSwitcher({ className = "" }: { className?: string }) {
 export const SIGN_IN_PATH = "/signin";
 
 /**
- * The Gwinn brush-Z mark — the signature gold-on-mahogany lockup (matches
+ * The Gwinn brush-G mark — the signature gold-on-mahogany lockup (matches
  * /favicon.svg + /logo.png). A near-square mahogany tile with a hand-inked gold
- * "Z"; reads at 16px. Inline so it stays crisp at any size.
+ * "G"; reads at 16px. Inline so it stays crisp at any size.
  *
- * The three fills are tokens, not hexes, so a theme recolours the mark without
- * a second file — the light palettes each take the lockup somewhere different
+ * The tile fill, the stroke and the spark are tokens, not hexes, so a theme
+ * recolours the mark without a second file — the light palettes each take the lockup somewhere different
  * (see --logo-* in index.css). The fallbacks are today's colours, so the mark
  * still renders correctly anywhere the stylesheet hasn't loaded.
  *
@@ -130,10 +130,14 @@ export function BrushMark({ className }: { className?: string }) {
         strokeWidth="1.5"
       />
       <path
-        d="M50 54 C70 50 132 50 150 54 C150 66 120 70 96 84 C78 95 66 110 58 130 C74 138 132 132 152 138 C150 150 120 152 96 150 C74 148 52 150 46 140 C48 120 70 100 96 84 C70 74 54 70 50 54 Z"
-        fill="var(--logo-mark, #B8963E)"
+        d="M143 68 C126 52 92 50 71 68 C48 88 46 126 68 144 C90 162 126 156 140 137 C145 130 146 122 145 114 L107 116"
+        fill="none"
+        stroke="var(--logo-mark, #B8963E)"
+        strokeWidth="18"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
-      <circle cx="163" cy="60" r="6.5" fill="var(--logo-dot, #F0EBE3)" />
+      <circle cx="166" cy="56" r="6.5" fill="var(--logo-dot, #F0EBE3)" />
     </svg>
   );
 }

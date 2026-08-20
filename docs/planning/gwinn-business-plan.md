@@ -523,7 +523,7 @@ Components:
   Button (dark band): bg-[--brand-accent] text-[--brand-ink]
   Card: bg-white, border-[--brand-border], rounded-lg/xl
   Eyebrow: font-hand gold
-  Logo: gold-on-mahogany brush-Z (#B8963E on #2D2620), near-square — never violet
+  Logo: gold-on-mahogany brush-G (#B8963E on #2D2620), near-square — never violet
 Hand-drawn guardrail:
   Pen allowed on feeling (eyebrows, dividers, hero underlines, illustrations);
   forbidden on information (numbers, money, tables, inputs, status pills, CTAs).

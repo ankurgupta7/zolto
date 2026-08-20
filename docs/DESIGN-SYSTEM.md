@@ -106,8 +106,8 @@ hand-drawn touch.
 
 ## Logo / icon guidance
 
-The mark is the **gold-on-mahogany** brush-Z lockup: a near-square mahogany tile
-(`#2D2620`) with a hand-inked gold "Z" (`#B8963E`) and a small cream spark.
+The mark is the **gold-on-mahogany** brush-G lockup: a near-square mahogany tile
+(`#2D2620`) with a hand-inked gold "G" (`#B8963E`) and a small cream spark.
 Assets live in `client/public/` — `logo.svg`/`logo.png`, `favicon.svg`,
 `favicon.png`, multi-size `favicon.ico`, and the 1200×630 `og-image.png`. The nav
 mark is the inline `BrushMark` in `client/src/marketing/components/MarketingChrome.tsx`.
