@@ -48,8 +48,12 @@ describe("parseArgs", () => {
   });
 
   it("takes the operator to act as", () => {
-    expect(parseArgs(["--as", `owner@${BRAND.domain}`]).as).toBe(`owner@${BRAND.domain}`);
-    expect(parseArgs([`--as=owner@${BRAND.domain}`]).as).toBe(`owner@${BRAND.domain}`);
+    expect(parseArgs(["--as", `owner@${BRAND.domain}`]).as).toBe(
+      `owner@${BRAND.domain}`,
+    );
+    expect(parseArgs([`--as=owner@${BRAND.domain}`]).as).toBe(
+      `owner@${BRAND.domain}`,
+    );
   });
 
   it("combines flags", () => {

@@ -141,7 +141,9 @@ function billingSession(meta: Record<string, string>): Stripe.Checkout.Session {
 describe("isBillingSession", () => {
   it("distinguishes billing sessions from storefront sessions", () => {
     expect(
-      isBillingSession(billingSession({ platformBilling: "plan_subscription" })),
+      isBillingSession(
+        billingSession({ platformBilling: "plan_subscription" }),
+      ),
     ).toBe(true);
     expect(
       isBillingSession({

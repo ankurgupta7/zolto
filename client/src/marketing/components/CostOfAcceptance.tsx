@@ -91,7 +91,9 @@ export function CostOfAcceptance({
   // shows everything.
   const rows = basketTable(basketChf, channel).filter(
     (r) =>
-      !provider || r.rate.provider === provider || r.rate.provider === "platform",
+      !provider ||
+      r.rate.provider === provider ||
+      r.rate.provider === "platform",
   );
   // Filtered by BOTH axes. Filtering only by provider made the pricing page
   // render Worldline's terminal contract and its online gateway twice — once

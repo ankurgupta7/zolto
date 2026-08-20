@@ -138,7 +138,9 @@ describe("breadcrumbJsonLd", () => {
       ["Shop", "/shop"],
     ]) as Record<string, any>;
     expect(node.itemListElement[0].position).toBe(1);
-    expect(node.itemListElement[1].item).toBe(`https://aurora.${BRAND.domain}/shop`);
+    expect(node.itemListElement[1].item).toBe(
+      `https://aurora.${BRAND.domain}/shop`,
+    );
   });
 });
 
@@ -179,7 +181,9 @@ describe("renderStorefrontSitemapXml", () => {
       product({ id: 11 }),
       product({ id: 12, sold: true }),
     ]);
-    expect(xml).toContain(`<loc>https://aurora.${BRAND.domain}/product/11</loc>`);
+    expect(xml).toContain(
+      `<loc>https://aurora.${BRAND.domain}/product/11</loc>`,
+    );
     expect(xml).not.toContain("/product/12");
   });
 
@@ -198,7 +202,10 @@ describe("renderStorefrontSitemapXml", () => {
   });
 
   it("tolerates a base URL with a trailing slash", () => {
-    const xml = renderStorefrontSitemapXml(`https://aurora.${BRAND.domain}/`, []);
+    const xml = renderStorefrontSitemapXml(
+      `https://aurora.${BRAND.domain}/`,
+      [],
+    );
     expect(xml).not.toContain("//shop");
   });
 });

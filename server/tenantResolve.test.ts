@@ -39,16 +39,18 @@ afterEach(() => {
 describe("resolveTenantForHost — platform subdomains", () => {
   it("resolves the left-most label of a platform subdomain as a slug", async () => {
     dbMock.getTenantBySlug.mockResolvedValue(AURORA);
-    await expect(resolveTenantForHost(`aurora.${BRAND.domain}`)).resolves.toBe(AURORA);
+    await expect(resolveTenantForHost(`aurora.${BRAND.domain}`)).resolves.toBe(
+      AURORA,
+    );
     expect(dbMock.getTenantBySlug).toHaveBeenCalledWith("aurora");
     expect(dbMock.getTenantByCustomDomain).not.toHaveBeenCalled();
   });
 
   it("ignores the port", async () => {
     dbMock.getTenantBySlug.mockResolvedValue(AURORA);
-    await expect(resolveTenantForHost(`aurora.${BRAND.domain}:443`)).resolves.toBe(
-      AURORA,
-    );
+    await expect(
+      resolveTenantForHost(`aurora.${BRAND.domain}:443`),
+    ).resolves.toBe(AURORA);
     expect(dbMock.getTenantBySlug).toHaveBeenCalledWith("aurora");
   });
 
@@ -75,7 +77,9 @@ describe("resolveTenantForHost — platform subdomains", () => {
   });
 
   it("returns null for an unknown slug rather than falling through to a domain lookup", async () => {
-    await expect(resolveTenantForHost(`nobody.${BRAND.domain}`)).resolves.toBeNull();
+    await expect(
+      resolveTenantForHost(`nobody.${BRAND.domain}`),
+    ).resolves.toBeNull();
     expect(dbMock.getTenantByCustomDomain).not.toHaveBeenCalled();
   });
 });

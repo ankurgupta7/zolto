@@ -968,8 +968,7 @@ rationale: one friendly sentence (max 25 words) naming BOTH colors, e.g. "Deep f
       if (input.hidePlatformCredit === true && !features.whiteLabel) {
         throw new TRPCError({
           code: "FORBIDDEN",
-          message:
-            `Hiding the "Made with ${BRAND.name}" credit requires the Pro plan. Please upgrade.`,
+          message: `Hiding the "Made with ${BRAND.name}" credit requires the Pro plan. Please upgrade.`,
         });
       }
       if (

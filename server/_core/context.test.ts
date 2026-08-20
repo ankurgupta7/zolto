@@ -93,7 +93,11 @@ describe("createContext — tenant resolution", () => {
   });
 
   it("ignores reserved subdomains (www, app, api)", async () => {
-    for (const host of [`www.${BRAND.domain}`, `app.${BRAND.domain}`, `api.${BRAND.domain}`]) {
+    for (const host of [
+      `www.${BRAND.domain}`,
+      `app.${BRAND.domain}`,
+      `api.${BRAND.domain}`,
+    ]) {
       const ctx = await createContext(opts({ host }));
       expect(ctx.tenant).toBeNull();
     }

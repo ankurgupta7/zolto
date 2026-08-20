@@ -30,8 +30,7 @@ export const PLATFORM = {
    *    completes. The assistant selects and starts the checkout; it does not
    *    complete a purchase in the chat.
    */
-  summary:
-    `${BRAND.name} gives independent makers and artisans a point-of-sale and an online store that share one inventory — with an AI assistant that handles setup, product photos, listings, and support. One register takes TWINT, cards and cash from a grid of your actual objects, on the phone you already own. ${BRAND.name} charges nothing on in-person sales and 1% on online and AI-agent orders on the Free plan; your payment provider's own fees apply on top and go to them. Built by AI, for AI: every store ships an llms.txt and a Model Context Protocol (MCP) endpoint out of the box, so AI assistants can find, recommend, and start a checkout with it directly. Sell online and in person without managing technology.`,
+  summary: `${BRAND.name} gives independent makers and artisans a point-of-sale and an online store that share one inventory — with an AI assistant that handles setup, product photos, listings, and support. One register takes TWINT, cards and cash from a grid of your actual objects, on the phone you already own. ${BRAND.name} charges nothing on in-person sales and 1% on online and AI-agent orders on the Free plan; your payment provider's own fees apply on top and go to them. Built by AI, for AI: every store ships an llms.txt and a Model Context Protocol (MCP) endpoint out of the box, so AI assistants can find, recommend, and start a checkout with it directly. Sell online and in person without managing technology.`,
   /** Who it's for — used in schema audience + llms briefs. */
   audience:
     "Independent makers, artisans, and small shop owners — people who sell at craft fairs, markets, and pop-ups and want an online store without hiring a developer.",
@@ -102,8 +101,7 @@ export const FEATURES: PlatformFeature[] = [
   {
     id: "day-end-reconciliation",
     name: "Sell by amount, reconcile with AI",
-    description:
-      `Too busy at the stall to tag each sale? Just enter the amount and take the tap. At the end of the day ${BRAND.name} emails its best guess at what you sold; one tap confirms it and the piece is marked sold across your store and POS at once.`,
+    description: `Too busy at the stall to tag each sale? Just enter the amount and take the tap. At the end of the day ${BRAND.name} emails its best guess at what you sold; one tap confirms it and the piece is marked sold across your store and POS at once.`,
   },
   {
     id: "multilingual-listings",
@@ -114,8 +112,7 @@ export const FEATURES: PlatformFeature[] = [
   {
     id: "payments",
     name: "Direct payments with Stripe",
-    description:
-      `Connect your own Stripe account; your customers pay straight into it. ${BRAND.name} never holds your money. Stripe charges its own processing fee on every sale and that money goes to Stripe — ${BRAND.name}'s fee is separate and on top of it: 1% on online and agent orders on the Free plan, 0% on Pro, and 0% on in-person sales on every plan.`,
+    description: `Connect your own Stripe account; your customers pay straight into it. ${BRAND.name} never holds your money. Stripe charges its own processing fee on every sale and that money goes to Stripe — ${BRAND.name}'s fee is separate and on top of it: 1% on online and agent orders on the Free plan, 0% on Pro, and 0% on in-person sales on every plan.`,
   },
   {
     id: "storefront",
@@ -126,8 +123,7 @@ export const FEATURES: PlatformFeature[] = [
   {
     id: "eu-hosting",
     name: "European hosting — your data stays in Europe",
-    description:
-      `${BRAND.name} runs on servers rented from Hetzner in Europe, most of them in Germany. Your catalogue, your orders and your customers' details live in a European data centre, under the GDPR and the revised Swiss FADP — not in whichever cloud region happened to be the default.`,
+    description: `${BRAND.name} runs on servers rented from Hetzner in Europe, most of them in Germany. Your catalogue, your orders and your customers' details live in a European data centre, under the GDPR and the revised Swiss FADP — not in whichever cloud region happened to be the default.`,
   },
   {
     id: "ai-discovery",
@@ -515,8 +511,7 @@ export const PRICING_PROMISE = {
    * person, the CHF 0/month figure, nothing added to the payment, and the
    * reason. Only the restatement went.
    */
-  pledge:
-    `Selling in person is free, forever — store, POS and inventory at CHF 0/month, and ${BRAND.name} adds nothing to the payment. The honest version: we already have enough money. We're not here to skim off small makers.`,
+  pledge: `Selling in person is free, forever — store, POS and inventory at CHF 0/month, and ${BRAND.name} adds nothing to the payment. The honest version: we already have enough money. We're not here to skim off small makers.`,
   points: [
     "Sell at the market and pay us nothing, forever: full POS, inventory sync and your online storefront, all included at CHF 0/month.",
     "Online and AI-agent orders carry a 1% fee on the Free plan. No online sales this month? You pay CHF 0. That's it.",
@@ -817,8 +812,7 @@ export const SOVEREIGNTY = {
   headline: "Made in Switzerland.",
   headlineEmphasis: "Run from Europe.",
   /** Who we build for, in order — Swiss first, Europe next, then everyone. */
-  serving:
-    `${BRAND.name} is built in Zürich, for Swiss makers first, for Europe next, and after that for anyone anywhere who likes how we do things.`,
+  serving: `${BRAND.name} is built in Zürich, for Swiss makers first, for Europe next, and after that for anyone anywhere who likes how we do things.`,
   body: `We're moving every piece of ${BRAND.name} we control onto European infrastructure, and into Switzerland where there's a Swiss option worth having. Some of it is already there. Some of it isn't yet. Here's the whole list, including the parts that make us look bad.`,
   /**
    * The homepage-reel version of `serving` + `body`, which together were 68
@@ -829,8 +823,7 @@ export const SOVEREIGNTY = {
    * could say is the last clause — that the list is complete, unflattering
    * rows included — so that is what survives.
    */
-  bodyShort:
-    `Every piece of ${BRAND.name}, and where it runs today — including the parts that make us look bad.`,
+  bodyShort: `Every piece of ${BRAND.name}, and where it runs today — including the parts that make us look bad.`,
   /**
    * Every piece of the stack, in the order a merchant would care about it.
    * The servers row reads DATA_RESIDENCY so the two can't tell different
@@ -1156,8 +1149,7 @@ export const AI_NATIVE_PITCH = {
    * future that /why-gwinn is the place to make. What survives is the only
    * part a reader has to have: what ships, and that it ships by default.
    */
-  bodyShort:
-    `They can only recommend a store they can read. Every ${BRAND.name} store ships llms.txt, MCP and agent checkout from day one.`,
+  bodyShort: `They can only recommend a store they can read. Every ${BRAND.name} store ships llms.txt, MCP and agent checkout from day one.`,
   chart: {
     title: "where buyers start their search",
     decliningLabel: "search engines",
@@ -1485,8 +1477,7 @@ export const CAPABILITIES: Capability[] = [
     key: "sell-by-amount",
     group: "The register",
     label: "Sell by amount when it's busy, tidy it up later",
-    platform:
-      `Yes — take the tap without tagging the item; at close of day ${BRAND.name} emails its best guess and one tap confirms it`,
+    platform: `Yes — take the tap without tagging the item; at close of day ${BRAND.name} emails its best guess and one tap confirms it`,
     platformSupported: true,
   },
 
@@ -1495,7 +1486,8 @@ export const CAPABILITIES: Capability[] = [
     key: "online-store",
     group: "The shop",
     label: "A real online shop, not a payment link",
-    platform: "Yes — themed storefront on your own address, Swiss and EU shipping",
+    platform:
+      "Yes — themed storefront on your own address, Swiss and EU shipping",
     platformSupported: true,
   },
   {
@@ -1555,7 +1547,8 @@ export const CAPABILITIES: Capability[] = [
     key: "ai-support",
     group: "The AI",
     label: "Something answers customer questions for you",
-    platform: "Yes — materials, shipping and sizing, without you at the keyboard",
+    platform:
+      "Yes — materials, shipping and sizing, without you at the keyboard",
     platformSupported: true,
   },
   {
@@ -1588,7 +1581,8 @@ export const CAPABILITIES: Capability[] = [
     key: "who-holds-money",
     group: "The money",
     label: "Who holds your money",
-    platform: "Nobody but you — straight into your own Stripe and TWINT accounts",
+    platform:
+      "Nobody but you — straight into your own Stripe and TWINT accounts",
     platformSupported: true,
   },
   {
@@ -1709,8 +1703,7 @@ export const COMPETITORS: Competitor[] = [
   {
     id: "stripe",
     name: "Stripe",
-    summary:
-      `A developer-first payments platform. Stripe powers checkout for a large share of the web, and ${BRAND.name} itself settles payments through Stripe Connect — your customers pay into your own Stripe account.`,
+    summary: `A developer-first payments platform. Stripe powers checkout for a large share of the web, and ${BRAND.name} itself settles payments through Stripe Connect — your customers pay into your own Stripe account.`,
     betterWhen: [
       "You have engineering resources and want to build a bespoke checkout.",
       "Your business model needs Stripe's full API surface — marketplaces, subscriptions, complex payouts.",
@@ -1753,8 +1746,7 @@ export const COMPETITORS: Competitor[] = [
         // publishing precisely because the opposite claim would be disproved
         // by one click on their pricing page.
         key: "item-grid",
-        value:
-          `Yes — Selling Layouts, categories, SKUs, variants and images, in the free app. More developed than ${BRAND.name}'s.`,
+        value: `Yes — Selling Layouts, categories, SKUs, variants and images, in the free app. More developed than ${BRAND.name}'s.`,
         supported: true,
         cost: "Free — no terminal needed",
         costSourceId: "sumup-pos-software",
@@ -2058,18 +2050,15 @@ export interface Limitation {
 export const PLATFORM_LIMITATIONS: Limitation[] = [
   {
     title: "We have no track record",
-    detail:
-      `SumUp and Worldline have a decade or more each. ${BRAND.name} is new, and a new company is a risk on its own terms however good the product is. What we can offer against that: no contract, no hardware to buy, and one-click export of everything you've put in — on the Free plan too. Leaving costs you an afternoon, not a termination fee.`,
+    detail: `SumUp and Worldline have a decade or more each. ${BRAND.name} is new, and a new company is a risk on its own terms however good the product is. What we can offer against that: no contract, no hardware to buy, and one-click export of everything you've put in — on the Free plan too. Leaving costs you an afternoon, not a termination fee.`,
   },
   {
     title: "Taking a card through us is the dearest option on our own table",
-    detail:
-      `Swiss-issued cards bill at Stripe's non-EEA rate — 2.9% plus CHF 0.20 — and ${BRAND.name} adds nothing on top, which still leaves every other in-person option on our comparison cheaper than ours. SumUp's online rate beats ours on every plan too. Two honest responses: take TWINT where you can, which sits in the same register and costs less than half as much; and choose ${BRAND.name} because it removes the work, not because it removes the fee. If cost per card sale is your deciding number, it decides against us.`,
+    detail: `Swiss-issued cards bill at Stripe's non-EEA rate — 2.9% plus CHF 0.20 — and ${BRAND.name} adds nothing on top, which still leaves every other in-person option on our comparison cheaper than ours. SumUp's online rate beats ours on every plan too. Two honest responses: take TWINT where you can, which sits in the same register and costs less than half as much; and choose ${BRAND.name} because it removes the work, not because it removes the fee. If cost per card sale is your deciding number, it decides against us.`,
   },
   {
     title: "Everything runs on Stripe, and Stripe sets the real price",
-    detail:
-      `Stripe holds the funds until payout, runs the identity checks, owns the chargeback process, and sets the rate that dominates what a sale costs you. ${BRAND.name} never touches your money, which is the good half of that arrangement; the other half is that our own sovereignty ledger lists card payments as still moving, and until it stops moving, a hard dependency is what it is.`,
+    detail: `Stripe holds the funds until payout, runs the identity checks, owns the chargeback process, and sets the rate that dominates what a sale costs you. ${BRAND.name} never touches your money, which is the good half of that arrangement; the other half is that our own sovereignty ledger lists card payments as still moving, and until it stops moving, a hard dependency is what it is.`,
   },
   {
     title: "Parts of our stack are still outside Europe",
@@ -2083,8 +2072,7 @@ export const PLATFORM_LIMITATIONS: Limitation[] = [
   },
   {
     title: "We are below the Swiss VAT threshold",
-    detail:
-      `Swiss VAT registration is mandatory only above CHF 100,000 of annual turnover, and ${BRAND.name} is under it, so the prices you see are simply the prices. It also tells you how small we are. If that changes, prices will say which way they're quoted, and we'll say so before it happens.`,
+    detail: `Swiss VAT registration is mandatory only above CHF 100,000 of annual turnover, and ${BRAND.name} is under it, so the prices you see are simply the prices. It also tells you how small we are. If that changes, prices will say which way they're quoted, and we'll say so before it happens.`,
   },
 ];
 

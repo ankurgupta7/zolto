@@ -63,16 +63,21 @@ describe("pairing token primitives", () => {
   });
 
   it("builds a deep link the apps can parse", () => {
-    expect(buildPairingDeepLink(`https://bergblume.${BRAND.domain}`, "tok123")).toBe(
-      `gwinn://pair?t=tok123&url=https%3A%2F%2Fbergblume.${BRAND.domain}`,
-    );
+    expect(
+      buildPairingDeepLink(`https://bergblume.${BRAND.domain}`, "tok123"),
+    ).toBe(`gwinn://pair?t=tok123&url=https%3A%2F%2Fbergblume.${BRAND.domain}`);
   });
 
   it("carries the server origin, since a fresh install knows no host", () => {
     // Without this the app has a token and nowhere to redeem it.
-    const link = buildPairingDeepLink(`https://bergblume.${BRAND.domain}`, "tok");
+    const link = buildPairingDeepLink(
+      `https://bergblume.${BRAND.domain}`,
+      "tok",
+    );
     const url = new URL(link);
-    expect(url.searchParams.get("url")).toBe(`https://bergblume.${BRAND.domain}`);
+    expect(url.searchParams.get("url")).toBe(
+      `https://bergblume.${BRAND.domain}`,
+    );
     expect(url.searchParams.get("t")).toBe("tok");
   });
 

@@ -95,8 +95,7 @@ export const RATES: Rate[] = [
     oneOffChf: 0,
     confidence: "verified",
     sourceId: "twint-merchant-fees",
-    caveat:
-      `This is the merchant's own TWINT QR: the money never passes through Stripe or ${BRAND.name}, and the sale is recorded in the register rather than captured by it.`,
+    caveat: `This is the merchant's own TWINT QR: the money never passes through Stripe or ${BRAND.name}, and the sale is recorded in the register rather than captured by it.`,
   },
   {
     id: "sumup-payments-plus",
@@ -181,8 +180,7 @@ export const RATES: Rate[] = [
     oneOffChf: 0,
     confidence: "verified",
     sourceId: "stripe-ch-pricing",
-    caveat:
-      `Swiss-issued cards fall in Stripe's non-EEA bucket, confirmed with Stripe. ${BRAND.name} adds nothing on top — this is Stripe's rate — but it makes cards the dearest way to take a payment at your stall. If your customer offers TWINT, take it: same register, same tap, less than half the cost.`,
+    caveat: `Swiss-issued cards fall in Stripe's non-EEA bucket, confirmed with Stripe. ${BRAND.name} adds nothing on top — this is Stripe's rate — but it makes cards the dearest way to take a payment at your stall. If your customer offers TWINT, take it: same register, same tap, less than half the cost.`,
   },
 
   // ---- Online -----------------------------------------------------------
@@ -225,8 +223,7 @@ export const RATES: Rate[] = [
     oneOffChf: 0,
     confidence: "verified",
     sourceId: "stripe-ch-pricing",
-    caveat:
-      `Stripe's domestic online rate plus ${BRAND.name}'s platform fee. On rate alone this is the most expensive row on the page — ${BRAND.name}'s online argument is what the store does, not what the transaction costs.`,
+    caveat: `Stripe's domestic online rate plus ${BRAND.name}'s platform fee. On rate alone this is the most expensive row on the page — ${BRAND.name}'s online argument is what the store does, not what the transaction costs.`,
   },
 ];
 
@@ -385,7 +382,9 @@ export function monthlyStack(
     Number.isFinite(avgOrderChf) && avgOrderChf > 0
       ? avgOrderChf
       : BASKET_EXAMPLE_CHF;
-  const r = rate(plan === "pro" ? "platform-online-pro" : "platform-online-free");
+  const r = rate(
+    plan === "pro" ? "platform-online-pro" : "platform-online-free",
+  );
 
   const orders = sales > 0 ? Math.max(1, Math.round(sales / avg)) : 0;
   const processor = (sales * r.percent) / 100 + orders * r.fixedChf;

@@ -217,9 +217,7 @@ export async function runPosAttribution(
     const branding = {
       tenantName: settings?.whiteLabelName ?? tenant?.name,
       tenantDomain: toBaseUrl(
-        settings?.publicDomain ??
-          process.env.PUBLIC_BASE_URL ??
-          BRAND.url,
+        settings?.publicDomain ?? process.env.PUBLIC_BASE_URL ?? BRAND.url,
       ),
       contactEmail: settings?.contactEmail ?? undefined,
       to: contact?.email ?? undefined,

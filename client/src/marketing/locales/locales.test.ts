@@ -357,7 +357,10 @@ describe("marketing locale files", () => {
       ),
       // CapabilityMatrix.tsx renders the row labels and Gwinn's own answers.
       capabilities: Object.fromEntries(
-        CAPABILITIES.map((c) => [c.key, { label: c.label, platform: c.platform }]),
+        CAPABILITIES.map((c) => [
+          c.key,
+          { label: c.label, platform: c.platform },
+        ]),
       ),
       capabilityGroups: Object.fromEntries(
         CAPABILITY_GROUPS.map((g) => [g, g]),

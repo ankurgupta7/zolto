@@ -28,7 +28,10 @@ export default function PlatformCredit({
   if (!showsPlatformCredit) return null;
 
   return (
-    <p className={`font-sans ${className}`.trim()} data-testid="platform-credit">
+    <p
+      className={`font-sans ${className}`.trim()}
+      data-testid="platform-credit"
+    >
       {/* The label is translated; the brand name never is, and it stays inside
           the anchor so the link text a crawler indexes is always "Gwinn". */}
       {t("footer.madeWith")}{" "}

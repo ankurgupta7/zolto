@@ -1523,8 +1523,9 @@ Return ONLY valid JSON, no markdown.`,
           // byId, because `existing` is this tenant's catalogue — so a bad id
           // falls through to the name match rather than writing across tenants.
           const match =
-            (row.platformId !== undefined ? byId.get(row.platformId) : undefined) ??
-            byName.get(row.name.trim().toLowerCase());
+            (row.platformId !== undefined
+              ? byId.get(row.platformId)
+              : undefined) ?? byName.get(row.name.trim().toLowerCase());
           if (match) {
             const patch: Record<string, unknown> = {
               // Included so an id-matched row can carry a rename. Under the old

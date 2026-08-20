@@ -140,7 +140,9 @@ describe("storefront surface", () => {
 
     expect(res.status).toBe(200);
     expect(res.text).toContain(`<loc>http://aurora.${BRAND.domain}/</loc>`);
-    expect(res.text).toContain(`<loc>http://aurora.${BRAND.domain}/product/3</loc>`);
+    expect(res.text).toContain(
+      `<loc>http://aurora.${BRAND.domain}/product/3</loc>`,
+    );
     expect(res.text).toContain("<lastmod>2026-05-06</lastmod>");
     // The regression this guards: marketing URLs 404 on a storefront host.
     expect(res.text).not.toContain("/pricing");
@@ -176,7 +178,9 @@ describe("storefront surface", () => {
       .get("/robots.txt")
       .set("Host", `aurora.${BRAND.domain}`);
 
-    expect(res.text).toContain(`Sitemap: http://aurora.${BRAND.domain}/sitemap.xml`);
+    expect(res.text).toContain(
+      `Sitemap: http://aurora.${BRAND.domain}/sitemap.xml`,
+    );
     expect(res.text).toContain("Disallow: /checkout");
     expect(res.text).toContain("Disallow: /admin");
     expect(res.text).not.toContain("gwinn.com");

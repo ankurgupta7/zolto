@@ -145,7 +145,9 @@ describe("navigation", () => {
   });
 
   it("shows where you are", () => {
-    expect(breadcrumb([tree, storesMenu[0]])).toBe(`${BRAND.name} admin › Stores`);
+    expect(breadcrumb([tree, storesMenu[0]])).toBe(
+      `${BRAND.name} admin › Stores`,
+    );
   });
 
   it("collects every action in the tree", () => {

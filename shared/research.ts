@@ -44,8 +44,7 @@ export const PILOT_METHODOLOGY = {
   /** ISO date the reporting period ended. */
   published: RESEARCH_PUBLISHED,
   sample: `One pilot store — ${maker.founder ? `${maker.brand}, a pearl-jewelry maker in ${maker.city}` : `a pearl-jewelry maker in ${maker.city}`} — over the first 30 days after its ${BRAND.name} storefront went live.`,
-  collection:
-    `Order and traffic figures are taken from the store's own ${BRAND.name} dashboard over the period; offline sales are the merchant's own count. Nothing is modelled or extrapolated.`,
+  collection: `Order and traffic figures are taken from the store's own ${BRAND.name} dashboard over the period; offline sales are the merchant's own count. Nothing is modelled or extrapolated.`,
   limits: [
     "A single store in a single category (handmade jewelry) in a single city. These numbers describe what happened to one shop, not what will happen to yours.",
     "One month is short. Month-one traffic is inflated by a launch announcement and by an existing Instagram following, neither of which repeats.",

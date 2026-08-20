@@ -90,8 +90,7 @@ export const SEGMENTS: Segment[] = [
       "pos-online-sync",
       "payments",
     ],
-    scenario:
-      `You take payments all day by amount on the phone in your apron. That evening ${BRAND.name} emails what it thinks you sold; one tap confirms it and your online stock matches reality again.`,
+    scenario: `You take payments all day by amount on the phone in your apron. That evening ${BRAND.name} emails what it thinks you sold; one tap confirms it and your online stock matches reality again.`,
   },
   {
     id: "boutiques",

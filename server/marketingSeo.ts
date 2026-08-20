@@ -364,8 +364,7 @@ export function getMarketingSeo(
       return {
         path: "/blog",
         title: `Launch Diary — a maker's first online store | ${PLATFORM.name}`,
-        description:
-          `A real maker's store launch on ${BRAND.name}, documented week by week: setup, launch day, and honest first-month numbers.`,
+        description: `A real maker's store launch on ${BRAND.name}, documented week by week: setup, launch day, and honest first-month numbers.`,
         jsonLd: [
           ...common,
           {
@@ -376,15 +375,13 @@ export function getMarketingSeo(
             url: `${base}/blog`,
           },
         ],
-        noscript:
-          `The ${BRAND.name} Launch Diary — a real maker's first online store, documented week by week.`,
+        noscript: `The ${BRAND.name} Launch Diary — a real maker's first online store, documented week by week.`,
       };
     case "/legal/privacy":
       return {
         path: "/legal/privacy",
         title: `Privacy Policy — ${PLATFORM.name}`,
-        description:
-          `How ${BRAND.name} handles data for merchants and their customers.`,
+        description: `How ${BRAND.name} handles data for merchants and their customers.`,
         jsonLd: common,
         noscript: `${BRAND.name} privacy policy.`,
       };

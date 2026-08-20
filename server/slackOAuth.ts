@@ -85,10 +85,7 @@ export function verifySlackOAuthState(
 }
 
 export function slackOAuthRedirectUri(): string {
-  const base = (process.env.PUBLIC_BASE_URL ?? BRAND.url).replace(
-    /\/+$/,
-    "",
-  );
+  const base = (process.env.PUBLIC_BASE_URL ?? BRAND.url).replace(/\/+$/, "");
   return `${base}/api/slack/oauth/callback`;
 }
 

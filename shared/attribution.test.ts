@@ -18,16 +18,16 @@ describe("showsPlatformCredit", () => {
     // The one that matters: a Free store cannot opt out of the credit it is
     // paying with. The column can hold `true` (a lapsed Pro store's leftover),
     // and it must read as "no" without anyone backfilling the row.
-    expect(showsPlatformCredit({ plan: "free", hidePlatformCredit: true })).toBe(
-      true,
-    );
+    expect(
+      showsPlatformCredit({ plan: "free", hidePlatformCredit: true }),
+    ).toBe(true);
   });
 
   it("lets a white-label plan switch the credit off, but only explicitly", () => {
     expect(showsPlatformCredit({ plan: "pro" })).toBe(true);
-    expect(showsPlatformCredit({ plan: "pro", hidePlatformCredit: false })).toBe(
-      true,
-    );
+    expect(
+      showsPlatformCredit({ plan: "pro", hidePlatformCredit: false }),
+    ).toBe(true);
     expect(showsPlatformCredit({ plan: "pro", hidePlatformCredit: true })).toBe(
       false,
     );
@@ -43,17 +43,16 @@ describe("showsPlatformCredit", () => {
         hidePlatformCredit: true,
       }),
     ).toBe(false);
-    expect(mayHidePlatformCredit({ plan: "free", compPlan: "pro" })).toBe(
-      true,
-    );
+    expect(mayHidePlatformCredit({ plan: "free", compPlan: "pro" })).toBe(true);
   });
 
   it("treats a retired or unknown plan id as Free", () => {
     // maker/studio/atelier are retired tiers; nonsense can arrive from a URL.
     for (const plan of ["atelier", "studio", "", "enterprise"]) {
-      expect(showsPlatformCredit({ plan, hidePlatformCredit: true }), plan).toBe(
-        true,
-      );
+      expect(
+        showsPlatformCredit({ plan, hidePlatformCredit: true }),
+        plan,
+      ).toBe(true);
     }
   });
 
@@ -126,6 +125,8 @@ describe("the credit's content", () => {
 
   it("tells an agent that the platform is not the counterparty", () => {
     expect(platformPoweredBy().name).toBe(BRAND.name);
-    expect(platformPoweredBy().description).toContain(`built and hosted on ${BRAND.name}`);
+    expect(platformPoweredBy().description).toContain(
+      `built and hosted on ${BRAND.name}`,
+    );
   });
 });

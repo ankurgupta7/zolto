@@ -501,9 +501,9 @@ describe("BrushMark", () => {
     expect(svg.querySelector("rect")?.getAttribute("fill")).toBe(
       "var(--logo-tile, #2D2620)",
     );
-    const mark = svg.querySelector("path")!;
-    expect(mark.getAttribute("stroke")).toBe("var(--logo-mark, #B8963E)");
-    expect(mark.getAttribute("fill")).toBe("none");
+    const mark = svg.querySelector("path");
+    expect(mark?.getAttribute("stroke")).toBe("var(--logo-mark, #B8963E)");
+    expect(mark?.getAttribute("fill")).toBe("none");
     expect(svg.querySelector("circle")?.getAttribute("fill")).toBe(
       "var(--logo-dot, #F0EBE3)",
     );

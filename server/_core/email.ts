@@ -10,8 +10,7 @@ export interface TenantBranding {
 
 const DEFAULT_BRANDING: TenantBranding = {
   tenantName: `${BRAND.name} Store`,
-  tenantDomain:
-    process.env.PUBLIC_BASE_URL?.replace(/\/$/, "") ?? BRAND.url,
+  tenantDomain: process.env.PUBLIC_BASE_URL?.replace(/\/$/, "") ?? BRAND.url,
   contactEmail: process.env.RESEND_FROM_EMAIL ?? `orders@${BRAND.domain}`,
   returnsFooter: "14-day returns on unused items in original condition",
 };

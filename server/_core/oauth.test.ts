@@ -128,12 +128,17 @@ describe("sanitizeNextTarget", () => {
 
   it("accepts an absolute https URL on a tenant subdomain", () => {
     expect(
-      sanitizeNextTarget(`https://blah.${BRAND.domain}/admin?x=1`, BRAND.domain),
+      sanitizeNextTarget(
+        `https://blah.${BRAND.domain}/admin?x=1`,
+        BRAND.domain,
+      ),
     ).toBe(`https://blah.${BRAND.domain}/admin?x=1`);
   });
 
   it("rejects an absolute URL when no root domain is configured", () => {
-    expect(sanitizeNextTarget(`https://blah.${BRAND.domain}/admin`, null)).toBeNull();
+    expect(
+      sanitizeNextTarget(`https://blah.${BRAND.domain}/admin`, null),
+    ).toBeNull();
   });
 
   it("rejects an absolute URL on an unrelated host", () => {

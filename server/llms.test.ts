@@ -106,7 +106,9 @@ describe("renderStorefrontLlmsTxt", () => {
       expect(txt, plan).toContain(`[${BRAND.name}](${BRAND.url})`);
       // The credit must not read as an endorsement of a second shop: an agent
       // buying here has to keep the merchant as the counterparty.
-      expect(txt, plan).toContain(`${BRAND.name} is the platform, not the merchant`);
+      expect(txt, plan).toContain(
+        `${BRAND.name} is the platform, not the merchant`,
+      );
     }
   });
 

@@ -73,13 +73,17 @@ describe("runShell", () => {
   it("goes back up a tier", async () => {
     const { fake, action } = await drive(["1", "b", "q"]);
     expect(action).not.toHaveBeenCalled();
-    const lines = fake.output.filter((l) => l.startsWith(`${BRAND.name} admin`));
+    const lines = fake.output.filter((l) =>
+      l.startsWith(`${BRAND.name} admin`),
+    );
     expect(lines[lines.length - 1]).toBe(`${BRAND.name} admin`);
   });
 
   it("returns home from any depth", async () => {
     const { fake } = await drive(["1", "h", "q"]);
-    const lines = fake.output.filter((l) => l.startsWith(`${BRAND.name} admin`));
+    const lines = fake.output.filter((l) =>
+      l.startsWith(`${BRAND.name} admin`),
+    );
     expect(lines[lines.length - 1]).toBe(`${BRAND.name} admin`);
   });
 

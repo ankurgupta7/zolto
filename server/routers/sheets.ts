@@ -151,8 +151,7 @@ export const sheetsRouter = router({
       if (!shareWith) {
         throw new TRPCError({
           code: "PRECONDITION_FAILED",
-          message:
-            `Tell us which Google account to share the sheet with, or sign in to ${BRAND.name} with Google.`,
+          message: `Tell us which Google account to share the sheet with, or sign in to ${BRAND.name} with Google.`,
         });
       }
 
