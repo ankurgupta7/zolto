@@ -221,6 +221,17 @@ export function pairingLink(token: string, storeUrl?: string): string {
 }
 
 /**
+ * Interpolation values i18next always has in scope, without a caller passing
+ * them. Wired into the client bootstrap as `interpolation.defaultVariables`
+ * (client/src/lib/i18n.ts) and re-used by anything that has to resolve a locale
+ * string outside React — otherwise a test simulating i18next concludes that
+ * `{{brand}}` is an unfilled placeholder when at runtime it is never unfilled.
+ */
+export const I18N_DEFAULT_VARIABLES: Record<string, string> = {
+  brand: BRAND.name,
+};
+
+/**
  * Strip the brand out of a string that is used as an i18n *key*.
  *
  * A few locale groups are keyed by their English prose — `faqs["What is

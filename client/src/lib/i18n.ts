@@ -35,6 +35,7 @@ const admin = {
   fr: { ...adminCoreFr, ...adminCatalogFr, ...adminStoreFr, ...adminOpsFr },
   it: { ...adminCoreIt, ...adminCatalogIt, ...adminStoreIt, ...adminOpsIt },
 };
+import { I18N_DEFAULT_VARIABLES } from "@shared/brand";
 import { BRAND } from "@shared/brand";
 import {
   DEFAULT_LANGUAGE,
@@ -72,7 +73,7 @@ i18n.use(initReactI18next).init({
     // fills it in from shared/brand.ts. That keeps ~500 translated strings out
     // of a rename's blast radius, and it keeps inflection correct — German
     // takes a genitive "{{brand}}s", which a hard-coded name could not survive.
-    defaultVariables: { brand: BRAND.name },
+    defaultVariables: I18N_DEFAULT_VARIABLES,
   },
 });
 
