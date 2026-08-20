@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "ch.zolto.pos"
+    namespace = "ch.gwinn.pos"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "ch.zolto.pos"
+        applicationId = "ch.gwinn.pos"
         minSdk = 26
         targetSdk = 35
         versionCode = 1

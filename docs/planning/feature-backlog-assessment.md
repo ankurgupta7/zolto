@@ -1,4 +1,4 @@
-# Zolto — Feature Backlog: what we're building, and what we're not
+# Gwinn — Feature Backlog: what we're building, and what we're not
 
 > Companion to [`./pricing-pivot-agent-commerce.md`](./pricing-pivot-agent-commerce.md).
 > Assesses the nine-item backlog from the pricing & product handoff against
@@ -39,7 +39,7 @@ no intermediary, no account with anyone but the merchant.
 The first is the handoff's own argument, which holds up: Shopify's Agentic
 model requires Shopify to *be* the intermediary that owns the agent
 relationship and takes the cut. They structurally cannot hand merchants a
-disintermediated endpoint without wrecking that revenue. Zolto can, because
+disintermediated endpoint without wrecking that revenue. Gwinn can, because
 it doesn't run that toll booth.
 
 The second is specific to what we just shipped and is the stronger reason.
@@ -73,18 +73,18 @@ differentiating half, unbuildable revenue. This closes that loop.
   every other buyer, human or agent. `server/rateLimit.ts` caps it per store
   per caller. Note this is the repo's *first* rate limiter — its in-process
   counters are honest about being single-instance, and should move to Redis
-  or the DB before Zolto runs more than one app instance.
+  or the DB before Gwinn runs more than one app instance.
 - **Advertised where agents look:** each store's `/llms.txt` says plainly that
   it can be bought from, and `get_store_info` reports `canBuyHere` so an agent
   doesn't have to attempt a purchase to discover whether the merchant has
   connected payments. A tool no agent knows about is not a wedge.
-- **Discovery — `find_stores` on the platform MCP.** An agent at zolto.com can
+- **Discovery — `find_stores` on the platform MCP.** An agent at gwinn.com can
   now list merchant storefronts and receive, for each one, that merchant's own
   storefront URL, llms.txt, and MCP endpoint. It is a directory, not a
   marketplace, and the distinction is load-bearing: Shopify's agentic model
   requires Shopify to remain the intermediary that owns the agent relationship
   and takes the cut, whereas this introduces the agent to the merchant and
-  then gets out of the way — the transaction and the money never touch Zolto.
+  then gets out of the way — the transaction and the money never touch Gwinn.
   Only stores with visible, in-stock products are listed, so an agent is never
   sent to a dead end. If a merchant ever asks to be delisted, that belongs in
   tenant settings as an explicit opt-out.
@@ -128,7 +128,7 @@ UX surfacing rather than capability — everything behind it now exists.
 
 The most seductive item, and the one to refuse for launch.
 
-It needs per-market sales history to say anything true. Zolto has one pilot
+It needs per-market sales history to say anything true. Gwinn has one pilot
 tenant at roughly 60 sales a month. A model trained on that would produce
 confident-sounding advice — "bring more soup veg" — with nothing behind it.
 Vendors would follow it, since that's the whole point, and the failure mode

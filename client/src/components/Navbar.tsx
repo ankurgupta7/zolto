@@ -1,3 +1,4 @@
+import { BRAND } from "@shared/brand";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { isStoreAdminRole } from "@/admin/nav";
 import { useState, useEffect } from "react";
@@ -34,7 +35,7 @@ function LanguageSwitcher() {
 
   const switchTo = (next: SupportedLanguage) => {
     i18n.changeLanguage(next);
-    localStorage.setItem("kalakosh_lang", next);
+    localStorage.setItem(BRAND.langKey, next);
     document.documentElement.lang = HTML_LANG[next];
   };
 

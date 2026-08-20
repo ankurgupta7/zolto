@@ -19,7 +19,7 @@
  * merchant's own copy, which is how every store looked before those fields
  * existed and the state most stores will still be in — worth shooting both.
  * `?whitelabel=1` puts the store on a plan that has switched the "Made with
- * Zolto" footer credit off — the other half of the only footer state that has
+ * Gwinn" footer credit off — the other half of the only footer state that has
  * two answers. `?trust=0` empties the customer-trust band at the foot of the
  * home page — no published quotes, no Trustpilot profile — which is the state
  * every store starts in and the one where the section must vanish entirely.
@@ -107,9 +107,9 @@ if (route === "/checkout") {
     ),
   );
   if (params.get("discount") !== "0") {
-    sessionStorage.setItem("zolto_discount_code", "FRIENDS-7K3P");
+    sessionStorage.setItem("gwinn_discount_code", "FRIENDS-7K3P");
   } else {
-    sessionStorage.removeItem("zolto_discount_code");
+    sessionStorage.removeItem("gwinn_discount_code");
   }
 }
 
@@ -161,7 +161,7 @@ const RESPONSES: Record<string, unknown> = {
     contactEmail: "hello@bergblume.ch",
     instagramHandle: "bergblume.keramik",
     whatsappNumber: null,
-    hideZoltoBadge: whitelabel,
+    hidePlatformCredit: whitelabel,
     ...AUTHORED,
   },
   "products.list": PRODUCTS,
@@ -293,7 +293,7 @@ createRoot(document.getElementById("root")!).render(
                 <Home />
               </Route>
             </Switch>
-            {/* The real footer, because the "Made with Zolto" credit lives in
+            {/* The real footer, because the "Made with Gwinn" credit lives in
                 it and no DOM assertion can tell whether it reads as the
                 platform's line or as part of the merchant's own copyright. */}
             <Footer />

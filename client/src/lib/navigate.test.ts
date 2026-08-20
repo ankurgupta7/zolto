@@ -37,7 +37,7 @@ describe("hardRedirect", () => {
 
   it("carries absolute cross-surface URLs through untouched", () => {
     const loc = stubLocation();
-    hardRedirect("https://kalakosh.zolto.ch/admin", { replace: true });
-    expect(loc.replace).toHaveBeenCalledWith("https://kalakosh.zolto.ch/admin");
+    hardRedirect("https://kalakosh.gwinn.ch/admin", { replace: true });
+    expect(loc.replace).toHaveBeenCalledWith("https://kalakosh.gwinn.ch/admin");
   });
 });

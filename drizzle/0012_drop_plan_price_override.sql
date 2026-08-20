@@ -1,7 +1,7 @@
 -- Drop tenants.plan_price_override along with the grandfathering machinery it
 -- served (server/billing.ts). Migration 0008 remapped pre-pivot paid tiers to
 -- 'pro' and the code recorded what such a tenant ACTUALLY paid so the Billing
--- page wouldn't quote them Pro's price — but Zolto had no paying tenants when
+-- page wouldn't quote them Pro's price — but Gwinn had no paying tenants when
 -- 0008 ran and has none now, so that population never existed. Retired tiers
 -- were never sellable either (PRICE_ENV holds only 'pro'), so no new legacy
 -- subscription can be created through the product.

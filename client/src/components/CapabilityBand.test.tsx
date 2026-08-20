@@ -5,7 +5,7 @@ import CapabilityBand from "./CapabilityBand";
 afterEach(cleanup);
 
 describe("CapabilityBand", () => {
-  it("surfaces all four Zolto capabilities", () => {
+  it("surfaces all four Gwinn capabilities", () => {
     render(<CapabilityBand storeConnected insightsReady />);
     expect(screen.getByText("Online Store")).toBeTruthy();
     expect(screen.getByText("Tap to Pay")).toBeTruthy();

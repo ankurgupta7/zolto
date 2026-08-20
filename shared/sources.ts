@@ -35,7 +35,7 @@ export interface Source {
 const REVIEWED = "2026-08-06";
 
 export const SOURCES: Source[] = [
-  // ---- Zolto's own rails -------------------------------------------------
+  // ---- Gwinn's own rails -------------------------------------------------
   {
     id: "stripe-ch-pricing",
     label: "Stripe — Pricing & fees (Switzerland)",

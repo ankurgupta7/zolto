@@ -6,7 +6,7 @@ import { useMarketingT } from "../lib/marketingI18n";
 /**
  * DiaryTeaser — the Launch Diary, surfaced where first-time visitors are.
  *
- * The rest of the homepage is Zolto talking about Zolto. This is the one band
+ * The rest of the homepage is Gwinn talking about Gwinn. This is the one band
  * that points at something a visitor can go and check: a real maker's launch,
  * written up week by week, including the parts that went slowly.
  *

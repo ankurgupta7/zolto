@@ -1,6 +1,6 @@
 -- Who is reading the machine-facing surfaces (server/agentHits.ts).
 --
--- Zolto publishes /llms.txt, /llms-full.txt and an MCP endpoint on the bet that
+-- Gwinn publishes /llms.txt, /llms-full.txt and an MCP endpoint on the bet that
 -- an AI agent will discover a store and buy from it. `orders.channel = 'agent'`
 -- already records the ones that bought; nothing recorded the reach that comes
 -- first, and no client-side analytics ever could — an agent fetching /llms.txt
@@ -17,7 +17,7 @@
 -- would stop ON DUPLICATE KEY UPDATE from ever firing for the platform surface
 -- or for a non-MCP request — every hit would insert a new row and the table
 -- would quietly become the per-request log it exists not to be.
---   tenant_id = 0 → the platform surface (zolto.ch), not a store; no tenants row
+--   tenant_id = 0 → the platform surface (gwinn.ch), not a store; no tenants row
 --                   has id 0, so it cannot collide with a real one.
 --   mcp_tool = '' → this hit was not an MCP tools/call.
 CREATE TABLE `agent_hits` (

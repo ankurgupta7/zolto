@@ -9,7 +9,7 @@
 > naming a real author (G10's gate), sourcing the CHF 2,000/year incumbent
 > figure (G11), and blog/location content (G7, G9).
 
-This plan maps Zolto against the findings in WebFX's
+This plan maps Gwinn against the findings in WebFX's
 ["What 600,000 AI Sessions Reveal About the Content That Wins AI Traffic"](https://www.webfx.com/blog/ai/what-content-earns-ai-traffic/)
 (published 2026-07-21; 590,868 AI sessions across 2,500 URLs, 15+ industries), and
 records the work to align with it.
@@ -48,12 +48,12 @@ Methodology caveats worth holding onto: the study measures **referral traffic, n
 citations**; it samples the *highest-performing* AI pages rather than the average
 page; and the platform mix (97.5% ChatGPT) will shift.
 
-## 2. How Zolto maps onto it
+## 2. How Gwinn maps onto it
 
-Zolto has **two** distinct surfaces that earn AI traffic, and they are at very
+Gwinn has **two** distinct surfaces that earn AI traffic, and they are at very
 different levels of readiness:
 
-| | zolto.ch (marketing) | Tenant storefronts (`*.zolto.ch`) |
+| | gwinn.ch (marketing) | Tenant storefronts (`*.gwinn.ch`) |
 |---|---|---|
 | Server-rendered title / meta / canonical | ✅ `server/marketingSeo.ts` | ⚠️ title + description + favicon only |
 | JSON-LD injected server-side | ✅ Organization, WebSite, SoftwareApplication, FAQPage, Article, Breadcrumb | ❌ none |
@@ -91,7 +91,7 @@ Ranked by the traffic weight the study assigns, not by effort.
   `<noscript>`. Homepages are 31.3% of AI traffic, the largest single category.
 - **G3. `/sitemap.xml` is host-blind — a live defect.** `server/seo.ts` calls
   `renderSitemapXml()` with no tenant resolution (unlike `server/llms.ts`, which
-  resolves tenants correctly). A storefront therefore serves Zolto's *marketing*
+  resolves tenants correctly). A storefront therefore serves Gwinn's *marketing*
   sitemap, advertising `/pricing`, `/blog` and `/signup` — all 404 on that host.
   No storefront sitemap generator exists.
 - **G4. `robots.txt` is host-blind** in the same way, pointing every storefront at
@@ -112,9 +112,9 @@ Ranked by the traffic weight the study assigns, not by effort.
   **largest AI Lift (+7.3)**.
 - **G8. No industry or audience pages**, despite an explicitly segmented audience
   (jewelry, crafts, boutiques, market stalls).
-- **G9. No location pages.** Zolto is Switzerland-specific (TWINT, CHF, Zurich).
+- **G9. No location pages.** Gwinn is Switzerland-specific (TWINT, CHF, Zurich).
   Location pages are organic-strong rather than AI-strong (−4.7 AI Lift), so this
-  is a Google play, but Zolto currently captures neither channel.
+  is a Google play, but Gwinn currently captures neither channel.
 
 ### Tier 3 — Trust signals
 
@@ -187,7 +187,7 @@ payment-adjacent and wants its own change. Until then, no claim beats a wrong on
 
 - [x] `/faq` marketing route rendering `FAQS`, grouped by a new `category` field,
       with FAQPage JSON-LD attached to it
-- [x] `/compare` index and `/compare/zolto-vs-{stripe,sumup,worldline}`, built from
+- [x] `/compare` index and `/compare/gwinn-vs-{stripe,sumup,worldline}`, built from
       a new `COMPETITORS` model alongside `INCUMBENT_COMPARISON`
 - [x] Both wired into `marketingSitemapEntries()`, `getMarketingSeo()`, `llms.txt`
       and the nav/footer, so they aren't orphan pages
@@ -195,7 +195,7 @@ payment-adjacent and wants its own change. Until then, no claim beats a wrong on
 
 **Also landed:** three billing FAQs ("is there a contract?", "do prices include
 VAT?", upgrade/downgrade) lived only inside `Pricing.tsx`, so they never reached
-the FAQPage schema, `/llms.txt` or MCP — an AI assistant asked "does Zolto have a
+the FAQPage schema, `/llms.txt` or MCP — an AI assistant asked "does Gwinn have a
 contract?" had nothing to read. Moved into the shared set; `Pricing.tsx` now
 renders them from there.
 
@@ -203,7 +203,7 @@ renders them from there.
 Their plans and rates vary by country, contract and volume, so any figure
 hard-coded here would be stale and unverifiable. The pages compare *models*
 (hardware, setup effort, where the money lands) and point at each incumbent's own
-pricing page. Claims about Zolto stay sourced from `PLANS` / `REVENUE_SHARE`.
+pricing page. Claims about Gwinn stay sourced from `PLANS` / `REVENUE_SHARE`.
 
 Each page also has a "when {competitor} is the better choice" section. That's
 load-bearing, not a hedge: the study found the top-cited pages explain tradeoffs
@@ -270,7 +270,7 @@ research page does, or (c) drop the number. That's an operator decision.
       `marketingSeo.test.ts` extended
 
 **Grounding rule:** segments reference features **by id** from `FEATURES`, never
-by retyped copy, so a segment page cannot promise a capability Zolto doesn't
+by retyped copy, so a segment page cannot promise a capability Gwinn doesn't
 ship. `segmentFeatures()` throws on an unknown id rather than silently dropping
 it, and a test asserts every id still resolves. Marketing copy that drifts from
 the product is worse than no page.

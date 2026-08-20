@@ -1,3 +1,4 @@
+import { BRAND } from "@shared/brand";
 /**
  * Where a merchant gets the register app.
  *
@@ -46,10 +47,10 @@ export interface PosDownloads {
   ios: PosDownload | null;
 }
 
-const DEFAULT_REPO = "ankurgupta7/zolto";
+const DEFAULT_REPO = "ankurgupta7/gwinn";
 const DEFAULT_TAG = "pos-latest";
-const ANDROID_ASSET = "ZoltoPOS-latest.apk";
-const IOS_ASSET = "ZoltoPOS-latest-unsigned.ipa";
+const ANDROID_ASSET = `${BRAND.name}POS-latest.apk`;
+const IOS_ASSET = `${BRAND.name}POS-latest-unsigned.ipa`;
 const ANDROID_SIDECAR = "android-build.json";
 const IOS_SIDECAR = "ios-build.json";
 
@@ -106,7 +107,7 @@ interface ReleaseMeta {
 function githubHeaders(): Record<string, string> {
   const headers: Record<string, string> = {
     accept: "application/vnd.github+json",
-    "user-agent": "zolto-pos-downloads",
+    "user-agent": "gwinn-pos-downloads",
   };
   // Unauthenticated GitHub API allows 60 requests/hour/IP. Caching keeps us far
   // under that, but a token (when the deployment has one) removes the risk.

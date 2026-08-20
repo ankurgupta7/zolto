@@ -11,7 +11,7 @@ import { useMarketingT } from "../lib/marketingI18n";
 /**
  * SwissMade — the Swissness claim, given a loud band high on the page.
  *
- * The band leads with where Zolto is from and who it's built for, then shows
+ * The band leads with where Gwinn is from and who it's built for, then shows
  * the ledger: every piece of the stack, what state it's actually in, and what
  * happens next. The rows that aren't Swiss yet are on the homepage too, not
  * hidden behind the "read more" link — a ledger that only listed the finished
@@ -137,7 +137,7 @@ export function SovereigntyBar() {
   );
 }
 
-/** Where Zolto is from, and who it is built for. */
+/** Where Gwinn is from, and who it is built for. */
 export function SwissMadeIntro({ dense = false }: DenseProps = {}) {
   const { st } = useMarketingT();
   return (

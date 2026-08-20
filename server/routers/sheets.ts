@@ -18,7 +18,7 @@
  *
  * ## Who the sheet gets shared with
  *
- * Zolto owns the file; the merchant is a Drive collaborator on it. The address
+ * Gwinn owns the file; the merchant is a Drive collaborator on it. The address
  * we share to is therefore an identity question, and the answer is already in
  * the session: an admin who signed in with Google (`loginMethod === "google"`)
  * has told us their Google address, so `connect` uses it and asks for nothing.
@@ -34,6 +34,7 @@
  * are audit-logged with who did it and where the file went.
  */
 
+import { BRAND } from "@shared/brand";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { adminProcedure, router } from "../_core/trpc";
@@ -150,8 +151,7 @@ export const sheetsRouter = router({
       if (!shareWith) {
         throw new TRPCError({
           code: "PRECONDITION_FAILED",
-          message:
-            "Tell us which Google account to share the sheet with, or sign in to Zolto with Google.",
+          message: `Tell us which Google account to share the sheet with, or sign in to ${BRAND.name} with Google.`,
         });
       }
 

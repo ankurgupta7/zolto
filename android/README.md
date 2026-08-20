@@ -1,14 +1,14 @@
-# Zolto POS (Android)
+# Gwinn POS (Android)
 
-Multi-tenant POS register for zolto stores. Ported from the single-tenant
+Multi-tenant POS register for gwinn stores. Ported from the single-tenant
 kalakosh-pos-android app (same payment flow: Tap to Pay via Stripe Terminal,
 TWINT QR, cash, offline queue with background sync).
 
 ## How a register is bound to a store
 
-Zolto is multi-tenant, so nothing store-specific is baked into the APK:
+Gwinn is multi-tenant, so nothing store-specific is baked into the APK:
 
-1. First launch shows **SetupActivity**: enter the zolto server URL and the
+1. First launch shows **SetupActivity**: enter the gwinn server URL and the
    store's POS API key (from the store's admin). Verified against
    `GET /api/pos/health`, then persisted (`PosConfig`, SharedPreferences).
 2. All API calls carry `X-POS-Key`; the server resolves the tenant from it.

@@ -1,3 +1,4 @@
+import { BRAND } from "@shared/brand";
 import {
   normalizeBaseUrl,
   STORY_SLUG,
@@ -37,7 +38,7 @@ import {
 } from "./headInject";
 
 /**
- * Server-side SEO for the Zolto marketing surface. This app is a client-rendered
+ * Server-side SEO for the Gwinn marketing surface. This app is a client-rendered
  * SPA; most AI crawlers (GPTBot, ClaudeBot, PerplexityBot, …) and some search
  * bots do NOT execute JavaScript, so a client-only <head> is invisible to them.
  * This module injects a real per-route <title>, meta description, canonical/OG
@@ -168,7 +169,7 @@ const named = Boolean(maker.founder);
 const DIARY_TITLES: Record<string, { title: string; description: string }> = {
   "launch-diary-1": {
     title: "Launch Diary #1: The Setup",
-    description: `How ${named ? brand : "a Zurich pearl-jewelry maker"} set up a first online store on Zolto — the real process, start to finish.`,
+    description: `How ${named ? brand : "a Zurich pearl-jewelry maker"} set up a first online store on Gwinn — the real process, start to finish.`,
   },
   "launch-diary-2": {
     title: "Launch Diary #2: Going Live",
@@ -288,7 +289,7 @@ export function getMarketingSeo(
             hasPart: COMPETITORS.map((c) => ({
               "@type": "WebPage",
               name: `${PLATFORM.name} vs ${c.name}`,
-              url: `${base}/compare/zolto-vs-${c.id}`,
+              url: `${base}/compare/gwinn-vs-${c.id}`,
             })),
           },
           breadcrumb(base, [
@@ -308,7 +309,7 @@ export function getMarketingSeo(
               `${r.feature} — traditionally: ${r.them}; with ${PLATFORM.name}: ${r.us}.`,
           ).join(" "),
       };
-    case "/why-zolto": {
+    case "/why-gwinn": {
       // The AI-native argument, as its own page: the homepage reel keeps the
       // thesis band and links here for the proof and the mechanics. Crawlers
       // get the whole argument in the noscript rather than a teaser — this is
@@ -316,15 +317,15 @@ export function getMarketingSeo(
       const title = `Why ${PLATFORM.name} — ${AI_NATIVE_PITCH.headline} ${AI_NATIVE_PITCH.headlineEmphasis}`;
       const description = AI_NATIVE_PITCH.body;
       return {
-        path: "/why-zolto",
+        path: "/why-gwinn",
         title,
         description,
         jsonLd: [
           ...common,
-          articleNode(base, "/why-zolto", title, description),
+          articleNode(base, "/why-gwinn", title, description),
           breadcrumb(base, [
             ["Home", "/"],
-            ["Why Zolto", "/why-zolto"],
+            [`Why ${BRAND.name}`, "/why-gwinn"],
           ]),
         ],
         noscript:
@@ -363,37 +364,34 @@ export function getMarketingSeo(
       return {
         path: "/blog",
         title: `Launch Diary — a maker's first online store | ${PLATFORM.name}`,
-        description:
-          "A real maker's store launch on Zolto, documented week by week: setup, launch day, and honest first-month numbers.",
+        description: `A real maker's store launch on ${BRAND.name}, documented week by week: setup, launch day, and honest first-month numbers.`,
         jsonLd: [
           ...common,
           {
             "@type": "CollectionPage",
-            name: "Zolto Launch Diary",
+            name: `${BRAND.name} Launch Diary`,
             description:
               "A real maker's store launch, documented week by week.",
             url: `${base}/blog`,
           },
         ],
-        noscript:
-          "The Zolto Launch Diary — a real maker's first online store, documented week by week.",
+        noscript: `The ${BRAND.name} Launch Diary — a real maker's first online store, documented week by week.`,
       };
     case "/legal/privacy":
       return {
         path: "/legal/privacy",
         title: `Privacy Policy — ${PLATFORM.name}`,
-        description:
-          "How Zolto handles data for merchants and their customers.",
+        description: `How ${BRAND.name} handles data for merchants and their customers.`,
         jsonLd: common,
-        noscript: "Zolto privacy policy.",
+        noscript: `${BRAND.name} privacy policy.`,
       };
     case "/legal/terms":
       return {
         path: "/legal/terms",
         title: `Terms of Service — ${PLATFORM.name}`,
-        description: "The terms governing use of the Zolto platform.",
+        description: `The terms governing use of the ${BRAND.name} platform.`,
         jsonLd: common,
-        noscript: "Zolto terms of service.",
+        noscript: `${BRAND.name} terms of service.`,
       };
   }
 
@@ -482,8 +480,8 @@ export function getMarketingSeo(
   }
 
   // Per-incumbent comparison pages.
-  if (clean.startsWith("/compare/zolto-vs-")) {
-    const competitor = findCompetitor(clean.slice("/compare/zolto-vs-".length));
+  if (clean.startsWith("/compare/gwinn-vs-")) {
+    const competitor = findCompetitor(clean.slice("/compare/gwinn-vs-".length));
     if (competitor) {
       const title = `${PLATFORM.name} vs ${competitor.name}`;
       const description = `An honest comparison of ${PLATFORM.name} and ${competitor.name} for independent makers: hardware, setup effort, where the money lands, and when ${competitor.name} is the better choice.`;
@@ -503,7 +501,7 @@ export function getMarketingSeo(
         noscript:
           `${competitor.summary} ` +
           `When ${competitor.name} is the better choice: ${competitor.betterWhen.join(" ")} ` +
-          `When ${PLATFORM.name} fits better: ${competitor.zoltoWhen.join(" ")} ` +
+          `When ${PLATFORM.name} fits better: ${competitor.platformWhen.join(" ")} ` +
           INCUMBENT_COMPARISON.map(
             (r) =>
               `${r.feature} — traditionally: ${r.them}; with ${PLATFORM.name}: ${r.us}.`,
@@ -519,7 +517,7 @@ export function getMarketingSeo(
   if (diarySlug && BLOG_POSTS.some((p) => p.slug === diarySlug)) {
     const meta = DIARY_TITLES[diarySlug] ?? {
       title: "Launch Diary",
-      description: "A maker's store launch on Zolto.",
+      description: `A maker's store launch on ${BRAND.name}.`,
     };
     const post = BLOG_POSTS.find((p) => p.slug === diarySlug)!;
     return {
@@ -545,7 +543,7 @@ export function getMarketingSeo(
   // Case study / story.
   if (clean === `/stories/${STORY_SLUG}`) {
     const title = named ? `${brand} Launch Case Study` : "Launch Case Study";
-    const description = `How ${named ? maker.founder : "a Zurich pearl-jewelry maker"} launched a first online store in 3 days and made 12 online sales in month one, on Zolto.`;
+    const description = `How ${named ? maker.founder : "a Zurich pearl-jewelry maker"} launched a first online store in 3 days and made 12 online sales in month one, on Gwinn.`;
     return {
       path: clean,
       title: `${title} | ${PLATFORM.name}`,

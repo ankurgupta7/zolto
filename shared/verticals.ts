@@ -1,7 +1,7 @@
 /**
  * Merchant verticals: what kind of store a tenant runs.
  *
- * Zolto supports merchants whose listed item IS the item sold, as-is — one
+ * Gwinn supports merchants whose listed item IS the item sold, as-is — one
  * listing, one physical thing (jewellery, ceramics, art, vintage finds).
  * Variant-based goods (e.g. clothing sizes) are deliberately unsupported.
  *

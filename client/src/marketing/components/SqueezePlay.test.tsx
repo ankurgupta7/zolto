@@ -56,7 +56,7 @@ describe("SqueezePlay", () => {
     expect(screen.getByTestId("squeeze-claim").textContent).toMatch(
       /three ways/i,
     );
-    expect(sp.claim).not.toMatch(/no other|nobody else|only zolto/i);
+    expect(sp.claim).not.toMatch(/no other|nobody else|only gwinn/i);
     // "only one" is the permitted form — it's a count of the named field, not
     // an assertion about every product that exists.
     expect(sp.claim).toMatch(/only one/i);

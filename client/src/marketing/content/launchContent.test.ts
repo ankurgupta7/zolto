@@ -110,11 +110,11 @@ describe("image blocks", () => {
 });
 
 describe("JSON-LD schema", () => {
-  it("marks each article as schema.org Article with a Zolto publisher", () => {
+  it("marks each article as schema.org Article with a Gwinn publisher", () => {
     for (const a of ALL) {
       expect(a.schema["@context"]).toBe("https://schema.org");
       expect(a.schema["@type"]).toBe("Article");
-      expect(a.schema.author).toMatchObject({ name: "Zolto" });
+      expect(a.schema.author).toMatchObject({ name: "Gwinn" });
     }
   });
 

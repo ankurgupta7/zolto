@@ -8,7 +8,12 @@ import {
   AI_NATIVE_PITCH,
   POSITIONING,
 } from "@shared/platform";
-import en from "../locales/en.json";
+import rawEn from "../locales/en.json";
+import { withBrand } from "@shared/brand";
+
+// Locale values hold the platform name as {{brand}}; the DOM holds it filled
+// in. Interpolate once here so every matcher below compares like with like.
+const en = withBrand(rawEn);
 import Landing from "./Landing";
 
 afterEach(cleanup);
@@ -57,7 +62,7 @@ function chapter(id: keyof typeof CHAPTERS) {
  * dropped. See the doc comment on Landing for the whole map.
  */
 const MOVED_KEYS = {
-  // → pages/WhyZolto.tsx, with AgentProofBand and HowAnAiBuys
+  // → pages/WhyPlatform.tsx, with AgentProofBand and HowAnAiBuys
   emailFrom: "ambiguous",
   emailSubjectLabel: "ambiguous",
   emailConfirm: "ambiguous",
@@ -195,7 +200,7 @@ describe("Landing — the reel", () => {
 });
 
 describe("Landing — post 1, the promise", () => {
-  it("leads by saying what Zolto is, in the merchant's nouns", () => {
+  it("leads by saying what Gwinn is, in the merchant's nouns", () => {
     renderLanding();
     expect(
       screen.getByRole("heading", {
@@ -224,7 +229,7 @@ describe("Landing — post 1, the promise", () => {
       within(chapter("promise"))
         .getByTestId("explainer-video-el")
         .getAttribute("src"),
-    ).toBe("/video/zolto-explainer.mp4");
+    ).toBe("/video/gwinn-explainer.mp4");
     // Its caption is the one string this change adds to the locale files.
     expect(screen.getByText(en.landing.video.caption)).toBeTruthy();
   });
@@ -245,7 +250,7 @@ describe("Landing — post 1, the promise", () => {
     }
   });
 
-  it("shows where Zolto is from above the fold", () => {
+  it("shows where Gwinn is from above the fold", () => {
     renderLanding();
     for (const badge of SOVEREIGNTY.heroBadges) {
       expect(within(chapter("promise")).getByText(badge)).toBeTruthy();
@@ -402,13 +407,13 @@ describe("Landing — post 7, what's coming", () => {
     expect(coming.queryByText(AI_NATIVE_PITCH.chart.caption)).toBeNull();
   });
 
-  it("links the two bands that moved to /why-zolto", () => {
+  it("links the two bands that moved to /why-gwinn", () => {
     renderLanding();
     expect(
       within(chapter("whats-coming"))
-        .getByRole("link", { name: en.landing.reel.whyZoltoLink })
+        .getByRole("link", { name: en.landing.reel.whyPlatformLink })
         .getAttribute("href"),
-    ).toBe("/why-zolto");
+    ).toBe("/why-gwinn");
   });
 });
 
@@ -442,7 +447,7 @@ describe("Landing — the copy that moved, and the copy that stayed", () => {
     });
     for (const label of Object.values(en.landing.reel)) {
       if (label === en.landing.reel.railLabel) continue;
-      if (label === en.landing.reel.whyZoltoLink) continue;
+      if (label === en.landing.reel.whyPlatformLink) continue;
       // The slide label names a dot under a post, not a chapter on the rail.
       if (label === en.landing.reel.slide) continue;
       expect(

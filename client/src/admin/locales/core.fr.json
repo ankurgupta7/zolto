@@ -3,7 +3,7 @@
     "nav": {
       "groups": {
         "store": "Boutique",
-        "account": "Compte Zolto"
+        "account": "Compte {{brand}}"
       },
       "home": "Accueil",
       "products": "Produits",
@@ -52,7 +52,7 @@
       },
       "adminOnly": {
         "title": "Réservé aux admins",
-        "description": "Cette partie de votre compte Zolto est gérée par le propriétaire de la boutique ou un admin."
+        "description": "Cette partie de votre compte {{brand}} est gérée par le propriétaire de la boutique ou un admin."
       }
     },
     "pos": {
@@ -69,8 +69,8 @@
     },
     "posPair": {
       "title": "Configurer cette caisse",
-      "description": "Ce lien associe cet appareil à votre boutique. Si l’application Zolto POS est installée, elle devrait déjà s’ouvrir.",
-      "openApp": "Ouvrir dans Zolto POS",
+      "description": "Ce lien associe cet appareil à votre boutique. Si l’application {{brand}} POS est installée, elle devrait déjà s’ouvrir.",
+      "openApp": "Ouvrir dans {{brand}} POS",
       "noAppYet": "Vous n’avez pas encore l’application ?",
       "installThenNewLink": "Les liens d’association expirent après quelques minutes : une fois l’application installée, générez-en un nouveau depuis « Clés et accès ».",
       "missingToken": "Ce lien d’association est incomplet. Générez-en un nouveau depuis la page « Clés et accès » de votre boutique."

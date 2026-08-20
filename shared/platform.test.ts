@@ -1,3 +1,4 @@
+import { BRAND } from "./brand";
 import { describe, it, expect } from "vitest";
 import {
   PLATFORM,
@@ -31,7 +32,7 @@ import {
   capabilitiesInGroup,
   capability,
   findCompetitor,
-  ZOLTO_LIMITATIONS,
+  PLATFORM_LIMITATIONS,
   BUYER_FIT,
 } from "./platform";
 import { source } from "./sources";
@@ -39,7 +40,7 @@ import { rate, sumUpPlusBreakEvenChf } from "./costOfAcceptance";
 
 describe("platform facts", () => {
   it("has a name, tagline, and summary", () => {
-    expect(PLATFORM.name).toBe("Zolto");
+    expect(PLATFORM.name).toBe(BRAND.name);
     expect(PLATFORM.tagline.length).toBeGreaterThan(0);
     expect(PLATFORM.summary.length).toBeGreaterThan(40);
   });
@@ -377,7 +378,7 @@ describe("ZERO_COST_POS", () => {
 describe("MAKER_PITCH", () => {
   it("names the product in the merchant's own nouns", () => {
     // The whole reason this constant exists: a reader arriving cold has to be
-    // told what Zolto is, in words they already use, before anything argues
+    // told what Gwinn is, in words they already use, before anything argues
     // for it. These four are the load-bearing ones — the category, the payment
     // method a Swiss maker reaches for first, and the hardware they own.
     //
@@ -428,7 +429,7 @@ describe("MAKER_PITCH", () => {
   });
 
   it("makes no claim about price or about any competitor", () => {
-    // On card rate Zolto is the dearest option on its own comparison table
+    // On card rate Gwinn is the dearest option on its own comparison table
     // (docs/planning/positioning-pricing-revision.md §1). A hero that opened on
     // "cheaper" would be contradicted by our own page further down, so it
     // opens on what the thing is instead.
@@ -481,7 +482,7 @@ describe("AI_NATIVE_PITCH", () => {
   it("makes no comparative claim about any competitor in the positioning copy", () => {
     // Scoped to the thesis surfaces (headline, body, chart), where a
     // competitor's name could only be a comparison. The proof/steps copy is
-    // allowed to name Stripe — there it's the payout rail Zolto really uses
+    // allowed to name Stripe — there it's the payout rail Gwinn really uses
     // (FEATURES "Direct payments with Stripe"), not a rival being knocked.
     const claimed = [
       AI_NATIVE_PITCH.eyebrow,
@@ -547,7 +548,7 @@ describe("INCUMBENT_COMPARISON headline row", () => {
 });
 
 describe("COMPETITORS", () => {
-  it("covers the platforms makers actually weigh Zolto against", () => {
+  it(`covers the platforms makers actually weigh ${BRAND.name} against`, () => {
     const ids = COMPETITORS.map((c) => c.id);
     expect(ids).toContain("stripe");
     expect(ids).toContain("sumup");
@@ -565,7 +566,7 @@ describe("COMPETITORS", () => {
     // The remedy is provenance, not silence. Any competitor entry carrying a
     // figure must name its sources, and every source must resolve and be dated.
     for (const c of COMPETITORS) {
-      const text = [c.summary, ...c.betterWhen, ...c.zoltoWhen].join(" ");
+      const text = [c.summary, ...c.betterWhen, ...c.platformWhen].join(" ");
       const quotesAFigure = /CHF\s?\d|\$\s?\d|€\s?\d|\d+(\.\d+)?\s*%/.test(
         text,
       );
@@ -595,7 +596,7 @@ describe("COMPETITORS", () => {
     // A comparison that never concedes reads as marketing and gets discounted.
     for (const c of COMPETITORS) {
       expect(c.betterWhen.length).toBeGreaterThanOrEqual(2);
-      expect(c.zoltoWhen.length).toBeGreaterThanOrEqual(2);
+      expect(c.platformWhen.length).toBeGreaterThanOrEqual(2);
     }
   });
 
@@ -707,25 +708,25 @@ describe("the agent-commerce claim matches what create_checkout does", () => {
 });
 
 describe("the capability matrix", () => {
-  it("makes Zolto answer every question it asks of anyone else", () => {
+  it(`makes ${BRAND.name} answer every question it asks of anyone else`, () => {
     for (const c of CAPABILITIES) {
       expect(c.label).toBeTruthy();
-      expect(c.zolto).toBeTruthy();
+      expect(c.platform).toBeTruthy();
     }
   });
 
-  it("includes the rows Zolto loses", () => {
+  it(`includes the rows ${BRAND.name} loses`, () => {
     // A matrix that only asks questions we win is a scorecard we wrote for
     // ourselves. Two rows are honest nos: PostFinance Pay, and the card rate,
     // which is the dearest on our own comparison table.
-    expect(capability("postfinance").zoltoSupported).toBe(false);
-    expect(capability("card-rate").zoltoSupported).toBe(false);
+    expect(capability("postfinance").platformSupported).toBe(false);
+    expect(capability("card-rate").platformSupported).toBe(false);
   });
 
   it("asks about the whole product, not only about payments", () => {
     // The matrix was ten payment-shaped rows, which conceded the frame: it
-    // compared Zolto to payment companies on payment questions, where the best
-    // available outcome is a tie. Zolto is a till, a shop, one inventory and an
+    // compared Gwinn to payment companies on payment questions, where the best
+    // available outcome is a tie. Gwinn is a till, a shop, one inventory and an
     // AI running all three.
     for (const group of CAPABILITY_GROUPS) {
       expect(capabilitiesInGroup(group).length).toBeGreaterThan(0);
@@ -756,9 +757,9 @@ describe("the capability matrix", () => {
   it("keeps the card-rate row in step with the rate table", () => {
     // The figure is quoted in copy, so it has to match what costOfAcceptance
     // actually models — otherwise the matrix and the pricing page disagree.
-    const card = rate("zolto-card");
-    expect(capability("card-rate").zolto).toContain(`${card.percent}%`);
-    expect(capability("card-rate").zolto).toContain(
+    const card = rate("platform-card");
+    expect(capability("card-rate").platform).toContain(`${card.percent}%`);
+    expect(capability("card-rate").platform).toContain(
       `CHF ${card.fixedChf.toFixed(2)}`,
     );
   });
@@ -783,7 +784,7 @@ describe("the capability matrix", () => {
     )!;
     expect(grid.supported).toBe(true);
     expect(grid.value).toMatch(/free app/i);
-    expect(grid.value).toMatch(/more developed than Zolto/i);
+    expect(grid.value).toMatch(/more developed than Gwinn/i);
   });
 
   it("answers every row for every competitor that publishes a matrix", () => {
@@ -809,8 +810,8 @@ describe("the capability matrix", () => {
     expect(answer("sumup", "twint").supported).toBe(false);
     expect(answer("worldline", "twint").supported).toBe(true);
     expect(answer("worldline", "item-grid").supported).toBe(false);
-    expect(capability("item-grid").zoltoSupported).toBe(true);
-    expect(capability("twint").zoltoSupported).toBe(true);
+    expect(capability("item-grid").platformSupported).toBe(true);
+    expect(capability("twint").platformSupported).toBe(true);
   });
 
   it("throws on an unknown capability key", () => {
@@ -971,7 +972,7 @@ describe("SOVEREIGNTY", () => {
 
   it("answers the Swissness questions in the FAQ too", () => {
     const questions = FAQS.map((f) => f.q).join(" | ");
-    expect(questions).toMatch(/Is Zolto Swiss/i);
+    expect(questions).toMatch(/Is Gwinn Swiss/i);
     expect(questions).toMatch(/moving the rest of the stack to Europe/i);
     // Both answers must point at the ledger rather than re-asserting a vibe.
     const answers = FAQS.filter((f) => /swiss|europe/i.test(f.q))
@@ -981,9 +982,9 @@ describe("SOVEREIGNTY", () => {
   });
 });
 
-describe("ZOLTO_LIMITATIONS", () => {
+describe("PLATFORM_LIMITATIONS", () => {
   it("names the things a merchant would be annoyed to discover later", () => {
-    const text = ZOLTO_LIMITATIONS.map((l) => `${l.title} ${l.detail}`).join(
+    const text = PLATFORM_LIMITATIONS.map((l) => `${l.title} ${l.detail}`).join(
       " ",
     );
     // Each of these is either checkable against this codebase or was already
@@ -996,7 +997,7 @@ describe("ZOLTO_LIMITATIONS", () => {
 
   it("concedes the card rate in our own words, not only in the table", () => {
     expect(
-      ZOLTO_LIMITATIONS.some((l) =>
+      PLATFORM_LIMITATIONS.some((l) =>
         /dearest option on our own table/i.test(l.title),
       ),
     ).toBe(true);
@@ -1005,7 +1006,7 @@ describe("ZOLTO_LIMITATIONS", () => {
   it("names Stripe's confirmed non-EEA rate rather than hedging it", () => {
     // While the bucket was unknown the copy could only say "not the cheapest".
     // It's known now, so the limitation states the figure and the consequence.
-    const card = ZOLTO_LIMITATIONS.find((l) =>
+    const card = PLATFORM_LIMITATIONS.find((l) =>
       /dearest option/i.test(l.title),
     )!;
     expect(card.detail).toMatch(/non-EEA/);
@@ -1017,7 +1018,7 @@ describe("ZOLTO_LIMITATIONS", () => {
   it("agrees with the sovereignty ledger about what is still foreign", () => {
     // If a row ever lands, this stops the limitation claiming otherwise.
     const stillMoving = SOVEREIGNTY.ledger.filter((e) => e.state === "moving");
-    const claim = ZOLTO_LIMITATIONS.find((l) =>
+    const claim = PLATFORM_LIMITATIONS.find((l) =>
       /outside Europe/i.test(l.title),
     )!;
     expect(claim.detail).toMatch(
@@ -1027,7 +1028,7 @@ describe("ZOLTO_LIMITATIONS", () => {
   });
 
   it("gives every limitation a reason it isn't fixed, not just a confession", () => {
-    for (const l of ZOLTO_LIMITATIONS) {
+    for (const l of PLATFORM_LIMITATIONS) {
       expect(l.title.length).toBeGreaterThan(0);
       // A bare admission with no context is theatre; each one has to say what
       // we do about it or why we can't.

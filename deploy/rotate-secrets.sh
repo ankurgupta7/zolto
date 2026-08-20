@@ -21,7 +21,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/lib/secrets.sh"
 
 ENV_FILE=".env"
-GITHUB_REPO="ankurgupta7/zolto"
+GITHUB_REPO="ankurgupta7/gwinn"
 POS_KEY=""
 BASE_URL_OVERRIDE=""
 DRY_RUN=0
@@ -33,7 +33,7 @@ Usage: bash deploy/rotate-secrets.sh <target> [options]
 
 Targets:
   pos-ci-key        Fan the platform POS test key out to the POS apps' CI.
-                    Zolto is multi-tenant: POS keys are per-tenant, generated
+                    Gwinn is multi-tenant: POS keys are per-tenant, generated
                     at signup and stored hashed, so there is no platform
                     POS_API_KEY in .env to rotate. The key CI builds use comes
                     from the superadmin UI (platform.rotatePosTestKey), which
@@ -61,7 +61,7 @@ Options:
                     Prefer the prompt — an argument is visible to `ps` and
                     lands in your shell history.
   --repo OWNER/NAME pos-ci-key: GitHub repo to push secrets to
-                    (default: ankurgupta7/zolto)
+                    (default: ankurgupta7/gwinn)
   --base-url URL    pos-ci-key: POS API base URL to publish and verify against
                     (default: PUBLIC_BASE_URL from .env)
   --dry-run         Print what would change; touch nothing.
@@ -267,7 +267,7 @@ rotate_stripe_key() {
 Restricted keys cannot mint further keys — this needs the live secret key." ;;
   esac
 
-  key_name="zolto-$(date -u +%Y%m%d)"
+  key_name="gwinn-$(date -u +%Y%m%d)"
   step "Creating restricted Stripe key '$key_name'"
   echo "  from $(mask_secret "$live_key")"
 

@@ -1,3 +1,4 @@
+import { BRAND } from "@shared/brand";
 import { describe, expect, it, vi, beforeAll, beforeEach } from "vitest";
 
 // A drizzle query builder is a thenable that returns `result` when awaited.
@@ -88,13 +89,13 @@ describe("user reads", () => {
 
   it("listPlatformOperators returns every superadmin — the accounts the admin shell may act as", async () => {
     selectReturns([
-      { id: 1, role: "superadmin", email: "owner@zolto.ch" },
-      { id: 4, role: "superadmin", email: "second@zolto.ch" },
+      { id: 1, role: "superadmin", email: `owner@${BRAND.domain}` },
+      { id: 4, role: "superadmin", email: `second@${BRAND.domain}` },
     ]);
     const operators = await db.listPlatformOperators();
     expect(operators.map((u) => u.email)).toEqual([
-      "owner@zolto.ch",
-      "second@zolto.ch",
+      `owner@${BRAND.domain}`,
+      `second@${BRAND.domain}`,
     ]);
   });
 

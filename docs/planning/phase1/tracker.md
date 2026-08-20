@@ -3,7 +3,7 @@
 > Content Engine & Launch Partner (Months 1–2)
 > Goal: Turn Kalakosh's launch journey into discoverable content. Validate the AI-run model.
 >
-> **Content release IS required.** Kalakosh being owned by Sheena Arora does not remove the need — Zolto is a separate party commercially using her name, likeness, and story to market to other customers. Get a signed content/publicity release (and a lightweight pilot-partnership agreement) before publishing the Launch Diary series. See `phase1/legal/content-release-form.md`.
+> **Content release IS required.** Kalakosh being owned by Sheena Arora does not remove the need — Gwinn is a separate party commercially using her name, likeness, and story to market to other customers. Get a signed content/publicity release (and a lightweight pilot-partnership agreement) before publishing the Launch Diary series. See `phase1/legal/content-release-form.md`.
 
 ---
 
@@ -59,7 +59,7 @@
 | Task                                                                    | Status | Notes                               |
 | ----------------------------------------------------------------------- | ------ | ----------------------------------- |
 | [ ] Install Google Analytics 4 on store + marketing site                | ❌     | Track: sign-ups, activations, sales |
-| [ ] Set up Google Search Console for zolto.com + kalakosh.ch            | ❌     | Submit sitemap after launch         |
+| [ ] Set up Google Search Console for gwinn.com + kalakosh.ch            | ❌     | Submit sitemap after launch         |
 | [ ] Configure conversion events (first sale, signup, checkout complete) | ❌     | Custom events in GA4                |
 | [ ] Set up Stripe Dashboard for revenue tracking                        | ❌     | Automatic with Stripe integration   |
 | [ ] Set up Google Business Profile for Kalakosh (Zurich)                | ❌     | Critical for local SEO              |
@@ -93,13 +93,13 @@
 | Task                                                                      | Status | Notes                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | ------------------------------------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [x] Set up URL structure (`/stories/…`, `/blog/launch-diary-1`, etc.)     | ✅     | **Built.** Routes live on the marketing surface: `/blog` (index), `/blog/:slug` (the three diaries), `/stories/:slug` (case study). Wired in `client/src/marketing/MarketingApp.tsx`; pages in `client/src/marketing/pages/{Blog,BlogPost,Story}.tsx`; content in `client/src/marketing/content/launchContent.ts`. "Launch Diary" added to the marketing nav.                                                                                                 |
-| [x] Add schema markup (Article + Organization + LocalBusiness for Zurich) | ✅     | **Built.** Each article renders JSON-LD (`Article` + Zolto `Organization` publisher + Zurich `LocalBusiness`) via `client/src/marketing/components/Article.tsx`. Per-page `<title>`/meta/canonical/OG set by `client/src/marketing/lib/useDocumentMeta.ts` (project has no react-helmet).                                                                                                                                                                     |
+| [x] Add schema markup (Article + Organization + LocalBusiness for Zurich) | ✅     | **Built.** Each article renders JSON-LD (`Article` + Gwinn `Organization` publisher + Zurich `LocalBusiness`) via `client/src/marketing/components/Article.tsx`. Per-page `<title>`/meta/canonical/OG set by `client/src/marketing/lib/useDocumentMeta.ts` (project has no react-helmet).                                                                                                                                                                     |
 | [x] Create XML sitemap                                                    | ✅     | **Built + served.** `/sitemap.xml` and `/robots.txt` are live server routes (`server/seo.ts`, registered in `server/_core/index.ts`), generated from the shared route list (`shared/marketing.ts`) so they always match the routes actually served. Absolute URLs use `PUBLIC_BASE_URL`, falling back to the request host. Supersedes the static `phase1/marketing/sitemap-template.xml` (which also listed not-yet-built `/features/*` and bare `/privacy`). |
 | [ ] Set up Google Business Profile for Kalakosh                           | 👤     | Local SEO critical for "pearl jewelry zurich" — needs Sheena's Google account.                                                                                                                                                                                                                                                                                                                                                                                |
 
 > **✅ Content release signed — pages are live NAMED (business-plan §5.1).** The operator confirmed (2026-07-22) the Kalakosh / Sheena Arora content & publicity release is signed and on file, so `CONTENT_RELEASE_SIGNED` in `shared/marketing.ts` is now `true`: the diary/case-study pages render the real brand and founder, the case study carries Sheena's attributed testimonial, JSON-LD asserts a named `Person` founder, and the story lives at `/stories/kalakosh-launch`. The gate still exists — set the flag back to `false` to re-anonymize instantly. **Open item:** commit the actual scanned/signed release into `phase1/legal/` (alongside `content-release-form.md`) as the durable record; right now the "signed" status rests on the operator's confirmation, not a filed document.
 >
-> **📸 Before/after assets are live.** Kalakosh's own phone photos + Zolto's AI-styled/on-model images now illustrate Launch Diary #1 and the case study (`client/public/launch/*.jpg`, downscaled to web size). Every AI-styled or on-model image carries the §5.1 disclosure in its caption ("the jewelry is real; the backdrop/model is AI-generated") — a rule enforced by a test. Pairings used: pearl-halo set raw→styled (before/after), baroque-fringe earrings raw→AI-on-model, gold-fringe earrings AI-styled flatlay. If any pairing misrepresents a physical product (e.g. a metal-colour change), tell me and I'll relabel or drop it.
+> **📸 Before/after assets are live.** Kalakosh's own phone photos + Gwinn's AI-styled/on-model images now illustrate Launch Diary #1 and the case study (`client/public/launch/*.jpg`, downscaled to web size). Every AI-styled or on-model image carries the §5.1 disclosure in its caption ("the jewelry is real; the backdrop/model is AI-generated") — a rule enforced by a test. Pairings used: pearl-halo set raw→styled (before/after), baroque-fringe earrings raw→AI-on-model, gold-fringe earrings AI-styled flatlay. If any pairing misrepresents a physical product (e.g. a metal-colour change), tell me and I'll relabel or drop it.
 
 ---
 
@@ -152,7 +152,7 @@
 | Task                                                               | Status | Notes                            |
 | ------------------------------------------------------------------ | ------ | -------------------------------- |
 | [ ] Submit sitemap to Google Search Console                        | ❌     | After all pages are live         |
-| [ ] Verify domain ownership (zolto.com, kalakosh.ch)               | ❌     | DNS record or HTML file          |
+| [ ] Verify domain ownership (gwinn.com, kalakosh.ch)               | ❌     | DNS record or HTML file          |
 | [ ] Request indexing for key pages (homepage, case study, pricing) | ❌     | Manual request in Search Console |
 | [ ] Set up Bing Webmaster Tools (bonus)                            | ❌     | Lower priority but free traffic  |
 | [ ] Set up Google Business Profile for Kalakosh                    | ❌     | Essential for local SEO          |
@@ -164,9 +164,9 @@
 | Criterion                                                       | Owner | Status | Verification                                     |
 | --------------------------------------------------------------- | ----- | ------ | ------------------------------------------------ |
 | Kalakosh online store launched with first online order          | 👤    | ❌     | Live URL + order confirmation                    |
-| 3+ content pieces published (Launch Diary series)               | 🤝    | ❌     | Blog posts live on zolto.com                     |
+| 3+ content pieces published (Launch Diary series)               | 🤝    | ❌     | Blog posts live on gwinn.com                     |
 | AI chatbot baseline measured (resolution rate, escalation rate) | 🤝    | ❌     | 7-day log completed                              |
-| Pricing page live with A/B test                                 | 🤝    | ❌     | zolto.com/pricing accessible                     |
+| Pricing page live with A/B test                                 | 🤝    | ❌     | gwinn.com/pricing accessible                     |
 | Self-serve sign-up flow end-to-end tested                       | 👤    | ❌     | Test signup → tenant created → onboarding starts |
 | Privacy policy + terms published                                | 🤝    | ❌     | Legal pages live                                 |
 | Google Business Profile set up for Kalakosh                     | 👤    | ❌     | Profile live with Zurich location                |
@@ -230,12 +230,12 @@ Copy this template daily. Keep it in `memory/2026-07-17.md` or a new daily file.
 
 ---
 
-## Repo Implementation Status (zolto — branch `claude/agent-context-migration-c2v8mx`)
+## Repo Implementation Status (gwinn — branch `claude/agent-context-migration-c2v8mx`)
 
 > Actual state of the code, verified against the repo. This is the ground truth; the checklists above are the plan.
 > Last verified: 2026-07-17 (stood the app up locally — MariaDB + all migrations 0000–0019 + server — and drove every surface in a headless browser).
 
-**Local run-through (2026-07-17):** brought Zolto up end-to-end in the sandbox
+**Local run-through (2026-07-17):** brought Gwinn up end-to-end in the sandbox
 (host MariaDB, `.env` with neutral `demo` seed tenant, migrations 0000–0019 applied
 cleanly via a local driver over `deploy/lib/db.sh`, a few seeded demo products, dev
 server) and screenshotted marketing + storefront + product surfaces. Migration 0019
@@ -243,7 +243,7 @@ ran green against a real MySQL for the first time (nullable → backfill → NOT
 all 10 tables, neutral tenant #1). The run surfaced Kalakosh branding still leaking
 through the shared chrome the content pass hadn't reached — **now fixed** (commit
 `9e60e57`): static `index.html` `<head>` (title/OG/JSON-LD w/ Kalakosh phone+address)
-neutralised to Zolto defaults; footer copyright + Instagram now branding-driven and
+neutralised to Gwinn defaults; footer copyright + Instagram now branding-driven and
 hidden when a tenant has no handle; shop eyebrow from `branding.storeName`; residual
 en/de strings (footer tagline/copyright/swissQuality, product trust-line) genericised.
 Verified in-browser: zero Kalakosh strings on any surface.
@@ -263,7 +263,7 @@ Verified in-browser: zero Kalakosh strings on any surface.
 | Pricing page                                              | Week 4     | ✅ Implemented | `client/src/marketing/pages/Pricing.tsx` from `marketing/pricing-page-copy.md`                                                                                                                                                                                                                                                                                                                                           |
 | **Launch Diary + case-study pages** (blog engine)         | Week 2     | ✅ Implemented | `/blog`, `/blog/:slug`, `/stories/:slug`. Content in `content/launchContent.ts` (typed blocks), rendered by `components/Article.tsx`, pages `pages/{Blog,BlogPost,Story}.tsx`. Identity **release-gated** via `shared/marketing.ts` (`CONTENT_RELEASE_SIGNED`) — anonymized until Sheena's content release is signed (see §5.1 note above). Tests: `launchContent.test.ts`, `Blog.test.tsx`, `useDocumentMeta.test.tsx`. |
 | **SEO plumbing** (sitemap, robots, per-page meta/JSON-LD) | Week 2     | ✅ Implemented | `/sitemap.xml` + `/robots.txt` served by `server/seo.ts`; per-page `<title>`/meta/canonical/OG via `lib/useDocumentMeta.ts`; `Article`/`LocalBusiness`/`Organization` JSON-LD per article. Route list single-sourced in `shared/marketing.ts`. Tests: `shared/marketing.test.ts`, `server/seo.test.ts`.                                                                                                                  |
-| Platform legal pages (Zolto ToS/Privacy)                  | Week 4     | ✅ Implemented | `client/src/marketing/pages/Legal.tsx` (/legal/privacy, /legal/terms). Storefront still uses tenant's own AGB (`pages/Policy.tsx`).                                                                                                                                                                                                                                                                                      |
+| Platform legal pages (Gwinn ToS/Privacy)                  | Week 4     | ✅ Implemented | `client/src/marketing/pages/Legal.tsx` (/legal/privacy, /legal/terms). Storefront still uses tenant's own AGB (`pages/Policy.tsx`).                                                                                                                                                                                                                                                                                      |
 | Chatbot metrics dashboard                                 | Sprint 4   | ❌ Not built   | —                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `feature_usage`, `chatbot_conversations` tables           | Sprint 1   | ❌ Not built   | Verified absent from `drizzle/schema.ts`; required before the chatbot metrics dashboard                                                                                                                                                                                                                                                                                                                                  |
 
@@ -284,22 +284,22 @@ several of these touch money or tenancy.
 | VAT decision                                 | ✅ Closed      | Not applicable — under the CHF 100,000 Swiss registration threshold. Recorded in code, planning docs, and the customer-facing FAQ (`shared/platform.ts`) so the three can't drift.                                                                                                        |
 | Legacy-subscriber grandfathering             | ✅ Closed      | There were none (pre-launch, no customers). Dead machinery removed; migration `0012` drops `plan_price_override`.                                                                                                                                                                        |
 | CI: unit / integration / e2e / android       | ✅ Implemented | GitHub Actions + a CircleCI mirror that takes over if Actions minutes run out (`.circleci/defer-to-github.sh`, 22 assertions). **e2e is green end-to-end for the first time**; the Android job compiles and runs the Kotlin for the first time — both were previously red before doing any work. |
-| Native TWINT (replacing the QR rail)         | 📋 Researched  | `docs/planning/native-twint-integration.md`. Not built: TWINT's API isn't public and Zolto would have to be a **certified integrator** (Store UUID + `.p12` mTLS cert). The QR rail is the shipped answer meanwhile.                                                                       |
+| Native TWINT (replacing the QR rail)         | 📋 Researched  | `docs/planning/native-twint-integration.md`. Not built: TWINT's API isn't public and Gwinn would have to be a **certified integrator** (Store UUID + `.p12` mTLS cert). The QR rail is the shipped answer meanwhile.                                                                       |
 
 **Not verified by any of the above:** the Stripe **live**-mode path (test mode
 only), and the reconciliation cron against a real multi-tenant Stripe account.
 
-**Deployment direction (decided 2026-07-16): Option A — standalone Zolto.**
-Zolto runs as its own deployment (own server + DB) onboarding new stores; the live
+**Deployment direction (decided 2026-07-16): Option A — standalone Gwinn.**
+Gwinn runs as its own deployment (own server + DB) onboarding new stores; the live
 Kalakosh store stays on the separate Kalakosh-ch codebase, untouched. Kalakosh-ch
 is single-tenant (no `tenant_id`) — running 0019 against its DB while it runs
 single-tenant code would break every insert, so that is explicitly out of scope.
-A future Kalakosh→Zolto cutover is possible later via 0019's `SEED_TENANT_SLUG`/
+A future Kalakosh→Gwinn cutover is possible later via 0019's `SEED_TENANT_SLUG`/
 `POS_API_KEY` path (see `deploy/MIGRATION-0019-RUNBOOK.md` Case B). Consequent changes:
 migration 0019 now seeds tenant #1 as a neutral `platform` tenant (not Kalakosh);
 client default tenant slug is `demo` (was `kalakosh`).
 
-**Resolved blocker (was: Kalakosh-forked client):** the marketing-vs-storefront split is now built (hostname-aware, same app). The storefront themes itself from `tenant_settings`; the Zolto marketing surface (`/`, `/pricing`, `/signup`, `/onboarding`, `/legal/*`) shares the storefront's warm "Pearl Jeweller" system (see `docs/DESIGN-SYSTEM.md`) — the earlier slate/violet marketing skin is retired. Kalakosh stays pixel-identical via per-tenant defaults.
+**Resolved blocker (was: Kalakosh-forked client):** the marketing-vs-storefront split is now built (hostname-aware, same app). The storefront themes itself from `tenant_settings`; the Gwinn marketing surface (`/`, `/pricing`, `/signup`, `/onboarding`, `/legal/*`) shares the storefront's warm "Pearl Jeweller" system (see `docs/DESIGN-SYSTEM.md`) — the earlier slate/violet marketing skin is retired. Kalakosh stays pixel-identical via per-tenant defaults.
 
 **Flow walkthrough (2026-07-17):** drove signup, cart/checkout, and the admin
 side in a headless browser against the local instance. Findings + fixes:

@@ -1,4 +1,4 @@
-# Zolto Instagram short — generation prompts for AI video
+# Gwinn Instagram short — generation prompts for AI video
 
 > Companion to [`instagram-short-brief.md`](./instagram-short-brief.md), which
 > holds the pitch, the audience, and — read it first — **§5, the claims we may
@@ -219,7 +219,7 @@ variants here and pick the one where the laugh looks involuntary.*
 > letting her walk into the distance. **[STYLE]**
 > Ambient audio: footsteps receding, wind, water, a distant church bell.
 
-*Post: end card over the last second — logo, CHF 0/month, zolto.ch.*
+*Post: end card over the last second — logo, CHF 0/month, gwinn.ch.*
 
 ---
 
@@ -324,7 +324,7 @@ say why.
 | 4 | "And at a market, this is the till. She taps the photo of the actual piece — then TWINT, card or cash, same screen. That's the bit the card companies don't do." |
 | 5 | "Same piece is already on her website — written up in German, French, Italian and English. One stock count across both. Sell it here, it's gone there. Instantly." |
 | 6 | "Is it the cheapest way to take a card? No. It isn't. But that's not what she's paying for — she's paying to not spend her evenings doing admin." |
-| 7 | "Zolto. It's Swiss, and it's free to start." |
+| 7 | "Gwinn. It's Swiss, and it's free to start." |
 
 **Delivery: third person, unpolished, one or two natural stumbles left in.** She
 is describing what a maker gets, not selling. Beat 6 must sound offhand — an
@@ -375,7 +375,7 @@ If you try it anyway:
 
 If the finished piece is materially AI-generated, label it. Instagram requires
 disclosure of realistic AI-generated content, and this video's whole persuasive
-strategy is honesty about what Zolto is and isn't — the same site now publishes
+strategy is honesty about what Gwinn is and isn't — the same site now publishes
 a table showing our card rate is the dearest of the three. Getting caught
 passing off a synthetic person as a real reviewer would cost more than the
 video could earn.
@@ -434,7 +434,7 @@ why it was written that way.
 The next instinct after §7a is to soften rather than drop it: *"some people say
 it's really nice"*, *"everyone I've spoken to loves it"*, *"it's got a bit of a
 following"*. This reads as safer because it is vaguer. It isn't safer, for a
-reason specific to where we are: **Zolto has no users yet**
+reason specific to where we are: **Gwinn has no users yet**
 ([`../../positioning-pricing-revision.md`](../../positioning-pricing-revision.md)
 § on `unverified` confidence). There are no some-people. Attributing an opinion
 to unnamed others who don't exist is the same fabrication as claiming it

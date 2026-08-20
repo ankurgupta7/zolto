@@ -1,19 +1,19 @@
-# Bring your own payments — Zolto as a front end to the rails
+# Bring your own payments — Gwinn as a front end to the rails
 
 > Research note answering the owner's question: **what if merchants brought
-> their own payment provider — Stripe, Worldline, Payrexx, SumUp — and Zolto
+> their own payment provider — Stripe, Worldline, Payrexx, SumUp — and Gwinn
 > sold itself as a front end to those systems rather than competing with them,
 > the way Shopify does?**
 >
 > Prompted by the August 2026 pricing review
 > ([`positioning-pricing-revision.md`](./positioning-pricing-revision.md)),
-> which established that Zolto's card row is the dearest in-person option on
+> which established that Gwinn's card row is the dearest in-person option on
 > its own comparison table. Bring-your-own is the one move that makes that
-> finding stop mattering, because the rate stops being Zolto's number.
+> finding stop mattering, because the rate stops being Gwinn's number.
 >
 > Written 2026-08-06. Status: **research, nothing committed.** Companion to
 > [`swiss-stack-migration.md`](./swiss-stack-migration.md), which asks the
-> narrower question of moving Zolto's *own* rail to Payrexx. Read that one
+> narrower question of moving Gwinn's *own* rail to Payrexx. Read that one
 > first if you only read one — this note assumes its §3.
 >
 > ✅ = verifiable from this repository or a cited public source.
@@ -26,7 +26,7 @@
 **The strategic core is right, and it is the best available answer to the
 pricing review.** If the merchant brings the rail, "our card rate is the
 highest on the page" becomes a fact about their provider rather than a fact
-about Zolto. *"We don't set your rate — bring the best one you can get"* is a
+about Gwinn. *"We don't set your rate — bring the best one you can get"* is a
 stronger position than any table we could publish.
 
 Three things decide how far it goes, and only one of them is hard:
@@ -57,7 +57,7 @@ So the useful question is not "which four providers do we support". It is:
 - **What does BYO cost the merchant?** (§5 here argues: Pro.)
 
 A pure BYO platform with no house rail has no payment economics at all, which
-for Zolto means the Free tier has no revenue mechanism — see §5.
+for Gwinn means the Free tier has no revenue mechanism — see §5.
 
 ---
 
@@ -73,7 +73,7 @@ for Zolto means the Free tier has no revenue mechanism — see §5.
 | Proof the platform fee actually landed | ✅ shipped, Stripe-only | `platformFeeVerify.ts` |
 | Tap to Pay | ✅ shipped, Stripe Terminal only | `pos.ts` + `StripeTokenProvider.kt` + iOS twin |
 
-**The honest summary of today: Zolto is already a front end to Stripe.** The
+**The honest summary of today: Gwinn is already a front end to Stripe.** The
 question is whether it becomes a front end to *four*, and that turns out to be
 four different questions rather than one.
 
@@ -133,7 +133,7 @@ four times the force here.
 **The good news, and it is genuinely surprising: the squeeze play survives BYO
 untouched.** ✅ The `twint_qr` path (`pos.ts`, `ATTESTED_METHODS`) is the
 merchant's *own* TWINT QR sticker — attested in the till, money never crossing
-Zolto or any processor. It is already provider-independent. So
+Gwinn or any processor. It is already provider-independent. So
 *"your catalogue and TWINT on the same screen"* — the one in-person argument
 that survived the pricing review — holds no matter whose card rail sits beside
 it, including SumUp's, which cannot take TWINT in its own till at all.
@@ -182,7 +182,7 @@ availability rather than by mechanism — and if OPP reaches Switzerland, by
 nothing at all.
 
 **Where invoice-only still applies, it is a different and worse business.**
-Zolto becomes a biller:
+Gwinn becomes a biller:
 it has to compute what it is owed from data it does not hold authoritatively,
 raise an invoice, reconcile payment, and chase non-payment — against merchants
 whose defining characteristic is that they are very small. The failure mode is
@@ -222,7 +222,7 @@ more up front.
 
 ### It helps, in three places
 
-- **`ZOLTO_LIMITATIONS`** currently opens with *"taking a card through us is the
+- **`PLATFORM_LIMITATIONS`** currently opens with *"taking a card through us is the
   dearest option on our own table"* and *"everything runs on Stripe, and Stripe
   sets the real price."* Under BYO both become far weaker complaints — the
   second nearly disappears.
@@ -235,7 +235,7 @@ more up front.
 
 ### It costs, in two places
 
-- **Activation.** Today Zolto onboards a merchant onto Connect in-flow and the
+- **Activation.** Today Gwinn onboards a merchant onto Connect in-flow and the
   pitch is "live this weekend". BYO *as the default* means "first, go have a
   relationship with a payment company" — the exact friction the product exists
   to remove, and the same kill criterion `swiss-stack-migration.md` §5 applies
@@ -243,8 +243,8 @@ more up front.
   provider has the opposite effect**: it deletes a switching cost. The
   difference between default and option is the whole risk here.
 - **Framing.** *"A front end to payment systems"* describes plumbing, not value,
-  and it concedes the frame: if Zolto is a front end to SumUp, SumUp can add a
-  catalogue and Zolto is a feature. Shopify survived that on scale and lock-in;
+  and it concedes the frame: if Gwinn is a front end to SumUp, SumUp can add a
+  catalogue and Gwinn is a feature. Shopify survived that on scale and lock-in;
   a pre-launch Swiss company has neither yet.
 
 **Recommended framing.** Keep *"removes the work"* as the position — the shop
@@ -283,7 +283,7 @@ to *"we are a payments front end"*.
 *Do SumUp and Worldline offer a partner commission mechanism?* **Both do** —
 see §5. What replaced it as the deciding question is narrower and specific:
 
-1. **What revenue share will SumUp actually agree** for a platform of Zolto's
+1. **What revenue share will SumUp actually agree** for a platform of Gwinn's
    size? The mechanism is real; the number is a negotiation, and if it lands
    materially under 1% the economics of BYO-SumUp change.
 2. **Is "Worldline for Platforms" live in Switzerland yet?** Announced EU-only
@@ -334,7 +334,7 @@ see §5. What replaced it as the deciding question is narrower and specific:
 - This repository: `server/checkoutSession.ts`, `server/stripeConnect.ts`,
   `server/providerMigration.ts`, `server/pos.ts`, `server/reconciliation.ts`,
   `server/platformFeeVerify.ts`,
-  `android/app/src/main/java/ch/zolto/pos/data/StripeTokenProvider.kt`
+  `android/app/src/main/java/ch/gwinn/pos/data/StripeTokenProvider.kt`
 - [`swiss-stack-migration.md`](./swiss-stack-migration.md) §3 — Payrexx's
   platform API, rates and open questions
 - [`pricing-pivot-agent-commerce.md`](./pricing-pivot-agent-commerce.md) §2 —

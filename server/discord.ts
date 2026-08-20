@@ -32,6 +32,7 @@
  *                          self-hosted deployments with no channel mapping
  */
 
+import { BRAND } from "@shared/brand";
 import WebSocket from "ws";
 import axios from "axios";
 import { invokeLLM } from "./_core/llm";
@@ -201,7 +202,7 @@ export async function handleDiscordMessage(
       tenant?.domain ??
       settings?.publicDomain ??
       process.env.PUBLIC_BASE_URL ??
-      "https://zolto.ch",
+      BRAND.url,
     contactEmail: settings?.contactEmail ?? undefined,
   };
 
@@ -472,7 +473,7 @@ function identify(conn: GatewayConn): void {
       d: {
         token: conn.token,
         intents: (1 << 9) | (1 << 15), // GUILD_MESSAGES + MESSAGE_CONTENT
-        properties: { os: "linux", browser: "zolto", device: "zolto" },
+        properties: { os: "linux", browser: "platform", device: "platform" },
       },
     }),
   );

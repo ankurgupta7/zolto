@@ -99,7 +99,7 @@ function SegmentPage({ segment }: { segment: SegmentType }) {
 
       {/*
         Rendered from the real FEATURES records via segmentFeatures(), so this
-        section can't promise a capability Zolto doesn't ship.
+        section can't promise a capability Gwinn doesn't ship.
       */}
       <section className="mx-auto mt-14 max-w-3xl">
         <h2 className="font-serif text-2xl text-[var(--brand-text)]">
@@ -172,7 +172,7 @@ function SegmentPage({ segment }: { segment: SegmentType }) {
 }
 
 /**
- * /for/:segment — one page per audience Zolto is built for.
+ * /for/:segment — one page per audience Gwinn is built for.
  *
  * The platform's audience was always stated as a list, but addressed with a
  * single generic landing page, so a ceramics studio or a market seller had

@@ -1,4 +1,4 @@
-# Zolto — Honest Pricing Strategy
+# Gwinn — Honest Pricing Strategy
 
 > ## ⚠️ SUPERSEDED — historical record only
 >
@@ -16,7 +16,7 @@
 > still shapes the current model. The *numbers and tiers* are obsolete; do
 > not implement anything from this file.
 
-> Companion to `./zolto-business-plan.md` (§4) and `./monetization-code-roadmap.md`.
+> Companion to `./gwinn-business-plan.md` (§4) and `./monetization-code-roadmap.md`.
 > This document refines the "four flat tiers" sketch in the business plan into a
 > **cost-honest** model: we charge where our cost is real and variable, we keep the
 > commerce engine free, we take **0% of your sales**, and we never charge you to leave.
@@ -91,7 +91,7 @@ afternoon**, and **NFC phones + TWINT QR mean there's no card reader to sell** a
 cost is tiny. So a maker pays **~CHF 19/mo instead of ~CHF 2,000/yr — one-hundredth the
 cost**.
 
-| | Old guard (Stripe / SumUp / Worldline) | Generic SaaS (Shopify / Square) | **Zolto** |
+| | Old guard (Stripe / SumUp / Worldline) | Generic SaaS (Shopify / Square) | **Gwinn** |
 |---|---|---|---|
 | Card reader | Sold/rented to you, CHF 50–300+ | — | **None — your phone (NFC tap + TWINT QR)** |
 | Cut of your sales | Processing % (theirs) | %+ unless you use *their* processor | **0% — money never touches us** |
@@ -108,7 +108,7 @@ they cost us almost nothing.
 
 ## 3. Free forever (marginal cost ≈ CHF 0)
 
-Free because one more of them costs Zolto essentially nothing: a shared MySQL row, a
+Free because one more of them costs Gwinn essentially nothing: a shared MySQL row, a
 Cloudflare R2 object (~CHF 0.015/GB-month, **zero egress fees**), CPU we already pay for.
 Charging here would be charging for air — and gating any of it is the manufactured-scarcity
 dark pattern the pledge disowns.
@@ -202,17 +202,17 @@ carry the boxes.
 ## 6. The transaction-fee stance: we take 0%
 
 The biggest honest lever, and now the shipped positioning ("your money goes straight into
-your own Stripe account — Zolto never touches your money").
+your own Stripe account — Gwinn never touches your money").
 
-Zolto uses **Stripe Connect (Standard)**. A customer's payment lands **directly in your own
-Stripe account.** Zolto's servers never touch it, never hold it, and take no application
+Gwinn uses **Stripe Connect (Standard)**. A customer's payment lands **directly in your own
+Stripe account.** Gwinn's servers never touch it, never hold it, and take no application
 fee. You pay **Stripe's** processing fee (≈2.9% + CHF 0.30 cards; TWINT and Tap-to-Pay are
 cheaper) **directly to Stripe** — the same rate you'd get going to Stripe yourself.
 
 - **SumUp / Worldline / Stripe-direct** monetize hardware and processing and hold your
   funds before payout.
 - **Shopify** adds 0.5–2% on top unless you use Shopify Payments.
-- **Zolto adds nothing.** Taxing revenue we never touch and did no work to earn is exactly
+- **Gwinn adds nothing.** Taxing revenue we never touch and did no work to earn is exactly
   the invisible fee this strategy refuses.
 
 If we ever offer a revenue-share option, it will be **opt-in and in place of** the
@@ -230,7 +230,7 @@ person on call, a domain + certificate + deliverability we keep alive, extra sta
 | Plan | Price (CHF, VAT per business plan §7.1) | What it adds beyond Free | Why it's a subscription |
 |---|---|---|---|
 | **Free** | **CHF 0/mo** | The entire §3 list — a complete, sellable store. Fair AI-text allowance. Community support. | Marginal cost ≈ 0 |
-| **Maker** | **CHF 19/mo** *(highlighted)* | Custom domain + managed SSL, remove "runs on Zolto" badge, **10 AI photo credits/mo included**, priority email support (next-business-day), 3 staff seats | Domain/cert/deliverability + a real human answering email are *ongoing* costs |
+| **Maker** | **CHF 19/mo** *(highlighted)* | Custom domain + managed SSL, remove "runs on Gwinn" badge, **10 AI photo credits/mo included**, priority email support (next-business-day), 3 staff seats | Domain/cert/deliverability + a real human answering email are *ongoing* costs |
 | **Studio** | **CHF 49/mo** | Everything in Maker + up to 10 staff seats, advanced analytics, same-day human support, **40 AI photo credits/mo**, multi-currency | More support time + more seats = more standing cost |
 | **Atelier** | **CHF 99/mo** | Everything in Studio + API access, SSO, audit logs, uptime SLA, **150 AI photo credits/mo** | SLA + security/compliance carry real recurring cost |
 
@@ -285,10 +285,10 @@ Kalakosh-shaped tenant: ~60 sales/month, ~150-item catalogue, custom domain, tra
 catalogue to English once, generates AI copy for new items, and restyles ~20 product photos
 with AI that month.
 
-| Line item | Usage | **Cost to the maker** | **Cost to Zolto** | Net to Zolto |
+| Line item | Usage | **Cost to the maker** | **Cost to Gwinn** | Net to Gwinn |
 |---|---|---|---|---|
 | Core store + POS + inventory | all month | CHF 0 | ~CHF 2 (shared infra) | −2 |
-| Sales processing | 60 sales | CHF 0 to Zolto (pays Stripe directly) | CHF 0 | 0 |
+| Sales processing | 60 sales | CHF 0 to Gwinn (pays Stripe directly) | CHF 0 | 0 |
 | Catalogue translation (one-off) | 150 items | CHF 0 (within allowance) | ~CHF 0.05 | −0.05 |
 | AI descriptions for new items | ~20/mo | CHF 0 (within allowance) | ~CHF 0.10 | −0.10 |
 | **AI product photography** | ~20 images | CHF 10 (10 from Maker's included bucket, 10 × CHF 1) | ~CHF 1.00 (GPU) | +9 |
@@ -359,6 +359,6 @@ real support commitments.
 
 ---
 
-> Prepared as a pricing-strategy companion to the Zolto business plan, reconciled with the
+> Prepared as a pricing-strategy companion to the Gwinn business plan, reconciled with the
 > shipped positioning. Spirit: charge for our real, variable cost — at what it costs us —
 > never for lock-in, never for your data, never for a slice of sales we didn't earn.

@@ -166,7 +166,7 @@ function StorefrontRouter() {
               const.ts getSignInPath) — offers all sign-in methods and returns
               the merchant to ?next=. */}
           <Route path="/signin" component={SignIn} />
-          {/* Where a `zolto://pair` link lands when the register app isn't
+          {/* Where a `gwinn://pair` link lands when the register app isn't
               installed yet. Unauthenticated on purpose: the till phone has never
               signed in to the admin, and the token in the URL carries the
               authority. */}

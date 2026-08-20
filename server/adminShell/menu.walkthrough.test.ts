@@ -8,6 +8,7 @@
  * promises — fails here rather than at a prompt on the server.
  */
 
+import { BRAND } from "@shared/brand";
 import { describe, expect, it, vi } from "vitest";
 import type { Tenant, User } from "../../drizzle/schema";
 import type { AdminCaller } from "./caller";
@@ -20,7 +21,7 @@ const operator = {
   id: 1,
   tenantId: 1,
   role: "superadmin",
-  email: "owner@zolto.ch",
+  email: `owner@${BRAND.domain}`,
   name: "Owner",
   loginMethod: "google",
 } as unknown as User;
@@ -134,7 +135,7 @@ async function run(
 describe("walkthrough: the first thing an operator does", () => {
   it("Stores → List every store", async () => {
     const { fake } = await run(["1", "1", "q"]);
-    expect(fake.text()).toContain("Zolto admin › Stores");
+    expect(fake.text()).toContain(`${BRAND.name} admin › Stores`);
     expect(fake.text()).toContain("Stores (1)");
     expect(fake.text()).toContain("kalakosh");
   });
@@ -203,7 +204,7 @@ describe("walkthrough: three tiers deep", () => {
     });
     const { fake } = await run(["4", "7", "1", "kalakosh", "q"], { caller });
     expect(fake.text()).toContain(
-      "Zolto admin › Catalogue & stock › Categories",
+      `${BRAND.name} admin › Catalogue & stock › Categories`,
     );
     expect(fake.text()).toContain("Categories — kalakosh (1)");
   });
@@ -226,7 +227,7 @@ describe("walkthrough: navigation words work at any depth", () => {
   it("? explains, b goes back, q leaves", async () => {
     const { fake } = await run(["3", "?", "b", "q"]);
     expect(fake.text()).toContain(
-      "Zolto admin › People & access — what these do",
+      `${BRAND.name} admin › People & access — what these do`,
     );
     expect(fake.text()).toContain(
       "Set a user's role (admin / staff)  [writes]",

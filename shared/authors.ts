@@ -1,15 +1,15 @@
 /**
- * Authorship for Zolto's published content.
+ * Authorship for Gwinn's published content.
  *
  * Identifying a named author with real credentials is a meaningful trust signal
  * for both readers and AI assistants deciding whether to cite a page. Until now
- * every article asserted `author: { "@type": "Organization", name: "Zolto" }`,
+ * every article asserted `author: { "@type": "Organization", name: "Gwinn" }`,
  * which says nothing about who stands behind the claims.
  *
  * ─────────────────────────────────────────────────────────────────────────────
  * Naming gate (mirrors CONTENT_RELEASE_SIGNED in ./marketing)
  * ─────────────────────────────────────────────────────────────────────────────
- * Publishing a real person's name, role and credentials to market Zolto needs
+ * Publishing a real person's name, role and credentials to market Gwinn needs
  * that person's explicit ok — the same principle already applied to the maker's
  * identity, and the one flagged in
  * docs/planning/phase1/content/about-founder.md ("real names/photos of the
@@ -30,7 +30,7 @@ import { PLATFORM } from "./platform";
 export interface Author {
   /** Display name. */
   name: string;
-  /** Role at Zolto, e.g. "Founder". */
+  /** Role at Gwinn, e.g. "Founder". */
   role: string;
   /**
    * Verifiable credentials — degrees, years of practice, prior work. Only

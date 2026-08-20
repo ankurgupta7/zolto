@@ -332,7 +332,7 @@ describe("checkout.createSession", () => {
       discount: null,
     });
 
-    // Runs on the tenant's own connected account — never Zolto's own.
+    // Runs on the tenant's own connected account — never Gwinn's own.
     const options = checkoutSessionsCreate.mock.calls[0][1];
     expect(options).toEqual({ stripeAccount: TEST_CONNECTED_ACCOUNT_ID });
   });

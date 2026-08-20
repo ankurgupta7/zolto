@@ -75,7 +75,7 @@ export function resolveSelection(
   return { kind: "unknown", input };
 }
 
-/** "Zolto admin › Plans & billing" — where the operator currently is. */
+/** "Gwinn admin › Plans & billing" — where the operator currently is. */
 export function breadcrumb(path: readonly MenuItem[]): string {
   return path.map((item) => item.title).join(" › ");
 }

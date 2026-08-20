@@ -1,6 +1,6 @@
 /**
  * Migrate-in from the payment providers merchants are leaving behind
- * (docs/planning/roadmap-backlog.md §1). The premise of Zolto is a painless
+ * (docs/planning/roadmap-backlog.md §1). The premise of Gwinn is a painless
  * exit ramp off the incumbents — Stripe, SumUp, Worldline/SIX — so a merchant
  * who has already keyed their catalogue into one of them never re-types it.
  *

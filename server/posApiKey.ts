@@ -11,7 +11,7 @@
  *   - authentication hashes the presented key and compares hashes
  *     (server/db.ts getTenantByPosApiKey);
  *   - the platform can never recover a lost key — the tenant rotates instead
- *     (tenant.rotatePosApiKey), which is precisely the "zolto admin never sees
+ *     (tenant.rotatePosApiKey), which is precisely the "gwinn admin never sees
  *     tenant credentials" property.
  *
  * SHA-256 (unsalted) is sufficient here because the keys are 256-bit random

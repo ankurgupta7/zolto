@@ -1,3 +1,4 @@
+import { BRAND } from "@shared/brand";
 import { describe, expect, it, vi } from "vitest";
 import { TRPCError } from "@trpc/server";
 import type { Tenant, User } from "../../drizzle/schema";
@@ -11,7 +12,7 @@ const operator = {
   id: 1,
   tenantId: 1,
   role: "superadmin",
-  email: "owner@zolto.ch",
+  email: `owner@${BRAND.domain}`,
 } as unknown as User;
 
 function makeSession(fake: FakeIo, readOnly = false) {
@@ -31,7 +32,7 @@ function makeSession(fake: FakeIo, readOnly = false) {
 function makeTree(run: () => Promise<void>): MenuItem {
   return {
     key: "root",
-    title: "Zolto admin",
+    title: `${BRAND.name} admin`,
     children: [
       {
         key: "stores",
@@ -66,20 +67,24 @@ describe("runShell", () => {
   it("walks down a tier and runs the action the operator picked", async () => {
     const { action, fake } = await drive(["1", "1", "q"]);
     expect(action).toHaveBeenCalledTimes(1);
-    expect(fake.text()).toContain("Zolto admin › Stores");
+    expect(fake.text()).toContain(`${BRAND.name} admin › Stores`);
   });
 
   it("goes back up a tier", async () => {
     const { fake, action } = await drive(["1", "b", "q"]);
     expect(action).not.toHaveBeenCalled();
-    const lines = fake.output.filter((l) => l.startsWith("Zolto admin"));
-    expect(lines[lines.length - 1]).toBe("Zolto admin");
+    const lines = fake.output.filter((l) =>
+      l.startsWith(`${BRAND.name} admin`),
+    );
+    expect(lines[lines.length - 1]).toBe(`${BRAND.name} admin`);
   });
 
   it("returns home from any depth", async () => {
     const { fake } = await drive(["1", "h", "q"]);
-    const lines = fake.output.filter((l) => l.startsWith("Zolto admin"));
-    expect(lines[lines.length - 1]).toBe("Zolto admin");
+    const lines = fake.output.filter((l) =>
+      l.startsWith(`${BRAND.name} admin`),
+    );
+    expect(lines[lines.length - 1]).toBe(`${BRAND.name} admin`);
   });
 
   it("redraws the menu on a bare ⏎ instead of picking something", async () => {

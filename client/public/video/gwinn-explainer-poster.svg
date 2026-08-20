@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Poster frame for the homepage explainer video (16/10). Drawn rather than
+  photographed, in the marketing palette (mahogany ground, refined gold), so it
+  matches the hand-inked illustrations the rest of the surface uses and needs no
+  photo shoot to ship. It is also what renders if the video itself is missing —
+  see client/public/video/README.md.
+-->
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 1600 1000"
+  width="1600"
+  height="1000"
+  role="img"
+  aria-label="A market stall till: a phone showing a shop, and the wares beside it"
+>
+  <defs>
+    <linearGradient id="ground" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2D2620" />
+      <stop offset="1" stop-color="#231E19" />
+    </linearGradient>
+    <radialGradient id="glow" cx="0.62" cy="0.42" r="0.6">
+      <stop offset="0" stop-color="#B8963E" stop-opacity="0.22" />
+      <stop offset="1" stop-color="#B8963E" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+
+  <rect width="1600" height="1000" fill="url(#ground)" />
+  <rect width="1600" height="1000" fill="url(#glow)" />
+
+  <!-- Stall awning, sketched -->
+  <g stroke="#B8963E" stroke-opacity="0.5" stroke-width="4" fill="none" stroke-linecap="round">
+    <path d="M180 210 H1420" />
+    <path d="M180 210 q60 70 120 0 q60 70 120 0 q60 70 120 0 q60 70 120 0 q60 70 120 0 q60 70 120 0 q60 70 120 0 q60 70 120 0 q60 70 120 0 q60 70 120 0 q60 70 120 0" />
+    <path d="M250 210 V830" />
+    <path d="M1350 210 V830" />
+  </g>
+
+  <!-- Table -->
+  <g stroke="#D4B060" stroke-opacity="0.55" stroke-width="5" fill="none" stroke-linecap="round">
+    <path d="M330 760 H1270" />
+    <path d="M400 760 V860" />
+    <path d="M1200 760 V860" />
+  </g>
+
+  <!-- The phone: a shop in your pocket -->
+  <g transform="translate(560 300)">
+    <rect
+      x="0"
+      y="0"
+      width="300"
+      height="440"
+      rx="34"
+      fill="#1C1714"
+      stroke="#D4B060"
+      stroke-width="5"
+    />
+    <rect x="118" y="18" width="64" height="9" rx="4.5" fill="#D4B060" fill-opacity="0.55" />
+    <!-- catalogue grid -->
+    <g fill="#D4B060" fill-opacity="0.35">
+      <rect x="30" y="56" width="110" height="110" rx="12" />
+      <rect x="160" y="56" width="110" height="110" rx="12" />
+      <rect x="30" y="182" width="110" height="110" rx="12" />
+      <rect x="160" y="182" width="110" height="110" rx="12" />
+    </g>
+    <!-- tap-to-pay line -->
+    <rect x="30" y="322" width="240" height="58" rx="14" fill="#B8963E" />
+    <g stroke="#1C1714" stroke-width="6" fill="none" stroke-linecap="round">
+      <path d="M118 340 q18 11 0 22" />
+      <path d="M138 332 q30 19 0 38" />
+    </g>
+    <rect x="30" y="398" width="150" height="12" rx="6" fill="#F0EBE3" fill-opacity="0.35" />
+  </g>
+
+  <!-- Wares on the table -->
+  <g stroke="#D4B060" stroke-opacity="0.7" stroke-width="4" fill="none" stroke-linecap="round">
+    <path d="M420 700 q-40 -70 0 -110 q40 -40 80 0 q40 40 0 110" />
+    <circle cx="460" cy="712" r="16" />
+    <path d="M980 700 h180 l-24 -90 h-132 z" />
+    <path d="M1006 610 q64 -40 128 0" />
+  </g>
+
+  <!-- The brush-G mark, small, bottom right -->
+  <g transform="translate(1360 830) scale(0.6)">
+    <rect width="200" height="200" rx="20" fill="#2D2620" fill-opacity="0.9" />
+    <path
+      d="M143 68 C126 52 92 50 71 68 C48 88 46 126 68 144 C90 162 126 156 140 137 C145 130 146 122 145 114 L107 116"
+      fill="none"
+      stroke="#B8963E"
+      stroke-width="18"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+    <circle cx="166" cy="56" r="6.5" fill="#F0EBE3" />
+  </g>
+</svg>

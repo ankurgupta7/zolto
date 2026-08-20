@@ -8,6 +8,7 @@
  * malformed. Generating a key costs ~50ms once per file.
  */
 
+import { BRAND } from "@shared/brand";
 import crypto from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
@@ -66,7 +67,7 @@ beforeEach(() => {
   vi.stubGlobal("fetch", fetchMock);
   vi.stubEnv(
     "GOOGLE_SERVICE_ACCOUNT_EMAIL",
-    "mirror@zolto.iam.gserviceaccount.com",
+    "mirror@gwinn.iam.gserviceaccount.com",
   );
   vi.stubEnv("GOOGLE_SERVICE_ACCOUNT_KEY", privateKey as string);
   resetSheetsAuthCache();
@@ -126,7 +127,7 @@ describe("getAccessToken", () => {
       .slice(0, 2)
       .map((part) => JSON.parse(Buffer.from(part, "base64url").toString()));
     expect(header.alg).toBe("RS256");
-    expect(payload.iss).toBe("mirror@zolto.iam.gserviceaccount.com");
+    expect(payload.iss).toBe("mirror@gwinn.iam.gserviceaccount.com");
     expect(payload.aud).toBe("https://oauth2.googleapis.com/token");
     expect(payload.scope).toContain(
       "https://www.googleapis.com/auth/spreadsheets",
@@ -199,7 +200,7 @@ describe("createSpreadsheet", () => {
       ],
     });
 
-    const created = await createSpreadsheet("Zolto — Acme", [
+    const created = await createSpreadsheet(`${BRAND.name} — Acme`, [
       "Sales",
       "Inventory",
     ]);
@@ -210,7 +211,7 @@ describe("createSpreadsheet", () => {
     });
 
     const sent = body(calls[1]);
-    expect(sent.properties).toEqual({ title: "Zolto — Acme" });
+    expect(sent.properties).toEqual({ title: `${BRAND.name} — Acme` });
     expect(sent.sheets).toEqual([
       { properties: { title: "Sales", index: 0 } },
       { properties: { title: "Inventory", index: 1 } },
@@ -375,7 +376,7 @@ describe("unshareSpreadsheet", () => {
       permissions: [
         {
           id: "owner-perm",
-          emailAddress: "mirror@zolto.iam.gserviceaccount.com",
+          emailAddress: "mirror@gwinn.iam.gserviceaccount.com",
         },
         { id: "merchant-perm", emailAddress: "shop@example.com" },
       ],

@@ -1,3 +1,4 @@
+import { brandNeutralKey } from "@shared/brand";
 import { Link } from "wouter";
 import { Container } from "../components/Container";
 import { CostOfAcceptance } from "../components/CostOfAcceptance";
@@ -89,7 +90,7 @@ export default function Pricing() {
               <span className="text-sm">{t("pricing.perYearShort")}</span>
             </p>
             <p className="mt-4 text-[11px] uppercase tracking-[0.16em] text-[var(--brand-accent)]">
-              {t("pricing.zoltoPlan", { plan: proName })}
+              {t("pricing.platformPlan", { plan: proName })}
             </p>
             <p className="mt-1 font-serif text-4xl font-bold text-[var(--brand-ink)] lining-nums tabular-nums">
               {formatPrice(COST_COMPARISON.usPerMonthChf)}
@@ -105,7 +106,7 @@ export default function Pricing() {
       </div>
 
       {/* What a sale actually costs, on every option we can source — including
-          the ones that beat us. The plan cards above quote Zolto's fee, which
+          the ones that beat us. The plan cards above quote Gwinn's fee, which
           is not the cost of acceptance; this is the correction, and it belongs
           on the pricing page rather than only on /compare, because this is the
           page a reader arrives at asking "what will this cost me". */}
@@ -257,10 +258,10 @@ export default function Pricing() {
               className="rounded-xl border border-[var(--brand-border)] bg-white p-6"
             >
               <dt className="font-medium text-[var(--brand-text)]">
-                {st(`faqs.${item.q}.q`, item.q)}
+                {st(`faqs.${brandNeutralKey(item.q)}.q`, item.q)}
               </dt>
               <dd className="mt-2 text-sm text-[var(--brand-muted-2)]">
-                {st(`faqs.${item.q}.a`, item.a)}
+                {st(`faqs.${brandNeutralKey(item.q)}.a`, item.a)}
               </dd>
             </div>
           ))}

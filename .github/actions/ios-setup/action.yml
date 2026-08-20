@@ -1,5 +1,5 @@
 name: "iOS POS Build Setup"
-description: "Shared setup for ZoltoPOS iOS builds: Xcode, xcodegen, SPM cache & resolve"
+description: "Shared setup for GwinnPOS iOS builds: Xcode, xcodegen, SPM cache & resolve"
 
 runs:
   using: composite
@@ -14,7 +14,7 @@ runs:
       shell: bash
 
     - name: Generate Xcode project
-      working-directory: ios/ZoltoPOS
+      working-directory: ios/GwinnPOS
       run: xcodegen generate --spec project.yml
       shell: bash
 
@@ -23,15 +23,15 @@ runs:
       with:
         path: |
           ~/.swiftpm
-          ios/ZoltoPOS/ZoltoPOS.xcodeproj/project.xcworkspace/xcshareddata/swiftpm
-        key: spm-${{ runner.os }}-${{ hashFiles('ios/ZoltoPOS/project.yml') }}
+          ios/GwinnPOS/GwinnPOS.xcodeproj/project.xcworkspace/xcshareddata/swiftpm
+        key: spm-${{ runner.os }}-${{ hashFiles('ios/GwinnPOS/project.yml') }}
         restore-keys: spm-${{ runner.os }}-
 
     - name: Resolve Swift packages
-      working-directory: ios/ZoltoPOS
+      working-directory: ios/GwinnPOS
       run: |
         xcodebuild \
           -resolvePackageDependencies \
-          -project ZoltoPOS.xcodeproj \
-          -scheme ZoltoPOS
+          -project GwinnPOS.xcodeproj \
+          -scheme GwinnPOS
       shell: bash

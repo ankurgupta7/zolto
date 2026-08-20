@@ -6,7 +6,7 @@
  * "Stripe Connect isn't set up on the platform yet. Contact support." whenever
  * `data?.url` was falsy — which is also true while the query is still in
  * flight, and true when the request failed. So a slow network or a transient
- * error accused Zolto of a misconfiguration it may not have and sent the
+ * error accused Gwinn of a misconfiguration it may not have and sent the
  * merchant to support over nothing.
  *
  * Only the server actually returning `url === null` means the platform is

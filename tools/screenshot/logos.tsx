@@ -1,11 +1,11 @@
 /**
- * Screenshot entry for the brush-Z lockup in both themes it has to survive.
+ * Screenshot entry for the brush-G lockup in both themes it has to survive.
  *
  * The mark is three tokens (--logo-tile / --logo-mark / --logo-dot, plus the
  * optional --logo-ring), so a theme can recolour it without a second SVG — and
  * a token swap is exactly the kind of change no unit test can see. This page
  * stands each colourway on the nav bar it will actually sit in, at the 32px it
- * actually renders at, next to a 16px copy: a lockup that reads as a gold Z at
+ * actually renders at, next to a 16px copy: a lockup that reads as a gold G at
  * hero size and as a smudge in a browser tab has not been checked.
  *
  *   npx vite --config tools/screenshot/vite.config.ts &
@@ -20,12 +20,12 @@ const ROWS = [
   {
     theme: undefined,
     name: "Dark",
-    note: "gold Z on a mahogany tile",
+    note: "gold G on a mahogany tile",
   },
   {
     theme: "light" as const,
     name: "Light",
-    note: "near-black Z on a hairline-ringed stone tile",
+    note: "near-black G on a hairline-ringed stone tile",
   },
 ];
 
@@ -52,7 +52,7 @@ function LogoRow({
         <div className="flex items-center gap-2.5">
           <BrushMark className="h-8 w-8" />
           <span className="font-serif text-xl tracking-tight text-[var(--brand-text)]">
-            Zolto
+            Gwinn
           </span>
         </div>
         <BrushMark className="h-4 w-4" />

@@ -130,7 +130,7 @@ export function DiscoveryShiftChart({
         </text>
       </svg>
       {/* Off the reel the caption still earns its place — a reader who has
-          navigated to /why-zolto has chosen to be reading. On the homepage the
+          navigated to /why-gwinn has chosen to be reading. On the homepage the
           annotation above says it, so the paragraph comes off. */}
       {!dense && (
         <p className="mt-4 text-sm leading-relaxed text-band-fg/60">
@@ -205,7 +205,7 @@ export function AgentChatMock() {
  *
  * This is the copy that was the hero. It keeps its eyebrow, headline and body
  * verbatim — what changed is that it's an `<h2>` on a page whose reader already
- * knows what a Zolto till is, so "your next customer is an AI" reads as a
+ * knows what a Gwinn till is, so "your next customer is an AI" reads as a
  * reason to choose this shop rather than as a description of it.
  */
 /**
@@ -286,7 +286,7 @@ export function AgentProofBand() {
             href="/llms.txt"
             className="mt-6 inline-block font-mono text-[13px] text-[var(--brand-accent-light)] underline decoration-[var(--brand-accent)]/40 underline-offset-4 hover:decoration-[var(--brand-accent)]"
           >
-            zolto.ch/llms.txt →
+            gwinn.ch/llms.txt →
           </a>
         </ScrollReveal>
         <ScrollReveal>

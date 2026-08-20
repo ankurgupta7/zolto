@@ -9,13 +9,13 @@
  *
  * ## Credentials are the PLATFORM's, not the tenant's
  *
- * Zolto owns one service account; every mirror spreadsheet is created and owned
+ * Gwinn owns one service account; every mirror spreadsheet is created and owned
  * by it, then *shared* with the merchant. So these live in env vars, which is
  * what server/tenantSecrets.ts documents as correct for platform credentials —
  * nothing a merchant pastes in ever reaches this module.
  *
  * That ownership split is also the security model for the mirror: the merchant
- * is a viewer on a file they do not own, so they cannot revoke Zolto's access,
+ * is a viewer on a file they do not own, so they cannot revoke Gwinn's access,
  * cannot edit the read-only tabs (Drive enforces it, not our code), and cannot
  * take the file with them in a way that makes the sync silently stop working.
  *
@@ -354,7 +354,7 @@ export async function shareSpreadsheet(
  * Withdraw one person's access to the spreadsheet, leaving the file itself
  * alone.
  *
- * This is what a disconnect does, and it is deliberately NOT a delete. Zolto
+ * This is what a disconnect does, and it is deliberately NOT a delete. Gwinn
  * owns the file, so deleting would destroy a merchant's sales history on their
  * behalf over a single button press — irreversible, and not the kind of thing a
  * platform should do to data a merchant thinks of as theirs. Revoking the share

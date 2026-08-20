@@ -78,15 +78,15 @@ describe("Stores — the list", () => {
   it("lists each store with its plan and address", () => {
     render(<Stores />);
     expect(screen.getByText("Aurora")).toBeTruthy();
-    expect(screen.getByText("aurora.zolto.ch")).toBeTruthy();
+    expect(screen.getByText("aurora.gwinn.ch")).toBeTruthy();
     expect(screen.getByText("free")).toBeTruthy();
   });
 
-  it("prefers a custom domain over the zolto.ch address when one is set", () => {
+  it("prefers a custom domain over the gwinn.ch address when one is set", () => {
     mocks.data = [row({ domain: "aurora.ch" })];
     render(<Stores />);
     expect(screen.getByText("aurora.ch")).toBeTruthy();
-    expect(screen.queryByText("aurora.zolto.ch")).toBeNull();
+    expect(screen.queryByText("aurora.gwinn.ch")).toBeNull();
   });
 
   it("filters by name, address, and domain", () => {

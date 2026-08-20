@@ -73,7 +73,7 @@ describe("Segment — per audience", () => {
   it("falls back to the index for an unknown segment", () => {
     renderSegment("/for/nonesuch");
     expect(
-      screen.getByRole("heading", { name: /Who Zolto is for/, level: 1 }),
+      screen.getByRole("heading", { name: /Who Gwinn is for/, level: 1 }),
     ).toBeTruthy();
   });
 });

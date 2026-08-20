@@ -23,8 +23,8 @@ import { ReelChapter, ReelPanel, ReelStage } from "./ReelStage";
  * reduced motion it is a poster and a play button.
  */
 
-const SRC = "/video/zolto-explainer.mp4";
-const POSTER = "/video/zolto-explainer-poster.svg";
+const SRC = "/video/gwinn-explainer.mp4";
+const POSTER = "/video/gwinn-explainer-poster.svg";
 
 let play: ReturnType<typeof vi.fn>;
 let pause: ReturnType<typeof vi.fn>;
@@ -111,7 +111,7 @@ describe("ExplainerVideo", () => {
 
   it("unmutes, shows controls and stops looping when the play button is clicked", () => {
     renderVideo();
-    fireEvent.click(screen.getByRole("button", { name: /play the zolto/i }));
+    fireEvent.click(screen.getByRole("button", { name: /play the gwinn/i }));
 
     const video = videoEl();
     expect(video.muted).toBe(false);
@@ -121,7 +121,7 @@ describe("ExplainerVideo", () => {
     expect(play).toHaveBeenCalled();
     // The gold button steps out of the way of the native controls.
     expect(
-      screen.queryByRole("button", { name: /play the zolto/i }),
+      screen.queryByRole("button", { name: /play the gwinn/i }),
     ).toBeNull();
   });
 
@@ -132,14 +132,14 @@ describe("ExplainerVideo", () => {
     expect(play).not.toHaveBeenCalled();
     // Poster plus play button is the whole component until they ask.
     expect(
-      screen.getByRole("button", { name: /play the zolto/i }),
+      screen.getByRole("button", { name: /play the gwinn/i }),
     ).toBeTruthy();
   });
 
   it("still plays when asked, under reduced motion", () => {
     mockMatchMedia({ reduce: true });
     renderVideo();
-    fireEvent.click(screen.getByRole("button", { name: /play the zolto/i }));
+    fireEvent.click(screen.getByRole("button", { name: /play the gwinn/i }));
     expect(play).toHaveBeenCalled();
     expect(videoEl().muted).toBe(false);
   });

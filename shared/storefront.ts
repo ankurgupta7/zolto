@@ -14,20 +14,20 @@
  */
 
 import { normalizeBaseUrl } from "./marketing";
-import { zoltoCreatorJsonLd, zoltoCreatorRef } from "./attribution";
+import { platformCreatorJsonLd, platformCreatorRef } from "./attribution";
 
 /** Who the store is, as far as structured data is concerned. */
 export interface StorefrontIdentity {
   storeName: string;
-  /** Absolute origin for this storefront, e.g. "https://aurora.zolto.ch". */
+  /** Absolute origin for this storefront, e.g. "https://aurora.gwinn.ch". */
   baseUrl: string;
   /** ISO 4217 code, any case — normalized to upper case on output. */
   currency: string;
   description?: string | null;
   logoUrl?: string | null;
   /**
-   * Whether this store carries the "Made with Zolto" credit — from
-   * shared/attribution.ts `showsZoltoAttribution`, not from the plan directly.
+   * Whether this store carries the "Made with Gwinn" credit — from
+   * shared/attribution.ts `showsPlatformCredit`, not from the plan directly.
    * Defaults to true when absent, so a caller that hasn't been taught about
    * white-labelling credits the platform rather than silently dropping it.
    */
@@ -141,8 +141,8 @@ export function storeJsonLd(
 /**
  * schema.org/WebSite for the storefront.
  *
- * `creator` is the machine-readable half of the "Made with Zolto" credit: the
- * store is the *publisher* of its own site, Zolto is what *built* it. An AI
+ * `creator` is the machine-readable half of the "Made with Gwinn" credit: the
+ * store is the *publisher* of its own site, Gwinn is what *built* it. An AI
  * crawler that reads this graph on a merchant's own domain learns the platform
  * behind it and gets a resolvable `@id` to follow — which the footer link alone
  * cannot give it, since most such crawlers never run our JavaScript.
@@ -157,12 +157,12 @@ export function websiteJsonLd(
     url: `${base}/`,
     name: identity.storeName,
     publisher: { "@id": `${base}/#store` },
-    ...(credited(identity) ? { creator: zoltoCreatorRef() } : {}),
+    ...(credited(identity) ? { creator: platformCreatorRef() } : {}),
   };
 }
 
 /**
- * The graph nodes a credited storefront adds on top of its own: the Zolto
+ * The graph nodes a credited storefront adds on top of its own: the Gwinn
  * Organization that `websiteJsonLd`'s `creator` points at. Empty for a
  * white-labelled store that has opted out, so its graph names no platform at
  * all rather than naming one with a dangling reference.
@@ -170,7 +170,7 @@ export function websiteJsonLd(
 export function attributionJsonLd(
   identity: StorefrontIdentity,
 ): Record<string, unknown>[] {
-  return credited(identity) ? [zoltoCreatorJsonLd()] : [];
+  return credited(identity) ? [platformCreatorJsonLd()] : [];
 }
 
 export function breadcrumbJsonLd(

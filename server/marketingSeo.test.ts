@@ -1,3 +1,4 @@
+import { BRAND } from "@shared/brand";
 import { describe, it, expect } from "vitest";
 import { getMarketingSeo, injectMarketingHead } from "./marketingSeo";
 import { marketingSitemapEntries } from "@shared/marketing";
@@ -6,14 +7,14 @@ import { PILOT_METHODOLOGY, PILOT_METRICS } from "@shared/research";
 import { authorJsonLd } from "@shared/authors";
 import { SEGMENTS, segmentFeatures } from "@shared/segments";
 
-const BASE = "https://zolto.com";
+const BASE = "https://gwinn.com";
 
 const SHELL = `<!doctype html><html><head>
-<title>Zolto</title>
+<title>${BRAND.name}</title>
 <meta name="description" content="old default" />
-<meta property="og:title" content="Zolto" />
+<meta property="og:title" content="${BRAND.name}" />
 <meta property="og:description" content="old" />
-<meta property="twitter:title" content="Zolto" />
+<meta property="twitter:title" content="${BRAND.name}" />
 <meta property="twitter:description" content="old" />
 </head><body><div id="root"></div><script src="/main.tsx"></script></body></html>`;
 
@@ -21,7 +22,7 @@ describe("getMarketingSeo", () => {
   it("returns SEO for the landing page with software + FAQ schema", () => {
     const seo = getMarketingSeo("/", BASE)!;
     expect(seo).not.toBeNull();
-    expect(seo.title).toContain("Zolto");
+    expect(seo.title).toContain(BRAND.name);
     const types = seo.jsonLd.map((n) => n["@type"]);
     expect(types).toContain("Organization");
     expect(types).toContain("WebSite");
@@ -60,9 +61,9 @@ describe("getMarketingSeo", () => {
 describe("injectMarketingHead", () => {
   it("replaces title + meta and injects canonical, JSON-LD, and noscript", () => {
     const out = injectMarketingHead(SHELL, "/pricing", BASE);
-    expect(out).toContain("<title>Pricing — Zolto for makers</title>");
+    expect(out).toContain(`<title>Pricing — ${BRAND.name} for makers</title>`);
     expect(out).toContain(
-      '<link rel="canonical" href="https://zolto.com/pricing"',
+      '<link rel="canonical" href="https://gwinn.com/pricing"',
     );
     expect(out).toContain("application/ld+json");
     expect(out).toContain("schema.org");
@@ -74,17 +75,17 @@ describe("injectMarketingHead", () => {
   it("injects an absolute og:image / twitter:image social card", () => {
     const out = injectMarketingHead(SHELL, "/", BASE);
     expect(out).toContain(
-      '<meta property="og:image" content="https://zolto.com/og-image.png"',
+      '<meta property="og:image" content="https://gwinn.com/og-image.png"',
     );
     expect(out).toContain(
-      '<meta name="twitter:image" content="https://zolto.com/og-image.png"',
+      '<meta name="twitter:image" content="https://gwinn.com/og-image.png"',
     );
   });
 
   it("sets an absolute canonical with no double slash for the landing page", () => {
     const out = injectMarketingHead(SHELL, "/", `${BASE}/`);
-    expect(out).toContain('<link rel="canonical" href="https://zolto.com/"');
-    expect(out).not.toContain("zolto.com//");
+    expect(out).toContain('<link rel="canonical" href="https://gwinn.com/"');
+    expect(out).not.toContain("gwinn.com//");
   });
 
   it("is a no-op for non-marketing routes", () => {
@@ -118,7 +119,7 @@ describe("injectMarketingHead", () => {
 
   it("renders a comparison page per named incumbent", () => {
     for (const c of COMPETITORS) {
-      const seo = getMarketingSeo(`/compare/zolto-vs-${c.id}`, BASE)!;
+      const seo = getMarketingSeo(`/compare/gwinn-vs-${c.id}`, BASE)!;
       expect(seo).not.toBeNull();
       expect(seo.title).toContain(c.name);
       expect(seo.noscript).toContain(c.summary);
@@ -136,7 +137,7 @@ describe("injectMarketingHead", () => {
   });
 
   it("has no SEO for an unknown competitor slug", () => {
-    expect(getMarketingSeo("/compare/zolto-vs-nonesuch", BASE)).toBeNull();
+    expect(getMarketingSeo("/compare/gwinn-vs-nonesuch", BASE)).toBeNull();
   });
 
   it("publishes the research page as a Dataset as well as an Article", () => {
@@ -158,7 +159,7 @@ describe("injectMarketingHead", () => {
     const seo = getMarketingSeo(`/research/${PILOT_METHODOLOGY.slug}`, BASE)!;
     expect(seo.noscript).toContain("Sample:");
     expect(seo.noscript).toContain("Limits:");
-    expect(seo.noscript).toContain("Zolto operates the platform");
+    expect(seo.noscript).toContain(`${BRAND.name} operates the platform`);
   });
 
   it("renders a page per audience segment, grounded in real features", () => {

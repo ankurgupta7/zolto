@@ -11,8 +11,8 @@
 #      here can help; restore a backup instead. The listing warns about this.
 #   2. A store exists with users but no admin: the owner signed in yet never
 #      redeemed the signup claim token. The token lives in sessionStorage on the
-#      MARKETING origin (zolto.ch), so it is lost if the owner lands on
-#      <slug>.zolto.ch (a different origin) or in a new tab — likely on mobile.
+#      MARKETING origin (gwinn.ch), so it is lost if the owner lands on
+#      <slug>.gwinn.ch (a different origin) or in a new tab — likely on mobile.
 #      `--promote` is the fix.
 #   3. The session's user row is gone while the cookie survives, so ctx.user is
 #      null. Signing out and back in re-creates it.
@@ -33,7 +33,7 @@
 # different thing from being the admin of a store and takes no slug. It exists
 # because nothing else in the codebase ever sets that role: signup grants
 # 'admin' via tenant.claimAdmin, and --promote above grants 'admin'. So the
-# operator console at zolto.ch/platform, the cross-tenant metrics, and the
+# operator console at gwinn.ch/platform, the cross-tenant metrics, and the
 # all-stores Stripe sweep were unreachable by every real account — the code
 # shipped, the role to use it did not. This is the one grant that must be made
 # by hand on the server, deliberately: a superadmin reads every merchant's
@@ -50,7 +50,7 @@ if [ ! -f .env ]; then
 fi
 
 # Parse .env literally via the shared loader. NEVER `source` it: values like
-# RESEND_FROM_EMAIL=Zolto <orders@zolto.ch> contain shell metacharacters and
+# RESEND_FROM_EMAIL=Gwinn <orders@gwinn.ch> contain shell metacharacters and
 # would be EXECUTED, not read — which is exactly why deploy/lib/env.sh exists
 # (see its header). The older deploy/*.sh scripts still use the unsafe pattern.
 # shellcheck source=lib/env.sh
@@ -103,7 +103,7 @@ suggest_emails() {
   total="$($MYSQL -N -s -e "SELECT COUNT(*) FROM users;" 2>/dev/null)"
   if [ "${total:-0}" = "0" ]; then
     echo "       There are NO users in this database at all, so there is nothing to" >&2
-    echo "       promote. Sign up at https://zolto.ch/signup first. (If you expected" >&2
+    echo "       promote. Sign up at https://gwinn.ch/signup first. (If you expected" >&2
     echo "       accounts here, check backups/ before writing anything on top.)" >&2
     return
   fi
@@ -128,7 +128,7 @@ EMAIL="${3:-}"
 # ── Platform ownership ────────────────────────────────────────────────────────
 # Handled before the slug lookup: superadmin is platform-wide and deliberately
 # takes no store. The user keeps whatever tenant_id they already had — being
-# the owner of Zolto and the admin of your own shop are not in conflict, and
+# the owner of Gwinn and the admin of your own shop are not in conflict, and
 # superadmin outranks admin everywhere the app checks (client/src/admin/nav.ts
 # ROLE_RANK, server/_core/trpc.ts).
 if [ "$SLUG" = "--superadmin" ]; then
@@ -174,7 +174,7 @@ if [ "$SLUG" = "--superadmin" ]; then
   echo "── Everyone who now owns the platform ──────────────────────────"
   $MYSQL -e "SELECT id, email, tenant_id FROM users WHERE role='superadmin' ORDER BY id;"
   echo
-  echo "Done. Sign out and back in, then open https://zolto.ch/platform"
+  echo "Done. Sign out and back in, then open https://gwinn.ch/platform"
   exit 0
 fi
 
@@ -200,7 +200,7 @@ if [ -z "$SLUG" ]; then
 There are NO users in this database at all, so there is nothing to promote —
 this is not a claim-token problem. Just sign up again to create one.
 
-While Zolto is in staging that is the expected state after a reset. If you did
+While Gwinn is in staging that is the expected state after a reset. If you did
 NOT expect it on a database that held real accounts, stop and check before
 writing anything on top:
   bash deploy/inspect-db.sh           # says whether rows were ever inserted
@@ -216,12 +216,12 @@ WARN
   fi
 
   # Who owns the platform itself. Shown unprompted because the usual reason
-  # zolto.ch/platform looks empty is that this list is empty.
+  # gwinn.ch/platform looks empty is that this list is empty.
   echo
   echo "── Platform owners (superadmin) ────────────────────────────────"
   SA_COUNT="$($MYSQL -N -s -e "SELECT COUNT(*) FROM users WHERE role='superadmin';" 2>/dev/null)"
   if [ "${SA_COUNT:-0}" = "0" ]; then
-    echo "None. The operator console at zolto.ch/platform will refuse everyone"
+    echo "None. The operator console at gwinn.ch/platform will refuse everyone"
     echo "until somebody holds this role. Grant it with:"
     echo "  bash deploy/tenant-admin.sh --superadmin <email>"
   else
@@ -251,7 +251,7 @@ if [ "$MODE" = "--promote" ]; then
   # never invented here. Matched case-insensitively — see the superadmin path.
   FOUND="$($MYSQL -N -s -e "SELECT COUNT(*) FROM users WHERE LOWER(email)=LOWER('${EMAIL_E}');" 2>/dev/null)"
   if [ "${FOUND:-0}" = "0" ]; then
-    echo "ERROR: no user with email '${EMAIL}'. They must sign in to Zolto once first," >&2
+    echo "ERROR: no user with email '${EMAIL}'. They must sign in to Gwinn once first," >&2
     echo "       so the account exists, then re-run this." >&2
     suggest_emails
     exit 1

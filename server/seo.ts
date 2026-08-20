@@ -27,7 +27,7 @@ export function resolveBaseUrl(req: Request): string {
 /**
  * A storefront's base URL always comes from its own host, never PUBLIC_BASE_URL:
  * that env var names the *platform* origin, so honouring it here would make every
- * store's sitemap advertise zolto.ch URLs.
+ * store's sitemap advertise gwinn.ch URLs.
  */
 function resolveStorefrontBaseUrl(req: Request): string {
   const proto =
@@ -43,7 +43,7 @@ function resolveStorefrontBaseUrl(req: Request): string {
  *
  * Tenant-aware, the same way server/llms.ts is: a resolved storefront gets a
  * sitemap of its own pages and live product URLs, while the platform apex gets
- * the marketing sitemap. Without this a store served Zolto's marketing sitemap,
+ * the marketing sitemap. Without this a store served Gwinn's marketing sitemap,
  * advertising /pricing, /blog and /signup — all 404s on a storefront host.
  */
 export function registerSeoRoutes(app: Express): void {

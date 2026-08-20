@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { BRAND } from "../shared/brand";
 
 /**
  * Storefront purchase journey (data-driven e2e).
@@ -30,13 +31,14 @@ const storeUrl = (path: string) => {
 
 // Render the UI in English deterministically, regardless of the saved default.
 async function openInEnglish(page: Page, path: string) {
-  await page.addInitScript(() => {
+  // Serialised into the page, so the key is passed rather than closed over.
+  await page.addInitScript((key: string) => {
     try {
-      localStorage.setItem("kalakosh_lang", "en");
+      localStorage.setItem(key, "en");
     } catch {
       /* storage unavailable — fall back to the default language */
     }
-  });
+  }, BRAND.langKey);
   await page.goto(storeUrl(path), { waitUntil: "networkidle" });
 }
 

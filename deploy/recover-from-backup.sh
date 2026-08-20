@@ -25,7 +25,7 @@ if [ ! -f .env ]; then
   exit 1
 fi
 # Parse .env literally via the shared loader. The old `export $(grep ... | xargs)`
-# word-split every value: RESEND_FROM_EMAIL=Zolto <orders@zolto.ch> became two
+# word-split every value: RESEND_FROM_EMAIL=Gwinn <orders@gwinn.ch> became two
 # arguments, `export` rejected the second as an invalid identifier, and `set -e`
 # aborted — so the recovery path was unusable on exactly the servers that needed
 # it. See deploy/lib/env.sh.

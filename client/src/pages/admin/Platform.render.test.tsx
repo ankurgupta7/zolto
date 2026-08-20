@@ -80,7 +80,7 @@ describe("Platform page — Stripe reconciliation sweep", () => {
     mocks.role = "admin";
     render(<Platform />);
     expect(screen.queryByText("Reconcile every store")).toBeNull();
-    expect(screen.getByText(/Zolto operator only/i)).toBeTruthy();
+    expect(screen.getByText(/Gwinn operator only/i)).toBeTruthy();
   });
 
   it("explains that unconnected stores are skipped before any run", () => {

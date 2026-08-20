@@ -179,7 +179,7 @@ describe("registerAgentHitTracking", () => {
   it("files an apex hit under the platform sentinel, not a store", async () => {
     resolveTenantFromRequest.mockResolvedValue(null);
     const app = appWith((a) =>
-      a.get("/llms.txt", (_q, r) => r.send("# zolto")),
+      a.get("/llms.txt", (_q, r) => r.send("# gwinn")),
     );
 
     await request(app).get("/llms.txt").set("User-Agent", GPTBOT).expect(200);

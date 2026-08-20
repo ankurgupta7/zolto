@@ -11,20 +11,20 @@ import { source } from "@shared/sources";
 import { useMarketingT } from "../lib/marketingI18n";
 
 /**
- * CapabilityMatrix — what each product does, row by row, with Zolto answering
+ * CapabilityMatrix — what each product does, row by row, with Gwinn answering
  * every question it asks of anyone else.
  *
  * The rows live in shared/platform.ts rather than on each competitor so the two
  * columns can't fall out of alignment, and so the matrix has to carry the rows
- * Zolto loses. A matrix that only asks questions we win is a scorecard we wrote
+ * Gwinn loses. A matrix that only asks questions we win is a scorecard we wrote
  * for ourselves, and a reader can tell.
  *
  * **Two design rules do the real work here.**
  *
  * First, the rows are grouped into the till, the shop, the AI and the money.
  * The matrix used to be ten payment-shaped rows, which conceded the frame:
- * it compared Zolto to payment companies on payment questions, where the best
- * available outcome is a tie. Zolto is a till, a shop, one inventory and an AI
+ * it compared Gwinn to payment companies on payment questions, where the best
+ * available outcome is a tie. Gwinn is a till, a shop, one inventory and an AI
  * running all three — so payments is one section of four.
  *
  * Second, a competitor's answer can carry a `cost`. Where they *do* have a
@@ -182,9 +182,9 @@ export function CapabilityMatrix({ competitor }: { competitor: Competitor }) {
                   </td>
                   <td className="py-4 align-top text-[var(--brand-ink)]">
                     <SupportMark
-                      supported={capability(row.key).zoltoSupported}
+                      supported={capability(row.key).platformSupported}
                     />
-                    {st(`capabilities.${row.key}.zolto`, row.zolto)}
+                    {st(`capabilities.${row.key}.platform`, row.platform)}
                   </td>
                 </tr>
               );

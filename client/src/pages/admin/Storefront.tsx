@@ -24,7 +24,7 @@ import {
 } from "@/components/admin/ui";
 import { useTenantSettings } from "@/components/admin/useTenantSettings";
 import { featuresForPlan } from "@shared/platform";
-import { ZOLTO_URL } from "@shared/attribution";
+import { BRAND } from "@shared/brand";
 
 export default function Storefront() {
   const { t } = useTranslation("admin");
@@ -39,7 +39,7 @@ export default function Storefront() {
   const [aboutBody, setAboutBody] = useState("");
   const [metaTitle, setMetaTitle] = useState("");
   const [metaDescription, setMetaDescription] = useState("");
-  const [hideZoltoBadge, setHideZoltoBadge] = useState(false);
+  const [hidePlatformCredit, setHidePlatformCredit] = useState(false);
 
   // Whether this store MAY hide the credit. The server enforces the same rule
   // in updateSettings (docs/ARCHITECTURE-ADMIN.md §4) — this only decides
@@ -60,7 +60,7 @@ export default function Storefront() {
       setAboutBody(settings.aboutBody ?? "");
       setMetaTitle(settings.metaTitle ?? "");
       setMetaDescription(settings.metaDescription ?? "");
-      setHideZoltoBadge(settings.hideZoltoBadge ?? false);
+      setHidePlatformCredit(settings.hidePlatformCredit ?? false);
     }
   }, [settings]);
 
@@ -107,11 +107,11 @@ export default function Storefront() {
       // Never send `true` from a plan that can't have it: the server would
       // reject the whole save, taking the merchant's unrelated edits on this
       // page down with it.
-      hideZoltoBadge: canWhiteLabel ? hideZoltoBadge : false,
+      hidePlatformCredit: canWhiteLabel ? hidePlatformCredit : false,
     });
   };
 
-  const storeUrl = slug ? `https://${slug}.zolto.ch` : null;
+  const storeUrl = slug ? `https://${slug}.gwinn.ch` : null;
 
   return (
     <div>
@@ -374,7 +374,7 @@ export default function Storefront() {
         </div>
       </SettingsCard>
 
-      {/* The "Made with Zolto" credit. Its own card rather than a line in
+      {/* The "Made with Gwinn" credit. Its own card rather than a line in
           Branding, because it is the one thing on this page that is about the
           platform rather than the merchant — and because a Free store needs to
           see the switch exists (and what unlocks it) even though it can't use
@@ -391,9 +391,9 @@ export default function Storefront() {
         <label className="flex cursor-pointer items-start gap-3">
           <input
             type="checkbox"
-            checked={!hideZoltoBadge}
+            checked={!hidePlatformCredit}
             disabled={!canWhiteLabel}
-            onChange={(e) => setHideZoltoBadge(!e.target.checked)}
+            onChange={(e) => setHidePlatformCredit(!e.target.checked)}
             className="mt-1 h-4 w-4 shrink-0 cursor-pointer accent-primary disabled:cursor-not-allowed disabled:opacity-50"
           />
           <span className="text-sm">
@@ -401,7 +401,7 @@ export default function Storefront() {
               {t("store.storefront.creditToggle")}
             </span>
             <span className="mt-1 block text-muted-foreground">
-              {t("store.storefront.creditToggleHint", { url: ZOLTO_URL })}
+              {t("store.storefront.creditToggleHint", { url: BRAND.url })}
             </span>
           </span>
         </label>

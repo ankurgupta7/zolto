@@ -1,5 +1,5 @@
 ================================================================================
-ZOLTO — INSTAGRAM SHORT · PASTE-READY VIDEO GENERATION PROMPTS
+GWINN — INSTAGRAM SHORT · PASTE-READY VIDEO GENERATION PROMPTS
 FIVE SETUPS · 9:16 · ~48 seconds. Written for Veo-3-class models.
 Placeholders are already expanded — paste each block whole, nothing to fill in.
 
@@ -243,7 +243,7 @@ Ambient audio: wind close on the microphone, water, distant gulls.
 
 >> EDIT: hold the final frame — her looking out at the water — for ~3s with a
    very slow push in, and put beat 7's voice and the end card over it. Logo,
-   CHF 0/month, zolto.ch.
+   CHF 0/month, gwinn.ch.
 
 
 ================================================================================
@@ -274,7 +274,7 @@ doc for why, and for what she may say instead.
   E/6  Is it the cheapest way to take a card? No. It isn't. She's paying to not
        spend her evenings on admin.
 
-  E/7  Zolto. Swiss, and free to start.
+  E/7  Gwinn. Swiss, and free to start.
 
 Delivery: unpolished, one or two natural stumbles left in, no presenter cadence.
 Line E/6 must sound offhand — an aside, not a line. Swiss-German-accented

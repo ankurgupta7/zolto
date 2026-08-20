@@ -16,7 +16,7 @@
 **Hey — quick note before you read on.**
 
 If you've landed on this page, you're probably not here for feature bullets.
-You're here because you want to know who's behind Zolto and whether you should
+You're here because you want to know who's behind Gwinn and whether you should
 trust them with your little shop. Fair. So I'll drop the polished tone the rest
 of the site has and just talk to you like a person for a minute.
 
@@ -50,7 +50,7 @@ By day I'm a [research scientist] with a pretty solid computer-science backgroun
 Over the past [fifteen-ish] years I've built some genuinely complex systems —
 humbly, but the real kind — and you can go check that out on my LinkedIn
 [link]. I say this not to brag but to be straight with you: at the level of
-complexity I usually work at, something like Zolto is basically entertainment. I
+complexity I usually work at, something like Gwinn is basically entertainment. I
 could put the core of it together in a few days. So this isn't a flaky side
 project that'll vanish — it's an easy lift for me, built because the alternative
 made me a little angry on behalf of every small maker getting nickel-and-dimed.
@@ -78,7 +78,7 @@ get you selling without the tax on being small.
    or keep it vague?
 7. **"Fifteen years"** — keep, or a different number / phrasing?
 8. **Product category** — the story says jewelry (from your wife's shop). Keep it
-   specific, or generalize since Zolto serves all makers?
+   specific, or generalize since Gwinn serves all makers?
 9. **Tone check** — anything here too casual / not casual enough? Any lines you'd
    cut or add (e.g. a photo of you, or of the terminal/first sale)?
 10. **CTA** — end on "start your store", "see pricing", or "email me"?

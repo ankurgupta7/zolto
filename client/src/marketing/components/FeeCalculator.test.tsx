@@ -25,7 +25,7 @@ describe("FeeCalculator", () => {
     expect(screen.getByLabelText(/your online sales this month/i)).toBeTruthy();
   });
 
-  // These three assert what ZOLTO invoices, so they target the headline figure
+  // These three assert what GWINN invoices, so they target the headline figure
   // rather than the card. Since the whole-bill breakdown landed, a card can
   // legitimately show the same amount twice — once as our fee and once as a
   // line in the stack — and an unscoped query can no longer tell them apart.
@@ -83,22 +83,22 @@ describe("FeeCalculator", () => {
 });
 
 /**
- * The calculator used to model Zolto's fee and nothing else, and defended that
+ * The calculator used to model Gwinn's fee and nothing else, and defended that
  * as an honesty rule. It was the opposite: showing "CHF 0.00" while Stripe took
  * three times our cut was the most misleading thing on the pricing page.
  */
 describe("FeeCalculator — the whole bill, not just our slice", () => {
-  it("shows what the card processor takes alongside what Zolto takes", () => {
+  it("shows what the card processor takes alongside what Gwinn takes", () => {
     render(<FeeCalculator />);
     setSales(2000);
     const stack = within(screen.getByTestId("stack-free"));
     // CHF 2,000 at a CHF 45 basket ≈ 44 orders.
-    // Stripe: 2.9% of 2000 = 58.00 + 44 × 0.30 = 13.20 → 71.20. Zolto: 20.00.
+    // Stripe: 2.9% of 2000 = 58.00 + 44 × 0.30 = 13.20 → 71.20. Gwinn: 20.00.
     expect(stack.getByText("CHF 71.20")).toBeTruthy();
     expect(stack.getByText("CHF 20.00")).toBeTruthy();
   });
 
-  it("shows the processor taking more than Zolto does", () => {
+  it("shows the processor taking more than Gwinn does", () => {
     // The whole point. If this ever flips, the headline claim is safe to make
     // on its own again — until then it isn't.
     render(<FeeCalculator />);
@@ -121,9 +121,9 @@ describe("FeeCalculator — the whole bill, not just our slice", () => {
     );
   });
 
-  it("still shows CHF 0.00 owed to Zolto in a month with no online sales", () => {
+  it("still shows CHF 0.00 owed to Gwinn in a month with no online sales", () => {
     // The pledge is real and the rebuild must not blur it: with nothing sold
-    // online, Zolto's invoice is genuinely zero.
+    // online, Gwinn's invoice is genuinely zero.
     render(<FeeCalculator />);
     setSales(0);
     expect(screen.getByTestId("fee-free-total").textContent).toBe("CHF 0.00");

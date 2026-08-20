@@ -1,6 +1,6 @@
 # Pricing Page Copy
 
-> zolto.com/pricing
+> gwinn.com/pricing
 
 ---
 
@@ -97,12 +97,12 @@ lifestyle image (disclosed as AI-generated). No monthly commitment, no
 "use it or lose it" — a maker adding 5 products this month and 0 next month
 pays for exactly 5 credits, not a recurring add-on fee.
 
-Not a free feature — image generation costs Zolto per image — so this
+Not a free feature — image generation costs Gwinn per image — so this
 recovers that cost directly rather than folding it into a plan price. See
 `marketing/ai-photography-pitch.md` for the competitive comparison this is
 anchored to.
 
-**Before this goes live:** confirm $1/credit actually covers Zolto's
+**Before this goes live:** confirm $1/credit actually covers Gwinn's
 per-image generation cost with healthy margin.
 
 ---
@@ -144,7 +144,7 @@ You'll be charged for the plan you selected. Cancel before the trial ends and yo
 **Do you charge transaction fees?**
 No. We only charge the monthly subscription. Payment processing fees go to Stripe.
 
-**Can I use Zolto just for POS (no online store)?**
+**Can I use Gwinn just for POS (no online store)?**
 Yes. The Maker plan includes both, but you can use just the POS if you prefer — perfect for market sellers like Sheena who want to add online later.
 
 **Is my data safe?**

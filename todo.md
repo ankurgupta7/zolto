@@ -92,7 +92,7 @@
 
 ### Marketing blurb
 
-> **Zolto exists to disrupt the website + point-of-sale integration market.** The big incumbents — Stripe, Worldline, SumUp — are relics of a previous era of software, when building a website was hard and keeping a small database of inventory was expensive. They overcharge small merchants for what is now cheap, and their real game is upselling their own card-reader hardware to lock you inside their ecosystem.
+> **Gwinn exists to disrupt the website + point-of-sale integration market.** The big incumbents — Stripe, Worldline, SumUp — are relics of a previous era of software, when building a website was hard and keeping a small database of inventory was expensive. They overcharge small merchants for what is now cheap, and their real game is upselling their own card-reader hardware to lock you inside their ecosystem.
 >
 > Two things have fundamentally changed. **First, AI** — we can now build a merchant's website in under a day. **Second, phones carry NFC chips** and QR-based payment methods (TWINT and friends) are everywhere, so nobody pushes a card into a machine anymore — they tap, and a phone is all the hardware you need. Server space is dirt cheap. There is simply no reason for a small business to pay hundreds or thousands of euros a year — in France, easily €2,000 — to stay trapped in a legacy provider.
 >
@@ -110,7 +110,7 @@
 ### Marketing copy tasks
 
 - [x] Rewrite marketing Landing hero around the disruption thesis — leads with "on the phone in your pocket," "no card reader to buy," "one-hundredth the cost," CTAs to Start free / See pricing (`marketing/pages/Landing.tsx`)
-- [x] "Why Zolto vs. Stripe/SumUp/Worldline" comparison section (cost, lock-in, hardware upsell, AI setup speed) — shipped on Landing, driven by `INCUMBENT_COMPARISON` in `shared/platform.ts`
+- [x] "Why Gwinn vs. Stripe/SumUp/Worldline" comparison section (cost, lock-in, hardware upsell, AI setup speed) — shipped on Landing, driven by `INCUMBENT_COMPARISON` in `shared/platform.ts`
 - [x] Transparent-pricing pledge: pass-through promise, €2,000-vs-€19 framing, "we never charge for anything not charged to us," "we're on your side" — shipped on Landing + Pricing, driven by `PRICING_PROMISE` / `COST_COMPARISON`
 - [x] "Tap, don't insert" + AI-inventory story: scan-your-notebook → sell-by-amount → end-of-day AI reconciliation email — shipped on Landing as the `SELLING_FLOW` section; `tap-to-pay` / `notebook-inventory` / `day-end-reconciliation` features added to `shared/platform.ts` (feed SEO + llms + MCP)
 - [x] Positioning FAQs added (no card reader; cheaper than Stripe/SumUp/Worldline; keep inventory in a notebook; don't tag every sale) in `shared/platform.ts`

@@ -84,8 +84,20 @@ A first-time visitor's theme comes from their OS, not from a stored choice —
 `DEFAULT_PREFERENCE` in `marketing/lib/theme.ts` is `"system"` — so a shot with
 no `SHOT_THEME` is shooting one of two possible arrivals. `SHOT_OS=dark` is the
 other one; Playwright defaults to light, which is the majority case in the wild.
-`tools/screenshot/logos.html` stands both colourways of the brush-Z lockup on
+`tools/screenshot/logos.html` stands both colourways of the brush-G lockup on
 the nav bars they have to survive, at 32px and at 16px.
+
+The raster brand assets are **generated, not hand-edited**. `tools/brand/render.mjs`
+renders `tools/screenshot/marks.html` into `client/public/{logo,favicon,og-image}.*`,
+the Android drawable and the iOS AppIcon, so the bitmaps cannot drift from the
+vector — a previous rebrand renamed the Android drawable to match the new name
+and left the _old_ brand's wordmark inside it, which then shipped on the
+register's main screen. After any change to the mark:
+
+```bash
+npx vite --config tools/screenshot/vite.config.ts &   # same harness, port 5199
+node tools/brand/render.mjs
+```
 
 Ten things it has already caught that every test suite passed straight
 through, and which are worth checking for by eye:

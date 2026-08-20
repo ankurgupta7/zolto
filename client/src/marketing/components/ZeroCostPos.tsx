@@ -14,7 +14,7 @@ import { useMarketingT } from "../lib/marketingI18n";
  * Every line is sourced from FREE_PLAN via ZERO_COST_POS, and the price is
  * rendered from the plan rather than typed in, so the boast can't drift past
  * what the plan actually includes. The section names no competitor and makes
- * no claim about anyone else's pricing — it's specific about what Zolto ships
+ * no claim about anyone else's pricing — it's specific about what Gwinn ships
  * and lets the comparison table handle the contrast.
  *
  * Two halves, for the same reason SqueezePlay has two: the homepage reel snaps

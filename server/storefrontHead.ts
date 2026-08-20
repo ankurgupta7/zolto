@@ -1,7 +1,7 @@
 /**
  * Per-tenant <head> injection for storefront requests. A storefront is served
- * from the same shared index.html as the Zolto marketing site, so without this
- * every store would show Zolto's favicon and "Zolto" tab title. This rewrites the
+ * from the same shared index.html as the Gwinn marketing site, so without this
+ * every store would show Gwinn's favicon and "Gwinn" tab title. This rewrites the
  * served HTML per tenant: the store's own favicon (uploaded, or a generated
  * initial-mark in its brand colour) and its own tab title / OG identity.
  *
@@ -16,7 +16,8 @@ import {
   setTitle,
   appendToHead,
 } from "./headInject";
-import { ZOLTO_ATTRIBUTION, ZOLTO_URL } from "@shared/attribution";
+import { PLATFORM_CREDIT } from "@shared/attribution";
+import { BRAND } from "@shared/brand";
 
 export interface StorefrontBranding {
   storeName: string;
@@ -25,14 +26,14 @@ export interface StorefrontBranding {
   faviconUrl?: string | null;
   primaryColor?: string | null;
   /**
-   * Whether this store carries the "Made with Zolto" credit
+   * Whether this store carries the "Made with Gwinn" credit
    * (shared/attribution.ts). Absent means yes — a caller that forgets to pass
    * it credits the platform rather than silently dropping the credit.
    */
   attribution?: boolean;
   /**
    * The slug of the store this host serves, stamped into the shell as
-   * `<meta name="zolto-tenant-slug">`. The client can derive the slug itself
+   * `<meta name="gwinn-tenant-slug">`. The client can derive the slug itself
    * from a platform subdomain, but not from a custom domain — only the server
    * knows that shop.example.com is "aurora". Without it the SPA fell back to
    * VITE_DEFAULT_TENANT_SLUG on every custom domain and asked the API for the
@@ -56,7 +57,7 @@ export function isSafeImageUrl(url: string): boolean {
 /**
  * A generated favicon (data-URI SVG) for a store with no uploaded icon: a rounded
  * square in the brand colour with the store's initial. Keeps storefronts
- * off-Zolto even before they upload a logo.
+ * off-Gwinn even before they upload a logo.
  */
 export function tenantFaviconDataUri(
   storeName: string,
@@ -70,7 +71,7 @@ export function tenantFaviconDataUri(
 }
 
 /**
- * Rewrite the served HTML for a storefront: swap Zolto's favicon + tab identity
+ * Rewrite the served HTML for a storefront: swap Gwinn's favicon + tab identity
  * for the tenant's. Returns the html unchanged if there's nothing to brand.
  */
 export function injectStorefrontHead(
@@ -84,7 +85,7 @@ export function injectStorefrontHead(
 
   let out = html;
 
-  // Remove Zolto's favicon/apple-touch links so its icon can't win.
+  // Remove Gwinn's favicon/apple-touch links so its icon can't win.
   out = out.replace(
     /\s*<link\s+rel=["'](?:icon|apple-touch-icon)["'][^>]*>/gi,
     "",
@@ -106,8 +107,8 @@ export function injectStorefrontHead(
   if (b.attribution !== false) {
     out = appendToHead(
       out,
-      `<meta name="generator" content="${escapeHtml(ZOLTO_ATTRIBUTION.generator)}" />` +
-        `<link rel="author" href="${ZOLTO_URL}/" title="${escapeHtml(ZOLTO_ATTRIBUTION.name)}" />`,
+      `<meta name="generator" content="${escapeHtml(PLATFORM_CREDIT.generator)}" />` +
+        `<link rel="author" href="${BRAND.url}/" title="${escapeHtml(PLATFORM_CREDIT.name)}" />`,
     );
   }
 
@@ -115,7 +116,7 @@ export function injectStorefrontHead(
   if (b.tenantSlug?.trim()) {
     out = appendToHead(
       out,
-      `<meta name="zolto-tenant-slug" content="${escapeHtml(b.tenantSlug.trim())}" />`,
+      `<meta name="gwinn-tenant-slug" content="${escapeHtml(b.tenantSlug.trim())}" />`,
     );
   }
 

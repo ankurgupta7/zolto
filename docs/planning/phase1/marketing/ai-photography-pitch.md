@@ -4,7 +4,7 @@
 > phone photo of a pair of earrings on a bedsheet, restyled by AI into a
 > product-catalogue shot and a full lifestyle image. Every backdrop, and
 > every "model," in the restyled versions is AI-generated — disclosed,
-> plainly, every time. This is a sales argument for Zolto, illustrated with
+> plainly, every time. This is a sales argument for Gwinn, illustrated with
 > a real maker's actual assets.
 
 ---
@@ -15,16 +15,16 @@ Small makers don't skip professional photography because they don't care
 how their products look. They skip it because a photographer, a model, and
 a studio rental cost more than the jewelry they'd be photographing.
 
-Zolto replaces that cost with a much smaller one: turn one rough phone
+Gwinn replaces that cost with a much smaller one: turn one rough phone
 photo into a catalogue-ready shot or a full lifestyle image for **$1 per
 image, pay-as-you-go — credits that never expire.** Still dramatically
 cheaper than booking a photographer, a model, or a studio. This isn't a
-free feature — image generation costs Zolto real money per image — so it's
+free feature — image generation costs Gwinn real money per image — so it's
 sold directly per credit, not folded into a subscription, and not billed
 as a recurring fee a maker pays whether she uses it or not.
 
 **The disclosure is the point, not a caveat.** Kalakosh tells its own
-customers which images are AI-styled. Zolto tells its prospective customers
+customers which images are AI-styled. Gwinn tells its prospective customers
 the same thing about how the images were made. A small business shouldn't
 need to hide the tool it used to compete — it should be able to point at it.
 
@@ -44,7 +44,7 @@ need to hide the tool it used to compete — it should be able to point at it.
 Same product. Three treatments. One of them cost nothing beyond a phone
 camera; the other two cost an AI generation call.
 
-## What Zolto tells prospective customers
+## What Gwinn tells prospective customers
 
 1. **You don't need a photographer to look professional.** One clear photo
    of the actual product is the only real-world input required.
@@ -75,7 +75,7 @@ All of the above are subscriptions: pay monthly, lose unused images at the
 end of the cycle, committed whether or not that month has any new products
 to shoot. None of them offer plain pay-as-you-go, non-expiring credits.
 
-**Proposed Zolto model: AI Photo Credits, $1/image, no subscription.**
+**Proposed Gwinn model: AI Photo Credits, $1/image, no subscription.**
 Effective per-image cost on the table above ranges roughly $0.10 (Pebblely
 at volume) to $0.56 (entry-tier fashion/lifestyle generators) — so $1/credit
 is not the cheapest per-image rate on paper. The pitch is different:
@@ -83,7 +83,7 @@ is not the cheapest per-image rate on paper. The pitch is different:
 never expire or get clawed back at renewal.** For a small maker adding a
 handful of products in a slow month, that beats being locked into a $19–39
 monthly plan to get access to lifestyle-scene generation at all.
-**The $1 price point needs checking against Zolto's real per-image
+**The $1 price point needs checking against Gwinn's real per-image
 generation cost before this ships** — the number is a starting anchor
 based on being simple and round, not a costed quote.
 
@@ -91,7 +91,7 @@ based on being simple and round, not a costed quote.
 
 - A dedicated section on the **pricing page** ("what your photos could look
   like — see a real before/after").
-- A short piece on the **marketing homepage**, since it's a Zolto feature
+- A short piece on the **marketing homepage**, since it's a Gwinn feature
   pitch first and a Kalakosh story second.
 - Cross-linked from **Launch Diary #1**, which now describes the real
   (AI-restyled, disclosed) photo process rather than the earlier inaccurate

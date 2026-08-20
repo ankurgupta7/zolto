@@ -44,7 +44,7 @@ COPY drizzle.config.ts ./
 # The app listens on 3000 inside the container. It is not published to a host
 # port by default: on the shared server the Kalakosh-ch Caddy (which owns
 # 80/443) reaches the app over the "kalakosh-shared" Docker network and serves
-# it at zolto.ch — so nothing here collides with the Kalakosh-ch stack.
+# it at gwinn.ch — so nothing here collides with the Kalakosh-ch stack.
 EXPOSE 3000
 
 # Stamp the image with a hash of the source it was built from, so update.sh can
@@ -57,6 +57,6 @@ EXPOSE 3000
 # final layer, a rebuild whose real inputs are unchanged is a cache hit all the
 # way down. deploy/lib/build.test.sh asserts the ordering.
 ARG SOURCE_FINGERPRINT=unknown
-LABEL ch.zolto.source-fingerprint=$SOURCE_FINGERPRINT
+LABEL ch.gwinn.source-fingerprint=$SOURCE_FINGERPRINT
 
 CMD ["node", "dist/index.js"]

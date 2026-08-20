@@ -1,3 +1,4 @@
+import { BRAND } from "@shared/brand";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { User } from "../../drizzle/schema";
 import { parseArgs, resolveOperator } from "./cli";
@@ -5,7 +6,7 @@ import { createFakeIo } from "./fakeIo";
 
 const owner = {
   id: 1,
-  email: "owner@zolto.ch",
+  email: `owner@${BRAND.domain}`,
   name: "Owner",
   role: "superadmin",
   lastSignedIn: new Date("2026-03-01T00:00:00Z"),
@@ -14,7 +15,7 @@ const owner = {
 const second = {
   ...owner,
   id: 2,
-  email: "second@zolto.ch",
+  email: `second@${BRAND.domain}`,
   name: "Second",
 } as User;
 
@@ -47,17 +48,21 @@ describe("parseArgs", () => {
   });
 
   it("takes the operator to act as", () => {
-    expect(parseArgs(["--as", "owner@zolto.ch"]).as).toBe("owner@zolto.ch");
-    expect(parseArgs(["--as=owner@zolto.ch"]).as).toBe("owner@zolto.ch");
+    expect(parseArgs(["--as", `owner@${BRAND.domain}`]).as).toBe(
+      `owner@${BRAND.domain}`,
+    );
+    expect(parseArgs([`--as=owner@${BRAND.domain}`]).as).toBe(
+      `owner@${BRAND.domain}`,
+    );
   });
 
   it("combines flags", () => {
     expect(
-      parseArgs(["-r", "--store=kalakosh", "--as=owner@zolto.ch"]),
+      parseArgs(["-r", "--store=kalakosh", `--as=owner@${BRAND.domain}`]),
     ).toEqual({
       readOnly: true,
       store: "kalakosh",
-      as: "owner@zolto.ch",
+      as: `owner@${BRAND.domain}`,
       help: false,
     });
   });
@@ -82,27 +87,27 @@ describe("resolveOperator", () => {
   it("honours --as when it names a real owner", async () => {
     const fake = createFakeIo([]);
     expect(
-      await resolveOperator(fake.io, [owner, second], "second@zolto.ch"),
+      await resolveOperator(fake.io, [owner, second], `second@${BRAND.domain}`),
     ).toBe(second);
   });
 
   it("matches --as case-insensitively", async () => {
     const fake = createFakeIo([]);
     expect(
-      await resolveOperator(fake.io, [owner, second], "SECOND@ZOLTO.CH"),
+      await resolveOperator(fake.io, [owner, second], "SECOND@GWINN.CH"),
     ).toBe(second);
   });
 
   it("says so and falls back to asking when --as names nobody", async () => {
     const fake = createFakeIo(["1"]);
     expect(
-      await resolveOperator(fake.io, [owner, second], "nope@zolto.ch"),
+      await resolveOperator(fake.io, [owner, second], `nope@${BRAND.domain}`),
     ).toBe(owner);
     expect(fake.text()).toContain("is not a platform owner here");
   });
 
   it("prefers ADMIN_EMAIL when several owners exist, rather than asking every time", async () => {
-    vi.stubEnv("ADMIN_EMAIL", "second@zolto.ch");
+    vi.stubEnv("ADMIN_EMAIL", `second@${BRAND.domain}`);
     const fake = createFakeIo([]);
     expect(await resolveOperator(fake.io, [owner, second], null)).toBe(second);
   });

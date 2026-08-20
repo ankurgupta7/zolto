@@ -13,7 +13,7 @@ export const NOT_ADMIN_ERR_MSG = "You do not have required permission (10002)";
 export type ProductCategory = string;
 
 /**
- * Where a new merchant sold before Zolto — signup's "already selling
+ * Where a new merchant sold before Gwinn — signup's "already selling
  * somewhere?" answer, stored in tenant_settings.migrate_from. Drives the
  * onboarding checklist's bring-your-catalogue step toward the matching
  * importer (server/onboarding.ts → /admin/products/import).

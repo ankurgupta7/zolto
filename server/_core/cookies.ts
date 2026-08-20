@@ -22,8 +22,8 @@ function requestHostname(req: Request): string | undefined {
 }
 
 /**
- * Session cookie options. On the platform's own domain (zolto.ch, or
- * zolto.kalakosh.ch alongside Kalakosh-ch) and its tenant subdomains, the
+ * Session cookie options. On the platform's own domain (gwinn.ch, or
+ * gwinn.kalakosh.ch alongside Kalakosh-ch) and its tenant subdomains, the
  * cookie domain is widened to `.{root}` so a session established on one host
  * (e.g. the canonical host Google OAuth redirects back to) is also valid on
  * every tenant subdomain — see oauth.ts's cross-subdomain login flow. Tenant

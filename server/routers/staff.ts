@@ -10,6 +10,7 @@
  * user calls claimInvite, which moves them onto the tenant as role "staff".
  */
 
+import { BRAND } from "@shared/brand";
 import { z } from "zod";
 import crypto from "node:crypto";
 import { TRPCError } from "@trpc/server";
@@ -123,7 +124,7 @@ export const staffRouter = router({
         emailed = await sendTransactionalEmail({
           to: email,
           subject: `${ctx.tenant.name} invited you to their team`,
-          html: `<p>${escapeHtml(ctx.tenant.name)} invited you to join their store team on Zolto.</p>
+          html: `<p>${escapeHtml(ctx.tenant.name)} invited you to join their store team on ${BRAND.name}.</p>
 <p><a href="${claimUrl}">Accept the invite</a> (valid for 7 days).</p>`,
         });
       } catch (err) {

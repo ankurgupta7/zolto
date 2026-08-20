@@ -81,7 +81,7 @@ export default function Stores() {
     <div>
       <PageHeader
         title="Stores"
-        description={`${all.length} store${all.length === 1 ? "" : "s"} on Zolto.`}
+        description={`${all.length} store${all.length === 1 ? "" : "s"} on Gwinn.`}
       />
 
       {lockedOut.length > 0 && (
@@ -155,7 +155,7 @@ export default function Stores() {
                       {t.name}
                     </Link>
                     <span className="block text-xs text-muted-foreground">
-                      {t.domain ?? `${t.slug}.zolto.ch`}
+                      {t.domain ?? `${t.slug}.gwinn.ch`}
                     </span>
                   </td>
                   <td className="px-4 py-3">
@@ -206,7 +206,7 @@ export default function Stores() {
                   </td>
                   <td className="px-4 py-3 text-right">
                     <a
-                      href={`https://${t.domain ?? `${t.slug}.zolto.ch`}`}
+                      href={`https://${t.domain ?? `${t.slug}.gwinn.ch`}`}
                       target="_blank"
                       rel="noreferrer"
                       aria-label={`Open ${t.name}'s storefront`}

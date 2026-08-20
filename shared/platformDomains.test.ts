@@ -1,3 +1,4 @@
+import { BRAND } from "./brand";
 import { describe, expect, it } from "vitest";
 import {
   FAQS,
@@ -9,16 +10,16 @@ import {
 } from "./platform";
 
 /**
- * Zolto answers on exactly one domain: zolto.ch, and its subdomains for tenant
+ * Gwinn answers on exactly one domain: gwinn.ch, and its subdomains for tenant
  * storefronts (server/_core/platformDomain.ts derives the root from
  * PUBLIC_BASE_URL). Nothing customer-facing may advertise another.
  *
- * The Free plan's feature list once promised "an online store on a zolto.shop
+ * The Free plan's feature list once promised "an online store on a gwinn.shop
  * address" — a domain the platform neither served nor owned. That string is not
  * page copy: FEATURES feeds the pricing card, /llms.txt and the platform MCP
  * tools, so human visitors and AI agents were being handed an address that
  * resolved to nothing, and any squatter could have registered it and phished
- * merchants with a name Zolto itself was publishing.
+ * merchants with a name Gwinn itself was publishing.
  *
  * This asserts on the constants' VALUES rather than grepping source, so a
  * comment can still explain the history without tripping the guard.
@@ -59,7 +60,7 @@ function marketingStrings(): { where: string; text: string }[] {
 
 /**
  * Domains mentioned in a string. Deliberately loose — it should catch
- * "zolto.shop" written in prose, not just a full URL.
+ * "gwinn.shop" written in prose, not just a full URL.
  */
 function domainsIn(text: string): string[] {
   const matches = text.match(
@@ -70,8 +71,8 @@ function domainsIn(text: string): string[] {
 
 /** Domains legitimately named in copy: ours, plus third parties we discuss. */
 const ALLOWED = new Set([
-  "zolto.ch",
-  // Named in comparison and integration copy — real companies, not Zolto hosts.
+  BRAND.domain,
+  // Named in comparison and integration copy — real companies, not Gwinn hosts.
   "stripe.com",
   "sumup.com",
   "worldline.com",
@@ -82,8 +83,8 @@ const ALLOWED = new Set([
 /** Filenames and protocol names the loose matcher will also pick up. */
 const NOT_A_DOMAIN = /^(llms\.txt|llms-full\.txt|robots\.txt|sitemap\.xml)$/i;
 
-describe("platform copy names only domains Zolto serves", () => {
-  it("mentions no domain other than zolto.ch", () => {
+describe(`platform copy names only domains ${BRAND.name} serves`, () => {
+  it(`mentions no domain other than ${BRAND.domain}`, () => {
     const offenders: string[] = [];
     for (const { where, text } of marketingStrings()) {
       for (const domain of domainsIn(text)) {
@@ -100,7 +101,7 @@ describe("platform copy names only domains Zolto serves", () => {
     // The specific regression. Kept as its own case so a failure says exactly
     // what went wrong rather than dumping the whole allow-list diff.
     for (const { where, text } of marketingStrings()) {
-      expect(`${where} :: ${text}`).not.toMatch(/zolto\.shop/i);
+      expect(`${where} :: ${text}`).not.toMatch(/gwinn\.shop/i);
     }
   });
 
@@ -108,7 +109,7 @@ describe("platform copy names only domains Zolto serves", () => {
     // The fix must not have simply deleted the promise. A merchant choosing
     // Free needs to know they get a web address at all.
     const free = PLANS.find((p) => p.id === "free")!;
-    const addressLine = free.features.find((f) => /zolto\.ch/i.test(f));
+    const addressLine = free.features.find((f) => /gwinn\.ch/i.test(f));
     expect(addressLine).toBeDefined();
     expect(addressLine).toMatch(/online store/i);
   });
@@ -120,9 +121,9 @@ describe("platform copy names only domains Zolto serves", () => {
     expect(FEATURES.length).toBeGreaterThan(0);
     expect(PLATFORM.summary.length).toBeGreaterThan(0);
     for (const f of FEATURES) {
-      expect(f.description).not.toMatch(/zolto\.shop/i);
+      expect(f.description).not.toMatch(/gwinn\.shop/i);
     }
-    expect(PLATFORM.summary).not.toMatch(/zolto\.shop/i);
-    expect(PLATFORM.pricingSummary).not.toMatch(/zolto\.shop/i);
+    expect(PLATFORM.summary).not.toMatch(/gwinn\.shop/i);
+    expect(PLATFORM.pricingSummary).not.toMatch(/gwinn\.shop/i);
   });
 });

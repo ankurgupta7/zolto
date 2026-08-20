@@ -1,7 +1,7 @@
 /**
  * Tenant secrets vault — the ONLY sanctioned home for tenant-provided secrets.
  *
- * Platform credentials (Zolto's own Stripe key, Discord bot token, DB password)
+ * Platform credentials (Gwinn's own Stripe key, Discord bot token, DB password)
  * live in env vars. Tenant credentials (anything a merchant pastes into their
  * admin settings — a future per-tenant bot token, a POS provider token, ...) must
  * NEVER go into env vars: env is process-global, so one leak exposes every
@@ -13,7 +13,7 @@
  *     TENANT_SECRETS_KEY (env). A DB dump or leaked backup is useless without it.
  *   - Write-only UI contract: the plaintext is returned by nothing. The `hint`
  *     column (last 4 chars) lets the admin UI show "…3f9a" without decrypting.
- *   - Zolto admin cannot read tenant secrets: there is deliberately no tRPC
+ *   - Gwinn admin cannot read tenant secrets: there is deliberately no tRPC
  *     endpoint and no admin query that returns plaintext. getTenantSecret()
  *     exists for SERVER-side use only (calling the provider's API on the
  *     tenant's behalf); every decrypt is audit-logged and stamped in

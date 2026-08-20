@@ -1,3 +1,4 @@
+import { BRAND } from "@shared/brand";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // Mock the data + stripe layers so the router is exercised in isolation.
@@ -1049,7 +1050,7 @@ describe("tenant.getBySlug", () => {
     return tenantRouter.createCaller(ctx());
   }
 
-  it("tells the storefront whether this store may hide the Zolto credit", async () => {
+  it(`tells the storefront whether this store may hide the ${BRAND.name} credit`, async () => {
     // The storefront footer needs the white-label RIGHT (this) plus the
     // merchant's switch (from getSettings) — see shared/attribution.ts.
     const free = await slugCtx({
@@ -1164,13 +1165,13 @@ describe("tenant.updateSettings plan gates", () => {
     expect(set).toHaveBeenCalled();
   });
 
-  it("rejects hiding the Made with Zolto credit on the free plan", async () => {
+  it(`rejects hiding the Made with ${BRAND.name} credit on the free plan`, async () => {
     // The credit is what a Free store pays with; only a white-label plan may
     // switch it off. shared/attribution.ts ignores a stale `true` anyway, but
     // the write must not succeed in the first place.
     const { caller, set } = tenantCtx("free");
     await expect(
-      caller.updateSettings({ hideZoltoBadge: true }),
+      caller.updateSettings({ hidePlatformCredit: true }),
     ).rejects.toThrow(/Pro plan/);
     expect(set).not.toHaveBeenCalled();
   });
@@ -1178,7 +1179,7 @@ describe("tenant.updateSettings plan gates", () => {
   it("allows hiding the credit on the Pro plan", async () => {
     const { caller, set } = tenantCtx("pro");
     await expect(
-      caller.updateSettings({ hideZoltoBadge: true }),
+      caller.updateSettings({ hidePlatformCredit: true }),
     ).resolves.toEqual({ success: true });
     expect(set).toHaveBeenCalled();
   });
@@ -1188,7 +1189,7 @@ describe("tenant.updateSettings plan gates", () => {
     // must still be able to clear the flag it set while it had the feature.
     const { caller, set } = tenantCtx("free");
     await expect(
-      caller.updateSettings({ hideZoltoBadge: false }),
+      caller.updateSettings({ hidePlatformCredit: false }),
     ).resolves.toEqual({ success: true });
     expect(set).toHaveBeenCalled();
   });
@@ -1382,7 +1383,7 @@ describe("tenant.updateSettings authorization", () => {
       42,
     );
     await expect(
-      caller.updateSettings({ hideZoltoBadge: true }),
+      caller.updateSettings({ hidePlatformCredit: true }),
     ).rejects.toThrow();
     expect(set).not.toHaveBeenCalled();
   });
@@ -1971,7 +1972,7 @@ describe("tenant.domainStatus authorization", () => {
   });
 
   it("serves this store's own admin", async () => {
-    process.env.PLATFORM_DOMAIN = "app.zolto.ch";
+    process.env.PLATFORM_DOMAIN = `app.${BRAND.domain}`;
     const { caller } = statusCtx({
       openId: "google:admin",
       role: "admin",
@@ -1979,7 +1980,7 @@ describe("tenant.domainStatus authorization", () => {
     });
     await expect(caller.domainStatus()).resolves.toMatchObject({
       domain: "shop.example.com",
-      expected: "app.zolto.ch",
+      expected: `app.${BRAND.domain}`,
       pointsToUs: false,
     });
     delete process.env.PLATFORM_DOMAIN;
@@ -2080,7 +2081,7 @@ describe("tenant POS pairing links", () => {
 
     expect(res.available).toBe(true);
     if (!res.available) return;
-    expect(res.deepLink).toMatch(/^zolto:\/\/pair\?t=/);
+    expect(res.deepLink).toMatch(/^gwinn:\/\/pair\?t=/);
     expect(res.webLink).toContain("/pos/pair?t=");
     expect(res.expiresAt.getTime()).toBeGreaterThan(Date.now());
 

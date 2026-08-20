@@ -1,3 +1,4 @@
+import { BRAND } from "@shared/brand";
 import { describe, expect, it, beforeAll } from "vitest";
 import Stripe from "stripe";
 
@@ -289,7 +290,7 @@ describeIf("Stripe Integration — Webhook Verification", () => {
 // This is the revenue mechanism of the whole pricing model
 // (docs/planning/pricing-pivot-agent-commerce.md): a Free-plan tenant's
 // customer pays into the TENANT's own connected account (a direct charge),
-// and Zolto's 1% rides along as application_fee_amount.
+// and Gwinn's 1% rides along as application_fee_amount.
 //
 // It matters that this is tested against the real API rather than a mock,
 // because the failure mode is not "the fee is skipped" — Stripe rejects the
@@ -300,7 +301,7 @@ describeIf("Stripe Integration — Webhook Verification", () => {
 /**
  * Find a connected account to run the direct-charge tests against.
  *
- * Deliberately does NOT create one. Zolto never creates connected accounts in
+ * Deliberately does NOT create one. Gwinn never creates connected accounts in
  * production — tenants link their OWN existing Stripe account over Connect
  * OAuth (server/stripeConnect.ts `stripe.oauth.token`), and we only ever
  * receive an account id. Creating one here also broke: Stripe now rejects
@@ -336,7 +337,7 @@ async function resolveConnectedAccount(stripe: Stripe): Promise<string> {
     // the error below then tells the operator exactly which account to fix.
     await stripe.accounts
       .update(usable.id, {
-        business_profile: { name: "Zolto Integration Test Store" },
+        business_profile: { name: `${BRAND.name} Integration Test Store` },
       })
       .catch(() => {});
   }
@@ -349,7 +350,7 @@ async function resolveConnectedAccount(stripe: Stripe): Promise<string> {
     "No connected account available, so the platform fee was NOT verified. " +
       "This is a test-environment gap, not a Stripe rejection of the fee. Fix by either: " +
       "(a) set STRIPE_TEST_CONNECTED_ACCOUNT_ID to an existing test-mode connected account (acct_...); " +
-      "(b) link one through Zolto's own Connect OAuth flow, which is what production does; or " +
+      `(b) link one through ${BRAND.name}'s own Connect OAuth flow, which is what production does; or ` +
       "(c) create one via Accounts v2 (POST /v2/core/accounts) or by enabling Accounts v1 " +
       "support at https://dashboard.stripe.com/settings/features/feat_accounts_v1_support.",
   );
@@ -411,7 +412,7 @@ describeIf(
             },
           ],
           payment_intent_data: {
-            statement_descriptor: "ZOLTO TEST",
+            statement_descriptor: "GWINN TEST",
             // 1% of the CHF 65 subtotal — what a Free-plan tenant is charged.
             application_fee_amount: 65,
           },
@@ -480,7 +481,7 @@ describeIf(
             },
           ],
           // Pro: no application_fee_amount key at all.
-          payment_intent_data: { statement_descriptor: "ZOLTO TEST" },
+          payment_intent_data: { statement_descriptor: "GWINN TEST" },
           success_url: "https://example.com/checkout/success",
           cancel_url: "https://example.com/checkout/cancel",
           metadata: { productIds: "1", channel: "web" },

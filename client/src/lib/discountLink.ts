@@ -15,7 +15,7 @@
 /** The query parameter a share link carries. */
 export const DISCOUNT_PARAM = "discount";
 
-const STORAGE_KEY = "zolto_discount_code";
+const STORAGE_KEY = "gwinn_discount_code";
 
 /** Minimal storage surface, so tests need no jsdom storage at all. */
 export interface CodeStorage {

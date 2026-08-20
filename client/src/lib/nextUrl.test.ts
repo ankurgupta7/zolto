@@ -1,12 +1,12 @@
 import { describe, it, expect } from "vitest";
 import { sanitizeNextUrl } from "./nextUrl";
 
-const ORIGIN = "https://kalakosh.zolto.ch";
+const ORIGIN = "https://kalakosh.gwinn.ch";
 
 describe("sanitizeNextUrl", () => {
   it("absolutizes a rooted path onto the current origin", () => {
     // Must not stay relative: the OAuth callback runs on the canonical host,
-    // so a bare "/admin" would land the merchant on zolto.ch, not their store.
+    // so a bare "/admin" would land the merchant on gwinn.ch, not their store.
     expect(sanitizeNextUrl("/admin/billing", ORIGIN)).toBe(
       `${ORIGIN}/admin/billing`,
     );
@@ -21,7 +21,7 @@ describe("sanitizeNextUrl", () => {
   it("rejects another origin", () => {
     expect(sanitizeNextUrl("https://evil.example.com/", ORIGIN)).toBeNull();
     // A different tenant's subdomain is still a different origin.
-    expect(sanitizeNextUrl("https://other.zolto.ch/admin", ORIGIN)).toBeNull();
+    expect(sanitizeNextUrl("https://other.gwinn.ch/admin", ORIGIN)).toBeNull();
   });
 
   it("rejects protocol-relative targets that browsers resolve off-origin", () => {

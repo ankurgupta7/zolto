@@ -8,7 +8,7 @@ import {
   authorJsonLd,
 } from "./authors";
 
-const BASE = "https://zolto.com";
+const BASE = "https://gwinn.com";
 
 describe("author attribution gate", () => {
   it("attributes to the organization while no author is named", () => {

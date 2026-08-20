@@ -2,7 +2,7 @@
 
 > Content Engine & Launch Partner (Months 1–2)
 
-This folder contains everything needed to execute Phase 1 of the Zolto business plan. All content is ready to review, edit, and deploy.
+This folder contains everything needed to execute Phase 1 of the Gwinn business plan. All content is ready to review, edit, and deploy.
 
 ---
 
@@ -95,7 +95,7 @@ importantly — the list of claims we may **not** make.
 
 The format is a real person walking the Zürich lakeside promenade, showing the
 product on her own laptop and phone, in the **third person** — she is not the
-maker. That distance is deliberate: it lets beat 6 concede that Zolto is not
+maker. That distance is deliberate: it lets beat 6 concede that Gwinn is not
 the cheapest way to take a card, which a founder saying it to camera could not
 pull off, and which is the most persuasive five seconds in the video.
 

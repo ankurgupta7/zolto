@@ -1,9 +1,9 @@
 /**
  * Stripe Connect (Standard) — lets each tenant link their OWN Stripe account
- * for their storefront's checkout, separate from Zolto's own
- * stripe_customer_id/stripe_subscription_id (Zolto billing the tenant for the
+ * for their storefront's checkout, separate from Gwinn's own
+ * stripe_customer_id/stripe_subscription_id (Gwinn billing the tenant for the
  * platform subscription — see server/stripe.ts). A tenant's customers pay
- * into their connected account directly; Zolto never holds that money. On the
+ * into their connected account directly; Gwinn never holds that money. On the
  * Free plan a 1% platform fee is taken on online/agent orders as a Stripe
  * application fee on the direct charge (server/routers/checkout.ts); Pro
  * removes it. See docs/planning/pricing-pivot-agent-commerce.md.
@@ -18,7 +18,7 @@
  *      and save tenants.stripe_connected_account_id.
  *
  * Required env vars:
- *   STRIPE_SECRET_KEY        — Zolto's own (platform) secret key. Also used
+ *   STRIPE_SECRET_KEY        — Gwinn's own (platform) secret key. Also used
  *                              to call stripe.oauth.token on the platform's
  *                              behalf (see server/stripe.ts getStripe()).
  *   STRIPE_CONNECT_CLIENT_ID — the platform's Connect OAuth client id
@@ -74,7 +74,7 @@ async function verifyState(
 // Stripe requires an exact, pre-registered redirect_uri — no wildcard
 // subdomains. So the OAuth round-trip always uses ONE canonical origin
 // (PUBLIC_BASE_URL, set in every deploy mode), never the request's own host —
-// otherwise every tenant subdomain (blah.zolto.ch) would need its own entry
+// otherwise every tenant subdomain (blah.gwinn.ch) would need its own entry
 // in the Stripe Dashboard's Connect OAuth settings, which doesn't scale for a
 // self-serve multi-tenant app. Falls back to the request's own origin only
 // when PUBLIC_BASE_URL isn't configured (e.g. a single-host self-hosted

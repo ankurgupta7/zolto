@@ -23,7 +23,7 @@ jobs:
         image: mysql:8.0
         env:
           MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: zolto
+          MYSQL_DATABASE: gwinn
         ports:
           - 3306:3306
         options: >-
@@ -33,7 +33,7 @@ jobs:
           --health-retries=20
 
     env:
-      DATABASE_URL: mysql://root:root@127.0.0.1:3306/zolto
+      DATABASE_URL: mysql://root:root@127.0.0.1:3306/gwinn
       # Storefront journey knobs (see e2e/storefront.spec.ts).
       E2E_STOREFRONT: "1"
       E2E_TENANT_SLUG: demo

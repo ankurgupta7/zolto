@@ -359,7 +359,7 @@ describe("page chrome", () => {
 
   it("keeps the English chrome exactly as the page had it inlined", () => {
     expect(BLOG_CHROME.en.indexMetaTitle).toBe(
-      "Launch Diary — A Maker's First Online Store | Zolto",
+      "Launch Diary — A Maker's First Online Store | Gwinn",
     );
     expect(BLOG_CHROME.en.indexEyebrow).toBe("The Launch Diary");
     expect(BLOG_CHROME.en.indexTitle).toBe(

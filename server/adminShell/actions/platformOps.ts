@@ -8,7 +8,7 @@ import { askLookbackDays, confirmWrite } from "./helpers";
 
 export async function operatingMetrics(ctx: ActionContext): Promise<void> {
   const m = await ctx.platform.platform.metrics();
-  ctx.io.printLines(heading(`Zolto — operating metrics (${m.month})`));
+  ctx.io.printLines(heading(`Gwinn — operating metrics (${m.month})`));
   ctx.io.printLines(
     keyValues([
       [
