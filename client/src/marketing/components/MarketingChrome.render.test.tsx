@@ -1,3 +1,4 @@
+import { BRAND } from "@shared/brand";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   render,
@@ -212,7 +213,7 @@ describe("MarketingNav — language picker", () => {
   afterEach(async () => {
     // Leave the suite in its jsdom baseline language (en) with no saved choice.
     await i18n.changeLanguage("en");
-    localStorage.removeItem("kalakosh_lang");
+    localStorage.removeItem(BRAND.langKey);
     document.documentElement.lang = "";
   });
 
@@ -234,7 +235,7 @@ describe("MarketingNav — language picker", () => {
     fireEvent.change(picker, { target: { value: "fr" } });
 
     // Same persistence contract as the storefront switcher.
-    expect(localStorage.getItem("kalakosh_lang")).toBe("fr");
+    expect(localStorage.getItem(BRAND.langKey)).toBe("fr");
     expect(document.documentElement.lang).toBe("fr-CH");
     // The nav itself re-renders in French.
     await waitFor(() =>

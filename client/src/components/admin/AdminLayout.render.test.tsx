@@ -1,3 +1,4 @@
+import { BRAND } from "@shared/brand";
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import i18n from "@/lib/i18n";
@@ -228,7 +229,7 @@ describe("AdminLayout", () => {
     fireEvent.change(switcher, { target: { value: "fr" } });
     expect(i18n.language).toBe("fr");
     // Same persistence contract as the storefront switcher.
-    expect(localStorage.getItem("kalakosh_lang")).toBe("fr");
+    expect(localStorage.getItem(BRAND.langKey)).toBe("fr");
     expect(document.documentElement.lang).toBe("fr-CH");
     expect(screen.getByText("Commandes")).toBeTruthy();
   });

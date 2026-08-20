@@ -1,3 +1,4 @@
+import { BRAND } from "@shared/brand";
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
 import type { ReactNode } from "react";
@@ -53,7 +54,7 @@ const NAV = [
 
 /**
  * The marketing language picker — the same mechanism as the storefront's
- * (Navbar.tsx): persist to the shared "kalakosh_lang" key, switch the global
+ * (Navbar.tsx): persist to the shared BRAND.langKey, switch the global
  * i18next instance, and keep <html lang> truthful. Styled for the marketing
  * chrome rather than the storefront's.
  */
@@ -64,7 +65,7 @@ export function LanguageSwitcher({ className = "" }: { className?: string }) {
 
   const switchTo = (next: SupportedLanguage) => {
     i18n.changeLanguage(next);
-    localStorage.setItem("kalakosh_lang", next);
+    localStorage.setItem(BRAND.langKey, next);
     document.documentElement.lang = HTML_LANG[next];
   };
 

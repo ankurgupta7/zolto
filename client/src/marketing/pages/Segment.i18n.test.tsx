@@ -1,3 +1,4 @@
+import { BRAND } from "@shared/brand";
 import { describe, it, expect, afterEach } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
 import { Route, Router } from "wouter";
@@ -11,7 +12,7 @@ afterEach(async () => {
   // jsdom's navigator.language is en-US, so the suite's baseline is English —
   // restore it so this file leaves no language behind for other tests.
   await i18n.changeLanguage("en");
-  localStorage.removeItem("kalakosh_lang");
+  localStorage.removeItem(BRAND.langKey);
 });
 
 function renderSegment(path: string) {

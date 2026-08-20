@@ -35,6 +35,7 @@ const admin = {
   fr: { ...adminCoreFr, ...adminCatalogFr, ...adminStoreFr, ...adminOpsFr },
   it: { ...adminCoreIt, ...adminCatalogIt, ...adminStoreIt, ...adminOpsIt },
 };
+import { BRAND } from "@shared/brand";
 import {
   DEFAULT_LANGUAGE,
   HTML_LANG,
@@ -44,7 +45,7 @@ import {
 } from "@/lib/languages";
 
 function initialLanguage(): string {
-  const saved = localStorage.getItem("kalakosh_lang");
+  const saved = localStorage.getItem(BRAND.langKey);
   if (isSupportedLanguage(saved)) return saved;
   // No (valid) saved choice: fall back to the browser language when we
   // cover it, so a Romandy visitor starts in French rather than German.
@@ -64,7 +65,15 @@ i18n.use(initReactI18next).init({
   lng: initialLanguage(),
   fallbackLng: DEFAULT_LANGUAGE,
   supportedLngs: [...SUPPORTED_LANGUAGES],
-  interpolation: { escapeValue: false },
+  interpolation: {
+    escapeValue: false,
+    // The platform's name is not translated, and it is also not spelled in the
+    // locale files: every string that needs it writes `{{brand}}` and i18next
+    // fills it in from shared/brand.ts. That keeps ~500 translated strings out
+    // of a rename's blast radius, and it keeps inflection correct — German
+    // takes a genitive "{{brand}}s", which a hard-coded name could not survive.
+    defaultVariables: { brand: BRAND.name },
+  },
 });
 
 // Keep <html lang> truthful from first paint, not only after a manual switch.

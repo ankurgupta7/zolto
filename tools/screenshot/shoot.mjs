@@ -90,7 +90,7 @@ if (shotLang) {
   // Runs before any page script, so i18n reads it during module init rather
   // than booting English and re-rendering after the shot is already taken.
   await page.addInitScript((lang) => {
-    localStorage.setItem("kalakosh_lang", lang);
+    localStorage.setItem(langKey, lang);
   }, shotLang);
 }
 

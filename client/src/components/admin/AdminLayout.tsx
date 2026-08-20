@@ -7,6 +7,7 @@
  * display (hidden vs locked vs open) — the server enforces access.
  */
 
+import { BRAND } from "@shared/brand";
 import { useEffect, useState, type ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import * as icons from "lucide-react";
@@ -46,7 +47,7 @@ function displayRole(role: string | undefined): AdminRole {
 
 /**
  * The same four-language switcher the storefront Navbar has, restyled for the
- * sidebar: persists the choice under "kalakosh_lang" and keeps <html lang>
+ * sidebar: persists the choice under BRAND.langKey and keeps <html lang>
  * truthful, so admin and storefront share one language preference.
  */
 function LanguageSwitcher() {
@@ -56,7 +57,7 @@ function LanguageSwitcher() {
 
   const switchTo = (next: SupportedLanguage) => {
     i18n.changeLanguage(next);
-    localStorage.setItem("kalakosh_lang", next);
+    localStorage.setItem(BRAND.langKey, next);
     document.documentElement.lang = HTML_LANG[next];
   };
 

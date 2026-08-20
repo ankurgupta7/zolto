@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { BRAND } from "../shared/brand";
 
 // Browser end-to-end smoke test. Boots the real app (see playwright.config.ts's
 // webServer) and drives it in a headless Chromium, verifying the SPA actually
@@ -46,11 +47,14 @@ test.describe("marketing shell", () => {
 
   test("switching language re-renders the nav in German", async ({ page }) => {
     // The platform ships in de/fr/it/en and stores the choice under
-    // "kalakosh_lang". Worth one browser-level assertion: the unit tests can
+    // BRAND.langKey. Worth one browser-level assertion: the unit tests can
     // prove the locale files agree, but only a real page load proves the saved
     // choice beats the browser's own language on first paint.
-    await page.addInitScript(() =>
-      window.localStorage.setItem("kalakosh_lang", "de"),
+    // The callback is serialised and run in the page, so the key has to travel
+    // as an argument — a closure over BRAND would arrive undefined.
+    await page.addInitScript(
+      (key: string) => window.localStorage.setItem(key, "de"),
+      BRAND.langKey,
     );
     await page.goto("/", { waitUntil: "domcontentloaded" });
 
