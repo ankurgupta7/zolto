@@ -27,9 +27,9 @@
                 android:layout_gravity="center"
                 android:adjustViewBounds="true"
                 android:scaleType="fitCenter"
-                android:src="@drawable/zolto_logo"
+                android:src="@drawable/gwinn_logo"
                 android:visibility="visible"
-                android:contentDescription="Zolto Zürich" />
+                android:contentDescription="Gwinn Zürich" />
 
         </androidx.appcompat.widget.Toolbar>
 
@@ -201,7 +201,7 @@
             android:enabled="false"
             android:text="@string/review_sale"
             android:textSize="16sp"
-            style="@style/Widget.Zolto.Button" />
+            style="@style/Widget.Brand.Button" />
 
     </LinearLayout>
 

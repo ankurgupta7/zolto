@@ -19,6 +19,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "ZoltoPOS"
+rootProject.name = "GwinnPOS"
 include(":app")
 include(":logic")

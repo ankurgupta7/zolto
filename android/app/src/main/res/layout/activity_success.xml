@@ -107,7 +107,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="@string/done"
-                style="@style/Widget.Zolto.Button.Outlined" />
+                style="@style/Widget.Brand.Button.Outlined" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_send_receipt"
@@ -116,7 +116,7 @@
                 android:layout_weight="1"
                 android:layout_marginStart="8dp"
                 android:text="@string/send_receipt"
-                style="@style/Widget.Zolto.Button.Primary" />
+                style="@style/Widget.Brand.Button.Primary" />
         </LinearLayout>
     </LinearLayout>
 </LinearLayout>

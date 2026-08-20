@@ -168,6 +168,34 @@ const FOREIGN_SURFACES: ReadonlyArray<{
     what: "released APK filename",
     expected: () => BRAND.androidApkAsset,
   },
+  // The two register apps parse pairing links themselves, so the scheme and the
+  // fallback origin are literals in Kotlin and Swift. If either drifts from
+  // server/posPairing.ts the deep link silently stops opening the app.
+  {
+    file: "android/logic/src/main/kotlin/ch/gwinn/pos/logic/PairingLink.kt",
+    what: "pairing scheme",
+    expected: () => `const val SCHEME = "${BRAND.urlScheme}"`,
+  },
+  {
+    file: "android/logic/src/main/kotlin/ch/gwinn/pos/logic/PairingLink.kt",
+    what: "fallback server origin",
+    expected: () => `const val DEFAULT_BASE_URL = "${BRAND.url}"`,
+  },
+  {
+    file: `ios/${BRAND.posProduct}/${BRAND.posProduct}/Logic/Pairing.swift`,
+    what: "fallback server origin",
+    expected: () => `static let defaultBaseURL = "${BRAND.url}"`,
+  },
+  {
+    file: `ios/${BRAND.posProduct}/${BRAND.posProduct}/Logic/Pairing.swift`,
+    what: "pairing scheme",
+    expected: () => `== "${BRAND.urlScheme}"`,
+  },
+  {
+    file: `ios/${BRAND.posProduct}/${BRAND.posProduct}/Services/SecureStore.swift`,
+    what: "Keychain service holding the paired POS key",
+    expected: () => `"${BRAND.iosKeychainService}"`,
+  },
 ];
 
 describe("surfaces that cannot import shared/brand.ts", () => {

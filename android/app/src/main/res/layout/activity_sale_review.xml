@@ -12,7 +12,7 @@
         android:layout_height="?attr/actionBarSize"
         android:background="@color/warm_white"
         android:title="@string/sale_review_title"
-        style="@style/Widget.Zolto.Toolbar" />
+        style="@style/Widget.Brand.Toolbar" />
 
     <ScrollView
         android:layout_width="match_parent"
@@ -53,7 +53,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
                 android:text="@string/add_custom_item"
-                style="@style/Widget.Zolto.Button.Outlined" />
+                style="@style/Widget.Brand.Button.Outlined" />
 
         </LinearLayout>
 
@@ -88,7 +88,7 @@
             android:layout_marginEnd="4dp"
             android:text="@string/pay_card"
             android:textSize="16sp"
-            style="@style/Widget.Zolto.Button" />
+            style="@style/Widget.Brand.Button" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_cash"
@@ -99,7 +99,7 @@
             android:layout_marginEnd="4dp"
             android:text="@string/pay_cash"
             android:textSize="16sp"
-            style="@style/Widget.Zolto.Button.Outlined" />
+            style="@style/Widget.Brand.Button.Outlined" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_twint"
@@ -109,7 +109,7 @@
             android:layout_marginStart="4dp"
             android:text="@string/pay_twint"
             android:textSize="16sp"
-            style="@style/Widget.Zolto.Button.Outlined" />
+            style="@style/Widget.Brand.Button.Outlined" />
 
         <!-- Only shown once the merchant has uploaded their TWINT QR sticker
              (GET /api/pos/config → twintQrUrl); hidden otherwise so we never
@@ -123,7 +123,7 @@
             android:text="@string/pay_twint_qr"
             android:textSize="14sp"
             android:visibility="gone"
-            style="@style/Widget.Zolto.Button.Outlined" />
+            style="@style/Widget.Brand.Button.Outlined" />
 
     </LinearLayout>
 
