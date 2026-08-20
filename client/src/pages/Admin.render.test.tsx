@@ -374,7 +374,7 @@ beforeEach(() => {
   mocks.translateLocalesResult = { skipped: false };
   window.history.replaceState({}, "", "/admin");
   // Keep the auto-starting guided tour overlay out of the way.
-  localStorage.setItem("zolto.tour.admin-v1", "done");
+  localStorage.setItem("gwinn.tour.admin-v1", "done");
 });
 afterEach(() => cleanup());
 
@@ -1146,7 +1146,7 @@ describe("Admin page — header tools on a phone", () => {
   // A tour spotlights elements by selector, so a collapsed menu has to unfold
   // — three of the six dashboard steps point at controls inside it.
   it("unfolds the tools while a guided tour is running", async () => {
-    localStorage.removeItem("zolto.tour.admin-v1");
+    localStorage.removeItem("gwinn.tour.admin-v1");
     render(<Admin />);
     await waitFor(() =>
       expect(screen.getByRole("link", { name: "CSV Import" })).toBeTruthy(),

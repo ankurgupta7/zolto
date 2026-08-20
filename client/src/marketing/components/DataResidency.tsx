@@ -7,7 +7,7 @@ import { useMarketingT } from "../lib/marketingI18n";
 /**
  * DataResidency — where the shop physically lives.
  *
- * Every other band on this page is about what Zolto does; this one is about
+ * Every other band on this page is about what Gwinn does; this one is about
  * where it runs. For a maker selling into the EU (and for the customer who
  * eventually asks), "the database with your customers' addresses is in Germany"
  * is a concrete, checkable answer, so the section states the facts plainly and

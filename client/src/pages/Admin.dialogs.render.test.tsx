@@ -257,7 +257,7 @@ beforeEach(() => {
   mocks.recatProposals = [];
   window.history.replaceState({}, "", "/admin");
   // Keep the auto-starting guided tour overlay out of the way.
-  localStorage.setItem("zolto.tour.admin-v1", "done");
+  localStorage.setItem("gwinn.tour.admin-v1", "done");
 });
 afterEach(() => cleanup());
 

@@ -21,7 +21,7 @@ export type MarketingTheme = (typeof THEMES)[number];
 export const THEME_PREFERENCES = ["system", "light", "dark"] as const;
 export type ThemePreference = (typeof THEME_PREFERENCES)[number];
 
-export const THEME_STORAGE_KEY = "zolto_theme";
+export const THEME_STORAGE_KEY = "gwinn_theme";
 
 /**
  * What a first-time visitor gets, before they have touched the toggle.

@@ -1,5 +1,5 @@
 /**
- * Platform router — Zolto's own operating metrics, for the platform owner.
+ * Platform router — Gwinn's own operating metrics, for the platform owner.
  *
  * Superadmin only, and deliberately separate from the tenant-facing routers:
  * everything here reads ACROSS tenants, which no store owner may ever do. A
@@ -145,7 +145,7 @@ export const platformRouter = router({
     }),
 
   /**
-   * Put a store on the house: give it a plan it doesn't pay for, waive Zolto's
+   * Put a store on the house: give it a plan it doesn't pay for, waive Gwinn's
    * cut of its online/agent orders, or both.
    *
    * This is the deliberate, recorded version of what `setTenantPlan` does by
@@ -245,7 +245,7 @@ export const platformRouter = router({
    * background? A merchant sees only their own store (insights.agentTraffic);
    * this crosses tenants by design, which is why it is superadmin-only.
    *
-   * `platformOnly` splits zolto.ch's own brief — read by an assistant helping
+   * `platformOnly` splits gwinn.ch's own brief — read by an assistant helping
    * someone choose a shop platform — from the storefronts', which are two
    * completely different questions that would otherwise be summed into one
    * uninterpretable number.

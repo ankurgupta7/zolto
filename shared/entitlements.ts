@@ -2,7 +2,7 @@
  * What a store is actually entitled to — the plan it *has* plus anything the
  * platform owner has given it **on the house**.
  *
- * Zolto sells two things (shared/platform.ts PLANS): a Pro subscription, and a
+ * Gwinn sells two things (shared/platform.ts PLANS): a Pro subscription, and a
  * 1% platform fee on online/agent orders that Pro removes. The operator
  * sometimes wants to hand one or both to a particular store for nothing — a
  * design partner, a friend of the house, a merchant we broke something for, the
@@ -87,7 +87,7 @@ export function featuresForTenant(
 }
 
 /**
- * Zolto's cut of an online/agent order, in basis points.
+ * Gwinn's cut of an online/agent order, in basis points.
  *
  * Two independent ways to reach 0: being on (or comped to) Pro, which removes
  * the fee as a feature of the plan, and an explicit fee waiver, which removes

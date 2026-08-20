@@ -1,5 +1,5 @@
 /**
- * Deciding whether Zolto's platform fee actually worked.
+ * Deciding whether Gwinn's platform fee actually worked.
  *
  * The fee is the one part of the pricing model that no test could prove:
  * `application_fee_amount` is only meaningful once a REAL Stripe account
@@ -17,8 +17,10 @@
  * as a pass just because the payment succeeded.
  */
 
+import { BRAND } from "@shared/brand";
+
 export interface FeeObservation {
-  /** What Zolto's own pricing code said to charge, in Rappen. */
+  /** What Gwinn's own pricing code said to charge, in Rappen. */
   expectedFeeRappen: number;
   /**
    * The application fee Stripe actually recorded on the settled charge, in
@@ -70,12 +72,12 @@ export function verdictFor(obs: FeeObservation): FeeVerdict {
       message: obs.rejectionRecognised
         ? `Stripe refused the ${chf(want)} platform fee. isPlatformFeeRejection() ` +
           `recognised it, so a real checkout would retry without the fee and the ` +
-          `sale would still complete — but every online order earns Zolto nothing ` +
+          `sale would still complete — but every online order earns ${BRAND.name} nothing ` +
           `until the Connect relationship is fixed.`
         : `Stripe refused the ${chf(want)} platform fee AND isPlatformFeeRejection() ` +
           `did not recognise the error. That is the worse case: the retry never ` +
           `fires, so this failure takes the vendor's entire online storefront down ` +
-          `rather than costing Zolto 1%. Widen the classifier to cover it.`,
+          `rather than costing ${BRAND.name} 1%. Widen the classifier to cover it.`,
     };
   }
 

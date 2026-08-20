@@ -65,7 +65,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: ZoltoPOS-debug
+          name: GwinnPOS-debug
           path: android/app/build/outputs/apk/debug/app-debug.apk
 
   # ────────────────────────────────────────────────────────────────────────────
@@ -87,7 +87,7 @@ jobs:
       - name: Download debug APK
         uses: actions/download-artifact@v4
         with:
-          name: ZoltoPOS-debug
+          name: GwinnPOS-debug
           path: apk
 
       # Stable asset name: the admin UI's link must not change per build.
@@ -96,7 +96,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p dist
-          cp apk/app-debug.apk dist/ZoltoPOS-latest.apk
+          cp apk/app-debug.apk dist/GwinnPOS-latest.apk
           cat > dist/android-build.json <<JSON
           {
             "platform": "android",
@@ -110,5 +110,5 @@ jobs:
       - name: Publish to rolling release
         uses: ./.github/actions/pos-release-upload
         with:
-          files: dist/ZoltoPOS-latest.apk dist/android-build.json
+          files: dist/GwinnPOS-latest.apk dist/android-build.json
           token: ${{ secrets.GITHUB_TOKEN }}

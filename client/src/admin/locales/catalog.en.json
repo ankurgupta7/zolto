@@ -22,8 +22,8 @@
         "description": "Free in person, forever. {{fee}} on online & AI-agent orders — or Pro, which removes it. Month-to-month, cancel anytime.",
         "notConfigured": "Paid plans aren't purchasable on this deployment yet (Stripe prices not configured). Everything on your current plan keeps working.",
         "compTitle": "Your store is on the house",
-        "compPlan": "Zolto has given you the {{plan}} plan at no charge — there's nothing to pay for it.",
-        "compFeeWaived": "Zolto takes no platform fee on your online and AI-agent orders.",
+        "compPlan": "{{brand}} has given you the {{plan}} plan at no charge — there's nothing to pay for it.",
+        "compFeeWaived": "{{brand}} takes no platform fee on your online and AI-agent orders.",
         "compBadge": "On the house",
         "feesWaived": "Platform fees (0% — on the house)",
         "plansTitle": "Plans",
@@ -45,7 +45,7 @@
         "agentSplit": "CHF {{amount}} via AI agents",
         "feesOnPro": "Platform fees (0% on Pro)",
         "feesOnFree": "Platform fees ({{percent}} on {{appliesTo}})",
-        "posNeverFee": "In-person POS sales never carry a Zolto fee, on any plan.",
+        "posNeverFee": "In-person POS sales never carry a {{brand}} fee, on any plan.",
         "upsell": "You'd save CHF {{savings}} on Pro this month — past CHF {{breakEven}}/month online, Pro's flat CHF {{proPrice}} beats the {{percent}} fee.",
         "upgradeNow": "Upgrade now",
         "aiTitle": "AI photo shots",
@@ -465,7 +465,7 @@
         "hideChecklist": "Hide this checklist"
       },
       "capabilities": {
-        "ariaLabel": "Your Zolto workshop",
+        "ariaLabel": "Your {{brand}} workshop",
         "eyebrow": "Your workshop, at a glance",
         "tagline": "Sell online & in person",
         "storeTitle": "Online Store",
@@ -616,7 +616,7 @@
         },
         "posReady": {
           "title": "Take a card payment on your phone",
-          "body": "Install the Zolto POS app and sign in with your POS key — the first card sale finishes the setup automatically.",
+          "body": "Install the {{brand}} POS app and sign in with your POS key — the first card sale finishes the setup automatically.",
           "blockedStripe": "Connect Stripe first (the step above)."
         }
       }

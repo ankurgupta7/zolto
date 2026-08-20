@@ -41,7 +41,7 @@ export interface TooltipPosition {
   arrow: number;
 }
 
-const STORAGE_PREFIX = "zolto.tour.";
+const STORAGE_PREFIX = "gwinn.tour.";
 
 export function tourStorageKey(tourId: string): string {
   return `${STORAGE_PREFIX}${tourId}`;

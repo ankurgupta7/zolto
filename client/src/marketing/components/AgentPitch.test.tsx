@@ -15,7 +15,7 @@ describe("AiNativeThesis", () => {
   it("states the thesis with its chart, as a section rather than the page title", () => {
     render(<AiNativeThesis />);
     // The copy is the copy that used to be the hero — unchanged. What moved is
-    // the heading level: this argues for choosing Zolto, it doesn't name it.
+    // the heading level: this argues for choosing Gwinn, it doesn't name it.
     const heading = screen.getByRole("heading", { level: 2 });
     expect(heading.textContent).toContain(AI_NATIVE_PITCH.headline);
     expect(heading.textContent).toContain(AI_NATIVE_PITCH.headlineEmphasis);
@@ -45,7 +45,7 @@ describe("AgentChatMock", () => {
     expect(screen.getByText(/handmade ceramic mug/i)).toBeTruthy();
     expect(screen.getByText(/Order placed/i)).toBeTruthy();
     // The mechanism is named — this is an MCP purchase, not vague magic.
-    expect(screen.getByText(/bergblume\.zolto\.ch\/mcp/i)).toBeTruthy();
+    expect(screen.getByText(/bergblume\.gwinn\.ch\/mcp/i)).toBeTruthy();
   });
 
   it("renders the price with lining figures so CHF 38 can't read as CHF 3o", () => {
@@ -94,7 +94,7 @@ describe("HowAnAiBuys", () => {
     expect(container.querySelector("section")).toBeNull();
     expect(screen.getByTestId("ai-native-band").className).toContain("bg-band");
     // Dense takes the short thesis: the long one narrates the chart beside it
-    // and then adds a claim about the future that /why-zolto is for.
+    // and then adds a claim about the future that /why-gwinn is for.
     expect(screen.getByText(AI_NATIVE_PITCH.bodyShort)).toBeTruthy();
     expect(screen.queryByText(AI_NATIVE_PITCH.body)).toBeNull();
   });

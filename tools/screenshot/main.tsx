@@ -10,7 +10,7 @@ import Landing from "@/marketing/pages/Landing";
 import Sovereignty from "@/marketing/pages/Sovereignty";
 import Pricing from "@/marketing/pages/Pricing";
 import Compare from "@/marketing/pages/Compare";
-import WhyZolto from "@/marketing/pages/WhyZolto";
+import WhyPlatform from "@/marketing/pages/WhyPlatform";
 import { MarketingShell } from "@/marketing/components/MarketingChrome";
 import {
   applyTheme,
@@ -49,19 +49,19 @@ const PAGES = {
   // The bands the homepage reel could not hold at one viewport each — the
   // agent-purchase proof, the found → asked → bought cards, and the
   // reconciliation email.
-  "why-zolto": { path: "/why-zolto", Component: WhyZolto },
-  // The index carries the buyer-fit guide and Zolto's own limitations — the
+  "why-gwinn": { path: "/why-gwinn", Component: WhyPlatform },
+  // The index carries the buyer-fit guide and Gwinn's own limitations — the
   // two places the site argues against itself, so worth looking at by eye.
   compare: { path: "/compare", route: "/compare", Component: Compare },
   // Worldline is the one carrying the risk section and the negotiated-pricing
   // list, so it's the compare page most worth looking at by eye.
   "compare-worldline": {
-    path: "/compare/zolto-vs-worldline",
+    path: "/compare/gwinn-vs-worldline",
     route: "/compare/:slug",
     Component: Compare,
   },
   "compare-sumup": {
-    path: "/compare/zolto-vs-sumup",
+    path: "/compare/gwinn-vs-sumup",
     route: "/compare/:slug",
     Component: Compare,
   },

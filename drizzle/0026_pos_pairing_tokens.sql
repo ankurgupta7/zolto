@@ -1,6 +1,6 @@
 -- One-tap POS register pairing.
 --
--- Short-lived, single-use tokens delivered as a deep link (`zolto://pair?t=…`)
+-- Short-lived, single-use tokens delivered as a deep link (`gwinn://pair?t=…`)
 -- so the tenant's POS API key never travels in a URL. Only the SHA-256 of the
 -- token is stored, and no key is stored at all — redemption reads the key from
 -- the encrypted tenant_secrets vault. See server/posPairing.ts.

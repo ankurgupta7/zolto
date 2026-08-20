@@ -6,6 +6,7 @@
  * Imported only by tests — the real context is ShellSession.
  */
 
+import { BRAND } from "@shared/brand";
 import type { Tenant, User } from "../../drizzle/schema";
 import type { AdminCaller } from "./caller";
 import { createFakeIo, type FakeIo } from "./fakeIo";
@@ -15,7 +16,7 @@ export const fakeOperator = {
   id: 1,
   tenantId: 1,
   openId: "google:1",
-  email: "owner@zolto.ch",
+  email: `owner@${BRAND.domain}`,
   name: "Platform Owner",
   role: "superadmin",
   loginMethod: "google",

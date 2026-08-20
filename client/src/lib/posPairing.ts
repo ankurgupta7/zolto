@@ -1,7 +1,7 @@
 /**
  * POS pairing payload — what the "scan to pair" QR on Keys & access encodes.
  *
- * The POS apps (Android, and the Zolto POS iOS app) scan this instead of the
+ * The POS apps (Android, and the Gwinn POS iOS app) scan this instead of the
  * merchant typing a 64-char key on a phone keyboard. Versioned JSON rather
  * than a URL: a URL invites the OS to open a browser on scan, while the POS
  * app's own scanner just wants structured data.
@@ -13,8 +13,8 @@
 
 export interface PosPairingPayload {
   /** Format discriminator + version for the scanning apps. */
-  zoltoPos: 1;
-  /** API origin the POS should talk to, e.g. https://zolto.ch */
+  platformPos: 1;
+  /** API origin the POS should talk to, e.g. https://gwinn.ch */
   baseUrl: string;
   /** The tenant's POS API key, plaintext (bearer credential). */
   key: string;
@@ -29,7 +29,7 @@ export function buildPosPairingPayload(baseUrl: string, key: string): string {
   if (!key.trim()) {
     throw new Error("Refusing to encode an empty POS key");
   }
-  const payload: PosPairingPayload = { zoltoPos: 1, baseUrl: origin, key };
+  const payload: PosPairingPayload = { platformPos: 1, baseUrl: origin, key };
   return JSON.stringify(payload);
 }
 
@@ -41,7 +41,7 @@ export function parsePosPairingPayload(text: string): PosPairingPayload | null {
   try {
     const parsed = JSON.parse(text) as Partial<PosPairingPayload>;
     if (
-      parsed.zoltoPos === 1 &&
+      parsed.platformPos === 1 &&
       typeof parsed.baseUrl === "string" &&
       typeof parsed.key === "string" &&
       parsed.baseUrl.length > 0 &&

@@ -2,7 +2,7 @@
 
 **Effective Date:** [Date]
 
-**Zolto** ("we," "us," or "our") operates the Zolto commerce platform (the "Service"). This Cookie Policy explains what cookies we use, why, and how you can control them. It supplements our [Privacy Policy](./privacy-policy.md).
+**Gwinn** ("we," "us," or "our") operates the Gwinn commerce platform (the "Service"). This Cookie Policy explains what cookies we use, why, and how you can control them. It supplements our [Privacy Policy](./privacy-policy.md).
 
 ---
 
@@ -16,7 +16,7 @@ Cookies are small text files stored on your device when you visit a website. The
 
 | Cookie | Type | Purpose | Duration |
 |--------|------|---------|----------|
-| `app_session_id` | Strictly necessary | Keeps you logged in to your Zolto account or store admin | 1 year |
+| `app_session_id` | Strictly necessary | Keeps you logged in to your Gwinn account or store admin | 1 year |
 
 This is the only cookie the Service sets today. It is **strictly necessary** — the Service cannot authenticate you without it, so it is not subject to consent under GDPR/ePrivacy and cannot be disabled while still using the Service.
 
@@ -56,7 +56,7 @@ We may update this Cookie Policy as our use of cookies changes (for example, whe
 
 ## 7. Contact Us
 
-**Email:** [privacy@zolto.com]
+**Email:** [privacy@gwinn.com]
 
 ---
 

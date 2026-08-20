@@ -6,7 +6,7 @@ import { SketchUnderline } from "@/components/SketchAccents";
  * The storefront's 404 — a shopper's dead end, not a developer's.
  *
  * This is a *tenant* page: the visitor thinks they are in a maker's shop, not
- * on Zolto, so it wears the storefront's own oyster/gold/ink brand rather than
+ * on Gwinn, so it wears the storefront's own oyster/gold/ink brand rather than
  * platform chrome, and the voice stays the shop's — warm and a little wry,
  * never a stack trace. It is translated like every other shopper-facing string
  * (the storefront ships de/en), because a German-speaking customer hitting a

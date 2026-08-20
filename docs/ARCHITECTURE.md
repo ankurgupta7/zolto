@@ -1,4 +1,4 @@
-# Zolto Architecture — Tenant Signup & Guided Onboarding
+# Gwinn Architecture — Tenant Signup & Guided Onboarding
 
 This document describes the **tenant signup tutorial workflow**: a fully
 hand-held first-run experience that takes a new merchant from landing page to a

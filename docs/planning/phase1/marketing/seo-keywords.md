@@ -1,4 +1,4 @@
-# SEO Keywords & Strategy for Zolto + Kalakosh
+# SEO Keywords & Strategy for Gwinn + Kalakosh
 
 > Target keywords for Phase 1 content, optimized for pearl jewelry and Zurich maker market
 
@@ -27,7 +27,7 @@
 | pearl necklace zurich handmade | Transactional | Product page / Landing |
 | pos system for craft fairs switzerland | Transactional | Location-specific landing |
 | ai generated product descriptions for jewelry | Informational | AI walkthrough blog |
-| best ecommerce platform for jewelry makers | Comparison | "Zolto vs Shopify for Makers" |
+| best ecommerce platform for jewelry makers | Comparison | "Gwinn vs Shopify for Makers" |
 | inventory sync pos online store | Informational | Feature deep-dive |
 | how to take product photos for jewelry | Informational | Photo guide (lead magnet) |
 | first online order craft business | Informational | Launch Diary #3 |
@@ -58,7 +58,7 @@
 | 5 | "Best POS for Craft Fairs" | craft fair pos | Comparison post |
 | 6 | AI Feature Deep-Dive | ai product descriptions | Tutorial + video |
 | 7 | Photo Guide (lead magnet) | how to take product photos for jewelry | PDF download |
-| 8 | "Zolto vs Shopify for Makers" | best ecommerce platform for jewelry makers | Comparison |
+| 8 | "Gwinn vs Shopify for Makers" | best ecommerce platform for jewelry makers | Comparison |
 
 ## Local SEO for Zurich
 
@@ -126,18 +126,18 @@ For every page:
 
 ## Schema Markup Templates
 
-### Organization (Zolto)
+### Organization (Gwinn)
 ```json
 {
   "@context": "https://schema.org",
   "@type": "Organization",
-  "name": "Zolto",
-  "url": "https://zolto.com",
-  "logo": "https://zolto.com/logo.png",
+  "name": "Gwinn",
+  "url": "https://gwinn.com",
+  "logo": "https://gwinn.com/logo.png",
   "description": "AI-run commerce platform for makers and artisans",
   "sameAs": [
-    "https://instagram.com/zolto",
-    "https://twitter.com/zolto"
+    "https://instagram.com/gwinn",
+    "https://twitter.com/gwinn"
   ]
 }
 ```
@@ -150,7 +150,7 @@ For every page:
   "headline": "Launch Diary #1: The Setup",
   "author": {
     "@type": "Organization",
-    "name": "Zolto"
+    "name": "Gwinn"
   },
   "about": {
     "@type": "LocalBusiness",

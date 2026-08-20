@@ -1,7 +1,7 @@
 /**
  * Sign out — the explicit counterpart to signing in.
  *
- * Zolto had no sign-out control outside a store's admin. Combined with pages
+ * Gwinn had no sign-out control outside a store's admin. Combined with pages
  * that silently reused whatever session already existed, that meant a visitor
  * signed in through Google was stuck as that account: no way to see who they
  * were, and no way to become somebody else. Every surface that can show a

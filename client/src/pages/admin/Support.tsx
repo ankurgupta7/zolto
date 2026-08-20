@@ -48,7 +48,7 @@ export default function Support() {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <a
-          href="mailto:support@zolto.ch"
+          href="mailto:support@gwinn.ch"
           className="group rounded-xl border bg-card p-5 transition-colors hover:border-primary"
         >
           <Mail className="h-5 w-5 text-muted-foreground group-hover:text-primary" />
@@ -56,11 +56,11 @@ export default function Support() {
             {t("store.support.emailUs")}
           </p>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            support@zolto.ch
+            support@gwinn.ch
           </p>
         </a>
         <a
-          href="https://zolto.ch/blog"
+          href="https://gwinn.ch/blog"
           target="_blank"
           rel="noopener noreferrer"
           className="group rounded-xl border bg-card p-5 transition-colors hover:border-primary"

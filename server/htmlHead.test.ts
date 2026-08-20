@@ -1,3 +1,4 @@
+import { BRAND } from "@shared/brand";
 import { describe, it, expect, vi, beforeAll, afterAll } from "vitest";
 import type { Request } from "express";
 
@@ -11,11 +12,11 @@ vi.mock("./tenantResolve", () => ({
 const { injectHeadForRequest } = await import("./htmlHead");
 
 const SHELL = `<!doctype html><html><head>
-<title>Zolto</title>
+<title>Gwinn</title>
 <meta name="description" content="old default" />
 </head><body><div id="root"></div></body></html>`;
 
-function fakeReq(url: string, host = "zolto.ch"): Request {
+function fakeReq(url: string, host = BRAND.domain): Request {
   return {
     headers: { host },
     originalUrl: url,
@@ -35,7 +36,7 @@ let savedBaseUrl: string | undefined;
 
 beforeAll(() => {
   savedBaseUrl = process.env.PUBLIC_BASE_URL;
-  process.env.PUBLIC_BASE_URL = "https://zolto.ch";
+  process.env.PUBLIC_BASE_URL = BRAND.url;
 });
 
 afterAll(() => {
@@ -46,11 +47,11 @@ afterAll(() => {
 describe("injectHeadForRequest — marketing route resolution", () => {
   // Regression: this read req.path, which Express collapses to "/" under a
   // "*" mount. Every marketing page rendered the homepage's title and
-  // canonical=https://zolto.ch/, telling crawlers the whole site was one page.
+  // canonical=https://gwinn.ch/, telling crawlers the whole site was one page.
   it("resolves the route from originalUrl, not the rewritten req.path", async () => {
     const out = await injectHeadForRequest(fakeReq("/pricing"), SHELL);
 
-    expect(canonical(out)).toBe("https://zolto.ch/pricing");
+    expect(canonical(out)).toBe(`${BRAND.url}/pricing`);
     expect(title(out)).toContain("Pricing");
   });
 
@@ -63,11 +64,11 @@ describe("injectHeadForRequest — marketing route resolution", () => {
     );
 
     expect(canonicals).toEqual([
-      "https://zolto.ch/",
-      "https://zolto.ch/pricing",
-      "https://zolto.ch/signup",
-      "https://zolto.ch/blog",
-      "https://zolto.ch/legal/privacy",
+      `${BRAND.url}/`,
+      `${BRAND.url}/pricing`,
+      `${BRAND.url}/signup`,
+      `${BRAND.url}/blog`,
+      `${BRAND.url}/legal/privacy`,
     ]);
     // No duplicates — that was the whole bug.
     expect(new Set(canonicals).size).toBe(routes.length);
@@ -102,13 +103,13 @@ describe("injectHeadForRequest — marketing route resolution", () => {
       SHELL,
     );
 
-    expect(canonical(out)).toBe("https://zolto.ch/pricing");
+    expect(canonical(out)).toBe(`${BRAND.url}/pricing`);
   });
 
   it("normalises a trailing slash to the canonical path", async () => {
     const out = await injectHeadForRequest(fakeReq("/pricing/"), SHELL);
 
-    expect(canonical(out)).toBe("https://zolto.ch/pricing");
+    expect(canonical(out)).toBe(`${BRAND.url}/pricing`);
   });
 
   it("leaves the shell alone for a non-marketing route on a marketing host", async () => {
@@ -117,22 +118,22 @@ describe("injectHeadForRequest — marketing route resolution", () => {
     expect(out).toBe(SHELL);
   });
 
-  it("treats www.zolto.ch as a marketing host", async () => {
+  it(`treats www.${BRAND.domain} as a marketing host`, async () => {
     const out = await injectHeadForRequest(
-      fakeReq("/pricing", "www.zolto.ch"),
+      fakeReq("/pricing", `www.${BRAND.domain}`),
       SHELL,
     );
 
-    expect(canonical(out)).toBe("https://zolto.ch/pricing");
+    expect(canonical(out)).toBe(`${BRAND.url}/pricing`);
   });
 
   it("ignores a port on the host header", async () => {
     const out = await injectHeadForRequest(
-      fakeReq("/pricing", "zolto.ch:443"),
+      fakeReq("/pricing", `${BRAND.domain}:443`),
       SHELL,
     );
 
-    expect(canonical(out)).toBe("https://zolto.ch/pricing");
+    expect(canonical(out)).toBe(`${BRAND.url}/pricing`);
   });
 
   // Regression: isMarketingHost takes a query string, but req.url (a full
@@ -145,7 +146,7 @@ describe("injectHeadForRequest — marketing route resolution", () => {
     );
 
     expect(title(out)).toContain("Pricing");
-    expect(canonical(out)).toBe("https://zolto.ch/pricing");
+    expect(canonical(out)).toBe(`${BRAND.url}/pricing`);
   });
 
   it("does not treat a plain tenant host as marketing", async () => {
@@ -206,7 +207,7 @@ describe("injectHeadForRequest — page-view tag", () => {
       { ANALYTICS_ENDPOINT: "/_stats", ANALYTICS_WEBSITE_ID: ID },
       () => injectHeadForRequest(fakeReq("/pricing"), SHELL),
     );
-    expect(canonical(out)).toBe("https://zolto.ch/pricing");
+    expect(canonical(out)).toBe(`${BRAND.url}/pricing`);
     expect(title(out)).toContain("Pricing");
   });
 

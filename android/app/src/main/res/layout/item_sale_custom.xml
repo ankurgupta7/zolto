@@ -38,6 +38,6 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center_vertical"
         android:text="@string/remove"
-        style="@style/Widget.Zolto.Button.Outlined" />
+        style="@style/Widget.Brand.Button.Outlined" />
 
 </LinearLayout>

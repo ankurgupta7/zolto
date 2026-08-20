@@ -106,7 +106,7 @@ tenant_scoped_tables() {
 #
 # Adds tenants.stripe_connected_account_id — the Standard Connect account a
 # tenant links so THEIR storefront checkout pays out directly to them,
-# separate from stripe_customer_id/stripe_subscription_id (Zolto's own
+# separate from stripe_customer_id/stripe_subscription_id (Gwinn's own
 # billing relationship with the tenant, added in 0019). Idempotent: a no-op
 # if the column already exists.
 migrate_0020_stripe_connect() {
@@ -284,13 +284,13 @@ migrate_0019_multitenant() {
     );"
 
   # ── Seed tenant #1 (the platform's system tenant) ───────────────────────────
-  # Zolto is a standalone multi-tenant product; tenant #1 is a neutral platform
+  # Gwinn is a standalone multi-tenant product; tenant #1 is a neutral platform
   # tenant, NOT any specific store. It exists because context-free server writes
   # (webhooks, jobs) fall back to DEFAULT_TENANT_ID=1. Real stores are created via
   # self-serve signup. Override the identity per deployment with SEED_TENANT_SLUG
   # / SEED_TENANT_NAME (e.g. a cutover that imports an existing store as tenant 1).
   local seed_slug="${SEED_TENANT_SLUG:-platform}"
-  local seed_name="${SEED_TENANT_NAME:-Zolto Platform}"
+  local seed_name="${SEED_TENANT_NAME:-Gwinn Platform}"
   if [ "$(row_count tenants 'id=1')" = "0" ]; then
     local pos_key="${POS_API_KEY:-}"
     if [ -z "$pos_key" ]; then

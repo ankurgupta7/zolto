@@ -1,5 +1,5 @@
 /**
- * Operator console router, mounted on the MARKETING surface (zolto.ch) rather
+ * Operator console router, mounted on the MARKETING surface (gwinn.ch) rather
  * than inside a tenant's admin — see PlatformLayout for why.
  *
  * Routes here render outside MarketingShell: the console is not a marketing

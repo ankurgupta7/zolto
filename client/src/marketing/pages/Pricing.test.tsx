@@ -49,7 +49,7 @@ describe("Pricing", () => {
 
   it("explains the fee: free in person, 1% online, Pro removes it", () => {
     renderPricing();
-    expect(screen.getAllByText(/Zolto adds nothing/i).length).toBeGreaterThan(
+    expect(screen.getAllByText(/Gwinn adds nothing/i).length).toBeGreaterThan(
       0,
     );
     expect(screen.getAllByText(/CHF 0/).length).toBeGreaterThan(0);
@@ -123,9 +123,9 @@ describe("Pricing", () => {
     renderPricing();
     expect(screen.getAllByTestId("cost-of-acceptance")).toHaveLength(2);
     expect(screen.getAllByTestId("cost-of-acceptance-note")).toHaveLength(1);
-    // "Zolto is not at the top" is the intro's own phrase — "cheapest first"
+    // "Gwinn is not at the top" is the intro's own phrase — "cheapest first"
     // also ends each table's sr-only caption, one per channel.
-    expect(screen.getAllByText(/Zolto is not at the top/i)).toHaveLength(1);
+    expect(screen.getAllByText(/Gwinn is not at the top/i)).toHaveLength(1);
     expect(
       screen.getByRole("heading", { name: /sale costs in person/i }),
     ).toBeTruthy();

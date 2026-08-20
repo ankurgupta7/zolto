@@ -38,7 +38,7 @@ export function cartTotalRappen(lines: TillCartLine[]): number {
 
 /**
  * Money as the cashier reads it. The currency is the store's own, so it is
- * passed in rather than assumed — Zolto stores are not all Swiss.
+ * passed in rather than assumed — Gwinn stores are not all Swiss.
  */
 export function formatMinor(minor: number, currency = "CHF"): string {
   return `${currency.toUpperCase()} ${(minor / 100).toFixed(2)}`;

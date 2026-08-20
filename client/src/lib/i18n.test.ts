@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { BRAND } from "@shared/brand";
 
 function mockBrowserLanguage(tag: string) {
   vi.spyOn(window.navigator, "language", "get").mockReturnValue(tag);
@@ -37,14 +38,14 @@ describe("i18n bootstrap", () => {
 
   it("honours a previously saved language preference over the browser", async () => {
     mockBrowserLanguage("fr-CH");
-    localStorage.setItem("kalakosh_lang", "it");
+    localStorage.setItem(BRAND.langKey, "it");
     const { default: i18n } = await import("./i18n");
     expect(i18n.language).toBe("it");
   });
 
   it("ignores an unsupported saved value", async () => {
     mockBrowserLanguage("pt-BR");
-    localStorage.setItem("kalakosh_lang", "xx");
+    localStorage.setItem(BRAND.langKey, "xx");
     const { default: i18n } = await import("./i18n");
     expect(i18n.language).toBe("de");
   });

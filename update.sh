@@ -994,21 +994,21 @@ migrate_0044_pos_pairing_tokens
 # Idempotent; see migrate_0045_site_imports in deploy/lib/db.sh.
 migrate_0045_site_imports
 
-# ── 0046: the "Made with Zolto" credit becomes an opt-out ─────────────────────
-# Ships drizzle/0028_zolto_attribution.sql. The platform credit used to be
+# ── 0046: the "Made with Gwinn" credit becomes an opt-out ─────────────────────
+# Ships drizzle/0028_gwinn_attribution.sql. The platform credit used to be
 # decided entirely by the plan: Free stores carried it (in /llms.txt, and
 # nowhere else), Pro stores dropped it silently. A custom domain is Pro-only, so
-# the storefronts where the Zolto name is least discoverable were the exact ones
+# the storefronts where the Gwinn name is least discoverable were the exact ones
 # that never named it — to a shopper, a search crawler or an AI agent.
 #
 # The credit now shows by default on every plan and white-labelling buys the
 # right to switch it off. This column is that switch; DEFAULT false means "show
 # it", which is the new behaviour every existing row wants. Idempotent.
-if [ "$(col_exists tenant_settings hide_zolto_badge)" = "0" ]; then
-  run_sql "0046 add tenant_settings.hide_zolto_badge" \
-    "ALTER TABLE \`tenant_settings\` ADD \`hide_zolto_badge\` boolean NOT NULL DEFAULT false;"
+if [ "$(col_exists tenant_settings hide_platform_credit)" = "0" ]; then
+  run_sql "0046 add tenant_settings.hide_platform_credit" \
+    "ALTER TABLE \`tenant_settings\` ADD \`hide_platform_credit\` boolean NOT NULL DEFAULT false;"
 else
-  ok "0046 tenant_settings.hide_zolto_badge already exists"
+  ok "0046 tenant_settings.hide_platform_credit already exists"
 fi
 
 # ── 0047: restore users_openId_unique where it went missing ──────────────────
@@ -1037,7 +1037,7 @@ migrate_0047_users_openid_unique
 migrate_0048_customer_trust
 
 # ── 0049: who is reading the machine-facing surfaces ─────────────────────────
-# Ships drizzle/0030_agent_hits.sql. Zolto publishes /llms.txt and an MCP
+# Ships drizzle/0030_agent_hits.sql. Gwinn publishes /llms.txt and an MCP
 # endpoint on the bet that an AI agent will find a store and buy from it, and
 # `orders.channel = 'agent'` already counts the ones that bought — but nothing
 # counted the reach that comes first, and no browser-side analytics ever could:

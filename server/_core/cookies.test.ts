@@ -1,3 +1,4 @@
+import { BRAND } from "@shared/brand";
 import { describe, expect, it, beforeEach, afterEach } from "vitest";
 import type { Request } from "express";
 import { getSessionCookieOptions } from "./cookies";
@@ -64,28 +65,28 @@ describe("getSessionCookieOptions", () => {
 
   it("has no domain override when PUBLIC_BASE_URL isn't configured", () => {
     const opts = getSessionCookieOptions(
-      req({ headers: { host: "blah.zolto.ch" } as never }),
+      req({ headers: { host: `blah.${BRAND.domain}` } as never }),
     );
     expect(opts.domain).toBeUndefined();
   });
 
   describe("cross-subdomain widening (PUBLIC_BASE_URL set)", () => {
     beforeEach(() => {
-      process.env.PUBLIC_BASE_URL = "https://zolto.ch";
+      process.env.PUBLIC_BASE_URL = BRAND.url;
     });
 
     it("widens the cookie domain for the platform's own apex", () => {
       const opts = getSessionCookieOptions(
-        req({ headers: { host: "zolto.ch" } as never }),
+        req({ headers: { host: BRAND.domain } as never }),
       );
-      expect(opts.domain).toBe(".zolto.ch");
+      expect(opts.domain).toBe(`.${BRAND.domain}`);
     });
 
     it("widens the cookie domain for a tenant subdomain", () => {
       const opts = getSessionCookieOptions(
-        req({ headers: { host: "blah.zolto.ch" } as never }),
+        req({ headers: { host: `blah.${BRAND.domain}` } as never }),
       );
-      expect(opts.domain).toBe(".zolto.ch");
+      expect(opts.domain).toBe(`.${BRAND.domain}`);
     });
 
     it("prefers x-forwarded-host over the raw host header", () => {
@@ -93,11 +94,11 @@ describe("getSessionCookieOptions", () => {
         req({
           headers: {
             host: "internal-service:3000",
-            "x-forwarded-host": "blah.zolto.ch",
+            "x-forwarded-host": `blah.${BRAND.domain}`,
           } as never,
         }),
       );
-      expect(opts.domain).toBe(".zolto.ch");
+      expect(opts.domain).toBe(`.${BRAND.domain}`);
     });
 
     it("stays host-only for a tenant's custom domain (unrelated host)", () => {

@@ -1,3 +1,4 @@
+import { BRAND } from "@shared/brand";
 import { describe, expect, it, vi } from "vitest";
 import { createFakeContext, fakeTenant } from "../fakeContext";
 import {
@@ -85,7 +86,7 @@ describe("domainStatus", () => {
         tenant: {
           domainStatus: async () => ({
             domain: "shop.example.com",
-            expected: "app.zolto.ch",
+            expected: `app.${BRAND.domain}`,
             pointsToUs: false,
           }),
         },
@@ -93,7 +94,7 @@ describe("domainStatus", () => {
     });
 
     await domainStatus(ctx);
-    expect(fake.text()).toContain("CNAME to app.zolto.ch");
+    expect(fake.text()).toContain(`CNAME to app.${BRAND.domain}`);
   });
 
   it("stays quiet when the domain is set up", async () => {
@@ -102,7 +103,7 @@ describe("domainStatus", () => {
         tenant: {
           domainStatus: async () => ({
             domain: "shop.example.com",
-            expected: "app.zolto.ch",
+            expected: `app.${BRAND.domain}`,
             pointsToUs: true,
           }),
         },
@@ -178,8 +179,8 @@ describe("pairRegister", () => {
         tenant: {
           createPosPairingToken: async () => ({
             available: true as const,
-            deepLink: "zolto://pair?token=x",
-            webLink: "https://zolto.ch/pos-pair?token=x",
+            deepLink: "gwinn://pair?token=x",
+            webLink: `${BRAND.url}/pos-pair?token=x`,
             expiresAt: new Date("2026-03-01T10:05:00Z"),
           }),
         },
@@ -187,7 +188,7 @@ describe("pairRegister", () => {
     });
 
     await pairRegister(ctx);
-    expect(fake.text()).toContain("zolto://pair?token=x");
+    expect(fake.text()).toContain("gwinn://pair?token=x");
     expect(fake.text()).toContain("Single use");
   });
 

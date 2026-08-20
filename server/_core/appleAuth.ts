@@ -16,7 +16,7 @@
  *
  * Required env vars:
  *   APPLE_CLIENT_ID     — the Services ID registered for Sign in with Apple
- *                         (e.g. "ch.zolto.web"), NOT the app's bundle id.
+ *                         (e.g. "ch.gwinn.web"), NOT the app's bundle id.
  *   APPLE_TEAM_ID       — Apple Developer Team ID
  *   APPLE_KEY_ID        — Key ID of the "Sign in with Apple" private key
  *   APPLE_PRIVATE_KEY   — that key's .p8 contents (PEM). Literal "\n"
@@ -51,7 +51,7 @@ import {
 // callback is a real top-level form POST, which a third-party page could
 // forge (an attacker auto-submitting their own valid Apple `code` into a
 // victim's browser — "login CSRF"). A random value round-tripped through a
-// cookie only Zolto could have set closes that off.
+// cookie only Gwinn could have set closes that off.
 const STATE_COOKIE = "apple_oauth_state";
 
 let jwks: ReturnType<typeof createRemoteJWKSet> | null = null;

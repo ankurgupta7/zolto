@@ -20,7 +20,7 @@ import Onboarding from "./Onboarding";
  * survivable.
  */
 
-const CLAIM_TOKEN_KEY = "zolto_claim_token";
+const CLAIM_TOKEN_KEY = "gwinn_claim_token";
 
 const mocks = vi.hoisted(() => ({
   meData: undefined as unknown,

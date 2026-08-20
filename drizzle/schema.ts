@@ -48,8 +48,8 @@ export const tenants = mysqlTable("tenants", {
   stripeSubscriptionId: varchar("stripe_subscription_id", { length: 255 }),
   // Stripe Connect (Standard) account for THIS tenant's own storefront
   // checkout — separate from stripeCustomerId/stripeSubscriptionId above,
-  // which are Zolto's own billing relationship with the tenant. A tenant's
-  // customers pay into stripeConnectedAccountId directly; Zolto never
+  // which are Gwinn's own billing relationship with the tenant. A tenant's
+  // customers pay into stripeConnectedAccountId directly; Gwinn never
   // touches that money.
   stripeConnectedAccountId: varchar("stripe_connected_account_id", {
     length: 255,
@@ -110,12 +110,12 @@ export const tenantSettings = mysqlTable("tenant_settings", {
   metaDescription: text("meta_description"),
   // Branding
   whiteLabelName: varchar("white_label_name", { length: 255 }),
-  // Hide the "Made with Zolto" credit in the storefront footer, its
+  // Hide the "Made with Gwinn" credit in the storefront footer, its
   // <meta name="generator">, its JSON-LD creator node, /llms.txt and the MCP
   // store info. Only honoured on a white-label plan — shared/attribution.ts
   // owns the gate, and a Free store's `true` here is ignored rather than
   // enforced, so a downgrade restores the credit without a data migration.
-  hideZoltoBadge: boolean("hide_zolto_badge").notNull().default(false),
+  hidePlatformCredit: boolean("hide_platform_credit").notNull().default(false),
   // ── Merchant-authored storefront content ──────────────────────────────────
   // Every column here is NULL for a store that has written nothing, and NULL
   // means "use the generated template copy" (client/src/lib/storefrontContent.ts)
@@ -156,7 +156,7 @@ export const tenantSettings = mysqlTable("tenant_settings", {
   // "jewellery" so every pre-existing store keeps its original behaviour.
   vertical: varchar("vertical", { length: 32 }).notNull().default("jewellery"),
   verticalDescription: text("vertical_description"),
-  // Where this merchant sold before Zolto (signup's "already selling
+  // Where this merchant sold before Gwinn (signup's "already selling
   // somewhere?"): 'stripe' | 'sumup' | 'worldline' | 'other', null = fresh
   // start. Drives the onboarding checklist's bring-your-catalogue step
   // (server/onboarding.ts) toward the matching importer.
@@ -221,7 +221,7 @@ export type InsertTenantSetting = typeof tenantSettings.$inferInsert;
 // if a future integration can't use OAuth delegation like Stripe Connect does).
 // Ciphertext only — AES-256-GCM against the platform master key in the
 // TENANT_SECRETS_KEY env var — so a DB dump or backup never exposes a tenant's
-// credentials, and no code path returns plaintext to anyone (including Zolto
+// credentials, and no code path returns plaintext to anyone (including Gwinn
 // admin). All access goes through server/tenantSecrets.ts.
 export const tenantSecrets = mysqlTable("tenant_secrets", {
   id: int("id").autoincrement().primaryKey(),
@@ -414,7 +414,7 @@ export const orders = mysqlTable("orders", {
   // store chat / MCP). In-person sales live in posOrders, so together the
   // three channels are cleanly separable — the pivot's north-star metric.
   channel: mysqlEnum("channel", ["web", "agent"]).default("web").notNull(),
-  // Zolto's platform fee (Stripe Connect application fee) taken on this
+  // Gwinn's platform fee (Stripe Connect application fee) taken on this
   // order, in Rappen. 0 on the Pro plan and for pre-pivot orders.
   platformFeeRappen: int("platform_fee_rappen").default(0).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -762,7 +762,7 @@ export type InsertRateLimitWindow = typeof rateLimitWindows.$inferInsert;
 // The plan cards sell "5 GB" (Free) and "50 GB" (Pro) of photo storage
 // (shared/platform.ts PLANS[].storageGb). Nothing enforced either: the only
 // limit anywhere was express.json's 50 MB per-request cap, so a free tenant
-// could upload without bound and Zolto was effectively free unlimited S3 for
+// could upload without bound and Gwinn was effectively free unlimited S3 for
 // anyone who signed up. S3 itself can't answer "how much does THIS tenant
 // use?" cheaply, so we keep the ledger here.
 //
@@ -812,7 +812,7 @@ export type InsertMagicLinkToken = typeof magicLinkTokens.$inferInsert;
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // Short-lived, single-use tokens that let a merchant bind a register by tapping
-// a link (`zolto://pair?t=…`) instead of typing a 64-char key on a phone.
+// a link (`gwinn://pair?t=…`) instead of typing a 64-char key on a phone.
 //
 // The token exists so the POS key itself never travels in a URL, where it would
 // land in browser history, server access logs and Referer headers. The app
@@ -842,7 +842,7 @@ export type InsertPosPairingToken = typeof posPairingTokens.$inferInsert;
 // SITE IMPORTS — the paid one-time switch-in (shared/platform.ts SITE_IMPORT)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-// One attempt at lifting a merchant's existing shop into Zolto. The row IS the
+// One attempt at lifting a merchant's existing shop into Gwinn. The row IS the
 // state machine, and its order is the whole point of the feature's pricing:
 //
 //   previewed → paid → applied
@@ -888,7 +888,7 @@ export type InsertSiteImport = typeof siteImports.$inferInsert;
 // ═══════════════════════════════════════════════════════════════════════════════
 // AGENT HITS — who is reading the machine-facing surfaces (server/agentHits.ts)
 // ═══════════════════════════════════════════════════════════════════════════════
-// Zolto publishes /llms.txt, /llms-full.txt and an MCP endpoint on the bet that
+// Gwinn publishes /llms.txt, /llms-full.txt and an MCP endpoint on the bet that
 // an AI agent will discover a store and buy from it. `orders.channel = 'agent'`
 // already records the ones that bought; nothing recorded the reach that comes
 // first, and no client-side analytics ever could — an agent fetching /llms.txt
@@ -905,7 +905,7 @@ export type InsertSiteImport = typeof siteImports.$inferInsert;
 // KEY UPDATE silently never fire for the platform surface or for a non-MCP
 // request — inserting a fresh row per hit and turning the whole table back into
 // the per-request log it is designed not to be:
-//   * tenant_id = 0  → the platform surface (zolto.ch itself), not a store.
+//   * tenant_id = 0  → the platform surface (gwinn.ch itself), not a store.
 //     No tenants row has id 0, so it can't collide with a real store.
 //   * mcp_tool = ''  → this hit wasn't an MCP tools/call.
 export const agentHits = mysqlTable(

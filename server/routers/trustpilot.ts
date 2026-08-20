@@ -7,7 +7,7 @@
  *
  * The API key never appears in any response here. `status` tells the admin
  * whether the platform HAS one — that is the difference between "your profile
- * is connected but Zolto can't fetch ratings" and "your profile is wrong", and
+ * is connected but Gwinn can't fetch ratings" and "your profile is wrong", and
  * a merchant staring at a link with no stars deserves to be told which.
  */
 

@@ -1,6 +1,6 @@
 import type { Request } from "express";
 import { isMarketingHost } from "@shared/marketing";
-import { showsZoltoAttribution } from "@shared/attribution";
+import { showsPlatformCredit } from "@shared/attribution";
 import { analyticsSnippet } from "./analytics";
 import { appendToHead } from "./headInject";
 import { injectMarketingHead } from "./marketingSeo";
@@ -54,9 +54,9 @@ export async function injectHeadForRequest(
     // One gate, read once and passed to both injectors, so the <meta generator>
     // and the JSON-LD creator node can never disagree about whether this store
     // is credited.
-    const attribution = showsZoltoAttribution({
+    const attribution = showsPlatformCredit({
       ...tenant,
-      hideZoltoBadge: settings?.hideZoltoBadge ?? false,
+      hidePlatformCredit: settings?.hidePlatformCredit ?? false,
     });
 
     const out = injectStorefrontHead(html, {

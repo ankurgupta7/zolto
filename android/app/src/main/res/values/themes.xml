@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.ZoltoPOS" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+    <style name="Theme.PosApp" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <item name="colorPrimary">@color/near_black</item>
         <item name="colorPrimaryDark">@color/charcoal</item>
         <item name="colorAccent">@color/gold</item>
@@ -8,15 +8,15 @@
         <item name="android:statusBarColor">@color/warm_white</item>
         <item name="android:navigationBarColor">@color/warm_white</item>
         <item name="android:windowLightStatusBar">true</item>
-        <item name="materialButtonStyle">@style/Widget.Zolto.Button</item>
-        <item name="materialButtonOutlinedStyle">@style/Widget.Zolto.Button.Outlined</item>
-        <item name="borderlessButtonStyle">@style/Widget.Zolto.Button.Borderless</item>
-        <item name="shapeAppearanceSmallComponent">@style/ShapeAppearance.Zolto.SmallComponent</item>
-        <item name="shapeAppearanceMediumComponent">@style/ShapeAppearance.Zolto.MediumComponent</item>
+        <item name="materialButtonStyle">@style/Widget.Brand.Button</item>
+        <item name="materialButtonOutlinedStyle">@style/Widget.Brand.Button.Outlined</item>
+        <item name="borderlessButtonStyle">@style/Widget.Brand.Button.Borderless</item>
+        <item name="shapeAppearanceSmallComponent">@style/ShapeAppearance.Brand.SmallComponent</item>
+        <item name="shapeAppearanceMediumComponent">@style/ShapeAppearance.Brand.MediumComponent</item>
     </style>
 
     <!-- Toolbar style: warm white bar with near-black icons — logo reads naturally -->
-    <style name="Widget.Zolto.Toolbar" parent="Widget.MaterialComponents.Toolbar">
+    <style name="Widget.Brand.Toolbar" parent="Widget.MaterialComponents.Toolbar">
         <item name="android:background">@color/warm_white</item>
         <item name="titleTextColor">@color/near_black</item>
         <item name="navigationIconTint">@color/near_black</item>
@@ -24,7 +24,7 @@
     </style>
 
     <!-- Primary filled button: near-black bg, warm-white text -->
-    <style name="Widget.Zolto.Button" parent="Widget.MaterialComponents.Button">
+    <style name="Widget.Brand.Button" parent="Widget.MaterialComponents.Button">
         <item name="backgroundTint">@color/near_black</item>
         <item name="android:textColor">@color/warm_white</item>
         <item name="cornerRadius">4dp</item>
@@ -32,10 +32,10 @@
     </style>
 
     <!-- Primary alias — used by success screen receipt actions -->
-    <style name="Widget.Zolto.Button.Primary" parent="Widget.Zolto.Button" />
+    <style name="Widget.Brand.Button.Primary" parent="Widget.Brand.Button" />
 
     <!-- Outlined button: near-black stroke + text -->
-    <style name="Widget.Zolto.Button.Outlined" parent="Widget.MaterialComponents.Button.OutlinedButton">
+    <style name="Widget.Brand.Button.Outlined" parent="Widget.MaterialComponents.Button.OutlinedButton">
         <item name="strokeColor">@color/near_black</item>
         <item name="android:textColor">@color/near_black</item>
         <item name="cornerRadius">4dp</item>
@@ -43,22 +43,22 @@
     </style>
 
     <!-- Borderless / text button -->
-    <style name="Widget.Zolto.Button.Borderless" parent="Widget.MaterialComponents.Button.TextButton">
+    <style name="Widget.Brand.Button.Borderless" parent="Widget.MaterialComponents.Button.TextButton">
         <item name="android:textColor">@color/near_black</item>
         <item name="cornerRadius">4dp</item>
     </style>
 
     <!-- 4dp corner radius for cards/components — Swiss geometric precision -->
-    <style name="ShapeAppearance.Zolto.SmallComponent" parent="ShapeAppearance.MaterialComponents.SmallComponent">
+    <style name="ShapeAppearance.Brand.SmallComponent" parent="ShapeAppearance.MaterialComponents.SmallComponent">
         <item name="cornerSize">4dp</item>
     </style>
 
-    <style name="ShapeAppearance.Zolto.MediumComponent" parent="ShapeAppearance.MaterialComponents.MediumComponent">
+    <style name="ShapeAppearance.Brand.MediumComponent" parent="ShapeAppearance.MaterialComponents.MediumComponent">
         <item name="cornerSize">4dp</item>
     </style>
 
     <!-- Gold button used on success screen -->
-    <style name="Widget.Zolto.Button.Gold" parent="Widget.Zolto.Button">
+    <style name="Widget.Brand.Button.Gold" parent="Widget.Brand.Button">
         <item name="backgroundTint">@color/gold</item>
         <item name="android:textColor">@color/near_black</item>
     </style>

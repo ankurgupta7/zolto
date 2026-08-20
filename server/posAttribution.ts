@@ -16,6 +16,7 @@
  * record at all*; this attributes sales the POS already recorded but left as an amount.
  */
 
+import { BRAND } from "@shared/brand";
 import {
   findCandidateProducts,
   generateConfirmationToken,
@@ -216,9 +217,7 @@ export async function runPosAttribution(
     const branding = {
       tenantName: settings?.whiteLabelName ?? tenant?.name,
       tenantDomain: toBaseUrl(
-        settings?.publicDomain ??
-          process.env.PUBLIC_BASE_URL ??
-          "https://zolto.ch",
+        settings?.publicDomain ?? process.env.PUBLIC_BASE_URL ?? BRAND.url,
       ),
       contactEmail: settings?.contactEmail ?? undefined,
       to: contact?.email ?? undefined,

@@ -28,7 +28,7 @@
  * - **Sales** — one row per line item with the transaction reference repeated,
  *   matching the shape of the existing CSV export on /admin/sales (a
  *   one-row-per-sale layout drops the very thing a merchant opens it for).
- * - **Inventory** — one row per product, `zolto_id` first.
+ * - **Inventory** — one row per product, `gwinn_id` first.
  * - **Stock In** — the only writable tab, and only when lane 2 is enabled.
  *
  * ## Why protected ranges rather than a read-only share
@@ -43,6 +43,7 @@
  * whenever the share role changes.
  */
 
+import { BRAND } from "@shared/brand";
 import {
   a1,
   batchUpdateSpreadsheet,
@@ -93,7 +94,7 @@ export const SALES_HEADER = [
 ];
 
 export const INVENTORY_HEADER = [
-  "zolto_id",
+  "gwinn_id",
   "name",
   "category",
   "price",
@@ -104,7 +105,7 @@ export const INVENTORY_HEADER = [
 ];
 
 /**
- * The Stock In tab's columns. `zolto_id` and `item` are written by us on each
+ * The Stock In tab's columns. `gwinn_id` and `item` are written by us on each
  * refresh; the merchant fills the rest.
  *
  * `qty_delta` is a CHANGE, not a total, and that is the single most important
@@ -115,7 +116,7 @@ export const INVENTORY_HEADER = [
  * the sheet, where the person typing will read it.
  */
 export const STOCK_IN_HEADER = [
-  "zolto_id",
+  "gwinn_id",
   "item",
   "qty_delta",
   "new_price",
@@ -149,7 +150,7 @@ function stamp(iso: string): string {
 export interface MirrorTabData {
   sales: (string | number)[][];
   inventory: (string | number)[][];
-  /** zolto_id + item only; the merchant owns the remaining columns. */
+  /** gwinn_id + item only; the merchant owns the remaining columns. */
   stockIn: (string | number)[][];
 }
 
@@ -285,7 +286,7 @@ export async function applyMirrorProtection(
       addProtectedRange: {
         protectedRange: {
           range: { sheetId },
-          description: "Published by Zolto — edit in the admin panel instead",
+          description: `Published by ${BRAND.name} — edit in the admin panel instead`,
           warningOnly: false,
         },
       },
@@ -417,7 +418,7 @@ export async function connectSheetMirror(
   options: { storeName: string; shareWith: string; stockInEnabled: boolean },
 ): Promise<{ spreadsheetId: string; spreadsheetUrl: string }> {
   const created = await createSpreadsheet(
-    `${options.storeName} — Zolto sales & inventory`,
+    `${options.storeName} — Gwinn sales & inventory`,
     // All three tabs exist from the start, so enabling lane 2 later is a
     // permission change rather than a restructuring of a live file.
     MIRROR_TABS,
@@ -482,7 +483,7 @@ export async function setStockInEnabled(
 /**
  * Disconnect: withdraw the merchant's access, stop syncing, forget the mirror.
  *
- * The spreadsheet is NOT deleted. Zolto owns it, which means deleting would
+ * The spreadsheet is NOT deleted. Gwinn owns it, which means deleting would
  * destroy a store's sales history on their behalf from one button press — and a
  * platform that can do that to data the merchant thinks of as theirs is exactly
  * the "captured" feeling this feature is supposed to avoid. Revoking the share

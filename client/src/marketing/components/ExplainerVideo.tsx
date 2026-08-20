@@ -3,7 +3,7 @@ import { useMarketingT } from "../lib/marketingI18n";
 import { useReelChapterVisible } from "./ReelStage";
 
 /**
- * ExplainerVideo — the Zolto explainer, in the hero beside the promise.
+ * ExplainerVideo — the Gwinn explainer, in the hero beside the promise.
  *
  * It behaves the way a reader expects a hero video to behave rather than the
  * way an autoplaying advert does: it loops silently while you are reading the
@@ -24,7 +24,7 @@ import { useReelChapterVisible } from "./ReelStage";
 
 /** Fallbacks, the same contract as `st()`: never render a raw locale key. */
 const DEFAULT_CAPTION = "Two minutes, start to first sale.";
-const DEFAULT_PLAY_LABEL = "Play the Zolto explainer";
+const DEFAULT_PLAY_LABEL = "Play the Gwinn explainer";
 
 function usePrefersReducedMotion(): boolean {
   const read = () =>
@@ -54,7 +54,7 @@ export function ExplainerVideo({
   poster,
   captionKey,
 }: {
-  /** Video file, e.g. "/video/zolto-explainer.mp4". */
+  /** Video file, e.g. "/video/gwinn-explainer.mp4". */
   src: string;
   /** Poster frame. Shown until the video can play — and instead of it, if it can't. */
   poster: string;

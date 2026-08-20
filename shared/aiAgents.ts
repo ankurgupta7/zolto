@@ -1,7 +1,7 @@
 /**
  * Who is reading the machine-facing surfaces, and what they asked for.
  *
- * Zolto publishes three things no human ever looks at: `/llms.txt`, its
+ * Gwinn publishes three things no human ever looks at: `/llms.txt`, its
  * long-form companion, and the MCP endpoint (server/llms.ts, server/mcp.ts).
  * They exist because the pricing thesis is that an AI agent can discover a
  * store and buy from it — and until now nothing recorded whether a single agent

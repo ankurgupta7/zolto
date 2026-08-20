@@ -1,5 +1,5 @@
 /**
- * The menu — every administrative operation Zolto has, arranged in tiers.
+ * The menu — every administrative operation Gwinn has, arranged in tiers.
  *
  * This file is data. Adding an operation means adding an entry here and a
  * function in actions/; the navigation, the read-only guard and the error
@@ -11,6 +11,7 @@
  * tier asks which store if the shell isn't already pointed at one.
  */
 
+import { BRAND } from "@shared/brand";
 import * as billing from "./actions/billing";
 import * as catalogue from "./actions/catalogue";
 import * as orders from "./actions/orders";
@@ -22,7 +23,7 @@ import type { MenuItem } from "./types";
 
 export const menu: MenuItem = {
   key: "root",
-  title: "Zolto admin",
+  title: `${BRAND.name} admin`,
   children: [
     {
       key: "stores",

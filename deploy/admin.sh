@@ -1,8 +1,8 @@
 #!/bin/bash
-# deploy/admin.sh — open the interactive Zolto administration shell.
+# deploy/admin.sh — open the interactive Gwinn administration shell.
 #
 # WHAT THIS IS
-# Every administrative operation Zolto has, at a prompt, arranged in tiers:
+# Every administrative operation Gwinn has, at a prompt, arranged in tiers:
 # stores, plans and comps, people and access, catalogue and stock, orders and
 # reconciliation, store setup, and the platform-wide operations. It asks what
 # you want to do, you pick a number, and it asks the next question.
@@ -11,7 +11,7 @@
 #     bash deploy/admin.sh                      # interactive, read-write
 #     bash deploy/admin.sh --read-only          # refuse every option that writes
 #     bash deploy/admin.sh --store kalakosh     # start pointed at one store
-#     bash deploy/admin.sh --as you@zolto.ch    # act as a specific owner
+#     bash deploy/admin.sh --as you@gwinn.ch    # act as a specific owner
 #
 # HOW IT REACHES THE APP
 # It runs INSIDE the app container (`docker compose exec app`), because that is

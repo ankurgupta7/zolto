@@ -2,7 +2,7 @@
  * The Launch Diary series + Kalakosh case study, as structured content.
  *
  * Source drafts live in docs/planning/phase1/content/*.md. Here they are modelled
- * as typed blocks so they render inside the Zolto marketing chrome with real SEO
+ * as typed blocks so they render inside the Gwinn marketing chrome with real SEO
  * metadata and JSON-LD.
  *
  * IDENTITY IS RELEASE-GATED. Every reference to the maker flows through `maker`
@@ -117,18 +117,18 @@ export function articleSchema(a: {
     headline: a.headline,
     description: a.description,
     inLanguage: HTML_LANG[a.lang ?? "en"],
-    author: authorJsonLd("https://zolto.com"),
+    author: authorJsonLd("https://gwinn.com"),
     publisher: {
       "@type": "Organization",
-      name: "Zolto",
-      logo: { "@type": "ImageObject", url: "https://zolto.com/logo.png" },
+      name: "Gwinn",
+      logo: { "@type": "ImageObject", url: "https://gwinn.com/logo.png" },
     },
     about: makerNode(),
     datePublished: a.datePublished,
     dateModified: a.dateModified,
     mainEntityOfPage: {
       "@type": "WebPage",
-      "@id": `https://zolto.com${BLOG_BASE}/${a.slug}`,
+      "@id": `https://gwinn.com${BLOG_BASE}/${a.slug}`,
     },
   };
 }
@@ -138,10 +138,10 @@ const diary1: Article = {
   kind: "diary",
   eyebrow: "Launch Diary · Part 1 of 4",
   title: "Launch Diary #1: The Setup",
-  metaTitle: `How ${founderTitle} Set Up ${brandPossessive} First Online Store | Zolto Launch Diary`,
+  metaTitle: `How ${founderTitle} Set Up ${brandPossessive} First Online Store | Gwinn Launch Diary`,
   metaDescription: maker.founder
-    ? `Follow ${maker.founder}, founder of ${maker.brand} pearl jewelry in ${maker.city}, as she sets up her first online store on Zolto. Real process, real timeline, no growth hacks.`
-    : `Follow a ${maker.city} pearl jewelry maker as she sets up a first online store on Zolto. Real process, real timeline, no growth hacks.`,
+    ? `Follow ${maker.founder}, founder of ${maker.brand} pearl jewelry in ${maker.city}, as she sets up her first online store on Gwinn. Real process, real timeline, no growth hacks.`
+    : `Follow a ${maker.city} pearl jewelry maker as she sets up a first online store on Gwinn. Real process, real timeline, no growth hacks.`,
   dek: "From Christmas markets to a first online store — Part 1: getting started.",
   datePublished: BLOG_POSTS[0].lastmod,
   dateModified: BLOG_POSTS[0].lastmod,
@@ -188,7 +188,7 @@ const diary1: Article = {
     { type: "h2", text: "The Setup Process" },
     {
       type: "p",
-      text: "Day 1 — Product upload. The studio started with 15 products. Not the full catalog — just the pieces that photograph well and sell consistently. One rough phone photo per piece, no studio; Zolto's AI restyles that single shot into a product or lifestyle image, and the AI descriptions get it about 80% of the way there before a human edit for voice.",
+      text: "Day 1 — Product upload. The studio started with 15 products. Not the full catalog — just the pieces that photograph well and sell consistently. One rough phone photo per piece, no studio; Gwinn's AI restyles that single shot into a product or lifestyle image, and the AI descriptions get it about 80% of the way there before a human edit for voice.",
     },
     {
       type: "note",
@@ -234,7 +234,7 @@ const diary1: Article = {
     },
     {
       type: "p",
-      text: "Day 3 — POS sync. The critical piece. POS inventory (what's available at markets) needed to sync with the online store, so a bracelet sold at a Chilbi doesn't still show as available online ten minutes later. Zolto handles this automatically: one inventory database, two sales channels. Time spent: 30 minutes. It just worked.",
+      text: "Day 3 — POS sync. The critical piece. POS inventory (what's available at markets) needed to sync with the online store, so a bracelet sold at a Chilbi doesn't still show as available online ten minutes later. Gwinn handles this automatically: one inventory database, two sales channels. Time spent: 30 minutes. It just worked.",
     },
     { type: "h2", text: "What We Learned" },
     {
@@ -271,7 +271,7 @@ const diary2: Article = {
   kind: "diary",
   eyebrow: "Launch Diary · Part 2 of 4",
   title: "Launch Diary #2: Going Live",
-  metaTitle: `Going Live: ${maker.founder ? `${maker.brand}'s` : "A Zurich Jewelry Store's"} First Day Online | Zolto Launch Diary`,
+  metaTitle: `Going Live: ${maker.founder ? `${maker.brand}'s` : "A Zurich Jewelry Store's"} First Day Online | Gwinn Launch Diary`,
   metaDescription: `Day 1 of ${maker.founder ? `${maker.brand}'s` : "a pearl jewelry store"} going online in ${maker.city}: 34 visitors, 0 orders. Day 2: the first sale. The real story of launching online.`,
   dek: "Part 2: the quiet switch from 'not available' to 'here it is' — and the first order.",
   datePublished: BLOG_POSTS[1].lastmod,
@@ -380,7 +380,7 @@ const diary3: Article = {
   eyebrow: "Launch Diary · Part 3 of 4",
   title: "Launch Diary #3: First Month Online",
   metaTitle:
-    "First Month Online: 12 Orders, Honest Numbers | Zolto Launch Diary",
+    "First Month Online: 12 Orders, Honest Numbers | Gwinn Launch Diary",
   metaDescription: `One month after launching online, ${maker.founder ? maker.brand : `a ${maker.city} pearl jewelry maker`} shares real numbers: 12 orders, CHF 61 average, 81% AI chatbot resolution. No growth hacks.`,
   dek: "Part 3: honest month-one numbers — 12 online orders, CHF 61 average, and what drove them.",
   datePublished: BLOG_POSTS[2].lastmod,
@@ -521,18 +521,18 @@ export function storySchema(a: {
     headline: a.headline,
     description: a.description,
     inLanguage: HTML_LANG[a.lang ?? "en"],
-    author: authorJsonLd("https://zolto.com"),
+    author: authorJsonLd("https://gwinn.com"),
     publisher: {
       "@type": "Organization",
-      name: "Zolto",
-      logo: { "@type": "ImageObject", url: "https://zolto.com/logo.png" },
+      name: "Gwinn",
+      logo: { "@type": "ImageObject", url: "https://gwinn.com/logo.png" },
     },
     about: makerNode(),
     datePublished: CASE_STUDY_PUBLISHED,
     dateModified: CASE_STUDY_PUBLISHED,
     mainEntityOfPage: {
       "@type": "WebPage",
-      "@id": `https://zolto.com${STORY_PATH}`,
+      "@id": `https://gwinn.com${STORY_PATH}`,
     },
   };
 }
@@ -541,8 +541,8 @@ const caseStudy: Article = {
   slug: STORY_SLUG,
   kind: "story",
   title: `${maker.brand} Launch Case Study`,
-  metaTitle: `${maker.founder ? `${maker.brand} Case Study` : "Case Study"}: From Christmas Markets to Online Sales in 30 Days | Zolto`,
-  metaDescription: `How ${maker.founder ? `${maker.founder}, founder of ${maker.brand},` : `a pearl jewelry maker in ${maker.city}`} launched a first online store in 3 days and made 12 online sales in the first month, on Zolto.`,
+  metaTitle: `${maker.founder ? `${maker.brand} Case Study` : "Case Study"}: From Christmas Markets to Online Sales in 30 Days | Gwinn`,
+  metaDescription: `How ${maker.founder ? `${maker.founder}, founder of ${maker.brand},` : `a pearl jewelry maker in ${maker.city}`} launched a first online store in 3 days and made 12 online sales in the first month, on Gwinn.`,
   dek: "From ~60 offline sales/month at Christmas markets to a hybrid online-offline pearl jewelry business in 30 days.",
   datePublished: CASE_STUDY_PUBLISHED,
   dateModified: CASE_STUDY_PUBLISHED,
@@ -557,7 +557,7 @@ const caseStudy: Article = {
     { type: "h2", text: "The Maker" },
     {
       type: "p",
-      text: `${maker.brand} is a jewelry brand in ${maker.city}, making handcrafted pieces in pearls and semi-precious stones — necklaces, earrings, bracelets — sold at Christmas markets and Chilbis along the Zurich Gold Coast. Before Zolto, the whole business was offline: about 60 sales a month, all in person, no online store.`,
+      text: `${maker.brand} is a jewelry brand in ${maker.city}, making handcrafted pieces in pearls and semi-precious stones — necklaces, earrings, bracelets — sold at Christmas markets and Chilbis along the Zurich Gold Coast. Before Gwinn, the whole business was offline: about 60 sales a month, all in person, no online store.`,
     },
     { type: "h2", text: "The Challenge" },
     {
@@ -642,7 +642,7 @@ const caseStudy: Article = {
           { type: "h2", text: "The Maker's Perspective" } as Block,
           {
             type: "quote",
-            text: "I didn't want to become a tech person. I wanted to make jewelry. Zolto let me set up a store in 3 days without learning anything new. The AI handles the questions I used to answer in Instagram DMs — like whether my pearls are freshwater, or what shipping costs to Germany.",
+            text: "I didn't want to become a tech person. I wanted to make jewelry. Gwinn let me set up a store in 3 days without learning anything new. The AI handles the questions I used to answer in Instagram DMs — like whether my pearls are freshwater, or what shipping costs to Germany.",
             cite: `${founderName}, Founder of ${maker.brand}, ${maker.city}`,
           } as Block,
         ]

@@ -93,7 +93,7 @@ const RESPONSES: Record<string, unknown> = {
   // state a merchant actually sits in while waiting for DNS.
   "tenant.domainStatus": {
     domain: "shop.bergblume.ch",
-    expected: "app.zolto.ch",
+    expected: "app.gwinn.ch",
     pointsToUs: false,
   },
   "tenant.getSettings": {
@@ -166,14 +166,14 @@ const RESPONSES: Record<string, unknown> = {
       ? { android: null, ios: null }
       : {
           android: {
-            url: "https://github.com/ankurgupta7/zolto/releases/download/pos-latest/ZoltoPOS-latest.apk",
+            url: "https://github.com/ankurgupta7/gwinn/releases/download/pos-latest/GwinnPOS-latest.apk",
             requiresSideload: false,
             sizeBytes: 9_240_000,
             builtAt: "2026-08-09T09:12:00Z",
             commit: "3f2a1bc",
           },
           ios: {
-            url: "https://github.com/ankurgupta7/zolto/releases/download/pos-latest/ZoltoPOS-latest-unsigned.ipa",
+            url: "https://github.com/ankurgupta7/gwinn/releases/download/pos-latest/GwinnPOS-latest-unsigned.ipa",
             requiresSideload: true,
             sizeBytes: 21_400_000,
             builtAt: "2026-08-09T09:20:00Z",
@@ -190,9 +190,9 @@ const RESPONSES: Record<string, unknown> = {
   "tenant.createPosPairingToken": {
     available: true,
     deepLink:
-      "zolto://pair?t=Q2xhdWRlRXhhbXBsZVBhaXJpbmdUb2tlbg&url=https%3A%2F%2Fbergblume.zolto.ch",
+      "gwinn://pair?t=Q2xhdWRlRXhhbXBsZVBhaXJpbmdUb2tlbg&url=https%3A%2F%2Fbergblume.gwinn.ch",
     webLink:
-      "https://bergblume.zolto.ch/pos/pair?t=Q2xhdWRlRXhhbXBsZVBhaXJpbmdUb2tlbg",
+      "https://bergblume.gwinn.ch/pos/pair?t=Q2xhdWRlRXhhbXBsZVBhaXJpbmdUb2tlbg",
     expiresAt: new Date(Date.now() + 10 * 60 * 1000),
   },
   "tenant.channelConnect": {

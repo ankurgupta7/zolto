@@ -1,6 +1,6 @@
 #!/usr/bin/env tsx
 /**
- * scripts/verify-platform-fee.ts — prove Zolto's platform fee actually works.
+ * scripts/verify-platform-fee.ts — prove Gwinn's platform fee actually works.
  *
  * WHY THIS EXISTS
  * The 1% fee on online + agent orders is the entire Free-plan business model,
@@ -14,7 +14,7 @@
  * If Stripe rejects the fee, createStorefrontCheckoutSession retries WITHOUT
  * it so the vendor's sale still completes (that fallback is intentional — an
  * unmonetised sale beats a lost one). The visible result is a working
- * storefront that earns Zolto nothing. Nobody would notice from the outside.
+ * storefront that earns Gwinn nothing. Nobody would notice from the outside.
  *
  * WHAT IT DOES
  * Creates and confirms a real test-mode PaymentIntent on the tenant's own
@@ -41,7 +41,7 @@
  */
 
 // Reads the repo-root .env into process.env. dotenv parses KEY=VALUE
-// literally, so a value like RESEND_FROM_EMAIL=Zolto <orders@zolto.ch> is
+// literally, so a value like RESEND_FROM_EMAIL=Gwinn <orders@gwinn.ch> is
 // safe — unlike `set -a; . ./.env`, which would treat the `<` as a redirect.
 // Anything already in the real environment still wins.
 import "dotenv/config";
@@ -101,7 +101,7 @@ if (!KEY.startsWith("sk_test_")) {
 const stripe = new Stripe(KEY);
 
 line("═".repeat(66));
-line(" Zolto platform fee — end-to-end verification against real Stripe");
+line(" Gwinn platform fee — end-to-end verification against real Stripe");
 line("═".repeat(66));
 
 /**
@@ -170,11 +170,11 @@ async function runCase(
         payment_method: "pm_card_visa",
         automatic_payment_methods: { enabled: true, allow_redirects: "never" },
         confirm: true,
-        description: `Zolto platform fee verification (${label})`,
+        description: `Gwinn platform fee verification (${label})`,
         // Omitted entirely when zero — exactly as checkoutSession.ts does it.
         ...(feeRappen > 0 ? { application_fee_amount: feeRappen } : {}),
       },
-      // The direct charge: runs on the tenant's own account using Zolto's
+      // The direct charge: runs on the tenant's own account using Gwinn's
       // platform key. This is the line the whole model depends on.
       { stripeAccount: account },
     );
@@ -206,7 +206,7 @@ async function runCase(
   }
 
   // Read the fee from the PLATFORM account. Asking the connected account what
-  // it was charged would only echo the request; this confirms Zolto received
+  // it was charged would only echo the request; this confirms Gwinn received
   // it, which is the actual claim being tested.
   const charge = await stripe.charges.retrieve(
     typeof intent.latest_charge === "string"

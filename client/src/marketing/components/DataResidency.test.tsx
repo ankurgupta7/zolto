@@ -62,7 +62,7 @@ describe("DataResidency", () => {
   });
 
   it("names no competitor and asserts nobody else's hosting", () => {
-    // Same discipline as the pricing bands: be specific about Zolto, and let
+    // Same discipline as the pricing bands: be specific about Gwinn, and let
     // the comparison table handle the contrast. Where a competitor hosts is
     // not something this page can verify.
     const { container } = renderBand();

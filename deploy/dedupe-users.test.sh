@@ -49,9 +49,9 @@ trap 'rm -rf "${FAKE_ROOT}" "${FAKE_BIN_DIR}" "${FAKE_CALL_LOG}"' EXIT
 mkdir -p "${FAKE_ROOT}/deploy"
 cp "${TARGET}" "${FAKE_ROOT}/deploy/dedupe-users.sh"
 cat > "${FAKE_ROOT}/.env" <<'ENV'
-MYSQL_USER=zolto_user
+MYSQL_USER=gwinn_user
 MYSQL_PASSWORD=sekret
-MYSQL_DATABASE=zolto
+MYSQL_DATABASE=gwinn
 ENV
 touch "${FAKE_ROOT}/docker-compose.yml"
 
@@ -142,7 +142,7 @@ assert_contains "$OUT" "more than one store" "two admin rows on two tenants → 
 # a magic-link row parked on the platform tenant as a customer. The tenant ids
 # differ, so the old "one row per tenant" test called this legitimate — but it
 # is one person split in two, and the parked row is not a store.
-PARKED=$'14\t1\tZolto Platform\tcustomer\temail:a@b.c\tada\ta@b.c\tmagic_link\t2026-08-09 19:54\t2026-08-13 16:08'
+PARKED=$'14\t1\tGwinn Platform\tcustomer\temail:a@b.c\tada\ta@b.c\tmagic_link\t2026-08-09 19:54\t2026-08-13 16:08'
 OUT=$(FAKE_INSPECT="${ROW1}"$'\n'"${PARKED}" FAKE_REAL=2 FAKE_TENANTS=1 FAKE_PARKED=1 run --email a@b.c)
 assert_contains "$OUT" "parking spot, not a store" "flags the parked row inline"
 assert_contains "$OUT" "One person, split across rows" "parked + managing → one person, not two stores"
@@ -199,18 +199,18 @@ env_case() { # env_case <.env body> [args…] → stdout+stderr
   rm -rf "$dir"
 }
 
-BASE=$'MYSQL_USER=zolto_user\nMYSQL_PASSWORD=sekret\nMYSQL_DATABASE=zolto'
+BASE=$'MYSQL_USER=gwinn_user\nMYSQL_PASSWORD=sekret\nMYSQL_DATABASE=gwinn'
 
 OUT=$(env_case "${BASE}"$'\nTENANT_SECRETS_KEY= 9aa5359e6149b7bb')
 assert_not_contains "$OUT" "command not found" "a 'KEY= value' line is not run as a command"
 
 # The dangerous one: sourcing would execute this.
 : > "${FAKE_CALL_LOG}"
-OUT=$(env_case "${BASE}"$'\nEVIL=$(touch /tmp/zolto-dedupe-pwned)')
+OUT=$(env_case "${BASE}"$'\nEVIL=$(touch /tmp/gwinn-dedupe-pwned)')
 assert_not_contains "$OUT" "command not found" "a \$(…) value produces no shell error"
-if [ -e /tmp/zolto-dedupe-pwned ]; then
+if [ -e /tmp/gwinn-dedupe-pwned ]; then
   fail "a \$(…) value in .env is NOT executed"
-  rm -f /tmp/zolto-dedupe-pwned
+  rm -f /tmp/gwinn-dedupe-pwned
 else
   pass "a \$(…) value in .env is NOT executed"
 fi
@@ -218,11 +218,11 @@ fi
 # Values still have to arrive intact, or the connection silently uses the wrong
 # credentials — the failure this whole section exists to prevent.
 : > "${FAKE_CALL_LOG}"
-env_case $'MYSQL_USER = spaced\nMYSQL_PASSWORD="quo ted"\nMYSQL_DATABASE=zolto # inline' --check >/dev/null
+env_case $'MYSQL_USER = spaced\nMYSQL_PASSWORD="quo ted"\nMYSQL_DATABASE=gwinn # inline' --check >/dev/null
 CALLS=$(cat "${FAKE_CALL_LOG}")
 assert_contains "$CALLS" "-uspaced"    "tolerates whitespace around ="
 assert_contains "$CALLS" "-pquo ted"   "keeps a quoted value verbatim, quotes stripped"
-assert_contains "$CALLS" " zolto "     "strips an inline comment from an unquoted value"
+assert_contains "$CALLS" " gwinn "     "strips an inline comment from an unquoted value"
 
 : > "${FAKE_CALL_LOG}"
 env_case $'MYSQL_USER=first\nMYSQL_PASSWORD=p\nMYSQL_DATABASE=d\nMYSQL_USER=second' --check >/dev/null

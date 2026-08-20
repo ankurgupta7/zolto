@@ -28,6 +28,7 @@
  *   once; there is no way around it and no silent failure.
  */
 
+import { BRAND } from "@shared/brand";
 import crypto from "node:crypto";
 import {
   claimPosPairingToken,
@@ -45,13 +46,13 @@ export const POS_SECRET_PROVIDER = "pos";
 
 /**
  * How long a pairing link stays good. Long enough to walk from a laptop to the
- * register and get past the OS "open in Zolto POS?" prompt; short enough that a link
+ * register and get past the OS "open in Gwinn POS?" prompt; short enough that a link
  * left in a chat thread is dead by the time anyone else finds it.
  */
 export const PAIRING_TTL_MS = 10 * 60 * 1000;
 
-/** Deep-link scheme both apps register. */
-export const PAIRING_SCHEME = "zolto";
+/** Deep-link scheme both apps register — derived, never spelled. */
+export const PAIRING_SCHEME = BRAND.urlScheme;
 
 // ─── Token primitives (pure) ──────────────────────────────────────────────────
 

@@ -6,7 +6,7 @@
  * they land in the encrypted vault (server/tenantSecrets.ts, the ONLY
  * sanctioned home for tenant secrets). Every channel handler asks here first
  * and falls back to the platform-level env var, so both models keep working:
- *   - platform-app model: one Meta/Slack/Discord app owned by Zolto, its
+ *   - platform-app model: one Meta/Slack/Discord app owned by Gwinn, its
  *     credentials in env, tenants only registering IDs/numbers;
  *   - bring-your-own-app model: a tenant's own app credentials in the vault.
  *

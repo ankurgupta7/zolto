@@ -36,7 +36,7 @@ const ENV_KEYS = [
 ] as const;
 const originalEnv: Record<string, string | undefined> = {};
 
-const CLIENT_ID = "ch.zolto.web";
+const CLIENT_ID = "ch.gwinn.web";
 const APPLE_KID = "test-apple-kid";
 const STATE = "a-fixed-test-state-value";
 

@@ -140,9 +140,9 @@ export interface BlogChrome {
  */
 export const BLOG_CHROME: Record<SupportedLanguage, BlogChrome> = {
   en: {
-    indexMetaTitle: "Launch Diary — A Maker's First Online Store | Zolto",
+    indexMetaTitle: "Launch Diary — A Maker's First Online Store | Gwinn",
     indexMetaDescription:
-      "The Launch Diary: an honest, week-by-week account of a Zurich pearl jewelry maker launching a first online store on Zolto. No growth hacks, just what happened.",
+      "The Launch Diary: an honest, week-by-week account of a Zurich pearl jewelry maker launching a first online store on Gwinn. No growth hacks, just what happened.",
     indexEyebrow: "The Launch Diary",
     indexTitle: "A maker's first online store, documented.",
     indexIntro:
@@ -156,13 +156,13 @@ export const BLOG_CHROME: Record<SupportedLanguage, BlogChrome> = {
     allDiaryPosts: "← All Launch Diary posts",
     nextInSeries: "Next in the series",
     seriesDisclosure:
-      "This series documents a real maker's first online-store launch on Zolto. No growth hacks, no cherry-picked metrics — just what happened.",
+      "This series documents a real maker's first online-store launch on Gwinn. No growth hacks, no cherry-picked metrics — just what happened.",
   },
   de: {
     indexMetaTitle:
-      "Launch-Tagebuch — Der erste Onlineshop einer Macherin | Zolto",
+      "Launch-Tagebuch — Der erste Onlineshop einer Macherin | Gwinn",
     indexMetaDescription:
-      "Das Launch-Tagebuch: ein ehrlicher Bericht Woche für Woche, wie eine Zürcher Perlenschmuck-Macherin ihren ersten Onlineshop auf Zolto eröffnet. Keine Growth-Hacks, nur was wirklich geschah.",
+      "Das Launch-Tagebuch: ein ehrlicher Bericht Woche für Woche, wie eine Zürcher Perlenschmuck-Macherin ihren ersten Onlineshop auf Gwinn eröffnet. Keine Growth-Hacks, nur was wirklich geschah.",
     indexEyebrow: "Das Launch-Tagebuch",
     indexTitle: "Der erste Onlineshop einer Macherin, dokumentiert.",
     indexIntro:
@@ -176,13 +176,13 @@ export const BLOG_CHROME: Record<SupportedLanguage, BlogChrome> = {
     allDiaryPosts: "← Alle Beiträge im Launch-Tagebuch",
     nextInSeries: "Als Nächstes in der Serie",
     seriesDisclosure:
-      "Diese Serie dokumentiert den ersten Onlineshop-Launch einer echten Macherin auf Zolto. Keine Growth-Hacks, keine geschönten Zahlen — nur was wirklich geschah.",
+      "Diese Serie dokumentiert den ersten Onlineshop-Launch einer echten Macherin auf Gwinn. Keine Growth-Hacks, keine geschönten Zahlen — nur was wirklich geschah.",
   },
   fr: {
     indexMetaTitle:
-      "Journal de lancement — La première boutique en ligne d'une créatrice | Zolto",
+      "Journal de lancement — La première boutique en ligne d'une créatrice | Gwinn",
     indexMetaDescription:
-      "Le Journal de lancement : le récit honnête, semaine après semaine, d'une créatrice de bijoux de perles zurichoise qui lance sa première boutique en ligne sur Zolto. Pas de growth hacking, juste ce qui s'est passé.",
+      "Le Journal de lancement : le récit honnête, semaine après semaine, d'une créatrice de bijoux de perles zurichoise qui lance sa première boutique en ligne sur Gwinn. Pas de growth hacking, juste ce qui s'est passé.",
     indexEyebrow: "Le Journal de lancement",
     indexTitle: "La première boutique en ligne d'une créatrice, documentée.",
     indexIntro:
@@ -197,13 +197,13 @@ export const BLOG_CHROME: Record<SupportedLanguage, BlogChrome> = {
     allDiaryPosts: "← Tous les articles du Journal de lancement",
     nextInSeries: "La suite de la série",
     seriesDisclosure:
-      "Cette série documente le lancement de la première boutique en ligne d'une véritable créatrice sur Zolto. Pas de growth hacking, pas de chiffres triés sur le volet — juste ce qui s'est passé.",
+      "Cette série documente le lancement de la première boutique en ligne d'une véritable créatrice sur Gwinn. Pas de growth hacking, pas de chiffres triés sur le volet — juste ce qui s'est passé.",
   },
   it: {
     indexMetaTitle:
-      "Diario di lancio — Il primo negozio online di un'artigiana | Zolto",
+      "Diario di lancio — Il primo negozio online di un'artigiana | Gwinn",
     indexMetaDescription:
-      "Il Diario di lancio: il racconto onesto, settimana dopo settimana, di un'artigiana di gioielli di perle di Zurigo che apre il suo primo negozio online su Zolto. Nessun growth hack, solo quello che è successo.",
+      "Il Diario di lancio: il racconto onesto, settimana dopo settimana, di un'artigiana di gioielli di perle di Zurigo che apre il suo primo negozio online su Gwinn. Nessun growth hack, solo quello che è successo.",
     indexEyebrow: "Il Diario di lancio",
     indexTitle: "Il primo negozio online di un'artigiana, documentato.",
     indexIntro:
@@ -217,7 +217,7 @@ export const BLOG_CHROME: Record<SupportedLanguage, BlogChrome> = {
     allDiaryPosts: "← Tutti gli articoli del Diario di lancio",
     nextInSeries: "Prossimo nella serie",
     seriesDisclosure:
-      "Questa serie documenta il lancio del primo negozio online di un'artigiana reale su Zolto. Nessun growth hack, nessun dato scelto ad arte — solo quello che è successo.",
+      "Questa serie documenta il lancio del primo negozio online di un'artigiana reale su Gwinn. Nessun growth hack, nessun dato scelto ad arte — solo quello che è successo.",
   },
 };
 

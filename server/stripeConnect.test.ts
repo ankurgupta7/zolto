@@ -1,3 +1,4 @@
+import { BRAND } from "@shared/brand";
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import express from "express";
 import request from "supertest";
@@ -33,7 +34,7 @@ const ENV_KEYS = [
 const originalEnv: Record<string, string | undefined> = {};
 
 function fakeReq(): never {
-  return { protocol: "https", headers: { host: "zolto.example" } } as never;
+  return { protocol: "https", headers: { host: "gwinn.example" } } as never;
 }
 
 beforeEach(() => {
@@ -134,7 +135,7 @@ describe("buildConnectAuthorizeUrl", () => {
     expect(parsed.searchParams.get("response_type")).toBe("code");
     expect(parsed.searchParams.get("scope")).toBe("read_write");
     expect(parsed.searchParams.get("redirect_uri")).toBe(
-      "https://zolto.example/api/stripe/connect/callback",
+      "https://gwinn.example/api/stripe/connect/callback",
     );
     expect(parsed.searchParams.get("state")).toEqual(expect.any(String));
   });
@@ -146,11 +147,11 @@ describe("buildConnectAuthorizeUrl", () => {
   // Stripe" from — otherwise only one tenant's subdomain would ever match
   // what's registered in the Stripe Dashboard.
   it("uses PUBLIC_BASE_URL's origin regardless of the request's own host", async () => {
-    process.env.PUBLIC_BASE_URL = "https://zolto.ch";
+    process.env.PUBLIC_BASE_URL = BRAND.url;
     const url = await buildConnectAuthorizeUrl(42, fakeReq());
     const parsed = new URL(url!);
     expect(parsed.searchParams.get("redirect_uri")).toBe(
-      "https://zolto.ch/api/stripe/connect/callback",
+      `${BRAND.url}/api/stripe/connect/callback`,
     );
   });
 
@@ -159,7 +160,7 @@ describe("buildConnectAuthorizeUrl", () => {
     const url = await buildConnectAuthorizeUrl(42, fakeReq());
     const parsed = new URL(url!);
     expect(parsed.searchParams.get("redirect_uri")).toBe(
-      "https://zolto.example/api/stripe/connect/callback",
+      "https://gwinn.example/api/stripe/connect/callback",
     );
   });
 });
@@ -192,7 +193,7 @@ describe("registerStripeConnectRoutes callback", () => {
   // one step later in the same flow.
   describe("redirecting back to the tenant's own subdomain", () => {
     beforeEach(() => {
-      process.env.PUBLIC_BASE_URL = "https://zolto.ch";
+      process.env.PUBLIC_BASE_URL = BRAND.url;
       getTenantById.mockResolvedValue({ id: 42, slug: "blah" });
     });
 
@@ -207,7 +208,7 @@ describe("registerStripeConnectRoutes callback", () => {
 
       expect(res.status).toBe(302);
       expect(res.headers.location).toBe(
-        "https://blah.zolto.ch/admin?stripeConnect=success",
+        `https://blah.${BRAND.domain}/admin?stripeConnect=success`,
       );
     });
 
@@ -221,7 +222,7 @@ describe("registerStripeConnectRoutes callback", () => {
       );
 
       expect(res.headers.location).toBe(
-        "https://blah.zolto.ch/admin?stripeConnect=error",
+        `https://blah.${BRAND.domain}/admin?stripeConnect=error`,
       );
     });
 
@@ -235,7 +236,7 @@ describe("registerStripeConnectRoutes callback", () => {
 
       expect(res.status).toBe(302);
       expect(res.headers.location).toBe(
-        "https://blah.zolto.ch/admin?stripeConnect=error&reason=access_denied",
+        `https://blah.${BRAND.domain}/admin?stripeConnect=error&reason=access_denied`,
       );
     });
 

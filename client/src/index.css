@@ -105,7 +105,7 @@
   --brand-band-deep: #231e19;
   --brand-band-fg: #ffffff;
 
-  /* ── The brush-Z lockup ─────────────────────────────────────────────────────
+  /* ── The brush-G lockup ─────────────────────────────────────────────────────
      The mark is one shape in three colours (tile, stroke, dot), so a theme can
      recolour it without a second SVG — see MarketingChrome.BrushMark. `ring` is
      a hairline on the tile edge, needed only where the tile is close enough to

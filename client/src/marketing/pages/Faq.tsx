@@ -1,3 +1,4 @@
+import { brandNeutralKey } from "@shared/brand";
 import { Link } from "wouter";
 import { Container } from "../components/Container";
 import { useDocumentMeta } from "../lib/useDocumentMeta";
@@ -54,7 +55,7 @@ export default function Faq() {
           return (
             <section key={category}>
               <h2 className="font-serif text-2xl text-[var(--brand-text)]">
-                {st(`faqCategories.${category}`, category)}
+                {st(`faqCategories.${brandNeutralKey(category)}`, category)}
               </h2>
               <dl className="mt-6 space-y-4">
                 {items.map((item) => (
@@ -63,10 +64,10 @@ export default function Faq() {
                     className="rounded-xl border border-[var(--brand-border)] bg-white p-6"
                   >
                     <dt className="font-medium text-[var(--brand-text)]">
-                      {st(`faqs.${item.q}.q`, item.q)}
+                      {st(`faqs.${brandNeutralKey(item.q)}.q`, item.q)}
                     </dt>
                     <dd className="mt-2 text-sm leading-relaxed text-[var(--brand-muted-2)]">
-                      {st(`faqs.${item.q}.a`, item.a)}
+                      {st(`faqs.${brandNeutralKey(item.q)}.a`, item.a)}
                     </dd>
                   </div>
                 ))}

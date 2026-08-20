@@ -1,3 +1,4 @@
+import { BRAND } from "./brand";
 import { describe, expect, it } from "vitest";
 import {
   type ProductSeo,
@@ -15,7 +16,7 @@ import {
 
 const identity: StorefrontIdentity = {
   storeName: "Aurora Atelier",
-  baseUrl: "https://aurora.zolto.ch",
+  baseUrl: `https://aurora.${BRAND.domain}`,
   currency: "chf",
   description: "Handmade pieces from Zurich.",
   logoUrl: "https://cdn.test/logo.png",
@@ -52,7 +53,7 @@ describe("productJsonLd", () => {
     expect(node.brand).toEqual({ "@type": "Brand", name: "Aurora Atelier" });
     expect(node.offers.priceCurrency).toBe("CHF");
     expect(node.offers.price).toBe("89.00");
-    expect(node.offers.url).toBe("https://aurora.zolto.ch/product/7");
+    expect(node.offers.url).toBe(`https://aurora.${BRAND.domain}/product/7`);
   });
 
   it("marks sold-out stock as OutOfStock", () => {
@@ -96,7 +97,7 @@ describe("productJsonLd", () => {
   it("points the seller at the store node rather than duplicating it", () => {
     const node = productJsonLd(product(), identity) as Record<string, any>;
     expect(node.offers.seller).toEqual({
-      "@id": "https://aurora.zolto.ch/#store",
+      "@id": `https://aurora.${BRAND.domain}/#store`,
     });
   });
 });
@@ -105,7 +106,7 @@ describe("storeJsonLd / websiteJsonLd", () => {
   it("emits a Store with a stable @id other nodes can reference", () => {
     const node = storeJsonLd(identity) as Record<string, any>;
     expect(node["@type"]).toBe("Store");
-    expect(node["@id"]).toBe("https://aurora.zolto.ch/#store");
+    expect(node["@id"]).toBe(`https://aurora.${BRAND.domain}/#store`);
     expect(node.name).toBe("Aurora Atelier");
     expect(node.currenciesAccepted).toBe("CHF");
     expect(node.logo.url).toBe("https://cdn.test/logo.png");
@@ -114,7 +115,7 @@ describe("storeJsonLd / websiteJsonLd", () => {
   it("omits optional fields that aren't set", () => {
     const node = storeJsonLd({
       storeName: "Bare",
-      baseUrl: "https://bare.zolto.ch",
+      baseUrl: `https://bare.${BRAND.domain}`,
       currency: "eur",
     }) as Record<string, any>;
     expect(node.description).toBeUndefined();
@@ -125,7 +126,7 @@ describe("storeJsonLd / websiteJsonLd", () => {
   it("links the website to its store publisher", () => {
     const node = websiteJsonLd(identity) as Record<string, any>;
     expect(node.publisher).toEqual({
-      "@id": "https://aurora.zolto.ch/#store",
+      "@id": `https://aurora.${BRAND.domain}/#store`,
     });
   });
 });
@@ -137,7 +138,9 @@ describe("breadcrumbJsonLd", () => {
       ["Shop", "/shop"],
     ]) as Record<string, any>;
     expect(node.itemListElement[0].position).toBe(1);
-    expect(node.itemListElement[1].item).toBe("https://aurora.zolto.ch/shop");
+    expect(node.itemListElement[1].item).toBe(
+      `https://aurora.${BRAND.domain}/shop`,
+    );
   });
 });
 
@@ -150,7 +153,7 @@ describe("shopCollectionJsonLd", () => {
     expect(node.mainEntity.numberOfItems).toBe(2);
     expect(node.mainEntity.itemListElement).toHaveLength(2);
     expect(node.mainEntity.itemListElement[0].url).toBe(
-      "https://aurora.zolto.ch/product/1",
+      `https://aurora.${BRAND.domain}/product/1`,
     );
   });
 
@@ -165,8 +168,8 @@ describe("shopCollectionJsonLd", () => {
 describe("renderStorefrontSitemapXml", () => {
   it("lists the storefront's own static routes, not marketing ones", () => {
     const xml = renderStorefrontSitemapXml(identity.baseUrl, []);
-    expect(xml).toContain("<loc>https://aurora.zolto.ch/</loc>");
-    expect(xml).toContain("<loc>https://aurora.zolto.ch/shop</loc>");
+    expect(xml).toContain(`<loc>https://aurora.${BRAND.domain}/</loc>`);
+    expect(xml).toContain(`<loc>https://aurora.${BRAND.domain}/shop</loc>`);
     // The bug this fixes: storefronts used to serve the marketing sitemap.
     expect(xml).not.toContain("/pricing");
     expect(xml).not.toContain("/blog");
@@ -178,7 +181,9 @@ describe("renderStorefrontSitemapXml", () => {
       product({ id: 11 }),
       product({ id: 12, sold: true }),
     ]);
-    expect(xml).toContain("<loc>https://aurora.zolto.ch/product/11</loc>");
+    expect(xml).toContain(
+      `<loc>https://aurora.${BRAND.domain}/product/11</loc>`,
+    );
     expect(xml).not.toContain("/product/12");
   });
 
@@ -197,7 +202,10 @@ describe("renderStorefrontSitemapXml", () => {
   });
 
   it("tolerates a base URL with a trailing slash", () => {
-    const xml = renderStorefrontSitemapXml("https://aurora.zolto.ch/", []);
+    const xml = renderStorefrontSitemapXml(
+      `https://aurora.${BRAND.domain}/`,
+      [],
+    );
     expect(xml).not.toContain("//shop");
   });
 });

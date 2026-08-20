@@ -1,3 +1,4 @@
+import { BRAND } from "@shared/brand";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import express from "express";
 import request from "supertest";
@@ -37,7 +38,7 @@ function makeApp() {
 function fakeReq(overrides: Partial<{ headers: Record<string, string> }> = {}) {
   return {
     protocol: "https",
-    headers: { host: "zolto.ch", ...(overrides.headers ?? {}) },
+    headers: { host: BRAND.domain, ...(overrides.headers ?? {}) },
   } as unknown as import("express").Request;
 }
 

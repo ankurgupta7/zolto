@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Zolto POS</string>
+    <string name="app_name">Gwinn POS</string>
 
     <!-- Optional dev defaults for SetupActivity's URL field. Production builds
          leave these blank — each register is bound to its store at runtime
@@ -61,7 +61,7 @@
     <string name="twint_sticker_confirm">Received %1$s</string>
     <string name="method_twint_qr">TWINT (QR code)</string>
     <string name="pay_twint_qr">TWINT QR</string>
-    <string name="twint_sticker_missing">No TWINT QR code is set up for this store yet. Add one in Zolto under Point of sale.</string>
+    <string name="twint_sticker_missing">No TWINT QR code is set up for this store yet. Add one in Gwinn under Point of sale.</string>
 
     <!-- Payment result -->
     <string name="payment_success_title">Payment Successful</string>
@@ -122,7 +122,7 @@
 
     <!-- First-launch store binding (multi-tenant) -->
     <string name="setup_title">Connect this register</string>
-    <string name="setup_subtitle">Point this device at your store: the zolto server URL and your store\'s POS key (from your store\'s admin settings).</string>
+    <string name="setup_subtitle">Point this device at your store: the gwinn server URL and your store\'s POS key (from your store\'s admin settings).</string>
     <string name="setup_url_hint">https://your-store-server</string>
     <string name="setup_key_hint">POS API key</string>
     <string name="setup_connect">Connect</string>

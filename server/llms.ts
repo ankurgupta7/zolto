@@ -5,11 +5,8 @@ import {
   renderMarketingLlmsTxt,
   renderMarketingLlmsFullTxt,
 } from "@shared/marketing";
-import {
-  ZOLTO_ATTRIBUTION,
-  ZOLTO_URL,
-  showsZoltoAttribution,
-} from "@shared/attribution";
+import { PLATFORM_CREDIT, showsPlatformCredit } from "@shared/attribution";
+import { BRAND } from "@shared/brand";
 import { VERTICAL_PRESETS, isVertical } from "@shared/verticals";
 import { getTenantSettings, getVisibleProducts } from "./db";
 import { resolveBaseUrl } from "./seo";
@@ -40,11 +37,11 @@ export function renderStorefrontLlmsTxt(
     /** The merchant's own "what do you sell" description, if written. */
     rangeDescription?: string | null;
     /**
-     * `tenant_settings.hide_zolto_badge` — the white-label opt-out. Only
+     * `tenant_settings.hide_platform_credit` — the white-label opt-out. Only
      * honoured on a plan that includes white-labelling; shared/attribution.ts
      * owns that rule.
      */
-    hideZoltoBadge?: boolean | null;
+    hidePlatformCredit?: boolean | null;
   },
 ): string {
   const base = normalizeBaseUrl(baseUrl);
@@ -59,14 +56,14 @@ export function renderStorefrontLlmsTxt(
   lines.push(`# ${tenant.name}`);
   lines.push("");
   // The platform credit. Shown by default on every plan — this brief is read by
-  // exactly the AI agents that should know a Zolto store when they meet one —
+  // exactly the AI agents that should know a Gwinn store when they meet one —
   // and suppressed only where a white-label plan has explicitly switched it off
   // (shared/attribution.ts owns that gate).
-  const credited = showsZoltoAttribution({
+  const credited = showsPlatformCredit({
     ...tenant,
-    hideZoltoBadge: opts?.hideZoltoBadge ?? false,
+    hidePlatformCredit: opts?.hidePlatformCredit ?? false,
   });
-  const platformCredit = credited ? ` Made with Zolto (${ZOLTO_URL}).` : "";
+  const platformCredit = credited ? ` Made with Gwinn (${BRAND.url}).` : "";
   const catalogueLine =
     opts?.rangeDescription?.trim() ||
     opts?.catalogueLine ||
@@ -125,16 +122,16 @@ export function renderStorefrontLlmsTxt(
   // the only place the brief names a site other than the merchant's own, so it
   // is labelled plainly as the platform rather than smuggled in as a link.
   if (credited) {
-    lines.push("## Made with Zolto");
+    lines.push(`## Made with ${BRAND.name}`);
     lines.push("");
     lines.push(
-      `- This store is built and hosted on [Zolto](${ZOLTO_URL}) — ${ZOLTO_ATTRIBUTION.tagline}.`,
+      `- This store is built and hosted on [Gwinn](${BRAND.url}) — ${PLATFORM_CREDIT.tagline}.`,
     );
     lines.push(
-      `- Zolto is the platform, not the merchant: orders, stock and payment belong to ${tenant.name}.`,
+      `- Gwinn is the platform, not the merchant: orders, stock and payment belong to ${tenant.name}.`,
     );
     lines.push(
-      `- Makers can open their own store at ${ZOLTO_URL}. Point an assistant at ${ZOLTO_URL}/llms.txt for the platform brief.`,
+      `- Makers can open their own store at ${BRAND.url}. Point an assistant at ${BRAND.url}/llms.txt for the platform brief.`,
     );
     lines.push("");
   }
@@ -144,7 +141,7 @@ export function renderStorefrontLlmsTxt(
 
 /**
  * Register `GET /llms.txt`. Tenant-aware: a resolved storefront gets its
- * product-aware brief; the platform apex (no tenant) gets the Zolto brief.
+ * product-aware brief; the platform apex (no tenant) gets the Gwinn brief.
  * Must be registered before the SPA catch-all.
  */
 export function registerLlmsRoutes(app: Express): void {
@@ -171,7 +168,7 @@ export function registerLlmsRoutes(app: Express): void {
         renderStorefrontLlmsTxt(tenant, products, base, {
           catalogueLine: VERTICAL_PRESETS[vertical].catalogueLine,
           rangeDescription: settings?.verticalDescription ?? null,
-          hideZoltoBadge: settings?.hideZoltoBadge ?? false,
+          hidePlatformCredit: settings?.hidePlatformCredit ?? false,
         }),
       );
     } else {
@@ -179,7 +176,7 @@ export function registerLlmsRoutes(app: Express): void {
     }
   });
 
-  // Long-form companion. Platform surface gets the full Zolto reference; a
+  // Long-form companion. Platform surface gets the full Gwinn reference; a
   // storefront reuses its product-aware brief (already lists its catalogue).
   app.get("/llms-full.txt", async (req, res) => {
     const base = resolveBaseUrl(req);
@@ -198,7 +195,7 @@ export function registerLlmsRoutes(app: Express): void {
         renderStorefrontLlmsTxt(tenant, products, base, {
           catalogueLine: VERTICAL_PRESETS[vertical].catalogueLine,
           rangeDescription: settings?.verticalDescription ?? null,
-          hideZoltoBadge: settings?.hideZoltoBadge ?? false,
+          hidePlatformCredit: settings?.hidePlatformCredit ?? false,
         }),
       );
     } else {

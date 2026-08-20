@@ -18,9 +18,9 @@ import { useMarketingT } from "../lib/marketingI18n";
  * derived from, so the widget cannot quote a number the platform wouldn't
  * actually charge.
  *
- * **This used to model Zolto's fee and nothing else**, and its own doc comment
+ * **This used to model Gwinn's fee and nothing else**, and its own doc comment
  * defended that as an honesty rule: it "makes no claim about what any competitor
- * would charge". That was the wrong boundary. Nobody asked what Zolto invoices;
+ * would charge". That was the wrong boundary. Nobody asked what Gwinn invoices;
  * they asked what they keep — and answering "CHF 0.00" while Stripe quietly took
  * three times our cut was the most misleading thing on the pricing page. The
  * boundary that actually matters is between *our* fee and *their* fee, and the
@@ -28,7 +28,7 @@ import { useMarketingT } from "../lib/marketingI18n";
  *
  * Two honesty rules survive from the original design:
  *  - It still makes no claim about a competitor's rate. Stripe's numbers are
- *    here because Stripe is the rail Zolto runs on, not as a comparison; the
+ *    here because Stripe is the rail Gwinn runs on, not as a comparison; the
  *    comparison lives on /compare where it can carry its sources.
  *  - It still recommends Free whenever Free is cheaper, which is most of the
  *    range. A calculator that always concludes "buy the paid plan" is an ad.
@@ -203,7 +203,7 @@ export function FeeCalculator() {
               amount={chf(free.processorChf)}
             />
             <StackRow
-              label={t("feeCalculator.toZolto")}
+              label={t("feeCalculator.toPlatform")}
               amount={chf(free.platformChf)}
             />
             <StackRow
@@ -241,7 +241,7 @@ export function FeeCalculator() {
               amount={chf(pro.processorChf)}
             />
             <StackRow
-              label={t("feeCalculator.toZolto")}
+              label={t("feeCalculator.toPlatform")}
               amount={chf(pro.platformChf)}
             />
             <StackRow

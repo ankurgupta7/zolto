@@ -1,4 +1,4 @@
-# Zolto — the pitch, and a brief for a 45-second Instagram short
+# Gwinn — the pitch, and a brief for a 45-second Instagram short
 
 > **Shareable with an outside creator.** Everything here is either shipped or
 > checkable. §5 is the part that matters most to a copywriter's instincts —
@@ -17,11 +17,11 @@
 
 ### One line
 
-**You make things. Zolto does the rest.**
+**You make things. Gwinn does the rest.**
 
 ### One paragraph
 
-Zolto is a shop, a till and a stock list that are all the same thing. Photograph
+Gwinn is a shop, a till and a stock list that are all the same thing. Photograph
 your handwritten inventory and it becomes a catalogue. At the market, tap the
 photo of the actual object and take TWINT, card or cash on the same screen. The
 same object is already on your website, written up in four languages, with one
@@ -35,7 +35,7 @@ the *rest* of it — the photographs, the descriptions, the website, the stock
 list, the reconciliation at the end of a market day. That work is the reason
 most makers sell in person only, or sell online badly.
 
-Zolto is the whole operation rather than the payment:
+Gwinn is the whole operation rather than the payment:
 
 - **One till with your things in it.** Not a keypad — a grid of photographs of
   what you actually made. Tap the piece, then choose TWINT, card or cash.
@@ -93,7 +93,7 @@ All within ~15 minutes on foot, all with water in frame:
 | 4 | 19–27s | Walking again, phone in hand, POS open. Thumb taps a *photo of an actual object*. Payment row: TWINT, card, cash. | "And at a market, this is the till. She taps the photo of the actual piece — then TWINT, card or cash, same screen. That's the bit the card companies don't do." | **YOUR THINGS. IN THE TILL.** |
 | 5 | 27–35s | Sitting on the bench, laptop open beside the phone, lake behind both. She points between the two screens. | "Same piece is already on her website — written up in German, French, Italian and English. One stock count across both. Sell it here, it's gone there. Instantly." | **ONE STOCK COUNT** |
 | 6 | 35–41s | Close on her, phone up, slight laugh. **The concession.** | "Is it the cheapest way to take a card? No. It isn't. But that's not what she's paying for — she's paying to not spend her evenings doing admin." | **not the cheapest. that's not the point.** |
-| 7 | 41–45s | Standing, walking away along the promenade, turns back for the last line. | "Zolto. It's Swiss, and it's free to start." | **ZOLTO · CHF 0/month · zolto.ch** |
+| 7 | 41–45s | Standing, walking away along the promenade, turns back for the last line. | "Gwinn. It's Swiss, and it's free to start." | **GWINN · CHF 0/month · gwinn.ch** |
 
 **15-second cut:** beats 1, 4, 6, 7. Beat 4 is the product; beat 6 is why she's
 believed.
@@ -185,22 +185,22 @@ more than it earns.
 
 **Never:**
 
-- ❌ **"Cheapest", "lowest fees", "a fraction of the cost."** On card rate Zolto
+- ❌ **"Cheapest", "lowest fees", "a fraction of the cost."** On card rate Gwinn
   is the *most expensive* option on its own published comparison. This is the
   single most important line in this brief.
-- ❌ **"No fees" / "0%"** on its own. In person Zolto takes nothing, but the
+- ❌ **"No fees" / "0%"** on its own. In person Gwinn takes nothing, but the
   payment processor always takes its own cut, and online is 1% on the Free plan.
   "CHF 0/month" is true and is the phrasing to use.
 - ❌ **"Buy inside the chat."** An AI assistant can pick a piece and *open a
   checkout*; a human completes it. Beat 6's text is written accordingly.
 - ❌ **"No card reader needed"** as a differentiator. Every competitor's phone
   does this now. It's true, it's just not interesting.
-- ❌ Suggesting AI assistants are already sending customers to Zolto shops. The
+- ❌ Suggesting AI assistants are already sending customers to Gwinn shops. The
   rails are live; the directory is still filling up. Beat 6 shows a capability,
   not a traffic claim.
 - ❌ Naming or mocking a competitor. The comparison lives on the website where it
   can carry its sources.
-- ❌ **Anyone saying they use Zolto who doesn't.** First person is more
+- ❌ **Anyone saying they use Gwinn who doesn't.** First person is more
   persuasive than third, which is exactly why it's tempting — but "I've been
   using this at markets all summer" is a testimonial, and a testimonial has to
   be true. If the presenter is cast rather than a genuine user, either give them
@@ -209,7 +209,7 @@ more than it earns.
   used anything at all — see
   [`instagram-short-ai-prompts.md`](./instagram-short-ai-prompts.md) §7a.
 - ❌ **Second-hand praise: "some people say…", "everyone loves it".** Vaguer is
-  not safer. Zolto has no users yet, so there are no some-people, and putting
+  not safer. Gwinn has no users yet, so there are no some-people, and putting
   the opinion in unnamed mouths hides the source rather than supplying one. It
   is also the weakest sentence in any cut of this script. Beat 4's *"that's the
   bit the card companies don't do"* is the outside validation you're reaching

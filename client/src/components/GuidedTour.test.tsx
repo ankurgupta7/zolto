@@ -88,7 +88,7 @@ describe("GuidedTour", () => {
   });
 
   it("does not auto-start for a user who already completed it", async () => {
-    localStorage.setItem("zolto.tour.test", "done");
+    localStorage.setItem("gwinn.tour.test", "done");
     renderTour();
     // Give effects a chance to run; nothing should appear.
     await new Promise((r) => setTimeout(r, 20));

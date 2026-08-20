@@ -33,7 +33,7 @@ import {
 import { useMarketingT } from "../lib/marketingI18n";
 
 /**
- * The Zolto homepage, as a reel of carousel posts.
+ * The Gwinn homepage, as a reel of carousel posts.
  *
  * Eight posts, and a post is exactly one screen — so flicking down slides
  * the one you're leaving up and fills the viewport with the next — and each post
@@ -73,7 +73,7 @@ import { useMarketingT } from "../lib/marketingI18n";
  * screen allows.
  *
  * Three bands left the homepage rather than being shrunk below legibility:
- * AgentProofBand, HowAnAiBuys and the end-of-day email mock live on /why-zolto,
+ * AgentProofBand, HowAnAiBuys and the end-of-day email mock live on /why-gwinn,
  * and the old-guard comparison table moved to the /compare index. Chapter five
  * links the first; the nav links the second.
  *
@@ -83,8 +83,8 @@ import { useMarketingT } from "../lib/marketingI18n";
  */
 
 /** The explainer cut and its drawn poster — see client/public/video/README.md. */
-const EXPLAINER_SRC = "/video/zolto-explainer.mp4";
-const EXPLAINER_POSTER = "/video/zolto-explainer-poster.svg";
+const EXPLAINER_SRC = "/video/gwinn-explainer.mp4";
+const EXPLAINER_POSTER = "/video/gwinn-explainer-poster.svg";
 
 export default function Landing() {
   const { t, st, numberLocale } = useMarketingT();
@@ -97,7 +97,7 @@ export default function Landing() {
       <ParticleField />
 
       <ReelStage label={t("landing.reel.railLabel")}>
-        {/* ── 1. Promise — what Zolto is, in the merchant's nouns, beside the
+        {/* ── 1. Promise — what Gwinn is, in the merchant's nouns, beside the
              explainer video (see MAKER_PITCH) ── */}
         <ReelChapter
           id="promise"
@@ -412,7 +412,7 @@ export default function Landing() {
         {/* ── 7. What's coming — the messy-stall claim and the thesis it leads
              to, the chart under it, and a market day as it actually goes. The
              proof band and the found→asked→bought mechanics moved to
-             /why-zolto; the chart slide links them. ── */}
+             /why-gwinn; the chart slide links them. ── */}
         <ReelChapter
           id="whats-coming"
           label={t("landing.reel.whatsComing")}
@@ -433,10 +433,10 @@ export default function Landing() {
                 <div className="grid gap-4">
                   <DiscoveryShiftChart dense />
                   <Link
-                    href="/why-zolto"
+                    href="/why-gwinn"
                     className="mx-auto text-sm text-[var(--brand-ink)] underline decoration-[var(--brand-accent)] underline-offset-4 transition-colors hover:text-[var(--brand-accent)] reel:mx-0"
                   >
-                    {t("landing.reel.whyZoltoLink")}
+                    {t("landing.reel.whyPlatformLink")}
                   </Link>
                 </div>
               </ReelPanel>

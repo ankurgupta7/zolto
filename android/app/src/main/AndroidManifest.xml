@@ -11,13 +11,13 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <application
-        android:name=".ZoltoApplication"
+        android:name=".PosApplication"
         android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.ZoltoPOS">
+        android:theme="@style/Theme.PosApp">
 
         <activity
             android:name=".MainActivity"
@@ -30,7 +30,7 @@
 
         <!--
             exported=true because of the pairing deep link below: tapping
-            `zolto://pair?t=…` in the store admin hands this activity the token
+            `gwinn://pair?t=…` in the store admin hands this activity the token
             and the register binds itself, instead of a merchant typing 64 hex
             characters into a phone.
 
@@ -49,7 +49,7 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="zolto" android:host="pair" />
+                <data android:scheme="gwinn" android:host="pair" />
             </intent-filter>
         </activity>
 

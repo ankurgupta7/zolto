@@ -36,11 +36,11 @@ const diary1: Article = {
   eyebrow: "Journal de lancement · Partie 1 sur 4",
   title: "Journal de lancement #1 : La mise en place",
   metaTitle: maker.founder
-    ? `Comment ${maker.founder} a créé la première boutique en ligne de ${maker.brand} | Journal de lancement Zolto`
-    : "Comment une créatrice zurichoise a créé sa première boutique en ligne | Journal de lancement Zolto",
+    ? `Comment ${maker.founder} a créé la première boutique en ligne de ${maker.brand} | Journal de lancement Gwinn`
+    : "Comment une créatrice zurichoise a créé sa première boutique en ligne | Journal de lancement Gwinn",
   metaDescription: maker.founder
-    ? `Suivez ${maker.founder}, fondatrice de ${maker.brand}, bijoux en perles à Zurich, pendant qu'elle crée sa première boutique en ligne sur Zolto. Vrai processus, vrai calendrier, zéro growth hack.`
-    : "Suivez une créatrice de bijoux en perles à Zurich pendant qu'elle crée sa première boutique en ligne sur Zolto. Vrai processus, vrai calendrier, zéro growth hack.",
+    ? `Suivez ${maker.founder}, fondatrice de ${maker.brand}, bijoux en perles à Zurich, pendant qu'elle crée sa première boutique en ligne sur Gwinn. Vrai processus, vrai calendrier, zéro growth hack.`
+    : "Suivez une créatrice de bijoux en perles à Zurich pendant qu'elle crée sa première boutique en ligne sur Gwinn. Vrai processus, vrai calendrier, zéro growth hack.",
   dek: "Des marchés de Noël à une première boutique en ligne — Partie 1 : le démarrage.",
   datePublished: BLOG_POSTS[0].lastmod,
   dateModified: BLOG_POSTS[0].lastmod,
@@ -87,7 +87,7 @@ const diary1: Article = {
     { type: "h2", text: "La mise en place" },
     {
       type: "p",
-      text: "Jour 1 — Mise en ligne des produits. L'atelier a commencé avec 15 produits. Pas tout le catalogue — seulement les pièces qui se photographient bien et se vendent régulièrement. Une photo brute au téléphone par pièce, pas de studio ; l'IA de Zolto transforme ce seul cliché en image produit ou lifestyle, et les descriptions générées par l'IA font environ 80% du chemin avant une relecture humaine pour le ton.",
+      text: "Jour 1 — Mise en ligne des produits. L'atelier a commencé avec 15 produits. Pas tout le catalogue — seulement les pièces qui se photographient bien et se vendent régulièrement. Une photo brute au téléphone par pièce, pas de studio ; l'IA de Gwinn transforme ce seul cliché en image produit ou lifestyle, et les descriptions générées par l'IA font environ 80% du chemin avant une relecture humaine pour le ton.",
     },
     {
       type: "note",
@@ -133,7 +133,7 @@ const diary1: Article = {
     },
     {
       type: "p",
-      text: "Jour 3 — Synchronisation de la caisse. La pièce maîtresse. Le stock de la caisse (ce qui est disponible sur les marchés) devait se synchroniser avec la boutique en ligne, pour qu'un bracelet vendu à une Chilbi ne s'affiche pas encore comme disponible en ligne dix minutes plus tard. Zolto gère cela automatiquement : une seule base de stock, deux canaux de vente. Temps passé : 30 minutes. Cela a simplement fonctionné.",
+      text: "Jour 3 — Synchronisation de la caisse. La pièce maîtresse. Le stock de la caisse (ce qui est disponible sur les marchés) devait se synchroniser avec la boutique en ligne, pour qu'un bracelet vendu à une Chilbi ne s'affiche pas encore comme disponible en ligne dix minutes plus tard. Gwinn gère cela automatiquement : une seule base de stock, deux canaux de vente. Temps passé : 30 minutes. Cela a simplement fonctionné.",
     },
     { type: "h2", text: "Ce que nous avons appris" },
     {
@@ -171,7 +171,7 @@ const diary2: Article = {
   kind: "diary",
   eyebrow: "Journal de lancement · Partie 2 sur 4",
   title: "Journal de lancement #2 : La mise en ligne",
-  metaTitle: `Mise en ligne : le premier jour ${maker.founder ? `de ${maker.brand}` : "d'une boutique de bijoux zurichoise"} | Journal de lancement Zolto`,
+  metaTitle: `Mise en ligne : le premier jour ${maker.founder ? `de ${maker.brand}` : "d'une boutique de bijoux zurichoise"} | Journal de lancement Gwinn`,
   metaDescription: `Jour 1 ${maker.founder ? `de ${maker.brand}` : "d'une boutique de bijoux en perles"} en ligne à Zurich : 34 visiteurs, 0 commande. Jour 2 : la première vente. La vraie histoire d'un lancement en ligne.`,
   dek: "Partie 2 : le passage discret de « pas disponible » à « c'est ici » — et la première commande.",
   datePublished: BLOG_POSTS[1].lastmod,
@@ -286,7 +286,7 @@ const diary3: Article = {
   eyebrow: "Journal de lancement · Partie 3 sur 4",
   title: "Journal de lancement #3 : Le premier mois en ligne",
   metaTitle:
-    "Premier mois en ligne : 12 commandes, des chiffres honnêtes | Journal de lancement Zolto",
+    "Premier mois en ligne : 12 commandes, des chiffres honnêtes | Journal de lancement Gwinn",
   metaDescription: `Un mois après le lancement, ${maker.founder ? maker.brand : "une créatrice de bijoux en perles à Zurich"} partage de vrais chiffres : 12 commandes, CHF 61 de panier moyen, 81% de résolution par le chatbot IA.`,
   dek: "Partie 3 : les chiffres honnêtes du premier mois — 12 commandes en ligne, CHF 61 de panier moyen, et ce qui les a générées.",
   datePublished: BLOG_POSTS[2].lastmod,
@@ -449,8 +449,8 @@ const caseStudy: Article = {
   slug: STORY_SLUG,
   kind: "story",
   title: caseStudyFrTitle,
-  metaTitle: `${maker.founder ? `Étude de cas ${maker.brand}` : "Étude de cas"} : des marchés de Noël aux ventes en ligne en 30 jours | Zolto`,
-  metaDescription: `Comment ${maker.founder ? `${maker.founder}, fondatrice de ${maker.brand},` : "une créatrice de bijoux en perles à Zurich"} a lancé sa première boutique en ligne en 3 jours et réalisé 12 ventes en ligne le premier mois, sur Zolto.`,
+  metaTitle: `${maker.founder ? `Étude de cas ${maker.brand}` : "Étude de cas"} : des marchés de Noël aux ventes en ligne en 30 jours | Gwinn`,
+  metaDescription: `Comment ${maker.founder ? `${maker.founder}, fondatrice de ${maker.brand},` : "une créatrice de bijoux en perles à Zurich"} a lancé sa première boutique en ligne en 3 jours et réalisé 12 ventes en ligne le premier mois, sur Gwinn.`,
   dek: "De ~60 ventes hors ligne par mois sur les marchés de Noël à une bijouterie hybride en ligne/hors ligne en 30 jours.",
   datePublished: CASE_STUDY.datePublished,
   dateModified: CASE_STUDY.dateModified,
@@ -465,7 +465,7 @@ const caseStudy: Article = {
     { type: "h2", text: "La créatrice" },
     {
       type: "p",
-      text: `${BRAND} est une marque de bijoux à Zurich : des pièces faites main en perles et pierres semi-précieuses — colliers, boucles d'oreilles, bracelets — vendues sur les marchés de Noël et les Chilbis de la Gold Coast zurichoise. Avant Zolto, toute l'activité était hors ligne : environ 60 ventes par mois, toutes en personne, pas de boutique en ligne.`,
+      text: `${BRAND} est une marque de bijoux à Zurich : des pièces faites main en perles et pierres semi-précieuses — colliers, boucles d'oreilles, bracelets — vendues sur les marchés de Noël et les Chilbis de la Gold Coast zurichoise. Avant Gwinn, toute l'activité était hors ligne : environ 60 ventes par mois, toutes en personne, pas de boutique en ligne.`,
     },
     { type: "h2", text: "Le défi" },
     {
@@ -560,7 +560,7 @@ const caseStudy: Article = {
           { type: "h2", text: "Le point de vue de la créatrice" } as Block,
           {
             type: "quote",
-            text: "Je ne voulais pas devenir une pro de la tech. Je voulais faire des bijoux. Zolto m'a permis de monter une boutique en 3 jours sans rien apprendre de nouveau. L'IA gère les questions auxquelles je répondais en DM Instagram — par exemple si mes perles sont d'eau douce, ou combien coûte la livraison vers l'Allemagne.",
+            text: "Je ne voulais pas devenir une pro de la tech. Je voulais faire des bijoux. Gwinn m'a permis de monter une boutique en 3 jours sans rien apprendre de nouveau. L'IA gère les questions auxquelles je répondais en DM Instagram — par exemple si mes perles sont d'eau douce, ou combien coûte la livraison vers l'Allemagne.",
             cite: `${founderName}, fondatrice de ${maker.brand}, Zurich`,
           } as Block,
         ]

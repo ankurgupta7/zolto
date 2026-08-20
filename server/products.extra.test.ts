@@ -1372,19 +1372,19 @@ describe("products.csvImport", () => {
     expect(res.failed).toEqual(["Boom"]);
   });
 
-  // ─── Matching by zolto_id ───────────────────────────────────────────────────
-  // The spreadsheet mirror publishes a `zolto_id` column, and re-importing an
+  // ─── Matching by gwinn_id ───────────────────────────────────────────────────
+  // The spreadsheet mirror publishes a `gwinn_id` column, and re-importing an
   // edited sheet is the normal workflow. Under name-only matching a rename was
   // indistinguishable from a new product, so it silently duplicated.
 
-  it("matches on zoltoId and lets the row carry a rename", async () => {
+  it("matches on platformId and lets the row carry a rename", async () => {
     db.getAllProducts.mockResolvedValue([
       product({ id: 1, name: "Silver ring" }),
     ]);
     const res = await admin().products.csvImport({
       rows: [
         {
-          zoltoId: 1,
+          platformId: 1,
           name: "Silver ring (small)",
           description: "d",
           price: 50,
@@ -1410,7 +1410,7 @@ describe("products.csvImport", () => {
     await admin().products.csvImport({
       rows: [
         {
-          zoltoId: 2,
+          platformId: 2,
           // The name matches product 1, but the id says 2. The id wins: it is
           // the stable key, and a name is what the merchant was editing.
           name: "Silver ring",
@@ -1453,7 +1453,7 @@ describe("products.csvImport", () => {
     const res = await admin().products.csvImport({
       rows: [
         {
-          zoltoId: 8888,
+          platformId: 8888,
           name: "Brand new",
           description: "d",
           price: 50,
@@ -1465,13 +1465,13 @@ describe("products.csvImport", () => {
     expect(db.updateProduct).not.toHaveBeenCalled();
   });
 
-  it("rejects a non-positive zoltoId at the schema", async () => {
+  it("rejects a non-positive platformId at the schema", async () => {
     db.getAllProducts.mockResolvedValue([]);
     await expect(
       admin().products.csvImport({
         rows: [
           {
-            zoltoId: 0,
+            platformId: 0,
             name: "x",
             description: "d",
             price: 10,

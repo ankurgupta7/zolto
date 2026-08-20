@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * `zolto-admin` — the interactive administration shell.
+ * `gwinn-admin` — the interactive administration shell.
  *
  * Run it on the server, where DATABASE_URL points at the live database:
  *
@@ -15,6 +15,7 @@
  * the readline wiring. All behaviour lives in shell.ts and actions/.
  */
 
+import { BRAND } from "@shared/brand";
 import "dotenv/config";
 import { pathToFileURL } from "node:url";
 import { NotAnOperatorError } from "./caller";
@@ -50,7 +51,7 @@ export function parseArgs(argv: readonly string[]): CliArgs {
 }
 
 const USAGE = `
-Zolto admin shell — every administrative operation, in tiers.
+Gwinn admin shell — every administrative operation, in tiers.
 
   Usage: node dist/admin.js [options]
          npx tsx server/adminShell/cli.ts [options]
@@ -154,7 +155,7 @@ export async function main(): Promise<number> {
     }
 
     io.print("");
-    io.print("  Zolto administration shell");
+    io.print(`  ${BRAND.name} administration shell`);
     io.print(
       `  Acting as ${orDash(operator.email)}${args.readOnly ? " — READ-ONLY" : ""}.`,
     );

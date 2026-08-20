@@ -54,7 +54,7 @@
     <string name="twint_sticker_confirm">%1$s erhalten</string>
     <string name="method_twint_qr">TWINT (QR-Code)</string>
     <string name="pay_twint_qr">TWINT QR</string>
-    <string name="twint_sticker_missing">Für diesen Shop ist noch kein TWINT-QR-Code eingerichtet. Fügen Sie einen in Zolto unter «Point of Sale» hinzu.</string>
+    <string name="twint_sticker_missing">Für diesen Shop ist noch kein TWINT-QR-Code eingerichtet. Fügen Sie einen in Gwinn unter «Point of Sale» hinzu.</string>
 
     <!-- Payment result -->
     <string name="payment_success_title">Zahlung erfolgreich</string>
@@ -114,7 +114,7 @@
 
     <!-- First-launch store binding (multi-tenant) -->
     <string name="setup_title">Diese Kasse verbinden</string>
-    <string name="setup_subtitle">Verbinden Sie dieses Gerät mit Ihrem Shop: die Zolto-Server-URL und der POS-Schlüssel Ihres Shops (aus den Admin-Einstellungen Ihres Shops).</string>
+    <string name="setup_subtitle">Verbinden Sie dieses Gerät mit Ihrem Shop: die Gwinn-Server-URL und der POS-Schlüssel Ihres Shops (aus den Admin-Einstellungen Ihres Shops).</string>
     <string name="setup_url_hint">https://ihr-shop-server</string>
     <string name="setup_key_hint">POS-API-Schlüssel</string>
     <string name="setup_connect">Verbinden</string>

@@ -1,5 +1,5 @@
 /**
- * Scheduled jobs — the marketing copy says "at the end of the day Zolto emails
+ * Scheduled jobs — the marketing copy says "at the end of the day Gwinn emails
  * its best guess at what you sold" (SELLING_FLOW, FAQ, FEATURES), but until
  * this module the POS-attribution pass only ran when a merchant pressed the
  * button on /admin/reconciliation. This registers the heartbeat callback that

@@ -535,7 +535,7 @@ describe("registerStripeWebhook", () => {
 describe("registerStripeWebhook — Connect endpoint", () => {
   // Events on a TENANT's connected account (a customer paying for jewelry)
   // arrive at a separate URL, signed with a separate secret, from events on
-  // Zolto's own platform account (tested above). Both share the same
+  // Gwinn's own platform account (tested above). Both share the same
   // handling logic since the order row already carries its own tenantId.
   const connectWebhookSecret = "whsec_test_connect_secret";
   const originalSecretKey = process.env.STRIPE_SECRET_KEY;

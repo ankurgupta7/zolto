@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Zolto Zürich — Pearl Jeweller Warm Palette -->
+    <!-- Gwinn Zürich — Pearl Jeweller Warm Palette -->
     <!-- Every neutral has a warm (brown/amber) undertone, never cold grey -->
     <color name="oyster_cream">#FFF7F3EE</color>     <!-- background — warm oyster white -->
     <color name="warm_dark">#FF2D2620</color>         <!-- mahogany dark — hero, success screen -->

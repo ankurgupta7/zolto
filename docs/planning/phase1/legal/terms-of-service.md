@@ -2,13 +2,13 @@
 
 **Effective Date:** [Date]
 
-Please read these Terms of Service ("Terms") carefully before using the Zolto platform ("Service").
+Please read these Terms of Service ("Terms") carefully before using the Gwinn platform ("Service").
 
 ---
 
 ## 1. Definitions
 
-- **"Platform"** — The Zolto commerce software, including AI features, POS, online store, and admin dashboard
+- **"Platform"** — The Gwinn commerce software, including AI features, POS, online store, and admin dashboard
 - **"Tenant"** — A business account on the Platform (e.g., Kalakosh)
 - **"Store"** — The online storefront created by a Tenant
 - **"End Customer"** — A person who purchases from a Tenant's Store
@@ -99,7 +99,7 @@ We target 99.9% uptime for the Platform. Scheduled maintenance is announced 48 h
 ## 8. Termination
 
 ### 8.1 By You
-Cancel anytime via account settings or by emailing [support@zolto.com].
+Cancel anytime via account settings or by emailing [support@gwinn.com].
 
 ### 8.2 By Us
 We may suspend or terminate accounts for:
@@ -127,7 +127,7 @@ To the maximum extent permitted by law:
 
 ## 10. Indemnification
 
-You agree to indemnify and hold harmless Zolto from claims arising from:
+You agree to indemnify and hold harmless Gwinn from claims arising from:
 - Your use of the Platform
 - Your store content and products
 - Your violation of these Terms
@@ -141,7 +141,7 @@ You agree to indemnify and hold harmless Zolto from claims arising from:
 These Terms are governed by the laws of [Switzerland / your jurisdiction].
 
 ### 11.2 Informal Resolution
-Before formal proceedings, contact [support@zolto.com] to attempt resolution.
+Before formal proceedings, contact [support@gwinn.com] to attempt resolution.
 
 ### 11.3 Arbitration
 Disputes will be resolved by binding arbitration under [Swiss Rules / ICC Rules]. Venue: [City, Country].
@@ -156,8 +156,8 @@ We may update these Terms. Material changes will be notified 30 days in advance.
 
 ## 13. Contact
 
-**Zolto**  
-**Email:** [support@zolto.com]  
+**Gwinn**  
+**Email:** [support@gwinn.com]  
 **Address:** [Your Business Address]
 
 ---

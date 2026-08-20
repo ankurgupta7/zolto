@@ -1,3 +1,4 @@
+import { BRAND } from "@shared/brand";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   render,
@@ -212,7 +213,7 @@ describe("MarketingNav — language picker", () => {
   afterEach(async () => {
     // Leave the suite in its jsdom baseline language (en) with no saved choice.
     await i18n.changeLanguage("en");
-    localStorage.removeItem("kalakosh_lang");
+    localStorage.removeItem(BRAND.langKey);
     document.documentElement.lang = "";
   });
 
@@ -234,7 +235,7 @@ describe("MarketingNav — language picker", () => {
     fireEvent.change(picker, { target: { value: "fr" } });
 
     // Same persistence contract as the storefront switcher.
-    expect(localStorage.getItem("kalakosh_lang")).toBe("fr");
+    expect(localStorage.getItem(BRAND.langKey)).toBe("fr");
     expect(document.documentElement.lang).toBe("fr-CH");
     // The nav itself re-renders in French.
     await waitFor(() =>
@@ -321,7 +322,7 @@ describe("MarketingFooter", () => {
 
   it("carries the origin and hosting location on every page", () => {
     // The footer is the one surface a visitor sees regardless of route, so
-    // where Zolto is from — and where it runs — lives here as well as on the
+    // where Gwinn is from — and where it runs — lives here as well as on the
     // landing band, with a link to the row-by-row version.
     const { container } = renderFooter();
     const text = container.textContent ?? "";
@@ -488,9 +489,11 @@ describe("theme switch", () => {
 
 describe("BrushMark", () => {
   /**
-   * The lockup is one shape in three themeable fills rather than one SVG per
+   * The lockup is one shape in three themeable colours rather than one SVG per
    * theme; hardcoding a hex back in would silently pin the mark to mahogany
-   * while every palette around it moved.
+   * while every palette around it moved. The letterform is a stroked path, not
+   * a filled outline, so it is `stroke` that has to carry the token — a mark
+   * that reverted to `fill` would render as a solid blob at every size.
    */
   it("takes its colours from the logo tokens, with today's as fallbacks", () => {
     const { container } = render(<BrushMark className="h-8 w-8" />);
@@ -498,9 +501,9 @@ describe("BrushMark", () => {
     expect(svg.querySelector("rect")?.getAttribute("fill")).toBe(
       "var(--logo-tile, #2D2620)",
     );
-    expect(svg.querySelector("path")?.getAttribute("fill")).toBe(
-      "var(--logo-mark, #B8963E)",
-    );
+    const mark = svg.querySelector("path");
+    expect(mark?.getAttribute("stroke")).toBe("var(--logo-mark, #B8963E)");
+    expect(mark?.getAttribute("fill")).toBe("none");
     expect(svg.querySelector("circle")?.getAttribute("fill")).toBe(
       "var(--logo-dot, #F0EBE3)",
     );

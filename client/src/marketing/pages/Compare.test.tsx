@@ -25,7 +25,7 @@ describe("Compare — index", () => {
       .getAllByRole("link")
       .map((a) => a.getAttribute("href"));
     for (const c of COMPETITORS) {
-      expect(hrefs).toContain(`/compare/zolto-vs-${c.id}`);
+      expect(hrefs).toContain(`/compare/gwinn-vs-${c.id}`);
     }
   });
 
@@ -70,15 +70,15 @@ describe("Compare — index", () => {
 
 describe("Compare — per competitor", () => {
   it("renders a heading naming both products", () => {
-    renderCompare("/compare/zolto-vs-sumup");
+    renderCompare("/compare/gwinn-vs-sumup");
     expect(
-      screen.getByRole("heading", { name: "Zolto vs SumUp", level: 1 }),
+      screen.getByRole("heading", { name: "Gwinn vs SumUp", level: 1 }),
     ).toBeTruthy();
   });
 
   it("concedes where the incumbent is the better choice", () => {
     const sumup = COMPETITORS.find((c) => c.id === "sumup")!;
-    renderCompare("/compare/zolto-vs-sumup");
+    renderCompare("/compare/gwinn-vs-sumup");
     expect(
       screen.getByRole("heading", {
         name: "When SumUp is the better choice",
@@ -90,21 +90,21 @@ describe("Compare — per competitor", () => {
     }
   });
 
-  it("states where Zolto fits better", () => {
+  it("states where Gwinn fits better", () => {
     const sumup = COMPETITORS.find((c) => c.id === "sumup")!;
-    renderCompare("/compare/zolto-vs-sumup");
-    for (const point of sumup.zoltoWhen) {
+    renderCompare("/compare/gwinn-vs-sumup");
+    for (const point of sumup.platformWhen) {
       expect(screen.getByText(point)).toBeTruthy();
     }
   });
 
   it("tells the argument once, in its specific form", () => {
-    // The generic seven-row "old guard vs Zolto" table used to sit above the
+    // The generic seven-row "old guard vs Gwinn" table used to sit above the
     // capability matrix. Once the matrix widened from ten payment rows to the
     // whole product, that was the same argument told twice on a page about one
     // named competitor — the second time better. It still renders on the
     // /compare index, where the reader hasn't picked a competitor yet.
-    renderCompare("/compare/zolto-vs-sumup");
+    renderCompare("/compare/gwinn-vs-sumup");
     expect(screen.getByTestId("capability-matrix")).toBeTruthy();
     for (const row of INCUMBENT_COMPARISON) {
       expect(
@@ -119,7 +119,7 @@ describe("Compare — per competitor", () => {
     // claim, "because rates vary by country, contract and volume". The August
     // 2026 review replaced that silence with a provenance rule: figures may
     // ship, but only sourced and dated. See positioning-pricing-revision.md §2a.
-    renderCompare("/compare/zolto-vs-worldline");
+    renderCompare("/compare/gwinn-vs-worldline");
     const table = screen.getByTestId("cost-of-acceptance");
     expect(within(table).getByText(/1\.70%/)).toBeTruthy();
     const worldline = COMPETITORS.find((c) => c.id === "worldline")!;
@@ -133,31 +133,31 @@ describe("Compare — per competitor", () => {
   it("prices the competitor's ticks rather than leaving them unqualified", () => {
     // The mechanism the widened matrix turns on: where they DO have something,
     // say what it costs.
-    renderCompare("/compare/zolto-vs-worldline");
+    renderCompare("/compare/gwinn-vs-worldline");
     expect(screen.getByTestId("cost-online-store").textContent).toMatch(
       /9\.95/,
     );
   });
 
   it("cross-links the other comparisons", () => {
-    renderCompare("/compare/zolto-vs-stripe");
+    renderCompare("/compare/gwinn-vs-stripe");
     const hrefs = screen
       .getAllByRole("link")
       .map((a) => a.getAttribute("href"));
-    expect(hrefs).toContain("/compare/zolto-vs-sumup");
-    expect(hrefs).toContain("/compare/zolto-vs-worldline");
-    expect(hrefs).not.toContain("/compare/zolto-vs-stripe");
+    expect(hrefs).toContain("/compare/gwinn-vs-sumup");
+    expect(hrefs).toContain("/compare/gwinn-vs-worldline");
+    expect(hrefs).not.toContain("/compare/gwinn-vs-stripe");
   });
 
   it("sets a per-competitor document title", () => {
-    renderCompare("/compare/zolto-vs-sumup");
+    renderCompare("/compare/gwinn-vs-sumup");
     expect(document.title).toContain("SumUp");
   });
 
   it("falls back to the index for an unknown competitor", () => {
-    renderCompare("/compare/zolto-vs-nonesuch");
+    renderCompare("/compare/gwinn-vs-nonesuch");
     expect(
-      screen.getByRole("heading", { name: "Compare Zolto", level: 1 }),
+      screen.getByRole("heading", { name: "Compare Gwinn", level: 1 }),
     ).toBeTruthy();
   });
 });

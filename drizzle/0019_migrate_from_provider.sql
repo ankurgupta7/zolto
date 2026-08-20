@@ -1,4 +1,4 @@
--- Where a new merchant sold before Zolto (signup's "already selling
+-- Where a new merchant sold before Gwinn (signup's "already selling
 -- somewhere?"): 'stripe' | 'sumup' | 'worldline' | 'other'; NULL = fresh
 -- start. Read by the onboarding checklist to turn "add your first product"
 -- into a provider-specific "bring your catalogue" step pointing at the

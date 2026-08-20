@@ -1,3 +1,4 @@
+import { brandNeutralKey } from "@shared/brand";
 // @vitest-environment node
 import { describe, it, expect } from "vitest";
 import {
@@ -21,7 +22,7 @@ import {
   POSITIONING,
   CAPABILITIES,
   CAPABILITY_GROUPS,
-  ZOLTO_LIMITATIONS,
+  PLATFORM_LIMITATIONS,
   BUYER_FIT,
 } from "@shared/platform";
 import { RATES, NEGOTIATED } from "@shared/costOfAcceptance";
@@ -110,7 +111,14 @@ describe("marketing locale files", () => {
     // A translation that loses {{saving}} (or invents {{Saving}}) renders a
     // literal brace-less sentence or an empty slot — catch it structurally.
     const placeholders = (s: string) =>
-      [...s.matchAll(/\{\{\s*([^}]+?)\s*\}\}/g)].map((m) => m[1]).sort();
+      [...s.matchAll(/\{\{\s*([^}]+?)\s*\}\}/g)]
+        .map((m) => m[1])
+        // `brand` comes from i18next's defaultVariables rather than from a
+        // caller, so it is always in scope. A language that names the platform
+        // where English phrases around it is making a translation choice, not
+        // dropping an argument the caller supplied.
+        .filter((name) => name !== "brand")
+        .sort();
     const flat = (node: unknown, prefix = ""): Array<[string, string]> => {
       if (Array.isArray(node))
         return node.flatMap((v, i) => flat(v, `${prefix}[${i}]`));
@@ -248,7 +256,9 @@ describe("marketing locale files", () => {
           { feature: r.feature, them: r.them, us: r.us },
         ]),
       ),
-      faqCategories: Object.fromEntries(FAQ_CATEGORIES.map((c) => [c, c])),
+      faqCategories: Object.fromEntries(
+        FAQ_CATEGORIES.map((c) => [brandNeutralKey(c), c]),
+      ),
       // The residency band and the Swissness ledger. The ledger's `next` is
       // optional in the source, so a row without one contributes no key —
       // which the structural test then requires every language to match.
@@ -280,7 +290,9 @@ describe("marketing locale files", () => {
         promise: SOVEREIGNTY.promise,
         heroBadges: [...SOVEREIGNTY.heroBadges],
       },
-      faqs: Object.fromEntries(FAQS.map((f) => [f.q, { q: f.q, a: f.a }])),
+      faqs: Object.fromEntries(
+        FAQS.map((f) => [brandNeutralKey(f.q), { q: f.q, a: f.a }]),
+      ),
       // Segment.tsx renders SEGMENTS and the FEATURES they resolve to, so both
       // are translated through `st()` and both belong to the same contract.
       segments: Object.fromEntries(
@@ -317,7 +329,7 @@ describe("marketing locale files", () => {
           {
             summary: c.summary,
             betterWhen: [...c.betterWhen],
-            zoltoWhen: [...c.zoltoWhen],
+            platformWhen: [...c.platformWhen],
             ...(c.capabilities
               ? {
                   capabilities: Object.fromEntries(
@@ -343,9 +355,12 @@ describe("marketing locale files", () => {
           },
         ]),
       ),
-      // CapabilityMatrix.tsx renders the row labels and Zolto's own answers.
+      // CapabilityMatrix.tsx renders the row labels and Gwinn's own answers.
       capabilities: Object.fromEntries(
-        CAPABILITIES.map((c) => [c.key, { label: c.label, zolto: c.zolto }]),
+        CAPABILITIES.map((c) => [
+          c.key,
+          { label: c.label, platform: c.platform },
+        ]),
       ),
       capabilityGroups: Object.fromEntries(
         CAPABILITY_GROUPS.map((g) => [g, g]),
@@ -366,7 +381,7 @@ describe("marketing locale files", () => {
       // Compare.tsx's index renders both. They're the two places the site
       // argues against itself, so they matter most in the languages a reader
       // actually reads.
-      limitations: ZOLTO_LIMITATIONS.map((l) => ({
+      limitations: PLATFORM_LIMITATIONS.map((l) => ({
         title: l.title,
         detail: l.detail,
       })),
@@ -396,7 +411,22 @@ describe("marketing locale files", () => {
       },
     };
 
-    expect(enLocale.shared).toEqual(expectedShared);
+    // The locale files hold the brand as {{brand}} rather than spelling it, so
+    // the TS side is neutralised the same way before comparing. The contract
+    // being checked is still "identical English", just expressed once.
+    const neutralise = (node: unknown): unknown => {
+      if (typeof node === "string") return brandNeutralKey(node);
+      if (Array.isArray(node)) return node.map(neutralise);
+      if (node !== null && typeof node === "object")
+        return Object.fromEntries(
+          Object.entries(node as Record<string, unknown>).map(([k, v]) => [
+            brandNeutralKey(k),
+            neutralise(v),
+          ]),
+        );
+      return node;
+    };
+    expect(enLocale.shared).toEqual(neutralise(expectedShared));
   });
 
   it("keeps the hero's underlined phrase short in every language", () => {
@@ -419,7 +449,7 @@ describe("marketing locale files", () => {
       for (const f of FAQS) {
         const entry = (
           resources.shared.faqs as Record<string, { q: string; a: string }>
-        )[f.q];
+        )[brandNeutralKey(f.q)];
         expect(entry, `${lang} FAQ "${f.q}"`).toBeDefined();
         expect(entry.a, `${lang} FAQ answer for "${f.q}"`).not.toBe(f.a);
       }

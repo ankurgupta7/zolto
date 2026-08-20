@@ -3,7 +3,7 @@
 > ## ⚠️ These are not the product.
 >
 > `pos-grid.png` and `pos-payment.png` are **hand-built HTML mockups** of the
-> till. They are not screenshots of the Zolto POS. Nothing here is wired to
+> till. They are not screenshots of the Gwinn POS. Nothing here is wired to
 > anything — the totals are typed in, the tap states are CSS classes.
 >
 > **Do not use them as documentation, as a design spec, or as evidence that a

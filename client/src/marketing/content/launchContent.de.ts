@@ -37,11 +37,11 @@ const diary1: Article = {
   eyebrow: "Launch-Tagebuch · Teil 1 von 4",
   title: "Launch-Tagebuch #1: Die Einrichtung",
   metaTitle: maker.founder
-    ? `Wie ${maker.founder} den ersten Onlineshop von ${maker.brand} aufbaute | Zolto Launch-Tagebuch`
-    : "Wie eine Zürcher Macherin ihren ersten Onlineshop aufbaute | Zolto Launch-Tagebuch",
+    ? `Wie ${maker.founder} den ersten Onlineshop von ${maker.brand} aufbaute | Gwinn Launch-Tagebuch`
+    : "Wie eine Zürcher Macherin ihren ersten Onlineshop aufbaute | Gwinn Launch-Tagebuch",
   metaDescription: maker.founder
-    ? `Begleiten Sie ${maker.founder}, Gründerin von ${maker.brand} in Zürich, beim Aufbau ihres ersten Onlineshops auf Zolto. Echter Prozess, echter Zeitplan, keine Growth-Hacks.`
-    : "Begleiten Sie eine Zürcher Perlenschmuck-Macherin beim Aufbau ihres ersten Onlineshops auf Zolto. Echter Prozess, echter Zeitplan, keine Growth-Hacks.",
+    ? `Begleiten Sie ${maker.founder}, Gründerin von ${maker.brand} in Zürich, beim Aufbau ihres ersten Onlineshops auf Gwinn. Echter Prozess, echter Zeitplan, keine Growth-Hacks.`
+    : "Begleiten Sie eine Zürcher Perlenschmuck-Macherin beim Aufbau ihres ersten Onlineshops auf Gwinn. Echter Prozess, echter Zeitplan, keine Growth-Hacks.",
   dek: "Von Weihnachtsmärkten zum ersten Onlineshop — Teil 1: der Anfang.",
   datePublished: BLOG_POSTS[0].lastmod,
   dateModified: BLOG_POSTS[0].lastmod,
@@ -88,7 +88,7 @@ const diary1: Article = {
     { type: "h2", text: "Der Einrichtungsprozess" },
     {
       type: "p",
-      text: "Tag 1 — Produkte hochladen. Das Atelier startete mit 15 Produkten. Nicht das ganze Sortiment — nur die Stücke, die sich gut fotografieren lassen und verlässlich verkaufen. Ein grobes Handyfoto pro Stück, kein Studio; Zoltos KI verwandelt diese eine Aufnahme in ein Produkt- oder Lifestyle-Bild, und die KI-Beschreibungen schaffen etwa 80% des Wegs, bevor ein Mensch den Ton nachschärft.",
+      text: "Tag 1 — Produkte hochladen. Das Atelier startete mit 15 Produkten. Nicht das ganze Sortiment — nur die Stücke, die sich gut fotografieren lassen und verlässlich verkaufen. Ein grobes Handyfoto pro Stück, kein Studio; Gwinns KI verwandelt diese eine Aufnahme in ein Produkt- oder Lifestyle-Bild, und die KI-Beschreibungen schaffen etwa 80% des Wegs, bevor ein Mensch den Ton nachschärft.",
     },
     {
       type: "note",
@@ -134,7 +134,7 @@ const diary1: Article = {
     },
     {
       type: "p",
-      text: "Tag 3 — Kassensynchronisation. Das entscheidende Stück. Der Kassenbestand (was an Märkten verfügbar ist) musste sich mit dem Onlineshop synchronisieren, damit ein an der Chilbi verkauftes Armband zehn Minuten später online nicht mehr als verfügbar erscheint. Zolto erledigt das automatisch: eine Bestandsdatenbank, zwei Verkaufskanäle. Zeitaufwand: 30 Minuten. Es funktionierte einfach.",
+      text: "Tag 3 — Kassensynchronisation. Das entscheidende Stück. Der Kassenbestand (was an Märkten verfügbar ist) musste sich mit dem Onlineshop synchronisieren, damit ein an der Chilbi verkauftes Armband zehn Minuten später online nicht mehr als verfügbar erscheint. Gwinn erledigt das automatisch: eine Bestandsdatenbank, zwei Verkaufskanäle. Zeitaufwand: 30 Minuten. Es funktionierte einfach.",
     },
     { type: "h2", text: "Was wir gelernt haben" },
     {
@@ -172,7 +172,7 @@ const diary2: Article = {
   kind: "diary",
   eyebrow: "Launch-Tagebuch · Teil 2 von 4",
   title: "Launch-Tagebuch #2: Der Livegang",
-  metaTitle: `Livegang: Der erste Onlinetag ${maker.founder ? `von ${maker.brand}` : "eines Zürcher Schmuck-Shops"} | Zolto Launch-Tagebuch`,
+  metaTitle: `Livegang: Der erste Onlinetag ${maker.founder ? `von ${maker.brand}` : "eines Zürcher Schmuck-Shops"} | Gwinn Launch-Tagebuch`,
   metaDescription: `Tag 1 ${maker.founder ? `von ${maker.brand}` : "eines Perlenschmuck-Shops"} online in Zürich: 34 Besucher, 0 Bestellungen. Tag 2: der erste Verkauf. Die echte Geschichte eines Online-Launchs.`,
   dek: "Teil 2: der leise Wechsel von 'gibt es nicht' zu 'hier ist er' — und die erste Bestellung.",
   datePublished: BLOG_POSTS[1].lastmod,
@@ -287,7 +287,7 @@ const diary3: Article = {
   eyebrow: "Launch-Tagebuch · Teil 3 von 4",
   title: "Launch-Tagebuch #3: Der erste Monat online",
   metaTitle:
-    "Der erste Monat online: 12 Bestellungen, ehrliche Zahlen | Zolto Launch-Tagebuch",
+    "Der erste Monat online: 12 Bestellungen, ehrliche Zahlen | Gwinn Launch-Tagebuch",
   metaDescription: `Einen Monat nach dem Online-Launch teilt ${maker.founder ? maker.brand : "eine Zürcher Perlenschmuck-Macherin"} echte Zahlen: 12 Bestellungen, CHF 61 im Schnitt, 81% KI-Chatbot-Lösungsquote. Keine Growth-Hacks.`,
   dek: "Teil 3: ehrliche Zahlen aus Monat eins — 12 Online-Bestellungen, CHF 61 im Schnitt, und was sie ausgelöst hat.",
   datePublished: BLOG_POSTS[2].lastmod,
@@ -432,8 +432,8 @@ const caseStudy: Article = {
   slug: STORY_SLUG,
   kind: "story",
   title: caseStudyDeTitle,
-  metaTitle: `${maker.founder ? `Fallstudie ${maker.brand}` : "Fallstudie"}: Von Weihnachtsmärkten zu Onlineverkäufen in 30 Tagen | Zolto`,
-  metaDescription: `Wie ${maker.founder ? `${maker.founder}, Gründerin von ${maker.brand},` : "eine Perlenschmuck-Macherin in Zürich"} in 3 Tagen einen ersten Onlineshop auf Zolto aufbaute und im ersten Monat 12 Onlineverkäufe erzielte.`,
+  metaTitle: `${maker.founder ? `Fallstudie ${maker.brand}` : "Fallstudie"}: Von Weihnachtsmärkten zu Onlineverkäufen in 30 Tagen | Gwinn`,
+  metaDescription: `Wie ${maker.founder ? `${maker.founder}, Gründerin von ${maker.brand},` : "eine Perlenschmuck-Macherin in Zürich"} in 3 Tagen einen ersten Onlineshop auf Gwinn aufbaute und im ersten Monat 12 Onlineverkäufe erzielte.`,
   dek: "Von ~60 Offline-Verkäufen pro Monat an Weihnachtsmärkten zu einem hybriden Online-Offline-Schmuckgeschäft in 30 Tagen.",
   datePublished: CASE_STUDY.datePublished,
   dateModified: CASE_STUDY.dateModified,
@@ -448,7 +448,7 @@ const caseStudy: Article = {
     { type: "h2", text: "Die Macherin" },
     {
       type: "p",
-      text: `${BRAND} ist eine Schmuckmarke in Zürich: handgefertigte Stücke aus Perlen und Halbedelsteinen — Halsketten, Ohrringe, Armbänder —, verkauft an Weihnachtsmärkten und Chilbis entlang der Zürcher Goldküste. Vor Zolto lief das ganze Geschäft offline: rund 60 Verkäufe im Monat, alle persönlich, kein Onlineshop.`,
+      text: `${BRAND} ist eine Schmuckmarke in Zürich: handgefertigte Stücke aus Perlen und Halbedelsteinen — Halsketten, Ohrringe, Armbänder —, verkauft an Weihnachtsmärkten und Chilbis entlang der Zürcher Goldküste. Vor Gwinn lief das ganze Geschäft offline: rund 60 Verkäufe im Monat, alle persönlich, kein Onlineshop.`,
     },
     { type: "h2", text: "Die Herausforderung" },
     {
@@ -542,7 +542,7 @@ const caseStudy: Article = {
           { type: "h2", text: "Die Perspektive der Macherin" } as Block,
           {
             type: "quote",
-            text: "Ich wollte kein Tech-Mensch werden. Ich wollte Schmuck machen. Mit Zolto stand mein Shop in 3 Tagen, ohne dass ich etwas Neues lernen musste. Die KI beantwortet die Fragen, die ich früher in Instagram-DMs beantwortet habe — etwa ob meine Perlen Süsswasserperlen sind oder was der Versand nach Deutschland kostet.",
+            text: "Ich wollte kein Tech-Mensch werden. Ich wollte Schmuck machen. Mit Gwinn stand mein Shop in 3 Tagen, ohne dass ich etwas Neues lernen musste. Die KI beantwortet die Fragen, die ich früher in Instagram-DMs beantwortet habe — etwa ob meine Perlen Süsswasserperlen sind oder was der Versand nach Deutschland kostet.",
             cite: `${founderName}, Gründerin von ${maker.brand}, Zürich`,
           } as Block,
         ]

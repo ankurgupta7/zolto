@@ -22,8 +22,8 @@
         "description": "Vor Ort dauerhaft kostenlos. {{fee}} auf Online- und KI-Agenten-Bestellungen — oder Pro, womit sie entfällt. Monatlich, jederzeit kündbar.",
         "notConfigured": "Bezahlte Pläne sind auf dieser Installation noch nicht käuflich (Stripe-Preise nicht konfiguriert). Alles in Ihrem aktuellen Plan funktioniert weiter.",
         "compTitle": "Ihr Shop geht aufs Haus",
-        "compPlan": "Zolto stellt Ihnen den {{plan}}-Plan kostenlos zur Verfügung — dafür ist nichts zu bezahlen.",
-        "compFeeWaived": "Zolto erhebt keine Plattformgebühr auf Ihre Online- und KI-Agenten-Bestellungen.",
+        "compPlan": "{{brand}} stellt Ihnen den {{plan}}-Plan kostenlos zur Verfügung — dafür ist nichts zu bezahlen.",
+        "compFeeWaived": "{{brand}} erhebt keine Plattformgebühr auf Ihre Online- und KI-Agenten-Bestellungen.",
         "compBadge": "Geht aufs Haus",
         "feesWaived": "Plattformgebühren (0 % — geht aufs Haus)",
         "plansTitle": "Pläne",
@@ -45,7 +45,7 @@
         "agentSplit": "CHF {{amount}} über KI-Agenten",
         "feesOnPro": "Plattformgebühren (0% mit Pro)",
         "feesOnFree": "Plattformgebühren ({{percent}} auf {{appliesTo}})",
-        "posNeverFee": "Verkäufe vor Ort an der Kasse tragen in keinem Plan eine Zolto-Gebühr.",
+        "posNeverFee": "Verkäufe vor Ort an der Kasse tragen in keinem Plan eine {{brand}}-Gebühr.",
         "upsell": "Mit Pro würden Sie diesen Monat CHF {{savings}} sparen — ab CHF {{breakEven}}/Monat online schlägt der Pauschalpreis von CHF {{proPrice}} für Pro die Gebühr von {{percent}}.",
         "upgradeNow": "Jetzt upgraden",
         "aiTitle": "KI-Fotoaufnahmen",
@@ -465,7 +465,7 @@
         "hideChecklist": "Diese Checkliste ausblenden"
       },
       "capabilities": {
-        "ariaLabel": "Ihre Zolto-Werkstatt",
+        "ariaLabel": "Ihre {{brand}}-Werkstatt",
         "eyebrow": "Ihre Werkstatt auf einen Blick",
         "tagline": "Online & vor Ort verkaufen",
         "storeTitle": "Onlineshop",
@@ -616,7 +616,7 @@
         },
         "posReady": {
           "title": "Nehmen Sie eine Kartenzahlung auf Ihrem Handy entgegen",
-          "body": "Installieren Sie die Zolto POS-App und melden Sie sich mit Ihrem POS-Schlüssel an — der erste Kartenverkauf schliesst die Einrichtung automatisch ab.",
+          "body": "Installieren Sie die {{brand}} POS-App und melden Sie sich mit Ihrem POS-Schlüssel an — der erste Kartenverkauf schliesst die Einrichtung automatisch ab.",
           "blockedStripe": "Verbinden Sie zuerst Stripe (der Schritt oben)."
         }
       }

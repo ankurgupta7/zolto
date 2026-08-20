@@ -22,7 +22,7 @@ function renderBand() {
 }
 
 describe("SwissMade", () => {
-  it("leads with where Zolto is from", () => {
+  it("leads with where Gwinn is from", () => {
     renderBand();
     expect(
       screen.getByRole("heading", {

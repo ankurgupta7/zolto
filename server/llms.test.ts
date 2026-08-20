@@ -1,3 +1,4 @@
+import { BRAND } from "@shared/brand";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import express from "express";
 import request from "supertest";
@@ -93,19 +94,21 @@ describe("renderStorefrontLlmsTxt", () => {
     expect(txt).toContain("create_checkout");
   });
 
-  it("credits Zolto on every plan by default, with a link an agent can follow", () => {
+  it(`credits ${BRAND.name} on every plan by default, with a link an agent can follow`, () => {
     for (const plan of ["free", "pro", "atelier"]) {
       const txt = renderStorefrontLlmsTxt(
         { ...tenant, plan } as Tenant,
         [makeProduct({ id: 1 })],
         "https://kalakosh.ch",
       );
-      expect(txt, plan).toContain("Made with Zolto (https://zolto.ch).");
-      expect(txt, plan).toContain("## Made with Zolto");
-      expect(txt, plan).toContain("[Zolto](https://zolto.ch)");
+      expect(txt, plan).toContain(`Made with ${BRAND.name} (${BRAND.url}).`);
+      expect(txt, plan).toContain(`## Made with ${BRAND.name}`);
+      expect(txt, plan).toContain(`[${BRAND.name}](${BRAND.url})`);
       // The credit must not read as an endorsement of a second shop: an agent
       // buying here has to keep the merchant as the counterparty.
-      expect(txt, plan).toContain("Zolto is the platform, not the merchant");
+      expect(txt, plan).toContain(
+        `${BRAND.name} is the platform, not the merchant`,
+      );
     }
   });
 
@@ -114,9 +117,9 @@ describe("renderStorefrontLlmsTxt", () => {
       { ...tenant, plan: "pro" } as Tenant,
       [makeProduct({ id: 1 })],
       "https://kalakosh.ch",
-      { hideZoltoBadge: true },
+      { hidePlatformCredit: true },
     );
-    expect(hidden).not.toContain("Zolto");
+    expect(hidden).not.toContain(BRAND.name);
 
     // The same switch set on a store WITHOUT white-labelling is inert — a Free
     // store cannot opt out of the credit it is paying with, and a Pro store
@@ -125,18 +128,18 @@ describe("renderStorefrontLlmsTxt", () => {
       { ...tenant, plan: "free" } as Tenant,
       [makeProduct({ id: 1 })],
       "https://kalakosh.ch",
-      { hideZoltoBadge: true },
+      { hidePlatformCredit: true },
     );
-    expect(free).toContain("Made with Zolto");
+    expect(free).toContain(`Made with ${BRAND.name}`);
 
     // …and a comped Pro store is honoured like a paying one (entitlements.ts).
     const comped = renderStorefrontLlmsTxt(
       { ...tenant, plan: "free", compPlan: "pro" } as Tenant,
       [makeProduct({ id: 1 })],
       "https://kalakosh.ch",
-      { hideZoltoBadge: true },
+      { hidePlatformCredit: true },
     );
-    expect(comped).not.toContain("Zolto");
+    expect(comped).not.toContain(BRAND.name);
   });
 
   it("summarises the tail when there are many products", () => {
@@ -195,7 +198,7 @@ describe("GET /llms.txt", () => {
     mocks.getTenantBySlug.mockResolvedValue(undefined);
     const res = await request(await buildApp()).get("/llms.txt");
     expect(res.status).toBe(200);
-    expect(res.text.startsWith("# Zolto")).toBe(true);
+    expect(res.text.startsWith(`# ${BRAND.name}`)).toBe(true);
     expect(res.text).toContain("Model Context Protocol");
   });
 

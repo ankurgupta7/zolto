@@ -4,7 +4,7 @@ import PlatformLayout from "./PlatformLayout";
 
 const mocks = vi.hoisted(() => ({
   role: "superadmin" as string | null,
-  email: "you@zolto.ch" as string | null,
+  email: "you@gwinn.ch" as string | null,
   loading: false,
   location: "/platform",
   logout: vi.fn(),
@@ -41,7 +41,7 @@ vi.mock("wouter", () => ({
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.role = "superadmin";
-  mocks.email = "you@zolto.ch";
+  mocks.email = "you@gwinn.ch";
   mocks.loading = false;
   mocks.location = "/platform";
   mocks.logout.mockResolvedValue(undefined);
@@ -56,7 +56,7 @@ describe("PlatformLayout — who gets in", () => {
       </PlatformLayout>,
     );
     expect(screen.getByText("secret numbers")).toBeTruthy();
-    expect(screen.getByText("Zolto operator")).toBeTruthy();
+    expect(screen.getByText("Gwinn operator")).toBeTruthy();
   });
 
   // The whole point of the console being on the marketing surface is that it is
@@ -186,7 +186,7 @@ describe("PlatformLayout — escaping the wrong account", () => {
         <p>secret numbers</p>
       </PlatformLayout>,
     );
-    expect(screen.getByText("you@zolto.ch")).toBeTruthy();
+    expect(screen.getByText("you@gwinn.ch")).toBeTruthy();
     await act(async () => {
       screen.getByRole("button", { name: "Sign out" }).click();
     });

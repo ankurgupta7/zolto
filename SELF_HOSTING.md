@@ -43,9 +43,9 @@ The Discord bot runs as a long-lived WebSocket connection inside the Node.js pro
 
 ---
 
-## Running alongside Kalakosh-ch (served at zolto.kalakosh.ch)
+## Running alongside Kalakosh-ch (served at gwinn.kalakosh.ch)
 
-If you already run the [Kalakosh-ch](https://github.com/ankurgupta7/Kalakosh-ch) stack on the same server, its Caddy already owns host ports **80** and **443**. Rather than have Zolto's Caddy fight for those ports, let the Kalakosh Caddy serve Zolto as a subdomain — **zolto.kalakosh.ch** — and reverse-proxy it to Zolto's app over a shared Docker network:
+If you already run the [Kalakosh-ch](https://github.com/ankurgupta7/Kalakosh-ch) stack on the same server, its Caddy already owns host ports **80** and **443**. Rather than have Gwinn's Caddy fight for those ports, let the Kalakosh Caddy serve Gwinn as a subdomain — **gwinn.kalakosh.ch** — and reverse-proxy it to Gwinn's app over a shared Docker network:
 
 ```
 Internet
@@ -53,10 +53,10 @@ Internet
     ▼
  Kalakosh Caddy ──── kalakosh.ch ─────────▶ Kalakosh app :3000
         │
-        └─────────── zolto.kalakosh.ch ───▶ Zolto app :3000   (via "kalakosh-shared" network)
+        └─────────── gwinn.kalakosh.ch ───▶ Gwinn app :3000   (via "kalakosh-shared" network)
 ```
 
-In this mode Zolto runs **no Caddy of its own and binds no host ports**, so there is nothing to compete over.
+In this mode Gwinn runs **no Caddy of its own and binds no host ports**, so there is nothing to compete over.
 
 **Setup:**
 
@@ -64,41 +64,41 @@ In this mode Zolto runs **no Caddy of its own and binds no host ports**, so ther
    ```bash
    docker network create kalakosh-shared
    ```
-2. **Add DNS:** point `zolto.kalakosh.ch` at the server IP (an `A`/`AAAA` record). The Kalakosh-ch repo already carries the matching `zolto.kalakosh.ch` block in its `Caddyfile`, so Caddy will provision the TLS certificate automatically.
-3. **Set** `PUBLIC_BASE_URL=https://zolto.kalakosh.ch` in Zolto's `.env` (used for Stripe redirects and absolute URLs).
-4. **Start Zolto** — the bundled Caddy is behind the `standalone` profile, so a plain up brings only the app + db, attached to the shared network:
+2. **Add DNS:** point `gwinn.kalakosh.ch` at the server IP (an `A`/`AAAA` record). The Kalakosh-ch repo already carries the matching `gwinn.kalakosh.ch` block in its `Caddyfile`, so Caddy will provision the TLS certificate automatically.
+3. **Set** `PUBLIC_BASE_URL=https://gwinn.kalakosh.ch` in Gwinn's `.env` (used for Stripe redirects and absolute URLs).
+4. **Start Gwinn** — the bundled Caddy is behind the `standalone` profile, so a plain up brings only the app + db, attached to the shared network:
    ```bash
    docker compose up -d
    ```
-5. **Restart the Kalakosh stack** (or `docker compose up -d` it) so its Caddy picks up the shared network and the `zolto.kalakosh.ch` route.
+5. **Restart the Kalakosh stack** (or `docker compose up -d` it) so its Caddy picks up the shared network and the `gwinn.kalakosh.ch` route.
 
 Both stacks are independent — separate databases, separate deploys — they only share the reverse-proxy network.
 
-**Tenant subdomains in this mode:** Zolto's own bundled Caddyfile isn't used here, so its `*.{$SITE_DOMAIN}` block doesn't apply — tenant subdomains need the equivalent wildcard block added to the **Kalakosh-ch** Caddyfile instead:
+**Tenant subdomains in this mode:** Gwinn's own bundled Caddyfile isn't used here, so its `*.{$SITE_DOMAIN}` block doesn't apply — tenant subdomains need the equivalent wildcard block added to the **Kalakosh-ch** Caddyfile instead:
 
-1. **Wildcard DNS:** add `*.zolto.kalakosh.ch A <server-ip>` alongside the existing `zolto.kalakosh.ch` record.
-2. **Add a wildcard block to the Kalakosh-ch Caddyfile**, using on-demand TLS gated by Zolto's `/api/domain-ask` endpoint (reachable over the same `kalakosh-shared` network):
+1. **Wildcard DNS:** add `*.gwinn.kalakosh.ch A <server-ip>` alongside the existing `gwinn.kalakosh.ch` record.
+2. **Add a wildcard block to the Kalakosh-ch Caddyfile**, using on-demand TLS gated by Gwinn's `/api/domain-ask` endpoint (reachable over the same `kalakosh-shared` network):
 
    ```
    {
        on_demand_tls {
-           ask http://<zolto-app-container-name>:3000/api/domain-ask
+           ask http://<gwinn-app-container-name>:3000/api/domain-ask
        }
    }
 
-   *.zolto.kalakosh.ch {
+   *.gwinn.kalakosh.ch {
        tls {
            on_demand
        }
-       reverse_proxy <zolto-app-container-name>:3000
+       reverse_proxy <gwinn-app-container-name>:3000
    }
    ```
 
-   Replace `<zolto-app-container-name>` with whatever the Zolto app container is actually named on the shared network (check `docker compose ps` in the Zolto stack — commonly `zolto-app-1` or similar). If the Kalakosh-ch Caddy already has its own `on_demand_tls` global block for something else, Caddy only allows one `ask` URL for the whole instance — you'll need to point that single `ask` at an endpoint that can distinguish Kalakosh's own on-demand hosts from Zolto's tenant subdomains (or fold the check into whichever service already backs it).
+   Replace `<gwinn-app-container-name>` with whatever the Gwinn app container is actually named on the shared network (check `docker compose ps` in the Gwinn stack — commonly `gwinn-app-1` or similar). If the Kalakosh-ch Caddy already has its own `on_demand_tls` global block for something else, Caddy only allows one `ask` URL for the whole instance — you'll need to point that single `ask` at an endpoint that can distinguish Kalakosh's own on-demand hosts from Gwinn's tenant subdomains (or fold the check into whichever service already backs it).
 
-3. The `/api/domain-ask` endpoint already reads `PUBLIC_BASE_URL` (which you set to `https://zolto.kalakosh.ch` in step 3 above) to know the platform's root domain, so no extra Zolto-side config is needed — it'll recognize `blah.zolto.kalakosh.ch` and check `blah` against the tenants table correctly once the DNS and Caddy block above are in place.
+3. The `/api/domain-ask` endpoint already reads `PUBLIC_BASE_URL` (which you set to `https://gwinn.kalakosh.ch` in step 3 above) to know the platform's root domain, so no extra Gwinn-side config is needed — it'll recognize `blah.gwinn.kalakosh.ch` and check `blah` against the tenants table correctly once the DNS and Caddy block above are in place.
 
-To run Zolto **standalone** instead (its own domain/IP with its own Caddy), see [Step 7 — Configure Caddy](#step-7--configure-caddy) and start it with `docker compose --profile standalone up -d`.
+To run Gwinn **standalone** instead (its own domain/IP with its own Caddy), see [Step 7 — Configure Caddy](#step-7--configure-caddy) and start it with `docker compose --profile standalone up -d`.
 
 ---
 
@@ -321,24 +321,24 @@ Leave blank to skip backups.
 
 ## Step 7 — Configure Caddy
 
-> Serving Zolto at **zolto.kalakosh.ch** instead? Skip this step — the Kalakosh-ch Caddy handles TLS and routing for you. See [Running alongside Kalakosh-ch](#running-alongside-kalakosh-ch-served-at-zoltokalakoshch).
+> Serving Gwinn at **gwinn.kalakosh.ch** instead? Skip this step — the Kalakosh-ch Caddy handles TLS and routing for you. See [Running alongside Kalakosh-ch](#running-alongside-kalakosh-ch-served-at-gwinnkalakoshch).
 
-Zolto's bundled Caddy is only used for **standalone** deploys (its own domain/IP) and lives behind the `standalone` compose profile. Point `SITE_DOMAIN` (in `.env`) at your domain so Caddy provisions HTTPS automatically.
+Gwinn's bundled Caddy is only used for **standalone** deploys (its own domain/IP) and lives behind the `standalone` compose profile. Point `SITE_DOMAIN` (in `.env`) at your domain so Caddy provisions HTTPS automatically.
 
-**Every tenant gets a storefront at `<slug>.{SITE_DOMAIN}`** (e.g. `blah.zolto.ch`), so DNS needs a **wildcard** record, not just the apex:
+**Every tenant gets a storefront at `<slug>.{SITE_DOMAIN}`** (e.g. `blah.gwinn.ch`), so DNS needs a **wildcard** record, not just the apex:
 
 ```
-A     zolto.ch        <server-ip>
-A     *.zolto.ch      <server-ip>
+A     gwinn.ch        <server-ip>
+A     *.gwinn.ch      <server-ip>
 ```
 
-One wildcard `A` record covers every tenant subdomain — you never register a new DNS entry per tenant. The bundled Caddyfile already has a `*.{$SITE_DOMAIN}` block wired to on-demand TLS: the first time `blah.zolto.ch` is visited, Caddy asks the app (`/api/domain-ask`) whether `blah` is a real tenant slug, and only then requests a Let's Encrypt certificate for that specific hostname (a real wildcard certificate isn't possible over plain HTTP-01, so Caddy issues one cert per subdomain, on demand). Nothing else to configure — this works as soon as the wildcard DNS record resolves to your server.
+One wildcard `A` record covers every tenant subdomain — you never register a new DNS entry per tenant. The bundled Caddyfile already has a `*.{$SITE_DOMAIN}` block wired to on-demand TLS: the first time `blah.gwinn.ch` is visited, Caddy asks the app (`/api/domain-ask`) whether `blah` is a real tenant slug, and only then requests a Let's Encrypt certificate for that specific hostname (a real wildcard certificate isn't possible over plain HTTP-01, so Caddy issues one cert per subdomain, on demand). Nothing else to configure — this works as soon as the wildcard DNS record resolves to your server.
 
 ---
 
 ## Step 8 — Start Everything
 
-For a **standalone** deploy (Zolto's own Caddy on its own domain), enable the profile so Caddy starts:
+For a **standalone** deploy (Gwinn's own Caddy on its own domain), enable the profile so Caddy starts:
 
 ```bash
 docker compose --profile standalone up -d
@@ -347,7 +347,7 @@ docker compose logs -f app   # watch startup logs
 
 Caddy will obtain an SSL certificate within ~30 seconds. Visit your `SITE_DOMAIN` to see the storefront.
 
-> Running **alongside Kalakosh-ch** at zolto.kalakosh.ch? Use `docker compose up -d` (no profile) — the app joins the shared network and the Kalakosh Caddy serves it. See [Running alongside Kalakosh-ch](#running-alongside-kalakosh-ch-served-at-zoltokalakoshch).
+> Running **alongside Kalakosh-ch** at gwinn.kalakosh.ch? Use `docker compose up -d` (no profile) — the app joins the shared network and the Kalakosh Caddy serves it. See [Running alongside Kalakosh-ch](#running-alongside-kalakosh-ch-served-at-gwinnkalakoshch).
 
 To access the admin panel, go to `https://yourdomain.com/admin` and click **Sign in with Google**.
 
@@ -375,7 +375,7 @@ minutes:
 
 - **The image rebuild** is skipped when the running container was already built
   from exactly this source. Each image is stamped with a hash of its build
-  context (`docker inspect` → `ch.zolto.source-fingerprint`), and that is
+  context (`docker inspect` → `ch.gwinn.source-fingerprint`), and that is
   compared against the working tree — including uncommitted edits and `.env`,
   since `VITE_*` values are compiled into the frontend bundle.
 - **The migrations** are skipped when this exact migration set already ran to
@@ -433,7 +433,7 @@ docker compose down
 > docker compose --profile standalone down
 > ```
 >
-> A plain `docker compose down` does **not** remove containers belonging to a profile that isn't currently enabled, so the standalone Caddy is left running and attached to `zolto_internal`, and the teardown fails with _"Network zolto_internal Resource is still in use"_ (see Troubleshooting).
+> A plain `docker compose down` does **not** remove containers belonging to a profile that isn't currently enabled, so the standalone Caddy is left running and attached to `gwinn_internal`, and the teardown fails with _"Network gwinn_internal Resource is still in use"_ (see Troubleshooting).
 
 ### Administer the platform from the terminal
 
@@ -445,13 +445,13 @@ front end is the thing that's broken.
 bash deploy/admin.sh                    # interactive, read-write
 bash deploy/admin.sh --read-only        # look, don't touch
 bash deploy/admin.sh --store kalakosh   # start pointed at one store
-bash deploy/admin.sh --as you@zolto.ch  # act as a specific platform owner
+bash deploy/admin.sh --as you@gwinn.ch  # act as a specific platform owner
 ```
 
 It asks what you want to do and you pick a number, tier by tier:
 
 ```
-Zolto admin
+Gwinn admin
 store: none selected
 
   1. Stores ›
@@ -465,7 +465,7 @@ store: none selected
   [?] help   [q] quit
   > 4
 
-Zolto admin › Catalogue & stock
+Gwinn admin › Catalogue & stock
 store: Kalakosh (kalakosh)
 
   1. List products
@@ -565,7 +565,7 @@ is involved: the service account creates each spreadsheet, keeps ownership of it
 and shares it with the merchant's own Google address.
 
 Which address is decided from the session, not from a form. An admin who signed
-in to Zolto with Google has already told us their Google identity, so Connect
+in to Gwinn with Google has already told us their Google identity, so Connect
 asks them nothing — and cannot be pointed at a third party, since there is no
 field to type one into. Admins who signed in by Apple or magic link are asked
 for a Google address explicitly, because Drive can only share to a Google
@@ -605,24 +605,24 @@ The app container may still be starting. Check: `docker compose logs app`. If it
 **SSL certificate not issued**
 Ensure your domain's DNS A record points to the correct server IP and has propagated. Check: `docker compose logs caddy`.
 
-**`ERR_SSL_PROTOCOL_ERROR` on a tenant subdomain (e.g. `blah.zolto.ch`)**
+**`ERR_SSL_PROTOCOL_ERROR` on a tenant subdomain (e.g. `blah.gwinn.ch`)**
 Almost always one of:
 
-- No wildcard DNS record. An `A` record for the apex (`zolto.ch`) does **not** cover subdomains — you also need `*.zolto.ch` pointing at the server IP (see Step 7).
-- `blah` isn't an actual tenant slug yet, or the tenant record hasn't propagated to the DB the app is reading. Caddy's on-demand TLS refuses to mint a cert for hostnames `/api/domain-ask` doesn't recognize — check `docker compose logs app` for `[DomainAsk]` lines, or ask the endpoint directly: `docker compose exec app curl -s "http://localhost:3000/api/domain-ask?domain=blah.zolto.ch" -o /dev/null -w '%{http_code}\n'` (200 = tenant found, 404 = no such slug).
+- No wildcard DNS record. An `A` record for the apex (`gwinn.ch`) does **not** cover subdomains — you also need `*.gwinn.ch` pointing at the server IP (see Step 7).
+- `blah` isn't an actual tenant slug yet, or the tenant record hasn't propagated to the DB the app is reading. Caddy's on-demand TLS refuses to mint a cert for hostnames `/api/domain-ask` doesn't recognize — check `docker compose logs app` for `[DomainAsk]` lines, or ask the endpoint directly: `docker compose exec app curl -s "http://localhost:3000/api/domain-ask?domain=blah.gwinn.ch" -o /dev/null -w '%{http_code}\n'` (200 = tenant found, 404 = no such slug).
 - DNS hasn't propagated yet after adding the wildcard record — give it a few minutes and retry.
 
-**"Error 400: redirect_uri_mismatch" signing in with Google on a tenant subdomain (e.g. `blah.zolto.ch`)**
+**"Error 400: redirect_uri_mismatch" signing in with Google on a tenant subdomain (e.g. `blah.gwinn.ch`)**
 Google OAuth requires an exact, pre-registered redirect URI and doesn't support wildcard subdomains, so the app always routes the OAuth round-trip through **`PUBLIC_BASE_URL`'s own host** — never whichever tenant subdomain the merchant started from. This error means that host mismatch is happening anyway, which points to `PUBLIC_BASE_URL` not being set (or set wrong) in `.env`:
 
-- Set `PUBLIC_BASE_URL=https://zolto.ch` (or `https://zolto.kalakosh.ch` if running alongside Kalakosh-ch) and restart the app.
+- Set `PUBLIC_BASE_URL=https://gwinn.ch` (or `https://gwinn.kalakosh.ch` if running alongside Kalakosh-ch) and restart the app.
 - Confirm Google Cloud Console's Authorized redirect URIs list contains exactly `https://<PUBLIC_BASE_URL host>/api/oauth/callback` — one entry covers every tenant, current and future.
-- The tenant is then redirected back to their own subdomain automatically after login (the session cookie is scoped to the whole `*.zolto.ch` family once `PUBLIC_BASE_URL` is set, not just the one host that issued it).
+- The tenant is then redirected back to their own subdomain automatically after login (the session cookie is scoped to the whole `*.gwinn.ch` family once `PUBLIC_BASE_URL` is set, not just the one host that issued it).
 
-**A tenant admin's "Connect Stripe" fails or redirects with `stripeConnect=error` on a tenant subdomain (e.g. `blah.zolto.ch`)**
+**A tenant admin's "Connect Stripe" fails or redirects with `stripeConnect=error` on a tenant subdomain (e.g. `blah.gwinn.ch`)**
 Same class of issue as the Google `redirect_uri_mismatch` above: Stripe also requires an exact, pre-registered redirect URI with no wildcard subdomains, so the app always routes the Connect OAuth round-trip through **`PUBLIC_BASE_URL`'s own host**, never whichever tenant subdomain the admin clicked "Connect Stripe" from.
 
-- Set `PUBLIC_BASE_URL=https://zolto.ch` (or `https://zolto.kalakosh.ch` if running alongside Kalakosh-ch) and restart the app.
+- Set `PUBLIC_BASE_URL=https://gwinn.ch` (or `https://gwinn.kalakosh.ch` if running alongside Kalakosh-ch) and restart the app.
 - Confirm the Stripe Dashboard's Connect OAuth settings list the redirect URI exactly as `https://<PUBLIC_BASE_URL host>/api/stripe/connect/callback` — one entry covers every tenant, current and future.
 - If `PUBLIC_BASE_URL` is unset entirely, the app falls back to the request's own host — this works only for whichever single host happens to match what's registered in Stripe, and fails for every other tenant subdomain.
 
@@ -635,15 +635,15 @@ Check `DISCORD_CHANNEL_ID` is the numeric ID (not the channel name). Check `dock
 **Images not showing**
 If `S3_PUBLIC_URL` is not set, images are served via signed URLs through the `/uploads/` proxy. Ensure all `S3_*` credentials are correct.
 
-**`docker compose down` fails with "Network zolto_internal Resource is still in use"**
-Compose stopped the app/db containers but could not remove the `zolto_internal` network because another container is still attached to it. First see what is still attached:
+**`docker compose down` fails with "Network gwinn_internal Resource is still in use"**
+Compose stopped the app/db containers but could not remove the `gwinn_internal` network because another container is still attached to it. First see what is still attached:
 
 ```bash
-docker network inspect zolto_internal \
+docker network inspect gwinn_internal \
   --format '{{range .Containers}}{{.Name}} {{end}}'
 ```
 
-- **`zolto-caddy-1`** — you started the bundled Caddy with `--profile standalone`, but a plain `docker compose down` does not remove containers behind a profile that isn't enabled (and `--remove-orphans` won't touch it either, since it's a declared service, not an orphan). Re-enable the profile so `down` matches it:
+- **`gwinn-caddy-1`** — you started the bundled Caddy with `--profile standalone`, but a plain `docker compose down` does not remove containers behind a profile that isn't enabled (and `--remove-orphans` won't touch it either, since it's a declared service, not an orphan). Re-enable the profile so `down` matches it:
 
   ```bash
   docker compose --profile standalone down
@@ -684,13 +684,13 @@ Tenants can serve their storefront on their own domain. Two pieces make it work:
    }
    ```
 
-   Set `PLATFORM_DOMAIN` (e.g. `app.zolto.ch`) in `.env` — tenants get shown
-   "CNAME your domain → app.zolto.ch" under Store → Domain, and the app
+   Set `PLATFORM_DOMAIN` (e.g. `app.gwinn.ch`) in `.env` — tenants get shown
+   "CNAME your domain → app.gwinn.ch" under Store → Domain, and the app
    live-checks their DNS. HTTPS is issued automatically on the first visit after
    DNS points.
 
    Requests then arrive with `Host: shop.example.com`, and the app maps that
    hostname back to the store through `tenant_settings.public_domain`
    (`server/tenantResolve.ts`) — no per-tenant configuration, and no relation to
-   the store's `*.zolto.ch` slug, which keeps working alongside it. That column
+   the store's `*.gwinn.ch` slug, which keeps working alongside it. That column
    is unique: a hostname belongs to exactly one store.
