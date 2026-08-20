@@ -47,6 +47,15 @@ export const BULK_ANALYZE_CONCURRENCY = 2;
 /** Groq's per-request vision limit; see the note on bulkAnalyze's input. */
 export const VISION_MAX_IMAGES_PER_REQUEST = 5;
 
+/**
+ * Photos one product may carry in a single publish request. Unlike the vision
+ * limit this is ours, not a provider's: uploads run sequentially and the whole
+ * body has to fit express's 50MB JSON limit, and publish sends originals, not
+ * the downscaled copies analysis uses. A product may hold any number of photos
+ * — the client sends the rest in follow-up bulkUpsertImages calls.
+ */
+export const PUBLISH_MAX_IMAGES_PER_REQUEST = 8;
+
 // Categories are per-tenant now (tenant_categories), so the input shape is a
 // plain string; write paths verify it against the tenant's actual list via
 // assertTenantCategories in the handler.
@@ -584,6 +593,10 @@ Return ONLY valid JSON, no markdown, no explanation.`,
               ...localeCreateFields,
               price: z.number().positive(),
               category: categoryInput,
+              // Caller-chosen id, echoed back in createdItems so a client can
+              // match a new product's row id to the card it came from — and
+              // send that product's remaining photos in a follow-up request.
+              tempId: z.string().optional(),
               images: z
                 .array(
                   z.object({
@@ -592,7 +605,12 @@ Return ONLY valid JSON, no markdown, no explanation.`,
                   }),
                 )
                 .min(1)
-                .max(8),
+                // Per REQUEST, not per product: photos beyond this go in
+                // follow-up bulkUpsertImages calls. Uploads are sequential and
+                // the body must fit express's 50MB JSON limit, so a request
+                // that carried a merchant's whole shoot would be both slow and
+                // liable to be rejected outright.
+                .max(PUBLISH_MAX_IMAGES_PER_REQUEST),
             }),
           )
           .min(1)
@@ -606,6 +624,11 @@ Return ONLY valid JSON, no markdown, no explanation.`,
         input.products.map((p) => p.category),
       );
       const created: number[] = [];
+      const createdItems: Array<{
+        tempId: string | null;
+        id: number;
+        name: string;
+      }> = [];
       const failed: string[] = [];
       const extraImageWarnings: string[] = [];
 
@@ -643,6 +666,11 @@ Return ONLY valid JSON, no markdown, no explanation.`,
           newId = insertedId(result);
           if (!newId) throw new Error("No insertId returned");
           created.push(newId);
+          createdItems.push({
+            tempId: item.tempId ?? null,
+            id: newId,
+            name: item.name,
+          });
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err);
           console.error(`[BulkCreate] Failed to create "${item.name}":`, err);
@@ -691,7 +719,12 @@ Return ONLY valid JSON, no markdown, no explanation.`,
         }
       }
 
-      return { created: created.length, failed, extraImageWarnings };
+      return {
+        created: created.length,
+        createdItems,
+        failed,
+        extraImageWarnings,
+      };
     }),
 
   // Admin: find existing products that match the given names (normalised).
@@ -771,7 +804,14 @@ Return ONLY valid JSON, no markdown, no explanation.`,
                   }),
                 )
                 .min(1)
-                .max(8),
+                // Per REQUEST, not per product — see the note on bulkCreate.
+                .max(PUBLISH_MAX_IMAGES_PER_REQUEST),
+              // Where this batch's photos sit in the product's gallery. Images
+              // are ordered by (sortOrder, createdAt), so a continuation batch
+              // that restarted at 0 would interleave itself with the photos
+              // already uploaded — photo 9 sorting ahead of photo 2. The caller
+              // passes how many are already there.
+              sortOrderOffset: z.number().int().min(0).default(0),
               description: z.string().optional(),
               descriptionEn: z.string().optional(),
               descriptionDe: z.string().optional(),
@@ -820,7 +860,8 @@ Return ONLY valid JSON, no markdown, no explanation.`,
               const buffer = Buffer.from(base64, "base64");
               const ext =
                 img.mimeType.split("/")[1]?.replace("jpeg", "jpg") ?? "jpg";
-              const key = `product-images/${item.productId}/${Date.now()}-${i}.${ext}`;
+              const sortOrder = item.sortOrderOffset + i;
+              const key = `product-images/${item.productId}/${Date.now()}-${sortOrder}.${ext}`;
               const { url } = await putForTenant(
                 tid,
                 key,
@@ -832,7 +873,7 @@ Return ONLY valid JSON, no markdown, no explanation.`,
                 productId: item.productId,
                 imageKey: key,
                 imageUrl: url,
-                sortOrder: i,
+                sortOrder,
               });
 
               // If product has no primary image yet, promote the first uploaded one

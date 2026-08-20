@@ -34,6 +34,10 @@ const PHOTO_COUNT = Number(params.get("photos") ?? 9);
 // shot can show a group above the 5-image analysis limit — the only state in
 // which the "AI reads the first 5" hint appears.
 const GROUP_SIZE = Number(params.get("group") ?? 0);
+// `?publish=1` lets analysis complete with canned results, then presses
+// Publish and holds the request open — the only way to see the publish
+// progress counter, which exists because publishing is now many requests.
+const DRIVE_PUBLISH = params.get("publish") === "1";
 
 const RESPONSES: Record<string, unknown> = {
   "auth.me": {
@@ -70,22 +74,85 @@ const RESPONSES: Record<string, unknown> = {
   "products.adminList": [],
 };
 
-// The analyse mutation never settles, so the page stays on the waiting panel
-// for as long as the shot needs. Everything else answers normally.
+// Whichever request the shot needs to catch mid-flight never settles, so the
+// page holds that state for as long as it takes. Everything else answers
+// normally.
 const NEVER = new Promise<Response>(() => {});
 
-window.fetch = ((input: RequestInfo | URL) => {
+const jsonResponse = (payload: unknown[]) =>
+  new Response(JSON.stringify(payload), {
+    status: 200,
+    headers: { "content-type": "application/json" },
+  });
+
+/** The tRPC input of a batched POST, as the httpBatchLink encodes it. */
+function requestInput(init?: RequestInit): Record<string, unknown> {
+  if (!init?.body) return {};
+  const parsed = JSON.parse(init.body as string) as Record<
+    string,
+    { json?: Record<string, unknown> }
+  >;
+  return parsed["0"]?.json ?? {};
+}
+
+/**
+ * Analysis results shaped like the router's, one per group in the request —
+ * the group ids are generated at runtime, so a canned reply has to be built
+ * from what was actually sent.
+ */
+function analyzeReply(init?: RequestInit) {
+  const groups = (requestInput(init).groups ?? []) as Array<{
+    groupId: string;
+  }>;
+  return groups.map((g, i) => ({
+    groupId: g.groupId,
+    success: true,
+    name: `Mondstein-Ring ${i + 1}`,
+    nameEn: `Moonstone Ring ${i + 1}`,
+    description: "Ein zarter Ring.",
+    descriptionEn: "A delicate ring.",
+    nameFr: null,
+    descriptionFr: null,
+    nameIt: null,
+    descriptionIt: null,
+    suggestedPrice: 120,
+    priceBasis: "in line with your other Rings",
+    category: "Rings",
+  }));
+}
+
+window.fetch = ((input: RequestInfo | URL, init?: RequestInit) => {
   const url = new URL(String(input), location.origin);
   const paths = url.pathname.replace(/^\/api\/trpc\//, "").split(",");
-  if (paths.some((p) => p.includes("bulkAnalyze"))) return NEVER;
-  const body = paths.map((p) => ({
-    result: { data: superjson.serialize(RESPONSES[p] ?? null) },
-  }));
+
+  // Publishing is the state under the lens: analysis must complete so the
+  // review step is reachable, and bulkCreate must hang so the counter stays up.
+  if (DRIVE_PUBLISH) {
+    if (paths.some((p) => p.includes("bulkCreate"))) return NEVER;
+    if (paths.some((p) => p.includes("bulkAnalyze"))) {
+      return Promise.resolve(
+        jsonResponse([
+          { result: { data: superjson.serialize(analyzeReply(init)) } },
+        ]),
+      );
+    }
+    if (paths.some((p) => p.includes("findMatches"))) {
+      return Promise.resolve(
+        jsonResponse([
+          { result: { data: superjson.serialize({ matches: [] }) } },
+        ]),
+      );
+    }
+  } else if (paths.some((p) => p.includes("bulkAnalyze"))) {
+    return NEVER;
+  }
+
   return Promise.resolve(
-    new Response(JSON.stringify(body), {
-      status: 200,
-      headers: { "content-type": "application/json" },
-    }),
+    jsonResponse(
+      paths.map((p) => ({
+        result: { data: superjson.serialize(RESPONSES[p] ?? null) },
+      })),
+    ),
   );
 }) as typeof fetch;
 

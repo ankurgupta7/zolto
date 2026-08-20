@@ -120,6 +120,104 @@ export function photosForAnalysis<T>(photoIds: T[]): T[] {
   return photoIds.slice(0, ANALYZE_MAX_IMAGES_PER_GROUP);
 }
 
+// ─── Publish request shaping ──────────────────────────────────────────────────
+
+// Publishing has the opposite problem to analysis. There is no provider limit
+// here — these are storage uploads — but the photos are the ORIGINALS, not the
+// downscaled copies the model gets, and the client accepts up to 8MB each,
+// which is ~10.7MB once base64'd. Every confirmed product used to go in one
+// request against express's 50MB JSON limit, so a dozen ordinary phone photos
+// were enough to have the whole publish rejected, losing every product in it.
+//
+// Nothing about that is inherent: unlike a vision call, a product's photos do
+// not have to travel together. So bound a request in the units that actually
+// fail — bytes and count — and let a product's photos span as many requests as
+// they need.
+
+/** Base64 text per publish request, well under express's 50MB body limit. */
+export const PUBLISH_CHUNK_BYTE_BUDGET = 15 * 1024 * 1024;
+
+/** Products per publish request, matching the router's own cap. */
+export const PUBLISH_CHUNK_MAX_PRODUCTS = 20;
+
+/**
+ * Photos of ONE product per request. Mirrors PUBLISH_MAX_IMAGES_PER_REQUEST in
+ * the products router — the client must never build a request the router would
+ * reject, since one bad item fails the whole batch.
+ */
+export const PUBLISH_MAX_IMAGES_PER_REQUEST = 8;
+
+export interface PublishImage {
+  data: string;
+  mimeType: string;
+}
+
+const imageBytes = (images: PublishImage[]) =>
+  images.reduce((sum, img) => sum + img.data.length, 0);
+
+/**
+ * Split one product's photos into request-sized batches. The first batch rides
+ * with the product's create/upsert; the rest follow as bulkUpsertImages calls.
+ * A single photo larger than the whole budget is still sent, alone — dropping
+ * a merchant's photo to satisfy a budget would be the worse failure.
+ */
+export function batchImagesForPublish(
+  images: PublishImage[],
+  byteBudget: number = PUBLISH_CHUNK_BYTE_BUDGET,
+  maxCount: number = PUBLISH_MAX_IMAGES_PER_REQUEST,
+): PublishImage[][] {
+  const batches: PublishImage[][] = [];
+  let current: PublishImage[] = [];
+  let currentSize = 0;
+
+  for (const image of images) {
+    if (
+      current.length > 0 &&
+      (currentSize + image.data.length > byteBudget ||
+        current.length >= maxCount)
+    ) {
+      batches.push(current);
+      current = [];
+      currentSize = 0;
+    }
+    current.push(image);
+    currentSize += image.data.length;
+  }
+  if (current.length > 0) batches.push(current);
+  return batches;
+}
+
+/**
+ * Pack products into requests by the same two ceilings. Each item's images are
+ * already one batch (above), so a chunk only exceeds the budget when a single
+ * item does — which is sent on its own rather than dropped.
+ */
+export function chunkPublishItems<T extends { images: PublishImage[] }>(
+  items: T[],
+  byteBudget: number = PUBLISH_CHUNK_BYTE_BUDGET,
+  maxItems: number = PUBLISH_CHUNK_MAX_PRODUCTS,
+): T[][] {
+  const chunks: T[][] = [];
+  let current: T[] = [];
+  let currentSize = 0;
+
+  for (const item of items) {
+    const size = imageBytes(item.images);
+    if (
+      current.length > 0 &&
+      (currentSize + size > byteBudget || current.length >= maxItems)
+    ) {
+      chunks.push(current);
+      current = [];
+      currentSize = 0;
+    }
+    current.push(item);
+    currentSize += size;
+  }
+  if (current.length > 0) chunks.push(current);
+  return chunks;
+}
+
 export interface AnalyzeGroupInput {
   groupId: string;
   images: Array<{ data: string; mimeType: string }>;
@@ -317,6 +415,13 @@ export default function BulkUpload() {
     Map<string, MatchDecision>
   >(new Map());
   const [publishing, setPublishing] = useState(false);
+  // Publishing is now several requests rather than one — a shoot of any size
+  // carries far more bytes than a single request may hold — so a bare spinner
+  // would sit there for minutes with nothing to say it was progressing.
+  const [publishProgress, setPublishProgress] = useState<{
+    current: number;
+    total: number;
+  } | null>(null);
   const [publishResult, setPublishResult] = useState<{
     created: number;
     updated: number;
@@ -675,6 +780,9 @@ export default function BulkUpload() {
       card: ReviewCard;
       match: MatchResult;
       decision: MatchDecision;
+      // Carried explicitly because a card only lands here when the match has
+      // one — narrowing it once at the push beats asserting it at every use.
+      productId: number;
     }> = [];
     const toCreate: ReviewCard[] = [];
 
@@ -683,7 +791,12 @@ export default function BulkUpload() {
       const decision = getDecisionForCard(card.groupId);
 
       if (decision.action === "add-to-existing" && match?.matchedProductId) {
-        toUpsert.push({ card, match, decision });
+        toUpsert.push({
+          card,
+          match,
+          decision,
+          productId: match.matchedProductId,
+        });
       } else {
         // Validate price for new items
         if (
@@ -711,41 +824,119 @@ export default function BulkUpload() {
       const allFailed: string[] = [];
       const allWarnings: string[] = [];
 
-      // ── Upsert images to existing products ──
-      if (toUpsert.length > 0) {
-        const upsertItems = toUpsert.map(({ card, match, decision }) => ({
-          productId: match.matchedProductId!,
-          images: card.photoIds.map((pid) => {
-            const photo = photos.find((p) => p.id === pid)!;
-            return { data: photo.dataUrl, mimeType: photo.mimeType };
-          }),
-          description: card.description,
-          descriptionEn: card.descriptionEn || undefined,
-          descriptionFr: card.descriptionFr || undefined,
-          descriptionIt: card.descriptionIt || undefined,
-          updateDescription: decision.updateDescription,
-        }));
+      const imagesOf = (photoIds: string[]): PublishImage[] =>
+        photoIds.map((pid) => {
+          const photo = photos.find((p) => p.id === pid)!;
+          return { data: photo.dataUrl, mimeType: photo.mimeType };
+        });
 
-        try {
-          const upsertResult = await bulkUpsertImagesMutation.mutateAsync({
-            items: upsertItems,
-          });
-          updatedCount += upsertResult.updated;
-          allFailed.push(...upsertResult.failed);
-          if (upsertResult.extraImageWarnings) {
-            allWarnings.push(...upsertResult.extraImageWarnings);
+      // Photos beyond a product's first request, queued to follow it. For an
+      // existing product the id is known now; for a new one it only exists
+      // once bulkCreate has returned, so those are matched up by tempId.
+      const trailingImages: Array<{
+        productId: number;
+        label: string;
+        images: PublishImage[];
+        sortOrderOffset: number;
+      }> = [];
+
+      // Every request this publish will send, counted before any of it goes
+      // out so the merchant sees a fixed denominator rather than a total that
+      // creeps upward. It is an upper bound: a product whose row fails to be
+      // created never gets its trailing photos sent, so the counter can stop a
+      // request or two short of the end — which is the moment the run finishes
+      // anyway.
+      const countRequests = (
+        upserts: { images: PublishImage[] }[],
+        creates: { images: PublishImage[] }[],
+        trailing: { images: PublishImage[] }[],
+      ) =>
+        chunkPublishItems(upserts).length +
+        chunkPublishItems(creates).length +
+        chunkPublishItems(trailing).length;
+
+      let requestsSent = 0;
+      let requestsTotal = 0;
+      const countRequest = () => {
+        requestsSent++;
+        setPublishProgress({
+          current: Math.min(requestsSent, requestsTotal),
+          total: requestsTotal,
+        });
+      };
+
+      const sendTrailingImages = async () => {
+        for (const chunk of chunkPublishItems(trailingImages)) {
+          countRequest();
+          try {
+            const result = await bulkUpsertImagesMutation.mutateAsync({
+              items: chunk.map((t) => ({
+                productId: t.productId,
+                images: t.images,
+                sortOrderOffset: t.sortOrderOffset,
+                updateDescription: false,
+              })),
+            });
+            allFailed.push(...result.failed);
+            if (result.extraImageWarnings) {
+              allWarnings.push(...result.extraImageWarnings);
+            }
+          } catch (err) {
+            // The products themselves are already saved; only these extra
+            // photos are lost, so report them as warnings rather than as
+            // failed products the merchant might re-publish.
+            console.error("[bulkUpsertImages] trailing images failed:", err);
+            allWarnings.push(...chunk.map((t) => t.label));
           }
-        } catch (err) {
-          console.error("[bulkUpsertImages] failed:", err);
-          allFailed.push(
-            ...toUpsert.map((u) => u.match.matchedProductName ?? "unknown"),
-          );
         }
-      }
+        trailingImages.length = 0;
+      };
 
-      // ── Create new products ──
-      if (toCreate.length > 0) {
-        const productsToCreate = toCreate.map((card) => ({
+      // ── Plan every request before sending any ──
+      // A new product's id doesn't exist until the server has made it, so its
+      // remaining photos are held here against the tempId and queued once
+      // bulkCreate reports the id back.
+      const heldImages = new Map<
+        string,
+        { label: string; batches: PublishImage[][] }
+      >();
+
+      const upsertItems = toUpsert.map(
+        ({ card, match, decision, productId }) => {
+          const [first = [], ...rest] = batchImagesForPublish(
+            imagesOf(card.photoIds),
+          );
+          let offset = first.length;
+          for (const batch of rest) {
+            trailingImages.push({
+              productId,
+              label: match.matchedProductName ?? card.name,
+              images: batch,
+              sortOrderOffset: offset,
+            });
+            offset += batch.length;
+          }
+          return {
+            productId,
+            images: first,
+            description: card.description,
+            descriptionEn: card.descriptionEn || undefined,
+            descriptionFr: card.descriptionFr || undefined,
+            descriptionIt: card.descriptionIt || undefined,
+            updateDescription: decision.updateDescription,
+          };
+        },
+      );
+
+      const productsToCreate = toCreate.map((card) => {
+        const [first = [], ...rest] = batchImagesForPublish(
+          imagesOf(card.photoIds),
+        );
+        if (rest.length > 0) {
+          heldImages.set(card.groupId, { label: card.name, batches: rest });
+        }
+        return {
+          tempId: card.groupId,
           name: card.name,
           nameEn: card.nameEn || undefined,
           nameFr: card.nameFr || undefined,
@@ -756,26 +947,89 @@ export default function BulkUpload() {
           descriptionIt: card.descriptionIt || undefined,
           price: parseFloat(card.price),
           category: card.category,
-          images: card.photoIds.map((pid) => {
-            const photo = photos.find((p) => p.id === pid)!;
-            return { data: photo.dataUrl, mimeType: photo.mimeType };
-          }),
-        }));
+          images: first,
+        };
+      });
 
-        try {
-          const createResult = await bulkCreateMutation.mutateAsync({
-            products: productsToCreate,
-          });
-          createdCount += createResult.created;
-          allFailed.push(...createResult.failed);
-          if (createResult.extraImageWarnings) {
-            allWarnings.push(...createResult.extraImageWarnings);
+      requestsTotal = countRequests(upsertItems, productsToCreate, [
+        // Trailing batches already queued (existing products), plus those the
+        // new products will need once they have ids. Same sizes and order, so
+        // they chunk into the same number of requests.
+        ...trailingImages,
+        ...Array.from(heldImages.values()).flatMap((h) =>
+          h.batches.map((images: PublishImage[]) => ({ images })),
+        ),
+      ]);
+      setPublishProgress({ current: 0, total: requestsTotal });
+
+      // ── Upsert images to existing products ──
+      if (upsertItems.length > 0) {
+        for (const chunk of chunkPublishItems(upsertItems)) {
+          countRequest();
+          try {
+            const upsertResult = await bulkUpsertImagesMutation.mutateAsync({
+              items: chunk,
+            });
+            updatedCount += upsertResult.updated;
+            allFailed.push(...upsertResult.failed);
+            if (upsertResult.extraImageWarnings) {
+              allWarnings.push(...upsertResult.extraImageWarnings);
+            }
+          } catch (err) {
+            // One chunk failing no longer costs the whole publish — the rest
+            // still go out, and only this chunk's products are reported.
+            console.error("[bulkUpsertImages] chunk failed:", err);
+            const ids = new Set(chunk.map((c) => c.productId));
+            allFailed.push(
+              ...toUpsert
+                .filter((u) => ids.has(u.productId))
+                .map((u) => u.match.matchedProductName ?? "unknown"),
+            );
           }
-        } catch (err) {
-          console.error("[bulkCreate] failed:", err);
-          allFailed.push(...toCreate.map((c) => c.name));
         }
       }
+
+      // ── Create new products ──
+      if (productsToCreate.length > 0) {
+        for (const chunk of chunkPublishItems(productsToCreate)) {
+          countRequest();
+          try {
+            const createResult = await bulkCreateMutation.mutateAsync({
+              products: chunk,
+            });
+            createdCount += createResult.created;
+            allFailed.push(...createResult.failed);
+            if (createResult.extraImageWarnings) {
+              allWarnings.push(...createResult.extraImageWarnings);
+            }
+
+            for (const item of createResult.createdItems ?? []) {
+              const held = item.tempId
+                ? heldImages.get(item.tempId)
+                : undefined;
+              if (!held) continue;
+              // The first batch went with the create, so the gallery already
+              // holds that many photos.
+              let offset =
+                chunk.find((c) => c.tempId === item.tempId)?.images.length ?? 0;
+              for (const batch of held.batches) {
+                trailingImages.push({
+                  productId: item.id,
+                  label: held.label,
+                  images: batch,
+                  sortOrderOffset: offset,
+                });
+                offset += batch.length;
+              }
+            }
+          } catch (err) {
+            console.error("[bulkCreate] chunk failed:", err);
+            allFailed.push(...chunk.map((c) => c.name));
+          }
+        }
+      }
+
+      await sendTrailingImages();
 
       setPublishResult({
         created: createdCount,
@@ -790,6 +1044,7 @@ export default function BulkUpload() {
       toast.error("Publishing failed. Please try again.");
     } finally {
       setPublishing(false);
+      setPublishProgress(null);
     }
   };
 
@@ -1787,9 +2042,11 @@ export default function BulkUpload() {
                     ) : (
                       <ShoppingBag size={16} />
                     )}
-                    {t("bulkUpload.publishButton", {
-                      count: reviewCards.filter((c) => c.confirmed).length,
-                    })}
+                    {publishing && publishProgress && publishProgress.total > 1
+                      ? `${publishProgress.current} / ${publishProgress.total}`
+                      : t("bulkUpload.publishButton", {
+                          count: reviewCards.filter((c) => c.confirmed).length,
+                        })}
                   </button>
                 </div>
               </>

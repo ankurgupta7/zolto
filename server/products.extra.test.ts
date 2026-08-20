@@ -83,6 +83,7 @@ import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
 import {
   BULK_ANALYZE_CONCURRENCY,
+  PUBLISH_MAX_IMAGES_PER_REQUEST,
   VISION_MAX_IMAGES_PER_REQUEST,
 } from "./routers/products";
 import { VISION_TOKENS_PER_MINUTE, estimateVisionTokens } from "./visionPacer";
@@ -717,6 +718,87 @@ describe("products.bulkCreate", () => {
     expect(db.addProductImage).toHaveBeenCalledTimes(1);
   });
 
+  it("reports the row id it created against the caller's tempId", async () => {
+    // Without this a client cannot send a product's remaining photos in a
+    // follow-up request: the new product's id doesn't exist until now.
+    db.addProductImage.mockResolvedValue(undefined);
+    const res = await admin().products.bulkCreate({
+      products: [
+        {
+          tempId: "card-7",
+          name: "Ring A",
+          description: "d",
+          price: 100,
+          category: "Rings",
+          images: [{ data: "QQ==", mimeType: "image/jpeg" }],
+        },
+      ],
+    });
+
+    expect(res.createdItems).toEqual([
+      { tempId: "card-7", id: 99, name: "Ring A" },
+    ]);
+  });
+
+  it("still reports created items when no tempId was given", async () => {
+    const res = await admin().products.bulkCreate({
+      products: [
+        {
+          name: "Ring A",
+          description: "d",
+          price: 100,
+          category: "Rings",
+          images: [{ data: "QQ==", mimeType: "image/jpeg" }],
+        },
+      ],
+    });
+
+    expect(res.createdItems).toEqual([
+      { tempId: null, id: 99, name: "Ring A" },
+    ]);
+  });
+
+  it("omits a product that failed from createdItems", async () => {
+    db.createProduct.mockRejectedValueOnce(new Error("db down"));
+    const res = await admin().products.bulkCreate({
+      products: [
+        {
+          tempId: "card-1",
+          name: "Ring A",
+          description: "d",
+          price: 100,
+          category: "Rings",
+          images: [{ data: "QQ==", mimeType: "image/jpeg" }],
+        },
+      ],
+    });
+
+    expect(res.createdItems).toEqual([]);
+    expect(res.failed).toEqual(["Ring A"]);
+  });
+
+  it("rejects more images than one request may carry", async () => {
+    await expect(
+      admin().products.bulkCreate({
+        products: [
+          {
+            name: "Ring A",
+            description: "d",
+            price: 100,
+            category: "Rings",
+            images: Array.from(
+              { length: PUBLISH_MAX_IMAGES_PER_REQUEST + 1 },
+              () => ({
+                data: "QQ==",
+                mimeType: "image/jpeg",
+              }),
+            ),
+          },
+        ],
+      }),
+    ).rejects.toThrow();
+  });
+
   it("records a failure and continues when createProduct throws", async () => {
     db.createProduct.mockRejectedValueOnce(new Error("db down"));
     const res = await admin().products.bulkCreate({
@@ -837,6 +919,64 @@ describe("products.bulkUpsertImages", () => {
     expect(db.insertBulkUploadLog).toHaveBeenCalledWith(
       expect.objectContaining({ operation: "upsert_images" }),
     );
+  });
+
+  it("numbers a continuation batch after the photos already there", async () => {
+    // Images are ordered by (sortOrder, createdAt), so a follow-up batch that
+    // restarted at 0 would interleave itself with the first — photo 9 sorting
+    // ahead of photo 2.
+    db.getProductById.mockResolvedValue(product({ id: 5, imageUrl: "x" }));
+    db.addProductImage.mockResolvedValue(undefined);
+
+    await admin().products.bulkUpsertImages({
+      items: [
+        {
+          productId: 5,
+          images: [
+            { data: "QQ==", mimeType: "image/jpeg" },
+            { data: "QQ==", mimeType: "image/jpeg" },
+          ],
+          sortOrderOffset: 8,
+        },
+      ],
+    });
+
+    const orders = db.addProductImage.mock.calls.map((c) => c[0].sortOrder);
+    expect(orders).toEqual([8, 9]);
+  });
+
+  it("starts at zero when no offset is given", async () => {
+    db.getProductById.mockResolvedValue(product({ id: 5, imageUrl: "x" }));
+    db.addProductImage.mockResolvedValue(undefined);
+
+    await admin().products.bulkUpsertImages({
+      items: [
+        {
+          productId: 5,
+          images: [
+            { data: "QQ==", mimeType: "image/jpeg" },
+            { data: "QQ==", mimeType: "image/jpeg" },
+          ],
+        },
+      ],
+    });
+
+    const orders = db.addProductImage.mock.calls.map((c) => c[0].sortOrder);
+    expect(orders).toEqual([0, 1]);
+  });
+
+  it("rejects a negative offset", async () => {
+    await expect(
+      admin().products.bulkUpsertImages({
+        items: [
+          {
+            productId: 5,
+            images: [{ data: "QQ==", mimeType: "image/jpeg" }],
+            sortOrderOffset: -1,
+          },
+        ],
+      }),
+    ).rejects.toThrow();
   });
 
   it("collects a warning when an image upload fails", async () => {

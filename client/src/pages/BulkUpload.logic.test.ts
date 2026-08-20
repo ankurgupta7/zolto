@@ -3,8 +3,13 @@ import {
   ANALYZE_CHUNK_MAX_GROUPS,
   ANALYZE_CHUNK_MAX_IMAGES,
   ANALYZE_MAX_IMAGES_PER_GROUP,
+  PUBLISH_CHUNK_MAX_PRODUCTS,
+  PUBLISH_MAX_IMAGES_PER_REQUEST,
+  batchImagesForPublish,
   chunkGroupsForAnalysis,
+  chunkPublishItems,
   photosForAnalysis,
+  type PublishImage,
   resizeImageForAnalysis,
   type AnalyzeGroupInput,
 } from "./BulkUpload";
@@ -272,5 +277,169 @@ describe("resizeImageForAnalysis", () => {
     );
 
     expect(result.data).toBe("data:image/jpeg;base64,original");
+  });
+});
+
+// ─── Publish request shaping ──────────────────────────────────────────────────
+
+// Publishing sends ORIGINALS, not the downscaled copies analysis uses: the
+// client accepts 8MB a photo, ~10.7MB once base64'd, against express's 50MB
+// body limit. Every confirmed product used to go in one request, so a dozen
+// ordinary phone photos were enough to have the whole publish rejected — and
+// the failure took every product with it, not just the oversized one.
+
+const img = (bytes: number): PublishImage => ({
+  data: "x".repeat(bytes),
+  mimeType: "image/jpeg",
+});
+
+const bytesOf = (images: PublishImage[]) =>
+  images.reduce((sum, i) => sum + i.data.length, 0);
+
+describe("batchImagesForPublish", () => {
+  it("keeps a small product's photos in one batch", () => {
+    const images = [img(10), img(10)];
+    expect(batchImagesForPublish(images, 1000, 8)).toEqual([images]);
+  });
+
+  it("splits on the byte budget", () => {
+    const images = [img(60), img(60), img(60)];
+    const batches = batchImagesForPublish(images, 100, 8);
+
+    expect(batches.map((b) => b.length)).toEqual([1, 1, 1]);
+    for (const batch of batches)
+      expect(bytesOf(batch)).toBeLessThanOrEqual(100);
+  });
+
+  it("splits on the per-request count as well as bytes", () => {
+    const images = Array.from({ length: 9 }, () => img(1));
+    const batches = batchImagesForPublish(images, 1_000_000, 8);
+
+    // The exact case that used to fail outright: a 9-photo product.
+    expect(batches.map((b) => b.length)).toEqual([8, 1]);
+  });
+
+  it("never drops a photo, whatever the budget", () => {
+    for (const count of [1, 8, 9, 25, 100]) {
+      const images = Array.from({ length: count }, () => img(3));
+      const batches = batchImagesForPublish(images, 10, 8);
+      expect(batches.flat()).toHaveLength(count);
+    }
+  });
+
+  it("sends a single oversized photo on its own rather than dropping it", () => {
+    // A merchant's 8MB photo is ~10.7MB base64. Losing it would be a worse
+    // failure than a request that runs slightly over budget.
+    const images = [img(500), img(10)];
+    const batches = batchImagesForPublish(images, 100, 8);
+
+    expect(batches[0]).toEqual([images[0]]);
+    expect(batches.flat()).toHaveLength(2);
+  });
+
+  it("preserves photo order across batches, so the gallery keeps its sequence", () => {
+    const images = Array.from({ length: 20 }, (_, i) => img(i + 1));
+    const batches = batchImagesForPublish(images, 1_000_000, 3);
+
+    expect(batches.flat()).toEqual(images);
+  });
+
+  it("defaults to a per-request cap the router will accept", () => {
+    const images = Array.from({ length: 30 }, () => img(1));
+    for (const batch of batchImagesForPublish(images)) {
+      expect(batch.length).toBeLessThanOrEqual(PUBLISH_MAX_IMAGES_PER_REQUEST);
+    }
+  });
+});
+
+describe("chunkPublishItems", () => {
+  const product = (id: string, images: PublishImage[]) => ({ id, images });
+
+  it("returns nothing for no products", () => {
+    expect(chunkPublishItems([])).toEqual([]);
+  });
+
+  it("sends a small batch as one request", () => {
+    const items = [product("a", [img(10)]), product("b", [img(10)])];
+    expect(chunkPublishItems(items, 1000, 20)).toEqual([items]);
+  });
+
+  it("splits once a request would exceed the byte budget", () => {
+    const items = [
+      product("a", [img(60)]),
+      product("b", [img(60)]),
+      product("c", [img(60)]),
+    ];
+    const chunks = chunkPublishItems(items, 100, 20);
+
+    expect(chunks.map((c) => c.map((i) => i.id))).toEqual([
+      ["a"],
+      ["b"],
+      ["c"],
+    ]);
+  });
+
+  it("caps products per request", () => {
+    const items = Array.from({ length: 7 }, (_, i) =>
+      product(`p${i}`, [img(1)]),
+    );
+    expect(chunkPublishItems(items, 1_000_000, 3).map((c) => c.length)).toEqual(
+      [3, 3, 1],
+    );
+  });
+
+  it("never drops or reorders a product", () => {
+    const items = Array.from({ length: 25 }, (_, i) =>
+      product(`p${i}`, [img((i % 5) + 1)]),
+    );
+    const chunks = chunkPublishItems(items, 7, 4);
+
+    expect(chunks.flat().map((i) => i.id)).toEqual(items.map((i) => i.id));
+  });
+
+  it("sends an oversized product alone rather than dropping it", () => {
+    const items = [product("huge", [img(500)]), product("small", [img(1)])];
+    const chunks = chunkPublishItems(items, 100, 20);
+
+    expect(chunks[0]).toEqual([items[0]]);
+    expect(chunks.flat()).toHaveLength(2);
+  });
+
+  it("keeps a realistic full batch inside the body limit", () => {
+    // 20 products, 5 photos each, at ~4MB of base64 per photo — a plausible
+    // shoot, and comfortably over the 50MB limit as one request.
+    const FOUR_MB = 4 * 1024 * 1024;
+    const items = Array.from({ length: 20 }, (_, i) =>
+      product(
+        `p${i}`,
+        Array.from({ length: 5 }, () => img(FOUR_MB)),
+      ),
+    );
+    // Each product is batched first, as the publish path does.
+    const batched = items.flatMap((item) =>
+      batchImagesForPublish(item.images).map((images) => ({
+        id: item.id,
+        images,
+      })),
+    );
+
+    const chunks = chunkPublishItems(batched);
+    expect(chunks.length).toBeGreaterThan(1);
+    for (const chunk of chunks) {
+      const size = chunk.reduce((sum, c) => sum + bytesOf(c.images), 0);
+      const isSingleOversizedItem = chunk.length === 1;
+      expect(size <= 15 * 1024 * 1024 || isSingleOversizedItem).toBe(true);
+    }
+    // Nothing lost.
+    expect(chunks.flat().reduce((n, c) => n + c.images.length, 0)).toBe(100);
+  });
+
+  it("defaults to a product cap the router will accept", () => {
+    const items = Array.from({ length: 50 }, (_, i) =>
+      product(`p${i}`, [img(1)]),
+    );
+    for (const chunk of chunkPublishItems(items)) {
+      expect(chunk.length).toBeLessThanOrEqual(PUBLISH_CHUNK_MAX_PRODUCTS);
+    }
   });
 });
