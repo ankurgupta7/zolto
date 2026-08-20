@@ -1,3 +1,4 @@
+import { BRAND } from "@shared/brand";
 import { afterEach, describe, expect, it } from "vitest";
 import type { Tenant, User } from "../../drizzle/schema";
 import {
@@ -14,7 +15,7 @@ const operator = {
   id: 1,
   tenantId: 1,
   openId: "google:1",
-  email: "owner@zolto.ch",
+  email: `owner@${BRAND.domain}`,
   name: "Owner",
   role: "superadmin",
   loginMethod: "google",
@@ -93,9 +94,9 @@ describe("storeContext", () => {
 
 describe("operatorRequest", () => {
   it("carries the host, in both the ways express exposes it", () => {
-    const req = operatorRequest("kalakosh.zolto.ch");
-    expect(req.headers.host).toBe("kalakosh.zolto.ch");
-    expect(req.get("Host")).toBe("kalakosh.zolto.ch");
+    const req = operatorRequest(`kalakosh.${BRAND.domain}`);
+    expect(req.headers.host).toBe(`kalakosh.${BRAND.domain}`);
+    expect(req.get("Host")).toBe(`kalakosh.${BRAND.domain}`);
   });
 });
 
@@ -116,21 +117,21 @@ describe("operatorResponse", () => {
 
 describe("hostForTenant", () => {
   it("prefers PUBLIC_BASE_URL, as getCanonicalOrigin does", () => {
-    process.env.PUBLIC_BASE_URL = "https://zolto.ch";
-    expect(hostForTenant(tenant)).toBe("zolto.ch");
+    process.env.PUBLIC_BASE_URL = BRAND.url;
+    expect(hostForTenant(tenant)).toBe(BRAND.domain);
   });
 
   it("falls back to the store's own subdomain so pairing links point at it", () => {
     delete process.env.PUBLIC_BASE_URL;
-    process.env.PLATFORM_DOMAIN = "zolto.ch";
-    expect(hostForTenant(tenant)).toBe("kalakosh.zolto.ch");
-    expect(hostForTenant(null)).toBe("zolto.ch");
+    process.env.PLATFORM_DOMAIN = BRAND.domain;
+    expect(hostForTenant(tenant)).toBe(`kalakosh.${BRAND.domain}`);
+    expect(hostForTenant(null)).toBe(BRAND.domain);
   });
 
   it("survives a malformed PUBLIC_BASE_URL", () => {
     process.env.PUBLIC_BASE_URL = "not a url";
-    process.env.PLATFORM_DOMAIN = "zolto.ch";
-    expect(hostForTenant(tenant)).toBe("kalakosh.zolto.ch");
+    process.env.PLATFORM_DOMAIN = BRAND.domain;
+    expect(hostForTenant(tenant)).toBe(`kalakosh.${BRAND.domain}`);
   });
 
   it("has a last resort when nothing is configured", () => {

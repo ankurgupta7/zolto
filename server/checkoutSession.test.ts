@@ -1,3 +1,4 @@
+import { BRAND } from "@shared/brand";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
 const getProductsByIds = vi.fn();
@@ -74,7 +75,7 @@ function run(
     tenant,
     productIds: [1],
     channel: "web",
-    baseUrl: "https://aurora.zolto.ch",
+    baseUrl: `https://aurora.${BRAND.domain}`,
     ...overrides,
   });
 }
@@ -131,7 +132,7 @@ describe("createStorefrontCheckoutSession", () => {
 
   // The end of the "don't charge them any margin" promise: the merchant's own
   // Stripe charge must carry no application_fee_amount at all, and the order
-  // must record that Zolto earned nothing on it.
+  // must record that Gwinn earned nothing on it.
   it("omits the fee entirely for a store comped onto Pro", async () => {
     await run({
       tenant: { ...tenant, plan: "free", compPlan: "pro" } as Tenant,
@@ -193,7 +194,7 @@ describe("createStorefrontCheckoutSession", () => {
     expect(reserveProducts).not.toHaveBeenCalled();
   });
 
-  it("refuses when Zolto's own Stripe key is missing", async () => {
+  it(`refuses when ${BRAND.name}'s own Stripe key is missing`, async () => {
     getStripe.mockReturnValue(null);
     await expect(run()).rejects.toMatchObject({ code: "NOT_CONFIGURED" });
   });
@@ -244,7 +245,7 @@ describe("createStorefrontCheckoutSession", () => {
 /**
  * Stripe rejecting the application fee fails the WHOLE session creation, so
  * without a fallback a Connect misconfiguration takes a vendor's storefront
- * offline rather than costing Zolto 1%.
+ * offline rather than costing Gwinn 1%.
  */
 describe("platform fee rejection", () => {
   function stripeErr(props: Record<string, unknown>) {

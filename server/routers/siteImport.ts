@@ -71,7 +71,7 @@ const MAX_IMPORT_PRODUCTS = 500;
 const CATEGORY_KEY = new RegExp("^[\\p{L}\\p{N}][\\p{L}\\p{N} &'\\-/]*$", "u");
 
 /**
- * Turn a source site's own category text into a Zolto category key, or null
+ * Turn a source site's own category text into a Gwinn category key, or null
  * when it can't be one. Punctuation-heavy breadcrumbs ("Shop » Mugs (new!)")
  * are dropped rather than mangled — a category the merchant doesn't recognise
  * is worse than one we didn't create.
@@ -430,7 +430,7 @@ async function applyExtraction(
       const key = categoryKeyFrom(product.rawCategory ?? "");
       const category = key && known.has(key) ? key : fallbackCategory;
       // A product whose price we couldn't read arrives hidden. Importing it
-      // visible would mean listing it at 0 — a merchant's first day on Zolto
+      // visible would mean listing it at 0 — a merchant's first day on Gwinn
       // must not include giving stock away because a crawler missed a number.
       const visible = product.price !== null;
       if (!visible) hiddenPending++;

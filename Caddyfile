@@ -1,25 +1,25 @@
 # ─────────────────────────────────────────────────────────────────────────────
-# Caddyfile — Zolto self-hosted (standalone profile only)
+# Caddyfile — Gwinn self-hosted (standalone profile only)
 #
 # NOTE: in the default shared-server setup this file is NOT used — the
-# Kalakosh-ch stack's Caddy owns 80/443 and reverse-proxies zolto.ch to the
-# app (zolto-app:3000) over the kalakosh-shared network. This file only
+# Kalakosh-ch stack's Caddy owns 80/443 and reverse-proxies gwinn.ch to the
+# app (gwinn-app:3000) over the kalakosh-shared network. This file only
 # applies when you start the bundled Caddy with --profile standalone.
 #
 # SITE_DOMAIN (see docker-compose.yml / .env) controls what Caddy serves:
-#   - "zolto.ch" (default) — Caddy automatically requests and renews a
-#     Let's Encrypt certificate and serves HTTPS for zolto.ch, with the
+#   - "gwinn.ch" (default) — Caddy automatically requests and renews a
+#     Let's Encrypt certificate and serves HTTPS for gwinn.ch, with the
 #     www → apex redirect below.
 #   - ":80" — a port-only address, plain HTTP on the mapped port for any
 #     hostname/IP, no TLS. Use this while testing by IP before DNS is
 #     pointed at the server.
 #
-# Tenant storefronts live on subdomains (blah.zolto.ch). Wildcard hostnames
+# Tenant storefronts live on subdomains (blah.gwinn.ch). Wildcard hostnames
 # can't get a normal ACME cert over HTTP-01 (that needs a DNS-01 challenge,
 # which isn't configured here), so the *.{$SITE_DOMAIN} block below uses
 # Caddy's on-demand TLS instead: Caddy asks the app whether a slug is a real
 # tenant before it requests a cert for that specific subdomain. Make sure
-# `*.{$SITE_DOMAIN}` (e.g. *.zolto.ch) has an A/AAAA record pointing at this
+# `*.{$SITE_DOMAIN}` (e.g. *.gwinn.ch) has an A/AAAA record pointing at this
 # server — see SELF_HOSTING.md.
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -94,7 +94,7 @@ www.{$SITE_DOMAIN} {
     redir https://{$SITE_DOMAIN}{uri} permanent
 }
 
-# Tenant storefronts (blah.zolto.ch, ada-studio.zolto.ch, ...). Matches a
+# Tenant storefronts (blah.gwinn.ch, ada-studio.gwinn.ch, ...). Matches a
 # single subdomain label — not deeper subdomains. On-demand TLS mints a cert
 # per tenant the first time their subdomain is visited, gated by
 # /api/domain-ask so strangers can't drive cert issuance for hostnames that
@@ -106,7 +106,7 @@ www.{$SITE_DOMAIN} {
 
     # Storefronts get the same first-party analytics path as the apex — see
     # the comment on the {$SITE_DOMAIN} block. Without this a store's page-view
-    # script would have to be loaded cross-origin from zolto.ch, which is both
+    # script would have to be loaded cross-origin from gwinn.ch, which is both
     # a third-party request from the shopper's point of view and the thing
     # blockers strip.
     handle_path /_stats/* {

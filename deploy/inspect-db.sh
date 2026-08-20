@@ -21,8 +21,8 @@ if [ ! -f .env ]; then
 fi
 
 # Parse .env literally via the shared loader. NEVER `source` it: this script
-# used to, and a value like RESEND_FROM_EMAIL=Zolto <orders@zolto.ch> was then
-# read as a shell redirect — producing "/dev/fd/63: line N: orders@zolto.ch: No
+# used to, and a value like RESEND_FROM_EMAIL=Gwinn <orders@gwinn.ch> was then
+# read as a shell redirect — producing "/dev/fd/63: line N: orders@gwinn.ch: No
 # such file or directory" before any query ran. See deploy/lib/env.sh.
 # shellcheck source=lib/env.sh
 . "$(dirname "$0")/lib/env.sh"
@@ -40,7 +40,7 @@ MYSQL="docker compose exec -T db mysql --connect-timeout=10 -u${MYSQL_USER} -p${
 q() { $MYSQL -N -s -e "$1" 2>/dev/null; }
 
 echo "════════════════════════════════════════════════════════════════"
-echo " Zolto migration 0019 — pre-flight inspection (READ ONLY)"
+echo " Gwinn migration 0019 — pre-flight inspection (READ ONLY)"
 echo " $(date -u '+%Y-%m-%d %H:%M:%SZ')   database: ${MYSQL_DATABASE}"
 echo "════════════════════════════════════════════════════════════════"
 
@@ -93,10 +93,10 @@ echo "── Was this database EVER populated? ───────────
 # An all-zero row count has two very different causes: a database that was
 # never written to, and one that was wiped. AUTO_INCREMENT separates them.
 #
-# NOTE: "wiped" is only alarming if you did not mean to wipe it. Zolto is in
+# NOTE: "wiped" is only alarming if you did not mean to wipe it. Gwinn is in
 # staging and the database is deliberately reset often, so this section reports
 # what it sees and lets you judge — it does not assume a loss. Set
-# ZOLTO_EXPECT_EMPTY_DB=1 to state up front that an empty database is intended,
+# PLATFORM_EXPECT_EMPTY_DB=1 to state up front that an empty database is intended,
 # which turns the finding into a plain confirmation instead of a warning.
 # MySQL 8.0 persists the counter across restarts and does NOT reset it on
 # DELETE, so:
@@ -121,14 +121,14 @@ for t in users products orders pos_orders tenants; do
   fi
 done
 echo
-if [ "$EVER_POPULATED" = "1" ] && [ -n "${ZOLTO_EXPECT_EMPTY_DB:-}" ]; then
+if [ "$EVER_POPULATED" = "1" ] && [ -n "${PLATFORM_EXPECT_EMPTY_DB:-}" ]; then
   echo "  ✔ Emptied on purpose: a table above is empty but its AUTO_INCREMENT is"
-  echo "     past 1, so rows existed and were removed. ZOLTO_EXPECT_EMPTY_DB is"
+  echo "     past 1, so rows existed and were removed. PLATFORM_EXPECT_EMPTY_DB is"
   echo "     set, so that is the intended staging reset — nothing to recover."
 elif [ "$EVER_POPULATED" = "1" ]; then
   echo "  ! A table above is empty but its AUTO_INCREMENT is past 1, so rows were"
   echo "     inserted and later removed. In staging that is a deliberate reset and"
-  echo "     is fine — set ZOLTO_EXPECT_EMPTY_DB=1 to silence this. If you did NOT"
+  echo "     is fine — set PLATFORM_EXPECT_EMPTY_DB=1 to silence this. If you did NOT"
   echo "     wipe it, treat it as data loss and restore before writing anything"
   echo "     new: ./deploy/recover-from-backup.sh --list"
 else

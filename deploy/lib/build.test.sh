@@ -87,7 +87,7 @@ setup_repo() {
   echo "export const App = 1" > client/src/App.tsx
   echo "export const api = 1" > server/index.ts
   echo "export const t = 1"   > shared/types.ts
-  echo '{"name":"zolto"}'     > package.json
+  echo '{"name":"gwinn"}'     > package.json
   echo "lockfileVersion: 9"   > pnpm-lock.yaml
   echo "FROM node:22-alpine"  > Dockerfile
   echo "# readme"             > README.md

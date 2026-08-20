@@ -1,6 +1,6 @@
 # An all-Swiss stack — what it costs, what it breaks, what it's worth
 
-> Research note answering the owner's question: **if Zolto had to run on Swiss
+> Research note answering the owner's question: **if Gwinn had to run on Swiss
 > infrastructure and a Swiss payment processor, what would we use, and what is
 > the relatively most cost-effective way to do it?**
 >
@@ -38,7 +38,7 @@ Two findings that change the shape of the decision:
    different proposition from one that taxes them for a flag.
 2. **Payrexx supplies TWINT without integrator certification.** That is the
    blocker [`native-twint-integration.md`](./native-twint-integration.md) §0 is
-   stuck behind — TWINT will not hand out its API until Zolto is certified as an
+   stuck behind — TWINT will not hand out its API until Gwinn is certified as an
    integrator. Going through a Swiss facilitator gets TWINT at a known rate with
    no application, no certification, and no per-tenant certificate lifecycle to
    manage. **This note is therefore also a possible answer to that one.**
@@ -155,8 +155,8 @@ quiet. Whatever replaces it needs a delivery check that fails loudly.
 |---|---|---|---|
 | 1 | Merchant onboarding + KYC (Connect accounts) | `server/stripeConnect.ts` | ✅ Payrexx sub-merchant onboarding |
 | 2 | **Direct charges + `application_fee_amount` — the 1% business model** | `server/checkoutSession.ts:333`, `server/routers/checkout.ts` | ✅ Payrexx split payments / platform commission |
-| 3 | **Tap to Pay via the Stripe Terminal SDK** | `server/pos.ts:784–880` + `android/app/src/main/java/ch/zolto/pos/data/StripeTokenProvider.kt` and the iOS app | ⚠️ SoftPOS SDK swap — the hard part |
-| 4 | Zolto's own Pro subscription (CHF 25/mo) | `server/billing.ts` | ✅ Payrexx subscriptions — but see §3.5 |
+| 3 | **Tap to Pay via the Stripe Terminal SDK** | `server/pos.ts:784–880` + `android/app/src/main/java/ch/gwinn/pos/data/StripeTokenProvider.kt` and the iOS app | ⚠️ SoftPOS SDK swap — the hard part |
+| 4 | Gwinn's own Pro subscription (CHF 25/mo) | `server/billing.ts` | ✅ Payrexx subscriptions — but see §3.5 |
 
 Also touched, and easy to forget: `server/reconciliation.ts` reads the tenant's
 own account via `{ stripeAccount }` for the day-end reconciliation email, and
@@ -208,7 +208,7 @@ material; confirm which applies to a platform sub-merchant.
 ### 3.4 What it does to the marketing surface
 
 This is not cosmetic. Under a facilitator model, merchants are **sub-merchants
-of Payrexx**, not holders of their own Stripe account. Zolto still never touches
+of Payrexx**, not holders of their own Stripe account. Gwinn still never touches
 the money — but the current copy says something more specific than that, in at
 least five places sourced from `shared/platform.ts`:
 
@@ -231,7 +231,7 @@ foreign (card schemes, wallets, possibly image generation).
 
 ### 3.5 What I would *not* move
 
-**Zolto's own Pro subscription billing.** That is our company's card being
+**Gwinn's own Pro subscription billing.** That is our company's card being
 charged, not merchant or customer data, and no marketing claim depends on where
 it runs. Keeping `server/billing.ts` on Stripe while storefront payments move to
 Payrexx costs nothing in credibility and removes a whole workstream from the
@@ -316,9 +316,9 @@ Kill criteria, stated up front so they can be checked rather than argued:
 
 ## 5b. A wider version of this question
 
-This note asks whether *Zolto's own* rail should move to Payrexx. The owner
+This note asks whether *Gwinn's own* rail should move to Payrexx. The owner
 subsequently asked the broader version: what if **merchants brought their own**
-provider and Zolto sold itself as a front end to the rails?
+provider and Gwinn sold itself as a front end to the rails?
 [`bring-your-own-payments.md`](./bring-your-own-payments.md) answers that, and
 it reuses §3 here wholesale. Two findings there change how §4's sequence should
 be read:

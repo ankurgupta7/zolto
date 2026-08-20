@@ -65,7 +65,7 @@ case "$1 $2" in
   "info ")            exit 0 ;;
   "compose build")    exit 0 ;;
   "compose up")       exit 0 ;;
-  "compose config")   echo "name: zolto"; exit 0 ;;
+  "compose config")   echo "name: gwinn"; exit 0 ;;
   "container prune")  echo "0B"; exit 0 ;;
   "image prune")      echo "0B"; exit 0 ;;
   "builder prune")    echo "Total: 0B"; exit 0 ;;
@@ -117,7 +117,7 @@ chmod +x "${FAKE_BIN}/docker"
 # ── Fake `crontab` — no real crontab is touched ───────────────────────────────
 cat > "${FAKE_BIN}/crontab" <<'FAKE_CRON'
 #!/bin/bash
-[ "${1:-}" = "-l" ] && { echo "0 2 * * 0 cd /srv/zolto && ./deploy/backup.sh"; exit 0; }
+[ "${1:-}" = "-l" ] && { echo "0 2 * * 0 cd /srv/gwinn && ./deploy/backup.sh"; exit 0; }
 cat > /dev/null
 exit 0
 FAKE_CRON
@@ -137,13 +137,13 @@ setup_repo() {
   cp "${REPO_ROOT}"/deploy/lib/{db.sh,env.sh,caddy.sh,build.sh} deploy/lib/
   echo "export const App = 1" > client/src/App.tsx
   echo "export const api = 1" > server/index.ts
-  echo '{"name":"zolto"}' > package.json
+  echo '{"name":"gwinn"}' > package.json
   printf '.env\nnode_modules\n' > .gitignore
 
   cat > .env <<'ENV'
-MYSQL_USER=zolto
+MYSQL_USER=gwinn
 MYSQL_PASSWORD=secret
-MYSQL_DATABASE=zolto
+MYSQL_DATABASE=gwinn
 ENV
 
   git init -q -b main .

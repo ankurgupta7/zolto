@@ -22,8 +22,8 @@
         "description": "Gratuit en personne, pour toujours. {{fee}} sur les commandes en ligne et par agent IA — ou Pro, qui la supprime. Sans engagement, résiliable à tout moment.",
         "notConfigured": "Les forfaits payants ne sont pas encore achetables sur ce déploiement (prix Stripe non configurés). Tout ce que comprend votre forfait actuel continue de fonctionner.",
         "compTitle": "Votre boutique est offerte",
-        "compPlan": "Zolto vous offre le plan {{plan}} — il n'y a rien à payer.",
-        "compFeeWaived": "Zolto ne prélève aucune commission sur vos commandes en ligne et via agent IA.",
+        "compPlan": "{{brand}} vous offre le plan {{plan}} — il n'y a rien à payer.",
+        "compFeeWaived": "{{brand}} ne prélève aucune commission sur vos commandes en ligne et via agent IA.",
         "compBadge": "Offert",
         "feesWaived": "Commissions de la plateforme (0 % — offert)",
         "plansTitle": "Forfaits",
@@ -47,7 +47,7 @@
         "agentSplit": "CHF {{amount}} via des agents IA",
         "feesOnPro": "Frais de plateforme (0% avec Pro)",
         "feesOnFree": "Frais de plateforme ({{percent}} sur {{appliesTo}})",
-        "posNeverFee": "Les ventes en personne à la caisse ne portent aucun frais Zolto, quel que soit le forfait.",
+        "posNeverFee": "Les ventes en personne à la caisse ne portent aucun frais {{brand}}, quel que soit le forfait.",
         "upsell": "Vous économiseriez CHF {{savings}} avec Pro ce mois-ci — au-delà de CHF {{breakEven}}/mois en ligne, le tarif fixe de CHF {{proPrice}} de Pro bat les frais de {{percent}}.",
         "upgradeNow": "Passer à Pro maintenant",
         "aiTitle": "Photos IA",
@@ -486,7 +486,7 @@
         "hideChecklist": "Masquer cette liste"
       },
       "capabilities": {
-        "ariaLabel": "Votre atelier Zolto",
+        "ariaLabel": "Votre atelier {{brand}}",
         "eyebrow": "Votre atelier en un coup d’œil",
         "tagline": "Vendez en ligne et en personne",
         "storeTitle": "Boutique en ligne",
@@ -640,7 +640,7 @@
         },
         "posReady": {
           "title": "Encaissez une carte sur votre téléphone",
-          "body": "Installez l'application Zolto POS et connectez-vous avec votre clé POS — la première vente par carte termine la configuration automatiquement.",
+          "body": "Installez l'application {{brand}} POS et connectez-vous avec votre clé POS — la première vente par carte termine la configuration automatiquement.",
           "blockedStripe": "Connectez d'abord Stripe (l'étape ci-dessus)."
         }
       }

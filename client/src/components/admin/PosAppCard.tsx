@@ -1,7 +1,7 @@
 /**
  * "Get the POS app" — the step that was missing from /admin/pos entirely.
  *
- * The register is a native app (android/ — `ch.zolto.pos`, and ios/), and the
+ * The register is a native app (android/ — `ch.gwinn.pos`, and ios/), and the
  * admin explained how to connect Stripe and where to find the API key but
  * never said where to get the app itself, which is the first thing a merchant
  * standing at a market stall needs.

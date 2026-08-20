@@ -11,13 +11,14 @@
  * match; this job never mutates stock itself.
  *
  * Each tenant's storefront and POS charges are DIRECT charges on their own
- * Stripe Connect account (server/stripeConnect.ts) — Zolto never holds their
+ * Stripe Connect account (server/stripeConnect.ts) — Gwinn never holds their
  * money. So reconciliation has to read that account, via `{ stripeAccount }`
  * on the platform client. This job previously scanned the PLATFORM account
  * and matched everything against the default tenant's catalogue, which meant
  * it could not see a single real merchant payment.
  */
 
+import { BRAND } from "@shared/brand";
 import crypto from "node:crypto";
 import type Stripe from "stripe";
 import {
@@ -202,7 +203,7 @@ export async function runStripeReconciliationForTenant(
   }
 
   // Every request below is made AS the connected account. Without this the
-  // job reads Zolto's own platform account and sees none of the merchant's
+  // job reads Gwinn's own platform account and sees none of the merchant's
   // money — which is exactly what it used to do.
   const asTenant = { stripeAccount: tenant.stripeConnectedAccountId };
   const sinceUnix = Math.floor(Date.now() / 1000) - lookbackDays * 86400;
@@ -324,9 +325,7 @@ export async function runStripeReconciliationForTenant(
     const branding = {
       tenantName: settings?.whiteLabelName ?? tenant.name,
       tenantDomain: toBaseUrl(
-        settings?.publicDomain ??
-          process.env.PUBLIC_BASE_URL ??
-          "https://zolto.ch",
+        settings?.publicDomain ?? process.env.PUBLIC_BASE_URL ?? BRAND.url,
       ),
       contactEmail: settings?.contactEmail ?? undefined,
       to: contact?.email ?? undefined,

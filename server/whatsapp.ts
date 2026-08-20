@@ -1,3 +1,4 @@
+import { BRAND } from "@shared/brand";
 import axios from "axios";
 import type { Request, Response } from "express";
 import { invokeLLM } from "./_core/llm";
@@ -69,7 +70,7 @@ export async function handleWebhookMessage(req: Request, res: Response) {
     let tenantId: number | undefined;
     let branding: TenantBranding = {
       tenantName: "your store",
-      tenantDomain: process.env.PUBLIC_BASE_URL ?? "https://zolto.ch",
+      tenantDomain: process.env.PUBLIC_BASE_URL ?? BRAND.url,
     };
 
     if (businessPhone) {
@@ -82,7 +83,7 @@ export async function handleWebhookMessage(req: Request, res: Response) {
             row.tenant.domain ??
             row.settings?.publicDomain ??
             process.env.PUBLIC_BASE_URL ??
-            "https://zolto.ch",
+            BRAND.url,
           contactEmail: row.settings?.contactEmail ?? undefined,
         };
       }

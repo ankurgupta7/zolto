@@ -1,3 +1,4 @@
+import { I18N_DEFAULT_VARIABLES } from "@shared/brand";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 const dbMock = vi.hoisted(() => ({
@@ -79,8 +80,11 @@ function renderEn(
     typeof count === "number"
       ? (enCopy(`${key}_${count === 1 ? "one" : "other"}`) ?? enCopy(key))
       : enCopy(key);
+  // i18next resolves a placeholder from the caller's params first and from
+  // interpolation.defaultVariables second, so this stand-in has to do both —
+  // otherwise {{brand}}, which no caller ever passes, reads as unfilled.
   return (copy ?? key).replace(/\{\{(\w+)\}\}/g, (_m, name: string) =>
-    String(params[name] ?? `{{${name}}}`),
+    String(params[name] ?? I18N_DEFAULT_VARIABLES[name] ?? `{{${name}}}`),
   );
 }
 

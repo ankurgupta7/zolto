@@ -213,7 +213,7 @@ describe("formatMinor", () => {
     expect(formatMinor(0)).toBe("CHF 0.00");
   });
 
-  it("uses the store's own currency — not every Zolto store is Swiss", () => {
+  it("uses the store's own currency — not every Gwinn store is Swiss", () => {
     expect(formatMinor(4500, "eur")).toBe("EUR 45.00");
   });
 });

@@ -357,7 +357,7 @@ describe("Checkout discount code", () => {
   // The whole point of a share link is that the friend types nothing.
   it("applies a code carried in from a share link, by itself", async () => {
     seedCart([ring]);
-    sessionStorage.setItem("zolto_discount_code", "FRIENDS-7K3P");
+    sessionStorage.setItem("gwinn_discount_code", "FRIENDS-7K3P");
     mocks.checkDiscount.mockResolvedValue({
       valid: true,
       code: "FRIENDS-7K3P",
@@ -373,11 +373,11 @@ describe("Checkout discount code", () => {
       productIds: [1],
     });
     // Consumed once: a shopper who removes it must not have it reappear.
-    expect(sessionStorage.getItem("zolto_discount_code")).toBeNull();
+    expect(sessionStorage.getItem("gwinn_discount_code")).toBeNull();
   });
 
   it("does not chase a carried code on an empty basket", () => {
-    sessionStorage.setItem("zolto_discount_code", "FRIENDS-7K3P");
+    sessionStorage.setItem("gwinn_discount_code", "FRIENDS-7K3P");
     renderCheckout();
     expect(mocks.checkDiscount).not.toHaveBeenCalled();
   });

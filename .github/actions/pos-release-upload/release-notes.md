@@ -5,6 +5,6 @@ store's admin never change; the contents are replaced on every merge.
 moved.** To find out which commit a given binary came from, read the
 `android-build.json` / `ios-build.json` asset next to it.
 
-- `ZoltoPOS-latest.apk` — Android debug build, installs directly from the link.
-- `ZoltoPOS-latest-unsigned.ipa` — unsigned iOS build; must be re-signed with
+- `GwinnPOS-latest.apk` — Android debug build, installs directly from the link.
+- `GwinnPOS-latest-unsigned.ipa` — unsigned iOS build; must be re-signed with
   AltStore/Sideloadly from a computer before it will install.

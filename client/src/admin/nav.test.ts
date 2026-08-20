@@ -21,7 +21,7 @@ describe("ADMIN_NAV manifest", () => {
     }
   });
 
-  it("covers both planes: the shop and the Zolto account", () => {
+  it("covers both planes: the shop and the Gwinn account", () => {
     const planes = new Set(ADMIN_NAV.map((i) => i.plane));
     expect(planes).toEqual(new Set(["store", "account"]));
   });
@@ -137,7 +137,7 @@ describe("groupNavByPlane", () => {
     const groups = groupNavByPlane(items);
     const accountIds = groups[1].items.map((i) => i.id);
     // Staff see their own account and support; billing, team, keys, and the
-    // rest of the owner's relationship with Zolto stay hidden.
+    // rest of the owner's relationship with Gwinn stay hidden.
     expect(accountIds).toEqual(["me", "support"]);
     const storeIds = groups[0].items.map((i) => i.id);
     expect(storeIds).toContain("insights"); // locked, still visible

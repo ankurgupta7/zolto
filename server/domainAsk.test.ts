@@ -1,3 +1,4 @@
+import { BRAND } from "@shared/brand";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import express from "express";
 import request from "supertest";
@@ -70,20 +71,20 @@ describe("GET /api/domain-ask (Caddy on-demand TLS)", () => {
   });
 });
 
-describe("GET /api/domain-ask — platform subdomains (blah.zolto.ch)", () => {
+describe(`GET /api/domain-ask — platform subdomains (blah.${BRAND.domain})`, () => {
   beforeEach(() => {
-    process.env.SITE_DOMAIN = "zolto.ch";
+    process.env.SITE_DOMAIN = BRAND.domain;
   });
 
   it("derives the root domain from PUBLIC_BASE_URL over SITE_DOMAIN", async () => {
-    // Alongside Kalakosh-ch: SITE_DOMAIN is unset/irrelevant (Zolto's own
+    // Alongside Kalakosh-ch: SITE_DOMAIN is unset/irrelevant (Gwinn's own
     // Caddy never runs), but PUBLIC_BASE_URL always points at the real
     // public host — the ask endpoint must key off that, not SITE_DOMAIN.
     delete process.env.SITE_DOMAIN;
-    process.env.PUBLIC_BASE_URL = "https://zolto.kalakosh.ch";
+    process.env.PUBLIC_BASE_URL = "https://gwinn.kalakosh.ch";
     dbMock.getTenantBySlug.mockResolvedValue({ id: 7, slug: "blah" });
     const res = await request(buildApp()).get(
-      "/api/domain-ask?domain=blah.zolto.kalakosh.ch",
+      "/api/domain-ask?domain=blah.gwinn.kalakosh.ch",
     );
     expect(res.status).toBe(200);
     expect(dbMock.getTenantBySlug).toHaveBeenCalledWith("blah");
@@ -92,7 +93,7 @@ describe("GET /api/domain-ask — platform subdomains (blah.zolto.ch)", () => {
   it("answers 200 for a subdomain matching a real tenant slug, no plan gate", async () => {
     dbMock.getTenantBySlug.mockResolvedValue({ id: 7, slug: "blah" });
     const res = await request(buildApp()).get(
-      "/api/domain-ask?domain=blah.zolto.ch",
+      `/api/domain-ask?domain=blah.${BRAND.domain}`,
     );
     expect(res.status).toBe(200);
     expect(dbMock.getTenantBySlug).toHaveBeenCalledWith("blah");
@@ -103,18 +104,18 @@ describe("GET /api/domain-ask — platform subdomains (blah.zolto.ch)", () => {
   it("404s a subdomain with no matching tenant", async () => {
     dbMock.getTenantBySlug.mockResolvedValue(undefined);
     const res = await request(buildApp()).get(
-      "/api/domain-ask?domain=nosuchtenant.zolto.ch",
+      `/api/domain-ask?domain=nosuchtenant.${BRAND.domain}`,
     );
     expect(res.status).toBe(404);
   });
 
   // Regression: this used to 404, which meant Caddy refused to issue a
-  // certificate for www.zolto.ch and aborted every handshake with a TLS
+  // certificate for www.gwinn.ch and aborted every handshake with a TLS
   // internal error. The hostname was unreachable — crawlers reported the
   // whole site as down — even though the Caddyfile only wanted to redirect it.
   it("allows www without a tenant lookup, so its cert can be issued", async () => {
     const res = await request(buildApp()).get(
-      "/api/domain-ask?domain=www.zolto.ch",
+      `/api/domain-ask?domain=www.${BRAND.domain}`,
     );
     expect(res.status).toBe(200);
     expect(dbMock.getTenantBySlug).not.toHaveBeenCalled();
@@ -122,7 +123,7 @@ describe("GET /api/domain-ask — platform subdomains (blah.zolto.ch)", () => {
 
   it("does not allow a www-prefixed deeper subdomain", async () => {
     const res = await request(buildApp()).get(
-      "/api/domain-ask?domain=www.blah.zolto.ch",
+      `/api/domain-ask?domain=www.blah.${BRAND.domain}`,
     );
     expect(res.status).toBe(404);
     expect(dbMock.getTenantBySlug).not.toHaveBeenCalled();
@@ -130,7 +131,7 @@ describe("GET /api/domain-ask — platform subdomains (blah.zolto.ch)", () => {
 
   it("404s deeper subdomains without a tenant lookup", async () => {
     const res = await request(buildApp()).get(
-      "/api/domain-ask?domain=a.b.zolto.ch",
+      `/api/domain-ask?domain=a.b.${BRAND.domain}`,
     );
     expect(res.status).toBe(404);
     expect(dbMock.getTenantBySlug).not.toHaveBeenCalled();

@@ -147,7 +147,7 @@ describe("AdminOnly", () => {
     expect(screen.getByRole("heading", { name: "Admins only" })).toBeTruthy();
     expect(
       screen.getByText(
-        "This part of your Zolto account is managed by the store owner or an admin.",
+        "This part of your Gwinn account is managed by the store owner or an admin.",
       ),
     ).toBeTruthy();
   });

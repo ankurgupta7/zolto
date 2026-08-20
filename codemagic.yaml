@@ -1,18 +1,18 @@
 ---
-# Codemagic CI/CD for Zolto
+# Codemagic CI/CD for Gwinn
 #
 # Two apps build here:
 #   ios-build            — the Kalakosh WebView companion app (ios/Kalakosh*)
-#   ios-pos-*            — the native ZoltoPOS Tap-to-Pay app
-#                          (ios/ZoltoPOS/, migrated from the
+#   ios-pos-*            — the native GwinnPOS Tap-to-Pay app
+#                          (ios/GwinnPOS/, migrated from the
 #                          ankurgupta7/kalakosh-pos-ios repo)
 #
 # NOTE: Codemagic is used primarily for signed IPA builds that install on real
-# physical devices. The Appetize simulator build for ZoltoPOS runs via
+# physical devices. The Appetize simulator build for GwinnPOS runs via
 # GitHub Actions (.github/workflows/ios-pos-build.yml); the ios-pos-simulator
 # workflow below is kept as a fallback for when GitHub Actions minutes run out.
 #
-# ZoltoPOS SETUP (all in Codemagic web UI — no Mac needed):
+# GwinnPOS SETUP (all in Codemagic web UI — no Mac needed):
 #  1. codemagic.io → Add application → GitHub → select this repo → "Other" → YAML
 #  2. Team settings → Integrations → App Store Connect → add API key
 #     (developer.apple.com → Users → Keys → generate key, needs "App Manager" role)
@@ -75,7 +75,7 @@ workflows:
           failure: true
 
   # ═══════════════════════════════════════════════════════════════════════════
-  # ZoltoPOS — native iOS Tap-to-Pay app (ios/ZoltoPOS/)
+  # GwinnPOS — native iOS Tap-to-Pay app (ios/GwinnPOS/)
   # ═══════════════════════════════════════════════════════════════════════════
 
   # ── Development build ───────────────────────────────────────────────────────────────────
@@ -100,8 +100,8 @@ workflows:
         distribution_type: development
         bundle_identifier: ch.kalakosh.pos
       vars:
-        XCODE_PROJECT: "ios/ZoltoPOS/ZoltoPOS.xcodeproj"
-        XCODE_SCHEME: "ZoltoPOS"
+        XCODE_PROJECT: "ios/GwinnPOS/GwinnPOS.xcodeproj"
+        XCODE_SCHEME: "GwinnPOS"
         BUNDLE_ID: "ch.kalakosh.pos"
       xcode: latest
 
@@ -111,7 +111,7 @@ workflows:
 
       - name: Generate Xcode project
         script: |
-          cd ios/ZoltoPOS
+          cd ios/GwinnPOS
           xcodegen generate --spec project.yml
 
       - name: Build IPA
@@ -156,8 +156,8 @@ workflows:
         distribution_type: ad_hoc
         bundle_identifier: ch.kalakosh.pos
       vars:
-        XCODE_PROJECT: "ios/ZoltoPOS/ZoltoPOS.xcodeproj"
-        XCODE_SCHEME: "ZoltoPOS"
+        XCODE_PROJECT: "ios/GwinnPOS/GwinnPOS.xcodeproj"
+        XCODE_SCHEME: "GwinnPOS"
         BUNDLE_ID: "ch.kalakosh.pos"
       xcode: latest
 
@@ -167,7 +167,7 @@ workflows:
 
       - name: Generate Xcode project
         script: |
-          cd ios/ZoltoPOS
+          cd ios/GwinnPOS
           xcodegen generate --spec project.yml
 
       - name: Build IPA
@@ -201,8 +201,8 @@ workflows:
     environment:
       xcode: latest
       vars:
-        XCODE_PROJECT: "ios/ZoltoPOS/ZoltoPOS.xcodeproj"
-        XCODE_SCHEME: "ZoltoPOS"
+        XCODE_PROJECT: "ios/GwinnPOS/GwinnPOS.xcodeproj"
+        XCODE_SCHEME: "GwinnPOS"
 
     scripts:
       - name: Install xcodegen
@@ -210,7 +210,7 @@ workflows:
 
       - name: Generate Xcode project
         script: |
-          cd ios/ZoltoPOS
+          cd ios/GwinnPOS
           xcodegen generate --spec project.yml
 
       - name: Run TWINT contract tests
@@ -220,7 +220,7 @@ workflows:
             -scheme "$XCODE_SCHEME" \
             -destination "platform=iOS Simulator,name=iPhone 17" \
             -configuration Debug \
-            -only-testing ZoltoPOSTests/TwintModelsTests \
+            -only-testing GwinnPOSTests/TwintModelsTests \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
@@ -258,7 +258,7 @@ workflows:
       # POS_API_BASE_URL overrides the host for a staging or self-hosted run.
       - name: Verify POS server health
         script: |
-          POS_API_BASE_URL="${POS_API_BASE_URL:-https://zolto.ch}"
+          POS_API_BASE_URL="${POS_API_BASE_URL:-https://gwinn.ch}"
           if [ -z "${POS_API_KEY}" ]; then
             echo "ERROR: POS_API_KEY is not set. Mint the platform POS test key (operator console -> Platform -> POS test key) and store it in Codemagic env vars."
             exit 1

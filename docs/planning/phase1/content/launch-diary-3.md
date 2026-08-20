@@ -114,6 +114,6 @@ Month 1 was about proving the store works. Month 2 is about proving it can grow.
 ## SEO Metadata
 
 ```html
-<title>First Month Online: 12 Orders, Honest Numbers | Zolto Launch Diary</title>
+<title>First Month Online: 12 Orders, Honest Numbers | Gwinn Launch Diary</title>
 <meta name="description" content="One month after launching their online store, Kalakosh shares real numbers: 12 orders, CHF 61 average, 81% AI chatbot resolution. No growth hacks, just data.">
 ```

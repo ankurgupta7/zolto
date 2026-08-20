@@ -9,13 +9,13 @@
  * Three design points, in the order they matter:
  *
  * 1. The API key is the PLATFORM's, not the merchant's. Trustpilot's Business
- *    Units API is read-only public data behind a key, so one Zolto key serves
+ *    Units API is read-only public data behind a key, so one Gwinn key serves
  *    every store — a merchant never has to obtain, paste or rotate a
  *    credential, and no tenant secret is created for this.
  *
  * 2. Without a key the feature degrades rather than breaks. `fetchTrustpilotSummary`
  *    returns null, and the storefront falls back to the plain "Read our reviews"
- *    link, which needs nothing but the domain. A self-hosted Zolto with no
+ *    link, which needs nothing but the domain. A self-hosted Gwinn with no
  *    Trustpilot account still renders a working trust band.
  *
  * 3. Results are cached in-process, successes and failures alike. A storefront

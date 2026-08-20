@@ -5,8 +5,8 @@ renders `<ExplainerVideo>` against these two paths:
 
 | Path                                | In the repo | Notes                                                                   |
 | ----------------------------------- | ----------- | ----------------------------------------------------------------------- |
-| `/video/zolto-explainer-poster.svg` | yes         | Drawn poster frame, 16/10, in the marketing palette.                    |
-| `/video/zolto-explainer.mp4`        | **no**      | The cut itself. Drop the file here and it starts playing; nothing else. |
+| `/video/gwinn-explainer-poster.svg` | yes         | Drawn poster frame, 16/10, in the marketing palette.                    |
+| `/video/gwinn-explainer.mp4`        | **no**      | The cut itself. Drop the file here and it starts playing; nothing else. |
 
 The mp4 is deliberately not committed — a marketing video is a binary that gets
 re-cut, and this repo is not where its versions should live. Until it lands, the
@@ -28,5 +28,5 @@ When you add it:
 ```bash
 ffmpeg -i cut.mov -vf scale=1280:800 -c:v libx264 -crf 24 -preset slow \
        -c:a aac -b:a 96k -movflags +faststart \
-       client/public/video/zolto-explainer.mp4
+       client/public/video/gwinn-explainer.mp4
 ```

@@ -114,16 +114,16 @@ describe("Keys page — pair a register", () => {
   it("shows the deep link, the web link, a QR and an expiry once minted", () => {
     mocks.pairingData = {
       available: true,
-      deepLink: "zolto://pair?t=tok123&url=https%3A%2F%2Fbergblume.zolto.ch",
-      webLink: "https://bergblume.zolto.ch/pos/pair?t=tok123",
+      deepLink: "gwinn://pair?t=tok123&url=https%3A%2F%2Fbergblume.gwinn.ch",
+      webLink: "https://bergblume.gwinn.ch/pos/pair?t=tok123",
       expiresAt: new Date("2026-08-09T10:10:00Z"),
     };
     render(<Keys />);
 
-    const open = screen.getByText("Open Zolto POS on this device").closest("a");
+    const open = screen.getByText("Open Gwinn POS on this device").closest("a");
     expect(open?.getAttribute("href")).toBe(mocks.pairingData.deepLink);
     expect(
-      screen.getByText("https://bergblume.zolto.ch/pos/pair?t=tok123"),
+      screen.getByText("https://bergblume.gwinn.ch/pos/pair?t=tok123"),
     ).toBeTruthy();
     expect(screen.getByTestId("pos-pairing-link-qr")).toBeTruthy();
     // Says it is single-use, which is why a stale link in a chat is harmless.
@@ -135,8 +135,8 @@ describe("Keys page — pair a register", () => {
     // credential into an image anyone in the room can photograph.
     mocks.pairingData = {
       available: true,
-      deepLink: "zolto://pair?t=tok123",
-      webLink: "https://bergblume.zolto.ch/pos/pair?t=tok123",
+      deepLink: "gwinn://pair?t=tok123",
+      webLink: "https://bergblume.gwinn.ch/pos/pair?t=tok123",
       expiresAt: new Date("2026-08-09T10:10:00Z"),
     };
     render(<Keys />);
@@ -162,13 +162,13 @@ describe("Keys page — pair a register", () => {
     // for a laptop, where you scan with the phone.
     mocks.pairingData = {
       available: true,
-      deepLink: "zolto://pair?t=tok123",
-      webLink: "https://bergblume.zolto.ch/pos/pair?t=tok123",
+      deepLink: "gwinn://pair?t=tok123",
+      webLink: "https://bergblume.gwinn.ch/pos/pair?t=tok123",
       expiresAt: new Date("2026-08-09T10:10:00Z"),
     };
     render(<Keys />);
 
-    const action = screen.getByText("Open Zolto POS on this device");
+    const action = screen.getByText("Open Gwinn POS on this device");
     const qr = screen.getByTestId("pos-pairing-link-qr");
     const order = action.compareDocumentPosition(qr);
     expect(order & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();

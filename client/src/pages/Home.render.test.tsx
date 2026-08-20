@@ -222,7 +222,7 @@ describe("Home page", () => {
     expect(screen.queryByText("New in the shop")).toBeNull();
   });
 
-  // Until these fields existed, every Zolto storefront showed the same hero:
+  // Until these fields existed, every Gwinn storefront showed the same hero:
   // the same background image, the same "Welcome", the same sentence.
   it("shows the platform banner and the store name when nothing is authored", () => {
     renderHome();

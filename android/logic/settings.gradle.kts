@@ -1,1 +1,1 @@
-rootProject.name = "zolto-pos-logic"
+rootProject.name = "gwinn-pos-logic"

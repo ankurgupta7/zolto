@@ -1,15 +1,16 @@
+import { BRAND } from "./brand";
 /**
- * Canonical facts about the Zolto platform — the single source of truth for the
+ * Canonical facts about the Gwinn platform — the single source of truth for the
  * marketing surface's SEO (JSON-LD), the /llms.txt + /llms-full.txt briefs, and
  * the platform MCP tools. Keep marketing copy that must stay consistent across
  * humans, search engines, LLMs, and agents here, not scattered across pages.
  */
 
 export const PLATFORM = {
-  name: "Zolto",
+  name: BRAND.name,
   /**
    * The page `<title>` and the MCP handshake read this, so it is the shortest
-   * answer to "what is Zolto?" anywhere on the platform. It used to be
+   * answer to "what is Gwinn?" anywhere on the platform. It used to be
    * "AI-run commerce for makers", which describes how the thing is built
    * rather than what it does — see MAKER_PITCH for the same correction applied
    * to the hero.
@@ -22,15 +23,14 @@ export const PLATFORM = {
    *
    *  - *"for a fraction of what legacy providers charge"* — not true on card
    *    rate. SumUp Payments Plus and Worldline Tap on Mobile both beat the
-   *    Stripe + Zolto stack in person, and SumUp beats it online on every plan.
+   *    Stripe + Gwinn stack in person, and SumUp beats it online on every plan.
    *    See shared/costOfAcceptance.ts.
    *  - *"AI assistants can find, recommend, and **buy** from it"* — MCP's
    *    `create_checkout` hands the buyer a Stripe payment link that a human
    *    completes. The assistant selects and starts the checkout; it does not
    *    complete a purchase in the chat.
    */
-  summary:
-    "Zolto gives independent makers and artisans a point-of-sale and an online store that share one inventory — with an AI assistant that handles setup, product photos, listings, and support. One register takes TWINT, cards and cash from a grid of your actual objects, on the phone you already own. Zolto charges nothing on in-person sales and 1% on online and AI-agent orders on the Free plan; your payment provider's own fees apply on top and go to them. Built by AI, for AI: every store ships an llms.txt and a Model Context Protocol (MCP) endpoint out of the box, so AI assistants can find, recommend, and start a checkout with it directly. Sell online and in person without managing technology.",
+  summary: `${BRAND.name} gives independent makers and artisans a point-of-sale and an online store that share one inventory — with an AI assistant that handles setup, product photos, listings, and support. One register takes TWINT, cards and cash from a grid of your actual objects, on the phone you already own. ${BRAND.name} charges nothing on in-person sales and 1% on online and AI-agent orders on the Free plan; your payment provider's own fees apply on top and go to them. Built by AI, for AI: every store ships an llms.txt and a Model Context Protocol (MCP) endpoint out of the box, so AI assistants can find, recommend, and start a checkout with it directly. Sell online and in person without managing technology.`,
   /** Who it's for — used in schema audience + llms briefs. */
   audience:
     "Independent makers, artisans, and small shop owners — people who sell at craft fairs, markets, and pop-ups and want an online store without hiring a developer.",
@@ -101,8 +101,7 @@ export const FEATURES: PlatformFeature[] = [
   {
     id: "day-end-reconciliation",
     name: "Sell by amount, reconcile with AI",
-    description:
-      "Too busy at the stall to tag each sale? Just enter the amount and take the tap. At the end of the day Zolto emails its best guess at what you sold; one tap confirms it and the piece is marked sold across your store and POS at once.",
+    description: `Too busy at the stall to tag each sale? Just enter the amount and take the tap. At the end of the day ${BRAND.name} emails its best guess at what you sold; one tap confirms it and the piece is marked sold across your store and POS at once.`,
   },
   {
     id: "multilingual-listings",
@@ -113,8 +112,7 @@ export const FEATURES: PlatformFeature[] = [
   {
     id: "payments",
     name: "Direct payments with Stripe",
-    description:
-      "Connect your own Stripe account; your customers pay straight into it. Zolto never holds your money. Stripe charges its own processing fee on every sale and that money goes to Stripe — Zolto's fee is separate and on top of it: 1% on online and agent orders on the Free plan, 0% on Pro, and 0% on in-person sales on every plan.",
+    description: `Connect your own Stripe account; your customers pay straight into it. ${BRAND.name} never holds your money. Stripe charges its own processing fee on every sale and that money goes to Stripe — ${BRAND.name}'s fee is separate and on top of it: 1% on online and agent orders on the Free plan, 0% on Pro, and 0% on in-person sales on every plan.`,
   },
   {
     id: "storefront",
@@ -125,8 +123,7 @@ export const FEATURES: PlatformFeature[] = [
   {
     id: "eu-hosting",
     name: "European hosting — your data stays in Europe",
-    description:
-      "Zolto runs on servers rented from Hetzner in Europe, most of them in Germany. Your catalogue, your orders and your customers' details live in a European data centre, under the GDPR and the revised Swiss FADP — not in whichever cloud region happened to be the default.",
+    description: `${BRAND.name} runs on servers rented from Hetzner in Europe, most of them in Germany. Your catalogue, your orders and your customers' details live in a European data centre, under the GDPR and the revised Swiss FADP — not in whichever cloud region happened to be the default.`,
   },
   {
     id: "ai-discovery",
@@ -153,7 +150,7 @@ export interface PlatformPlan {
   /**
    * Platform fee, in basis points, applied to ONLINE and AGENT-originated
    * orders via the Stripe Connect application fee on the tenant's direct
-   * charge. In-person (POS) sales always carry 0 from Zolto, on every plan —
+   * charge. In-person (POS) sales always carry 0 from Gwinn, on every plan —
    * in-person is not our channel to tax.
    */
   onlineFeeBps: number;
@@ -176,7 +173,7 @@ export const REVENUE_SHARE = {
   proBps: 0,
   percentLabel: "1%",
   appliesTo: "online and AI-agent orders",
-  /** In-person sales are never Zolto's to tax, on any plan. */
+  /** In-person sales are never Gwinn's to tax, on any plan. */
   inPersonBps: 0,
 } as const;
 
@@ -186,7 +183,7 @@ export const REVENUE_SHARE = {
  *
  * Packaging rule (docs/planning/pricing-pivot-agent-commerce.md): in-person
  * commerce is free — the whole store, POS and inventory sync cost CHF 0/month
- * and Zolto adds nothing on in-person payments. We earn only on the
+ * and Gwinn adds nothing on in-person payments. We earn only on the
  * incremental online + agent sales we create: a 1% platform fee on the Free
  * plan, or a flat Pro subscription that removes it and unlocks unmetered AI.
  * Plans are metered on scale (products, photos, storage) — never on AI usage.
@@ -203,15 +200,15 @@ export const PLANS: PlatformPlan[] = [
     maxProducts: 200,
     storageGb: 5,
     features: [
-      "Full POS — Tap to Pay, TWINT and cash — CHF 0 from Zolto on in-person sales",
+      `Full POS — Tap to Pay, TWINT and cash — CHF 0 from ${BRAND.name} on in-person sales`,
       // Storefronts live on subdomains of the platform root, which is derived
-      // from PUBLIC_BASE_URL (server/_core/platformDomain.ts) and is zolto.ch
+      // from PUBLIC_BASE_URL (server/_core/platformDomain.ts) and is gwinn.ch
       // in every deploy. This once named a different domain the platform does
       // not serve; because FEATURES feeds the pricing card, /llms.txt AND the
       // MCP tools, that pointed humans and AI agents alike at an address which
-      // resolved to nothing. Only ever name a domain Zolto actually answers on
+      // resolved to nothing. Only ever name a domain Gwinn actually answers on
       // — platformDomains.test.ts enforces it.
-      "Online store on your own zolto.ch address",
+      `Online store on your own ${BRAND.domain} address`,
       "Real-time POS ↔ online inventory sync",
       "AI descriptions & translation (fair use)",
       "5 AI photo shots / month",
@@ -238,14 +235,14 @@ export const PLANS: PlatformPlan[] = [
       "0% platform fee — keep every online sale",
       "Unmetered AI — photos, descriptions, chat",
       "Your own custom domain + managed SSL",
-      // Every store carries a "Made with Zolto" credit by default — a footer
+      // Every store carries a "Made with Gwinn" credit by default — a footer
       // line, a generator tag and a JSON-LD creator node, so shoppers, search
-      // engines and AI assistants can all tell what a Zolto shop is. Pro buys
-      // the switch that turns it off (tenant_settings.hide_zolto_badge). This
-      // used to read 'Your brand only — no "runs on Zolto"', which described
+      // engines and AI assistants can all tell what a Gwinn shop is. Pro buys
+      // the switch that turns it off (tenant_settings.hide_platform_credit). This
+      // used to read 'Your brand only — no "runs on Gwinn"', which described
       // the credit as automatically absent; it is now the merchant's choice,
       // and the copy has to say so. See shared/attribution.ts.
-      'White-label switch — hide the "Made with Zolto" credit',
+      `White-label switch — hide the "Made with ${BRAND.name}" credit`,
       "Advanced analytics & AI insights",
       "3 staff seats",
       "Priority human support",
@@ -395,13 +392,13 @@ export function featuresForPlan(plan: string): (typeof PLAN_FEATURES)[PlanId] {
 
 /**
  * The positioning thesis, as structured facts the marketing surface renders and
- * the llms/MCP briefs can quote. Zolto's stance: the legacy website + POS market
+ * the llms/MCP briefs can quote. Gwinn's stance: the legacy website + POS market
  * (Stripe, SumUp, Worldline) is previous-era software that overcharges small
  * merchants and upsells card-reader hardware — two shifts (AI setup, NFC phones +
  * QR payments) make that obsolete, so pricing is radically transparent.
  */
 export const POSITIONING = {
-  /** Legacy players Zolto positions against, named on the comparison. */
+  /** Legacy players Gwinn positions against, named on the comparison. */
   incumbents: ["Stripe", "SumUp", "Worldline"] as const,
   /** The two shifts that make the old model obsolete. */
   shifts: [
@@ -416,7 +413,7 @@ export const POSITIONING = {
    * The shape of it: the two incumbents have opposite gaps. SumUp's register has a
    * genuinely good item catalogue and cannot take TWINT at all. Worldline's Tap
    * on Mobile takes TWINT at a competitive flat rate and has no catalogue to put
-   * in front of it. Zolto is the only one of the three where a maker taps a
+   * in front of it. Gwinn is the only one of the three where a maker taps a
    * photo of the actual object and then picks TWINT, card or cash on the same
    * screen.
    *
@@ -491,8 +488,8 @@ export const POSITIONING = {
       {
         id: "both",
         has: ["grid", "twint"] as const,
-        vendor: "Zolto",
-        label: "Zolto",
+        vendor: BRAND.name,
+        label: BRAND.name,
         note: "tap the photo, pick the method",
         detail:
           "Tap the photo of the actual object, then choose TWINT, card or cash on the same screen. One tap updates the stock behind your stall and on your website at once.",
@@ -514,8 +511,7 @@ export const PRICING_PROMISE = {
    * person, the CHF 0/month figure, nothing added to the payment, and the
    * reason. Only the restatement went.
    */
-  pledge:
-    "Selling in person is free, forever — store, POS and inventory at CHF 0/month, and Zolto adds nothing to the payment. The honest version: we already have enough money. We're not here to skim off small makers.",
+  pledge: `Selling in person is free, forever — store, POS and inventory at CHF 0/month, and ${BRAND.name} adds nothing to the payment. The honest version: we already have enough money. We're not here to skim off small makers.`,
   points: [
     "Sell at the market and pay us nothing, forever: full POS, inventory sync and your online storefront, all included at CHF 0/month.",
     "Online and AI-agent orders carry a 1% fee on the Free plan. No online sales this month? You pay CHF 0. That's it.",
@@ -528,7 +524,7 @@ export const PRICING_PROMISE = {
     // The one paid extra, stated up front and in the pledge's own terms. It is
     // here rather than buried in the admin because "no surprises" has to
     // survive contact with the first thing we ever charge for.
-    "One thing costs extra, once: CHF 20 to lift your whole existing shop — products, stock, photos, categories, your story — off your old site and into Zolto in about a minute. That buys real machine time reading your site, not rent on a row in a database. Incumbents charge you monthly for storing what you already own; we charge once for the work of moving it, and never again.",
+    `One thing costs extra, once: CHF 20 to lift your whole existing shop — products, stock, photos, categories, your story — off your old site and into ${BRAND.name} in about a minute. That buys real machine time reading your site, not rent on a row in a database. Incumbents charge you monthly for storing what you already own; we charge once for the work of moving it, and never again.`,
   ],
   /**
    * Indices of `points` that /pricing's fee section ("the only fee we charge")
@@ -587,7 +583,7 @@ export const SITE_IMPORT = {
 
 /**
  * The cost-disruption headline: a year of fixed costs on a subscription-priced
- * competitor vs. a month on Zolto.
+ * competitor vs. a month on Gwinn.
  *
  * **This figure used to have no source.** `themPerYearChf` was 2000, traceable
  * to nothing more than the founder's recollection of what a terminal costs, and
@@ -616,7 +612,7 @@ export const COST_COMPARISON = {
   /** The source row backing `themPerYearChf`. Rendered, not just recorded. */
   themSourceId: "sumup-pos-lite",
   usPerMonthChf: (PLANS.find((p) => p.highlight)?.priceChf ?? 19) as number,
-  usLabel: "A month with Zolto",
+  usLabel: `A month with ${BRAND.name}`,
   usNote: "no hardware · cancel anytime · your Stripe, your money",
   /**
    * This used to read "one-hundredth the cost", which was never arithmetic —
@@ -631,7 +627,7 @@ export const COST_COMPARISON = {
 /**
  * The zero-cost phone POS — the headline differentiator.
  *
- * The claim is deliberately scoped to what Zolto ships rather than to what
+ * The claim is deliberately scoped to what Gwinn ships rather than to what
  * anyone else doesn't: every line here is checkable against FREE_PLAN, and the
  * tests pin it there. A blanket "nobody else does this" would be a claim about
  * every competitor's current tier in every country, which is unverifiable the
@@ -698,7 +694,7 @@ export const ZERO_COST_POS = {
     "Full POS — Tap to Pay, TWINT and cash, on one screen",
     "Every piece with its photo, name and price",
     "Real-time POS ↔ online inventory sync",
-    "Your online storefront, on your own zolto.ch address",
+    `Your online storefront, on your own ${BRAND.domain} address`,
   ],
   /**
    * The catch, stated before anyone has to ask what it is.
@@ -735,11 +731,11 @@ export const DATA_RESIDENCY = {
   /** Split for the hand-drawn underline — see ZERO_COST_POS on why. */
   headline: "Your shop lives in Europe.",
   headlineEmphasis: "Mostly Germany.",
-  /** The company whose hardware Zolto rents. */
+  /** The company whose hardware Gwinn rents. */
   provider: "Hetzner",
   region: "Europe",
   primaryCountry: "Germany",
-  body: "Zolto runs on machines we rent from Hetzner, a German hosting company, in European data centres — in most cases in Germany. Your catalogue, your orders and your customers' addresses sit in a database on those machines. Not on the other side of an ocean because that was the default setting.",
+  body: `${BRAND.name} runs on machines we rent from Hetzner, a German hosting company, in European data centres — in most cases in Germany. Your catalogue, your orders and your customers' addresses sit in a database on those machines. Not on the other side of an ocean because that was the default setting.`,
   points: [
     "Application servers and database in Europe — rented from Hetzner, most of them in Germany.",
     "Two data-protection regimes cover it: the GDPR and the revised Swiss FADP. Where they differ, we hold ourselves to the stricter one.",
@@ -788,7 +784,7 @@ export interface SovereigntyEntry {
 }
 
 /**
- * Zolto's Swissness claim and the European-stack roadmap — the prominent,
+ * Gwinn's Swissness claim and the European-stack roadmap — the prominent,
  * page-level version of what DATA_RESIDENCY says about hosting alone.
  *
  * The claim is deliberately three-layered, because only the first layer is
@@ -816,9 +812,8 @@ export const SOVEREIGNTY = {
   headline: "Made in Switzerland.",
   headlineEmphasis: "Run from Europe.",
   /** Who we build for, in order — Swiss first, Europe next, then everyone. */
-  serving:
-    "Zolto is built in Zürich, for Swiss makers first, for Europe next, and after that for anyone anywhere who likes how we do things.",
-  body: "We're moving every piece of Zolto we control onto European infrastructure, and into Switzerland where there's a Swiss option worth having. Some of it is already there. Some of it isn't yet. Here's the whole list, including the parts that make us look bad.",
+  serving: `${BRAND.name} is built in Zürich, for Swiss makers first, for Europe next, and after that for anyone anywhere who likes how we do things.`,
+  body: `We're moving every piece of ${BRAND.name} we control onto European infrastructure, and into Switzerland where there's a Swiss option worth having. Some of it is already there. Some of it isn't yet. Here's the whole list, including the parts that make us look bad.`,
   /**
    * The homepage-reel version of `serving` + `body`, which together were 68
    * words explaining a table that explains itself. Two of the three things
@@ -828,8 +823,7 @@ export const SOVEREIGNTY = {
    * could say is the last clause — that the list is complete, unflattering
    * rows included — so that is what survives.
    */
-  bodyShort:
-    "Every piece of Zolto, and where it runs today — including the parts that make us look bad.",
+  bodyShort: `Every piece of ${BRAND.name}, and where it runs today — including the parts that make us look bad.`,
   /**
    * Every piece of the stack, in the order a merchant would care about it.
    * The servers row reads DATA_RESIDENCY so the two can't tell different
@@ -951,7 +945,7 @@ export interface ComparisonRow {
 }
 
 /**
- * "What you're actually paying them for" — old guard vs. Zolto, row by row.
+ * "What you're actually paying them for" — old guard vs. Gwinn, row by row.
  *
  * Two rows were retired in the August 2026 pricing review, and it's worth
  * saying why so they don't creep back:
@@ -959,7 +953,7 @@ export interface ComparisonRow {
  *  - **"Card reader — sold to you, CHF 50–300+"** stopped being true of the
  *    field. SumUp Tap to Pay and Worldline Tap on Mobile both run on an
  *    ordinary phone in Switzerland now, and Worldline's carries no fixed
- *    monthly cost. "You don't need to buy a reader" is still true of Zolto and
+ *    monthly cost. "You don't need to buy a reader" is still true of Gwinn and
  *    no longer distinguishes it.
  *  - **"Your catalogue on your phone — part of a paid tier"** was a claim about
  *    competitors' packaging that the review's research contradicts: SumUp's
@@ -1040,12 +1034,12 @@ export const CARD_READER_GAG = {
 } as const;
 
 /**
- * The landing hero — what Zolto *is*, in the merchant's own nouns.
+ * The landing hero — what Gwinn *is*, in the merchant's own nouns.
  *
  * This constant exists because the hero used to be AI_NATIVE_PITCH, and that
  * was a mistake worth recording so it doesn't get undone. The AI-native thesis
  * is true, sourced and genuinely differentiating, but it is an argument for
- * *choosing* Zolto — it only lands on a reader who already knows what Zolto is.
+ * *choosing* Gwinn — it only lands on a reader who already knows what Gwinn is.
  * A jeweller arriving cold read four sections (the thesis, the agent chat, the
  * cost strip, found→asked→bought) before the page mentioned a register, and nine
  * before it mentioned TWINT. The page answered "why is this the future?" ahead
@@ -1098,7 +1092,7 @@ export const MAKER_PITCH = {
    * "a point of sale and a shop." is 361px against the ~330px ceiling above,
    * and "a cash register and a shop." is 362px. The abbreviation does, at
    * 254px, and it is the one form of the term that is identical in all four
-   * of Zolto's languages. `body` directly beneath opens by spelling it out,
+   * of Gwinn's languages. `body` directly beneath opens by spelling it out,
    * so a reader who does not know the abbreviation is told immediately —
    * which is why the repetition there is deliberate and should stay.
    */
@@ -1116,7 +1110,7 @@ export const MAKER_PITCH = {
    * thesis is being legible to a machine reading the page. "Point-of-sale" is
    * what a buyer searches and what an assistant matches on. Dropping it would
    * have saved four words and cost the one sentence on the site that says what
-   * Zolto is.
+   * Gwinn is.
    */
   body: "A point-of-sale and a web shop that share one inventory. Tap the photo of the piece you just sold on the phone in your hand — it's off your website before the customer has walked away.",
   /** Labels on the hero's register drawing. */
@@ -1134,7 +1128,7 @@ export const MAKER_PITCH = {
  *
  * The thesis: buying is moving from search results into assistant
  * conversations, and assistants can only recommend stores they can read.
- * Zolto's answer is structural, not retrofitted — llms.txt, MCP and agent
+ * Gwinn's answer is structural, not retrofitted — llms.txt, MCP and agent
  * checkout ship with every store (see FREE_PLAN "Found by AI agents…"), so
  * the claim set here is pinned to the Free plan by platform.test.ts the same
  * way ZERO_COST_POS is.
@@ -1147,16 +1141,15 @@ export const AI_NATIVE_PITCH = {
   headline: "Your next customer",
   /** Split so the sketch underline hugs the punchline (see ZERO_COST_POS). */
   headlineEmphasis: "is an AI.",
-  body: "Search built the last era of shops. Assistants are building this one — and they can only recommend stores they can read. Every Zolto store ships llms.txt, MCP and agent checkout from day one, kept current as the protocols move, so your shop compounds in the answers while retrofitted websites fade out of them.",
+  body: `Search built the last era of shops. Assistants are building this one — and they can only recommend stores they can read. Every ${BRAND.name} store ships llms.txt, MCP and agent checkout from day one, kept current as the protocols move, so your shop compounds in the answers while retrofitted websites fade out of them.`,
   /**
    * The homepage-reel version of `body`. The long form narrates the chart
    * beside it — two lines crossing, described in a sentence — and then adds
    * the "compounds in the answers" flourish, which is a claim about the
-   * future that /why-zolto is the place to make. What survives is the only
+   * future that /why-gwinn is the place to make. What survives is the only
    * part a reader has to have: what ships, and that it ships by default.
    */
-  bodyShort:
-    "They can only recommend a store they can read. Every Zolto store ships llms.txt, MCP and agent checkout from day one.",
+  bodyShort: `They can only recommend a store they can read. Every ${BRAND.name} store ships llms.txt, MCP and agent checkout from day one.`,
   chart: {
     title: "where buyers start their search",
     decliningLabel: "search engines",
@@ -1186,15 +1179,15 @@ export const AI_NATIVE_PITCH = {
    */
   proof: {
     eyebrow: "the rails are live — the traffic is still arriving",
-    headline: "Watch an AI shop a Zolto store.",
-    body: "Your customer asks their assistant. The assistant reads the store's brief, checks live stock over MCP, picks the piece and opens a checkout — your customer taps pay, and the money lands in the maker's own Stripe like any other sale. Point your own AI at zolto.ch/llms.txt and ask it about us.",
+    headline: `Watch an AI shop a ${BRAND.name} store.`,
+    body: `Your customer asks their assistant. The assistant reads the store's brief, checks live stock over MCP, picks the piece and opens a checkout — your customer taps pay, and the money lands in the maker's own Stripe like any other sale. Point your own AI at ${BRAND.domain}/llms.txt and ask it about us.`,
   },
   /** The mechanics band — each step names something the Free plan ships. */
   steps: [
     {
       k: "Found",
       title: "The assistant reads your brief",
-      body: "Every store publishes yourstore.zolto.ch/llms.txt — a plain-language summary of who you are and what you sell, written for AI readers.",
+      body: `Every store publishes yourstore.${BRAND.domain}/llms.txt — a plain-language summary of who you are and what you sell, written for AI readers.`,
     },
     {
       k: "Asked",
@@ -1254,7 +1247,7 @@ export const SELLING_FLOW: SellingStep[] = [
 
 /** Grouping for the /faq page. Order here is the order sections render in. */
 export const FAQ_CATEGORIES = [
-  "About Zolto",
+  `About ${BRAND.name}`,
   "Getting started",
   "Selling",
   "Pricing & billing",
@@ -1273,19 +1266,19 @@ export interface Faq {
 /** Questions a prospective maker actually asks — feeds FAQPage schema + llms + MCP. */
 export const FAQS: Faq[] = [
   {
-    category: "About Zolto",
-    q: "What is Zolto?",
-    a: "Zolto is an AI-run commerce platform for independent makers. It gives you a point-of-sale and an online store that share one inventory, plus an AI assistant that handles product photos, descriptions, and customer support.",
+    category: `About ${BRAND.name}`,
+    q: `What is ${BRAND.name}?`,
+    a: `${BRAND.name} is an AI-run commerce platform for independent makers. It gives you a point-of-sale and an online store that share one inventory, plus an AI assistant that handles product photos, descriptions, and customer support.`,
   },
   {
-    category: "About Zolto",
-    q: "Who is Zolto for?",
+    category: `About ${BRAND.name}`,
+    q: `Who is ${BRAND.name} for?`,
     a: "Makers, artisans, and small shop owners who sell at craft fairs, markets, and pop-ups and want to sell online too — without hiring a developer or learning complex software.",
   },
   {
-    category: "About Zolto",
-    q: "Is Zolto Swiss?",
-    a: "Yes — Zolto is built in Zürich by a Swiss company, for Swiss makers first, for Europe next, and after that for anyone anywhere. Prices are in Swiss francs, TWINT is built in rather than bolted on, and the infrastructure is European with an open plan to move the rest of it into Switzerland. The full row-by-row list of what already runs where lives at /made-in-switzerland.",
+    category: `About ${BRAND.name}`,
+    q: `Is ${BRAND.name} Swiss?`,
+    a: `Yes — ${BRAND.name} is built in Zürich by a Swiss company, for Swiss makers first, for Europe next, and after that for anyone anywhere. Prices are in Swiss francs, TWINT is built in rather than bolted on, and the infrastructure is European with an open plan to move the rest of it into Switzerland. The full row-by-row list of what already runs where lives at /made-in-switzerland.`,
   },
   {
     category: "Getting started",
@@ -1295,37 +1288,37 @@ export const FAQS: Faq[] = [
   {
     category: "Getting started",
     q: "I already sell with Stripe, SumUp or Worldline — how do I switch?",
-    a: "Bring your catalogue with you instead of re-typing it. If you're on Stripe, link the Stripe account you already have — your checkout keeps working and your products import in one click. From SumUp or Worldline/SIX, upload the CSV export from their dashboard and Zolto reads it (including German/French headers and Swiss price formats). You review every item before anything is written to your shop.",
+    a: `Bring your catalogue with you instead of re-typing it. If you're on Stripe, link the Stripe account you already have — your checkout keeps working and your products import in one click. From SumUp or Worldline/SIX, upload the CSV export from their dashboard and ${BRAND.name} reads it (including German/French headers and Swiss price formats). You review every item before anything is written to your shop.`,
   },
   {
     category: "Getting started",
     q: "Do I need to be technical?",
-    a: "No. Zolto is built for makers, not store managers. The AI does the setup busywork, and a guided tour walks you through the dashboard.",
+    a: `No. ${BRAND.name} is built for makers, not store managers. The AI does the setup busywork, and a guided tour walks you through the dashboard.`,
   },
   {
     category: "Pricing & billing",
     q: "How much does it cost?",
-    a: "Selling in person is free, forever — the store, POS and inventory sync cost CHF 0/month and Zolto adds nothing on in-person payments. Online and AI-agent orders carry a 1% platform fee on the Free plan (a month with no online sales costs CHF 0). Pro is CHF 25/month with a 14-day free trial: it removes the 1% and unlocks unmetered AI. Month-to-month — cancel anytime.",
+    a: `Selling in person is free, forever — the store, POS and inventory sync cost CHF 0/month and ${BRAND.name} adds nothing on in-person payments. Online and AI-agent orders carry a 1% platform fee on the Free plan (a month with no online sales costs CHF 0). Pro is CHF 25/month with a 14-day free trial: it removes the 1% and unlocks unmetered AI. Month-to-month — cancel anytime.`,
   },
   {
     category: "Selling",
     q: "Can I sell both in person and online?",
-    a: "Yes — that's the core of Zolto. One inventory powers both your point-of-sale and your online store, and stock stays in sync in real time so you never oversell.",
+    a: `Yes — that's the core of ${BRAND.name}. One inventory powers both your point-of-sale and your online store, and stock stays in sync in real time so you never oversell.`,
   },
   {
     category: "Pricing & billing",
     q: "How do I get paid?",
-    a: "You connect your own Stripe account and your customers pay directly into it — Zolto never holds your money. On the Free plan a 1% platform fee is taken automatically on online and AI-agent orders only; in-person sales are always fee-free, and Pro removes the fee entirely.",
+    a: `You connect your own Stripe account and your customers pay directly into it — ${BRAND.name} never holds your money. On the Free plan a 1% platform fee is taken automatically on online and AI-agent orders only; in-person sales are always fee-free, and Pro removes the fee entirely.`,
   },
   {
     category: "Selling",
     q: "Do I need to buy a card reader?",
-    a: "No — payments happen on the phone you already own, via the Zolto POS app: contactless card, Apple Pay / Google Pay, and TWINT QR. Nobody inserts a card anymore, they tap, so there's no reader to buy, rent, or plug in.",
+    a: `No — payments happen on the phone you already own, via the ${BRAND.name} POS app: contactless card, Apple Pay / Google Pay, and TWINT QR. Nobody inserts a card anymore, they tap, so there's no reader to buy, rent, or plug in.`,
   },
   {
     category: "Pricing & billing",
-    q: "How is Zolto cheaper than Stripe, SumUp, or Worldline?",
-    a: "Those tools were built for an era when websites were hard and a card reader was king, so they charge for hardware, setup, and lock-in — easily around CHF 2,000 a year. AI builds your store in an afternoon and your phone is the terminal, so the real cost is tiny. Zolto passes that saving on: selling in person is free, online orders carry just a 1% platform fee on the Free plan, and Pro is a flat CHF 25/month — roughly one-hundredth of the old way.",
+    q: `How is ${BRAND.name} cheaper than Stripe, SumUp, or Worldline?`,
+    a: `Those tools were built for an era when websites were hard and a card reader was king, so they charge for hardware, setup, and lock-in — easily around CHF 2,000 a year. AI builds your store in an afternoon and your phone is the terminal, so the real cost is tiny. ${BRAND.name} passes that saving on: selling in person is free, online orders carry just a 1% platform fee on the Free plan, and Pro is a flat CHF 25/month — roughly one-hundredth of the old way.`,
   },
   {
     category: "Selling",
@@ -1335,7 +1328,7 @@ export const FAQS: Faq[] = [
   {
     category: "Selling",
     q: "Do I have to tag every sale at a busy market?",
-    a: "No. Just enter the amount and take the tap. At the end of the day Zolto emails its best guess at what you sold; you tap to confirm and each piece is marked sold across your store and POS automatically.",
+    a: `No. Just enter the amount and take the tap. At the end of the day ${BRAND.name} emails its best guess at what you sold; you tap to confirm and each piece is marked sold across your store and POS automatically.`,
   },
   {
     category: "Getting started",
@@ -1365,17 +1358,17 @@ export const FAQS: Faq[] = [
   {
     category: "Privacy & data",
     q: "Where is my store's data stored?",
-    a: "In Europe. Zolto runs on servers we rent from Hetzner, a German hosting company, in European data centres — in most cases in Germany. Your products, orders and customers' details live in a database on those machines, not on a cloud region on the other side of an ocean.",
+    a: `In Europe. ${BRAND.name} runs on servers we rent from Hetzner, a German hosting company, in European data centres — in most cases in Germany. Your products, orders and customers' details live in a database on those machines, not on a cloud region on the other side of an ocean.`,
   },
   {
     category: "Privacy & data",
     q: "Does any of my data leave Europe?",
-    a: "Some of it reaches companies we don't run ourselves: card payments are handled by Stripe (card numbers never touch Zolto's servers), our AI features send text and photos to a model provider, and account emails go through an email service — and not all of those are European. Everything Zolto itself stores stays on our European servers. The sub-processors are named in the privacy policy, and the current list is available on request.",
+    a: `Some of it reaches companies we don't run ourselves: card payments are handled by Stripe (card numbers never touch ${BRAND.name}'s servers), our AI features send text and photos to a model provider, and account emails go through an email service — and not all of those are European. Everything ${BRAND.name} itself stores stays on our European servers. The sub-processors are named in the privacy policy, and the current list is available on request.`,
   },
   {
     category: "Privacy & data",
-    q: "Is Zolto covered by the GDPR and Swiss data protection?",
-    a: "Both apply. Zolto serves merchants in Switzerland and the EU, so the revised Swiss Federal Act on Data Protection (revFADP) and the GDPR both come into play — where they differ we work to the stricter one. Hosting in the EU makes that a much shorter conversation, and where we process your customers' data on your behalf, a Data Processing Agreement governs it.",
+    q: `Is ${BRAND.name} covered by the GDPR and Swiss data protection?`,
+    a: `Both apply. ${BRAND.name} serves merchants in Switzerland and the EU, so the revised Swiss Federal Act on Data Protection (revFADP) and the GDPR both come into play — where they differ we work to the stricter one. Hosting in the EU makes that a much shorter conversation, and where we process your customers' data on your behalf, a Data Processing Agreement governs it.`,
   },
   {
     category: "Privacy & data",
@@ -1390,7 +1383,7 @@ export const FAQS: Faq[] = [
   {
     category: "Pricing & billing",
     q: "Do prices include VAT?",
-    a: "There's no VAT to add. Zolto is under the CHF 100,000 Swiss VAT registration threshold, so the price you see is the price you pay. If that ever changes, we'll say so before it does.",
+    a: `There's no VAT to add. ${BRAND.name} is under the CHF 100,000 Swiss VAT registration threshold, so the price you see is the price you pay. If that ever changes, we'll say so before it does.`,
   },
 ];
 
@@ -1408,10 +1401,10 @@ export function faqsByCategory(category: FaqCategory): Faq[] {
 export type Support = boolean | "partial" | "n/a";
 
 /**
- * A row of the capability matrix, carrying its own Zolto answer.
+ * A row of the capability matrix, carrying its own Gwinn answer.
  *
  * The rows live here rather than on each competitor so the columns can't fall
- * out of alignment, and so Zolto answers every question it asks of anyone else
+ * out of alignment, and so Gwinn answers every question it asks of anyone else
  * — including the two it answers badly (no PostFinance Pay, and a slower setup
  * than SumUp's).
  */
@@ -1419,7 +1412,7 @@ export type Support = boolean | "partial" | "n/a";
  * The sections of the capability matrix, in reading order.
  *
  * The matrix was ten payment-shaped rows, which quietly conceded the frame:
- * it compared Zolto to payment companies on payment questions, where the best
+ * it compared Gwinn to payment companies on payment questions, where the best
  * available outcome is a tie. The product is a register, a shop, one inventory and
  * an AI that runs all three — so the matrix now asks about all of it, grouped,
  * and the payment section is one of four rather than the whole thing.
@@ -1437,8 +1430,8 @@ export interface Capability {
   key: string;
   group: CapabilityGroup;
   label: string;
-  zolto: string;
-  zoltoSupported: Support;
+  platform: string;
+  platformSupported: Support;
 }
 
 export const CAPABILITIES: Capability[] = [
@@ -1447,46 +1440,45 @@ export const CAPABILITIES: Capability[] = [
     key: "no-hardware",
     group: "The register",
     label: "Takes a payment with no hardware to buy",
-    zolto: "Yes — Tap to Pay on the phone you already own",
-    zoltoSupported: true,
+    platform: "Yes — Tap to Pay on the phone you already own",
+    platformSupported: true,
   },
   {
     key: "item-grid",
     group: "The register",
     label: "Your catalogue as a grid in the register",
-    zolto: "Yes — photo, name and price for every piece",
-    zoltoSupported: true,
+    platform: "Yes — photo, name and price for every piece",
+    platformSupported: true,
   },
   {
     key: "twint",
     group: "The register",
     label: "TWINT in the same register",
-    zolto: "Yes — beside cards and cash, on one screen",
-    zoltoSupported: true,
+    platform: "Yes — beside cards and cash, on one screen",
+    platformSupported: true,
   },
   {
-    // Zolto answers this one badly, on purpose. A matrix that only asks
+    // Gwinn answers this one badly, on purpose. A matrix that only asks
     // questions we win is a scorecard we wrote for ourselves.
     key: "postfinance",
     group: "The register",
     label: "PostFinance Pay",
-    zolto: "No",
-    zoltoSupported: false,
+    platform: "No",
+    platformSupported: false,
   },
   {
     key: "stock-in-person",
     group: "The register",
     label: "Stock counts down as you sell in person",
-    zolto: "Yes",
-    zoltoSupported: true,
+    platform: "Yes",
+    platformSupported: true,
   },
   {
     key: "sell-by-amount",
     group: "The register",
     label: "Sell by amount when it's busy, tidy it up later",
-    zolto:
-      "Yes — take the tap without tagging the item; at close of day Zolto emails its best guess and one tap confirms it",
-    zoltoSupported: true,
+    platform: `Yes — take the tap without tagging the item; at close of day ${BRAND.name} emails its best guess and one tap confirms it`,
+    platformSupported: true,
   },
 
   // ── The shop ───────────────────────────────────────────────────────────
@@ -1494,36 +1486,37 @@ export const CAPABILITIES: Capability[] = [
     key: "online-store",
     group: "The shop",
     label: "A real online shop, not a payment link",
-    zolto: "Yes — themed storefront on your own address, Swiss and EU shipping",
-    zoltoSupported: true,
+    platform:
+      "Yes — themed storefront on your own address, Swiss and EU shipping",
+    platformSupported: true,
   },
   {
     key: "builds-storefront",
     group: "The shop",
     label: "Somebody builds the shop for you",
-    zolto: "Yes — the AI drafts the theme, the copy and the photography",
-    zoltoSupported: true,
+    platform: "Yes — the AI drafts the theme, the copy and the photography",
+    platformSupported: true,
   },
   {
     key: "stock-shared",
     group: "The shop",
     label: "One stock count across the stall and the shop",
-    zolto: "Yes — with a short-lived hold while a customer is in checkout",
-    zoltoSupported: true,
+    platform: "Yes — with a short-lived hold while a customer is in checkout",
+    platformSupported: true,
   },
   {
     key: "multilingual",
     group: "The shop",
     label: "Listings in German, French, Italian and English",
-    zolto: "Yes — written and translated for you, not by you",
-    zoltoSupported: true,
+    platform: "Yes — written and translated for you, not by you",
+    platformSupported: true,
   },
   {
     key: "setup",
     group: "The shop",
     label: "Time to your first sale",
-    zolto: "Same day",
-    zoltoSupported: true,
+    platform: "Same day",
+    platformSupported: true,
   },
 
   // ── The AI ─────────────────────────────────────────────────────────────
@@ -1531,38 +1524,39 @@ export const CAPABILITIES: Capability[] = [
     key: "ai-listings",
     group: "The AI",
     label: "Titles and descriptions written for you",
-    zolto: "Yes — from a photo, in every language you sell in",
-    zoltoSupported: true,
+    platform: "Yes — from a photo, in every language you sell in",
+    platformSupported: true,
   },
   {
     key: "ai-photography",
     group: "The AI",
     label: "One phone photo becomes a catalogue shot",
-    zolto:
+    platform:
       "Yes — restyled into a clean product or on-model image, disclosed as AI-styled",
-    zoltoSupported: true,
+    platformSupported: true,
   },
   {
     key: "ai-intake",
     group: "The AI",
     label: "Get stock in without typing it",
-    zolto:
+    platform:
       "Yes — photograph a handwritten list, or send a photo and a price to WhatsApp, Slack or Discord",
-    zoltoSupported: true,
+    platformSupported: true,
   },
   {
     key: "ai-support",
     group: "The AI",
     label: "Something answers customer questions for you",
-    zolto: "Yes — materials, shipping and sizing, without you at the keyboard",
-    zoltoSupported: true,
+    platform:
+      "Yes — materials, shipping and sizing, without you at the keyboard",
+    platformSupported: true,
   },
   {
     key: "ai-insights",
     group: "The AI",
     label: "Plain-language read on what's selling",
-    zolto: "Yes — best sellers and restock needs, in sentences (Pro)",
-    zoltoSupported: true,
+    platform: "Yes — best sellers and restock needs, in sentences (Pro)",
+    platformSupported: true,
   },
 
   // ── Found and bought by AI ─────────────────────────────────────────────
@@ -1570,16 +1564,16 @@ export const CAPABILITIES: Capability[] = [
     key: "ai-discovery",
     group: "The AI",
     label: "AI assistants can read your shop",
-    zolto: "Yes — every store ships an llms.txt and an MCP endpoint",
-    zoltoSupported: true,
+    platform: "Yes — every store ships an llms.txt and an MCP endpoint",
+    platformSupported: true,
   },
   {
     key: "agent-checkout",
     group: "The AI",
     label: "An assistant can pick a piece and open a checkout",
-    zolto:
+    platform:
       "Yes — it checks live stock over MCP and hands your customer a checkout to complete",
-    zoltoSupported: true,
+    platformSupported: true,
   },
 
   // ── The money ──────────────────────────────────────────────────────────
@@ -1587,31 +1581,32 @@ export const CAPABILITIES: Capability[] = [
     key: "who-holds-money",
     group: "The money",
     label: "Who holds your money",
-    zolto: "Nobody but you — straight into your own Stripe and TWINT accounts",
-    zoltoSupported: true,
+    platform:
+      "Nobody but you — straight into your own Stripe and TWINT accounts",
+    platformSupported: true,
   },
   {
     key: "card-rate",
     group: "The money",
     label: "What a card costs you",
     // The row we lose, stated as a figure rather than a shrug. Sourced from
-    // costOfAcceptance's `zolto-card`, so it can't drift from the rate table.
-    zolto: "2.9% + CHF 0.20 — Stripe's Swiss rate, and we add nothing to it",
-    zoltoSupported: false,
+    // costOfAcceptance's `platform-card`, so it can't drift from the rate table.
+    platform: "2.9% + CHF 0.20 — Stripe's Swiss rate, and we add nothing to it",
+    platformSupported: false,
   },
   {
     key: "commitment",
     group: "The money",
     label: "What you sign",
-    zolto: "Nothing — month to month, and one-click export on every plan",
-    zoltoSupported: true,
+    platform: "Nothing — month to month, and one-click export on every plan",
+    platformSupported: true,
   },
   {
     key: "swiss",
     group: "The money",
     label: "Built and run where you are",
-    zolto: "Built in Zürich; servers in Europe, mostly Germany",
-    zoltoSupported: true,
+    platform: "Built in Zürich; servers in Europe, mostly Germany",
+    platformSupported: true,
   },
 ];
 
@@ -1646,7 +1641,7 @@ export interface CompetitorCapability {
 }
 
 export interface Competitor {
-  /** URL slug fragment: /compare/zolto-vs-<id>. */
+  /** URL slug fragment: /compare/gwinn-vs-<id>. */
   id: string;
   name: string;
   /** What the product actually is — neutral, checkable, no pricing claims. */
@@ -1658,8 +1653,8 @@ export interface Competitor {
    * we don't fit is what makes the rest of the page worth believing.
    */
   betterWhen: string[];
-  /** When Zolto is the better fit. */
-  zoltoWhen: string[];
+  /** When Gwinn is the better fit. */
+  platformWhen: string[];
   /**
    * Answers to the CAPABILITIES rows. Optional because we only publish a matrix
    * for the competitors we actually researched to that depth — an empty column
@@ -1682,7 +1677,7 @@ export interface Competitor {
 }
 
 /**
- * The named incumbents Zolto positions against, for the /compare/* pages.
+ * The named incumbents Gwinn positions against, for the /compare/* pages.
  *
  * **This used to be a pricing-free zone.** The old rule was that competitors'
  * rates change by country, contract and volume, so any figure here would be
@@ -1702,20 +1697,19 @@ export interface Competitor {
  * ship — Worldline's negotiated terminal pricing stays on the NEGOTIATED list
  * with no number rather than getting a plausible one.
  *
- * Claims about Zolto still come from PLANS / REVENUE_SHARE, as before.
+ * Claims about Gwinn still come from PLANS / REVENUE_SHARE, as before.
  */
 export const COMPETITORS: Competitor[] = [
   {
     id: "stripe",
     name: "Stripe",
-    summary:
-      "A developer-first payments platform. Stripe powers checkout for a large share of the web, and Zolto itself settles payments through Stripe Connect — your customers pay into your own Stripe account.",
+    summary: `A developer-first payments platform. Stripe powers checkout for a large share of the web, and ${BRAND.name} itself settles payments through Stripe Connect — your customers pay into your own Stripe account.`,
     betterWhen: [
       "You have engineering resources and want to build a bespoke checkout.",
       "Your business model needs Stripe's full API surface — marketplaces, subscriptions, complex payouts.",
       "You already run a storefront you're happy with and only need payments.",
     ],
-    zoltoWhen: [
+    platformWhen: [
       "You want a store and a point-of-sale, not an API to build against.",
       "You'd rather photograph your notebook than write a product catalogue by hand.",
       "You sell at markets and online and want one inventory across both.",
@@ -1729,10 +1723,10 @@ export const COMPETITORS: Competitor[] = [
     betterWhen: [
       "Your customers don't pay by TWINT — SumUp is cheaper and simpler on cards, and setup takes under an hour.",
       "You sell enough on cards for a monthly subscription to beat a per-sale percentage.",
-      "You want a mature POS app: variants, modifiers, selling layouts, supplier lists, reconciliation. On pure point-of-sale features it is further along than Zolto.",
-      "You want a decade of track record behind the company taking your money. Zolto does not have one.",
+      `You want a mature POS app: variants, modifiers, selling layouts, supplier lists, reconciliation. On pure point-of-sale features it is further along than ${BRAND.name}.`,
+      `You want a decade of track record behind the company taking your money. ${BRAND.name} does not have one.`,
     ],
-    zoltoWhen: [
+    platformWhen: [
       "Your customers reach for TWINT first. A SumUp register cannot take it at all — the workaround is a second, separate TWINT setup and a manual reconciliation at the end of the day.",
       "You sell one-of-a-kind pieces and can't afford to sell the same one twice across two channels.",
       "You want the shop built, written and photographed for you rather than a template to fill in yourself.",
@@ -1752,8 +1746,7 @@ export const COMPETITORS: Competitor[] = [
         // publishing precisely because the opposite claim would be disproved
         // by one click on their pricing page.
         key: "item-grid",
-        value:
-          "Yes — Selling Layouts, categories, SKUs, variants and images, in the free app. More developed than Zolto's.",
+        value: `Yes — Selling Layouts, categories, SKUs, variants and images, in the free app. More developed than ${BRAND.name}'s.`,
         supported: true,
         cost: "Free — no terminal needed",
         costSourceId: "sumup-pos-software",
@@ -1867,7 +1860,7 @@ export const COMPETITORS: Competitor[] = [
       "You want the biggest third-party app ecosystem and someone to assemble it.",
       "You need established multi-channel retail tooling and have time to administer it.",
     ],
-    zoltoWhen: [
+    platformWhen: [
       "You're one person, and a platform you have to administer is the problem, not the solution.",
       "You want the register and the catalogue on the phone in your apron without a monthly bill for it.",
       "You'd rather photograph your notebook than fill in a product grid by hand.",
@@ -1884,7 +1877,7 @@ export const COMPETITORS: Competitor[] = [
       "You have real volume and want negotiated rates with dedicated account management.",
       "You want an established Swiss acquiring relationship with formal contract terms.",
     ],
-    zoltoWhen: [
+    platformWhen: [
       "You want your products in the register. Tap on Mobile is a payment app — you type in an amount every time, or buy and integrate separate POS software.",
       "You want an online shop, not a checkout to bolt onto a site you commission. Saferpay is a gateway, not a store.",
       "You're one person or a small studio, and a multi-year terminal contract is overkill.",
@@ -2033,10 +2026,10 @@ export const HOW_TO_START: string[] = [
 ];
 
 /**
- * What Zolto is bad at, published rather than left to be discovered.
+ * What Gwinn is bad at, published rather than left to be discovered.
  *
- * The August 2026 pricing review ended its case for Zolto with a list of
- * Zolto's own risks, on the grounds that a comparison which concedes nothing
+ * The August 2026 pricing review ended its case for Gwinn with a list of
+ * Gwinn's own risks, on the grounds that a comparison which concedes nothing
  * about itself gets discounted along with everything else on the page. That
  * reasoning is already the repo's own — it's why `Competitor.betterWhen`
  * exists, and why the research page keeps its unflattering finding — but it
@@ -2054,21 +2047,18 @@ export interface Limitation {
   detail: string;
 }
 
-export const ZOLTO_LIMITATIONS: Limitation[] = [
+export const PLATFORM_LIMITATIONS: Limitation[] = [
   {
     title: "We have no track record",
-    detail:
-      "SumUp and Worldline have a decade or more each. Zolto is new, and a new company is a risk on its own terms however good the product is. What we can offer against that: no contract, no hardware to buy, and one-click export of everything you've put in — on the Free plan too. Leaving costs you an afternoon, not a termination fee.",
+    detail: `SumUp and Worldline have a decade or more each. ${BRAND.name} is new, and a new company is a risk on its own terms however good the product is. What we can offer against that: no contract, no hardware to buy, and one-click export of everything you've put in — on the Free plan too. Leaving costs you an afternoon, not a termination fee.`,
   },
   {
     title: "Taking a card through us is the dearest option on our own table",
-    detail:
-      "Swiss-issued cards bill at Stripe's non-EEA rate — 2.9% plus CHF 0.20 — and Zolto adds nothing on top, which still leaves every other in-person option on our comparison cheaper than ours. SumUp's online rate beats ours on every plan too. Two honest responses: take TWINT where you can, which sits in the same register and costs less than half as much; and choose Zolto because it removes the work, not because it removes the fee. If cost per card sale is your deciding number, it decides against us.",
+    detail: `Swiss-issued cards bill at Stripe's non-EEA rate — 2.9% plus CHF 0.20 — and ${BRAND.name} adds nothing on top, which still leaves every other in-person option on our comparison cheaper than ours. SumUp's online rate beats ours on every plan too. Two honest responses: take TWINT where you can, which sits in the same register and costs less than half as much; and choose ${BRAND.name} because it removes the work, not because it removes the fee. If cost per card sale is your deciding number, it decides against us.`,
   },
   {
     title: "Everything runs on Stripe, and Stripe sets the real price",
-    detail:
-      "Stripe holds the funds until payout, runs the identity checks, owns the chargeback process, and sets the rate that dominates what a sale costs you. Zolto never touches your money, which is the good half of that arrangement; the other half is that our own sovereignty ledger lists card payments as still moving, and until it stops moving, a hard dependency is what it is.",
+    detail: `Stripe holds the funds until payout, runs the identity checks, owns the chargeback process, and sets the rate that dominates what a sale costs you. ${BRAND.name} never touches your money, which is the good half of that arrangement; the other half is that our own sovereignty ledger lists card payments as still moving, and until it stops moving, a hard dependency is what it is.`,
   },
   {
     title: "Parts of our stack are still outside Europe",
@@ -2082,8 +2072,7 @@ export const ZOLTO_LIMITATIONS: Limitation[] = [
   },
   {
     title: "We are below the Swiss VAT threshold",
-    detail:
-      "Swiss VAT registration is mandatory only above CHF 100,000 of annual turnover, and Zolto is under it, so the prices you see are simply the prices. It also tells you how small we are. If that changes, prices will say which way they're quoted, and we'll say so before it happens.",
+    detail: `Swiss VAT registration is mandatory only above CHF 100,000 of annual turnover, and ${BRAND.name} is under it, so the prices you see are simply the prices. It also tells you how small we are. If that changes, prices will say which way they're quoted, and we'll say so before it happens.`,
   },
 ];
 
@@ -2109,11 +2098,11 @@ export const BUYER_FIT: BuyerQuestion[] = [
     answers: [
       {
         when: "Yes, most of them",
-        then: "SumUp is out, whatever it costs — its register cannot take TWINT at all. That leaves Zolto and Worldline, and the question becomes whether you want your catalogue in the register. It's also the cheapest answer for you: TWINT at 1.3% is the least you can pay to be handed money at a stall without a monthly subscription.",
+        then: `SumUp is out, whatever it costs — its register cannot take TWINT at all. That leaves ${BRAND.name} and Worldline, and the question becomes whether you want your catalogue in the register. It's also the cheapest answer for you: TWINT at 1.3% is the least you can pay to be handed money at a stall without a monthly subscription.`,
       },
       {
         when: "No, they mostly tap a card",
-        then: "Then the card rate is your number, and ours is the highest on this page — Swiss cards bill at Stripe's non-EEA rate and we add nothing to it. SumUp is cheaper and its POS app is more mature. Choose Zolto for the shop, the listings and the one inventory, or don't choose it.",
+        then: `Then the card rate is your number, and ours is the highest on this page — Swiss cards bill at Stripe's non-EEA rate and we add nothing to it. SumUp is cheaper and its POS app is more mature. Choose ${BRAND.name} for the shop, the listings and the one inventory, or don't choose it.`,
       },
     ],
   },
@@ -2136,7 +2125,7 @@ export const BUYER_FIT: BuyerQuestion[] = [
       },
       {
         when: "Below that, or wildly seasonal",
-        then: "A subscription you owe in a quiet month is the wrong shape. Zolto's Free plan costs nothing in a month you don't sell online, and nothing ever on in-person sales.",
+        then: `A subscription you owe in a quiet month is the wrong shape. ${BRAND.name}'s Free plan costs nothing in a month you don't sell online, and nothing ever on in-person sales.`,
       },
     ],
   },

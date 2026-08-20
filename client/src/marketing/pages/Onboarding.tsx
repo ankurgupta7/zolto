@@ -15,7 +15,7 @@ import { useMarketingT } from "../lib/marketingI18n";
  * once the admin is claimed, so a reload resumes where the merchant left off.
  */
 
-const CLAIM_TOKEN_KEY = "zolto_claim_token";
+const CLAIM_TOKEN_KEY = "gwinn_claim_token";
 
 /**
  * The "become your store's admin" step. Signup stashes a one-time claim token in

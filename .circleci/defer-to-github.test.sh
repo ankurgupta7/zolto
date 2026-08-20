@@ -73,7 +73,7 @@ git add -A && git commit -q -m base
 BASE_SHA="$(git rev-parse HEAD)"
 
 export CIRCLE_PROJECT_USERNAME=ankurgupta7
-export CIRCLE_PROJECT_REPONAME=zolto
+export CIRCLE_PROJECT_REPONAME=gwinn
 export GH_WAIT_SECONDS=0 # never sleep in tests
 
 # run_sut <expected-exit-desc>; echoes combined output, sets $SUT_RC / $SUT_HALTED

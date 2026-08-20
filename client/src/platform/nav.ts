@@ -1,5 +1,5 @@
 /**
- * Operator console navigation — Zolto's own back office, not a merchant's.
+ * Operator console navigation — Gwinn's own back office, not a merchant's.
  *
  * Kept separate from client/src/admin/nav.ts on purpose. That manifest
  * describes a *tenant's* admin and is resolved against their role and plan;

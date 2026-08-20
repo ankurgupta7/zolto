@@ -1,12 +1,12 @@
 # Positioning & pricing revision — August 2026
 
 > **Status: shipped.** This records what changed on the marketing surface after
-> an external review checked Zolto's positioning against primary sources, and —
+> an external review checked Gwinn's positioning against primary sources, and —
 > more importantly — *why*, so the decisions don't get quietly reverted by
 > someone who only sees the old rule.
 
-The review is `zolto-vs-sumup-vs-worldline`, revised August 2026. It compared
-Zolto, SumUp and Worldline for a Swiss maker, with every competitor figure
+The review is `gwinn-vs-sumup-vs-worldline`, revised August 2026. It compared
+Gwinn, SumUp and Worldline for a Swiss maker, with every competitor figure
 checked against a primary source. Its findings were mostly uncomfortable and
 mostly correct.
 
@@ -14,37 +14,37 @@ mostly correct.
 
 ## 1. The finding that mattered
 
-**Zolto's "0% in person / 1% online" is a platform fee charged on top of
+**Gwinn's "0% in person / 1% online" is a platform fee charged on top of
 Stripe. It is not the cost of acceptance.** Every surface quoted it as though
 it were — the pledge, the pricing page, and above all `FeeCalculator`, which
 showed a merchant "CHF 0.00" while Stripe quietly took roughly three times
-Zolto's cut on the same sale.
+Gwinn's cut on the same sale.
 
 Compared like for like on a CHF 45 craft-fair sale:
 
 | | Cost | Effective rate |
 |---|---|---|
 | SumUp Payments Plus (CHF 29/mo) | CHF 0.45 | 0.99% |
-| **Zolto — own TWINT QR** | **CHF 0.59** | **1.30%** |
+| **Gwinn — own TWINT QR** | **CHF 0.59** | **1.30%** |
 | SumUp — debit | CHF 0.68 | 1.50% |
 | Worldline Tap on Mobile | CHF 0.77 | 1.70% |
 | SumUp — credit | CHF 1.13 | 2.50% |
-| **Zolto — card via Stripe** | **CHF 1.51** | **3.34%** |
+| **Gwinn — card via Stripe** | **CHF 1.51** | **3.34%** |
 
-*(Updated after the Stripe confirmation in §6. The review worked its Zolto card
+*(Updated after the Stripe confirmation in §6. The review worked its Gwinn card
 row at 1.4% because Stripe's bucket was unknown; at the confirmed 2.9% the row
 moves from fifth to last.)*
 
 Two things follow, and the whole in-person argument now rests on the second:
 
-1. **On cards, Zolto is the dearest option on its own table** — dearer than a
-   SumUp credit-card sale. Zolto adds nothing to Stripe's rate; Stripe's rate is
+1. **On cards, Gwinn is the dearest option on its own table** — dearer than a
+   SumUp credit-card sale. Gwinn adds nothing to Stripe's rate; Stripe's rate is
    simply high for Swiss cards.
-2. **On TWINT, Zolto is the cheapest way a maker can be paid at a stall without
+2. **On TWINT, Gwinn is the cheapest way a maker can be paid at a stall without
    a subscription** — 1.30%, less than half the card figure, in the same till as
    the catalogue, which SumUp cannot do at all.
 
-**The reason to choose Zolto is that it removes the work, not that it removes
+**The reason to choose Gwinn is that it removes the work, not that it removes
 the fee.** Sold as "cheapest", the case doesn't survive page one.
 
 ---
@@ -121,11 +121,11 @@ keeps the unbounded form out.
 
 ## 4. A correction the review itself got wrong
 
-The review credits Zolto with **TWINT at 1.3% straight from the merchant's own
+The review credits Gwinn with **TWINT at 1.3% straight from the merchant's own
 account**. That is true of only one of the two TWINT paths in `server/pos.ts`:
 
 - `twint_qr` — the merchant's own static QR. Swiss end to end, 1.3%, and the
-  money never passes through Stripe or Zolto. It is *attested* in the till, not
+  money never passes through Stripe or Gwinn. It is *attested* in the till, not
   captured by it.
 - `twint` (`/api/pos/twint-intent`) — a **Stripe** PaymentIntent with
   `payment_method_types: ["twint"]`. Stripe's rails, at a TWINT rate Stripe does
@@ -151,7 +151,7 @@ elision the ledger exists to refuse. It is now two rows, and the second says
 - **Any "SumUp is British, post-Brexit" framing.** SumUp's European merchants
   contract with **SumUp Limited (Dublin)**, an EU-regulated e-money
   institution. The real SumUp gap is TWINT.
-- **Changing the prices.** The review shows Zolto is the most expensive of the
+- **Changing the prices.** The review shows Gwinn is the most expensive of the
   three online on rate. Whether to move `REVENUE_SHARE.freeBps` or
   `PLANS[].priceChf` is a business decision, not a copy fix. Both are single
   constants everything derives from, so it stays a one-line change whenever the
@@ -169,8 +169,8 @@ would have been choosing a number rather than reporting one.
 
 **Confirmed August 2026: Swiss-issued cards bill at Stripe's non-EEA rate.** The
 optimistic row is deleted rather than kept as a hopeful footnote, and the
-surviving `zolto-card` row is `verified`. The consequences rippled further than
-the table — the comparison row, `ZOLTO_LIMITATIONS`, `BUYER_FIT`, the
+surviving `platform-card` row is `verified`. The consequences rippled further than
+the table — the comparison row, `PLATFORM_LIMITATIONS`, `BUYER_FIT`, the
 sovereignty ledger's card-networks note, the MCP summary and `/llms-full.txt`
 all previously said some version of "not the cheapest" and now say the sharper,
 true thing. The mechanism that made this safe is worth keeping: the site was

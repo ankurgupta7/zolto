@@ -62,7 +62,7 @@
         android:layout_gravity="center_vertical"
         android:layout_marginEnd="4dp"
         android:text="@string/bargain"
-        style="@style/Widget.Zolto.Button.Outlined" />
+        style="@style/Widget.Brand.Button.Outlined" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_remove"
@@ -70,6 +70,6 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center_vertical"
         android:text="@string/remove"
-        style="@style/Widget.Zolto.Button.Outlined" />
+        style="@style/Widget.Brand.Button.Outlined" />
 
 </LinearLayout>

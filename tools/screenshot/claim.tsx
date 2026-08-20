@@ -54,7 +54,7 @@ const trpcClient = trpc.createClient({
 
 // No claim token on purpose: that's the recovery scenario.
 try {
-  sessionStorage.removeItem("zolto_claim_token");
+  sessionStorage.removeItem("gwinn_claim_token");
 } catch {
   /* fine */
 }

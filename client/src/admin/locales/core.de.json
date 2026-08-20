@@ -3,7 +3,7 @@
     "nav": {
       "groups": {
         "store": "Shop",
-        "account": "Zolto-Konto"
+        "account": "{{brand}}-Konto"
       },
       "home": "Startseite",
       "products": "Produkte",
@@ -52,7 +52,7 @@
       },
       "adminOnly": {
         "title": "Nur für Admins",
-        "description": "Dieser Teil Ihres Zolto-Kontos wird vom Shop-Inhaber oder einem Admin verwaltet."
+        "description": "Dieser Teil Ihres {{brand}}-Kontos wird vom Shop-Inhaber oder einem Admin verwaltet."
       }
     },
     "pos": {
@@ -69,8 +69,8 @@
     },
     "posPair": {
       "title": "Diese Kasse einrichten",
-      "description": "Dieser Link verbindet dieses Gerät mit deinem Shop. Wenn die Zolto-POS-App installiert ist, sollte sie sich bereits öffnen.",
-      "openApp": "In Zolto POS öffnen",
+      "description": "Dieser Link verbindet dieses Gerät mit deinem Shop. Wenn die {{brand}}-POS-App installiert ist, sollte sie sich bereits öffnen.",
+      "openApp": "In {{brand}} POS öffnen",
       "noAppYet": "Du hast die App noch nicht?",
       "installThenNewLink": "Kopplungslinks laufen nach wenigen Minuten ab. Erstelle nach der Installation unter „Schlüssel & Zugriff“ einen neuen.",
       "missingToken": "Dieser Kopplungslink ist unvollständig. Erstelle unter „Schlüssel & Zugriff“ einen neuen."

@@ -22,7 +22,7 @@ payment service provider or an existing plug-in, and anyone wanting to build a
 direct integration must submit an application form which TWINT reviews before
 they will talk to you.
 
-Worse for Zolto specifically:
+Worse for Gwinn specifically:
 
 > "If the connection/integration process is carried out technically by a third
 > party (such as a payment service provider or an integrator), it must be
@@ -30,7 +30,7 @@ Worse for Zolto specifically:
 > lost, the contractual partner may no longer process payments via TWINT."
 > — TWINT GTC for Merchants (V4)
 
-Zolto is exactly that third party. We hold merchants' credentials and initiate
+Gwinn is exactly that third party. We hold merchants' credentials and initiate
 payments on their behalf, which makes us an **integrator** in TWINT's model, not
 a merchant. So the sequence is:
 
@@ -58,11 +58,11 @@ Two separate things, and it's worth not conflating them:
 report receiving it by email and finding it under *Settings → \<store\>* in the
 portal. The certificate is ordered/generated within that same portal.
 
-This is per-merchant, not per-platform. Each Zolto tenant selling via native
+This is per-merchant, not per-platform. Each Gwinn tenant selling via native
 TWINT signs their own TWINT contract and registers their own store — exactly
 like today's Stripe Connect model, where each tenant links their own Stripe
-account and money never touches Zolto. **That property is preserved**, which
-matters: "Zolto never holds your money" is a load-bearing promise
+account and money never touches Gwinn. **That property is preserved**, which
+matters: "Gwinn never holds your money" is a load-bearing promise
 (`shared/platform.ts` `PRICING_PROMISE`).
 
 ---
@@ -130,10 +130,10 @@ settlement becomes unattributable.
 
 ### 3.3 What must not regress
 
-- **In-person carries no Zolto fee, on any plan.** Native TWINT changes who the
-  merchant pays 1.3% to; it must not become an excuse to introduce a Zolto cut
+- **In-person carries no Gwinn fee, on any plan.** Native TWINT changes who the
+  merchant pays 1.3% to; it must not become an excuse to introduce a Gwinn cut
   on POS. This is the central product promise.
-- **Zolto never holds merchant money.** Preserved: each merchant contracts with
+- **Gwinn never holds merchant money.** Preserved: each merchant contracts with
   TWINT Acquiring AG directly.
 - **Stripe TWINT stays as the fallback.** A merchant without a TWINT contract
   yet must still be able to take TWINT on day one. Two rails coexisting is the
@@ -187,10 +187,10 @@ Android app shows the sticker with the amount in 40sp beside it and records the
 sale only when the merchant taps *Received CHF x.xx*. Migration `0013`.
 
 The merchant already has a TWINT QR code sticker (they get one with the
-acquiring contract; it's the *Kassensticker* small vendors use). Zolto's POS
+acquiring contract; it's the *Kassensticker* small vendors use). Gwinn's POS
 simply **shows that sticker on screen** for the customer to scan. Money goes
 merchant → merchant at 1.3%, Stripe is out of the in-person loop entirely, and
-Zolto holds nothing but an image.
+Gwinn holds nothing but an image.
 
 It also removes a wart in today's flow. `PaymentActivity.kt:364` records that a
 locally-rendered QR of Stripe's redirect URL **was rejected by the TWINT app** —
@@ -201,7 +201,7 @@ cashier never leaves the app.
 
 ### The one thing it cannot do
 
-**Zolto cannot learn that the payment succeeded.** No API means no webhook, no
+**Gwinn cannot learn that the payment succeeded.** No API means no webhook, no
 callback, nothing to poll. Basic-sticker payments are anonymous (no payer name
 or number reaches the merchant), so even in principle there is no handle to
 match against. The TWINT notification goes to the *merchant's* phone. No design

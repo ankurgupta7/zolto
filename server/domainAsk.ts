@@ -1,7 +1,7 @@
 /**
  * Caddy on-demand-TLS "ask" endpoint — covers two kinds of tenant hostnames:
  *
- * 1. Platform subdomains (blah.zolto.ch, or blah.zolto.kalakosh.ch when run
+ * 1. Platform subdomains (blah.gwinn.ch, or blah.gwinn.kalakosh.ch when run
  *    alongside Kalakosh-ch) — every tenant's default storefront. We answer
  *    200 for any subdomain of the platform's root domain whose left-most
  *    label matches a real tenant slug. No plan gate: this is the free-tier
@@ -14,7 +14,7 @@
  *
  * The platform root domain is read from PUBLIC_BASE_URL (set in every deploy
  * mode — standalone or alongside Kalakosh-ch) rather than SITE_DOMAIN, which
- * only applies to Zolto's own bundled Caddy and would be wrong/unset when a
+ * only applies to Gwinn's own bundled Caddy and would be wrong/unset when a
  * different Caddy (e.g. Kalakosh-ch's) is fronting the app.
  *
  * Caddy calls this before minting a certificate for either case:

@@ -60,9 +60,9 @@ describe("Support page", () => {
     render(<Support />);
     expect(
       screen.getByText("Email us").closest("a")!.getAttribute("href"),
-    ).toBe("mailto:support@zolto.ch");
+    ).toBe("mailto:support@gwinn.ch");
     const docs = screen.getByText("Guides & docs").closest("a")!;
-    expect(docs.getAttribute("href")).toBe("https://zolto.ch/blog");
+    expect(docs.getAttribute("href")).toBe("https://gwinn.ch/blog");
     expect(docs.getAttribute("target")).toBe("_blank");
     expect(screen.getByText("All systems operational")).toBeTruthy();
   });

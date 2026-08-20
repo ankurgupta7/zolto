@@ -97,7 +97,7 @@ function storefrontTenantId(ctx: { tenant: { id: number } | null }): number {
  * storagePut, with a quota rejection turned into something the merchant can act
  * on. A bare StorageQuotaError would reach the browser as tRPC's generic
  * "Internal server error", which tells someone who has simply filled their plan
- * that Zolto is broken — the same opaque-error trap as the Connect (10002)
+ * that Gwinn is broken — the same opaque-error trap as the Connect (10002)
  * message. PAYLOAD_TOO_LARGE carries the real explanation instead.
  */
 async function putForTenant(
@@ -1474,12 +1474,12 @@ Return ONLY valid JSON, no markdown.`,
           .array(
             z.object({
               /**
-               * The product's own id, from the `zolto_id` column the spreadsheet
+               * The product's own id, from the `gwinn_id` column the spreadsheet
                * mirror publishes (server/sheetMirror.ts). Optional, because a
                * hand-written CSV or a file exported from another platform has no
                * such column — but when present it is what the row is matched on.
                */
-              zoltoId: z.number().int().positive().optional(),
+              platformId: z.number().int().positive().optional(),
               name: z.string().min(1),
               description: z.string().min(1),
               ...localeCreateFields,
@@ -1523,8 +1523,9 @@ Return ONLY valid JSON, no markdown.`,
           // byId, because `existing` is this tenant's catalogue — so a bad id
           // falls through to the name match rather than writing across tenants.
           const match =
-            (row.zoltoId !== undefined ? byId.get(row.zoltoId) : undefined) ??
-            byName.get(row.name.trim().toLowerCase());
+            (row.platformId !== undefined
+              ? byId.get(row.platformId)
+              : undefined) ?? byName.get(row.name.trim().toLowerCase());
           if (match) {
             const patch: Record<string, unknown> = {
               // Included so an id-matched row can carry a rename. Under the old

@@ -1,7 +1,7 @@
 /**
  * /pos/pair?t=… — where a pairing link lands in a browser.
  *
- * The deep link the admin mints is `zolto://pair?t=…`, which only resolves if the
+ * The deep link the admin mints is `gwinn://pair?t=…`, which only resolves if the
  * app is installed. This page is the https fallback for the case that matters
  * most: the merchant taps the link on a phone that doesn't have the register app
  * yet. Without it, that tap does nothing at all and reads as a broken link.
@@ -39,7 +39,7 @@ export default function PosPair() {
   });
 
   const deepLink = token
-    ? `zolto://pair?t=${encodeURIComponent(token)}&url=${encodeURIComponent(window.location.origin)}`
+    ? `gwinn://pair?t=${encodeURIComponent(token)}&url=${encodeURIComponent(window.location.origin)}`
     : null;
 
   useEffect(() => {

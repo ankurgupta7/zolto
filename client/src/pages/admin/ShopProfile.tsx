@@ -1,5 +1,5 @@
 /**
- * Shop profile (account plane) — the store's identity within Zolto: name, slug,
+ * Shop profile (account plane) — the store's identity within Gwinn: name, slug,
  * plan/trial status, business contact details, the currency it sells in, and
  * the legal identity behind it. Name and slug are the tenant's stable identity
  * (changing them is a support operation), so they're shown read-only; the rest
@@ -81,7 +81,7 @@ export default function ShopProfile() {
     return <AdminOnly />;
   }
 
-  const storeUrl = tenant?.slug ? `${tenant.slug}.zolto.ch` : null;
+  const storeUrl = tenant?.slug ? `${tenant.slug}.gwinn.ch` : null;
 
   const onSave = () => {
     if (contactEmail && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(contactEmail)) {

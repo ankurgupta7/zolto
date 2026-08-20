@@ -314,7 +314,7 @@ describe("GET /api/pos/config", () => {
     expect(res.body.twintQrUrl).toBeNull();
   });
 
-  // Store identity for generic POS clients (Zolto POS) — the app renders the
+  // Store identity for generic POS clients (Gwinn POS) — the app renders the
   // paired store's name/logo at runtime instead of baking a brand into the
   // build, so config must always carry a usable identity.
   it("returns the tenant's name, no logo, and CHF by default", async () => {

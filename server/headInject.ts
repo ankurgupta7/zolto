@@ -1,7 +1,7 @@
 /**
  * Primitives for rewriting the served index.html <head> before it goes out.
  *
- * Zolto serves one shared SPA shell for the marketing surface and every tenant
+ * Gwinn serves one shared SPA shell for the marketing surface and every tenant
  * storefront, so "what this page is" has to be stamped into the HTML per request
  * — search and AI crawlers that don't execute JavaScript see only what's here.
  * Both server/marketingSeo.ts and server/storefrontSeo.ts build on these.

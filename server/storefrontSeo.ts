@@ -10,7 +10,8 @@ import {
   isInStock,
 } from "@shared/storefront";
 import { normalizeBaseUrl } from "@shared/marketing";
-import { ZOLTO_URL, zoltoCreditSentence } from "@shared/attribution";
+import { platformCreditSentence } from "@shared/attribution";
+import { BRAND } from "@shared/brand";
 import {
   escapeHtml,
   setMetaContent,
@@ -289,8 +290,8 @@ export function injectStorefrontSeo(
   const credit =
     data.identity.attribution === false
       ? ""
-      : `<p>${escapeHtml(zoltoCreditSentence(data.identity.storeName))} ` +
-        `<a href="${ZOLTO_URL}/">${escapeHtml(ZOLTO_URL)}</a></p>`;
+      : `<p>${escapeHtml(platformCreditSentence(data.identity.storeName))} ` +
+        `<a href="${BRAND.url}/">${escapeHtml(BRAND.url)}</a></p>`;
 
   out = appendAfterRoot(
     out,

@@ -1,5 +1,5 @@
 /**
- * Screenshot entry for the operator console (zolto.ch/platform).
+ * Screenshot entry for the operator console (gwinn.ch/platform).
  *
  * The console's pages read everything through tRPC, so unlike the Landing
  * entry they cannot be mounted bare. Rather than mock the components — which
@@ -79,7 +79,7 @@ const STORES = [
     stripeConnected: true,
     adminCount: 2,
     userCount: 5,
-    // Fee waived only: still on Free's limits, but Zolto takes no cut.
+    // Fee waived only: still on Free's limits, but Gwinn takes no cut.
     comp: {
       plan: null,
       feeWaived: true,
@@ -100,7 +100,7 @@ const RESPONSES: Record<string, unknown> = {
     tenant: {
       ...STORES[1],
       onboardingStep: 2,
-      referralCode: "ZOLTO-8F2A",
+      referralCode: "GWINN-8F2A",
     },
     users: [
       {

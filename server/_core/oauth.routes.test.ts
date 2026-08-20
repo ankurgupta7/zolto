@@ -1,3 +1,4 @@
+import { BRAND } from "@shared/brand";
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import express from "express";
 import request from "supertest";
@@ -67,49 +68,49 @@ describe("GET /api/oauth/login", () => {
     const res = await request(makeApp())
       .get("/api/oauth/login")
       .set("X-Forwarded-Proto", "https")
-      .set("X-Forwarded-Host", "custom.zolto.ch");
+      .set("X-Forwarded-Host", `custom.${BRAND.domain}`);
     const loc = new URL(res.headers.location);
     expect(loc.searchParams.get("redirect_uri")).toBe(
-      "https://custom.zolto.ch/api/oauth/callback",
+      `https://custom.${BRAND.domain}/api/oauth/callback`,
     );
   });
 
   it("uses the canonical PUBLIC_BASE_URL origin for the redirect URI, ignoring a tenant subdomain's own host", async () => {
-    process.env.PUBLIC_BASE_URL = "https://zolto.ch";
+    process.env.PUBLIC_BASE_URL = BRAND.url;
     const res = await request(makeApp())
       .get("/api/oauth/login")
       .set("X-Forwarded-Proto", "https")
-      .set("X-Forwarded-Host", "blah.zolto.ch");
+      .set("X-Forwarded-Host", `blah.${BRAND.domain}`);
     const loc = new URL(res.headers.location);
     // Google only ever sees one registered redirect_uri, regardless of which
     // tenant subdomain the merchant started the login from.
     expect(loc.searchParams.get("redirect_uri")).toBe(
-      "https://zolto.ch/api/oauth/callback",
+      `${BRAND.url}/api/oauth/callback`,
     );
   });
 
   it("stashes a cross-subdomain next target as an absolute URL, cookie scoped to the shared root domain", async () => {
-    process.env.PUBLIC_BASE_URL = "https://zolto.ch";
+    process.env.PUBLIC_BASE_URL = BRAND.url;
     const res = await request(makeApp())
       .get(
         "/api/oauth/login?next=" +
-          encodeURIComponent("https://blah.zolto.ch/admin"),
+          encodeURIComponent(`https://blah.${BRAND.domain}/admin`),
       )
       .set("X-Forwarded-Proto", "https")
-      .set("X-Forwarded-Host", "blah.zolto.ch");
+      .set("X-Forwarded-Host", `blah.${BRAND.domain}`);
     const setCookie = (res.headers["set-cookie"] as unknown as string[]).join(
       ";",
     );
     expect(decodeURIComponent(setCookie)).toContain(
-      "oauth_next=https://blah.zolto.ch/admin",
+      `oauth_next=https://blah.${BRAND.domain}/admin`,
     );
     // Widened to the shared root domain so it's readable once Google
-    // redirects the browser back to the canonical zolto.ch host.
-    expect(setCookie.toLowerCase()).toContain("domain=.zolto.ch");
+    // redirects the browser back to the canonical gwinn.ch host.
+    expect(setCookie.toLowerCase()).toContain(`domain=.${BRAND.domain}`);
   });
 
   it("rejects a next target on an unrelated host even with PUBLIC_BASE_URL set", async () => {
-    process.env.PUBLIC_BASE_URL = "https://zolto.ch";
+    process.env.PUBLIC_BASE_URL = BRAND.url;
     const res = await request(makeApp()).get(
       "/api/oauth/login?next=" +
         encodeURIComponent("https://evil.example.com/"),
@@ -250,16 +251,16 @@ describe("GET /api/oauth/callback", () => {
   });
 
   it("redirects a tenant admin back to their own subdomain after the canonical-host callback", async () => {
-    process.env.PUBLIC_BASE_URL = "https://zolto.ch";
+    process.env.PUBLIC_BASE_URL = BRAND.url;
     mockGoogle({ email: "someone@example.com" });
     const res = await request(makeApp())
       .get("/api/oauth/callback?code=abc")
-      .set("Cookie", "oauth_next=https://blah.zolto.ch/admin");
-    expect(res.headers.location).toBe("https://blah.zolto.ch/admin");
+      .set("Cookie", `oauth_next=https://blah.${BRAND.domain}/admin`);
+    expect(res.headers.location).toBe(`https://blah.${BRAND.domain}/admin`);
   });
 
   it("still rejects a stashed next target on an unrelated host when PUBLIC_BASE_URL is set", async () => {
-    process.env.PUBLIC_BASE_URL = "https://zolto.ch";
+    process.env.PUBLIC_BASE_URL = BRAND.url;
     mockGoogle({ email: "someone@example.com" });
     const res = await request(makeApp())
       .get("/api/oauth/callback?code=abc")

@@ -8,7 +8,7 @@
 
 **Sheena Arora** is the founder of **Kalakosh**, a jewelry brand in Zurich. She creates handcrafted pieces in pearls and semi-precious stones — necklaces, earrings, bracelets — sold at Christmas markets and Chilbis along the Zurich Gold Coast.
 
-Before Zolto, her entire business was offline. About 60 sales per month, all in person. She had no online store. No Instagram shop. Just a Square reader for card payments and repeat customers who found her at the same markets.
+Before Gwinn, her entire business was offline. About 60 sales per month, all in person. She had no online store. No Instagram shop. Just a Square reader for card payments and repeat customers who found her at the same markets.
 
 ## The Challenge
 
@@ -23,7 +23,7 @@ Sheena isn't a tech person. She didn't want to learn Shopify, pay for a develope
 
 ## The Solution
 
-Kalakosh became the first customer on Zolto — a commerce platform built for makers, with AI handling the technical work.
+Kalakosh became the first customer on Gwinn — a commerce platform built for makers, with AI handling the technical work.
 
 ### What Was Set Up (3 Days)
 
@@ -80,7 +80,7 @@ In the first month, 4 features were built based on customer conversations with t
 
 ## The Maker's Perspective
 
-> "I didn't want to become a tech person. I wanted to make jewelry. Zolto let me set up a store in 3 days without learning anything new. The AI handles the questions I used to answer in Instagram DMs — like whether my pearls are freshwater or what shipping costs to Germany."
+> "I didn't want to become a tech person. I wanted to make jewelry. Gwinn let me set up a store in 3 days without learning anything new. The AI handles the questions I used to answer in Instagram DMs — like whether my pearls are freshwater or what shipping costs to Germany."
 >
 > — **Sheena Arora**, Founder of Kalakosh, Zurich
 
@@ -101,7 +101,7 @@ Month 1 proved the model works. Month 2 is about growth:
 
 ---
 
-*Kalakosh is a real jewelry brand in Zurich and the first customer on Zolto. This case study documents Sheena Arora's actual first month. No growth hacks. No cherry-picked metrics. Just what happened.*
+*Kalakosh is a real jewelry brand in Zurich and the first customer on Gwinn. This case study documents Sheena Arora's actual first month. No growth hacks. No cherry-picked metrics. Just what happened.*
 
 **Want to read the full journey?**
 - [Launch Diary #1: The Setup](/blog/launch-diary-1)
@@ -113,7 +113,7 @@ Month 1 proved the model works. Month 2 is about growth:
 ## SEO Metadata
 
 ```html
-<title>Kalakosh Case Study: From Christmas Markets to Online Sales | Zolto</title>
+<title>Kalakosh Case Study: From Christmas Markets to Online Sales | Gwinn</title>
 <meta name="description" content="How Sheena Arora, founder of Kalakosh pearl jewelry in Zurich, launched her first online store in 3 days and made 12 online sales in her first month.">
 ```
 
@@ -125,7 +125,7 @@ Month 1 proved the model works. Month 2 is about growth:
   "@type": "CaseStudy",
   "headline": "Kalakosh Launch Case Study",
   "description": "From Christmas markets to online sales in 30 days.",
-  "author": { "@type": "Organization", "name": "Zolto" },
+  "author": { "@type": "Organization", "name": "Gwinn" },
   "datePublished": "2026-08-01",
   "about": {
     "@type": "LocalBusiness",

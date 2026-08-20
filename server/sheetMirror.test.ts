@@ -185,13 +185,13 @@ describe("buildMirrorTabs", () => {
     expect(sales[0][7]).toBe(65);
   });
 
-  it("puts zolto_id first in inventory and orders rows by id", async () => {
+  it("puts gwinn_id first in inventory and orders rows by id", async () => {
     dbMock.getAllProducts.mockResolvedValue([
       product({ id: 9, name: "Later" }),
       product({ id: 2, name: "Earlier" }),
     ]);
     const { inventory, stockIn } = await buildMirrorTabs(TENANT);
-    expect(INVENTORY_HEADER[0]).toBe("zolto_id");
+    expect(INVENTORY_HEADER[0]).toBe("gwinn_id");
     expect(inventory.map((r) => r[0])).toEqual([2, 9]);
     // Stock In lists the same items in the same order, so the two tabs read
     // against each other.

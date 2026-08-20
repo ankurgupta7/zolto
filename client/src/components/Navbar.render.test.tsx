@@ -1,3 +1,4 @@
+import { BRAND } from "@shared/brand";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import { Router } from "wouter";
@@ -175,19 +176,19 @@ describe("Navbar", () => {
 
     fireEvent.change(switcher, { target: { value: "de" } });
     expect(i18n.language).toBe("de");
-    expect(localStorage.getItem("kalakosh_lang")).toBe("de");
+    expect(localStorage.getItem(BRAND.langKey)).toBe("de");
     expect(screen.getAllByText(de.nav.home).length).toBeGreaterThan(0);
     expect(document.documentElement.lang).toBe("de-CH");
 
     fireEvent.change(switcher, { target: { value: "fr" } });
     expect(i18n.language).toBe("fr");
-    expect(localStorage.getItem("kalakosh_lang")).toBe("fr");
+    expect(localStorage.getItem(BRAND.langKey)).toBe("fr");
     expect(screen.getAllByText(fr.nav.home).length).toBeGreaterThan(0);
     expect(document.documentElement.lang).toBe("fr-CH");
 
     fireEvent.change(switcher, { target: { value: "it" } });
     expect(i18n.language).toBe("it");
-    expect(localStorage.getItem("kalakosh_lang")).toBe("it");
+    expect(localStorage.getItem(BRAND.langKey)).toBe("it");
     expect(screen.getAllByText(itLocale.nav.home).length).toBeGreaterThan(0);
     expect(document.documentElement.lang).toBe("it-CH");
   });

@@ -12,7 +12,7 @@
         android:layout_height="?attr/actionBarSize"
         android:background="@color/warm_white"
         android:title="@string/sales_history_title"
-        style="@style/Widget.Zolto.Toolbar" />
+        style="@style/Widget.Brand.Toolbar" />
 
     <!-- Slim indeterminate bar: visible whenever a DB/network sync runs. -->
     <ProgressBar

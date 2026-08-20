@@ -106,7 +106,7 @@ export default function StoreDetail({ tenantId }: { tenantId: number }) {
   const detail = query.data;
   if (!detail) return null;
   const { tenant, users } = detail;
-  const host = tenant.domain ?? `${tenant.slug}.zolto.ch`;
+  const host = tenant.domain ?? `${tenant.slug}.gwinn.ch`;
   const comp = tenant.comp;
   const noAdmin = tenant.adminCount === 0;
 
@@ -206,7 +206,7 @@ export default function StoreDetail({ tenantId }: { tenantId: number }) {
                   <>Paying for its own plan</>
                 )}
                 {comp.feeWaived
-                  ? ", and pays Zolto 0% on online & agent orders."
+                  ? ", and pays Gwinn 0% on online & agent orders."
                   : "."}
                 {comp.grantedAt && (
                   <span className="text-muted-foreground">
@@ -223,7 +223,7 @@ export default function StoreDetail({ tenantId }: { tenantId: number }) {
               </>
             ) : (
               <>
-                Nothing is comped — this store pays for its plan and Zolto's
+                Nothing is comped — this store pays for its plan and Gwinn's
                 usual online fee.
               </>
             )}

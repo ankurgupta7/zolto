@@ -9,7 +9,7 @@ import { SketchUnderline, SketchDivider } from "./SketchAccents";
 /**
  * CapabilityBand — a slim, at-a-glance strip that answers the merchant's
  * question "is my shop set up and running?" rather than selling them the
- * product they already bought. It surfaces Zolto's four pillars — Online Store,
+ * product they already bought. It surfaces Gwinn's four pillars — Online Store,
  * Tap to Pay (POS), AI Studio, and Insights — each with a live status pill.
  *
  * This is a decorative/identity zone, so it carries the hand-drawn brand voice

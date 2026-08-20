@@ -181,7 +181,7 @@ describe("Channels page — connect links", () => {
     ).toBe("https://slack.com/oauth/v2/authorize?state=signed");
     expect(
       screen
-        .getByRole("link", { name: /invite the Zolto bot/i })
+        .getByRole("link", { name: /invite the Gwinn bot/i })
         .getAttribute("href"),
     ).toBe("https://discord.com/oauth2/authorize?client_id=stub");
   });
@@ -192,7 +192,7 @@ describe("Channels page — connect links", () => {
     render(<Channels />);
     expect(screen.queryByRole("link", { name: /add to slack/i })).toBeNull();
     expect(
-      screen.queryByRole("link", { name: /invite the Zolto bot/i }),
+      screen.queryByRole("link", { name: /invite the Gwinn bot/i }),
     ).toBeNull();
   });
 });

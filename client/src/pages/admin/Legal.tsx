@@ -1,6 +1,6 @@
 /**
  * Legal & invoices (account plane) — links to the legal documents governing the
- * Zolto relationship and a pointer to invoices (managed in Plan & billing via
+ * Gwinn relationship and a pointer to invoices (managed in Plan & billing via
  * Stripe). Static; the invoice archive itself lives on the Stripe customer.
  */
 import { useTranslation } from "react-i18next";

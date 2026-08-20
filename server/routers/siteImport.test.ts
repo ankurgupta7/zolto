@@ -499,7 +499,7 @@ describe("apply", () => {
   });
 
   it("imports a product with no readable price hidden, never live at zero", async () => {
-    // A merchant's first day on Zolto must not include giving stock away
+    // A merchant's first day on Gwinn must not include giving stock away
     // because a crawler missed a number.
     mocked(getSiteImportForTenant).mockResolvedValue(
       importRow({

@@ -22,8 +22,8 @@
         "description": "Di persona è gratis, per sempre. {{fee}} sugli ordini online e da agenti IA — oppure Pro, che la elimina. Di mese in mese, disdetta in qualsiasi momento.",
         "notConfigured": "I piani a pagamento non sono ancora acquistabili su questa installazione (prezzi Stripe non configurati). Tutto ciò che è incluso nel Suo piano attuale continua a funzionare.",
         "compTitle": "Il tuo negozio è offerto da noi",
-        "compPlan": "Zolto ti offre il piano {{plan}} senza costi — non c'è nulla da pagare.",
-        "compFeeWaived": "Zolto non applica alcuna commissione sui tuoi ordini online e da agenti IA.",
+        "compPlan": "{{brand}} ti offre il piano {{plan}} senza costi — non c'è nulla da pagare.",
+        "compFeeWaived": "{{brand}} non applica alcuna commissione sui tuoi ordini online e da agenti IA.",
         "compBadge": "Offerto",
         "feesWaived": "Commissioni della piattaforma (0% — offerto)",
         "plansTitle": "Piani",
@@ -47,7 +47,7 @@
         "agentSplit": "CHF {{amount}} tramite agenti IA",
         "feesOnPro": "Commissioni della piattaforma (0% con Pro)",
         "feesOnFree": "Commissioni della piattaforma ({{percent}} su {{appliesTo}})",
-        "posNeverFee": "Le vendite di persona alla cassa non comportano mai una commissione Zolto, con qualsiasi piano.",
+        "posNeverFee": "Le vendite di persona alla cassa non comportano mai una commissione {{brand}}, con qualsiasi piano.",
         "upsell": "Con Pro risparmierebbe CHF {{savings}} questo mese — oltre CHF {{breakEven}}/mese online, la tariffa fissa di CHF {{proPrice}} di Pro batte la commissione del {{percent}}.",
         "upgradeNow": "Passa a Pro ora",
         "aiTitle": "Foto IA",
@@ -486,7 +486,7 @@
         "hideChecklist": "Nascondi questo elenco"
       },
       "capabilities": {
-        "ariaLabel": "Il suo laboratorio Zolto",
+        "ariaLabel": "Il suo laboratorio {{brand}}",
         "eyebrow": "Il suo laboratorio in sintesi",
         "tagline": "Venda online e di persona",
         "storeTitle": "Negozio online",
@@ -640,7 +640,7 @@
         },
         "posReady": {
           "title": "Accetti un pagamento con carta dal Suo telefono",
-          "body": "Installi l'app Zolto POS e acceda con la Sua chiave POS — la prima vendita con carta completa automaticamente la configurazione.",
+          "body": "Installi l'app {{brand}} POS e acceda con la Sua chiave POS — la prima vendita con carta completa automaticamente la configurazione.",
           "blockedStripe": "Colleghi prima Stripe (il passo qui sopra)."
         }
       }

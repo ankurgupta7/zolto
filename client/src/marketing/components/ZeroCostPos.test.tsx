@@ -63,7 +63,7 @@ describe("ZeroCostPos", () => {
   });
 
   it("names no competitor and asserts nobody else's price", () => {
-    // The band is specific about what Zolto ships; the contrast is the
+    // The band is specific about what Gwinn ships; the contrast is the
     // comparison table's job. An unverifiable "nobody else does this" here
     // would undercut the honesty the rest of the page is selling.
     const { container } = renderBand();

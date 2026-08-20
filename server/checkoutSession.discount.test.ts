@@ -14,6 +14,7 @@
  *     outage doesn't silently spend a customer's single-use code
  */
 
+import { BRAND } from "@shared/brand";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
 const getProductsByIds = vi.fn();
@@ -108,7 +109,7 @@ function run(overrides: Record<string, unknown> = {}) {
     tenant,
     productIds: [1],
     channel: "web",
-    baseUrl: "https://aurora.zolto.ch",
+    baseUrl: `https://aurora.${BRAND.domain}`,
     ...overrides,
   });
 }

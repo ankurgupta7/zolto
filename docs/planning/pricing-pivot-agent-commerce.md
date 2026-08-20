@@ -1,6 +1,6 @@
-# Zolto — Pricing Pivot: Free In-Person, Skim Online/Agent Sales
+# Gwinn — Pricing Pivot: Free In-Person, Skim Online/Agent Sales
 
-> Companion to `./zolto-business-plan.md` (§4). **This is the shipped pricing
+> Companion to `./gwinn-business-plan.md` (§4). **This is the shipped pricing
 > model.** It supersedes `./honest-pricing-strategy.md`, which described the
 > retired four-tier / 0%-take model and is kept only as history.
 > Document version: 2.0 (implemented)
@@ -34,7 +34,7 @@ sale — the differentiating revenue was unreachable. See
 
 Full suite green and `tsc --noEmit` clean at the time of writing. **Still open before launch:** the native TWINT rail (§3) is not
 built — in-person still runs on Stripe TWINT, which is correct on fee
-grounds (Zolto takes nothing in person either way) but not yet the
+grounds (Gwinn takes nothing in person either way) but not yet the
 cheapest rail for the vendor.
 
 ---
@@ -50,7 +50,7 @@ are **live in code and covered by tests**:
   a comment: *"Kept at 0 to honor the 'we take no cut' promise... change this
   (and that doc) together if the platform ever starts monetizing storefront
   checkout."*
-- `server/checkout.test.ts:407` — `"pins application_fee_amount at 0 — Zolto
+- `server/checkout.test.ts:407` — `"pins application_fee_amount at 0 — Gwinn
   takes no cut of the direct charge"`.
 - Current tiers are **Free / Maker (19) / Studio (49) / Atelier (99)**, priced
   around domain/support/seats/SLA, not a sales skim (`shared/platform.ts:151`).
@@ -58,7 +58,7 @@ are **live in code and covered by tests**:
 All three were reversed together, deliberately, in the same change — the
 old code comment on the fee constant had anticipated exactly this fork and
 asked for precisely that. The pledge was **rewritten rather than deleted**:
-Zolto still never holds a vendor's money and still charges nothing on
+Gwinn still never holds a vendor's money and still charges nothing on
 in-person sales; what changed is that online and agent-originated orders now
 carry a disclosed 1% on the Free plan.
 
@@ -76,7 +76,7 @@ create, and give a graduation path that rewards vendor growth.
 
 1. **Free tier** — mobile store, POS, inventory + POS sync, and a taste of AI.
    CHF 0/month. In-person payments run through **native TWINT QR (1.3%);
-   Zolto takes nothing in-person.**
+   Gwinn takes nothing in-person.**
 2. **Revenue share — shipped at 1%** (`REVENUE_SHARE.freeBps = 100`), as a
    Stripe Connect `application_fee` on online + agent-originated sales only,
    computed on the product subtotal and never on shipping. Zero in a month
@@ -137,7 +137,7 @@ to build and support alongside Stripe Connect.
   `checkout.createSession`, so they pick up the fee automatically; the
   `channel` input only changes attribution.
 - ⬜ **Native TWINT QR** — not built. In-person still runs on Stripe TWINT
-  (`/api/pos/twint-intent`), fee-free to the vendor from Zolto either way.
+  (`/api/pos/twint-intent`), fee-free to the vendor from Gwinn either way.
   Verify the effective rate before committing to a second acquirer.
 - ✅ **Tier gating** — `PLAN_FEATURES` is `free`/`pro`. The agent layer
   (llms.txt, MCP, store chat) is deliberately **ungated**: it is the
@@ -199,7 +199,7 @@ page.
   [`native-twint-integration.md`](./native-twint-integration.md).
 - ~~**VAT: inclusive vs exclusive**~~ — **closed, not applicable.** Swiss VAT
   registration is mandatory only above CHF 100,000 of annual turnover
-  (MWSTG art. 10). Zolto is below that and pre-revenue, so there is no VAT to
+  (MWSTG art. 10). Gwinn is below that and pre-revenue, so there is no VAT to
   charge on Pro or on the platform fee, and Stripe Tax stays off. **Revisit
   when annual turnover approaches CHF 100k** — at that point registration
   becomes obligatory and prices must state which way they're quoted. Until
@@ -237,7 +237,7 @@ Migration `0008` remapped the plan enum from Maker/Studio/Atelier to `pro`,
 and this section used to carry a runbook for reconciling the tenants that
 remap would have left billing an old Stripe price.
 
-**That population never existed.** Zolto is pre-launch: no paying tenants
+**That population never existed.** Gwinn is pre-launch: no paying tenants
 when `0008` ran, and none since. The grandfathering machinery built for them
 — `isLegacyPriceId`, the retired-tier inverse lookup, the
 `tenants.plan_price_override` column, the Billing-page banner, and the
@@ -276,7 +276,7 @@ being precise about what has and hasn't been proven:
   unproven link in the revenue path — it's closed.
 - ✅ **Failure contained regardless.** A rejected application fee fails the
   *entire* `checkout.sessions.create` call, which would take a vendor's
-  storefront offline rather than cost Zolto 1%. `createStorefrontCheckoutSession`
+  storefront offline rather than cost Gwinn 1%. `createStorefrontCheckoutSession`
   now retries once without the fee when — and only when — the error is
   fee-specific (`isPlatformFeeRejection`), logs loudly, and records `0` on the
   order. An un-monetized sale beats a lost one. If the integration run above

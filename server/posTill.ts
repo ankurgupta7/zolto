@@ -28,6 +28,7 @@
  * lands with the merchant and not the platform.
  */
 
+import { BRAND } from "@shared/brand";
 import type Stripe from "stripe";
 import {
   getDb,
@@ -79,7 +80,7 @@ function resolveBaseUrl(): string {
   const fromEnv = process.env.PUBLIC_BASE_URL?.replace(/\/$/, "");
   if (fromEnv) return fromEnv;
   return process.env.NODE_ENV === "production"
-    ? "https://zolto.ch"
+    ? BRAND.url
     : "http://localhost:3000";
 }
 

@@ -25,7 +25,7 @@
 # The fingerprint deliberately covers content, not commits: a dirty worktree or
 # an edited .env changes it, so a hand-patched server still rebuilds.
 
-IMAGE_FINGERPRINT_LABEL="ch.zolto.source-fingerprint"
+IMAGE_FINGERPRINT_LABEL="ch.gwinn.source-fingerprint"
 
 # Files that reach the build context without being tracked by git, and that the
 # build genuinely reads. .env is the one that matters: vite.config.ts sets

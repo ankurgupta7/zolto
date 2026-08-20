@@ -21,10 +21,10 @@ const RESERVED_LABELS = new Set(["www", "app", "api"]);
  * Order:
  *   1. `X-Tenant-Slug` header (POS apps, API clients, the storefront SPA).
  *   2. A subdomain of the platform root domain → its left-most label is a slug
- *      (blah.zolto.ch → "blah"). The apex and reserved labels resolve to null:
+ *      (blah.gwinn.ch → "blah"). The apex and reserved labels resolve to null:
  *      that's the platform surface, not a store.
  *   3. Any other hostname → a registered custom domain (shop.example.com).
- *   4. No fallback — an unknown host resolves to null. Zolto is a fresh
+ *   4. No fallback — an unknown host resolves to null. Gwinn is a fresh
  *      product, not Kalakosh; Kalakosh remains separate on kalakosh.ch.
  *
  * Steps 2 and 3 are mutually exclusive, and deliberately so. Resolution used to

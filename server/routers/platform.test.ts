@@ -1,3 +1,4 @@
+import { BRAND } from "@shared/brand";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const { dbMock } = vi.hoisted(() => ({
@@ -556,7 +557,7 @@ describe("platform.rotatePosTestKey", () => {
 
 describe("platform.agentTraffic", () => {
   const today = new Date().toISOString().slice(0, 10);
-  // tenant_id 0 is the platform surface (zolto.ch's own brief); anything else
+  // tenant_id 0 is the platform surface (gwinn.ch's own brief); anything else
   // is a storefront. See drizzle/schema.ts agentHits for why 0, not NULL.
   const rows = [
     {
@@ -605,8 +606,8 @@ describe("platform.agentTraffic", () => {
     expect(res.storesReached).toBe(2);
   });
 
-  it("separates zolto.ch's own brief from the storefronts'", async () => {
-    // Two different questions — "is an assistant recommending Zolto to a maker"
+  it(`separates ${BRAND.domain}'s own brief from the storefronts'`, async () => {
+    // Two different questions — "is an assistant recommending Gwinn to a maker"
     // versus "is an agent shopping at our merchants" — that would be
     // uninterpretable summed together.
     dbMock.getAllAgentHits.mockResolvedValue(rows);

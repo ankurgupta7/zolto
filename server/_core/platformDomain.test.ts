@@ -1,3 +1,4 @@
+import { BRAND } from "@shared/brand";
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { getPlatformRootDomain, isPlatformHost } from "./platformDomain";
 
@@ -19,19 +20,19 @@ afterEach(() => {
 
 describe("getPlatformRootDomain", () => {
   it("prefers PUBLIC_BASE_URL's hostname", () => {
-    process.env.PUBLIC_BASE_URL = "https://zolto.ch";
+    process.env.PUBLIC_BASE_URL = BRAND.url;
     process.env.SITE_DOMAIN = "ignored.example";
-    expect(getPlatformRootDomain()).toBe("zolto.ch");
+    expect(getPlatformRootDomain()).toBe(BRAND.domain);
   });
 
   it("supports the alongside-Kalakosh-ch domain scheme", () => {
-    process.env.PUBLIC_BASE_URL = "https://zolto.kalakosh.ch";
-    expect(getPlatformRootDomain()).toBe("zolto.kalakosh.ch");
+    process.env.PUBLIC_BASE_URL = "https://gwinn.kalakosh.ch";
+    expect(getPlatformRootDomain()).toBe("gwinn.kalakosh.ch");
   });
 
   it("falls back to SITE_DOMAIN when PUBLIC_BASE_URL is unset", () => {
-    process.env.SITE_DOMAIN = "zolto.ch";
-    expect(getPlatformRootDomain()).toBe("zolto.ch");
+    process.env.SITE_DOMAIN = BRAND.domain;
+    expect(getPlatformRootDomain()).toBe(BRAND.domain);
   });
 
   it("ignores SITE_DOMAIN's by-IP testing form (:80)", () => {
@@ -41,8 +42,8 @@ describe("getPlatformRootDomain", () => {
 
   it("ignores a malformed PUBLIC_BASE_URL and falls back to SITE_DOMAIN", () => {
     process.env.PUBLIC_BASE_URL = "not a url";
-    process.env.SITE_DOMAIN = "zolto.ch";
-    expect(getPlatformRootDomain()).toBe("zolto.ch");
+    process.env.SITE_DOMAIN = BRAND.domain;
+    expect(getPlatformRootDomain()).toBe(BRAND.domain);
   });
 
   it("returns null when neither is configured", () => {
@@ -52,30 +53,30 @@ describe("getPlatformRootDomain", () => {
 
 describe("isPlatformHost", () => {
   it("matches the root domain itself", () => {
-    expect(isPlatformHost("zolto.ch", "zolto.ch")).toBe(true);
+    expect(isPlatformHost(BRAND.domain, BRAND.domain)).toBe(true);
   });
 
   it("matches a subdomain of the root", () => {
-    expect(isPlatformHost("blah.zolto.ch", "zolto.ch")).toBe(true);
+    expect(isPlatformHost(`blah.${BRAND.domain}`, BRAND.domain)).toBe(true);
   });
 
   it("is case-insensitive", () => {
-    expect(isPlatformHost("Blah.Zolto.CH", "zolto.ch")).toBe(true);
+    expect(isPlatformHost(`Blah.${BRAND.name}.CH`, BRAND.domain)).toBe(true);
   });
 
   it("rejects an unrelated domain", () => {
-    expect(isPlatformHost("shop.example.com", "zolto.ch")).toBe(false);
+    expect(isPlatformHost("shop.example.com", BRAND.domain)).toBe(false);
   });
 
   it("rejects a domain that merely ends with the same characters", () => {
-    expect(isPlatformHost("notzolto.ch", "zolto.ch")).toBe(false);
+    expect(isPlatformHost(`not${BRAND.domain}`, BRAND.domain)).toBe(false);
   });
 
   it("returns false when root is null", () => {
-    expect(isPlatformHost("zolto.ch", null)).toBe(false);
+    expect(isPlatformHost(BRAND.domain, null)).toBe(false);
   });
 
   it("returns false when hostname is missing", () => {
-    expect(isPlatformHost(undefined, "zolto.ch")).toBe(false);
+    expect(isPlatformHost(undefined, BRAND.domain)).toBe(false);
   });
 });

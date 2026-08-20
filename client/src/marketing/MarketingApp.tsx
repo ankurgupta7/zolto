@@ -12,7 +12,7 @@ import BlogPost from "./pages/BlogPost";
 import Story from "./pages/Story";
 import Faq from "./pages/Faq";
 import Compare from "./pages/Compare";
-import WhyZolto from "./pages/WhyZolto";
+import WhyPlatform from "./pages/WhyPlatform";
 import Research from "./pages/Research";
 import Segment from "./pages/Segment";
 import Sovereignty from "./pages/Sovereignty";
@@ -30,8 +30,8 @@ function ScrollToTop() {
 }
 
 /**
- * The Zolto marketing / SaaS surface — rendered when the hostname resolves to the
- * platform apex (zolto.com) rather than a tenant storefront. Shares the warm
+ * The Gwinn marketing / SaaS surface — rendered when the hostname resolves to the
+ * platform apex (gwinn.com) rather than a tenant storefront. Shares the warm
  * oyster/gold/ink + serif brand system of the storefront (a handcrafted identity
  * for a maker audience), with its own marketing chrome.
  */
@@ -42,7 +42,7 @@ export default function MarketingApp() {
   // it renders outside MarketingShell so it carries no pricing nav or footer.
   // It is mounted here because /admin/* only exists on tenant hosts, which
   // left the platform owner with no way to reach their own console from
-  // zolto.ch (see platform/PlatformLayout).
+  // gwinn.ch (see platform/PlatformLayout).
   if (isPlatformPath(location)) {
     return <PlatformApp />;
   }
@@ -59,7 +59,7 @@ export default function MarketingApp() {
         {/* The AI-native argument in full — the bands the homepage reel could
             not hold at one viewport each. Linked from the reel's "what's
             coming" chapter. */}
-        <Route path="/why-zolto" component={WhyZolto} />
+        <Route path="/why-gwinn" component={WhyPlatform} />
         <Route path="/compare/:slug" component={Compare} />
         <Route path="/signup" component={Signup} />
         <Route path="/signin" component={SignIn} />
