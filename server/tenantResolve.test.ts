@@ -1,3 +1,4 @@
+import { BRAND } from "@shared/brand";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 const dbMock = vi.hoisted(() => ({
@@ -21,7 +22,7 @@ const ORIGINAL_SITE_DOMAIN = process.env.SITE_DOMAIN;
 
 beforeEach(() => {
   vi.clearAllMocks();
-  process.env.PUBLIC_BASE_URL = "https://zolto.ch";
+  process.env.PUBLIC_BASE_URL = BRAND.url;
   delete process.env.SITE_DOMAIN;
   dbMock.getTenantBySlug.mockResolvedValue(undefined);
   dbMock.getTenantByCustomDomain.mockResolvedValue(undefined);
@@ -38,24 +39,24 @@ afterEach(() => {
 describe("resolveTenantForHost — platform subdomains", () => {
   it("resolves the left-most label of a platform subdomain as a slug", async () => {
     dbMock.getTenantBySlug.mockResolvedValue(AURORA);
-    await expect(resolveTenantForHost("aurora.zolto.ch")).resolves.toBe(AURORA);
+    await expect(resolveTenantForHost(`aurora.${BRAND.domain}`)).resolves.toBe(AURORA);
     expect(dbMock.getTenantBySlug).toHaveBeenCalledWith("aurora");
     expect(dbMock.getTenantByCustomDomain).not.toHaveBeenCalled();
   });
 
   it("ignores the port", async () => {
     dbMock.getTenantBySlug.mockResolvedValue(AURORA);
-    await expect(resolveTenantForHost("aurora.zolto.ch:443")).resolves.toBe(
+    await expect(resolveTenantForHost(`aurora.${BRAND.domain}:443`)).resolves.toBe(
       AURORA,
     );
     expect(dbMock.getTenantBySlug).toHaveBeenCalledWith("aurora");
   });
 
   it("works alongside Kalakosh-ch's deeper root domain", async () => {
-    process.env.PUBLIC_BASE_URL = "https://zolto.kalakosh.ch";
+    process.env.PUBLIC_BASE_URL = "https://gwinn.kalakosh.ch";
     dbMock.getTenantBySlug.mockResolvedValue(AURORA);
     await expect(
-      resolveTenantForHost("aurora.zolto.kalakosh.ch"),
+      resolveTenantForHost("aurora.gwinn.kalakosh.ch"),
     ).resolves.toBe(AURORA);
     expect(dbMock.getTenantBySlug).toHaveBeenCalledWith("aurora");
   });
@@ -63,10 +64,10 @@ describe("resolveTenantForHost — platform subdomains", () => {
   it("resolves the platform apex and reserved labels to null", async () => {
     dbMock.getTenantBySlug.mockResolvedValue(AURORA);
     for (const host of [
-      "zolto.ch",
-      "www.zolto.ch",
-      "app.zolto.ch",
-      "api.zolto.ch",
+      BRAND.domain,
+      `www.${BRAND.domain}`,
+      `app.${BRAND.domain}`,
+      `api.${BRAND.domain}`,
     ]) {
       await expect(resolveTenantForHost(host)).resolves.toBeNull();
     }
@@ -74,7 +75,7 @@ describe("resolveTenantForHost — platform subdomains", () => {
   });
 
   it("returns null for an unknown slug rather than falling through to a domain lookup", async () => {
-    await expect(resolveTenantForHost("nobody.zolto.ch")).resolves.toBeNull();
+    await expect(resolveTenantForHost(`nobody.${BRAND.domain}`)).resolves.toBeNull();
     expect(dbMock.getTenantByCustomDomain).not.toHaveBeenCalled();
   });
 });
@@ -120,7 +121,7 @@ describe("resolveTenantForHost — custom domains", () => {
 describe("resolveTenantForHost — header and dev hosts", () => {
   it("prefers an explicit X-Tenant-Slug over the host", async () => {
     dbMock.getTenantBySlug.mockResolvedValue(AURORA);
-    await expect(resolveTenantForHost("zolto.ch", "aurora")).resolves.toBe(
+    await expect(resolveTenantForHost(BRAND.domain, "aurora")).resolves.toBe(
       AURORA,
     );
     expect(dbMock.getTenantBySlug).toHaveBeenCalledWith("aurora");
@@ -131,7 +132,7 @@ describe("resolveTenantForHost — header and dev hosts", () => {
       slug === "aurora" ? AURORA : undefined,
     );
     await expect(
-      resolveTenantForHost("aurora.zolto.ch", "ghost"),
+      resolveTenantForHost(`aurora.${BRAND.domain}`, "ghost"),
     ).resolves.toBe(AURORA);
   });
 
@@ -174,7 +175,7 @@ describe("resolveTenantFromRequest", () => {
     dbMock.getTenantBySlug.mockResolvedValue(AURORA);
     await expect(
       resolveTenantFromRequest(
-        req({ host: "zolto.ch", "x-tenant-slug": ["aurora", "other"] }),
+        req({ host: BRAND.domain, "x-tenant-slug": ["aurora", "other"] }),
       ),
     ).resolves.toBe(AURORA);
     expect(dbMock.getTenantBySlug).toHaveBeenCalledWith("aurora");

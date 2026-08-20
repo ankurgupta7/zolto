@@ -1,6 +1,6 @@
 /**
- * The platform's own root domain — zolto.ch in standalone deploys, or
- * zolto.kalakosh.ch when run alongside Kalakosh-ch — derived from
+ * The platform's own root domain — gwinn.ch in standalone deploys, or
+ * gwinn.kalakosh.ch when run alongside Kalakosh-ch — derived from
  * PUBLIC_BASE_URL, the one env var set consistently across every deploy mode
  * (falls back to SITE_DOMAIN for standalone deploys that only set that one).
  *

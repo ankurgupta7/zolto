@@ -1,3 +1,4 @@
+import { BRAND } from "./brand";
 import { describe, expect, it } from "vitest";
 import {
   PILOT_METHODOLOGY,
@@ -14,11 +15,11 @@ describe("pilot research data", () => {
     expect(PILOT_METHODOLOGY.collection).toBeTruthy();
   });
 
-  it("publishes its limits, including that Zolto is the vendor", () => {
+  it(`publishes its limits, including that ${BRAND.name} is the vendor`, () => {
     expect(PILOT_METHODOLOGY.limits.length).toBeGreaterThan(0);
     const text = PILOT_METHODOLOGY.limits.join(" ").toLowerCase();
     // The disclosure that makes the rest of the page credible.
-    expect(text).toContain("zolto operates the platform");
+    expect(text).toContain("gwinn operates the platform");
     expect(text).toContain("single store");
   });
 

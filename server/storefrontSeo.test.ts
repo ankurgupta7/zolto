@@ -1,3 +1,4 @@
+import { BRAND } from "@shared/brand";
 import { describe, expect, it } from "vitest";
 import {
   getStorefrontSeo,
@@ -10,7 +11,7 @@ import type { ProductSeo, StorefrontIdentity } from "@shared/storefront";
 
 const identity: StorefrontIdentity = {
   storeName: "Aurora Atelier",
-  baseUrl: "https://aurora.zolto.ch",
+  baseUrl: `https://aurora.${BRAND.domain}`,
   currency: "chf",
   description: "Handmade pieces from Zurich.",
   logoUrl: null,
@@ -35,11 +36,11 @@ function data(over: Partial<StorefrontSeoData> = {}): StorefrontSeoData {
 }
 
 /** A stand-in for the built index.html shell. */
-const SHELL = `<!doctype html><html><head><title>Zolto</title>
+const SHELL = `<!doctype html><html><head><title>${BRAND.name}</title>
 <meta name="description" content="default" />
-<meta property="og:title" content="Zolto" />
+<meta property="og:title" content="${BRAND.name}" />
 <meta property="og:description" content="default" />
-<meta property="twitter:title" content="Zolto" />
+<meta property="twitter:title" content="${BRAND.name}" />
 <meta property="twitter:description" content="default" />
 </head><body><div id="root"></div></body></html>`;
 
@@ -143,8 +144,8 @@ describe("getStorefrontSeo — store pages", () => {
       data({ products: [product(), product({ id: 8, category: "Rings" })] }),
     );
     expect(seo!.title).toBe("Aurora Atelier");
-    // The Organization is Zolto's own node, which WebSite.creator points at —
-    // the machine-readable "Made with Zolto" credit (shared/attribution.ts).
+    // The Organization is Gwinn's own node, which WebSite.creator points at —
+    // the machine-readable "Made with Gwinn" credit (shared/attribution.ts).
     expect(seo!.jsonLd.map((n) => n["@type"])).toEqual([
       "Store",
       "WebSite",
@@ -226,7 +227,7 @@ describe("injectStorefrontSeo", () => {
       data({ product: product() }),
     );
     expect(out).toContain(
-      '<link rel="canonical" href="https://aurora.zolto.ch/product/7" />',
+      `<link rel="canonical" href="https://aurora.${BRAND.domain}/product/7" />`,
     );
     expect(out).toContain('<script type="application/ld+json">');
     expect(out).toContain('"@type":"Product"');
@@ -277,7 +278,7 @@ describe("injectStorefrontSeo", () => {
   });
 });
 
-describe("the Made with Zolto credit in storefront SEO", () => {
+describe(`the Made with ${BRAND.name} credit in storefront SEO`, () => {
   /** Every JSON-LD node the injected HTML carries, flattened out of @graph. */
   function nodes(html: string): Record<string, unknown>[] {
     return [
@@ -290,30 +291,30 @@ describe("the Made with Zolto credit in storefront SEO", () => {
     });
   }
 
-  it("points the WebSite at a Zolto Organization node that is actually present", () => {
+  it(`points the WebSite at a ${BRAND.name} Organization node that is actually present`, () => {
     // A dangling `creator` reference would be worse than no credit: a consumer
     // resolving the @id would find nothing.
     const graph = nodes(injectStorefrontSeo(SHELL, "/", data()));
     const website = graph.find((n) => n["@type"] === "WebSite")!;
     const creator = website.creator as { "@id": string };
-    expect(creator["@id"]).toBe("https://zolto.ch/#organization");
+    expect(creator["@id"]).toBe(`${BRAND.url}/#organization`);
     const org = graph.find((n) => n["@id"] === creator["@id"]);
-    expect(org).toMatchObject({ "@type": "Organization", name: "Zolto" });
+    expect(org).toMatchObject({ "@type": "Organization", name: BRAND.name });
   });
 
-  it("keeps the store, not Zolto, as the publisher and the seller", () => {
+  it(`keeps the store, not ${BRAND.name}, as the publisher and the seller`, () => {
     // The credit says who BUILT the site. Getting this backwards would tell a
-    // shopping agent that Zolto is the counterparty for the order.
+    // shopping agent that Gwinn is the counterparty for the order.
     const graph = nodes(
       injectStorefrontSeo(SHELL, "/product/7", data({ product: product() })),
     );
     const website = graph.find((n) => n["@type"] === "WebSite")!;
     expect(website.publisher).toEqual({
-      "@id": "https://aurora.zolto.ch/#store",
+      "@id": `https://aurora.${BRAND.domain}/#store`,
     });
     const prod = graph.find((n) => n["@type"] === "Product")!;
     expect((prod.offers as { seller: unknown }).seller).toEqual({
-      "@id": "https://aurora.zolto.ch/#store",
+      "@id": `https://aurora.${BRAND.domain}/#store`,
     });
   });
 
@@ -321,11 +322,11 @@ describe("the Made with Zolto credit in storefront SEO", () => {
     // The whole point: AI crawlers don't run our React footer.
     const out = injectStorefrontSeo(SHELL, "/", data());
     const noscript = out.slice(out.indexOf("<noscript>"));
-    expect(noscript).toContain("Aurora Atelier is made with Zolto");
-    expect(noscript).toContain('<a href="https://zolto.ch/">');
+    expect(noscript).toContain(`Aurora Atelier is made with ${BRAND.name}`);
+    expect(noscript).toContain(`<a href="${BRAND.url}/">`);
   });
 
-  it("names Zolto nowhere once a white-labelled store switches it off", () => {
+  it(`names ${BRAND.name} nowhere once a white-labelled store switches it off`, () => {
     const white = { ...identity, attribution: false };
     for (const path of ["/", "/shop", "/about"]) {
       const out = injectStorefrontSeo(SHELL, path, {
@@ -333,9 +334,9 @@ describe("the Made with Zolto credit in storefront SEO", () => {
         products: [product()],
       });
       const injected = out.slice(out.indexOf("<title>"));
-      expect(injected, path).not.toContain("zolto.ch/#organization");
+      expect(injected, path).not.toContain(`${BRAND.domain}/#organization`);
       expect(injected, path).not.toContain("creator");
-      expect(injected, path).not.toContain("made with Zolto");
+      expect(injected, path).not.toContain(`made with ${BRAND.name}`);
     }
   });
 

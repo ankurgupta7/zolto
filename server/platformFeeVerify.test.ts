@@ -26,7 +26,7 @@ describe("verdictFor", () => {
 
   it("FAILS when the charge settled without the expected fee", () => {
     // The whole point of the exercise. The payment succeeded, so every
-    // outward signal says "working storefront" while Zolto earns nothing.
+    // outward signal says "working storefront" while Gwinn earns nothing.
     const v = verdictFor({ expectedFeeRappen: 100, observedFeeRappen: null });
     expect(v.kind).toBe("missing");
     expect(v.pass).toBe(false);

@@ -2,7 +2,7 @@
  * Notification helper — "new order"-style owner DMs via Discord.
  *
  * The bot token is a PLATFORM credential (DISCORD_BOT_TOKEN env) — there is one
- * Zolto bot, invited into each tenant's Discord server. Per-tenant routing is by
+ * Gwinn bot, invited into each tenant's Discord server. Per-tenant routing is by
  * ID, not by token: each tenant's owner sets their own Discord user ID in their
  * store settings (tenant_settings.discord_owner_user_id, via
  * tenant.updateSettings) and callers pass it as opts.discordUserId. The env var

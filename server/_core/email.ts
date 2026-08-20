@@ -1,3 +1,4 @@
+import { BRAND } from "@shared/brand";
 export interface TenantBranding {
   tenantName: string;
   tenantDomain: string;
@@ -8,10 +9,10 @@ export interface TenantBranding {
 }
 
 const DEFAULT_BRANDING: TenantBranding = {
-  tenantName: "Zolto Store",
+  tenantName: `${BRAND.name} Store`,
   tenantDomain:
-    process.env.PUBLIC_BASE_URL?.replace(/\/$/, "") ?? "https://zolto.ch",
-  contactEmail: process.env.RESEND_FROM_EMAIL ?? "orders@zolto.ch",
+    process.env.PUBLIC_BASE_URL?.replace(/\/$/, "") ?? BRAND.url,
+  contactEmail: process.env.RESEND_FROM_EMAIL ?? `orders@${BRAND.domain}`,
   returnsFooter: "14-day returns on unused items in original condition",
 };
 
@@ -325,7 +326,7 @@ export async function sendTransactionalEmail(opts: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      from: opts.from ?? "Zolto <noreply@zolto.ch>",
+      from: opts.from ?? `${BRAND.name} <noreply@${BRAND.domain}>`,
       to: opts.to,
       subject: opts.subject,
       html: opts.html,
@@ -348,9 +349,9 @@ export async function sendMagicLinkEmail(opts: {
 }): Promise<boolean> {
   return sendTransactionalEmail({
     to: opts.to,
-    subject: "Sign in to Zolto",
-    html: `<p>Click the link below to sign in to Zolto. It works once and expires in 15 minutes.</p>
-<p><a href="${escapeHtml(opts.url)}">Sign in to Zolto</a></p>
+    subject: `Sign in to ${BRAND.name}`,
+    html: `<p>Click the link below to sign in to Gwinn. It works once and expires in 15 minutes.</p>
+<p><a href="${escapeHtml(opts.url)}">Sign in to Gwinn</a></p>
 <p>If you didn't request this, you can ignore this email.</p>`,
   });
 }

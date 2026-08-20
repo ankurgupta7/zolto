@@ -1,3 +1,4 @@
+import { BRAND } from "@shared/brand";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { MIGRATE_FROM_PROVIDERS, NOT_ADMIN_ERR_MSG } from "@shared/const";
@@ -138,7 +139,7 @@ function stripPosApiKey<T extends { posApiKey: string }>(
  * any tenantId as ownership made claiming a new store impossible in
  * production: the freshly signed-in owner was "already attached" to the
  * platform tenant, the claim CONFLICTed, and `myStore` pointed them at
- * platform.zolto.ch's admin to be refused.
+ * platform.gwinn.ch's admin to be refused.
  *
  * Ownership is the ROLE: admins and staff manage the store their tenantId
  * names; a customer row's tenantId is just where they shopped (or the parking
@@ -204,7 +205,7 @@ export const tenantRouter = router({
         slug: tenant.slug,
         name: tenant.name,
         plan: tenant.plan,
-        // Whether this store is ALLOWED to hide the "Made with Zolto" credit,
+        // Whether this store is ALLOWED to hide the "Made with Gwinn" credit,
         // not whether it does — the switch itself lives on tenant_settings and
         // comes back from getSettings. Derived (rather than left to the client
         // to infer from `plan`) so a comped Pro store is honoured here too;
@@ -684,7 +685,7 @@ rationale: one friendly sentence (max 25 words) naming BOTH colors, e.g. "Deep f
   // Host-INDEPENDENT (unlike `me`, which resolves the tenant from the request
   // host): resolves from ctx.user.tenantId, so it works on the marketing
   // surface too. Powers the "go to your store" affordance for a returning
-  // merchant who landed on zolto.ch and forgot their store's address. Returns
+  // merchant who landed on gwinn.ch and forgot their store's address. Returns
   // just what a link needs (slug + name), never the POS key; null if the user
   // isn't attached to a store.
   myStore: protectedProcedure.query(async ({ ctx }) => {
@@ -803,7 +804,7 @@ rationale: one friendly sentence (max 25 words) naming BOTH colors, e.g. "Deep f
 
   // ─── Admin: Custom domain DNS status ──────────────────────────────────────
   // Live check whether the saved custom domain's DNS points at the platform
-  // (PLATFORM_DOMAIN env, e.g. app.zolto.ch). Caddy's on-demand TLS only
+  // (PLATFORM_DOMAIN env, e.g. app.gwinn.ch). Caddy's on-demand TLS only
   // issues a cert once the domain is both registered here and pointing at us.
   //
   // tenantAdminProcedure, matching the updateSettings mutation that writes this
@@ -916,9 +917,9 @@ rationale: one friendly sentence (max 25 words) naming BOTH colors, e.g. "Deep f
         // reconciliation.ts) but was missing from this schema, so nothing
         // could ever set it.
         whiteLabelName: z.string().trim().max(255).nullable().optional(),
-        // Hide the "Made with Zolto" credit — the white-label plan feature,
+        // Hide the "Made with Gwinn" credit — the white-label plan feature,
         // enforced below.
-        hideZoltoBadge: z.boolean().optional(),
+        hidePlatformCredit: z.boolean().optional(),
         // ── Trustpilot ──────────────────────────────────────────────────────
         // The business unit's domain, as the merchant pastes it — a bare
         // domain or a full profile URL, both of which normalise to the same
@@ -964,11 +965,11 @@ rationale: one friendly sentence (max 25 words) naming BOTH colors, e.g. "Deep f
       // direction is gated: a store that drops to Free must always be able to
       // set this back to false, and shared/attribution.ts already ignores a
       // stale `true` so the credit reappears the moment the plan lapses.
-      if (input.hideZoltoBadge === true && !features.whiteLabel) {
+      if (input.hidePlatformCredit === true && !features.whiteLabel) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message:
-            'Hiding the "Made with Zolto" credit requires the Pro plan. Please upgrade.',
+            `Hiding the "Made with ${BRAND.name}" credit requires the Pro plan. Please upgrade.`,
         });
       }
       if (
@@ -1163,7 +1164,7 @@ rationale: one friendly sentence (max 25 words) naming BOTH colors, e.g. "Deep f
 
   // ─── Admin: Get this tenant's Stripe Connect authorize URL + status ───────
   // Lets a store admin link their OWN Stripe account for storefront checkout
-  // (separate from Zolto's own subscription billing — see
+  // (separate from Gwinn's own subscription billing — see
   // server/stripeConnect.ts). `url` is null when Connect isn't configured on
   // the platform yet (STRIPE_CONNECT_CLIENT_ID unset).
   // The cross-tenant check that used to be hand-rolled here is now the shared

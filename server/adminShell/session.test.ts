@@ -1,3 +1,4 @@
+import { BRAND } from "@shared/brand";
 import { describe, expect, it, vi } from "vitest";
 import type { Tenant, User } from "../../drizzle/schema";
 import type { AdminCaller } from "./caller";
@@ -8,7 +9,7 @@ const operator = {
   id: 1,
   tenantId: 1,
   role: "superadmin",
-  email: "owner@zolto.ch",
+  email: `owner@${BRAND.domain}`,
 } as unknown as User;
 
 const kalakosh = { id: 3, slug: "kalakosh", name: "Kalakosh" } as Tenant;

@@ -1,3 +1,4 @@
+import { BRAND } from "@shared/brand";
 import {
   describe,
   it,
@@ -11,7 +12,7 @@ import type { Request } from "express";
 
 /**
  * The storefront branch of injectHeadForRequest — the one place that turns a
- * tenant row plus its settings into the "Made with Zolto" gate, and hands the
+ * tenant row plus its settings into the "Made with Gwinn" gate, and hands the
  * same answer to BOTH injectors. Its own file because the storefront branch
  * needs a real tenant and a catalogue, where htmlHead.test.ts deliberately
  * mocks the lookups down to "no tenant" for the marketing routes.
@@ -34,7 +35,7 @@ vi.mock("./tenantResolve", () => ({
 const { injectHeadForRequest } = await import("./htmlHead");
 
 const SHELL = `<!doctype html><html><head>
-<title>Zolto</title>
+<title>Gwinn</title>
 <meta name="description" content="old default" />
 </head><body><div id="root"></div></body></html>`;
 
@@ -52,7 +53,7 @@ function fakeReq(url: string, host = "shop.bergblume.ch"): Request {
 let savedBaseUrl: string | undefined;
 beforeAll(() => {
   savedBaseUrl = process.env.PUBLIC_BASE_URL;
-  process.env.PUBLIC_BASE_URL = "https://zolto.ch";
+  process.env.PUBLIC_BASE_URL = BRAND.url;
 });
 afterAll(() => {
   if (savedBaseUrl === undefined) delete process.env.PUBLIC_BASE_URL;
@@ -70,53 +71,53 @@ beforeEach(() => {
 });
 
 describe("injectHeadForRequest — the credit on a storefront", () => {
-  it("credits Zolto on a custom domain, in markup and structured data alike", async () => {
+  it(`credits ${BRAND.name} on a custom domain, in markup and structured data alike`, async () => {
     // The whole point of this change: a custom domain is Pro-only, so these
-    // were exactly the storefronts that named Zolto nowhere at all.
+    // were exactly the storefronts that named Gwinn nowhere at all.
     mocks.tenant = { ...mocks.tenant, plan: "pro" };
     const out = await injectHeadForRequest(fakeReq("/"), SHELL);
 
     expect(out).toContain(
-      '<meta name="generator" content="Zolto (https://zolto.ch)" />',
+      `<meta name="generator" content="${BRAND.name} (${BRAND.url})" />`,
     );
-    expect(out).toContain('<link rel="author" href="https://zolto.ch/"');
-    expect(out).toContain("https://zolto.ch/#organization");
-    expect(out).toContain("Bergblume Keramik is made with Zolto");
+    expect(out).toContain(`<link rel="author" href="${BRAND.url}/"`);
+    expect(out).toContain(`${BRAND.url}/#organization`);
+    expect(out).toContain(`Bergblume Keramik is made with ${BRAND.name}`);
   });
 
   it("hands the same answer to the head and the SEO injector", async () => {
     // One gate read once. If these could disagree, a store could end up with a
     // generator tag and no creator node, or the reverse.
     mocks.tenant = { ...mocks.tenant, plan: "pro" };
-    mocks.settings = { hideZoltoBadge: true };
+    mocks.settings = { hidePlatformCredit: true };
     const out = await injectHeadForRequest(fakeReq("/"), SHELL);
 
     expect(out).not.toContain('name="generator"');
     expect(out).not.toContain('rel="author"');
-    expect(out).not.toContain("zolto.ch/#organization");
-    expect(out).not.toContain("made with Zolto");
+    expect(out).not.toContain(`${BRAND.domain}/#organization`);
+    expect(out).not.toContain(`made with ${BRAND.name}`);
     // The store's own head injection is untouched.
     expect(out).toContain("<title>Bergblume Keramik</title>");
     expect(out).toContain(
-      '<meta name="zolto-tenant-slug" content="bergblume" />',
+      '<meta name="gwinn-tenant-slug" content="bergblume" />',
     );
   });
 
   it("ignores the switch on a store whose plan cannot white-label", async () => {
-    mocks.settings = { hideZoltoBadge: true }; // plan is "free"
+    mocks.settings = { hidePlatformCredit: true }; // plan is "free"
     const out = await injectHeadForRequest(fakeReq("/"), SHELL);
     expect(out).toContain('name="generator"');
   });
 
   it("honours a comped Pro store's opt-out", async () => {
     mocks.tenant = { ...mocks.tenant, plan: "free", compPlan: "pro" };
-    mocks.settings = { hideZoltoBadge: true };
+    mocks.settings = { hidePlatformCredit: true };
     const out = await injectHeadForRequest(fakeReq("/"), SHELL);
     expect(out).not.toContain('name="generator"');
   });
 
   it("credits routes with no per-route SEO too", async () => {
-    // /checkout gets no storefront SEO, but it is still a page of a Zolto
+    // /checkout gets no storefront SEO, but it is still a page of a Gwinn
     // store — the generator tag rides on the head injector for that reason.
     const out = await injectHeadForRequest(fakeReq("/checkout"), SHELL);
     expect(out).toContain('name="generator"');

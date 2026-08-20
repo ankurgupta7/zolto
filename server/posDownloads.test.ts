@@ -1,3 +1,4 @@
+import { BRAND } from "@shared/brand";
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import {
   getPosDownloads,
@@ -17,7 +18,7 @@ function asset(name: string, over: Record<string, unknown> = {}) {
     name,
     size: 12_345,
     updated_at: "2026-08-09T10:00:00Z",
-    browser_download_url: `https://github.com/ankurgupta7/zolto/releases/download/pos-latest/${name}`,
+    browser_download_url: `https://github.com/ankurgupta7/gwinn/releases/download/pos-latest/${name}`,
     ...over,
   };
 }
@@ -64,22 +65,22 @@ afterEach(() => {
 
 describe("posDownloads — release coordinates", () => {
   it("defaults to the public repo and the rolling tag", () => {
-    expect(releaseRepo()).toBe("ankurgupta7/zolto");
+    expect(releaseRepo()).toBe("ankurgupta7/gwinn");
     expect(releaseTag()).toBe("pos-latest");
   });
 
   it("lets a self-hoster point at their own repo and tag", () => {
-    process.env.POS_RELEASE_REPO = "acme/zolto-fork";
+    process.env.POS_RELEASE_REPO = "acme/gwinn-fork";
     process.env.POS_RELEASE_TAG = "pos-stable";
-    expect(releaseRepo()).toBe("acme/zolto-fork");
+    expect(releaseRepo()).toBe("acme/gwinn-fork");
     expect(releaseTag()).toBe("pos-stable");
   });
 
   it("ignores a malformed repo rather than building a bogus URL", () => {
     // A typo like a full URL instead of owner/repo would otherwise produce
     // https://github.com/https://github.com/... and a broken download button.
-    process.env.POS_RELEASE_REPO = "https://github.com/acme/zolto";
-    expect(releaseRepo()).toBe("ankurgupta7/zolto");
+    process.env.POS_RELEASE_REPO = "https://github.com/acme/gwinn";
+    expect(releaseRepo()).toBe("ankurgupta7/gwinn");
   });
 });
 
@@ -89,8 +90,8 @@ describe("posDownloads — published build", () => {
       [
         "api.github.com",
         releaseBody([
-          asset("ZoltoPOS-latest.apk", { size: 9_000_000 }),
-          asset("ZoltoPOS-latest-unsigned.ipa", { size: 21_000_000 }),
+          asset(`${BRAND.name}POS-latest.apk`, { size: 9_000_000 }),
+          asset(`${BRAND.name}POS-latest-unsigned.ipa`, { size: 21_000_000 }),
           asset("android-build.json"),
           asset("ios-build.json"),
         ]),
@@ -105,13 +106,13 @@ describe("posDownloads — published build", () => {
     const d = await getPosDownloads();
 
     expect(d.android).toMatchObject({
-      url: expect.stringContaining("ZoltoPOS-latest.apk"),
+      url: expect.stringContaining(`${BRAND.name}POS-latest.apk`),
       sizeBytes: 9_000_000,
       builtAt: "2026-08-09T10:00:00Z",
       commit: "3f2a1bc",
     });
     expect(d.ios).toMatchObject({
-      url: expect.stringContaining("ZoltoPOS-latest-unsigned.ipa"),
+      url: expect.stringContaining(`${BRAND.name}POS-latest-unsigned.ipa`),
       sizeBytes: 21_000_000,
       commit: "abcdef1",
     });
@@ -124,8 +125,8 @@ describe("posDownloads — published build", () => {
       [
         "api.github.com",
         releaseBody([
-          asset("ZoltoPOS-latest.apk"),
-          asset("ZoltoPOS-latest-unsigned.ipa"),
+          asset(`${BRAND.name}POS-latest.apk`),
+          asset(`${BRAND.name}POS-latest-unsigned.ipa`),
         ]),
       ],
     ]);
@@ -137,10 +138,10 @@ describe("posDownloads — published build", () => {
 
   it("still returns the link when the sidecar JSON is missing", async () => {
     stubFetch([
-      ["api.github.com", releaseBody([asset("ZoltoPOS-latest.apk")])],
+      ["api.github.com", releaseBody([asset(`${BRAND.name}POS-latest.apk`)])],
     ]);
     const d = await getPosDownloads();
-    expect(d.android?.url).toContain("ZoltoPOS-latest.apk");
+    expect(d.android?.url).toContain(`${BRAND.name}POS-latest.apk`);
     expect(d.android?.commit).toBeUndefined();
   });
 });
@@ -150,7 +151,7 @@ describe("posDownloads — not published vs. couldn't ask", () => {
     // Before the first iOS publish the merchant must see "not published yet",
     // not a button that 404s.
     stubFetch([
-      ["api.github.com", releaseBody([asset("ZoltoPOS-latest.apk")])],
+      ["api.github.com", releaseBody([asset(`${BRAND.name}POS-latest.apk`)])],
     ]);
     const d = await getPosDownloads();
     expect(d.android).not.toBeNull();
@@ -167,8 +168,8 @@ describe("posDownloads — not published vs. couldn't ask", () => {
       }),
     );
     const d = await getPosDownloads();
-    expect(d.android?.url).toContain("ZoltoPOS-latest.apk");
-    expect(d.ios?.url).toContain("ZoltoPOS-latest-unsigned.ipa");
+    expect(d.android?.url).toContain(`${BRAND.name}POS-latest.apk`);
+    expect(d.ios?.url).toContain(`${BRAND.name}POS-latest-unsigned.ipa`);
     expect(d.android?.builtAt).toBeUndefined();
   });
 
@@ -182,14 +183,14 @@ describe("posDownloads — not published vs. couldn't ask", () => {
   it("survives a release payload that is not the shape we expect", async () => {
     stubFetch([["api.github.com", { assets: "not-an-array" }]]);
     const d = await getPosDownloads();
-    expect(d.android?.url).toContain("ZoltoPOS-latest.apk");
+    expect(d.android?.url).toContain(`${BRAND.name}POS-latest.apk`);
   });
 });
 
 describe("posDownloads — operator overrides", () => {
   it("prefers POS_ANDROID_URL / POS_IOS_URL over the release", async () => {
     process.env.POS_ANDROID_URL =
-      "https://play.google.com/store/apps/details?id=ch.zolto.pos";
+      "https://play.google.com/store/apps/details?id=ch.gwinn.pos";
     process.env.POS_IOS_URL = "https://testflight.apple.com/join/abc123";
     const { fn } = stubFetch([["api.github.com", releaseBody([])]]);
 
@@ -211,7 +212,7 @@ describe("posDownloads — operator overrides", () => {
 
   it("treats a self-hosted .ipa override as a sideload", async () => {
     process.env.POS_ANDROID_URL = "https://example.test/a.apk";
-    process.env.POS_IOS_URL = "https://mdm.example.test/builds/ZoltoPOS.ipa";
+    process.env.POS_IOS_URL = `https://mdm.example.test/builds/${BRAND.name}POS.ipa`;
     stubFetch([]);
     const d = await getPosDownloads();
     expect(d.ios?.requiresSideload).toBe(true);
@@ -221,7 +222,7 @@ describe("posDownloads — operator overrides", () => {
 describe("posDownloads — caching", () => {
   it("asks GitHub once across repeated calls", async () => {
     const { fn } = stubFetch([
-      ["api.github.com", releaseBody([asset("ZoltoPOS-latest.apk")])],
+      ["api.github.com", releaseBody([asset(`${BRAND.name}POS-latest.apk`)])],
     ]);
 
     await getPosDownloads();
@@ -236,7 +237,7 @@ describe("posDownloads — caching", () => {
 
   it("asks again once the cache is cleared", async () => {
     const { fn } = stubFetch([
-      ["api.github.com", releaseBody([asset("ZoltoPOS-latest.apk")])],
+      ["api.github.com", releaseBody([asset(`${BRAND.name}POS-latest.apk`)])],
     ]);
     await getPosDownloads();
     clearPosDownloadsCache();

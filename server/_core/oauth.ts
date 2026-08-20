@@ -55,8 +55,8 @@ export function sanitizeNextPath(raw: unknown): string | null {
 // Like sanitizeNextPath, but also allows an absolute https URL when it points
 // at the platform's own root domain or one of its tenant subdomains. Needed
 // because OAuth always round-trips through one canonical host (see
-// getRedirectUri below) — a tenant admin signing in from blah.zolto.ch needs
-// to land back on blah.zolto.ch, not the canonical host's homepage, and that
+// getRedirectUri below) — a tenant admin signing in from blah.gwinn.ch needs
+// to land back on blah.gwinn.ch, not the canonical host's homepage, and that
 // return target is a different origin than the callback itself. Still never
 // allows redirecting to an unrelated host.
 export function sanitizeNextTarget(
@@ -101,7 +101,7 @@ function getConfig() {
 // Google requires an exact, pre-registered redirect_uri — no wildcard
 // subdomains. So the OAuth round-trip always uses ONE canonical origin
 // (PUBLIC_BASE_URL, set in every deploy mode), never the request's own host —
-// otherwise every tenant subdomain (blah.zolto.ch) would need its own entry
+// otherwise every tenant subdomain (blah.gwinn.ch) would need its own entry
 // in Google Cloud Console's authorized redirect URIs, which doesn't scale for
 // a self-serve multi-tenant app. Falls back to the request's own origin only
 // when PUBLIC_BASE_URL isn't configured (e.g. a single-host self-hosted
@@ -297,7 +297,7 @@ export function registerOAuthRoutes(app: Express) {
       );
       const userInfo = await fetchGoogleUserInfo(tokens.access_token);
 
-      // Zolto is multi-tenant self-serve: any Google account can sign in. The
+      // Gwinn is multi-tenant self-serve: any Google account can sign in. The
       // configured ADMIN_EMAIL is the platform admin and is granted the admin
       // role directly; everyone else signs in as a regular user and becomes an
       // admin only by claiming a store they created (tenant.claimAdmin).

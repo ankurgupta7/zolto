@@ -511,7 +511,7 @@ describe("toBaseUrl", () => {
 
 // The whole point of the rework: read the MERCHANT's account, match against
 // the MERCHANT's catalogue, file the row against the MERCHANT's tenant.
-// Previously this scanned Zolto's own platform account and matched everything
+// Previously this scanned Gwinn's own platform account and matched everything
 // against DEFAULT_TENANT_ID, so it could not see a real merchant payment at all.
 describe("runStripeReconciliationForTenant — connected account", () => {
   it("lists payment intents AS the tenant's connected account", async () => {

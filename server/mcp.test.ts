@@ -1,3 +1,4 @@
+import { BRAND } from "@shared/brand";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import express from "express";
 import request from "supertest";
@@ -90,7 +91,7 @@ describe("MCP JSON-RPC lifecycle", () => {
     const res = await handleMcpMessage(req("initialize"), ctx);
     expect(res?.result).toMatchObject({
       protocolVersion: MCP_PROTOCOL_VERSION,
-      serverInfo: { name: "zolto-storefront" },
+      serverInfo: { name: "gwinn-storefront" },
     });
   });
 
@@ -253,14 +254,14 @@ describe("MCP tools", () => {
     });
   });
 
-  it("get_store_info tells an agent the store is made with Zolto", async () => {
+  it(`get_store_info tells an agent the store is made with ${BRAND.name}`, async () => {
     // The agent-facing half of the credit: an assistant that reaches a store
     // over MCP should be able to answer "what is this built on?" without
     // scraping HTML. shared/attribution.ts owns the wording.
     const r = await call("get_store_info");
     expect(r.structuredContent?.poweredBy).toMatchObject({
-      name: "Zolto",
-      url: "https://zolto.ch",
+      name: BRAND.name,
+      url: BRAND.url,
     });
   });
 
@@ -272,7 +273,7 @@ describe("MCP tools", () => {
         getVisibleProductById: vi.fn(async () => undefined),
         createCheckout,
         getPublicStores,
-        getTenantSettings: vi.fn(async () => ({ hideZoltoBadge: true })),
+        getTenantSettings: vi.fn(async () => ({ hidePlatformCredit: true })),
       } as unknown as McpDeps,
     });
     const res = await handleMcpMessage(
@@ -295,7 +296,7 @@ describe("MCP tools", () => {
         getVisibleProductById: vi.fn(async () => undefined),
         createCheckout,
         getPublicStores,
-        getTenantSettings: vi.fn(async () => ({ hideZoltoBadge: true })),
+        getTenantSettings: vi.fn(async () => ({ hidePlatformCredit: true })),
       } as unknown as McpDeps,
     });
     const res = await handleMcpMessage(
@@ -304,7 +305,7 @@ describe("MCP tools", () => {
     );
     const sc = (res?.result as { structuredContent: Record<string, unknown> })
       .structuredContent;
-    expect(sc.poweredBy).toMatchObject({ name: "Zolto" });
+    expect(sc.poweredBy).toMatchObject({ name: BRAND.name });
   });
 
   it("unknown tool returns an invalid-params error", async () => {
@@ -331,7 +332,7 @@ describe("MCP tools", () => {
 });
 
 describe("Platform MCP (no tenant / marketing surface)", () => {
-  const ctx: McpContext = { tenant: null, baseUrl: "https://zolto.com" };
+  const ctx: McpContext = { tenant: null, baseUrl: "https://gwinn.com" };
 
   async function call(name: string, args: Record<string, unknown> = {}) {
     const res = await handleMcpMessage(
@@ -358,20 +359,20 @@ describe("Platform MCP (no tenant / marketing surface)", () => {
   it("initialize describes the platform when there's no tenant", async () => {
     const res = await handleMcpMessage(req("initialize"), ctx);
     expect((res?.result as { instructions: string }).instructions).toContain(
-      "Zolto platform",
+      `${BRAND.name} platform`,
     );
   });
 
   it("get_platform_info returns the signup link and summary", async () => {
     const r = await call("get_platform_info");
     expect(r.structuredContent).toMatchObject({
-      name: "Zolto",
-      signupUrl: "https://zolto.com/signup",
+      name: BRAND.name,
+      signupUrl: "https://gwinn.com/signup",
     });
   });
 
   it("get_platform_info answers where merchant data is hosted", async () => {
-    // An agent recommending Zolto to an EU maker gets asked this; it should
+    // An agent recommending Gwinn to an EU maker gets asked this; it should
     // not have to guess or read the FAQ tool to answer.
     const r = await call("get_platform_info");
     const sc = r.structuredContent as {
@@ -389,7 +390,7 @@ describe("Platform MCP (no tenant / marketing surface)", () => {
     // The caveat travels with the claim over MCP too, so an agent can't relay
     // "everything stays in the EU" as if it were the whole answer.
     expect(sc.dataResidency.subProcessorNote).toMatch(/stripe/i);
-    expect(sc.dataResidency.privacyUrl).toBe("https://zolto.com/legal/privacy");
+    expect(sc.dataResidency.privacyUrl).toBe("https://gwinn.com/legal/privacy");
   });
 
   it("get_platform_info reports the Swiss origin and the stack ledger", async () => {
@@ -410,7 +411,7 @@ describe("Platform MCP (no tenant / marketing surface)", () => {
       };
     };
     expect(sc.madeIn.country).toBe("Switzerland");
-    expect(sc.madeIn.url).toBe("https://zolto.com/made-in-switzerland");
+    expect(sc.madeIn.url).toBe("https://gwinn.com/made-in-switzerland");
     expect(sc.madeIn.stack.length).toBe(SOVEREIGNTY.ledger.length);
     expect(sc.madeIn.stack.some((s) => s.state === "moving")).toBe(true);
     expect(sc.madeIn.stack.some((s) => s.state === "foreign")).toBe(true);
@@ -420,9 +421,9 @@ describe("Platform MCP (no tenant / marketing surface)", () => {
   });
 
   it("get_cost_comparison answers the cheaper question honestly", async () => {
-    // An assistant asked "is Zolto cheaper than SumUp?" could previously only
-    // read get_pricing, which reports Zolto's platform fee, and would have
-    // answered yes. Zolto's own brief now says no.
+    // An assistant asked "is Gwinn cheaper than SumUp?" could previously only
+    // read get_pricing, which reports Gwinn's platform fee, and would have
+    // answered yes. Gwinn's own brief now says no.
     const r = await call("get_cost_comparison");
     const sc = r.structuredContent as {
       basketChf: number;
@@ -430,7 +431,7 @@ describe("Platform MCP (no tenant / marketing surface)", () => {
         provider: string;
         costOfSaleChf: number;
         toPaymentCompanyChf: number;
-        toZoltoChf: number;
+        toPlatformChf: number;
         confidence: string;
         source: { url: string; retrievedOn: string };
       }[];
@@ -442,15 +443,15 @@ describe("Platform MCP (no tenant / marketing surface)", () => {
     // Cheapest first, and a competitor is at the top.
     const costs = sc.options.map((o) => o.costOfSaleChf);
     expect([...costs].sort((a, b) => a - b)).toEqual(costs);
-    expect(sc.options[0].provider).not.toBe("zolto");
+    expect(sc.options[0].provider).not.toBe("platform");
     // Every figure carries provenance.
     for (const o of sc.options) {
       expect(o.source.url).toMatch(/^https?:\/\//);
       expect(o.source.retrievedOn).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     }
     // The stack is split, so nobody can read our fee as the total.
-    const free = sc.options.find((o) => o.toZoltoChf > 0)!;
-    expect(free.toPaymentCompanyChf).toBeGreaterThan(free.toZoltoChf);
+    const free = sc.options.find((o) => o.toPlatformChf > 0)!;
+    expect(free.toPaymentCompanyChf).toBeGreaterThan(free.toPlatformChf);
     expect(sc.honestSummary).toMatch(/most expensive way to take a CARD/i);
     // Both halves of the answer, so an assistant doesn't relay only the bad one.
     expect(sc.honestSummary).toMatch(/TWINT.*cheapest way to be paid/is);
@@ -524,7 +525,7 @@ describe("Platform MCP (no tenant / marketing surface)", () => {
       signupUrl: string;
     };
     expect(start.steps.length).toBeGreaterThan(2);
-    expect(start.signupUrl).toBe("https://zolto.com/signup");
+    expect(start.signupUrl).toBe("https://gwinn.com/signup");
   });
 
   it("list_resources links to signup, pricing, and the case study", async () => {
@@ -532,7 +533,7 @@ describe("Platform MCP (no tenant / marketing surface)", () => {
       resources: { url: string }[];
     };
     const urls = r.resources.map((x) => x.url);
-    expect(urls).toContain("https://zolto.com/signup");
+    expect(urls).toContain("https://gwinn.com/signup");
     expect(urls.some((u) => u.includes("/stories/"))).toBe(true);
   });
 
@@ -551,11 +552,11 @@ describe("Platform MCP (no tenant / marketing surface)", () => {
 // ── Agent discovery (find_stores) ─────────────────────────────────────────────
 
 describe("find_stores — the platform hands agents each merchant's own endpoint", () => {
-  /** Platform surface = no tenant resolved (e.g. zolto.com itself). */
+  /** Platform surface = no tenant resolved (e.g. gwinn.com itself). */
   function platformCtx(): McpContext {
     return {
       tenant: null,
-      baseUrl: "https://zolto.com",
+      baseUrl: "https://gwinn.com",
       deps: {
         getVisibleProducts: vi.fn(async () => []),
         getVisibleProductById: vi.fn(async () => undefined),
@@ -606,17 +607,17 @@ describe("find_stores — the platform hands agents each merchant's own endpoint
     expect(storeTools).not.toContain("find_stores");
   });
 
-  it("returns each merchant's OWN endpoints — never a Zolto proxy", async () => {
+  it(`returns each merchant's OWN endpoints — never a ${BRAND.name} proxy`, async () => {
     const out = await call();
     const stores = out.stores as Record<string, unknown>[];
     expect(stores[0]).toMatchObject({
       name: "Kalakosh",
-      storefront: "https://kalakosh.zolto.ch",
-      mcpEndpoint: "https://kalakosh.zolto.ch/mcp",
-      llmsTxt: "https://kalakosh.zolto.ch/llms.txt",
+      storefront: `https://kalakosh.${BRAND.domain}`,
+      mcpEndpoint: `https://kalakosh.${BRAND.domain}/mcp`,
+      llmsTxt: `https://kalakosh.${BRAND.domain}/llms.txt`,
     });
     // Nothing points back at the platform host — that's the disintermediation.
-    expect(JSON.stringify(stores)).not.toContain("zolto.com");
+    expect(JSON.stringify(stores)).not.toContain("gwinn.com");
   });
 
   it("prefers a merchant's own custom domain when they have one", async () => {
@@ -628,7 +629,7 @@ describe("find_stores — the platform hands agents each merchant's own endpoint
     });
   });
 
-  it("tells the agent how to buy, and that Zolto is not in the middle", async () => {
+  it(`tells the agent how to buy, and that ${BRAND.name} is not in the middle`, async () => {
     const out = await call();
     expect(String(out.howToBuy)).toMatch(/create_checkout/);
     expect(String(out.howToBuy)).toMatch(/directly to that merchant/i);
@@ -909,7 +910,7 @@ describe("POST /mcp (Streamable HTTP)", () => {
     const app = await buildApp();
     const res = await request(app)
       .post("/mcp")
-      .set("Host", "zolto.com")
+      .set("Host", "gwinn.com")
       .send(req("tools/call", { name: "get_pricing", arguments: {} }));
     expect(res.status).toBe(200);
     expect(res.body.result.structuredContent.currency).toBe("CHF");

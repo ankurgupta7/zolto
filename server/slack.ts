@@ -12,6 +12,7 @@
  *   SLACK_SIGNING_SECRET – Used to verify request signatures
  */
 
+import { BRAND } from "@shared/brand";
 import axios from "axios";
 import crypto from "node:crypto";
 import type { Request, Response } from "express";
@@ -131,7 +132,7 @@ export async function handleSlackEvent(req: Request, res: Response) {
         tenant.domain ??
         settings?.publicDomain ??
         process.env.PUBLIC_BASE_URL ??
-        "https://zolto.ch",
+        BRAND.url,
       contactEmail: settings?.contactEmail ?? undefined,
     };
 

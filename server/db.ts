@@ -1006,7 +1006,7 @@ export async function getMonthlyOnlineSales(tenantId: number): Promise<{
  * The headline number is the one the pricing model lives or dies on
  * (docs/planning/pricing-pivot-agent-commerce.md §5): **what share of free
  * in-person vendors make at least one online or agent sale in a month.** A
- * free vendor who only ever sells at their stall pays Zolto CHF 0 forever, by
+ * free vendor who only ever sells at their stall pays Gwinn CHF 0 forever, by
  * design — so this ratio, not signups, is the business.
  *
  * "In-person vendor" means a tenant with a paid POS order this month;
@@ -2773,7 +2773,7 @@ export async function setTenantPosApiKeyHash(
 }
 
 // Links a tenant's OWN Stripe Standard account (Connect) for their storefront
-// checkout — separate from setTenantStripeCustomer above, which is Zolto's own
+// checkout — separate from setTenantStripeCustomer above, which is Gwinn's own
 // billing relationship with the tenant.
 export async function setTenantStripeConnectAccount(
   tenantId: number,
@@ -3074,9 +3074,9 @@ export async function findDuplicateEmails(): Promise<
   }, []);
 }
 
-// ─── Billing (Zolto's own subscription relationship with tenants) ─────────────
+// ─── Billing (Gwinn's own subscription relationship with tenants) ─────────────
 // Distinct from storefront payments: stripeCustomerId/stripeSubscriptionId here
-// belong to Zolto's own Stripe account and bill the MERCHANT for their plan;
+// belong to Gwinn's own Stripe account and bill the MERCHANT for their plan;
 // stripeConnectedAccountId is the merchant's own account their customers pay
 // into (see server/stripeConnect.ts).
 

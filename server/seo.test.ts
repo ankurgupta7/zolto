@@ -1,3 +1,4 @@
+import { BRAND } from "@shared/brand";
 import { describe, expect, it, beforeEach, afterEach, vi } from "vitest";
 import express from "express";
 import request from "supertest";
@@ -44,7 +45,7 @@ afterEach(() => {
 
 describe("GET /sitemap.xml", () => {
   beforeEach(() => {
-    process.env.PUBLIC_BASE_URL = "https://zolto.com";
+    process.env.PUBLIC_BASE_URL = "https://gwinn.com";
   });
 
   it("serves XML with the configured base URL", async () => {
@@ -52,12 +53,12 @@ describe("GET /sitemap.xml", () => {
     expect(res.status).toBe(200);
     expect(res.headers["content-type"]).toContain("xml");
     expect(res.text).toContain('<?xml version="1.0" encoding="UTF-8"?>');
-    expect(res.text).toContain("<loc>https://zolto.com/</loc>");
+    expect(res.text).toContain("<loc>https://gwinn.com/</loc>");
     expect(res.text).toContain(
-      "<loc>https://zolto.com/blog/launch-diary-1</loc>",
+      "<loc>https://gwinn.com/blog/launch-diary-1</loc>",
     );
     expect(res.text).toContain(
-      `<loc>https://zolto.com/stories/${STORY_SLUG}</loc>`,
+      `<loc>https://gwinn.com/stories/${STORY_SLUG}</loc>`,
     );
   });
 
@@ -83,7 +84,7 @@ describe("GET /sitemap.xml without PUBLIC_BASE_URL", () => {
 
 describe("GET /robots.txt", () => {
   beforeEach(() => {
-    process.env.PUBLIC_BASE_URL = "https://zolto.com";
+    process.env.PUBLIC_BASE_URL = "https://gwinn.com";
   });
 
   it("serves plain text pointing at the sitemap", async () => {
@@ -91,7 +92,7 @@ describe("GET /robots.txt", () => {
     expect(res.status).toBe(200);
     expect(res.headers["content-type"]).toContain("text/plain");
     expect(res.text).toContain("User-agent: *");
-    expect(res.text).toContain("Sitemap: https://zolto.com/sitemap.xml");
+    expect(res.text).toContain("Sitemap: https://gwinn.com/sitemap.xml");
   });
 
   it("repeats the disallow list inside each AI-crawler group", () => {
@@ -111,8 +112,8 @@ describe("GET /robots.txt", () => {
 describe("storefront surface", () => {
   beforeEach(() => {
     // PUBLIC_BASE_URL names the *platform* origin; a storefront must ignore it
-    // and use its own host, or every store would advertise zolto.com URLs.
-    process.env.PUBLIC_BASE_URL = "https://zolto.com";
+    // and use its own host, or every store would advertise gwinn.com URLs.
+    process.env.PUBLIC_BASE_URL = "https://gwinn.com";
     resolved.tenant = { id: 42, name: "Aurora Atelier" };
   });
 
@@ -135,16 +136,16 @@ describe("storefront surface", () => {
 
     const res = await request(buildApp())
       .get("/sitemap.xml")
-      .set("Host", "aurora.zolto.ch");
+      .set("Host", `aurora.${BRAND.domain}`);
 
     expect(res.status).toBe(200);
-    expect(res.text).toContain("<loc>http://aurora.zolto.ch/</loc>");
-    expect(res.text).toContain("<loc>http://aurora.zolto.ch/product/3</loc>");
+    expect(res.text).toContain(`<loc>http://aurora.${BRAND.domain}/</loc>`);
+    expect(res.text).toContain(`<loc>http://aurora.${BRAND.domain}/product/3</loc>`);
     expect(res.text).toContain("<lastmod>2026-05-06</lastmod>");
     // The regression this guards: marketing URLs 404 on a storefront host.
     expect(res.text).not.toContain("/pricing");
     expect(res.text).not.toContain("/blog");
-    expect(res.text).not.toContain("zolto.com");
+    expect(res.text).not.toContain("gwinn.com");
   });
 
   it("omits sold-out products from the sitemap", async () => {
@@ -166,18 +167,18 @@ describe("storefront surface", () => {
 
     const res = await request(buildApp())
       .get("/sitemap.xml")
-      .set("Host", "aurora.zolto.ch");
+      .set("Host", `aurora.${BRAND.domain}`);
     expect(res.text).not.toContain("/product/4");
   });
 
   it("points robots.txt at the store's own sitemap and blocks checkout", async () => {
     const res = await request(buildApp())
       .get("/robots.txt")
-      .set("Host", "aurora.zolto.ch");
+      .set("Host", `aurora.${BRAND.domain}`);
 
-    expect(res.text).toContain("Sitemap: http://aurora.zolto.ch/sitemap.xml");
+    expect(res.text).toContain(`Sitemap: http://aurora.${BRAND.domain}/sitemap.xml`);
     expect(res.text).toContain("Disallow: /checkout");
     expect(res.text).toContain("Disallow: /admin");
-    expect(res.text).not.toContain("zolto.com");
+    expect(res.text).not.toContain("gwinn.com");
   });
 });

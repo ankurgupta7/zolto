@@ -1,3 +1,4 @@
+import { BRAND } from "@shared/brand";
 import { describe, expect, it } from "vitest";
 import {
   allActions,
@@ -15,7 +16,7 @@ const noop = async () => {};
 
 const tree: MenuItem = {
   key: "root",
-  title: "Zolto admin",
+  title: `${BRAND.name} admin`,
   children: [
     {
       key: "stores",
@@ -144,7 +145,7 @@ describe("navigation", () => {
   });
 
   it("shows where you are", () => {
-    expect(breadcrumb([tree, storesMenu[0]])).toBe("Zolto admin › Stores");
+    expect(breadcrumb([tree, storesMenu[0]])).toBe(`${BRAND.name} admin › Stores`);
   });
 
   it("collects every action in the tree", () => {

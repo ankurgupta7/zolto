@@ -1,3 +1,4 @@
+import { BRAND } from "@shared/brand";
 import { describe, expect, it } from "vitest";
 import { SignJWT } from "jose";
 import {
@@ -115,53 +116,53 @@ describe("sanitizeNextPath", () => {
 
 describe("sanitizeNextTarget", () => {
   it("accepts a relative path exactly like sanitizeNextPath, regardless of root domain", () => {
-    expect(sanitizeNextTarget("/claim/x", "zolto.ch")).toBe("/claim/x");
+    expect(sanitizeNextTarget("/claim/x", BRAND.domain)).toBe("/claim/x");
     expect(sanitizeNextTarget("/claim/x", null)).toBe("/claim/x");
   });
 
   it("accepts an absolute https URL on the platform root domain", () => {
-    expect(sanitizeNextTarget("https://zolto.ch/admin", "zolto.ch")).toBe(
-      "https://zolto.ch/admin",
+    expect(sanitizeNextTarget(`${BRAND.url}/admin`, BRAND.domain)).toBe(
+      `${BRAND.url}/admin`,
     );
   });
 
   it("accepts an absolute https URL on a tenant subdomain", () => {
     expect(
-      sanitizeNextTarget("https://blah.zolto.ch/admin?x=1", "zolto.ch"),
-    ).toBe("https://blah.zolto.ch/admin?x=1");
+      sanitizeNextTarget(`https://blah.${BRAND.domain}/admin?x=1`, BRAND.domain),
+    ).toBe(`https://blah.${BRAND.domain}/admin?x=1`);
   });
 
   it("rejects an absolute URL when no root domain is configured", () => {
-    expect(sanitizeNextTarget("https://blah.zolto.ch/admin", null)).toBeNull();
+    expect(sanitizeNextTarget(`https://blah.${BRAND.domain}/admin`, null)).toBeNull();
   });
 
   it("rejects an absolute URL on an unrelated host", () => {
     expect(
-      sanitizeNextTarget("https://evil.example.com/", "zolto.ch"),
+      sanitizeNextTarget("https://evil.example.com/", BRAND.domain),
     ).toBeNull();
   });
 
-  it("rejects a host that merely ends with the same characters (evilzolto.ch)", () => {
+  it(`rejects a host that merely ends with the same characters (evil${BRAND.domain})`, () => {
     expect(
-      sanitizeNextTarget("https://evilzolto.ch/admin", "zolto.ch"),
+      sanitizeNextTarget(`https://evil${BRAND.domain}/admin`, BRAND.domain),
     ).toBeNull();
   });
 
   it("rejects a non-https absolute URL", () => {
     expect(
-      sanitizeNextTarget("http://blah.zolto.ch/admin", "zolto.ch"),
+      sanitizeNextTarget(`http://blah.${BRAND.domain}/admin`, BRAND.domain),
     ).toBeNull();
   });
 
   it("rejects control characters and over-long input", () => {
-    expect(sanitizeNextTarget("https://zolto.ch/a\nb", "zolto.ch")).toBeNull();
+    expect(sanitizeNextTarget(`${BRAND.url}/a\nb`, BRAND.domain)).toBeNull();
     expect(
-      sanitizeNextTarget(`https://zolto.ch/${"a".repeat(600)}`, "zolto.ch"),
+      sanitizeNextTarget(`https://gwinn.ch/${"a".repeat(600)}`, BRAND.domain),
     ).toBeNull();
   });
 
   it("rejects non-strings", () => {
-    expect(sanitizeNextTarget(undefined, "zolto.ch")).toBeNull();
-    expect(sanitizeNextTarget(42, "zolto.ch")).toBeNull();
+    expect(sanitizeNextTarget(undefined, BRAND.domain)).toBeNull();
+    expect(sanitizeNextTarget(42, BRAND.domain)).toBeNull();
   });
 });

@@ -1,7 +1,7 @@
 /**
- * Audience segments — one page per kind of seller Zolto is actually built for.
+ * Audience segments — one page per kind of seller Gwinn is actually built for.
  *
- * Zolto's audience has always been stated as a list ("makers, artisans, and
+ * Gwinn's audience has always been stated as a list ("makers, artisans, and
  * small shop owners — people who sell at craft fairs, markets, and pop-ups"),
  * but the marketing surface addressed all of them with one generic landing page.
  * Someone asking "is this any good for a ceramics studio?" — or an AI assistant
@@ -9,10 +9,11 @@
  *
  * Grounding rule: each segment names the features that matter to it **by id**
  * from FEATURES in ./platform, never by retyping a capability. A segment page
- * therefore cannot promise something Zolto doesn't ship, and a test asserts every
+ * therefore cannot promise something Gwinn doesn't ship, and a test asserts every
  * id still resolves. Copy that drifts from the product is worse than no page.
  */
 
+import { BRAND } from "./brand";
 import { FEATURES, type PlatformFeature } from "./platform";
 
 export interface Segment {
@@ -90,7 +91,7 @@ export const SEGMENTS: Segment[] = [
       "payments",
     ],
     scenario:
-      "You take payments all day by amount on the phone in your apron. That evening Zolto emails what it thinks you sold; one tap confirms it and your online stock matches reality again.",
+      `You take payments all day by amount on the phone in your apron. That evening ${BRAND.name} emails what it thinks you sold; one tap confirms it and your online stock matches reality again.`,
   },
   {
     id: "boutiques",
@@ -141,7 +142,7 @@ export function renderSegmentText(segment: Segment): string {
     segment.headline,
     segment.summary,
     `Common problems: ${segment.painPoints.join(" ")}`,
-    `How Zolto helps: ${segmentFeatures(segment)
+    `How ${BRAND.name} helps: ${segmentFeatures(segment)
       .map((f) => `${f.name} — ${f.description}`)
       .join(" ")}`,
     segment.scenario,

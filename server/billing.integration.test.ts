@@ -1,3 +1,4 @@
+import { BRAND } from "@shared/brand";
 import { describe, expect, it, beforeAll, afterAll } from "vitest";
 import Stripe from "stripe";
 
@@ -92,12 +93,12 @@ describeIf("Tenant Onboarding — Stripe Integration", () => {
     // Point the platform key at the test account so server/stripe.ts's
     // getStripe() (read by billing.ts) talks to the same account.
     setEnv("STRIPE_SECRET_KEY", secretKey!);
-    setEnv("PUBLIC_BASE_URL", "https://zolto.ch");
+    setEnv("PUBLIC_BASE_URL", BRAND.url);
 
     // Self-provision the Prices the billing code needs — no dependency on
     // dashboard-created Price ids, so the suite runs against any test account.
     const proProduct = await stripe.products.create({
-      name: "Zolto Pro (integration test)",
+      name: `${BRAND.name} Pro (integration test)`,
     });
     productIds.push(proProduct.id);
     const proPrice = await stripe.prices.create({
@@ -140,7 +141,7 @@ describeIf("Tenant Onboarding — Stripe Integration", () => {
         const { createStripeCustomer } = await import("./stripe");
         const customerId = await createStripeCustomer({
           name: "Integration Test Merchant",
-          email: "onboarding-test@zolto.ch",
+          email: `onboarding-test@${BRAND.domain}`,
         });
 
         expect(customerId).toMatch(/^cus_/);
@@ -152,7 +153,7 @@ describeIf("Tenant Onboarding — Stripe Integration", () => {
         expect(customer.deleted).not.toBe(true);
         const c = customer as Stripe.Customer;
         expect(c.name).toBe("Integration Test Merchant");
-        expect(c.email).toBe("onboarding-test@zolto.ch");
+        expect(c.email).toBe(`onboarding-test@${BRAND.domain}`);
       },
       NETWORK,
     );
@@ -178,7 +179,7 @@ describeIf("Tenant Onboarding — Stripe Integration", () => {
           await import("./billing");
         const customer = await stripe.customers.create({
           name: "Trial Tenant",
-          email: "trial-tenant@zolto.ch",
+          email: `trial-tenant@${BRAND.domain}`,
         });
         customerIds.push(customer.id);
 
@@ -204,16 +205,16 @@ describeIf("Tenant Onboarding — Stripe Integration", () => {
 
         expect(session.mode).toBe("subscription");
         expect(session.success_url).toContain(
-          "https://zolto.ch/admin/billing?upgraded=1",
+          `${BRAND.url}/admin/billing?upgraded=1`,
         );
         expect(session.cancel_url).toBe(
-          "https://zolto.ch/admin/billing?cancelled=1",
+          `${BRAND.url}/admin/billing?cancelled=1`,
         );
 
         // Metadata is what handleBillingEvent routes on.
         expect(isBillingSession(session)).toBe(true);
         expect(session.metadata).toMatchObject({
-          zoltoBilling: "plan_subscription",
+          platformBilling: "plan_subscription",
           tenantId: "4242",
           plan: "pro",
         });
@@ -242,7 +243,7 @@ describeIf("Tenant Onboarding — Stripe Integration", () => {
         const { createPlanCheckoutSession } = await import("./billing");
         const customer = await stripe.customers.create({
           name: "Returning Tenant",
-          email: "returning-tenant@zolto.ch",
+          email: `returning-tenant@${BRAND.domain}`,
         });
         customerIds.push(customer.id);
 
@@ -265,7 +266,7 @@ describeIf("Tenant Onboarding — Stripe Integration", () => {
         sessionIds.push(session.id);
         expect(session.mode).toBe("subscription");
         expect(session.metadata).toMatchObject({
-          zoltoBilling: "plan_subscription",
+          platformBilling: "plan_subscription",
           tenantId: "4343",
           plan: "pro",
         });

@@ -8,12 +8,13 @@
  * shipping rules, platform fee, and Stripe treatment as a human's — the
  * agent layer is a new doorway, not a parallel checkout with its own rules.
  *
- * Money never touches Zolto: the session is created on the tenant's own
- * connected Standard account (a direct charge), and Zolto's cut rides along
+ * Money never touches Gwinn: the session is created on the tenant's own
+ * connected Standard account (a direct charge), and Gwinn's cut rides along
  * as a Stripe `application_fee_amount` — 1% of the product subtotal on the
  * Free plan, nothing on Pro (docs/planning/pricing-pivot-agent-commerce.md).
  */
 
+import { BRAND } from "@shared/brand";
 import { onlineFeeBpsFor, type TenantBillingFacts } from "@shared/entitlements";
 import type { Tenant } from "../drizzle/schema";
 import {
@@ -83,7 +84,7 @@ export type SalesChannel = "web" | "agent";
  * agnostic so both front doors report the same reasons.
  */
 export type CheckoutErrorCode =
-  | "NOT_CONFIGURED" // Zolto's own Stripe key is missing
+  | "NOT_CONFIGURED" // ${BRAND.name}'s own Stripe key is missing
   | "NOT_CONNECTED" // this tenant hasn't linked their Stripe account yet
   | "NOT_FOUND" // one or more ids aren't in this store's catalogue
   | "CONFLICT" // sold, hidden, or already being bought by someone else
@@ -100,7 +101,7 @@ export class CheckoutError extends Error {
 }
 
 /**
- * Zolto's platform fee on ONLINE + AGENT-originated orders. Computed on the
+ * Gwinn's platform fee on ONLINE + AGENT-originated orders. Computed on the
  * product subtotal only — never on shipping — and in-person POS sales never
  * carry a fee at all (server/pos.ts). An unknown plan value bills like Free,
  * matching the DB default.
@@ -163,7 +164,7 @@ export interface CreateCheckoutResult {
   sessionId: string;
   amountTotal: number;
   currency: string;
-  /** What Zolto took from this order, in Rappen (0 on Pro). */
+  /** What Gwinn took from this order, in Rappen (0 on Pro). */
   platformFeeRappen: number;
   items: { id: number; name: string; price: string }[];
   /** The code that was applied and what it took off, or null. */
@@ -207,7 +208,7 @@ export async function createStorefrontCheckoutSession(params: {
     );
   }
 
-  // We never process a tenant's customer payments through Zolto's own
+  // We never process a tenant's customer payments through Gwinn's own
   // account. See server/stripeConnect.ts.
   const connectedAccountId = tenant.stripeConnectedAccountId;
   if (!connectedAccountId) {
@@ -334,9 +335,9 @@ export async function createStorefrontCheckoutSession(params: {
   const feeRappen = platformFeeRappen(tenant, discountedSubtotalRappen);
 
   // The second argument's `stripeAccount` runs this call on the tenant's own
-  // connected Standard account (a "direct charge") using Zolto's platform key
+  // connected Standard account (a "direct charge") using Gwinn's platform key
   // — funds settle straight to the tenant, no raw tenant Stripe key ever
-  // touches Zolto's servers. application_fee_amount is the platform's cut of
+  // touches Gwinn's servers. application_fee_amount is the platform's cut of
   // that direct charge; omitted entirely when the fee is 0 (Pro plan).
   const buildParams = (fee: number, couponId: string | null) => ({
     mode: "payment" as const,
@@ -398,7 +399,7 @@ export async function createStorefrontCheckoutSession(params: {
     // NOTE: must be inside payment_intent_data for Checkout Sessions;
     // top-level statement_descriptor is rejected by newer Stripe APIs.
     payment_intent_data: {
-      statement_descriptor: (tenant.name || "ZOLTO STORE")
+      statement_descriptor: (tenant.name || "GWINN STORE")
         .slice(0, 22)
         .toUpperCase(),
       ...(fee > 0 ? { application_fee_amount: fee } : {}),
@@ -438,7 +439,7 @@ export async function createStorefrontCheckoutSession(params: {
           duration: "once",
           name: claimedDiscount.code.slice(0, 40),
           max_redemptions: 1,
-          metadata: { zoltoDiscountCode: claimedDiscount.code },
+          metadata: { platformDiscountCode: claimedDiscount.code },
         },
         { stripeAccount: connectedAccountId },
       );
@@ -463,7 +464,7 @@ export async function createStorefrontCheckoutSession(params: {
         console.error(
           `[Checkout] Stripe rejected the platform fee for tenant ${tenantId} ` +
             `(connected account ${connectedAccountId}). Retrying WITHOUT the fee ` +
-            `so the sale still completes — this order earns Zolto nothing. ` +
+            `so the sale still completes — this order earns ${BRAND.name} nothing. ` +
             `Check the Connect relationship. Original error:`,
           err,
         );

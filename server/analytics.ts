@@ -25,7 +25,7 @@
  *      screenshot run gets for free.
  *   2. **One shell serves every surface.** index.html is shared by the
  *      marketing site and every tenant storefront, so a build-time constant can
- *      only ever produce one bucket. Injected per request, zolto.ch and the
+ *      only ever produce one bucket. Injected per request, gwinn.ch and the
  *      storefronts are separable.
  *
  * ## What separates one store from another
@@ -51,7 +51,7 @@ export interface AnalyticsConfig {
    * first-party path is also the one ad blockers do not strip.
    */
   endpoint: string;
-  /** Website id for the marketing surface (zolto.ch). */
+  /** Website id for the marketing surface (gwinn.ch). */
   marketingWebsiteId: string;
   /** Website id shared by every tenant storefront. */
   storefrontWebsiteId: string;

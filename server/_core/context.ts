@@ -11,7 +11,7 @@ export type TrpcContext = {
 };
 
 // Resolve tenant from request: X-Tenant-Slug header, then the host — a
-// platform subdomain (tenant.zolto.ch) by slug, any other hostname as a
+// platform subdomain (tenant.gwinn.ch) by slug, any other hostname as a
 // registered custom domain (shop.example.com). Unknown hosts resolve to null.
 //
 // The logic itself lives in server/tenantResolve.ts, shared with the non-tRPC

@@ -4,8 +4,8 @@
  * kalakosh.ch runs this same app (single-tenant), so its public
  * `products.list` tRPC endpoint already returns exactly the shape this
  * deployment's `products` table expects. This migrates that catalog onto the
- * Zolto multi-tenant platform (Kalakosh = tenant "kalakosh", tenant #1 — see
- * docs/planning/zolto-business-plan.md) instead of re-keying it by hand.
+ * Gwinn multi-tenant platform (Kalakosh = tenant "kalakosh", tenant #1 — see
+ * docs/planning/gwinn-business-plan.md) instead of re-keying it by hand.
  *
  * Idempotent: re-running only imports products whose name isn't already
  * present for the tenant, so a second run (e.g. after kalakosh.ch adds new

@@ -1,3 +1,4 @@
+import { BRAND } from "@shared/brand";
 import type { Express, Request, Response, NextFunction } from "express";
 import express from "express";
 import type Stripe from "stripe";
@@ -109,7 +110,7 @@ function resolveBaseUrl(tenantSlug: string): string {
   const fromEnv = process.env.PUBLIC_BASE_URL?.replace(/\/+$/, "");
   if (fromEnv) return fromEnv;
   return process.env.NODE_ENV === "production"
-    ? `https://${tenantSlug}.zolto.ch`
+    ? `https://${tenantSlug}.gwinn.ch`
     : "http://localhost:3000";
 }
 
@@ -754,7 +755,7 @@ interface ReceiptOrder {
 
 function _generateReceiptHtml(
   order: ReceiptOrder,
-  tenantName: string = "Zolto Store",
+  tenantName: string = `${BRAND.name} Store`,
   tenantDomain: string = "",
   returnsFooter: string = "14-day returns on unused items in original condition",
 ): string {
@@ -795,7 +796,7 @@ function _generateReceiptHtml(
     : "";
 
   const invoiceNumber = order.invoiceNumber ?? `KPOS-${order.id}`;
-  const footerDomain = tenantDomain || `${tenantName.toLowerCase()}.zolto.ch`;
+  const footerDomain = tenantDomain || `${tenantName.toLowerCase()}.gwinn.ch`;
 
   return `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><title>Receipt #${orderRef}</title>
@@ -1015,7 +1016,7 @@ export function registerPosRoutes(app: Express): void {
         locationId: terminalLocationId ?? process.env.STRIPE_LOCATION_ID ?? "",
         tenantSlug,
         twintQrUrl: settings?.twintQrUrl ?? null,
-        // Store identity for generic POS clients (Zolto POS): the app shows
+        // Store identity for generic POS clients (Gwinn POS): the app shows
         // the paired store's own name/logo instead of baking a brand into the
         // build. whiteLabelName is the merchant-facing override; the tenant's
         // platform name is the fallback.
@@ -1723,11 +1724,11 @@ function parseAttestedMethod(value: unknown): AttestedMethod | null {
 }
 
 // Stripe statement_descriptor allows letters/numbers/spaces only, 5–22 chars.
-// Derive a neutral, tenant-scoped descriptor from the slug; fall back to ZOLTO.
+// Derive a neutral, tenant-scoped descriptor from the slug; fall back to GWINN.
 function posStatementDescriptor(tenantSlug: string): string {
   const cleaned = tenantSlug
     .replace(/[^A-Za-z0-9 ]/g, "")
     .toUpperCase()
     .slice(0, 22);
-  return cleaned.length >= 5 ? cleaned : "ZOLTO";
+  return cleaned.length >= 5 ? cleaned : "GWINN";
 }

@@ -1,3 +1,4 @@
+import { BRAND } from "@shared/brand";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   buildReceiptHtml,
@@ -348,7 +349,7 @@ describe("sendClaimLinkEmail", () => {
 
     const sent = await sendClaimLinkEmail({
       to: "owner@aurora.example",
-      url: "https://zolto.ch/onboarding?store=aurora&claim=tok",
+      url: `${BRAND.url}/onboarding?store=aurora&claim=tok`,
       storeName: "Aurora Atelier",
     });
     expect(sent).toBe(false);
@@ -362,7 +363,7 @@ describe("sendClaimLinkEmail", () => {
 
     const sent = await sendClaimLinkEmail({
       to: "owner@aurora.example",
-      url: "https://zolto.ch/onboarding?store=aurora&claim=tok",
+      url: `${BRAND.url}/onboarding?store=aurora&claim=tok`,
       storeName: `<img src=x onerror=alert(1)>`,
     });
 
@@ -371,7 +372,7 @@ describe("sendClaimLinkEmail", () => {
     const body = JSON.parse(init.body as string);
     expect(body.to).toBe("owner@aurora.example");
     expect(body.html).toContain(
-      "https://zolto.ch/onboarding?store=aurora&amp;claim=tok",
+      `${BRAND.url}/onboarding?store=aurora&amp;claim=tok`,
     );
     expect(body.html).not.toContain("<img");
     expect(body.html).toContain("&lt;img");

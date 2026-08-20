@@ -26,7 +26,7 @@ const STRIPE_CATALOG_LIMIT = 1000;
 
 export const migrationRouter = router({
   /**
-   * What the "switch to Zolto" UI can offer this store right now — whether
+   * What the "switch to Gwinn" UI can offer this store right now — whether
    * the one-click Stripe catalogue import is available (their Stripe account
    * already linked via Connect), connectable, or unavailable on this deploy.
    */

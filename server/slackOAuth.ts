@@ -3,18 +3,18 @@
  * on the Channels admin page.
  *
  * The merchant clicks the button (URL built per-tenant by the tenant router),
- * approves Zolto's Slack app in THEIR workspace, and Slack redirects back
+ * approves Gwinn's Slack app in THEIR workspace, and Slack redirects back
  * here with a code. We exchange it for that workspace's bot token and write
  * it straight into the encrypted tenant-secrets vault — the same place the
  * manual paste on the Channels page stores it — so the intake handlers pick
  * it up through channelSecret() with no extra plumbing.
  *
- * The signing secret stays platform-level (it belongs to Zolto's app, not the
+ * The signing secret stays platform-level (it belongs to Gwinn's app, not the
  * workspace), so OAuth removes any need for merchants to handle secrets at
  * all: the whole Slack section becomes one click plus a channel id.
  *
  * Platform env:
- *   SLACK_CLIENT_ID / SLACK_CLIENT_SECRET — from Zolto's Slack app
+ *   SLACK_CLIENT_ID / SLACK_CLIENT_SECRET — from Gwinn's Slack app
  *   PUBLIC_BASE_URL                       — the redirect_uri host
  *
  * The `state` parameter carries WHICH tenant is connecting, HMAC-signed with
@@ -22,6 +22,7 @@
  * replayed or aimed at someone else's store.
  */
 
+import { BRAND } from "@shared/brand";
 import crypto from "node:crypto";
 import type { Express, Request, Response } from "express";
 import { ENV } from "./_core/env";
@@ -84,7 +85,7 @@ export function verifySlackOAuthState(
 }
 
 export function slackOAuthRedirectUri(): string {
-  const base = (process.env.PUBLIC_BASE_URL ?? "https://zolto.ch").replace(
+  const base = (process.env.PUBLIC_BASE_URL ?? BRAND.url).replace(
     /\/+$/,
     "",
   );

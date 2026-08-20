@@ -1,3 +1,4 @@
+import { BRAND } from "./brand";
 import { describe, expect, it } from "vitest";
 import {
   SEGMENTS,
@@ -8,7 +9,7 @@ import {
 import { FEATURES } from "./platform";
 
 describe("segments", () => {
-  it("only references features Zolto actually ships", () => {
+  it(`only references features ${BRAND.name} actually ships`, () => {
     // The grounding rule: a segment page must not be able to promise a
     // capability that doesn't exist.
     const known = new Set(FEATURES.map((f) => f.id));

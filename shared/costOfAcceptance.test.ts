@@ -1,3 +1,4 @@
+import { BRAND } from "./brand";
 import { describe, it, expect } from "vitest";
 import {
   RATES,
@@ -25,12 +26,12 @@ describe("the CHF 45 basket", () => {
    * mind about what a sale costs.
    */
   it.each([
-    ["zolto-twint-qr", 0.59, 1.3],
+    ["platform-twint-qr", 0.59, 1.3],
     ["sumup-payments-plus", 0.45, 0.99],
     ["sumup-debit", 0.68, 1.5],
     ["worldline-tap-on-mobile", 0.77, 1.7],
     ["sumup-credit", 1.13, 2.5],
-    ["zolto-card", 1.51, 3.34],
+    ["platform-card", 1.51, 3.34],
   ])("costs %s CHF %s (%s%%)", (id, chf, pct) => {
     const cost = costOfBasket(BASKET_EXAMPLE_CHF, rate(id));
     expect(cost.totalChf).toBe(chf);
@@ -45,14 +46,14 @@ describe("basketTable", () => {
     expect([...totals].sort((a, b) => a - b)).toEqual(totals);
   });
 
-  it("puts Zolto's card row LAST in person, because that is where it belongs", () => {
+  it(`puts ${BRAND.name}'s card row LAST in person, because that is where it belongs`, () => {
     // The finding, pinned, and sharper since Stripe confirmed Swiss cards bill
-    // at the non-EEA rate: taking a card through Zolto is the most expensive
+    // at the non-EEA rate: taking a card through Gwinn is the most expensive
     // in-person option on our own comparison. A table that reordered itself
-    // until Zolto won would be the exact behaviour the pricing pledge is
+    // until Gwinn won would be the exact behaviour the pricing pledge is
     // positioned against, so this fails loudly if anyone ever "fixes" it.
     const rows = basketTable(BASKET_EXAMPLE_CHF, "in-person");
-    expect(rows.at(-1)!.rate.id).toBe("zolto-card");
+    expect(rows.at(-1)!.rate.id).toBe("platform-card");
   });
 
   it("puts TWINT second overall, and first among options with no monthly fee", () => {
@@ -60,31 +61,31 @@ describe("basketTable", () => {
     // survives: the cheapest row (SumUp Payments Plus) costs CHF 29/month to
     // stand on. TWINT costs nothing to stand on and is next.
     const rows = basketTable(BASKET_EXAMPLE_CHF, "in-person");
-    expect(rows[1].rate.id).toBe("zolto-twint-qr");
+    expect(rows[1].rate.id).toBe("platform-twint-qr");
     const noSubscription = rows.filter((r) => r.rate.monthlyChf === 0);
-    expect(noSubscription[0].rate.id).toBe("zolto-twint-qr");
+    expect(noSubscription[0].rate.id).toBe("platform-twint-qr");
   });
 
   it("keeps TWINT under half the cost of a card, which the copy claims", () => {
     // SOVEREIGNTY and BUYER_FIT both say "less than half what the same sale
     // costs on a card". That is arithmetic, so it gets checked here rather
     // than trusted in four languages.
-    const twint = costOfBasket(BASKET_EXAMPLE_CHF, rate("zolto-twint-qr"));
-    const card = costOfBasket(BASKET_EXAMPLE_CHF, rate("zolto-card"));
+    const twint = costOfBasket(BASKET_EXAMPLE_CHF, rate("platform-twint-qr"));
+    const card = costOfBasket(BASKET_EXAMPLE_CHF, rate("platform-card"));
     expect(twint.totalChf).toBeLessThan(card.totalChf / 2);
   });
 
-  it("keeps SumUp cheaper than Zolto online on every plan", () => {
-    // The other unflattering finding: online is where Zolto is most expensive
+  it(`keeps SumUp cheaper than ${BRAND.name} online on every plan`, () => {
+    // The other unflattering finding: online is where Gwinn is most expensive
     // of the three on rate. Its argument there is what the store does, not what
     // the transaction costs — and the page has to be able to say so.
     const rows = basketTable(BASKET_EXAMPLE_CHF, "online");
     const byId = new Map(rows.map((r) => [r.rate.id, r.totalChf]));
     expect(byId.get("sumup-online")!).toBeLessThan(
-      byId.get("zolto-online-pro")!,
+      byId.get("platform-online-pro")!,
     );
-    expect(byId.get("zolto-online-pro")!).toBeLessThan(
-      byId.get("zolto-online-free")!,
+    expect(byId.get("platform-online-pro")!).toBeLessThan(
+      byId.get("platform-online-free")!,
     );
   });
 
@@ -99,20 +100,20 @@ describe("basketTable", () => {
 });
 
 describe("the fee stack is split, not summed away", () => {
-  it("separates what the payment company takes from what Zolto adds", () => {
-    const free = costOfBasket(100, rate("zolto-online-free"));
-    // Stripe 2.9% + CHF 0.30, then Zolto's 1% on top — shown as two numbers
+  it(`separates what the payment company takes from what ${BRAND.name} adds`, () => {
+    const free = costOfBasket(100, rate("platform-online-free"));
+    // Stripe 2.9% + CHF 0.30, then Gwinn's 1% on top — shown as two numbers
     // because "1%" on its own was the claim that read as a total.
     expect(free.acquirerChf).toBe(3.2);
     expect(free.platformChf).toBe(1);
     expect(free.totalChf).toBe(4.2);
   });
 
-  it("sources Zolto's platform slice from REVENUE_SHARE, never a literal", () => {
-    expect(rate("zolto-online-free").platformPercent).toBe(
+  it(`sources ${BRAND.name}'s platform slice from REVENUE_SHARE, never a literal`, () => {
+    expect(rate("platform-online-free").platformPercent).toBe(
       REVENUE_SHARE.freeBps / 100,
     );
-    expect(rate("zolto-online-pro").platformPercent).toBe(
+    expect(rate("platform-online-pro").platformPercent).toBe(
       REVENUE_SHARE.proBps / 100,
     );
   });
@@ -125,7 +126,7 @@ describe("the fee stack is split, not summed away", () => {
   });
 
   it("charges no platform fee to a competitor's rate", () => {
-    for (const r of RATES.filter((r) => r.provider !== "zolto")) {
+    for (const r of RATES.filter((r) => r.provider !== "platform")) {
       expect(r.platformPercent).toBe(0);
     }
   });
@@ -134,14 +135,14 @@ describe("the fee stack is split, not summed away", () => {
 describe("costOfBasket", () => {
   it("treats a zero, negative or non-finite basket as a zero month", () => {
     for (const bad of [0, -10, NaN, Infinity]) {
-      const cost = costOfBasket(bad, rate("zolto-online-free"));
+      const cost = costOfBasket(bad, rate("platform-online-free"));
       expect(cost.totalChf).toBe(0);
       expect(cost.effectivePct).toBe(0);
     }
   });
 
   it("does not charge a fixed fee on a sale that didn't happen", () => {
-    expect(costOfBasket(0, rate("zolto-card")).totalChf).toBe(0);
+    expect(costOfBasket(0, rate("platform-card")).totalChf).toBe(0);
   });
 
   it("rounds to whole cents rather than leaking float noise", () => {
@@ -165,11 +166,11 @@ describe("honesty invariants", () => {
     // than reporting one. Stripe confirmed the pessimistic reading in August
     // 2026, so the optimistic row is gone rather than kept as a hopeful
     // footnote, and the surviving row is marked verified.
-    const card = rate("zolto-card");
+    const card = rate("platform-card");
     expect(card.confidence).toBe("verified");
     expect(card.percent).toBe(2.9);
-    expect(RATES.filter((r) => /zolto-card/.test(r.id))).toHaveLength(1);
-    // The row still explains itself: Zolto adds nothing, and TWINT is cheaper.
+    expect(RATES.filter((r) => /platform-card/.test(r.id))).toHaveLength(1);
+    // The row still explains itself: Gwinn adds nothing, and TWINT is cheaper.
     expect(card.caveat).toMatch(/non-EEA/);
     expect(card.caveat).toMatch(/TWINT/);
   });
@@ -192,7 +193,7 @@ describe("honesty invariants", () => {
       expect(n.detail).toBeTruthy();
     }
     expect(negotiatedFor("worldline").length).toBeGreaterThan(0);
-    expect(negotiatedFor("zolto")).toEqual([]);
+    expect(negotiatedFor("platform")).toEqual([]);
   });
 
   it("concedes Worldline's Tap on Mobile is a good offer", () => {
@@ -213,7 +214,7 @@ describe("monthlyStack", () => {
   it("names every party that takes a cut of a month's online selling", () => {
     // CHF 2,000 across CHF 50 baskets = 40 orders.
     // Stripe: 2.9% of 2000 = 58.00, plus 40 × 0.30 = 12.00 → 70.00
-    // Zolto:  1% of 2000 = 20.00.  Subscription: 0.
+    // Gwinn:  1% of 2000 = 20.00.  Subscription: 0.
     const s = monthlyStack(2000, 50, "free");
     expect(s.orders).toBe(40);
     expect(s.processorChf).toBe(70);
@@ -233,7 +234,7 @@ describe("monthlyStack", () => {
   });
 
   it("makes the processor the larger cut at every volume", () => {
-    // The point of the whole exercise: Zolto's 1% was being read as the cost
+    // The point of the whole exercise: Gwinn's 1% was being read as the cost
     // of a sale while Stripe was quietly taking three times as much.
     for (const sales of [200, 1000, 2500, 6000]) {
       const s = monthlyStack(sales, 45, "free");
@@ -282,7 +283,7 @@ describe("helpers", () => {
 
   it("groups rates by provider", () => {
     expect(ratesFor("sumup").every((r) => r.provider === "sumup")).toBe(true);
-    expect(ratesFor("zolto").length).toBeGreaterThan(0);
+    expect(ratesFor("platform").length).toBeGreaterThan(0);
   });
 
   it("computes SumUp Plus's break-even against its own pay-as-you-go rates", () => {

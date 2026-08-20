@@ -73,7 +73,7 @@ describe("plan/price mapping", () => {
   });
 
   it("does not resolve retired tier prices to any plan", () => {
-    // The grandfathering map is deliberately gone: Zolto had no paying
+    // The grandfathering map is deliberately gone: Gwinn had no paying
     // tenants when migration 0008 ran and has none now, so no subscription
     // can be sitting on a retired Price.
     expect(planForPriceId("price_maker_legacy")).toBeNull();
@@ -98,7 +98,7 @@ describe("createPlanCheckoutSession", () => {
     expect(args.customer).toBe("cus_t7");
     expect(args.line_items).toEqual([{ price: "price_pro", quantity: 1 }]);
     expect(args.subscription_data.trial_period_days).toBe(14);
-    expect(args.metadata.zoltoBilling).toBe("plan_subscription");
+    expect(args.metadata.platformBilling).toBe("plan_subscription");
     expect(args.metadata.tenantId).toBe("7");
   });
 
@@ -141,7 +141,7 @@ function billingSession(meta: Record<string, string>): Stripe.Checkout.Session {
 describe("isBillingSession", () => {
   it("distinguishes billing sessions from storefront sessions", () => {
     expect(
-      isBillingSession(billingSession({ zoltoBilling: "plan_subscription" })),
+      isBillingSession(billingSession({ platformBilling: "plan_subscription" })),
     ).toBe(true);
     expect(
       isBillingSession({
@@ -172,7 +172,7 @@ describe("handleBillingEvent", () => {
       type: "checkout.session.completed",
       data: {
         object: billingSession({
-          zoltoBilling: "plan_subscription",
+          platformBilling: "plan_subscription",
           tenantId: "7",
           plan: "pro",
         }),
@@ -192,7 +192,7 @@ describe("handleBillingEvent", () => {
       type: "checkout.session.completed",
       data: {
         object: billingSession({
-          zoltoBilling: "photo_credits",
+          platformBilling: "photo_credits",
           tenantId: "7",
           credits: "25",
         }),
@@ -387,7 +387,7 @@ describe("createSiteImportCheckoutSession", () => {
     });
     const args = sessionsCreate.mock.calls[0][0];
     expect(args.metadata).toMatchObject({
-      zoltoBilling: "site_import",
+      platformBilling: "site_import",
       tenantId: "7",
       siteImportId: "42",
     });
@@ -433,7 +433,7 @@ describe("site import webhook", () => {
           amount_total: 2000,
           currency: "chf",
           metadata: {
-            zoltoBilling: "site_import",
+            platformBilling: "site_import",
             tenantId: "7",
             siteImportId: "42",
             ...meta,

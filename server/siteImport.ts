@@ -3,7 +3,7 @@
  *
  * This is the extraction half of the paid switch-in import (shared/platform.ts
  * SITE_IMPORT). A merchant who already sells somewhere has typed their whole
- * catalogue in once; the premise of Zolto is that they never do it again, and
+ * catalogue in once; the premise of Gwinn is that they never do it again, and
  * the CSV/Stripe importers (server/providerMigration.ts) already cover the
  * cases where the old platform will hand over a file. This covers the case that
  * is actually most common for a small maker: there is no export, there is just

@@ -2,7 +2,7 @@
  * Count what the AI agents actually do — the reach half of the funnel whose
  * sale half is already recorded as `orders.channel = 'agent'`.
  *
- * Zolto publishes `/llms.txt`, `/llms-full.txt` and an MCP endpoint on the bet
+ * Gwinn publishes `/llms.txt`, `/llms-full.txt` and an MCP endpoint on the bet
  * that an agent will discover a store and buy from it (server/llms.ts,
  * server/mcp.ts). Until this module nothing recorded whether one ever did, and
  * nothing on the client could: an agent fetching `/llms.txt` never loads the
@@ -35,7 +35,7 @@ import {
 import { recordAgentHit } from "./db";
 import { resolveTenantFromRequest } from "./tenantResolve";
 
-/** The `tenant_id` sentinel for the platform surface (zolto.ch itself). */
+/** The `tenant_id` sentinel for the platform surface (gwinn.ch itself). */
 export const PLATFORM_TENANT_ID = 0;
 
 /**

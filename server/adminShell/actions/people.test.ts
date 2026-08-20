@@ -1,3 +1,4 @@
+import { BRAND } from "@shared/brand";
 import { describe, expect, it, vi } from "vitest";
 import { createFakeContext, fakeTenant } from "../fakeContext";
 import {
@@ -124,7 +125,7 @@ describe("inviteTeammate", () => {
   it("invites and prints the claim link, which works even when mail does not", async () => {
     const invite = vi.fn(async () => ({
       emailed: false,
-      claimUrl: "https://zolto.ch/claim-staff?token=abc",
+      claimUrl: `${BRAND.url}/claim-staff?token=abc`,
       expiresInDays: 7,
     }));
     const { ctx, fake } = createFakeContext({

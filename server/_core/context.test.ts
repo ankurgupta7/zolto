@@ -1,3 +1,4 @@
+import { BRAND } from "@shared/brand";
 import { describe, expect, it, vi, beforeEach, afterAll } from "vitest";
 
 const { authenticateRequest, getTenantBySlug, getTenantByCustomDomain } =
@@ -22,7 +23,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   // The production shape: a configured platform root, so a host is either one
   // of its subdomains (a slug) or a custom domain — never both.
-  process.env.PUBLIC_BASE_URL = "https://zolto.ch";
+  process.env.PUBLIC_BASE_URL = BRAND.url;
   getTenantBySlug.mockResolvedValue(undefined);
   getTenantByCustomDomain.mockResolvedValue(undefined);
 });
@@ -36,13 +37,13 @@ afterAll(() => {
 describe("createContext — user", () => {
   it("attaches the authenticated user", async () => {
     authenticateRequest.mockResolvedValue({ id: 1, openId: "google:1" });
-    const ctx = await createContext(opts({ host: "zolto.ch" }));
+    const ctx = await createContext(opts({ host: BRAND.domain }));
     expect(ctx.user).toMatchObject({ id: 1 });
   });
 
   it("leaves the user null when authentication fails", async () => {
     authenticateRequest.mockRejectedValue(new Error("no session"));
-    const ctx = await createContext(opts({ host: "zolto.ch" }));
+    const ctx = await createContext(opts({ host: BRAND.domain }));
     expect(ctx.user).toBeNull();
   });
 });
@@ -61,7 +62,7 @@ describe("createContext — tenant resolution", () => {
 
   it("resolves the tenant from a subdomain when there is no header", async () => {
     getTenantBySlug.mockResolvedValueOnce({ id: 8, slug: "lumiere" });
-    const ctx = await createContext(opts({ host: "lumiere.zolto.ch" }));
+    const ctx = await createContext(opts({ host: `lumiere.${BRAND.domain}` }));
     expect(ctx.tenant).toMatchObject({ id: 8 });
     expect(getTenantBySlug).toHaveBeenCalledWith("lumiere");
   });
@@ -71,7 +72,7 @@ describe("createContext — tenant resolution", () => {
       .mockResolvedValueOnce(undefined) // header lookup misses
       .mockResolvedValueOnce({ id: 9, slug: "sub" }); // subdomain lookup hits
     const ctx = await createContext(
-      opts({ "x-tenant-slug": "nope", host: "sub.zolto.ch" }),
+      opts({ "x-tenant-slug": "nope", host: `sub.${BRAND.domain}` }),
     );
     expect(ctx.tenant).toMatchObject({ id: 9 });
     expect(getTenantBySlug).toHaveBeenCalledTimes(2);
@@ -92,7 +93,7 @@ describe("createContext — tenant resolution", () => {
   });
 
   it("ignores reserved subdomains (www, app, api)", async () => {
-    for (const host of ["www.zolto.ch", "app.zolto.ch", "api.zolto.ch"]) {
+    for (const host of [`www.${BRAND.domain}`, `app.${BRAND.domain}`, `api.${BRAND.domain}`]) {
       const ctx = await createContext(opts({ host }));
       expect(ctx.tenant).toBeNull();
     }
@@ -101,7 +102,7 @@ describe("createContext — tenant resolution", () => {
   });
 
   it("returns a null tenant when nothing resolves", async () => {
-    const ctx = await createContext(opts({ host: "zolto.ch" }));
+    const ctx = await createContext(opts({ host: BRAND.domain }));
     expect(ctx.tenant).toBeNull();
   });
 

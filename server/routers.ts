@@ -111,7 +111,7 @@ export const appRouter = router({
   }),
   tenant: tenantRouter, // NEW: Multi-tenant routes
   billing: billingRouter, // Plan subscriptions + AI usage
-  platform: platformRouter, // Zolto-wide operating metrics (superadmin only)
+  platform: platformRouter, // Gwinn-wide operating metrics (superadmin only)
   staff: staffRouter, // Team seats + invites
   chat: chatRouter, // AI support assistant (storefront)
   insights: insightsRouter, // Sales/inventory stats + AI narrative (Pro)

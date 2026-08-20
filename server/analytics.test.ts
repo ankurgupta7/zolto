@@ -102,7 +102,7 @@ describe("analyticsSnippet", () => {
   });
 
   it("points the two surfaces at different website ids", () => {
-    // One shell serves both, so a single baked-in id would sum zolto.ch's
+    // One shell serves both, so a single baked-in id would sum gwinn.ch's
     // traffic with every storefront's into one uninterpretable number.
     expect(analyticsSnippet("marketing", config)).toContain(
       `data-website-id="${ID_A}"`,

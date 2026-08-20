@@ -1,3 +1,4 @@
+import { BRAND } from "@shared/brand";
 import { describe, expect, it } from "vitest";
 import {
   detectDelimiter,
@@ -174,7 +175,7 @@ describe("parseProviderCsv — Worldline", () => {
 });
 
 describe("parseProviderCsv — generic", () => {
-  it("reads the Zolto template columns", () => {
+  it(`reads the ${BRAND.name} template columns`, () => {
     const csv = [
       "name,description,price,category,quantity,imageUrl",
       "Ring,Schöner Ring,45,Rings,2,https://example.com/r.jpg",

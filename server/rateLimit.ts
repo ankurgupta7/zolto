@@ -5,7 +5,7 @@
  * every restart, which is honest for one instance but silently multiplies
  * the effective limit by instance count once there is more than one.
  *
- * Zolto's public MCP endpoint lets any AI agent start a checkout, and starting
+ * Gwinn's public MCP endpoint lets any AI agent start a checkout, and starting
  * a checkout *reserves inventory* for 30 minutes. Without a limit, one looping
  * agent could hold a vendor's entire stall catalogue and nobody else — human
  * or agent — could buy. That's the specific harm this guards against.

@@ -16,6 +16,7 @@
  * bounds what a hostile or merely enormous site can cost us.
  */
 
+import { BRAND } from "@shared/brand";
 import { assertPublicHostname } from "./ssrf";
 import { looksLikeCatalogueUrl, sameOriginLinks } from "./siteImport";
 
@@ -37,9 +38,16 @@ export const DEFAULT_LIMITS: CrawlLimits = {
   perRequestTimeoutMs: 10_000,
 };
 
+/**
+ * The product token a merchant sees in their access log and can name in their
+ * robots.txt. Brand-derived rather than neutral precisely because it is meant
+ * to be recognised — and shared with {@link parseRobots} so the name we crawl
+ * under and the name we honour a Disallow for cannot drift apart.
+ */
+export const CRAWLER_TOKEN = `${BRAND.name}Importer`;
+
 /** How we identify ourselves, so a merchant can see us in their logs. */
-export const USER_AGENT =
-  "ZoltoImporter/1.0 (+https://zolto.ch/; one-time shop import on behalf of the site owner)";
+export const USER_AGENT = `${CRAWLER_TOKEN}/1.0 (+${BRAND.url}/; one-time shop import on behalf of the site owner)`;
 
 const MAX_REDIRECTS = 5;
 
@@ -74,7 +82,9 @@ export function parseRobots(txt: string): string[] {
     const key = rawKey.trim().toLowerCase();
     const value = rest.join(":").trim();
     if (key === "user-agent") {
-      applies = value === "*" || /zolto/i.test(value);
+      applies =
+        value === "*" ||
+        value.toLowerCase().includes(CRAWLER_TOKEN.toLowerCase());
       continue;
     }
     if (applies && key === "disallow" && value) disallow.push(value);

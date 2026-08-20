@@ -6,6 +6,7 @@ const assertPublicHostname = vi.hoisted(() => vi.fn());
 vi.mock("./ssrf", () => ({ assertPublicHostname }));
 
 import {
+  CRAWLER_TOKEN,
   crawlSite,
   fetchPageSafely,
   isAllowedByRobots,
@@ -68,7 +69,7 @@ describe("robots.txt", () => {
 
   it("picks up a group that names this crawler", () => {
     expect(
-      parseRobots("User-agent: ZoltoImporter\nDisallow: /private"),
+      parseRobots(`User-agent: ${CRAWLER_TOKEN}\nDisallow: /private`),
     ).toEqual(["/private"]);
   });
 

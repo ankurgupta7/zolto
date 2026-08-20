@@ -1,13 +1,13 @@
--- The "Made with Zolto" credit becomes an opt-out rather than a plan side-effect.
+-- The "Made with Gwinn" credit becomes an opt-out rather than a plan side-effect.
 --
 -- Until now the credit was decided entirely by `PLAN_FEATURES[plan].whiteLabel`:
 -- Free stores carried it (in /llms.txt, and nowhere else), Pro stores silently
 -- dropped it. Two problems with that:
 --
---   * A custom domain is Pro-only. So the storefronts where the Zolto name is
+--   * A custom domain is Pro-only. So the storefronts where the Gwinn name is
 --     least discoverable — someone else's domain, our HTML — were the exact ones
 --     that never named it, to any shopper, crawler or AI agent.
---   * "Runs on Zolto" appeared in the llms.txt brief and nowhere a human or a
+--   * "Runs on Gwinn" appeared in the llms.txt brief and nowhere a human or a
 --     search engine would ever see it. There was no footer credit and no
 --     structured-data attribution at all.
 --
@@ -19,4 +19,4 @@
 --
 -- DEFAULT false = "show the credit", which is the new behaviour for every
 -- existing row, Free and Pro alike.
-ALTER TABLE `tenant_settings` ADD COLUMN `hide_zolto_badge` boolean NOT NULL DEFAULT false;
+ALTER TABLE `tenant_settings` ADD COLUMN `hide_platform_credit` boolean NOT NULL DEFAULT false;

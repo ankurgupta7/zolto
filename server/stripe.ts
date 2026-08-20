@@ -6,14 +6,14 @@
  * (Switzerland's most popular mobile payment method). All prices are in CHF.
  *
  * Required env vars:
- *   STRIPE_SECRET_KEY       – Zolto's own (platform) secret API key
- *                             (sk_live_... or sk_test_...). Used for Zolto's
+ *   STRIPE_SECRET_KEY       – Gwinn's own (platform) secret API key
+ *                             (sk_live_... or sk_test_...). Used for Gwinn's
  *                             own subscription billing of tenants AND as the
  *                             platform key for Connect API calls — it never
  *                             directly processes a tenant's storefront
  *                             payments; see server/stripeConnect.ts for that.
  *   STRIPE_WEBHOOK_SECRET   – Signing secret for /api/stripe/webhook (events
- *                             on Zolto's own account)
+ *                             on Gwinn's own account)
  *
  * Optional (Stripe Connect — see server/stripeConnect.ts):
  *   STRIPE_CONNECT_CLIENT_ID        – Platform's Connect OAuth client id (ca_...)
@@ -288,7 +288,7 @@ async function handleStripeEvent(
   // Platform-billing events (plan subscriptions, photo-credit purchases,
   // subscription lifecycle) are handled by server/billing.ts first — but only
   // on the platform webhook; subscription events on a tenant's connected
-  // account are not Zolto's billing relationship. Anything billing doesn't
+  // account are not Gwinn's billing relationship. Anything billing doesn't
   // claim falls through to storefront order handling below.
   if (source === "platform" && (await handleBillingEvent(event))) return;
 
@@ -341,7 +341,7 @@ async function handleStripeEvent(
  *
  * Two separate endpoints, because they're signed with two separate secrets
  * in the Stripe Dashboard:
- *   /api/stripe/webhook          — events on Zolto's own (platform) account
+ *   /api/stripe/webhook          — events on Gwinn's own (platform) account
  *                                   (STRIPE_WEBHOOK_SECRET)
  *   /api/stripe/connect-webhook  — events on tenants' connected accounts
  *                                   (STRIPE_CONNECT_WEBHOOK_SECRET), e.g. a

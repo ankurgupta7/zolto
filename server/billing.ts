@@ -1,10 +1,10 @@
 /**
- * Zolto's own subscription billing — charging MERCHANTS for the Pro plan
+ * Gwinn's own subscription billing — charging MERCHANTS for the Pro plan
  * (free / pro, see shared/platform.ts PLANS).
  *
  * This is entirely separate from storefront payments: a tenant's customers
  * pay into the tenant's own Stripe account via Connect (server/stripeConnect.ts);
- * everything here runs on Zolto's own (platform) Stripe account against the
+ * everything here runs on Gwinn's own (platform) Stripe account against the
  * tenant's stripeCustomerId / stripeSubscriptionId. The Free plan's 1%
  * online/agent fee is not billed here at all — it's a Stripe Connect
  * application fee taken per direct charge (server/routers/checkout.ts).
@@ -16,6 +16,7 @@
  * server/stripe.ts delegates billing-shaped events to handleBillingEvent below.
  */
 
+import { BRAND } from "@shared/brand";
 import type Stripe from "stripe";
 import { type PlatformPlan } from "@shared/platform";
 import {
@@ -44,7 +45,7 @@ function priceIdForPlan(plan: PaidPlanId): string | null {
  * Inverse lookup: Stripe Price id → plan id (used by webhook sync).
  *
  * There is deliberately no mapping for the retired pre-pivot tiers
- * (maker/studio/atelier). Migration 0008 remapped the plan enum, but Zolto
+ * (maker/studio/atelier). Migration 0008 remapped the plan enum, but Gwinn
  * had no paying tenants at the time and still has none — the grandfathering
  * machinery that used to live here was built for a population that never
  * existed. Retired tiers also cannot be sold: PRICE_ENV holds only `pro`.
@@ -74,7 +75,7 @@ function resolveBaseUrl(req?: { headers?: { origin?: string } }): string {
 // tenant storefront order (which server/stripe.ts fulfillOrder handles).
 // "photo_credits" survives only as a recognized-but-retired kind so a stale
 // pre-pivot checkout completing after deploy is logged instead of crashing.
-const META_KIND = "zoltoBilling";
+const META_KIND = "platformBilling";
 const KIND_PLAN = "plan_subscription";
 const KIND_PHOTO_CREDITS = "photo_credits";
 /** The one-time switch-in import (shared/platform.ts SITE_IMPORT). */
@@ -174,7 +175,7 @@ export async function createSiteImportCheckoutSession(params: {
           currency: "chf",
           unit_amount: Math.round(params.priceChf * 100),
           product_data: {
-            name: "Zolto shop import",
+            name: `${BRAND.name} shop import`,
             // What they are buying, in the receipt, in their own terms.
             description: `One-time import of ${params.productCount} products from your existing site`,
           },
