@@ -7,7 +7,7 @@ import { trpc } from "@/lib/trpc";
 import "@/lib/i18n";
 
 /**
- * Every way to sign in to Zolto: Google, Apple, or a passwordless email link
+ * Every way to sign in to Gwinn: Google, Apple, or a passwordless email link
  * for anyone whose address isn't on either of those — see server/_core's
  * oauth.ts, appleAuth.ts and magicLink.ts.
  *

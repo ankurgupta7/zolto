@@ -36,11 +36,11 @@ const diary1: Article = {
   eyebrow: "Diario di lancio · Parte 1 di 4",
   title: "Diario di lancio #1: La preparazione",
   metaTitle: maker.founder
-    ? `Come ${maker.founder} ha creato il primo negozio online di ${maker.brand} | Diario di lancio Zolto`
-    : "Come un'artigiana di Zurigo ha creato il suo primo negozio online | Diario di lancio Zolto",
+    ? `Come ${maker.founder} ha creato il primo negozio online di ${maker.brand} | Diario di lancio Gwinn`
+    : "Come un'artigiana di Zurigo ha creato il suo primo negozio online | Diario di lancio Gwinn",
   metaDescription: maker.founder
-    ? `Segua ${maker.founder}, fondatrice di ${maker.brand}, gioielli di perle a Zurigo, mentre apre il suo primo negozio online su Zolto. Processo reale, tempi reali, niente growth hack.`
-    : "Segua un'artigiana di gioielli di perle a Zurigo mentre apre il suo primo negozio online su Zolto. Processo reale, tempi reali, niente growth hack.",
+    ? `Segua ${maker.founder}, fondatrice di ${maker.brand}, gioielli di perle a Zurigo, mentre apre il suo primo negozio online su Gwinn. Processo reale, tempi reali, niente growth hack.`
+    : "Segua un'artigiana di gioielli di perle a Zurigo mentre apre il suo primo negozio online su Gwinn. Processo reale, tempi reali, niente growth hack.",
   dek: "Dai mercatini di Natale a un primo negozio online — Parte 1: come si comincia.",
   datePublished: BLOG_POSTS[0].lastmod,
   dateModified: BLOG_POSTS[0].lastmod,
@@ -87,7 +87,7 @@ const diary1: Article = {
     { type: "h2", text: "La configurazione" },
     {
       type: "p",
-      text: "Giorno 1 — Caricamento dei prodotti. Il laboratorio è partito con 15 prodotti. Non l'intero catalogo — solo i pezzi che vengono bene in foto e si vendono con costanza. Una foto grezza da telefono per pezzo, niente studio; l'IA di Zolto trasforma quello scatto unico in un'immagine prodotto o lifestyle, e le descrizioni IA arrivano all'80% del risultato prima di una revisione umana per il tono.",
+      text: "Giorno 1 — Caricamento dei prodotti. Il laboratorio è partito con 15 prodotti. Non l'intero catalogo — solo i pezzi che vengono bene in foto e si vendono con costanza. Una foto grezza da telefono per pezzo, niente studio; l'IA di Gwinn trasforma quello scatto unico in un'immagine prodotto o lifestyle, e le descrizioni IA arrivano all'80% del risultato prima di una revisione umana per il tono.",
     },
     {
       type: "note",
@@ -133,7 +133,7 @@ const diary1: Article = {
     },
     {
       type: "p",
-      text: "Giorno 3 — Sincronizzazione della cassa. Il pezzo decisivo. L'inventario della cassa (ciò che è disponibile ai mercati) doveva sincronizzarsi con il negozio online, così un bracciale venduto a una Chilbi non risulta ancora disponibile online dieci minuti dopo. Zolto lo gestisce in automatico: un solo database di inventario, due canali di vendita. Tempo impiegato: 30 minuti. Ha semplicemente funzionato.",
+      text: "Giorno 3 — Sincronizzazione della cassa. Il pezzo decisivo. L'inventario della cassa (ciò che è disponibile ai mercati) doveva sincronizzarsi con il negozio online, così un bracciale venduto a una Chilbi non risulta ancora disponibile online dieci minuti dopo. Gwinn lo gestisce in automatico: un solo database di inventario, due canali di vendita. Tempo impiegato: 30 minuti. Ha semplicemente funzionato.",
     },
     { type: "h2", text: "Che cosa abbiamo imparato" },
     {
@@ -171,7 +171,7 @@ const diary2: Article = {
   kind: "diary",
   eyebrow: "Diario di lancio · Parte 2 di 4",
   title: "Diario di lancio #2: Si va online",
-  metaTitle: `Si va online: il primo giorno ${maker.founder ? `di ${maker.brand}` : "di un negozio di gioielli di Zurigo"} | Diario di lancio Zolto`,
+  metaTitle: `Si va online: il primo giorno ${maker.founder ? `di ${maker.brand}` : "di un negozio di gioielli di Zurigo"} | Diario di lancio Gwinn`,
   metaDescription: `Giorno 1 ${maker.founder ? `di ${maker.brand}` : "di un negozio di gioielli di perle"} online a Zurigo: 34 visitatori, 0 ordini. Giorno 2: la prima vendita. La vera storia di un lancio online.`,
   dek: 'Parte 2: il passaggio silenzioso da "non disponibile" a "eccolo" — e il primo ordine.',
   datePublished: BLOG_POSTS[1].lastmod,
@@ -286,7 +286,7 @@ const diary3: Article = {
   eyebrow: "Diario di lancio · Parte 3 di 4",
   title: "Diario di lancio #3: Il primo mese online",
   metaTitle:
-    "Il primo mese online: 12 ordini, numeri onesti | Diario di lancio Zolto",
+    "Il primo mese online: 12 ordini, numeri onesti | Diario di lancio Gwinn",
   metaDescription: `A un mese dal lancio online, ${maker.founder ? maker.brand : "un'artigiana di gioielli di perle a Zurigo"} condivide numeri veri: 12 ordini, CHF 61 di media, 81% di richieste risolte dal chatbot IA. Niente growth hack.`,
   dek: "Parte 3: i numeri onesti del primo mese — 12 ordini online, CHF 61 di media, e che cosa li ha generati.",
   datePublished: BLOG_POSTS[2].lastmod,
@@ -449,8 +449,8 @@ const caseStudy: Article = {
   slug: STORY_SLUG,
   kind: "story",
   title: caseStudyItTitle,
-  metaTitle: `${maker.founder ? `Caso studio ${maker.brand}` : "Caso studio"}: dai mercatini di Natale alle vendite online in 30 giorni | Zolto`,
-  metaDescription: `Come ${maker.founder ? `${maker.founder}, fondatrice di ${maker.brand},` : "un'artigiana di gioielli di perle a Zurigo"} ha aperto il suo primo negozio online in 3 giorni e realizzato 12 vendite online nel primo mese, su Zolto.`,
+  metaTitle: `${maker.founder ? `Caso studio ${maker.brand}` : "Caso studio"}: dai mercatini di Natale alle vendite online in 30 giorni | Gwinn`,
+  metaDescription: `Come ${maker.founder ? `${maker.founder}, fondatrice di ${maker.brand},` : "un'artigiana di gioielli di perle a Zurigo"} ha aperto il suo primo negozio online in 3 giorni e realizzato 12 vendite online nel primo mese, su Gwinn.`,
   dek: "Da ~60 vendite offline al mese ai mercatini di Natale a una gioielleria ibrida online-offline in 30 giorni.",
   datePublished: CASE_STUDY.datePublished,
   dateModified: CASE_STUDY.dateModified,
@@ -465,7 +465,7 @@ const caseStudy: Article = {
     { type: "h2", text: "L'artigiana" },
     {
       type: "p",
-      text: `${BRAND} è un marchio di gioielli di Zurigo: pezzi fatti a mano con perle e pietre semipreziose — collane, orecchini, bracciali — venduti ai mercatini di Natale e alle Chilbi lungo la Gold Coast di Zurigo. Prima di Zolto tutta l'attività era offline: circa 60 vendite al mese, tutte di persona, nessun negozio online.`,
+      text: `${BRAND} è un marchio di gioielli di Zurigo: pezzi fatti a mano con perle e pietre semipreziose — collane, orecchini, bracciali — venduti ai mercatini di Natale e alle Chilbi lungo la Gold Coast di Zurigo. Prima di Gwinn tutta l'attività era offline: circa 60 vendite al mese, tutte di persona, nessun negozio online.`,
     },
     { type: "h2", text: "La sfida" },
     {
@@ -564,7 +564,7 @@ const caseStudy: Article = {
           { type: "h2", text: "La prospettiva dell'artigiana" } as Block,
           {
             type: "quote",
-            text: "Non volevo diventare un'esperta di tecnologia. Volevo fare gioielli. Con Zolto ho aperto il negozio in 3 giorni senza imparare nulla di nuovo. L'IA gestisce le domande a cui rispondevo nei DM di Instagram — per esempio se le mie perle sono d'acqua dolce o quanto costa la spedizione in Germania.",
+            text: "Non volevo diventare un'esperta di tecnologia. Volevo fare gioielli. Con Gwinn ho aperto il negozio in 3 giorni senza imparare nulla di nuovo. L'IA gestisce le domande a cui rispondevo nei DM di Instagram — per esempio se le mie perle sono d'acqua dolce o quanto costa la spedizione in Germania.",
             cite: `${founderName}, fondatrice di ${maker.brand}, Zurigo`,
           } as Block,
         ]

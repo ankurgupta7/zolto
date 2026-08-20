@@ -9,7 +9,7 @@ import { useMarketingT } from "../lib/marketingI18n";
  * SqueezePlay — three tills, side by side, and only one of them has both.
  *
  * This replaced the card-reader gag as the in-person argument. That section was
- * built on "you don't need to buy a reader", which was true of Zolto and, by
+ * built on "you don't need to buy a reader", which was true of Gwinn and, by
  * 2026, equally true of everyone else: SumUp Tap to Pay and Worldline Tap on
  * Mobile both run on an ordinary phone in Switzerland, and Worldline's carries
  * no monthly fee. A differentiator every competitor shares is a paragraph, not
@@ -128,13 +128,13 @@ function SqueezeMatrix() {
         </thead>
         <tbody>
           {sp.panels.map((panel, i) => {
-            const isZolto = panel.has.length > 1;
+            const isPlatform = panel.has.length > 1;
             return (
               <tr
                 key={panel.id}
                 data-testid={`squeeze-row-${panel.id}`}
                 className={`border-b border-[var(--brand-border)] last:border-b-0 ${
-                  isZolto ? "bg-[var(--brand-accent)]/[0.09]" : ""
+                  isPlatform ? "bg-[var(--brand-accent)]/[0.09]" : ""
                 }`}
               >
                 <th scope="row" className="py-2.5 pl-2 pr-3 font-normal">
@@ -143,7 +143,7 @@ function SqueezeMatrix() {
                       translatable "SumUp" is a key waiting to drift. */}
                   <span
                     className={`block font-serif text-base leading-tight text-[var(--brand-text)] sm:text-[17px] ${
-                      isZolto ? "font-medium" : ""
+                      isPlatform ? "font-medium" : ""
                     }`}
                   >
                     {panel.vendor}
@@ -238,13 +238,13 @@ export function SqueezePlayTills({ dense = false }: DenseProps = {}) {
         className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 sm:grid sm:snap-none sm:grid-cols-3 sm:gap-8 sm:overflow-visible sm:pb-0"
       >
         {sp.panels.map((panel, i) => {
-          const isZolto = panel.has.length > 1;
+          const isPlatform = panel.has.length > 1;
           return (
             <li
               key={panel.id}
               data-testid={`squeeze-panel-${panel.id}`}
               className={`min-w-[80%] shrink-0 snap-center rounded-2xl border p-6 sm:min-w-0 sm:shrink ${
-                isZolto
+                isPlatform
                   ? "border-[var(--brand-accent)] bg-white ring-1 ring-[var(--brand-accent)]"
                   : "border-[var(--brand-border)] bg-white/60"
               }`}
@@ -253,7 +253,7 @@ export function SqueezePlayTills({ dense = false }: DenseProps = {}) {
                 has={panel.has}
                 title={st(`squeezePlay.panels.${i}.label`, panel.label)}
                 className={`mx-auto h-40 w-auto ${
-                  isZolto
+                  isPlatform
                     ? "text-[var(--brand-ink)]"
                     : "text-[var(--brand-muted)]"
                 }`}

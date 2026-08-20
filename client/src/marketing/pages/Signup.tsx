@@ -151,7 +151,7 @@ export default function Signup() {
       // Auth is via the identity provider: stash the one-time claim token so the
       // owner can take ownership (tenant.claimAdmin) once they've signed in.
       try {
-        sessionStorage.setItem("zolto_claim_token", data.claimToken);
+        sessionStorage.setItem("gwinn_claim_token", data.claimToken);
       } catch {
         /* private-mode / storage disabled — claim can still be re-issued */
       }
@@ -310,7 +310,7 @@ export default function Signup() {
               error={slugTouched && slug ? errors.slug : undefined}
               hint={
                 effectiveSlug
-                  ? `${effectiveSlug}.zolto.ch`
+                  ? `${effectiveSlug}.gwinn.ch`
                   : t("signup.storeUrlHint")
               }
             >

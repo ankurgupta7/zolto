@@ -43,7 +43,7 @@ describe("AdminLayout", () => {
       </AdminLayout>,
     );
     expect(screen.getByText("Shop")).toBeTruthy();
-    expect(screen.getByText("Zolto account")).toBeTruthy();
+    expect(screen.getByText("Gwinn account")).toBeTruthy();
     expect(screen.getByText("page body")).toBeTruthy();
     expect(screen.getByRole("heading", { name: "Home" })).toBeTruthy();
   });
@@ -166,7 +166,7 @@ describe("AdminLayout", () => {
     expect(screen.getByText("Produkte")).toBeTruthy();
     expect(screen.getByText("Bestellungen")).toBeTruthy();
     expect(screen.getByText("Plan & Abrechnung")).toBeTruthy();
-    expect(screen.getByText("Zolto-Konto")).toBeTruthy();
+    expect(screen.getByText("Gwinn-Konto")).toBeTruthy();
     // The switcher itself is translated too, and still offers all four.
     const switcher = screen.getByLabelText(
       "Sprache wechseln",

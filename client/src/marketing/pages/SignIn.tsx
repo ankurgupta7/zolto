@@ -20,7 +20,7 @@ const strongText = <span className="font-medium text-[var(--brand-text)]" />;
  * magic link — see SignInOptions) and, once one completes, ends at the
  * merchant's own admin. The chain is
  *
- *   /signin → (identity provider) → /signin → {slug}.zolto.ch/admin
+ *   /signin → (identity provider) → /signin → {slug}.gwinn.ch/admin
  *
  * The final hop is a full-page navigation (see lib/navigate): the admin lives
  * on the storefront surface, which the app only resolves at mount, and it uses

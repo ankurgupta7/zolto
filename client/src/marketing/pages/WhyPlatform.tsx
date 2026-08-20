@@ -7,7 +7,7 @@ import { useDocumentMeta } from "../lib/useDocumentMeta";
 import { useMarketingT } from "../lib/marketingI18n";
 
 /**
- * /why-zolto — the AI-native argument, in full.
+ * /why-gwinn — the AI-native argument, in full.
  *
  * These three pieces were all on the homepage: the proof band (a real MCP
  * purchase, staged), the found → asked → bought mechanics, and the end-of-day
@@ -23,13 +23,13 @@ import { useMarketingT } from "../lib/marketingI18n";
  * by restating it, because a visitor arriving from a search result hasn't read
  * the homepage.
  */
-export default function WhyZolto() {
+export default function WhyPlatform() {
   const { t, st } = useMarketingT();
 
   useDocumentMeta({
-    title: t("whyZolto.metaTitle", { name: PLATFORM.name }),
-    description: t("whyZolto.metaDescription", { name: PLATFORM.name }),
-    path: "/why-zolto",
+    title: t("whyPlatform.metaTitle", { name: PLATFORM.name }),
+    description: t("whyPlatform.metaDescription", { name: PLATFORM.name }),
+    path: "/why-gwinn",
   });
 
   return (
@@ -67,7 +67,7 @@ export default function WhyZolto() {
         <div className="overflow-hidden rounded-xl border border-[var(--brand-border)] bg-white shadow-[0_18px_44px_-30px_rgba(45,38,32,0.5)]">
           <div className="border-b border-[var(--brand-border)] px-5 py-3.5 text-[13px] text-[var(--brand-muted)]">
             {t("landing.emailFrom")}{" "}
-            <span className="text-[var(--brand-text)]">Zolto</span> ·{" "}
+            <span className="text-[var(--brand-text)]">Gwinn</span> ·{" "}
             {t("landing.emailSubjectLabel")}{" "}
             <span className="text-[var(--brand-text)]">
               {t("landing.emailSubject")}

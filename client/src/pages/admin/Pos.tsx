@@ -70,7 +70,7 @@ export default function Pos() {
   // resolves which store it belongs to from the POS API key, not the host, so
   // the admin's own origin is a correct and recognisable answer.
   const serverUrl =
-    typeof window === "undefined" ? "https://zolto.ch" : window.location.origin;
+    typeof window === "undefined" ? "https://gwinn.ch" : window.location.origin;
 
   const qrInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);

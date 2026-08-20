@@ -8,7 +8,7 @@
  *
  * The admin serves two relationships, mirrored by `plane`:
  * - "store": the tenant's own rented website and POS (daily surface)
- * - "account": the tenant's relationship with Zolto (billing, team, credits…)
+ * - "account": the tenant's relationship with Gwinn (billing, team, credits…)
  */
 
 import { PLANS } from "@shared/platform";
@@ -153,7 +153,7 @@ export const ADMIN_NAV: AdminNavItem[] = [
     requiredPlan: "pro",
   },
 
-  // ── Account plane — "My Zolto account" (owner/admin by default) ─────────
+  // ── Account plane — "My Gwinn account" (owner/admin by default) ─────────
   {
     id: "account",
     plane: "account",
@@ -228,7 +228,7 @@ export const ADMIN_NAV: AdminNavItem[] = [
     requiredRole: "admin",
   },
 
-  // ── Zolto's own operations — the platform owner only ─────────────────────
+  // ── Gwinn's own operations — the platform owner only ─────────────────────
   {
     id: "platform",
     plane: "account",
@@ -325,14 +325,14 @@ export function activeNavId(
 
 export interface NavGroup {
   plane: AdminPlane;
-  /** Display title for the sidebar section ("Shop" / "Zolto account"). */
+  /** Display title for the sidebar section ("Shop" / "Gwinn account"). */
   title: string;
   items: ResolvedNavItem[];
 }
 
 const PLANE_TITLES: Record<AdminPlane, string> = {
   store: "Shop",
-  account: "Zolto account",
+  account: "Gwinn account",
 };
 
 /**

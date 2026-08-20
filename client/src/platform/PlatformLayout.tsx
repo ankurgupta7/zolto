@@ -1,5 +1,5 @@
 /**
- * The operator console shell — Zolto's own back office at zolto.ch/platform.
+ * The operator console shell — Gwinn's own back office at gwinn.ch/platform.
  *
  * Why this exists rather than a page in the merchant sidebar: admin routes are
  * mounted inside StorefrontRouter, which only renders on a tenant host, so the
@@ -41,7 +41,7 @@ function NotTheOperator({ email }: { email: string | null }) {
         Not available
       </h1>
       <p className="mt-2 text-sm text-muted-foreground">
-        This area belongs to the Zolto operator.
+        This area belongs to the Gwinn operator.
       </p>
 
       {email ? (
@@ -64,7 +64,7 @@ function NotTheOperator({ email }: { email: string | null }) {
               href="/"
               className="text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
             >
-              Back to zolto.ch
+              Back to gwinn.ch
             </a>
           </div>
         </>
@@ -92,7 +92,7 @@ export function PlatformLayout({
   const activeId = activePlatformNavId(location);
 
   useEffect(() => {
-    if (title) document.title = `${title} · Zolto operator`;
+    if (title) document.title = `${title} · Gwinn operator`;
   }, [title]);
 
   if (loading) {
@@ -120,7 +120,7 @@ export function PlatformLayout({
                 aria-hidden="true"
               />
               <span className="text-sm font-semibold tracking-tight text-foreground">
-                Zolto operator
+                Gwinn operator
               </span>
             </div>
             <div className="flex items-center gap-3">
@@ -133,7 +133,7 @@ export function PlatformLayout({
                 href="/"
                 className="text-xs text-muted-foreground hover:text-foreground"
               >
-                zolto.ch
+                gwinn.ch
               </a>
               <SignOutButton className="text-xs text-muted-foreground hover:text-foreground" />
             </div>

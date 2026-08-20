@@ -1,7 +1,7 @@
 /**
  * Generic, tenant-branded storefront content.
  *
- * Zolto is multi-tenant: a store's public pages (home hero, about, FAQ, terms,
+ * Gwinn is multi-tenant: a store's public pages (home hero, about, FAQ, terms,
  * imprint) must not hardcode any one merchant's prose. These pure builders take
  * the current tenant's Branding and return neutral, commerce-generic copy
  * parameterized by store name, currency, and contact channels — so every tenant

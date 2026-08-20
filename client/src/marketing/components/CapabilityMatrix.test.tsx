@@ -25,7 +25,7 @@ describe("CapabilityMatrix", () => {
 
   it("groups the rows so payments is one section of four, not the whole table", () => {
     // The matrix used to be ten payment-shaped rows, which conceded the frame:
-    // it compared Zolto to payment companies on payment questions, where the
+    // it compared Gwinn to payment companies on payment questions, where the
     // best available outcome is a tie.
     render(<CapabilityMatrix competitor={sumup} />);
     for (const group of CAPABILITY_GROUPS) {
@@ -47,11 +47,11 @@ describe("CapabilityMatrix", () => {
     expect(keys).toContain("multilingual");
   });
 
-  it("carries the rows Zolto loses", () => {
+  it("carries the rows Gwinn loses", () => {
     // A matrix that only asks questions we win is a scorecard we wrote for
     // ourselves, and it gets discounted on sight. Two rows lose: PostFinance
     // Pay, and the card rate — which is now the dearest on our own table.
-    const lost = CAPABILITIES.filter((c) => c.zoltoSupported === false);
+    const lost = CAPABILITIES.filter((c) => c.platformSupported === false);
     expect(lost.map((c) => c.key).sort()).toEqual(["card-rate", "postfinance"]);
 
     render(<CapabilityMatrix competitor={worldline} />);
@@ -99,7 +99,7 @@ describe("CapabilityMatrix", () => {
     render(<CapabilityMatrix competitor={sumup} />);
     const row = screen.getByTestId("capability-item-grid").textContent!;
     expect(row).toMatch(/free app/i);
-    expect(row).toMatch(/more developed than Zolto/i);
+    expect(row).toMatch(/more developed than Gwinn/i);
     expect(row).toMatch(/no terminal needed/i);
   });
 

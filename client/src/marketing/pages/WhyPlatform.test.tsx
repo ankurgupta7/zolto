@@ -4,15 +4,15 @@ import { Router } from "wouter";
 import { memoryLocation } from "wouter/memory-location";
 import { AI_NATIVE_PITCH } from "@shared/platform";
 import en from "../locales/en.json";
-import WhyZolto from "./WhyZolto";
+import WhyPlatform from "./WhyPlatform";
 
 afterEach(cleanup);
 
 function renderPage() {
-  const { hook } = memoryLocation({ path: "/why-zolto", static: true });
+  const { hook } = memoryLocation({ path: "/why-gwinn", static: true });
   return render(
     <Router hook={hook}>
-      <WhyZolto />
+      <WhyPlatform />
     </Router>,
   );
 }
@@ -22,7 +22,7 @@ function renderPage() {
  * became a reel. The bands moved rather than being dropped, so their tests
  * moved with them — that is the whole point of this file.
  */
-describe("WhyZolto", () => {
+describe("WhyPlatform", () => {
   it("opens on the thesis the homepage links here from", () => {
     renderPage();
     const heading = screen.getByRole("heading", { level: 1 });
@@ -35,7 +35,7 @@ describe("WhyZolto", () => {
     renderPage();
     expect(screen.getByTestId("agent-chat-mock")).toBeTruthy();
     expect(screen.getByText(/Order placed/i)).toBeTruthy();
-    expect(screen.getByText(/bergblume\.zolto\.ch\/mcp/i)).toBeTruthy();
+    expect(screen.getByText(/bergblume\.gwinn\.ch\/mcp/i)).toBeTruthy();
     // The endpoint a reader can go and try for themselves.
     expect(
       screen.getByRole("link", { name: /llms\.txt/i }).getAttribute("href"),
@@ -87,13 +87,13 @@ describe("WhyZolto", () => {
 
   it("sets its own title and description, so it can be found on its own", () => {
     renderPage();
-    expect(document.title).toContain("Zolto");
+    expect(document.title).toContain("Gwinn");
     const description = document.head.querySelector('meta[name="description"]');
     expect(description?.getAttribute("content")).toBeTruthy();
     expect(
       document.head
         .querySelector('link[rel="canonical"]')
         ?.getAttribute("href"),
-    ).toContain("/why-zolto");
+    ).toContain("/why-gwinn");
   });
 });

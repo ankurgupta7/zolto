@@ -2,7 +2,7 @@
  * AdminLayout — the admin shell (docs/ARCHITECTURE-ADMIN.md §2.3).
  *
  * A manifest-driven sidebar with two titled groups — "Shop" (store plane) and
- * "Zolto account" (account plane) — so the plane boundary is always visible.
+ * "Gwinn account" (account plane) — so the plane boundary is always visible.
  * Everything the sidebar shows comes from admin/nav.ts; role/plan only decide
  * display (hidden vs locked vs open) — the server enforces access.
  */

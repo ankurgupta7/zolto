@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
-import ZoltoCredit from "./ZoltoCredit";
+import PlatformCredit from "./PlatformCredit";
 
-const mocks = vi.hoisted(() => ({ showsZoltoCredit: true }));
+const mocks = vi.hoisted(() => ({ showsPlatformCredit: true }));
 
 // t() echoes the key so assertions don't depend on locale files.
 vi.mock("react-i18next", () => ({
@@ -12,35 +12,35 @@ vi.mock("react-i18next", () => ({
 vi.mock("@/contexts/TenantContext", () => ({
   useTenant: () => ({
     slug: "bergblume",
-    showsZoltoCredit: mocks.showsZoltoCredit,
+    showsPlatformCredit: mocks.showsPlatformCredit,
   }),
 }));
 
 beforeEach(() => {
-  mocks.showsZoltoCredit = true;
+  mocks.showsPlatformCredit = true;
 });
 afterEach(() => cleanup());
 
-describe("ZoltoCredit", () => {
-  it("links to zolto.ch with Zolto as the link text", () => {
-    render(<ZoltoCredit />);
-    const link = screen.getByRole("link", { name: "Zolto" });
-    expect(link.getAttribute("href")).toContain("https://zolto.ch/");
+describe("PlatformCredit", () => {
+  it("links to gwinn.ch with Gwinn as the link text", () => {
+    render(<PlatformCredit />);
+    const link = screen.getByRole("link", { name: "Gwinn" });
+    expect(link.getAttribute("href")).toContain("https://gwinn.ch/");
   });
 
   it("stays followable — a nofollow would defeat the point of the backlink", () => {
     // The credit on a merchant's own custom domain exists precisely so a search
-    // engine walks it back to zolto.ch.
-    render(<ZoltoCredit />);
-    const rel = screen.getByRole("link", { name: "Zolto" }).getAttribute("rel");
+    // engine walks it back to gwinn.ch.
+    render(<PlatformCredit />);
+    const rel = screen.getByRole("link", { name: "Gwinn" }).getAttribute("rel");
     expect(rel).toContain("noopener");
     expect(rel).not.toContain("nofollow");
   });
 
   it("tags the link so storefront referrals are measurable", () => {
-    render(<ZoltoCredit />);
+    render(<PlatformCredit />);
     const href = screen
-      .getByRole("link", { name: "Zolto" })
+      .getByRole("link", { name: "Gwinn" })
       .getAttribute("href")!;
     expect(new URL(href).searchParams.get("utm_source")).toBe(
       "storefront-footer",
@@ -48,15 +48,15 @@ describe("ZoltoCredit", () => {
   });
 
   it("renders nothing for a store that has switched the credit off", () => {
-    mocks.showsZoltoCredit = false;
-    const { container } = render(<ZoltoCredit />);
+    mocks.showsPlatformCredit = false;
+    const { container } = render(<PlatformCredit />);
     expect(container.innerHTML).toBe("");
-    expect(screen.queryByRole("link", { name: "Zolto" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Gwinn" })).toBeNull();
   });
 
   it("keeps the caller's classes on the wrapper", () => {
-    render(<ZoltoCredit className="text-white/40" />);
-    expect(screen.getByTestId("zolto-credit").className).toContain(
+    render(<PlatformCredit className="text-white/40" />);
+    expect(screen.getByTestId("platform-credit").className).toContain(
       "text-white/40",
     );
   });

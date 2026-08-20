@@ -419,7 +419,7 @@ export default function Admin() {
   };
 
   // Stripe Connect: link this store's own Stripe account for storefront
-  // checkout (separate from Zolto's own subscription billing).
+  // checkout (separate from Gwinn's own subscription billing).
   const stripeConnectQuery = trpc.tenant.getStripeConnectUrl.useQuery();
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -1010,7 +1010,7 @@ export default function Admin() {
       </section>
 
       <div className="container py-10">
-        {/* What Zolto does for this seller — live capability status */}
+        {/* What Gwinn does for this seller — live capability status */}
         <CapabilityBand
           storeConnected={!!stripeConnectQuery.data?.connected}
           insightsReady={!!insightsData}

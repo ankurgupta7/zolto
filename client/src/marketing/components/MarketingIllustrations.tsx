@@ -4,7 +4,7 @@ import { SketchArrow } from "@/components/SketchAccents";
 import { SUPPORTED_LANGUAGES } from "@/lib/languages";
 
 /**
- * Marketing illustrations — the "show what Zolto does" visuals for the landing
+ * Marketing illustrations — the "show what Gwinn does" visuals for the landing
  * page. Built as warm HTML + light SVG line-art rather than stock photography:
  * honest, on-brand, and self-contained (no external image assets).
  *

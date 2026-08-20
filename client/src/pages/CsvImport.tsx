@@ -105,12 +105,12 @@ function getField(raw: Record<string, string>, ...keys: string[]): string {
 
 export interface CsvRow {
   /**
-   * The product's own id, from the `zolto_id` column the spreadsheet mirror
+   * The product's own id, from the `gwinn_id` column the spreadsheet mirror
    * publishes. Undefined for a hand-written CSV or a file from another platform;
    * when present the server matches on it instead of on the name, so an item
    * renamed in the sheet is updated rather than duplicated.
    */
-  zoltoId?: number;
+  platformId?: number;
   name: string;
   nameEn?: string;
   nameFr?: string;
@@ -157,11 +157,11 @@ export function mapRows(
 
     // Not an error when absent or unparseable — an id is an optimisation for
     // sheets that came from us, and a CSV from anywhere else must still import.
-    const idStr = getField(r, "zoltoId", "zolto_id", "id");
-    const zoltoId = /^\d+$/.test(idStr) ? parseInt(idStr, 10) : undefined;
+    const idStr = getField(r, "platformId", "gwinn_id", "id");
+    const platformId = /^\d+$/.test(idStr) ? parseInt(idStr, 10) : undefined;
 
     return {
-      zoltoId: zoltoId && zoltoId > 0 ? zoltoId : undefined,
+      platformId: platformId && platformId > 0 ? platformId : undefined,
       name: name || "(empty)",
       nameEn: getField(r, "nameEn", "nameenglish", "name_en") || undefined,
       nameFr: getField(r, "nameFr", "namefrench", "name_fr") || undefined,
@@ -235,9 +235,9 @@ function downloadTemplate(example: {
   category: string;
 }) {
   const headers =
-    "zolto_id,name,nameEn,nameFr,nameIt,description,descriptionEn,descriptionFr,descriptionIt,price,category,quantity,imageUrl";
+    "gwinn_id,name,nameEn,nameFr,nameIt,description,descriptionEn,descriptionFr,descriptionIt,price,category,quantity,imageUrl";
   const exampleRow =
-    // zolto_id blank: a template row is a NEW product. It is filled in only by
+    // gwinn_id blank: a template row is a NEW product. It is filled in only by
     // the spreadsheet mirror, for items that already exist.
     `,"${example.name}","${example.nameEn}","${example.nameFr}","${example.nameIt}",` +
     `"${example.description}","${example.descriptionEn}","${example.descriptionFr}","${example.descriptionIt}",` +
@@ -658,7 +658,7 @@ export default function CsvImport() {
       try {
         const result = await utils.client.products.csvImport.mutate({
           rows: chunks[i].map((r) => ({
-            zoltoId: r.zoltoId,
+            platformId: r.platformId,
             name: r.name,
             nameEn: r.nameEn,
             nameFr: r.nameFr,

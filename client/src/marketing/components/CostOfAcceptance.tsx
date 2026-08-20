@@ -17,7 +17,7 @@ import { useMarketingT } from "../lib/marketingI18n";
  * flattered us: a reader who can't see the rates assumes the platform charging
  * "0% in person" is the cheap one, and on cards it isn't. This table is the
  * correction, and the correction only works if it's allowed to lose — so it
- * sorts by cost and Zolto lands where it lands.
+ * sorts by cost and Gwinn lands where it lands.
  *
  * Every row carries the source it came from and the date that source was read.
  * Rows we couldn't pin down stay visible with their doubt attached rather than
@@ -86,12 +86,12 @@ export function CostOfAcceptance({
   showFraming?: boolean;
 }) {
   const { t, st, numberLocale } = useMarketingT();
-  // On a "Zolto vs X" page, a third party's rates are noise. Everywhere else
+  // On a "Gwinn vs X" page, a third party's rates are noise. Everywhere else
   // (the pricing page) the whole field is the point, so an absent `provider`
   // shows everything.
   const rows = basketTable(basketChf, channel).filter(
     (r) =>
-      !provider || r.rate.provider === provider || r.rate.provider === "zolto",
+      !provider || r.rate.provider === provider || r.rate.provider === "platform",
   );
   // Filtered by BOTH axes. Filtering only by provider made the pricing page
   // render Worldline's terminal contract and its online gateway twice — once
@@ -148,7 +148,7 @@ export function CostOfAcceptance({
                 key={rate.id}
                 data-testid={`cost-row-${rate.id}`}
                 className={`border-b border-[var(--brand-border)]/60 ${
-                  rate.provider === "zolto"
+                  rate.provider === "platform"
                     ? "bg-[var(--brand-accent)]/[0.06]"
                     : ""
                 }`}

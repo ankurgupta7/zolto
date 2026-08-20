@@ -3,7 +3,7 @@
     "nav": {
       "groups": {
         "store": "Negozio",
-        "account": "Account Zolto"
+        "account": "Account {{brand}}"
       },
       "home": "Home",
       "products": "Prodotti",
@@ -52,7 +52,7 @@
       },
       "adminOnly": {
         "title": "Solo per amministratori",
-        "description": "Questa parte del Suo account Zolto è gestita dal proprietario del negozio o da un amministratore."
+        "description": "Questa parte del Suo account {{brand}} è gestita dal proprietario del negozio o da un amministratore."
       }
     },
     "pos": {
@@ -69,8 +69,8 @@
     },
     "posPair": {
       "title": "Configura questa cassa",
-      "description": "Questo link collega questo dispositivo al tuo negozio. Se l’app Zolto POS è installata, dovrebbe già aprirsi.",
-      "openApp": "Apri in Zolto POS",
+      "description": "Questo link collega questo dispositivo al tuo negozio. Se l’app {{brand}} POS è installata, dovrebbe già aprirsi.",
+      "openApp": "Apri in {{brand}} POS",
       "noAppYet": "Non hai ancora l’app?",
       "installThenNewLink": "I link di associazione scadono dopo pochi minuti: una volta installata l’app, generane uno nuovo da “Chiavi e accessi”.",
       "missingToken": "Questo link di associazione è incompleto. Generane uno nuovo dalla pagina “Chiavi e accessi” del tuo negozio."

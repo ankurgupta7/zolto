@@ -17,7 +17,7 @@ describe("CardReaderGag", () => {
     render(<CardReaderGag />);
     expect(
       screen.getByText(
-        `${CARD_READER_GAG.proMonths} months of Zolto ${PRO_PLAN.name}.`,
+        `${CARD_READER_GAG.proMonths} months of Gwinn ${PRO_PLAN.name}.`,
       ),
     ).toBeTruthy();
   });

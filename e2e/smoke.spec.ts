@@ -21,7 +21,7 @@ test.describe("marketing shell", () => {
 
     await page.goto("/", { waitUntil: "networkidle" });
 
-    await expect(page).toHaveTitle(/Zolto/i);
+    await expect(page).toHaveTitle(/Gwinn/i);
     // The hero CTA is client-rendered, proving React hydrated (not just the shell).
     await expect(page.getByText(/explore the shop/i).first()).toBeVisible();
     // Value props render from client-side content.

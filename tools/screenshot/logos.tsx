@@ -52,7 +52,7 @@ function LogoRow({
         <div className="flex items-center gap-2.5">
           <BrushMark className="h-8 w-8" />
           <span className="font-serif text-xl tracking-tight text-[var(--brand-text)]">
-            Zolto
+            Gwinn
           </span>
         </div>
         <BrushMark className="h-4 w-4" />

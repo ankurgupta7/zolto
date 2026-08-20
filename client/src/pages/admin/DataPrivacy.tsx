@@ -88,7 +88,7 @@ export default function DataPrivacy() {
           <SecondaryButton
             onClick={() =>
               (window.location.href =
-                "mailto:support@zolto.ch?subject=Delete%20my%20store")
+                "mailto:support@gwinn.ch?subject=Delete%20my%20store")
             }
           >
             {t("store.dataPrivacy.requestDeletion")}

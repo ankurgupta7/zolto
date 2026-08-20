@@ -7,7 +7,7 @@ import {
   PLATFORM,
   PRICING_PROMISE,
   BUYER_FIT,
-  ZOLTO_LIMITATIONS,
+  PLATFORM_LIMITATIONS,
   INCUMBENT_COMPARISON,
 } from "@shared/platform";
 import { source } from "@shared/sources";
@@ -16,10 +16,10 @@ import { CostOfAcceptance } from "../components/CostOfAcceptance";
 import { useMarketingT } from "../lib/marketingI18n";
 
 /**
- * /compare/zolto-vs-:slug — a decision-stage page per named incumbent.
+ * /compare/gwinn-vs-:slug — a decision-stage page per named incumbent.
  *
  * The comparison data already existed in shared/platform.ts but only rendered as
- * one section inside the landing page, so someone asking "Zolto vs SumUp" had no
+ * one section inside the landing page, so someone asking "Gwinn vs SumUp" had no
  * page to land on. Comparison content is what people (and AI assistants) reach
  * for at the point of choosing, which is where most referral traffic arrives.
  *
@@ -29,7 +29,7 @@ import { useMarketingT } from "../lib/marketingI18n";
 export default function Compare() {
   const { t, st } = useMarketingT();
   const params = useParams<{ slug?: string }>();
-  const slug = (params.slug ?? "").replace(/^zolto-vs-/, "");
+  const slug = (params.slug ?? "").replace(/^gwinn-vs-/, "");
   const competitor = findCompetitor(slug);
 
   useDocumentMeta({
@@ -45,7 +45,7 @@ export default function Compare() {
           competitor: competitor.name,
         })
       : t("compare.metaDescriptionIndex", { name: PLATFORM.name }),
-    path: competitor ? `/compare/zolto-vs-${competitor.id}` : "/compare",
+    path: competitor ? `/compare/gwinn-vs-${competitor.id}` : "/compare",
   });
 
   if (!competitor) {
@@ -61,7 +61,7 @@ export default function Compare() {
           {COMPETITORS.map((c) => (
             <li key={c.id}>
               <Link
-                href={`/compare/zolto-vs-${c.id}`}
+                href={`/compare/gwinn-vs-${c.id}`}
                 className="block rounded-xl border border-[var(--brand-border)] bg-white p-6 transition-colors hover:border-[var(--brand-accent)]"
               >
                 <span className="font-serif text-xl text-[var(--brand-text)]">
@@ -178,14 +178,14 @@ export default function Compare() {
             "when they're the better choice" panel; this is the same courtesy
             turned on us, and it's checkable against the codebase. */}
         <div
-          data-testid="zolto-limitations"
+          data-testid="gwinn-limitations"
           className="mx-auto mt-12 max-w-2xl rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-surface-2)] p-8"
         >
           <h2 className="font-serif text-2xl text-[var(--brand-text)]">
             {t("compare.limitationsHeading", { name: PLATFORM.name })}
           </h2>
           <ul className="mt-6 grid gap-5">
-            {ZOLTO_LIMITATIONS.map((l, i) => (
+            {PLATFORM_LIMITATIONS.map((l, i) => (
               <li key={l.title}>
                 <h3 className="text-sm font-medium text-[var(--brand-ink)]">
                   {st(`limitations.${i}.title`, l.title)}
@@ -218,7 +218,7 @@ export default function Compare() {
         </p>
       </div>
 
-      {/* The generic "old guard vs Zolto" table used to sit here. It was
+      {/* The generic "old guard vs Gwinn" table used to sit here. It was
           removed once the capability matrix widened from ten payment rows to
           the whole product: on a page about ONE named competitor, a generic
           seven-row table directly above a specific twenty-two-row one is the
@@ -227,7 +227,7 @@ export default function Compare() {
           competitor yet and the generic version is the right altitude. */}
 
       {/* What each product actually does, row by row — including the row
-          Zolto loses. Only rendered for competitors we researched to that
+          Gwinn loses. Only rendered for competitors we researched to that
           depth; a blank column would read as "no" rather than "we didn't
           check". */}
       {competitor.capabilities && (
@@ -319,15 +319,15 @@ export default function Compare() {
         </div>
         <div className="rounded-xl border border-[var(--brand-accent)] bg-white p-6 ring-1 ring-[var(--brand-accent)]">
           <h2 className="font-serif text-xl text-[var(--brand-text)]">
-            {t("compare.zoltoWhenHeading", { name: PLATFORM.name })}
+            {t("compare.platformWhenHeading", { name: PLATFORM.name })}
           </h2>
           <ul className="mt-4 space-y-3 text-sm text-[var(--brand-muted-2)]">
-            {competitor.zoltoWhen.map((point, i) => (
+            {competitor.platformWhen.map((point, i) => (
               <li key={point} className="flex gap-2.5">
                 <span aria-hidden className="text-[var(--brand-accent)]">
                   ✓
                 </span>
-                {st(`competitors.${competitor.id}.zoltoWhen.${i}`, point)}
+                {st(`competitors.${competitor.id}.platformWhen.${i}`, point)}
               </li>
             ))}
           </ul>
@@ -362,7 +362,7 @@ export default function Compare() {
           <span key={c.id}>
             {i > 0 && <span className="text-[var(--brand-muted)]"> · </span>}
             <Link
-              href={`/compare/zolto-vs-${c.id}`}
+              href={`/compare/gwinn-vs-${c.id}`}
               className="text-[var(--brand-accent)] hover:underline"
             >
               {t("compare.versus", {

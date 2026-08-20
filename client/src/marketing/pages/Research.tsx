@@ -74,7 +74,7 @@ function DataTable({
 }
 
 /**
- * /research/first-month-online — Zolto's first-party pilot data, published as a
+ * /research/first-month-online — Gwinn's first-party pilot data, published as a
  * citable research page rather than left inside the Launch Diary narrative.
  *
  * The same numbers appear in Launch Diary #3, but as story beats. Stated with a

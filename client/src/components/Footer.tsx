@@ -5,7 +5,7 @@ import { trpc } from "@/lib/trpc";
 import { useTenant } from "@/contexts/TenantContext";
 import { instagramHref, whatsappHref } from "@/lib/branding";
 import { useCategories } from "@/hooks/useCategories";
-import ZoltoCredit from "./ZoltoCredit";
+import PlatformCredit from "./PlatformCredit";
 
 const InstagramIcon = ({ className = "w-5 h-5" }: { className?: string }) => (
   <svg
@@ -207,7 +207,7 @@ export default function Footer() {
             {/* Under the copyright line, where a "built by" credit belongs:
                 clearly the platform's, clearly not the merchant's. Renders
                 nothing for a store that has white-labelled it away. */}
-            <ZoltoCredit className="text-white/50" />
+            <PlatformCredit className="text-white/50" />
           </div>
           <div className="flex items-center gap-4">
             <Link

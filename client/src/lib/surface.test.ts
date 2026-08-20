@@ -16,21 +16,21 @@ describe("isDevHost", () => {
     expect(isDevHost("mymachine.local")).toBe(true);
   });
   it("treats real domains as non-dev", () => {
-    expect(isDevHost("zolto.ch")).toBe(false);
+    expect(isDevHost("gwinn.ch")).toBe(false);
     expect(isDevHost("kalakosh.ch")).toBe(false);
   });
 });
 
 describe("tenantSlugFromHost", () => {
   it("extracts the slug from a platform subdomain", () => {
-    expect(tenantSlugFromHost("kalakosh.zolto.ch")).toBe("kalakosh");
-    expect(tenantSlugFromHost("kalakosh.zolto.ch:443")).toBe("kalakosh");
+    expect(tenantSlugFromHost("kalakosh.gwinn.ch")).toBe("kalakosh");
+    expect(tenantSlugFromHost("kalakosh.gwinn.ch:443")).toBe("kalakosh");
   });
   it("returns null for the apex and reserved subdomains", () => {
-    expect(tenantSlugFromHost("zolto.ch")).toBeNull();
-    expect(tenantSlugFromHost("www.zolto.ch")).toBeNull();
-    expect(tenantSlugFromHost("app.zolto.ch")).toBeNull();
-    expect(tenantSlugFromHost("api.zolto.ch")).toBeNull();
+    expect(tenantSlugFromHost("gwinn.ch")).toBeNull();
+    expect(tenantSlugFromHost("www.gwinn.ch")).toBeNull();
+    expect(tenantSlugFromHost("app.gwinn.ch")).toBeNull();
+    expect(tenantSlugFromHost("api.gwinn.ch")).toBeNull();
   });
   it("returns null for custom domains (resolved server-side)", () => {
     expect(tenantSlugFromHost("kalakosh.ch")).toBeNull();
@@ -39,17 +39,17 @@ describe("tenantSlugFromHost", () => {
 
 describe("resolveSurface", () => {
   it("apex hosts render the marketing surface", () => {
-    expect(resolveSurface({ hostname: "zolto.ch" })).toEqual({
+    expect(resolveSurface({ hostname: "gwinn.ch" })).toEqual({
       surface: "marketing",
       tenantSlug: null,
     });
-    expect(resolveSurface({ hostname: "www.zolto.ch" }).surface).toBe(
+    expect(resolveSurface({ hostname: "www.gwinn.ch" }).surface).toBe(
       "marketing",
     );
   });
 
   it("subdomains render the tenant storefront with the derived slug", () => {
-    expect(resolveSurface({ hostname: "kalakosh.zolto.ch" })).toEqual({
+    expect(resolveSurface({ hostname: "kalakosh.gwinn.ch" })).toEqual({
       surface: "storefront",
       tenantSlug: "kalakosh",
     });
@@ -80,10 +80,10 @@ describe("resolveSurface", () => {
 
   it("prefers the hostname's own slug over a stale stamped one", () => {
     // The subdomain is authoritative when it has a slug: a cached shell must
-    // never make blah.zolto.ch render someone else's store.
+    // never make blah.gwinn.ch render someone else's store.
     expect(
       resolveSurface({
-        hostname: "kalakosh.zolto.ch",
+        hostname: "kalakosh.gwinn.ch",
         hostTenantSlug: "aurora",
       }).tenantSlug,
     ).toBe("kalakosh");
@@ -91,7 +91,7 @@ describe("resolveSurface", () => {
 
   it("reads the stamped slug from the document by default", () => {
     const meta = document.createElement("meta");
-    meta.name = "zolto-tenant-slug";
+    meta.name = "gwinn-tenant-slug";
     meta.content = "aurora";
     document.head.appendChild(meta);
     try {
@@ -121,13 +121,13 @@ describe("resolveSurface", () => {
   it("?surface override wins on any host", () => {
     expect(
       resolveSurface({
-        hostname: "kalakosh.zolto.ch",
+        hostname: "kalakosh.gwinn.ch",
         search: "?surface=marketing",
       }),
     ).toEqual({ surface: "marketing", tenantSlug: null });
     expect(
       resolveSurface({
-        hostname: "zolto.ch",
+        hostname: "gwinn.ch",
         search: "?surface=storefront&tenant=demo",
       }),
     ).toEqual({ surface: "storefront", tenantSlug: "demo" });
@@ -136,14 +136,14 @@ describe("resolveSurface", () => {
 
 describe("storeAdminUrl / storeHomeUrl (cross-surface navigation)", () => {
   it("sends the browser to the tenant subdomain from the platform apex", () => {
-    expect(storeAdminUrl("kalakosh", "zolto.ch")).toBe(
-      "https://kalakosh.zolto.ch/admin",
+    expect(storeAdminUrl("kalakosh", "gwinn.ch")).toBe(
+      "https://kalakosh.gwinn.ch/admin",
     );
-    expect(storeAdminUrl("kalakosh", "www.zolto.ch")).toBe(
-      "https://kalakosh.zolto.ch/admin",
+    expect(storeAdminUrl("kalakosh", "www.gwinn.ch")).toBe(
+      "https://kalakosh.gwinn.ch/admin",
     );
-    expect(storeHomeUrl("kalakosh", "zolto.ch")).toBe(
-      "https://kalakosh.zolto.ch/",
+    expect(storeHomeUrl("kalakosh", "gwinn.ch")).toBe(
+      "https://kalakosh.gwinn.ch/",
     );
   });
 

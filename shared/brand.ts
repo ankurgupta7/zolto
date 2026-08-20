@@ -220,4 +220,40 @@ export function pairingLink(token: string, storeUrl?: string): string {
   return `${BRAND.urlScheme}://pair?${params.toString()}`;
 }
 
+/**
+ * Strip the brand out of a string that is used as an i18n *key*.
+ *
+ * A few locale groups are keyed by their English prose — `faqs["What is
+ * Gwinn?"]`, `faqCategories["About Gwinn"]` — which means the key moved every
+ * time the product was renamed, and i18next answers a missing key by silently
+ * falling back to the English default. Nothing fails; the page just quietly
+ * stops being translated.
+ *
+ * So the key is normalised on both sides: the locale files store
+ * `"What is {{brand}}?"` and every lookup runs the runtime question through
+ * here first. The keys are now stable across any future rename.
+ */
+export function brandNeutralKey(text: string): string {
+  return text.split(BRAND.name).join("{{brand}}");
+}
+
+/**
+ * The inverse of {@link brandNeutralKey}: fill `{{brand}}` in, the way i18next
+ * does at render. For tests and for any non-React caller that reads a locale
+ * value directly and needs the string a user would actually see.
+ */
+export function withBrand<T>(node: T): T {
+  if (typeof node === "string")
+    return node.split("{{brand}}").join(BRAND.name) as T;
+  if (Array.isArray(node)) return node.map(withBrand) as T;
+  if (node !== null && typeof node === "object")
+    return Object.fromEntries(
+      Object.entries(node as Record<string, unknown>).map(([k, v]) => [
+        k,
+        withBrand(v),
+      ]),
+    ) as T;
+  return node;
+}
+
 export default BRAND;

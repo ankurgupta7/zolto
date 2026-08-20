@@ -31,7 +31,7 @@ interface TenantContextValue {
    */
   content: StorefrontContent;
   /**
-   * Whether this storefront carries the "Made with Zolto" credit. Combines the
+   * Whether this storefront carries the "Made with Gwinn" credit. Combines the
    * plan's white-label right (`tenant.getBySlug`) with the merchant's own
    * switch (`tenant.getSettings`) through shared/attribution.ts, so the footer
    * and the server-injected `<meta generator>` / JSON-LD agree.
@@ -40,7 +40,7 @@ interface TenantContextValue {
    * a beat late is a smaller wrong than one that flashes onto a white-labelled
    * store's page before being taken away.
    */
-  showsZoltoCredit: boolean;
+  showsPlatformCredit: boolean;
   /** True while tenant/settings are still loading (defaults are shown meanwhile). */
   isLoading: boolean;
   /** True if the tenant lookup failed (e.g. not seeded) — defaults are used. */
@@ -154,18 +154,18 @@ export function TenantProvider({
   // store that MAY have switched the credit off waits for the settings answer,
   // which is what keeps the credit from flashing onto a white-labelled page.
   const tenantData = tenantQuery.data;
-  const showsZoltoCredit =
+  const showsPlatformCredit =
     !!tenantData &&
     (!tenantData.whiteLabel ||
       (settingsQuery.isFetched &&
-        creditShown(true, settingsQuery.data?.hideZoltoBadge ?? false)));
+        creditShown(true, settingsQuery.data?.hidePlatformCredit ?? false)));
 
   const value = useMemo<TenantContextValue>(
     () => ({
       slug,
       branding,
       content,
-      showsZoltoCredit,
+      showsPlatformCredit,
       isLoading: enabled && (tenantQuery.isLoading || settingsQuery.isLoading),
       notFound: enabled && tenantQuery.isError,
     }),
@@ -173,7 +173,7 @@ export function TenantProvider({
       slug,
       branding,
       content,
-      showsZoltoCredit,
+      showsPlatformCredit,
       enabled,
       tenantQuery.isLoading,
       tenantQuery.isError,
@@ -197,9 +197,9 @@ export function useTenant(): TenantContextValue {
       slug: null,
       branding: NEUTRAL_BRANDING,
       content: EMPTY_CONTENT,
-      // Outside a provider means the marketing surface, which IS Zolto — a
-      // "Made with Zolto" credit there would be circular.
-      showsZoltoCredit: false,
+      // Outside a provider means the marketing surface, which IS Gwinn — a
+      // "Made with Gwinn" credit there would be circular.
+      showsPlatformCredit: false,
       isLoading: false,
       notFound: false,
     };

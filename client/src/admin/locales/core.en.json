@@ -3,7 +3,7 @@
     "nav": {
       "groups": {
         "store": "Shop",
-        "account": "Zolto account"
+        "account": "{{brand}} account"
       },
       "home": "Home",
       "products": "Products",
@@ -52,7 +52,7 @@
       },
       "adminOnly": {
         "title": "Admins only",
-        "description": "This part of your Zolto account is managed by the store owner or an admin."
+        "description": "This part of your {{brand}} account is managed by the store owner or an admin."
       }
     },
     "pos": {
@@ -69,8 +69,8 @@
     },
     "posPair": {
       "title": "Set up this register",
-      "description": "This link binds this device to your store. If the Zolto POS app is installed it should already be opening.",
-      "openApp": "Open in Zolto POS",
+      "description": "This link binds this device to your store. If the {{brand}} POS app is installed it should already be opening.",
+      "openApp": "Open in {{brand}} POS",
       "noAppYet": "Don’t have the app yet?",
       "installThenNewLink": "Pairing links expire after a few minutes, so once the app is installed, generate a fresh one from Keys & access.",
       "missingToken": "This pairing link is incomplete. Generate a new one from your store’s Keys & access page."

@@ -20,7 +20,7 @@
     }
   },
   "footer": {
-    "copyright": "© {{year}} Zolto — le commerce pour les artisans, fait main à Zurich, conçu pour que plus d'argent reste dans votre poche.",
+    "copyright": "© {{year}} {{brand}} — le commerce pour les artisans, fait main à Zurich, conçu pour que plus d'argent reste dans votre poche.",
     "pricing": "Tarifs",
     "faq": "FAQ",
     "privacy": "Confidentialité",
@@ -32,7 +32,7 @@
     "startFree": "Commencer gratuitement →",
     "seePricing": "Voir les tarifs",
     "pledgeEyebrow": "notre engagement envers les artisans",
-    "pledgeSignature": "— l'équipe Zolto",
+    "pledgeSignature": "— l'équipe {{brand}}",
     "comparisonEyebrow": "la comparaison honnête",
     "comparisonHeading": "Ce que vous leur payez vraiment.",
     "comparisonBody": "Ce sont de vrais produits avec de vraies forces, et sur un marché, chacun d'eux nous bat sur le taux carte. Ce qui suit, c'est là où les modèles diffèrent réellement — ce qu'il y a dans la caisse, qui construit la boutique, et où finissent l'argent et les données.",
@@ -68,11 +68,11 @@
       "trust": "Confiance",
       "whatsComing": "Ce qui arrive",
       "startFree": "Commencer",
-      "whyZoltoLink": "Comment une IA trouve, demande et achète →"
+      "whyPlatformLink": "Comment une IA trouve, demande et achète →"
     },
     "video": {
       "caption": "Deux minutes, de la boutique vide à la première vente.",
-      "play": "Lire la vidéo de présentation Zolto"
+      "play": "Lire la vidéo de présentation {{brand}}"
     }
   },
   "pricing": {
@@ -82,7 +82,7 @@
     "oldWay": "L'ancienne méthode",
     "perYearShort": "/an",
     "perMonthShort": "/mois",
-    "zoltoPlan": "Zolto {{plan}}",
+    "platformPlan": "{{brand}} {{plan}}",
     "mostPopular": "Le plus populaire",
     "perMonth": "/ mois",
     "feeEyebrow": "les seuls frais que nous facturons",
@@ -119,7 +119,7 @@
     "freeMeta": "{{percent}} des ventes en ligne · pas d'abonnement",
     "proMeta": "forfait mensuel fixe · 0% sur chaque vente",
     "toProcessor": "→ à votre processeur de cartes",
-    "toZolto": "→ à Zolto",
+    "toPlatform": "→ à {{brand}}",
     "youKeep": "→ il vous reste",
     "stackNote": "Le grand chiffre, c'est notre facture. Le détail, c'est la facture entière : votre processeur de cartes prélève sa propre part sur chaque vente en ligne, et cet argent va chez lui, pas chez nous. Sur le seul taux carte, nous ne sommes pas le moyen le moins cher d'être payé en Suisse — la comparaison en donne le calcul.",
     "verdictNoSales": "Pas de ventes en ligne ? Alors nous ne sommes pas payés. <hl>CHF 0.00.</hl> Vendez au stand tout le mois et nous ne gagnerons rien, avec plaisir.",
@@ -132,12 +132,12 @@
     "chatAssistant1a": "Bergblume Keramik, un petit atelier à Berne, propose la",
     "chatProductName": "Alpine Glaze Mug",
     "chatAssistant1b": "— tournée à la main, CHF 38, 3 en stock, expédiée demain.",
-    "chatProductMeta": "CHF 38 · 3 en stock · bergblume.zolto.ch",
+    "chatProductMeta": "CHF 38 · 3 en stock · bergblume.gwinn.ch",
     "chatAssistant1c": "Voulez-vous que je la commande ?",
     "chatUser2": "Oui — commande-la.",
     "orderPlaced": "Commande passée ✓",
     "orderPlacedRest": "— confirmation envoyée. Payée directement sur le Stripe de l'artisane.",
-    "mcpCaption": "stock en direct & paiement via bergblume.zolto.ch/mcp",
+    "mcpCaption": "stock en direct & paiement via bergblume.gwinn.ch/mcp",
     "howEyebrow": "pas de configuration, pas de plugin, pas d'agence",
     "howHeading": "Comment une IA achète chez vous."
   },
@@ -155,21 +155,21 @@
   "cardReaderGag": {
     "eyebrow": "une brève digression",
     "heading": "Des choses qui coûtent à peu près autant qu'un terminal de paiement.",
-    "punchlineStrong": "{{months}} mois de Zolto {{plan}}.",
+    "punchlineStrong": "{{months}} mois de {{brand}} {{plan}}.",
     "punchlineRest": "Le seul élément de cette liste qui fait aussi tourner votre boutique.",
     "footnote": "En prenant CHF {{anchor}}, le haut de la fourchette ci-dessus. Votre téléphone sait déjà encaisser, vous n'avez donc à dépenser cet argent pour rien de tout cela."
   },
   "legal": {
-    "disclaimer": "Ceci est un résumé en langage clair des conditions de la plateforme Zolto. Ce n'est pas un avis juridique. Les marchands restent responsables des politiques destinées aux clients de leur propre boutique.",
+    "disclaimer": "Ceci est un résumé en langage clair des conditions de la plateforme {{brand}}. Ce n'est pas un avis juridique. Les marchands restent responsables des politiques destinées aux clients de leur propre boutique.",
     "privacy": {
       "title": "Politique de confidentialité",
       "updated": "Brouillon — en attente de relecture juridique",
-      "intro": "Cette politique explique quelles données Zolto traite lorsque vous utilisez la plateforme pour gérer une boutique. Elle couvre le rôle de Zolto en tant que fournisseur de la plateforme ; chaque marchand est le responsable du traitement des données de ses propres clients.",
+      "intro": "Cette politique explique quelles données {{brand}} traite lorsque vous utilisez la plateforme pour gérer une boutique. Elle couvre le rôle de {{brand}} en tant que fournisseur de la plateforme ; chaque marchand est le responsable du traitement des données de ses propres clients.",
       "sections": [
         {
           "heading": "1. Deux régimes de protection des données s'appliquent",
           "body": [
-            "Zolto sert des marchands en Suisse et dans l'UE, régis par des lois différentes. Les marchands suisses et leurs clients relèvent de la loi fédérale suisse révisée sur la protection des données (nLPD). Les marchands et clients de l'UE relèvent du RGPD. Là où les deux diffèrent, nous appliquons la règle la plus stricte.",
+            "{{brand}} sert des marchands en Suisse et dans l'UE, régis par des lois différentes. Les marchands suisses et leurs clients relèvent de la loi fédérale suisse révisée sur la protection des données (nLPD). Les marchands et clients de l'UE relèvent du RGPD. Là où les deux diffèrent, nous appliquons la règle la plus stricte.",
             "Lorsque nous agissons comme sous-traitant pour un marchand (en traitant les données de ses clients pour son compte), un accord de traitement des données régit cette relation."
           ]
         },
@@ -177,13 +177,13 @@
           "heading": "2. Ce que nous collectons",
           "body": [
             "Données de compte : votre nom, votre e-mail, le nom de votre boutique et vos identifiants de connexion. Données de boutique : les produits, commandes et l'inventaire que vous saisissez. Données d'utilisation : la manière dont vous interagissez avec la plateforme, pour l'améliorer et fournir de l'assistance.",
-            "Les données de carte de paiement sont traitées directement par notre prestataire de paiement (Stripe) et ne sont jamais stockées sur les serveurs de Zolto."
+            "Les données de carte de paiement sont traitées directement par notre prestataire de paiement (Stripe) et ne sont jamais stockées sur les serveurs de {{brand}}."
           ]
         },
         {
           "heading": "3. Où vivent vos données",
           "body": [
-            "Zolto tourne sur des machines que nous louons chez Hetzner, un hébergeur allemand, dans des centres de données européens — en Allemagne dans la plupart des cas. Votre catalogue, vos commandes et les adresses de vos clients se trouvent dans une base de données sur ces machines. Deux régimes de protection des données s'appliquent : le RGPD et la nLPD suisse révisée. Là où ils divergent, nous nous tenons au plus strict des deux.",
+            "{{brand}} tourne sur des machines que nous louons chez Hetzner, un hébergeur allemand, dans des centres de données européens — en Allemagne dans la plupart des cas. Votre catalogue, vos commandes et les adresses de vos clients se trouvent dans une base de données sur ces machines. Deux régimes de protection des données s'appliquent : le RGPD et la nLPD suisse révisée. Là où ils divergent, nous nous tenons au plus strict des deux.",
             "Nous n'exploitons pas tout nous-mêmes : les paiements par carte passent par Stripe, nos fonctions d'IA appellent un fournisseur de modèles et les e-mails de compte partent via un service d'envoi — certaines données parviennent donc aussi à ces entreprises, et toutes ne sont pas européennes. La liste complète, ligne par ligne, de ce qui tourne où et de ce qui déménage est publiée sur /made-in-switzerland."
           ]
         },
@@ -211,7 +211,7 @@
     "terms": {
       "title": "Conditions d'utilisation",
       "updated": "Brouillon — en attente de relecture juridique",
-      "intro": "Ces conditions régissent votre utilisation de la plateforme Zolto pour exploiter une boutique en ligne et un point de vente.",
+      "intro": "Ces conditions régissent votre utilisation de la plateforme {{brand}} pour exploiter une boutique en ligne et un point de vente.",
       "sections": [
         {
           "heading": "1. Abonnements & essais",
@@ -222,13 +222,13 @@
         {
           "heading": "2. Prix et taxes",
           "body": [
-            "Les prix sont indiqués en francs suisses (CHF). Le chiffre d'affaires de Zolto est inférieur au seuil de CHF 100 000 à partir duquel l'assujettissement à la TVA suisse devient obligatoire ; aucune TVA n'est donc facturée sur les abonnements ni sur les frais de plateforme — le prix affiché est le prix que vous payez. Si Zolto franchissait ce seuil, ou devenait imposable dans une autre juridiction, nous mettrions à jour ces conditions et informerions les clients concernés avant l'application de toute taxe."
+            "Les prix sont indiqués en francs suisses (CHF). Le chiffre d'affaires de {{brand}} est inférieur au seuil de CHF 100 000 à partir duquel l'assujettissement à la TVA suisse devient obligatoire ; aucune TVA n'est donc facturée sur les abonnements ni sur les frais de plateforme — le prix affiché est le prix que vous payez. Si {{brand}} franchissait ce seuil, ou devenait imposable dans une autre juridiction, nous mettrions à jour ces conditions et informerions les clients concernés avant l'application de toute taxe."
           ]
         },
         {
           "heading": "3. Fonctionnalités assistées par IA",
           "body": [
-            "Zolto inclut des fonctionnalités d'IA qui rédigent des descriptions de produits, répondent aux questions d'assistance et accélèrent la mise en place. Les résultats de l'IA peuvent être inexacts — il vous incombe de vérifier le contenu avant qu'il ne soit visible par vos clients. Les changements affectant la facturation, les paiements ou l'inventaire sont toujours appliqués par un humain, jamais déployés automatiquement par l'assistant."
+            "{{brand}} inclut des fonctionnalités d'IA qui rédigent des descriptions de produits, répondent aux questions d'assistance et accélèrent la mise en place. Les résultats de l'IA peuvent être inexacts — il vous incombe de vérifier le contenu avant qu'il ne soit visible par vos clients. Les changements affectant la facturation, les paiements ou l'inventaire sont toujours appliqués par un humain, jamais déployés automatiquement par l'assistant."
           ]
         },
         {
@@ -247,7 +247,7 @@
     }
   },
   "notFound": {
-    "metaTitle": "Page introuvable | Zolto",
+    "metaTitle": "Page introuvable | {{brand}}",
     "metaDescription": "Cette page n’est pas ici. Essayez plutôt la page d’accueil, les tarifs ou la FAQ.",
     "eyebrow": "eh bien, ce stand est vide",
     "heading": "Il n’y a rien sur cette page.",
@@ -255,7 +255,7 @@
     "exits": {
       "home": {
         "label": "La page d’accueil",
-        "hint": "Ce qu’est Zolto, en une minute environ"
+        "hint": "Ce qu’est {{brand}}, en une minute environ"
       },
       "pricing": {
         "label": "Tarifs",
@@ -328,7 +328,7 @@
     "failedBody": "Ce lien de revendication est invalide ou a déjà été utilisé. Si vous vous êtes déjà connecté sur un autre appareil, tout est en ordre."
   },
   "research": {
-    "metaTitle": "{{title}} | Recherche Zolto",
+    "metaTitle": "{{title}} | Recherche {{brand}}",
     "metaDescription": "Données de première main sur les 30 premiers jours de vente en ligne d’une créatrice : 12 commandes, CHF 61 de panier moyen, 2.5 % de conversion, et d’où venaient réellement les commandes. Méthode et limites explicitées.",
     "eyebrow": "données de première main",
     "intro": "Ce qui s’est réellement passé pendant les 30 premiers jours après la mise en ligne de la vitrine d’une créatrice — y compris les chiffres qui ne nous flattent pas.",
@@ -343,7 +343,7 @@
     "limitsHeading": "Ce que cela ne montre pas",
     "diaryLead": "L’histoire mois par mois derrière ces chiffres se trouve dans le",
     "diaryLink": "Journal de lancement",
-    "citation": "Vous réutilisez ces chiffres ? Merci de citer « Zolto, {{title}} ({{published}}) » et de faire un lien vers cette page."
+    "citation": "Vous réutilisez ces chiffres ? Merci de citer « {{brand}}, {{title}} ({{published}}) » et de faire un lien vers cette page."
   },
   "compare": {
     "metaTitle": "{{name}} vs {{competitor}} — lequel convient mieux à un créateur ?",
@@ -358,7 +358,7 @@
     "traditionalWay": "La méthode classique",
     "rateNote": "Les offres et les tarifs de {{competitor}} varient selon le pays, le contrat et le volume — consultez leur propre page de tarifs pour les chiffres actuels. Du côté de {{name}}, c’est {{percent}} sur {{appliesTo}}, et rien en personne.",
     "betterWhenHeading": "Quand {{competitor}} est le meilleur choix",
-    "zoltoWhenHeading": "Quand {{name}} convient mieux",
+    "platformWhenHeading": "Quand {{name}} convient mieux",
     "startFree": "Commencer gratuitement",
     "seePricing": "Voir les tarifs",
     "alsoCompare": "À comparer aussi :",
@@ -370,7 +370,7 @@
     "buyerFitIntro": "Répondez-y avant de lire une comparaison de plus. Deux des trois peuvent nous écarter, et il vaut mieux l'apprendre ici qu'après avoir déplacé votre catalogue.",
     "limitationsHeading": "Là où {{name}} pèche"
   },
-  "whyZolto": {
+  "whyPlatform": {
     "metaTitle": "Pourquoi {{name}} — prêt pour l'IA qui achète pour votre client",
     "metaDescription": "Comment l'assistant d'un client trouve votre boutique, vérifie le stock et achète — et ce que {{name}} fait déjà pour cela aujourd'hui."
   },
@@ -387,7 +387,7 @@
     "storeNamePlaceholder": "Le nom de votre boutique",
     "storeUrlLabel": "URL de la boutique",
     "storeUrlPlaceholder": "votreboutique",
-    "storeUrlHint": "votreboutique.zolto.ch",
+    "storeUrlHint": "votreboutique.gwinn.ch",
     "emailLabel": "E-mail",
     "emailPlaceholder": "vous@exemple.ch",
     "emailHint": "Vous terminerez la configuration en vous connectant avec cette adresse e-mail.",
@@ -461,8 +461,8 @@
         "blurb": "Une boutique complète. Gratuit en personne, 1% en ligne.",
         "cta": "Commencer gratuitement",
         "features": [
-          "Caisse complète — Tap to Pay, TWINT et espèces — CHF 0 de la part de Zolto sur les ventes en personne",
-          "Boutique en ligne sur votre propre adresse zolto.ch",
+          "Caisse complète — Tap to Pay, TWINT et espèces — CHF 0 de la part de {{brand}} sur les ventes en personne",
+          "Boutique en ligne sur votre propre adresse gwinn.ch",
           "Synchronisation en temps réel entre caisse et inventaire en ligne",
           "Descriptions & traductions par IA (usage raisonnable)",
           "5 photos IA / mois",
@@ -482,7 +482,7 @@
           "0% de frais de plateforme — gardez chaque vente en ligne",
           "IA illimitée — photos, descriptions, chat",
           "Votre propre nom de domaine + SSL géré",
-          "Option marque blanche — masquer la mention « Réalisé avec Zolto »",
+          "Option marque blanche — masquer la mention « Réalisé avec {{brand}} »",
           "Statistiques avancées & insights IA",
           "3 comptes collaborateurs",
           "Support humain prioritaire",
@@ -492,20 +492,20 @@
     },
     "pricingPromise": {
       "headline": "Vous ne nous payez pas tant qu'Internet ne vous paie pas.",
-      "pledge": "Vendre en personne est gratuit, pour toujours — boutique, caisse et stock à CHF 0/mois, et Zolto n'ajoute rien au paiement. La version honnête : nous avons déjà assez d'argent. Nous ne sommes pas là pour rogner sur les petits créateurs.",
+      "pledge": "Vendre en personne est gratuit, pour toujours — boutique, caisse et stock à CHF 0/mois, et {{brand}} n'ajoute rien au paiement. La version honnête : nous avons déjà assez d'argent. Nous ne sommes pas là pour rogner sur les petits créateurs.",
       "points": [
         "Vendez au marché et ne nous payez rien, pour toujours : caisse complète, synchronisation de l'inventaire et votre vitrine en ligne, tout compris à CHF 0/mois.",
         "Les commandes en ligne et via agents IA portent des frais de 1% sur le plan Gratuit. Pas de ventes en ligne ce mois-ci ? Vous payez CHF 0. C'est tout.",
         "Pro (CHF 25/mois) supprime entièrement le 1% et débloque l'IA illimitée. Vous vendez plus d'environ CHF 2 500/mois en ligne ? Pro est moins cher — nous vous le dirons dans l'app dès que le changement en vaut la peine.",
         "Nous ne facturerons jamais votre usage de l'IA au compte-gouttes. Parlez-lui autant que vous voulez — les plans évoluent selon les produits, les photos et le stockage, pas selon votre bavardage.",
         "Ce que nous facturons n'est pas ce que coûte une vente. Votre prestataire de paiement prend sa propre part et cet argent lui revient, pas à nous — et sur le seul taux carte, nous ne sommes pas le moyen le moins cher d'être payé en Suisse. Nous préférons vous montrer toute la pile et vous laisser faire le calcul.",
-        "Une seule chose coûte un supplément, une fois : CHF 20 pour transférer toute votre boutique existante — produits, stock, photos, catégories, votre histoire — de votre ancien site vers Zolto en une minute environ. Cela paie du temps machine réel passé à lire votre site, pas un loyer sur une ligne dans une base de données. Les acteurs établis vous facturent chaque mois le stockage de ce qui vous appartient déjà ; nous facturons une fois le travail du déménagement, et plus jamais ensuite."
+        "Une seule chose coûte un supplément, une fois : CHF 20 pour transférer toute votre boutique existante — produits, stock, photos, catégories, votre histoire — de votre ancien site vers {{brand}} en une minute environ. Cela paie du temps machine réel passé à lire votre site, pas un loyer sur une ligne dans une base de données. Les acteurs établis vous facturent chaque mois le stockage de ce qui vous appartient déjà ; nous facturons une fois le travail du déménagement, et plus jamais ensuite."
       ]
     },
     "costComparison": {
       "themLabel": "Une année de coûts fixes ailleurs",
       "themNote": "SumUp Payments Plus à CHF 29/mois pendant un an, plus un lecteur Solo à CHF 99 — ce qui achète un taux carte inférieur au nôtre",
-      "usLabel": "Un mois avec Zolto",
+      "usLabel": "Un mois avec {{brand}}",
       "usNote": "pas de matériel · résiliable à tout moment · votre Stripe, votre argent",
       "multiplier": "et CHF 0/mois si vous restez sur Free"
     },
@@ -531,7 +531,7 @@
         "Caisse complète — Tap to Pay, TWINT et espèces, sur un seul écran",
         "Chaque pièce avec sa photo, son nom et son prix",
         "Synchronisation en temps réel entre caisse et inventaire en ligne",
-        "Votre vitrine en ligne, sur votre propre adresse zolto.ch"
+        "Votre vitrine en ligne, sur votre propre adresse gwinn.ch"
       ],
       "catch": "Pas de compte à rebours d'essai. Pas de palier de départ qui expire discrètement. La seule chose que nous facturons, ce sont les ventes en ligne que nous vous apportons — et s'il n'y en a pas, il n'y a rien à facturer. Celui qui traite vos paiements carte et TWINT prélève toujours son propre taux, comme partout ailleurs ; cette facture est entre vous et lui, et nous n'en prenons pas une part."
     },
@@ -550,8 +550,8 @@
       "eyebrow": "le commerce déménage dans la fenêtre de chat",
       "headline": "Votre prochain client",
       "headlineEmphasis": "est une IA.",
-      "body": "La recherche a bâti la dernière ère des boutiques. Les assistants bâtissent celle-ci — et ils ne peuvent recommander que les boutiques qu'ils savent lire. Chaque boutique Zolto embarque llms.txt, MCP et le paiement par agent dès le premier jour, tenus à jour au fil des protocoles, pour que votre boutique gagne du poids dans les réponses pendant que les sites rafistolés en disparaissent.",
-      "bodyShort": "Ils ne recommandent que ce qu'ils peuvent lire. Chaque boutique Zolto embarque llms.txt, MCP et le paiement agent dès le premier jour.",
+      "body": "La recherche a bâti la dernière ère des boutiques. Les assistants bâtissent celle-ci — et ils ne peuvent recommander que les boutiques qu'ils savent lire. Chaque boutique {{brand}} embarque llms.txt, MCP et le paiement par agent dès le premier jour, tenus à jour au fil des protocoles, pour que votre boutique gagne du poids dans les réponses pendant que les sites rafistolés en disparaissent.",
+      "bodyShort": "Ils ne recommandent que ce qu'ils peuvent lire. Chaque boutique {{brand}} embarque llms.txt, MCP et le paiement agent dès le premier jour.",
       "chart": {
         "title": "où les acheteurs commencent leur recherche",
         "crossingLabel": "2025 — les assistants dépassent la recherche",
@@ -561,14 +561,14 @@
       },
       "proof": {
         "eyebrow": "les rails sont en place — le trafic arrive encore",
-        "headline": "Regardez une IA faire ses courses dans une boutique Zolto.",
-        "body": "Votre cliente demande à son assistant. L'assistant lit la fiche de la boutique, vérifie le stock en direct via MCP, choisit la pièce et ouvre une caisse — votre cliente appuie sur payer, et l'argent arrive sur le compte Stripe de la créatrice comme pour n'importe quelle vente. Pointez votre propre IA sur zolto.ch/llms.txt et posez-lui des questions sur nous."
+        "headline": "Regardez une IA faire ses courses dans une boutique {{brand}}.",
+        "body": "Votre cliente demande à son assistant. L'assistant lit la fiche de la boutique, vérifie le stock en direct via MCP, choisit la pièce et ouvre une caisse — votre cliente appuie sur payer, et l'argent arrive sur le compte Stripe de la créatrice comme pour n'importe quelle vente. Pointez votre propre IA sur gwinn.ch/llms.txt et posez-lui des questions sur nous."
       },
       "steps": [
         {
           "k": "Trouvé",
           "title": "L'assistant lit votre fiche",
-          "body": "Chaque boutique publie votreboutique.zolto.ch/llms.txt — un résumé en langage clair de qui vous êtes et de ce que vous vendez, écrit pour des lecteurs IA."
+          "body": "Chaque boutique publie votreboutique.gwinn.ch/llms.txt — un résumé en langage clair de qui vous êtes et de ce que vous vendez, écrit pour des lecteurs IA."
         },
         {
           "k": "Vérifié",
@@ -645,7 +645,7 @@
       }
     },
     "faqCategories": {
-      "About Zolto": "À propos de Zolto",
+      "About {{brand}}": "À propos de {{brand}}",
       "Getting started": "Premiers pas",
       "Selling": "Vendre",
       "Pricing & billing": "Tarifs & facturation",
@@ -653,12 +653,12 @@
       "Privacy & data": "Confidentialité et données"
     },
     "faqs": {
-      "What is Zolto?": {
-        "q": "Qu'est-ce que Zolto ?",
-        "a": "Zolto est une plateforme de commerce pilotée par l'IA pour les artisans indépendants. Elle vous donne un point de vente et une boutique en ligne qui partagent un seul inventaire, plus un assistant IA qui s'occupe des photos de produits, des descriptions et du support client."
+      "What is {{brand}}?": {
+        "q": "Qu'est-ce que {{brand}} ?",
+        "a": "{{brand}} est une plateforme de commerce pilotée par l'IA pour les artisans indépendants. Elle vous donne un point de vente et une boutique en ligne qui partagent un seul inventaire, plus un assistant IA qui s'occupe des photos de produits, des descriptions et du support client."
       },
-      "Who is Zolto for?": {
-        "q": "À qui s'adresse Zolto ?",
+      "Who is {{brand}} for?": {
+        "q": "À qui s'adresse {{brand}} ?",
         "a": "Aux artisans, créateurs et petits commerçants qui vendent dans les foires artisanales, les marchés et les pop-ups et veulent aussi vendre en ligne — sans engager un développeur ni apprendre un logiciel complexe."
       },
       "How long does it take to set up a store?": {
@@ -667,31 +667,31 @@
       },
       "I already sell with Stripe, SumUp or Worldline — how do I switch?": {
         "q": "Je vends déjà avec Stripe, SumUp ou Worldline — comment migrer ?",
-        "a": "Emportez votre catalogue au lieu de le ressaisir. Si vous êtes sur Stripe, reliez le compte Stripe que vous avez déjà — votre paiement continue de fonctionner et vos produits s'importent en un clic. Depuis SumUp ou Worldline/SIX, téléversez l'export CSV de leur tableau de bord et Zolto le lit (y compris les en-têtes allemands et français et les formats de prix suisses). Vous vérifiez chaque article avant que quoi que ce soit ne soit écrit dans votre boutique."
+        "a": "Emportez votre catalogue au lieu de le ressaisir. Si vous êtes sur Stripe, reliez le compte Stripe que vous avez déjà — votre paiement continue de fonctionner et vos produits s'importent en un clic. Depuis SumUp ou Worldline/SIX, téléversez l'export CSV de leur tableau de bord et {{brand}} le lit (y compris les en-têtes allemands et français et les formats de prix suisses). Vous vérifiez chaque article avant que quoi que ce soit ne soit écrit dans votre boutique."
       },
       "Do I need to be technical?": {
         "q": "Dois-je être à l'aise avec la technique ?",
-        "a": "Non. Zolto est conçu pour les artisans, pas pour les gérants de boutique. L'IA fait la corvée de mise en place, et une visite guidée vous accompagne dans le tableau de bord."
+        "a": "Non. {{brand}} est conçu pour les artisans, pas pour les gérants de boutique. L'IA fait la corvée de mise en place, et une visite guidée vous accompagne dans le tableau de bord."
       },
       "How much does it cost?": {
         "q": "Combien ça coûte ?",
-        "a": "Vendre en personne est gratuit, pour toujours — la boutique, la caisse et la synchronisation de l'inventaire coûtent CHF 0/mois et Zolto n'ajoute rien sur les paiements en personne. Les commandes en ligne et via agents IA portent des frais de plateforme de 1% sur le plan Gratuit (un mois sans ventes en ligne coûte CHF 0). Pro est à CHF 25/mois avec un essai gratuit de 14 jours : il supprime le 1% et débloque l'IA illimitée. Au mois le mois — résiliable à tout moment."
+        "a": "Vendre en personne est gratuit, pour toujours — la boutique, la caisse et la synchronisation de l'inventaire coûtent CHF 0/mois et {{brand}} n'ajoute rien sur les paiements en personne. Les commandes en ligne et via agents IA portent des frais de plateforme de 1% sur le plan Gratuit (un mois sans ventes en ligne coûte CHF 0). Pro est à CHF 25/mois avec un essai gratuit de 14 jours : il supprime le 1% et débloque l'IA illimitée. Au mois le mois — résiliable à tout moment."
       },
       "Can I sell both in person and online?": {
         "q": "Puis-je vendre à la fois en personne et en ligne ?",
-        "a": "Oui — c'est le cœur de Zolto. Un seul inventaire alimente votre point de vente et votre boutique en ligne, et le stock reste synchronisé en temps réel pour que vous ne vendiez jamais plus que votre stock."
+        "a": "Oui — c'est le cœur de {{brand}}. Un seul inventaire alimente votre point de vente et votre boutique en ligne, et le stock reste synchronisé en temps réel pour que vous ne vendiez jamais plus que votre stock."
       },
       "How do I get paid?": {
         "q": "Comment suis-je payé ?",
-        "a": "Vous connectez votre propre compte Stripe et vos clients y paient directement — Zolto ne détient jamais votre argent. Sur le plan Gratuit, des frais de plateforme de 1% sont prélevés automatiquement uniquement sur les commandes en ligne et via agents IA ; les ventes en personne sont toujours sans frais, et Pro supprime entièrement les frais."
+        "a": "Vous connectez votre propre compte Stripe et vos clients y paient directement — {{brand}} ne détient jamais votre argent. Sur le plan Gratuit, des frais de plateforme de 1% sont prélevés automatiquement uniquement sur les commandes en ligne et via agents IA ; les ventes en personne sont toujours sans frais, et Pro supprime entièrement les frais."
       },
       "Do I need to buy a card reader?": {
         "q": "Dois-je acheter un terminal de paiement ?",
-        "a": "Non — les paiements se font sur le téléphone que vous possédez déjà, via l'app POS de Zolto : carte sans contact, Apple Pay / Google Pay et TWINT QR. Plus personne n'insère de carte, tout le monde tape — il n'y a donc aucun terminal à acheter, à louer ou à brancher."
+        "a": "Non — les paiements se font sur le téléphone que vous possédez déjà, via l'app POS de {{brand}} : carte sans contact, Apple Pay / Google Pay et TWINT QR. Plus personne n'insère de carte, tout le monde tape — il n'y a donc aucun terminal à acheter, à louer ou à brancher."
       },
-      "How is Zolto cheaper than Stripe, SumUp, or Worldline?": {
-        "q": "Comment Zolto est-il moins cher que Stripe, SumUp ou Worldline ?",
-        "a": "Ces outils ont été construits pour une époque où les sites web étaient compliqués et où le terminal de paiement était roi ; ils facturent donc le matériel, la mise en place et le verrouillage — facilement autour de CHF 2 000 par an. L'IA construit votre boutique en un après-midi et votre téléphone est le terminal : le coût réel est minuscule. Zolto vous restitue cette économie : vendre en personne est gratuit, les commandes en ligne ne portent que 1% de frais de plateforme sur le plan Gratuit, et Pro est un forfait de CHF 25/mois — environ un centième de l'ancienne méthode."
+      "How is {{brand}} cheaper than Stripe, SumUp, or Worldline?": {
+        "q": "Comment {{brand}} est-il moins cher que Stripe, SumUp ou Worldline ?",
+        "a": "Ces outils ont été construits pour une époque où les sites web étaient compliqués et où le terminal de paiement était roi ; ils facturent donc le matériel, la mise en place et le verrouillage — facilement autour de CHF 2 000 par an. L'IA construit votre boutique en un après-midi et votre téléphone est le terminal : le coût réel est minuscule. {{brand}} vous restitue cette économie : vendre en personne est gratuit, les commandes en ligne ne portent que 1% de frais de plateforme sur le plan Gratuit, et Pro est un forfait de CHF 25/mois — environ un centième de l'ancienne méthode."
       },
       "What if I keep my inventory in a notebook?": {
         "q": "Et si je tiens mon inventaire dans un carnet ?",
@@ -699,7 +699,7 @@
       },
       "Do I have to tag every sale at a busy market?": {
         "q": "Dois-je étiqueter chaque vente sur un marché bondé ?",
-        "a": "Non. Saisissez simplement le montant et encaissez le tap. En fin de journée, Zolto vous envoie par e-mail sa meilleure estimation de ce que vous avez vendu ; vous touchez pour confirmer et chaque pièce est marquée vendue dans votre boutique et votre caisse automatiquement."
+        "a": "Non. Saisissez simplement le montant et encaissez le tap. En fin de journée, {{brand}} vous envoie par e-mail sa meilleure estimation de ce que vous avez vendu ; vous touchez pour confirmer et chaque pièce est marquée vendue dans votre boutique et votre caisse automatiquement."
       },
       "Can I bring products from another platform?": {
         "q": "Puis-je apporter des produits d'une autre plateforme ?",
@@ -723,23 +723,23 @@
       },
       "Do prices include VAT?": {
         "q": "Les prix incluent-ils la TVA ?",
-        "a": "Il n'y a pas de TVA à ajouter. Zolto est en dessous du seuil suisse d'assujettissement à la TVA de CHF 100 000, donc le prix affiché est le prix que vous payez. Si cela change un jour, nous le dirons avant que cela n'arrive."
+        "a": "Il n'y a pas de TVA à ajouter. {{brand}} est en dessous du seuil suisse d'assujettissement à la TVA de CHF 100 000, donc le prix affiché est le prix que vous payez. Si cela change un jour, nous le dirons avant que cela n'arrive."
       },
-      "Is Zolto Swiss?": {
-        "q": "Zolto est-il suisse ?",
-        "a": "Oui — Zolto est conçu à Zurich par une société suisse, d'abord pour les artisans suisses, ensuite pour l'Europe, et après cela pour tout le monde. Les prix sont en francs, TWINT est intégré plutôt que rajouté, et l'infrastructure est européenne avec un plan public pour amener le reste en Suisse. La liste détaillée de ce qui tourne déjà où se trouve sur /made-in-switzerland."
+      "Is {{brand}} Swiss?": {
+        "q": "{{brand}} est-il suisse ?",
+        "a": "Oui — {{brand}} est conçu à Zurich par une société suisse, d'abord pour les artisans suisses, ensuite pour l'Europe, et après cela pour tout le monde. Les prix sont en francs, TWINT est intégré plutôt que rajouté, et l'infrastructure est européenne avec un plan public pour amener le reste en Suisse. La liste détaillée de ce qui tourne déjà où se trouve sur /made-in-switzerland."
       },
       "Where is my store's data stored?": {
         "q": "Où sont stockées les données de ma boutique ?",
-        "a": "En Europe. Zolto tourne sur des serveurs que nous louons chez Hetzner, un hébergeur allemand, dans des centres de données européens — en Allemagne dans la plupart des cas. Vos produits, vos commandes et les coordonnées de vos clients vivent dans une base de données sur ces machines, pas dans une région cloud de l'autre côté d'un océan."
+        "a": "En Europe. {{brand}} tourne sur des serveurs que nous louons chez Hetzner, un hébergeur allemand, dans des centres de données européens — en Allemagne dans la plupart des cas. Vos produits, vos commandes et les coordonnées de vos clients vivent dans une base de données sur ces machines, pas dans une région cloud de l'autre côté d'un océan."
       },
       "Does any of my data leave Europe?": {
         "q": "Est-ce qu'une partie de mes données quitte l'Europe ?",
-        "a": "Une partie parvient à des entreprises que nous n'exploitons pas nous-mêmes : les paiements par carte sont traités par Stripe (les numéros de carte ne touchent jamais les serveurs de Zolto), nos fonctions d'IA envoient du texte et des photos à un fournisseur de modèles, et les e-mails de compte passent par un service d'envoi — et toutes ne sont pas européennes. Tout ce que Zolto stocke lui-même reste sur nos serveurs européens. Les sous-traitants sont nommés dans la politique de confidentialité et la liste à jour est disponible sur demande."
+        "a": "Une partie parvient à des entreprises que nous n'exploitons pas nous-mêmes : les paiements par carte sont traités par Stripe (les numéros de carte ne touchent jamais les serveurs de {{brand}}), nos fonctions d'IA envoient du texte et des photos à un fournisseur de modèles, et les e-mails de compte passent par un service d'envoi — et toutes ne sont pas européennes. Tout ce que {{brand}} stocke lui-même reste sur nos serveurs européens. Les sous-traitants sont nommés dans la politique de confidentialité et la liste à jour est disponible sur demande."
       },
-      "Is Zolto covered by the GDPR and Swiss data protection?": {
-        "q": "Zolto est-il couvert par le RGPD et la protection des données suisse ?",
-        "a": "Les deux s'appliquent. Zolto sert des commerçants en Suisse et dans l'UE : la loi fédérale révisée sur la protection des données (nLPD) et le RGPD entrent donc en jeu — là où ils divergent, nous travaillons selon le plus strict. Héberger dans l'UE rend cette conversation beaucoup plus courte, et lorsque nous traitons les données de vos clients pour votre compte, un contrat de sous-traitance l'encadre."
+      "Is {{brand}} covered by the GDPR and Swiss data protection?": {
+        "q": "{{brand}} est-il couvert par le RGPD et la protection des données suisse ?",
+        "a": "Les deux s'appliquent. {{brand}} sert des commerçants en Suisse et dans l'UE : la loi fédérale révisée sur la protection des données (nLPD) et le RGPD entrent donc en jeu — là où ils divergent, nous travaillons selon le plus strict. Héberger dans l'UE rend cette conversation beaucoup plus courte, et lorsque nous traitons les données de vos clients pour votre compte, un contrat de sous-traitance l'encadre."
       },
       "Are you moving the rest of the stack to Europe?": {
         "q": "Allez-vous déplacer le reste de la technique en Europe ?",
@@ -782,7 +782,7 @@
           "Sur un stand pris d’assaut, il n’y a pas le temps d’associer chaque vente au bon article.",
           "Ce que vous vendez le samedi doit être répercuté en ligne le dimanche, et ça ne l’est généralement pas."
         ],
-        "scenario": "Vous encaissez toute la journée par montant, sur le téléphone rangé dans votre tablier. Le soir, Zolto vous envoie par e-mail ce qu’il pense que vous avez vendu ; une pression confirme, et votre stock en ligne colle de nouveau à la réalité."
+        "scenario": "Vous encaissez toute la journée par montant, sur le téléphone rangé dans votre tablier. Le soir, {{brand}} vous envoie par e-mail ce qu’il pense que vous avez vendu ; une pression confirme, et votre stock en ligne colle de nouveau à la réalité."
       },
       "boutiques": {
         "name": "Petites boutiques",
@@ -831,7 +831,7 @@
       },
       "day-end-reconciliation": {
         "name": "Vendez par montant, réconciliez avec l’IA",
-        "description": "Trop de monde au stand pour associer chaque vente ? Saisissez simplement le montant et encaissez. En fin de journée, Zolto vous envoie par e-mail sa meilleure estimation de ce que vous avez vendu ; une pression confirme et la pièce est marquée vendue à la fois dans votre boutique et à la caisse."
+        "description": "Trop de monde au stand pour associer chaque vente ? Saisissez simplement le montant et encaissez. En fin de journée, {{brand}} vous envoie par e-mail sa meilleure estimation de ce que vous avez vendu ; une pression confirme et la pièce est marquée vendue à la fois dans votre boutique et à la caisse."
       },
       "multilingual-listings": {
         "name": "Des annonces dans toutes les langues où vous vendez",
@@ -839,7 +839,7 @@
       },
       "payments": {
         "name": "Paiements directs avec Stripe",
-        "description": "Connectez votre propre compte Stripe ; vos clientes paient directement dessus. Zolto ne détient jamais votre argent. Stripe prélève ses propres frais de traitement sur chaque vente et cet argent va à Stripe — les frais de Zolto sont distincts et viennent par-dessus : 1% sur les commandes en ligne et via agent sur Free, 0% sur Pro, et 0% sur les ventes en personne sur tous les plans."
+        "description": "Connectez votre propre compte Stripe ; vos clientes paient directement dessus. {{brand}} ne détient jamais votre argent. Stripe prélève ses propres frais de traitement sur chaque vente et cet argent va à Stripe — les frais de {{brand}} sont distincts et viennent par-dessus : 1% sur les commandes en ligne et via agent sur Free, 0% sur Pro, et 0% sur les ventes en personne sur tous les plans."
       },
       "storefront": {
         "name": "Votre vitrine à votre image",
@@ -855,18 +855,18 @@
       },
       "eu-hosting": {
         "name": "Hébergement européen — vos données restent en Europe",
-        "description": "Zolto tourne sur des serveurs loués chez Hetzner en Europe, la plupart en Allemagne. Votre catalogue, vos commandes et les données de vos clients vivent dans un centre de données européen, sous le RGPD et la nLPD suisse révisée — pas dans la région cloud qui se trouvait être le réglage par défaut."
+        "description": "{{brand}} tourne sur des serveurs loués chez Hetzner en Europe, la plupart en Allemagne. Votre catalogue, vos commandes et les données de vos clients vivent dans un centre de données européen, sous le RGPD et la nLPD suisse révisée — pas dans la région cloud qui se trouvait être le réglage par défaut."
       }
     },
     "research": {
       "title": "Premier mois en ligne : les chiffres d’une créatrice",
-      "sample": "Une boutique pilote — Kalakosh, créatrice de bijoux en perles à Zurich — sur les 30 premiers jours après la mise en ligne de sa vitrine Zolto.",
-      "collection": "Les chiffres de commandes et de trafic proviennent du tableau de bord Zolto de la boutique sur la période ; les ventes hors ligne sont le décompte de la commerçante elle-même. Rien n’est modélisé ni extrapolé.",
+      "sample": "Une boutique pilote — Kalakosh, créatrice de bijoux en perles à Zurich — sur les 30 premiers jours après la mise en ligne de sa vitrine {{brand}}.",
+      "collection": "Les chiffres de commandes et de trafic proviennent du tableau de bord {{brand}} de la boutique sur la période ; les ventes hors ligne sont le décompte de la commerçante elle-même. Rien n’est modélisé ni extrapolé.",
       "limits": [
         "Une seule boutique, dans une seule catégorie (bijoux faits main), dans une seule ville. Ces chiffres décrivent ce qui est arrivé à un commerce, pas ce qui arrivera au vôtre.",
         "Un mois, c’est court. Le trafic du premier mois est gonflé par une annonce de lancement et par une communauté Instagram existante, deux choses qui ne se répètent pas.",
         "La commerçante avait déjà des clients en personne. Une créatrice qui démarre sans audience doit s’attendre à une autre courbe.",
-        "Zolto exploite la plateforme d’où viennent ces chiffres : traitez-les comme un cas publié par le fournisseur et pondérez-les en conséquence."
+        "{{brand}} exploite la plateforme d’où viennent ces chiffres : traitez-les comme un cas publié par le fournisseur et pondérez-les en conséquence."
       ],
       "findings": [
         "C’est une audience existante qui a fait le travail. 58 % des commandes en ligne venaient de la communauté Instagram de la créatrice — la vitrine a converti une attention qu’elle avait déjà plutôt que de créer une demande nouvelle.",
@@ -938,13 +938,13 @@
     },
     "competitors": {
       "stripe": {
-        "summary": "Une plateforme de paiement pensée pour les développeurs. Stripe fait tourner le paiement d’une grande partie du web, et Zolto lui-même règle les paiements via Stripe Connect — vos clients paient sur votre propre compte Stripe.",
+        "summary": "Une plateforme de paiement pensée pour les développeurs. Stripe fait tourner le paiement d’une grande partie du web, et {{brand}} lui-même règle les paiements via Stripe Connect — vos clients paient sur votre propre compte Stripe.",
         "betterWhen": [
           "Vous disposez de ressources techniques et voulez construire un paiement sur mesure.",
           "Votre modèle d’affaires a besoin de toute la surface d’API de Stripe — places de marché, abonnements, versements complexes.",
           "Vous avez déjà une boutique qui vous convient et n’avez besoin que des paiements."
         ],
-        "zoltoWhen": [
+        "platformWhen": [
           "Vous voulez une boutique et une caisse, pas une API à développer.",
           "Vous préférez photographier votre carnet plutôt que rédiger un catalogue à la main.",
           "Vous vendez sur les marchés et en ligne et voulez un seul stock pour les deux."
@@ -955,10 +955,10 @@
         "betterWhen": [
           "Votre clientèle ne paie pas avec TWINT — SumUp est moins cher et plus simple sur les cartes, et l'installation prend moins d'une heure.",
           "Vous vendez assez par carte pour qu'un abonnement mensuel batte un pourcentage par vente.",
-          "Vous voulez une application de caisse mature : variantes, options, dispositions de vente, listes de fournisseurs, clôture de caisse. Sur les fonctions de caisse pures, elle va plus loin que Zolto.",
-          "Vous voulez dix ans d'antécédents derrière l'entreprise qui encaisse votre argent. Zolto n'en a pas."
+          "Vous voulez une application de caisse mature : variantes, options, dispositions de vente, listes de fournisseurs, clôture de caisse. Sur les fonctions de caisse pures, elle va plus loin que {{brand}}.",
+          "Vous voulez dix ans d'antécédents derrière l'entreprise qui encaisse votre argent. {{brand}} n'en a pas."
         ],
-        "zoltoWhen": [
+        "platformWhen": [
           "Votre clientèle sort TWINT en premier. Une caisse SumUp ne peut pas l'accepter du tout — le contournement, c'est un second dispositif TWINT séparé et un rapprochement manuel en fin de journée.",
           "Vous vendez des pièces uniques et ne pouvez pas vous permettre de vendre deux fois la même sur deux canaux.",
           "Vous voulez que la boutique soit construite, rédigée et photographiée pour vous, plutôt qu'un gabarit à remplir vous-même.",
@@ -966,7 +966,7 @@
         ],
         "capabilities": {
           "no-hardware": "Oui — Tap to Pay, iPhone XS et plus récent / Android 11+",
-          "item-grid": "Oui — dispositions de vente, catégories, SKU, variantes et images, dans l'appli gratuite. Plus abouti que celui de Zolto.",
+          "item-grid": "Oui — dispositions de vente, catégories, SKU, variantes et images, dans l'appli gratuite. Plus abouti que celui de {{brand}}.",
           "twint": "Non",
           "postfinance": "Non",
           "stock-in-person": "Oui, avec alertes de stock bas et une étiquette « épuisé »",
@@ -1000,7 +1000,7 @@
           "Vous voulez le plus grand écosystème d’applications tierces et quelqu’un pour l’assembler.",
           "Vous avez besoin d’outils de vente multicanal établis et du temps pour les administrer."
         ],
-        "zoltoWhen": [
+        "platformWhen": [
           "Vous êtes seul, et une plateforme à administrer est le problème, pas la solution.",
           "Vous voulez la caisse et le catalogue sur le téléphone dans votre tablier, sans facture mensuelle.",
           "Vous préférez photographier votre carnet plutôt que remplir une grille de produits à la main."
@@ -1014,7 +1014,7 @@
           "Vous avez un vrai volume et voulez des taux négociés avec un suivi dédié.",
           "Vous voulez une relation d'acquisition suisse établie, avec des conditions contractuelles formelles."
         ],
-        "zoltoWhen": [
+        "platformWhen": [
           "Vous voulez vos produits dans la caisse. Tap on Mobile est une application de paiement — vous saisissez un montant à chaque fois, ou vous achetez et intégrez un logiciel de caisse séparé.",
           "Vous voulez une boutique en ligne, pas une caisse à greffer sur un site que vous faites réaliser. Saferpay est une passerelle, pas un magasin.",
           "Vous êtes seul ou un petit atelier, et un contrat de terminal pluriannuel est démesuré.",
@@ -1085,7 +1085,7 @@
       "provider": "Hetzner",
       "region": "Europe",
       "primaryCountry": "Allemagne",
-      "body": "Zolto tourne sur des machines que nous louons chez Hetzner, un hébergeur allemand, dans des centres de données européens — en Allemagne dans la plupart des cas. Votre catalogue, vos commandes et les adresses de vos clients se trouvent dans une base de données sur ces machines. Pas de l'autre côté d'un océan parce que c'était le réglage par défaut.",
+      "body": "{{brand}} tourne sur des machines que nous louons chez Hetzner, un hébergeur allemand, dans des centres de données européens — en Allemagne dans la plupart des cas. Votre catalogue, vos commandes et les adresses de vos clients se trouvent dans une base de données sur ces machines. Pas de l'autre côté d'un océan parce que c'était le réglage par défaut.",
       "points": [
         "Serveurs applicatifs et base de données en Europe — loués chez Hetzner, la plupart en Allemagne.",
         "Deux régimes de protection des données s'appliquent : le RGPD et la nLPD suisse révisée. Là où ils divergent, nous nous tenons au plus strict.",
@@ -1098,9 +1098,9 @@
       "eyebrow": "fabriqué en suisse",
       "headline": "Fabriqué en Suisse.",
       "headlineEmphasis": "Exploité depuis l'Europe.",
-      "serving": "Zolto est conçu à Zurich, d'abord pour les artisans suisses, ensuite pour l'Europe, et après cela pour quiconque, où qu'il soit, aime notre façon de faire.",
-      "body": "Nous déplaçons chaque pièce de Zolto que nous maîtrisons vers une infrastructure européenne, et vers la Suisse lorsqu'il existe une option suisse qui en vaut la peine. Une partie y est déjà. Une partie non. Voici la liste entière, y compris ce qui nous met mal à l'aise.",
-      "bodyShort": "Chaque partie de Zolto et où elle tourne aujourd'hui — y compris celles qui nous desservent.",
+      "serving": "{{brand}} est conçu à Zurich, d'abord pour les artisans suisses, ensuite pour l'Europe, et après cela pour quiconque, où qu'il soit, aime notre façon de faire.",
+      "body": "Nous déplaçons chaque pièce de {{brand}} que nous maîtrisons vers une infrastructure européenne, et vers la Suisse lorsqu'il existe une option suisse qui en vaut la peine. Une partie y est déjà. Une partie non. Voici la liste entière, y compris ce qui nous met mal à l'aise.",
+      "bodyShort": "Chaque partie de {{brand}} et où elle tourne aujourd'hui — y compris celles qui nous desservent.",
       "ledger": [
         {
           "piece": "L'entreprise et le produit",
@@ -1190,7 +1190,7 @@
           "detail": "TWINT, cartes, un bon taux forfaitaire — et rien dedans. C'est une application de paiement : vous saisissez un montant à chaque fois, ou vous achetez et intégrez un logiciel de caisse séparé par-dessus."
         },
         {
-          "label": "Zolto",
+          "label": "{{brand}}",
           "note": "toucher la photo, choisir le moyen",
           "detail": "Touchez la photo de l'objet réel, puis choisissez TWINT, carte ou espèces sur le même écran. Une pression met à jour le stock derrière votre stand et sur votre site en même temps."
         }
@@ -1198,9 +1198,9 @@
       "claim": "Des trois façons dont une créatrice suisse peut se faire payer sur un marché aujourd'hui, une seule met le catalogue et TWINT sur le même écran."
     },
     "rates": {
-      "zolto-twint-qr": {
+      "platform-twint-qr": {
         "label": "TWINT — votre propre code QR, votre propre compte TWINT",
-        "caveat": "C'est le code QR TWINT de la commerçante : l'argent ne passe jamais par Stripe ni par Zolto, et la vente est enregistrée dans la caisse plutôt qu'encaissée par elle."
+        "caveat": "C'est le code QR TWINT de la commerçante : l'argent ne passe jamais par Stripe ni par {{brand}}, et la vente est enregistrée dans la caisse plutôt qu'encaissée par elle."
       },
       "sumup-payments-plus": {
         "label": "Payments Plus (CHF 29/mois)",
@@ -1213,23 +1213,23 @@
         "label": "Tap on Mobile",
         "caveat": "Taux forfaitaire sans coût mensuel fixe, et TWINT est accepté. Une offre réellement compétitive pour un petit commerce."
       },
-      "zolto-card": {
+      "platform-card": {
         "label": "Tap to Pay — carte",
-        "caveat": "Les cartes suisses relèvent de la catégorie hors EEE de Stripe, confirmé auprès de Stripe. Zolto n'ajoute rien par-dessus — c'est le taux de Stripe — mais cela fait de la carte le moyen le plus cher d'être payé à votre stand. Si votre cliente propose TWINT, prenez-le : même caisse, même geste, moins de la moitié du coût."
+        "caveat": "Les cartes suisses relèvent de la catégorie hors EEE de Stripe, confirmé auprès de Stripe. {{brand}} n'ajoute rien par-dessus — c'est le taux de Stripe — mais cela fait de la carte le moyen le plus cher d'être payé à votre stand. Si votre cliente propose TWINT, prenez-le : même caisse, même geste, moins de la moitié du coût."
       },
       "sumup-credit": {
         "label": "Carte de crédit, sans abonnement"
       },
       "sumup-online": {
         "label": "Caisse de la boutique en ligne",
-        "caveat": "Forfaitaire, sans frais fixes. Moins cher que Zolto en ligne sur tous les plans."
+        "caveat": "Forfaitaire, sans frais fixes. Moins cher que {{brand}} en ligne sur tous les plans."
       },
-      "zolto-online-pro": {
+      "platform-online-pro": {
         "label": "Caisse de la boutique — Pro"
       },
-      "zolto-online-free": {
+      "platform-online-free": {
         "label": "Caisse de la boutique — Free",
-        "caveat": "Le taux domestique en ligne de Stripe plus les frais de plateforme de Zolto. Sur le seul taux, c'est la ligne la plus chère de la page — l'argument en ligne de Zolto, c'est ce que fait la boutique, pas ce que coûte la transaction."
+        "caveat": "Le taux domestique en ligne de Stripe plus les frais de plateforme de {{brand}}. Sur le seul taux, c'est la ligne la plus chère de la page — l'argument en ligne de {{brand}}, c'est ce que fait la boutique, pas ce que coûte la transaction."
       }
     },
     "negotiated": {
@@ -1245,105 +1245,105 @@
     "capabilities": {
       "no-hardware": {
         "label": "Encaisse sans matériel à acheter",
-        "zolto": "Oui — Tap to Pay sur le téléphone que vous avez déjà"
+        "platform": "Oui — Tap to Pay sur le téléphone que vous avez déjà"
       },
       "item-grid": {
         "label": "Votre catalogue en grille dans la caisse",
-        "zolto": "Oui — photo, nom et prix pour chaque pièce"
+        "platform": "Oui — photo, nom et prix pour chaque pièce"
       },
       "twint": {
         "label": "TWINT dans la même caisse",
-        "zolto": "Oui — à côté des cartes et des espèces, sur un écran"
+        "platform": "Oui — à côté des cartes et des espèces, sur un écran"
       },
       "postfinance": {
         "label": "PostFinance Pay",
-        "zolto": "Non"
+        "platform": "Non"
       },
       "stock-in-person": {
         "label": "Le stock décompte au fil des ventes en personne",
-        "zolto": "Oui"
+        "platform": "Oui"
       },
       "sell-by-amount": {
         "label": "Encaisser un montant quand c'est la cohue, ranger après",
-        "zolto": "Oui — encaissez sans étiqueter la pièce ; en fin de journée Zolto envoie sa meilleure hypothèse et une pression la confirme"
+        "platform": "Oui — encaissez sans étiqueter la pièce ; en fin de journée {{brand}} envoie sa meilleure hypothèse et une pression la confirme"
       },
       "online-store": {
         "label": "Une vraie boutique en ligne, pas un lien de paiement",
-        "zolto": "Oui — une vitrine thématisée à votre propre adresse, livraison Suisse et UE"
+        "platform": "Oui — une vitrine thématisée à votre propre adresse, livraison Suisse et UE"
       },
       "builds-storefront": {
         "label": "Quelqu'un construit la boutique pour vous",
-        "zolto": "Oui — l'IA conçoit le thème, les textes et la photographie"
+        "platform": "Oui — l'IA conçoit le thème, les textes et la photographie"
       },
       "stock-shared": {
         "label": "Un seul stock pour le stand et la boutique",
-        "zolto": "Oui — avec une réserve brève pendant qu'un client est en caisse"
+        "platform": "Oui — avec une réserve brève pendant qu'un client est en caisse"
       },
       "multilingual": {
         "label": "Des fiches en allemand, français, italien et anglais",
-        "zolto": "Oui — rédigées et traduites pour vous, pas par vous"
+        "platform": "Oui — rédigées et traduites pour vous, pas par vous"
       },
       "setup": {
         "label": "Délai avant la première vente",
-        "zolto": "Le jour même"
+        "platform": "Le jour même"
       },
       "ai-listings": {
         "label": "Titres et descriptions rédigés pour vous",
-        "zolto": "Oui — à partir d'une photo, dans chaque langue où vous vendez"
+        "platform": "Oui — à partir d'une photo, dans chaque langue où vous vendez"
       },
       "ai-photography": {
         "label": "Une photo de téléphone devient une image catalogue",
-        "zolto": "Oui — retravaillée en visuel produit ou porté, signalée comme stylisée par l'IA"
+        "platform": "Oui — retravaillée en visuel produit ou porté, signalée comme stylisée par l'IA"
       },
       "ai-intake": {
         "label": "Entrer du stock sans rien taper",
-        "zolto": "Oui — photographiez une liste manuscrite, ou envoyez photo et prix sur WhatsApp, Slack ou Discord"
+        "platform": "Oui — photographiez une liste manuscrite, ou envoyez photo et prix sur WhatsApp, Slack ou Discord"
       },
       "ai-support": {
         "label": "Quelque chose répond aux questions clients à votre place",
-        "zolto": "Oui — matières, livraison et tailles, sans vous au clavier"
+        "platform": "Oui — matières, livraison et tailles, sans vous au clavier"
       },
       "ai-insights": {
         "label": "Une lecture en clair de ce qui se vend",
-        "zolto": "Oui — meilleures ventes et réassorts, en phrases (Pro)"
+        "platform": "Oui — meilleures ventes et réassorts, en phrases (Pro)"
       },
       "ai-discovery": {
         "label": "Les assistants IA peuvent lire votre boutique",
-        "zolto": "Oui — chaque boutique embarque un llms.txt et un point d'accès MCP"
+        "platform": "Oui — chaque boutique embarque un llms.txt et un point d'accès MCP"
       },
       "agent-checkout": {
         "label": "Un assistant peut choisir une pièce et ouvrir une caisse",
-        "zolto": "Oui — il vérifie le stock en direct via MCP et transmet une caisse à votre cliente"
+        "platform": "Oui — il vérifie le stock en direct via MCP et transmet une caisse à votre cliente"
       },
       "who-holds-money": {
         "label": "Qui détient votre argent",
-        "zolto": "Personne d'autre que vous — directement sur vos propres comptes Stripe et TWINT"
+        "platform": "Personne d'autre que vous — directement sur vos propres comptes Stripe et TWINT"
       },
       "card-rate": {
         "label": "Ce que vous coûte une carte",
-        "zolto": "2,9% + CHF 0.20 — le taux suisse de Stripe, et nous n'ajoutons rien"
+        "platform": "2,9% + CHF 0.20 — le taux suisse de Stripe, et nous n'ajoutons rien"
       },
       "commitment": {
         "label": "Ce que vous signez",
-        "zolto": "Rien — mois par mois, et export en un clic sur tous les plans"
+        "platform": "Rien — mois par mois, et export en un clic sur tous les plans"
       },
       "swiss": {
         "label": "Construit et exploité là où vous êtes",
-        "zolto": "Construit à Zurich ; serveurs en Europe, principalement en Allemagne"
+        "platform": "Construit à Zurich ; serveurs en Europe, principalement en Allemagne"
       }
     },
     "limitations": [
       {
         "title": "Nous n'avons aucun historique",
-        "detail": "SumUp et Worldline ont chacun dix ans ou plus. Zolto est nouveau, et une entreprise nouvelle est un risque en soi, aussi bon soit le produit. Ce que nous pouvons opposer à cela : aucun contrat, aucun matériel à acheter, et un export en un clic de tout ce que vous avez saisi — y compris sur le plan Free. Partir vous coûte un après-midi, pas des frais de résiliation."
+        "detail": "SumUp et Worldline ont chacun dix ans ou plus. {{brand}} est nouveau, et une entreprise nouvelle est un risque en soi, aussi bon soit le produit. Ce que nous pouvons opposer à cela : aucun contrat, aucun matériel à acheter, et un export en un clic de tout ce que vous avez saisi — y compris sur le plan Free. Partir vous coûte un après-midi, pas des frais de résiliation."
       },
       {
         "title": "Encaisser une carte chez nous est l'option la plus chère de notre propre tableau",
-        "detail": "Les cartes suisses relèvent du taux hors EEE de Stripe — 2,9% plus CHF 0.20 — et Zolto n'ajoute rien par-dessus, ce qui laisse malgré tout toutes les autres options en personne de notre comparaison moins chères que la nôtre. Le taux en ligne de SumUp bat aussi le nôtre sur tous les plans. Deux réponses honnêtes : prenez TWINT quand vous le pouvez, il est dans la même caisse et coûte moins de la moitié ; et choisissez Zolto parce qu'il supprime le travail, pas les frais. Si le coût par vente par carte est votre chiffre décisif, il tranche contre nous."
+        "detail": "Les cartes suisses relèvent du taux hors EEE de Stripe — 2,9% plus CHF 0.20 — et {{brand}} n'ajoute rien par-dessus, ce qui laisse malgré tout toutes les autres options en personne de notre comparaison moins chères que la nôtre. Le taux en ligne de SumUp bat aussi le nôtre sur tous les plans. Deux réponses honnêtes : prenez TWINT quand vous le pouvez, il est dans la même caisse et coûte moins de la moitié ; et choisissez {{brand}} parce qu'il supprime le travail, pas les frais. Si le coût par vente par carte est votre chiffre décisif, il tranche contre nous."
       },
       {
         "title": "Tout passe par Stripe, et c'est Stripe qui fixe le vrai prix",
-        "detail": "Stripe détient les fonds jusqu'au versement, effectue les vérifications d'identité, gère les rétrofacturations et fixe le taux qui domine ce que vous coûte une vente. Zolto ne touche jamais votre argent : c'est la bonne moitié de cet arrangement ; l'autre, c'est que notre propre registre de souveraineté classe encore les paiements par carte comme « en cours de déplacement », et tant que cela dure, une dépendance forte reste une dépendance forte."
+        "detail": "Stripe détient les fonds jusqu'au versement, effectue les vérifications d'identité, gère les rétrofacturations et fixe le taux qui domine ce que vous coûte une vente. {{brand}} ne touche jamais votre argent : c'est la bonne moitié de cet arrangement ; l'autre, c'est que notre propre registre de souveraineté classe encore les paiements par carte comme « en cours de déplacement », et tant que cela dure, une dépendance forte reste une dépendance forte."
       },
       {
         "title": "Une partie de notre pile est encore hors d'Europe",
@@ -1355,7 +1355,7 @@
       },
       {
         "title": "Nous sommes sous le seuil de TVA suisse",
-        "detail": "L'assujettissement à la TVA n'est obligatoire qu'au-delà de CHF 100 000 de chiffre d'affaires annuel, et Zolto est en dessous : les prix que vous voyez sont donc simplement les prix. Cela vous dit aussi à quel point nous sommes petits. Si cela change, les prix préciseront dans quel sens ils sont indiqués, et nous le dirons avant."
+        "detail": "L'assujettissement à la TVA n'est obligatoire qu'au-delà de CHF 100 000 de chiffre d'affaires annuel, et {{brand}} est en dessous : les prix que vous voyez sont donc simplement les prix. Cela vous dit aussi à quel point nous sommes petits. Si cela change, les prix préciseront dans quel sens ils sont indiqués, et nous le dirons avant."
       }
     ],
     "buyerFit": [
@@ -1364,11 +1364,11 @@
         "answers": [
           {
             "when": "Oui, en majorité",
-            "then": "SumUp est écarté, quel qu'en soit le prix — sa caisse ne peut absolument pas prendre TWINT. Restent Zolto et Worldline, et la question devient : voulez-vous votre catalogue dans la caisse ? C'est aussi la réponse la moins chère pour vous : TWINT à 1,3% est le minimum que vous puissiez payer pour recevoir de l'argent sur un marché, sans abonnement mensuel."
+            "then": "SumUp est écarté, quel qu'en soit le prix — sa caisse ne peut absolument pas prendre TWINT. Restent {{brand}} et Worldline, et la question devient : voulez-vous votre catalogue dans la caisse ? C'est aussi la réponse la moins chère pour vous : TWINT à 1,3% est le minimum que vous puissiez payer pour recevoir de l'argent sur un marché, sans abonnement mensuel."
           },
           {
             "when": "Non, elle tape surtout une carte",
-            "then": "Alors le taux carte est votre chiffre, et le nôtre est le plus élevé de cette page — les cartes suisses relèvent du taux hors EEE de Stripe, et nous n'ajoutons rien. SumUp est moins cher et son application de caisse est plus mature. Choisissez Zolto pour la boutique, les fiches et l'inventaire unique — ou ne le choisissez pas."
+            "then": "Alors le taux carte est votre chiffre, et le nôtre est le plus élevé de cette page — les cartes suisses relèvent du taux hors EEE de Stripe, et nous n'ajoutons rien. SumUp est moins cher et son application de caisse est plus mature. Choisissez {{brand}} pour la boutique, les fiches et l'inventaire unique — ou ne le choisissez pas."
           }
         ]
       },
@@ -1394,7 +1394,7 @@
           },
           {
             "when": "En dessous, ou très saisonnier",
-            "then": "Un abonnement dû dans un mois calme a la mauvaise forme. Le plan Free de Zolto ne coûte rien un mois sans vente en ligne, et jamais rien sur les ventes en personne."
+            "then": "Un abonnement dû dans un mois calme a la mauvaise forme. Le plan Free de {{brand}} ne coûte rien un mois sans vente en ligne, et jamais rien sur les ventes en personne."
           }
         ]
       }
@@ -1446,7 +1446,7 @@
     "heading": "Ce que coûte une vente de CHF {{basket}}",
     "headingInPerson": "Ce que coûte une vente de CHF {{basket}} en personne",
     "headingOnline": "Ce que coûte une vente de CHF {{basket}} en ligne",
-    "intro": "Du moins cher au plus cher. Zolto n'est pas en tête, et c'est bien là le propos — sur le taux carte, toutes les autres options ici nous battent. Chaque chiffre renvoie à sa source et à la date de consultation.",
+    "intro": "Du moins cher au plus cher. {{brand}} n'est pas en tête, et c'est bien là le propos — sur le taux carte, toutes les autres options ici nous battent. Chaque chiffre renvoie à sa source et à la date de consultation.",
     "tableCaption": "Coût d'une vente de CHF {{basket}} pour chaque option, du moins cher au plus cher",
     "tableCaptionInPerson": "Coût d'une vente de CHF {{basket}} encaissée en personne pour chaque option, du moins cher au plus cher",
     "tableCaptionOnline": "Coût d'une vente de CHF {{basket}} encaissée en ligne pour chaque option, du moins cher au plus cher",

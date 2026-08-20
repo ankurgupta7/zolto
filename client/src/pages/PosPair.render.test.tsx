@@ -18,7 +18,7 @@ vi.mock("@/lib/trpc", () => ({
 import PosPair from "./PosPair";
 
 // jsdom logs "Not implemented: navigation to another Document" for each render
-// here. That is the page's deliberate auto-open of the zolto:// scheme, which
+// here. That is the page's deliberate auto-open of the gwinn:// scheme, which
 // jsdom cannot follow — expected noise, not a failure.
 
 /** The page reads the token straight off the URL, so tests set the URL. */
@@ -29,11 +29,11 @@ function visit(search: string) {
 beforeEach(() => {
   mocks.downloads = {
     android: {
-      url: "https://x.test/ZoltoPOS-latest.apk",
+      url: "https://x.test/GwinnPOS-latest.apk",
       requiresSideload: false,
     },
     ios: {
-      url: "https://x.test/ZoltoPOS-latest-unsigned.ipa",
+      url: "https://x.test/GwinnPOS-latest-unsigned.ipa",
       requiresSideload: true,
     },
   };
@@ -48,18 +48,18 @@ afterEach(() => {
 // link on a till phone that doesn't have the app yet. Without it, that tap does
 // nothing and reads as a broken link.
 describe("PosPair", () => {
-  it("offers to open the app via the zolto:// scheme", () => {
+  it("offers to open the app via the gwinn:// scheme", () => {
     render(<PosPair />);
-    const link = screen.getByText(/Open in Zolto POS/).closest("a");
+    const link = screen.getByText(/Open in Gwinn POS/).closest("a");
     const href = link?.getAttribute("href") ?? "";
-    expect(href.startsWith("zolto://pair?t=tok123")).toBe(true);
+    expect(href.startsWith("gwinn://pair?t=tok123")).toBe(true);
   });
 
   it("passes the server origin along, since a fresh install knows no host", () => {
     render(<PosPair />);
     const href =
       screen
-        .getByText(/Open in Zolto POS/)
+        .getByText(/Open in Gwinn POS/)
         .closest("a")
         ?.getAttribute("href") ?? "";
     expect(href).toContain(`url=${encodeURIComponent(window.location.origin)}`);
@@ -70,8 +70,8 @@ describe("PosPair", () => {
     const hrefs = screen
       .getAllByText(/Get it for/)
       .map((el) => el.closest("a")?.getAttribute("href"));
-    expect(hrefs).toContain("https://x.test/ZoltoPOS-latest.apk");
-    expect(hrefs).toContain("https://x.test/ZoltoPOS-latest-unsigned.ipa");
+    expect(hrefs).toContain("https://x.test/GwinnPOS-latest.apk");
+    expect(hrefs).toContain("https://x.test/GwinnPOS-latest-unsigned.ipa");
   });
 
   it("warns that a link will have expired by the time the app is installed", () => {
@@ -84,7 +84,7 @@ describe("PosPair", () => {
     // nothing back — the page must still show the open-app button.
     mocks.downloads = undefined;
     render(<PosPair />);
-    expect(screen.getByText(/Open in Zolto POS/)).toBeTruthy();
+    expect(screen.getByText(/Open in Gwinn POS/)).toBeTruthy();
     expect(screen.queryByText(/Get it for/)).toBeNull();
   });
 
@@ -92,7 +92,7 @@ describe("PosPair", () => {
     visit("");
     render(<PosPair />);
     expect(screen.getByText(/pairing link is incomplete/)).toBeTruthy();
-    expect(screen.queryByText(/Open in Zolto POS/)).toBeNull();
+    expect(screen.queryByText(/Open in Gwinn POS/)).toBeNull();
   });
 
   it("never displays the token itself", () => {

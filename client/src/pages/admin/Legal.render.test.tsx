@@ -39,7 +39,7 @@ describe("Legal page", () => {
   it("shows the AI-image disclosure", () => {
     render(<Legal />);
     expect(
-      screen.getByText(/Product photos styled with Zolto's AI/),
+      screen.getByText(/Product photos styled with Gwinn's AI/),
     ).toBeTruthy();
   });
 });

@@ -110,7 +110,7 @@ if (shotTheme && !["light", "dark"].includes(shotTheme)) {
 }
 if (shotTheme) {
   await page.addInitScript((theme) => {
-    localStorage.setItem("zolto_theme", theme);
+    localStorage.setItem("gwinn_theme", theme);
   }, shotTheme);
 }
 

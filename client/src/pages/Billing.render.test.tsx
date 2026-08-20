@@ -133,7 +133,7 @@ vi.mock("@/lib/trpc", () => ({
     tenant: {
       domainStatus: {
         useQuery: () => ({
-          data: { domain: null, expected: "app.zolto.ch", pointsToUs: false },
+          data: { domain: null, expected: "app.gwinn.ch", pointsToUs: false },
         }),
       },
       updateSettings: {
@@ -183,7 +183,7 @@ describe("Billing page", () => {
     expect(screen.getByText("CHF 3'200")).toBeTruthy();
     expect(screen.getByText("CHF 32")).toBeTruthy();
     expect(screen.getByText(/via AI agents/)).toBeTruthy();
-    expect(screen.getByText(/never carry a Zolto fee/)).toBeTruthy();
+    expect(screen.getByText(/never carry a Gwinn fee/)).toBeTruthy();
   });
 
   it("surfaces the skim-vs-Pro upsell once savings go positive", () => {

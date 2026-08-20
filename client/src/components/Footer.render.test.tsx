@@ -6,7 +6,7 @@ import Footer from "./Footer";
 const mocks = vi.hoisted(() => ({
   branding: {} as Record<string, unknown>,
   products: [] as { category: string }[] | undefined,
-  showsZoltoCredit: true,
+  showsPlatformCredit: true,
 }));
 
 // t() echoes the key so assertions are stable without loading locale files.
@@ -18,7 +18,7 @@ vi.mock("@/contexts/TenantContext", () => ({
   useTenant: () => ({
     slug: "bergblume",
     branding: mocks.branding as unknown as Branding,
-    showsZoltoCredit: mocks.showsZoltoCredit,
+    showsPlatformCredit: mocks.showsPlatformCredit,
     isLoading: false,
     notFound: false,
   }),
@@ -67,7 +67,7 @@ beforeEach(() => {
     logoUrlDark: null,
   };
   mocks.products = [{ category: "Rings" }, { category: "Earrings" }];
-  mocks.showsZoltoCredit = true;
+  mocks.showsPlatformCredit = true;
 });
 afterEach(() => cleanup());
 
@@ -136,21 +136,21 @@ describe("Footer", () => {
   });
 });
 
-describe("Footer — the Made with Zolto credit", () => {
+describe("Footer — the Made with Gwinn credit", () => {
   it("carries the credit next to the store's own copyright", () => {
     render(<Footer />);
-    const link = screen.getByRole("link", { name: "Zolto" });
-    expect(link.getAttribute("href")).toContain("https://zolto.ch/");
+    const link = screen.getByRole("link", { name: "Gwinn" });
+    expect(link.getAttribute("href")).toContain("https://gwinn.ch/");
     // Under the copyright, not mixed into the merchant's own legal links —
     // it must read as the platform's line, not the store's.
-    const credit = screen.getByTestId("zolto-credit");
+    const credit = screen.getByTestId("platform-credit");
     expect(credit.parentElement!.textContent).toContain("footer.copyright");
   });
 
   it("leaves the rest of the footer alone when a store hides it", () => {
-    mocks.showsZoltoCredit = false;
+    mocks.showsPlatformCredit = false;
     render(<Footer />);
-    expect(screen.queryByRole("link", { name: "Zolto" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Gwinn" })).toBeNull();
     expect(screen.getByText("footer.copyright")).toBeTruthy();
     expect(
       screen.getByText("footer.impressum").closest("a")!.getAttribute("href"),

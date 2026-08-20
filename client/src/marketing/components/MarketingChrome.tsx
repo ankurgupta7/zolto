@@ -30,7 +30,7 @@ import {
 } from "../lib/themeContext";
 
 /**
- * Zolto marketing chrome — nav + footer.
+ * Gwinn marketing chrome — nav + footer.
  *
  * Warm, handcrafted identity: the oyster/gold/ink + Cormorant serif palette the
  * makers' own storefronts use, so the acquisition page looks like it was built
@@ -97,7 +97,7 @@ export function LanguageSwitcher({ className = "" }: { className?: string }) {
 export const SIGN_IN_PATH = "/signin";
 
 /**
- * The Zolto brush-Z mark — the signature gold-on-mahogany lockup (matches
+ * The Gwinn brush-Z mark — the signature gold-on-mahogany lockup (matches
  * /favicon.svg + /logo.png). A near-square mahogany tile with a hand-inked gold
  * "Z"; reads at 16px. Inline so it stays crisp at any size.
  *
@@ -117,7 +117,7 @@ export function BrushMark({ className }: { className?: string }) {
       viewBox="0 0 200 200"
       className={className}
       role="img"
-      aria-label="Zolto"
+      aria-label="Gwinn"
     >
       <rect
         x="0.75"
@@ -188,7 +188,7 @@ function AuthSlotSkeleton() {
 
 /**
  * "Go to your store" shortcut — for a signed-in merchant who lands back on the
- * marketing site (zolto.ch) and has forgotten their store's address. Uses the
+ * marketing site (gwinn.ch) and has forgotten their store's address. Uses the
  * host-independent tenant.myStore, and a real anchor (not a wouter <Link>) so
  * the browser crosses from the marketing surface to the storefront/admin
  * (see lib/surface.storeAdminUrl). Renders nothing for logged-out visitors, so
@@ -372,7 +372,7 @@ export function MarketingNav() {
         <Link href="/" className="flex items-center gap-2.5">
           <BrushMark className="h-8 w-8" />
           <span className="font-serif text-xl tracking-tight text-[var(--brand-text)]">
-            Zolto
+            Gwinn
           </span>
         </Link>
 

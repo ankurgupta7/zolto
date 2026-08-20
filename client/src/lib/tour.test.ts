@@ -19,7 +19,7 @@ describe("tour completion storage", () => {
   beforeEach(() => localStorage.clear());
 
   it("keys storage under a stable namespace", () => {
-    expect(tourStorageKey("admin-v1")).toBe("zolto.tour.admin-v1");
+    expect(tourStorageKey("admin-v1")).toBe("gwinn.tour.admin-v1");
   });
 
   it("is not completed until marked", () => {

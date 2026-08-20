@@ -177,7 +177,7 @@ function BlockView({ block }: { block: Block }) {
 }
 
 /**
- * Renders a Launch Diary / case-study article inside the Zolto marketing chrome,
+ * Renders a Launch Diary / case-study article inside the Gwinn marketing chrome,
  * with per-page document metadata and JSON-LD. Shared by BlogPost and Story.
  */
 export function ArticleView({ article }: { article: Article }) {

@@ -322,7 +322,7 @@ describe("MarketingFooter", () => {
 
   it("carries the origin and hosting location on every page", () => {
     // The footer is the one surface a visitor sees regardless of route, so
-    // where Zolto is from — and where it runs — lives here as well as on the
+    // where Gwinn is from — and where it runs — lives here as well as on the
     // landing band, with a link to the row-by-row version.
     const { container } = renderFooter();
     const text = container.textContent ?? "";

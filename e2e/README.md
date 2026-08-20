@@ -58,8 +58,8 @@ product (`npm run seed:e2e`), installs Chromium, and runs
 build artifact. Locally, reproduce it with:
 
 ```bash
-docker run -d --name zolto-e2e -e MYSQL_ROOT_PASSWORD=root -e MYSQL_DATABASE=zolto -p 3306:3306 mysql:8.0
-export DATABASE_URL='mysql://root:root@127.0.0.1:3306/zolto'
+docker run -d --name gwinn-e2e -e MYSQL_ROOT_PASSWORD=root -e MYSQL_DATABASE=gwinn -p 3306:3306 mysql:8.0
+export DATABASE_URL='mysql://root:root@127.0.0.1:3306/gwinn'
 npm run db:sync && npm run seed:e2e
 E2E_STOREFRONT=1 E2E_TENANT_SLUG=demo npm run test:e2e
 ```

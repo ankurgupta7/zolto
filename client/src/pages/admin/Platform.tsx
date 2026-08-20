@@ -1,5 +1,5 @@
 /**
- * Platform metrics (superadmin only) — how Zolto itself is doing.
+ * Platform metrics (superadmin only) — how Gwinn itself is doing.
  *
  * Leads with the one number the pricing model lives or dies on: the share of
  * free in-person vendors who made an online or agent sale this month. A free
