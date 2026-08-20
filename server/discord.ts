@@ -89,6 +89,10 @@ export async function parseProductFromMessage(
           content: `Extract product info from this message:\n\n${text}`,
         },
       ],
+      // Reasoning models default to reasoning ON and Groq strips those
+      // tokens from `content`, leaving structured output empty — this is a
+      // direct extraction task, so turn it off (see InvokeParams in llm.ts).
+      reasoning_effort: "none",
       response_format: {
         type: "json_schema",
         json_schema: jsonSchema,

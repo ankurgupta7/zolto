@@ -1,5 +1,12 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
-import { invokeLLM, listLLMModels, type Message } from "./llm";
+import {
+  computeRateLimitDelay,
+  invokeLLM,
+  isRetryableStatus,
+  listLLMModels,
+  mentionsReasoningParameter,
+  type Message,
+} from "./llm";
 
 const ENV_KEYS = [
   "LLM_API_KEY",
@@ -257,7 +264,7 @@ describe("invokeLLM response_format", () => {
 });
 
 describe("invokeLLM errors & retries", () => {
-  it("throws with detail on a non-retryable failure after exhausting retries", async () => {
+  it("throws with detail on a server error after exhausting retries", async () => {
     vi.useFakeTimers();
     vi.stubGlobal(
       "fetch",
@@ -296,6 +303,247 @@ describe("invokeLLM errors & retries", () => {
     const assertion = expect(p).rejects.toThrow(/ECONNRESET/);
     await vi.runAllTimersAsync();
     await assertion;
+  });
+});
+
+describe("isRetryableStatus", () => {
+  it("treats rate limiting and server faults as retryable", () => {
+    expect(isRetryableStatus(429)).toBe(true);
+    expect(isRetryableStatus(500)).toBe(true);
+    expect(isRetryableStatus(503)).toBe(true);
+  });
+
+  it("treats deterministic client errors as non-retryable", () => {
+    for (const status of [400, 401, 403, 404, 413, 422]) {
+      expect(isRetryableStatus(status)).toBe(false);
+    }
+  });
+});
+
+describe("invokeLLM non-retryable errors", () => {
+  it("surfaces a 400 immediately instead of burning the backoff ladder", async () => {
+    // A malformed request fails identically every time; retrying it only
+    // delays the same error by ~30s, which reads as a hang.
+    const fetchSpy = vi.fn(async () => errResponse(400));
+    vi.stubGlobal("fetch", fetchSpy);
+
+    await expect(invokeLLM({ messages: [] })).rejects.toThrow(
+      /LLM invoke failed: 400/,
+    );
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([401, 403, 404, 422])("does not retry a %i", async (status) => {
+    const fetchSpy = vi.fn(async () => errResponse(status));
+    vi.stubGlobal("fetch", fetchSpy);
+
+    await expect(invokeLLM({ messages: [] })).rejects.toThrow(String(status));
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("computeRateLimitDelay", () => {
+  it("waits at least as long as the provider asked", () => {
+    // Groq answers a vision burst with `retry-after: 7`.
+    expect(computeRateLimitDelay(0, 7000)).toBeGreaterThanOrEqual(7000);
+  });
+
+  it("adds only a small jitter on top of retry-after", () => {
+    for (let attempt = 0; attempt < 8; attempt++) {
+      expect(computeRateLimitDelay(attempt, 7000)).toBeLessThanOrEqual(7500);
+    }
+  });
+
+  it("does not shorten a long retry-after into the same exhausted window", () => {
+    expect(computeRateLimitDelay(0, 55_000)).toBeGreaterThanOrEqual(55_000);
+  });
+
+  it("backs off exponentially when no retry-after is given", () => {
+    expect(computeRateLimitDelay(5)).toBeGreaterThan(computeRateLimitDelay(0));
+  });
+
+  it("bounds even an absurd retry-after so a request cannot hang forever", () => {
+    expect(computeRateLimitDelay(0, 86_400_000)).toBeLessThanOrEqual(120_000);
+  });
+});
+
+describe("invokeLLM rate-limit retries", () => {
+  it("keeps retrying a 429 past the budget a server error would get", async () => {
+    vi.useFakeTimers();
+    // Six 429s — more than RETRY_MAX_RETRIES (4), which is what a burst
+    // against an 8,000 tokens/minute budget actually produces.
+    const fetchSpy = vi.fn();
+    for (let i = 0; i < 6; i++)
+      fetchSpy.mockResolvedValueOnce(errResponse(429, "0"));
+    fetchSpy.mockResolvedValueOnce(okResponse({ id: "ok", choices: [] }));
+    vi.stubGlobal("fetch", fetchSpy);
+
+    const p = invokeLLM({ messages: [] });
+    await vi.runAllTimersAsync();
+    await expect(p).resolves.toMatchObject({ id: "ok" });
+    expect(fetchSpy).toHaveBeenCalledTimes(7);
+  });
+
+  it("gives up on a persistent 429 rather than retrying forever", async () => {
+    vi.useFakeTimers();
+    const fetchSpy = vi.fn(async () => errResponse(429, "0"));
+    vi.stubGlobal("fetch", fetchSpy);
+
+    const p = invokeLLM({ messages: [] });
+    const assertion = expect(p).rejects.toThrow(/429/);
+    await vi.runAllTimersAsync();
+    await assertion;
+    expect(fetchSpy).toHaveBeenCalledTimes(9); // 1 attempt + 8 retries
+  });
+
+  it("spends rate-limit and server-error budgets independently", async () => {
+    vi.useFakeTimers();
+    // Five 429s (past the 4-attempt error budget) then a 503: the 429s must
+    // not have consumed the attempts the 503 needs.
+    const fetchSpy = vi.fn();
+    for (let i = 0; i < 5; i++)
+      fetchSpy.mockResolvedValueOnce(errResponse(429, "0"));
+    fetchSpy.mockResolvedValueOnce(errResponse(503, "0"));
+    fetchSpy.mockResolvedValueOnce(okResponse({ id: "ok", choices: [] }));
+    vi.stubGlobal("fetch", fetchSpy);
+
+    const p = invokeLLM({ messages: [] });
+    await vi.runAllTimersAsync();
+    await expect(p).resolves.toMatchObject({ id: "ok" });
+    expect(fetchSpy).toHaveBeenCalledTimes(7);
+  });
+
+  it("waits the retry-after the provider named, not its own first rung", async () => {
+    vi.useFakeTimers();
+    const fetchSpy = vi
+      .fn()
+      .mockResolvedValueOnce(errResponse(429, "7"))
+      .mockResolvedValueOnce(okResponse({ id: "ok", choices: [] }));
+    vi.stubGlobal("fetch", fetchSpy);
+
+    const p = invokeLLM({ messages: [] });
+
+    // Well past the generic ladder's first rung, but short of retry-after.
+    await vi.advanceTimersByTimeAsync(2000);
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+
+    await vi.advanceTimersByTimeAsync(6000);
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+    await p;
+  });
+});
+
+describe("reasoning controls", () => {
+  it("forwards reasoning_effort into the request payload", async () => {
+    const fetchSpy = vi.fn(async () => okResponse({ id: "ok", choices: [] }));
+    vi.stubGlobal("fetch", fetchSpy);
+
+    await invokeLLM({ messages: [], reasoning_effort: "none" });
+    expect(lastPayload(fetchSpy).reasoning_effort).toBe("none");
+  });
+
+  it("accepts the camelCase alias", async () => {
+    const fetchSpy = vi.fn(async () => okResponse({ id: "ok", choices: [] }));
+    vi.stubGlobal("fetch", fetchSpy);
+
+    await invokeLLM({ messages: [], reasoningEffort: "none" });
+    expect(lastPayload(fetchSpy).reasoning_effort).toBe("none");
+  });
+
+  it("omits the reasoning fields when not asked for", async () => {
+    const fetchSpy = vi.fn(async () => okResponse({ id: "ok", choices: [] }));
+    vi.stubGlobal("fetch", fetchSpy);
+
+    await invokeLLM({ messages: [] });
+    expect(lastPayload(fetchSpy)).not.toHaveProperty("reasoning_effort");
+    expect(lastPayload(fetchSpy)).not.toHaveProperty("reasoning_format");
+  });
+});
+
+describe("mentionsReasoningParameter", () => {
+  it("recognises the parameter however a provider words the rejection", () => {
+    for (const body of [
+      '{"error":{"message":"Unknown parameter: reasoning_effort"}}',
+      "model does not support reasoning_effort",
+      "'reasoning-format' is not supported for this model",
+      "Unsupported value for REASONING_EFFORT",
+    ]) {
+      expect(mentionsReasoningParameter(body)).toBe(true);
+    }
+  });
+
+  it("does not claim an unrelated 400", () => {
+    expect(mentionsReasoningParameter("invalid response_format")).toBe(false);
+    expect(mentionsReasoningParameter("context length exceeded")).toBe(false);
+  });
+});
+
+describe("invokeLLM reasoning-parameter compatibility", () => {
+  it("retries without reasoning controls when the model rejects them", async () => {
+    // This project runs against whatever OpenAI-compatible endpoint the
+    // operator configured, and only some models take reasoning controls.
+    const reject = {
+      ...errResponse(400),
+      text: async () =>
+        '{"error":{"message":"Unknown parameter: reasoning_effort"}}',
+    };
+    const fetchSpy = vi
+      .fn()
+      .mockResolvedValueOnce(reject)
+      .mockResolvedValueOnce(okResponse({ id: "ok", choices: [] }));
+    vi.stubGlobal("fetch", fetchSpy);
+
+    const res = await invokeLLM({
+      messages: [],
+      reasoning_effort: "none",
+      response_format: { type: "json_object" },
+    });
+
+    expect(res).toMatchObject({ id: "ok" });
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+    const retried = lastPayload(fetchSpy);
+    expect(retried).not.toHaveProperty("reasoning_effort");
+    // Everything else about the request survives the retry.
+    expect(retried.response_format).toEqual({ type: "json_object" });
+  });
+
+  it("does not retry a 400 that has nothing to do with reasoning", async () => {
+    const fetchSpy = vi.fn(async () => errResponse(400));
+    vi.stubGlobal("fetch", fetchSpy);
+
+    await expect(
+      invokeLLM({ messages: [], reasoning_effort: "none" }),
+    ).rejects.toThrow(/LLM invoke failed: 400/);
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not retry when no reasoning control was sent", async () => {
+    const reject = {
+      ...errResponse(400),
+      text: async () => "Unknown parameter: reasoning_effort",
+    };
+    const fetchSpy = vi.fn(async () => reject);
+    vi.stubGlobal("fetch", fetchSpy);
+
+    await expect(invokeLLM({ messages: [] })).rejects.toThrow(/400/);
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("surfaces a failure on the retry rather than masking it", async () => {
+    const reject = {
+      ...errResponse(400),
+      text: async () => "Unknown parameter: reasoning_effort",
+    };
+    const fetchSpy = vi
+      .fn()
+      .mockResolvedValueOnce(reject)
+      .mockResolvedValueOnce(errResponse(401));
+    vi.stubGlobal("fetch", fetchSpy);
+
+    await expect(
+      invokeLLM({ messages: [], reasoning_effort: "none" }),
+    ).rejects.toThrow(/401/);
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
   });
 });
 

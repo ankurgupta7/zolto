@@ -510,6 +510,10 @@ rationale: one friendly sentence (max 25 words) naming BOTH colors, e.g. "Deep f
             ],
           },
         ],
+        // Reasoning models default to reasoning ON and Groq strips those
+        // tokens from `content`, leaving structured output empty — this is a
+        // direct extraction task, so turn it off (see InvokeParams in llm.ts).
+        reasoning_effort: "none",
         response_format: {
           type: "json_schema",
           json_schema: {

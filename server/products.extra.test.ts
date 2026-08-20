@@ -60,8 +60,33 @@ vi.mock("./_core/notification", () => ({
 }));
 vi.mock("./ssrf", () => ({ assertPublicHostname }));
 
+// The real pacer would hold these tests to the live 8,000 tokens/minute
+// budget — the burst below alone would sleep for over a minute. Its own
+// behaviour is covered in visionPacer.test.ts against a fake clock; here we
+// only check that bulkAnalyze reserves the right budget before each call.
+const acquireVisionBudget = vi.hoisted(() =>
+  vi.fn().mockResolvedValue(undefined),
+);
+
+vi.mock("./visionPacer", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./visionPacer")>();
+  return {
+    ...actual,
+    visionPacer: {
+      acquire: (cost: number) => acquireVisionBudget(cost),
+      available: () => Number.POSITIVE_INFINITY,
+    },
+  };
+});
+
 import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
+import {
+  BULK_ANALYZE_CONCURRENCY,
+  PUBLISH_MAX_IMAGES_PER_REQUEST,
+  VISION_MAX_IMAGES_PER_REQUEST,
+} from "./routers/products";
+import { VISION_TOKENS_PER_MINUTE, estimateVisionTokens } from "./visionPacer";
 
 const TENANT_ID = 7;
 
@@ -393,6 +418,282 @@ describe("products.bulkAnalyze", () => {
       expect.objectContaining({ operation: "analyze", ref: "g1" }),
     );
   });
+
+  // ─── Rate limiting ──────────────────────────────────────────────────────────
+
+  it("disables reasoning so structured output isn't emptied by it", async () => {
+    // Reasoning models default to reasoning ON, and Groq strips reasoning
+    // tokens out of `content` — leaving a json_schema request with nothing to
+    // parse, which surfaces as every group falling back.
+    llmJson({
+      name: "R",
+      name_en: "R",
+      description: "d",
+      description_en: "d",
+      category: "Rings",
+    });
+
+    await admin().products.bulkAnalyze({
+      groups: [
+        { groupId: "g1", images: [{ data: "d", mimeType: "image/png" }] },
+      ],
+    });
+
+    expect(invokeLLM.mock.calls[0][0].reasoning_effort).toBe("none");
+  });
+
+  it("reserves the estimated token budget before each vision call", async () => {
+    llmJson({
+      name: "R",
+      name_en: "R",
+      description: "d",
+      description_en: "d",
+      category: "Rings",
+    });
+
+    await admin().products.bulkAnalyze({
+      groups: [
+        {
+          groupId: "g1",
+          images: [
+            { data: "a", mimeType: "image/png" },
+            { data: "b", mimeType: "image/png" },
+          ],
+        },
+      ],
+    });
+
+    expect(acquireVisionBudget).toHaveBeenCalledWith(estimateVisionTokens(2));
+  });
+
+  it("waits for budget before spending a request, not after", async () => {
+    const events: string[] = [];
+    acquireVisionBudget.mockImplementationOnce(async () => {
+      events.push("acquire");
+    });
+    invokeLLM.mockImplementationOnce(async () => {
+      events.push("invoke");
+      return {
+        choices: [
+          {
+            message: {
+              content: JSON.stringify({
+                name: "R",
+                name_en: "R",
+                description: "d",
+                description_en: "d",
+                category: "Rings",
+              }),
+            },
+          },
+        ],
+      };
+    });
+
+    await admin().products.bulkAnalyze({
+      groups: [
+        { groupId: "g1", images: [{ data: "d", mimeType: "image/png" }] },
+      ],
+    });
+
+    expect(events).toEqual(["acquire", "invoke"]);
+  });
+
+  it("analyses at most BULK_ANALYZE_CONCURRENCY groups at a time", async () => {
+    // A burst of 8 concurrent vision calls measured 2 successes and 6 rate
+    // limit errors against the live API. Fanning out with Promise.all is what
+    // produced that burst.
+    let running = 0;
+    let peak = 0;
+    const release: Array<() => void> = [];
+
+    invokeLLM.mockImplementation(async () => {
+      running++;
+      peak = Math.max(peak, running);
+      await new Promise<void>((resolve) => release.push(resolve));
+      running--;
+      return {
+        choices: [
+          {
+            message: {
+              content: JSON.stringify({
+                name: "R",
+                name_en: "R",
+                description: "d",
+                description_en: "d",
+                category: "Rings",
+              }),
+            },
+          },
+        ],
+      };
+    });
+
+    const promise = admin().products.bulkAnalyze({
+      groups: Array.from({ length: 8 }, (_, i) => ({
+        groupId: `g${i}`,
+        images: [{ data: "d", mimeType: "image/png" }],
+      })),
+    });
+
+    let settled = false;
+    void promise.then(
+      () => {
+        settled = true;
+      },
+      () => {
+        settled = true;
+      },
+    );
+    for (let i = 0; i < 200 && !settled; i++) {
+      while (release.length > 0) release.shift()!();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+
+    const res = await promise;
+    expect(res).toHaveLength(8);
+    expect(res.map((r) => r.groupId)).toEqual(
+      Array.from({ length: 8 }, (_, i) => `g${i}`),
+    );
+    expect(peak).toBeGreaterThan(0);
+    expect(peak).toBeLessThanOrEqual(BULK_ANALYZE_CONCURRENCY);
+  });
+
+  it("keeps the concurrency limit within the provider's token budget", () => {
+    expect(BULK_ANALYZE_CONCURRENCY).toBeGreaterThanOrEqual(1);
+    expect(BULK_ANALYZE_CONCURRENCY).toBeLessThanOrEqual(2);
+  });
+
+  // ─── Groq's per-request vision limit ────────────────────────────────────────
+
+  it("rejects a group with more than 5 images", async () => {
+    // Groq's vision API caps a request at 5 images: a bigger group fails
+    // generation outright rather than being analysed from its first five.
+    await expect(
+      admin().products.bulkAnalyze({
+        groups: [
+          {
+            groupId: "g1",
+            images: Array.from({ length: 6 }, () => ({
+              data: "d",
+              mimeType: "image/png",
+            })),
+          },
+        ],
+      }),
+    ).rejects.toThrow();
+  });
+
+  it("accepts a group at exactly the limit", async () => {
+    llmJson({
+      name: "R",
+      name_en: "R",
+      description: "d",
+      description_en: "d",
+      category: "Rings",
+    });
+
+    const res = await admin().products.bulkAnalyze({
+      groups: [
+        {
+          groupId: "g1",
+          images: Array.from({ length: VISION_MAX_IMAGES_PER_REQUEST }, () => ({
+            data: "d",
+            mimeType: "image/png",
+          })),
+        },
+      ],
+    });
+
+    expect(res[0].success).toBe(true);
+  });
+
+  it("keeps a full group's token cost inside one minute of budget", async () => {
+    // The cap is what makes a group payable rather than only servable by
+    // being throttled first.
+    llmJson({
+      name: "R",
+      name_en: "R",
+      description: "d",
+      description_en: "d",
+      category: "Rings",
+    });
+
+    await admin().products.bulkAnalyze({
+      groups: [
+        {
+          groupId: "g1",
+          images: Array.from({ length: VISION_MAX_IMAGES_PER_REQUEST }, () => ({
+            data: "d",
+            mimeType: "image/png",
+          })),
+        },
+      ],
+    });
+
+    const [cost] = acquireVisionBudget.mock.calls.at(-1)!;
+    expect(cost).toBeLessThanOrEqual(VISION_TOKENS_PER_MINUTE);
+  });
+
+  // ─── Category resilience ────────────────────────────────────────────────────
+
+  it("defaults to the fallback category when the model omits it", async () => {
+    // Good copy plus a missing category used to pass `undefined` straight
+    // through as the product's category. The merchant picks the category from
+    // a dropdown on the next screen; the copy is the part worth keeping.
+    llmJson({
+      name: "Mondstein-Ring",
+      name_en: "Moonstone Ring",
+      description: "Schoen",
+      description_en: "Pretty",
+    });
+
+    const res = await admin().products.bulkAnalyze({
+      groups: [
+        { groupId: "g1", images: [{ data: "d", mimeType: "image/png" }] },
+      ],
+    });
+
+    expect(res[0].success).toBe(true);
+    expect(res[0].category).toBe("Other");
+    expect(res[0].name).toBe("Mondstein-Ring");
+  });
+
+  it("does not pass through a category the catalogue doesn't have", async () => {
+    llmJson({
+      name: "R",
+      name_en: "R",
+      description: "d",
+      description_en: "d",
+      category: "Spaceships",
+    });
+
+    const res = await admin().products.bulkAnalyze({
+      groups: [
+        { groupId: "g1", images: [{ data: "d", mimeType: "image/png" }] },
+      ],
+    });
+
+    expect(res[0].category).toBe("Other");
+  });
+
+  it("keeps a category the tenant's catalogue does have", async () => {
+    llmJson({
+      name: "R",
+      name_en: "R",
+      description: "d",
+      description_en: "d",
+      category: "Bangles",
+    });
+
+    const res = await admin().products.bulkAnalyze({
+      groups: [
+        { groupId: "g1", images: [{ data: "d", mimeType: "image/png" }] },
+      ],
+    });
+
+    expect(res[0].category).toBe("Bangles");
+  });
 });
 
 describe("products.bulkCreate", () => {
@@ -415,6 +716,87 @@ describe("products.bulkCreate", () => {
     expect(res.created).toBe(1);
     expect(db.createProduct).toHaveBeenCalled();
     expect(db.addProductImage).toHaveBeenCalledTimes(1);
+  });
+
+  it("reports the row id it created against the caller's tempId", async () => {
+    // Without this a client cannot send a product's remaining photos in a
+    // follow-up request: the new product's id doesn't exist until now.
+    db.addProductImage.mockResolvedValue(undefined);
+    const res = await admin().products.bulkCreate({
+      products: [
+        {
+          tempId: "card-7",
+          name: "Ring A",
+          description: "d",
+          price: 100,
+          category: "Rings",
+          images: [{ data: "QQ==", mimeType: "image/jpeg" }],
+        },
+      ],
+    });
+
+    expect(res.createdItems).toEqual([
+      { tempId: "card-7", id: 99, name: "Ring A" },
+    ]);
+  });
+
+  it("still reports created items when no tempId was given", async () => {
+    const res = await admin().products.bulkCreate({
+      products: [
+        {
+          name: "Ring A",
+          description: "d",
+          price: 100,
+          category: "Rings",
+          images: [{ data: "QQ==", mimeType: "image/jpeg" }],
+        },
+      ],
+    });
+
+    expect(res.createdItems).toEqual([
+      { tempId: null, id: 99, name: "Ring A" },
+    ]);
+  });
+
+  it("omits a product that failed from createdItems", async () => {
+    db.createProduct.mockRejectedValueOnce(new Error("db down"));
+    const res = await admin().products.bulkCreate({
+      products: [
+        {
+          tempId: "card-1",
+          name: "Ring A",
+          description: "d",
+          price: 100,
+          category: "Rings",
+          images: [{ data: "QQ==", mimeType: "image/jpeg" }],
+        },
+      ],
+    });
+
+    expect(res.createdItems).toEqual([]);
+    expect(res.failed).toEqual(["Ring A"]);
+  });
+
+  it("rejects more images than one request may carry", async () => {
+    await expect(
+      admin().products.bulkCreate({
+        products: [
+          {
+            name: "Ring A",
+            description: "d",
+            price: 100,
+            category: "Rings",
+            images: Array.from(
+              { length: PUBLISH_MAX_IMAGES_PER_REQUEST + 1 },
+              () => ({
+                data: "QQ==",
+                mimeType: "image/jpeg",
+              }),
+            ),
+          },
+        ],
+      }),
+    ).rejects.toThrow();
   });
 
   it("records a failure and continues when createProduct throws", async () => {
@@ -537,6 +919,64 @@ describe("products.bulkUpsertImages", () => {
     expect(db.insertBulkUploadLog).toHaveBeenCalledWith(
       expect.objectContaining({ operation: "upsert_images" }),
     );
+  });
+
+  it("numbers a continuation batch after the photos already there", async () => {
+    // Images are ordered by (sortOrder, createdAt), so a follow-up batch that
+    // restarted at 0 would interleave itself with the first — photo 9 sorting
+    // ahead of photo 2.
+    db.getProductById.mockResolvedValue(product({ id: 5, imageUrl: "x" }));
+    db.addProductImage.mockResolvedValue(undefined);
+
+    await admin().products.bulkUpsertImages({
+      items: [
+        {
+          productId: 5,
+          images: [
+            { data: "QQ==", mimeType: "image/jpeg" },
+            { data: "QQ==", mimeType: "image/jpeg" },
+          ],
+          sortOrderOffset: 8,
+        },
+      ],
+    });
+
+    const orders = db.addProductImage.mock.calls.map((c) => c[0].sortOrder);
+    expect(orders).toEqual([8, 9]);
+  });
+
+  it("starts at zero when no offset is given", async () => {
+    db.getProductById.mockResolvedValue(product({ id: 5, imageUrl: "x" }));
+    db.addProductImage.mockResolvedValue(undefined);
+
+    await admin().products.bulkUpsertImages({
+      items: [
+        {
+          productId: 5,
+          images: [
+            { data: "QQ==", mimeType: "image/jpeg" },
+            { data: "QQ==", mimeType: "image/jpeg" },
+          ],
+        },
+      ],
+    });
+
+    const orders = db.addProductImage.mock.calls.map((c) => c[0].sortOrder);
+    expect(orders).toEqual([0, 1]);
+  });
+
+  it("rejects a negative offset", async () => {
+    await expect(
+      admin().products.bulkUpsertImages({
+        items: [
+          {
+            productId: 5,
+            images: [{ data: "QQ==", mimeType: "image/jpeg" }],
+            sortOrderOffset: -1,
+          },
+        ],
+      }),
+    ).rejects.toThrow();
   });
 
   it("collects a warning when an image upload fails", async () => {
