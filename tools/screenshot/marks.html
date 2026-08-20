@@ -3,8 +3,9 @@
   Raster source for the brand marks. Every PNG in client/public/ and the
   Android drawable is rendered from this one page by tools/brand/render.mjs, so
   the tile, the stroke and the spark cannot drift between the SVG and the
-  bitmaps the way the previous rebrand let them (android/.../zolto_logo.png was
-  still the *Kalakosh* wordmark, renamed but never redrawn).
+  bitmaps the way the previous rebrand let them — the Android drawable was
+  renamed to match the new name and left holding the *old* brand's wordmark,
+  which then shipped on the register's main screen.
 
   Each block is sized exactly to its output and tagged with an id the renderer
   clips to.

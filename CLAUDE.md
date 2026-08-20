@@ -91,7 +91,7 @@ The raster brand assets are **generated, not hand-edited**. `tools/brand/render.
 renders `tools/screenshot/marks.html` into `client/public/{logo,favicon,og-image}.*`,
 the Android drawable and the iOS AppIcon, so the bitmaps cannot drift from the
 vector — a previous rebrand renamed the Android drawable to match the new name
-and left the *old* brand's wordmark inside it, which then shipped on the
+and left the _old_ brand's wordmark inside it, which then shipped on the
 register's main screen. After any change to the mark:
 
 ```bash

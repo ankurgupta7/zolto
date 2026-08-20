@@ -67,7 +67,13 @@ await page.goto(BASE);
 // Cormorant Garamond sets the wordmark; a fallback face would silently ship.
 await page.waitForFunction(() => document.fonts.status === "loaded");
 const faces = await page.evaluate(() =>
-  [...new Set([...document.fonts].filter((f) => f.status === "loaded").map((f) => f.family))].join(", "),
+  [
+    ...new Set(
+      [...document.fonts]
+        .filter((f) => f.status === "loaded")
+        .map((f) => f.family),
+    ),
+  ].join(", "),
 );
 console.log(`fonts loaded: ${faces || "NONE ⚠"}`);
 
@@ -89,6 +95,8 @@ for (const size of ICO_SIZES) {
   frames.push({ size, png: await page.locator("#tileScalable").screenshot() });
 }
 writeFileSync("client/public/favicon.ico", buildIco(frames));
-console.log(`wrote client/public/favicon.ico (${ICO_SIZES.join("/")}px frames)`);
+console.log(
+  `wrote client/public/favicon.ico (${ICO_SIZES.join("/")}px frames)`,
+);
 
 await browser.close();

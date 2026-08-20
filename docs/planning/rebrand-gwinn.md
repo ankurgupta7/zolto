@@ -1,6 +1,6 @@
 # Rebrand: Zolto → Gwinn
 
-Status: in progress. Tick each tier as it lands.
+Status: **complete**. All tiers landed; see the notes under each.
 
 ## Premise
 
@@ -57,50 +57,88 @@ Three mechanisms, because one does not reach everywhere:
 ## Tiers
 
 ### Tier A — brand module (foundation)
-- [ ] `shared/brand.ts` with every derived identifier
-- [ ] i18next `defaultVariables: { brand }` wired in `client/src/lib/i18n.ts`
-- [ ] `shared/brand.check.test.ts` — non-TS surface assertions + repo-wide guard
+- [x] `shared/brand.ts` with every derived identifier
+- [x] i18next `defaultVariables: { brand }` wired in `client/src/lib/i18n.ts`
+- [x] `shared/brand.check.test.ts` — non-TS surface assertions + repo-wide guard
 
 ### Tier B — shared/ + server/
-- [ ] `shared/attribution.ts`: `ZOLTO_URL`/`ZOLTO_ATTRIBUTION`/`zolto*` → brand-derived
-- [ ] `shared/platform.ts` `name`, `shared/marketing.ts` `MARKETING_HOSTS`, routes
-- [ ] `shared/costOfAcceptance.ts` rate ids (`*-card`, `*-twint-qr`, `*-online-*`)
-- [ ] `server/`: MCP `serverInfo.name`, Stripe `META_KIND` + statement descriptor,
+- [x] `shared/attribution.ts`: `ZOLTO_URL`/`ZOLTO_ATTRIBUTION`/`zolto*` → brand-derived
+- [x] `shared/platform.ts` `name`, `shared/marketing.ts` `MARKETING_HOSTS`, routes
+- [x] `shared/costOfAcceptance.ts` rate ids (`*-card`, `*-twint-qr`, `*-online-*`)
+- [x] `server/`: MCP `serverInfo.name`, Stripe `META_KIND` + statement descriptor,
       `<meta name="…-tenant-slug">`, `posDownloads` asset names, SEO routes
-- [ ] Google Sheets mirror column `zolto_id` → `gwinn_id`
-- [ ] DB column `hide_zolto_badge` → `hide_gwinn_badge` (schema + migration + `update.sh`)
+- [x] Google Sheets mirror column `zolto_id` → `gwinn_id`
+- [x] DB column `hide_zolto_badge` → **`hide_platform_credit`** (schema + migration +
+      `update.sh`) — brand-neutral, so it survives the next rename untouched
 
 ### Tier C — client/
-- [ ] `surface.ts` hosts, storage keys (`*_theme`, `*_discount_code`,
+- [x] `surface.ts` hosts, storage keys (`*_theme`, `*_discount_code`,
       `*_claim_token`, `*.tour.*`, and the stale `kalakosh_lang`)
-- [ ] `ZoltoCredit` → `BrandCredit`, `WhyZolto` → `WhyBrand`, routes `/why-gwinn`,
+- [x] `ZoltoCredit` → `BrandCredit`, `WhyZolto` → `WhyBrand`, routes `/why-gwinn`,
       `/compare/gwinn-vs-*`
-- [ ] locale JSON → `{{brand}}` across de/en/fr/it (marketing + admin)
+- [x] locale JSON → `{{brand}}` across de/en/fr/it (marketing + admin)
 
 ### Tier D — mobile
-- [ ] Android: `ch/zolto/` → `ch/gwinn/` in 4 source roots, applicationId,
+- [x] Android: `ch/zolto/` → `ch/gwinn/` in 4 source roots, applicationId,
       namespace, manifest scheme, `Theme.ZoltoPOS`, `Zolto.Button.*`,
       `KalakoshApplication.kt` → `GwinnApplication.kt` (fixes the stale filename)
-- [ ] iOS: `ios/ZoltoPOS/` tree rename, `project.yml`, bundle ids, keychain
+- [x] iOS: `ios/ZoltoPOS/` tree rename, `project.yml`, bundle ids, keychain
       service, `ZoltoTheme.swift` + `zoltoInk`/`zoltoAccent`/… colour tokens
 
 ### Tier E — infra, CI, deploy, docs
-- [ ] `.env.example`, `docker-compose.yml`, `Caddyfile`, `Dockerfile`, `update.sh`
-- [ ] `.github/`, `.circleci/`, `codemagic.yaml` — artifact names, paths, schemes
-- [ ] `deploy/*.sh` incl. `ZOLTO_EXPECT_EMPTY_DB`
-- [ ] `README.md`, `SELF_HOSTING.md`, `CLAUDE.md`, `docs/`
+- [x] `.env.example`, `docker-compose.yml`, `Caddyfile`, `Dockerfile`, `update.sh`
+- [x] `.github/`, `.circleci/`, `codemagic.yaml` — artifact names, paths, schemes
+- [x] `deploy/*.sh` incl. `ZOLTO_EXPECT_EMPTY_DB`
+- [x] `README.md`, `SELF_HOSTING.md`, `CLAUDE.md`, `docs/`
 
 ### Tier F — assets
-- [ ] Redraw the mark: brush-**G** replacing brush-Z in `favicon.svg`, `logo.svg`,
-      and the inline `BrushMark()` in `MarketingChrome.tsx` (three copies of one path)
-- [ ] `favicon.ico`/`favicon.png`/`logo.png`/`og-image.png`, Android drawable, iOS AppIcon
-- [ ] `video/…-explainer-poster.svg`
-- [ ] Screenshot the nav lockup in both themes + `tools/screenshot/logos.html` at 16/32px
+- [x] Redraw the mark: brush-**G** replacing brush-Z — five copies of one path
+- [x] `favicon.ico`/`favicon.png`/`logo.png`/`og-image.png`, Android drawable, iOS AppIcon
+- [x] `video/…-explainer-poster.svg`
+- [x] Screenshot the nav lockup in both themes + `tools/screenshot/logos.html` at 16/32px
 
 ### Tier G — verify
-- [ ] `npx vitest run`, `npx tsc --noEmit`, `npm run lint`
-- [ ] Gradle + XCTest suites
-- [ ] Repo-wide guard green: zero occurrences of the retired name
+- [x] `npx vitest run` — 4491 pass, 0 fail
+- [x] `npx tsc --noEmit` — clean
+- [x] `npm run lint` — 33 errors / 356 warnings, byte-identical to the pre-branch baseline
+- [x] `npm run test:deploy-scripts` — 40 pass
+- [x] Screenshots: `logos.html` at 32/16px both colourways, and the real nav via
+      `?shell` in dark and light
+- [x] Repo-wide guard green: zero occurrences of the retired name
+- [ ] **Gradle + XCTest — not run here.** The project pins JDK 17 and this
+      container has only 21, and there is no macOS toolchain. Both run in CI.
+      Verified at source level instead: all 51 Kotlin package declarations match
+      their directories, and no XML or Swift reference to a renamed type survives.
+
+## What the rebrand found
+
+Three defects that predated it, all of the same shape — a rename that moved a
+name on one side of a pair and not the other, failing silently:
+
+1. **The register app shipped the wrong company's logo.** `zolto_logo.png` was
+   still the Kalakosh wordmark: the previous rebrand renamed the file and never
+   redrew the artwork. It is on the register's main screen.
+2. **The site crawler ignored merchants who asked it to stop.** `USER_AGENT`
+   advertised one product token while `parseRobots` matched a different one, so
+   a `Disallow` group naming the crawler never applied. Both now derive from one
+   `CRAWLER_TOKEN`.
+3. **Two i18n key spaces contained the brand**, so every rename silently dropped
+   translated copy back to English — i18next answers a missing key with the
+   fallback, not an error. The capability column and the FAQ groups are now
+   keyed brand-neutrally.
+
+Plus the `kalakosh_lang` localStorage key the i18n bootstrap was still reading
+two brands later, and `KalakoshApplication.kt` declaring `class ZoltoApplication`.
+
+## Renaming it again
+
+1. Edit `NAME` (and `TLD` if the domain moves) in `shared/brand.ts`.
+2. Add the retired slug to `RETIRED` in `shared/brand.check.test.ts`.
+3. Run `npx vitest run shared/brand.check.test.ts`. It names every file that
+   still disagrees, and every file still carrying the old name.
+4. Redraw the mark, then `node tools/brand/render.mjs` for the bitmaps.
+5. Rewrite prose. Translated copy carries `{{brand}}` and needs no edit; comments
+   and English prose do, and step 3 lists them.
 
 ## Deliberately out of scope
 

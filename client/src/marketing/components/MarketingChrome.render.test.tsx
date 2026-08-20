@@ -489,9 +489,11 @@ describe("theme switch", () => {
 
 describe("BrushMark", () => {
   /**
-   * The lockup is one shape in three themeable fills rather than one SVG per
+   * The lockup is one shape in three themeable colours rather than one SVG per
    * theme; hardcoding a hex back in would silently pin the mark to mahogany
-   * while every palette around it moved.
+   * while every palette around it moved. The letterform is a stroked path, not
+   * a filled outline, so it is `stroke` that has to carry the token — a mark
+   * that reverted to `fill` would render as a solid blob at every size.
    */
   it("takes its colours from the logo tokens, with today's as fallbacks", () => {
     const { container } = render(<BrushMark className="h-8 w-8" />);
@@ -499,9 +501,9 @@ describe("BrushMark", () => {
     expect(svg.querySelector("rect")?.getAttribute("fill")).toBe(
       "var(--logo-tile, #2D2620)",
     );
-    expect(svg.querySelector("path")?.getAttribute("fill")).toBe(
-      "var(--logo-mark, #B8963E)",
-    );
+    const mark = svg.querySelector("path")!;
+    expect(mark.getAttribute("stroke")).toBe("var(--logo-mark, #B8963E)");
+    expect(mark.getAttribute("fill")).toBe("none");
     expect(svg.querySelector("circle")?.getAttribute("fill")).toBe(
       "var(--logo-dot, #F0EBE3)",
     );
