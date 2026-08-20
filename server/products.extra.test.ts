@@ -81,8 +81,11 @@ vi.mock("./visionPacer", async (importOriginal) => {
 
 import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
-import { BULK_ANALYZE_CONCURRENCY } from "./routers/products";
-import { estimateVisionTokens } from "./visionPacer";
+import {
+  BULK_ANALYZE_CONCURRENCY,
+  VISION_MAX_IMAGES_PER_REQUEST,
+} from "./routers/products";
+import { VISION_TOKENS_PER_MINUTE, estimateVisionTokens } from "./visionPacer";
 
 const TENANT_ID = 7;
 
@@ -558,6 +561,77 @@ describe("products.bulkAnalyze", () => {
   it("keeps the concurrency limit within the provider's token budget", () => {
     expect(BULK_ANALYZE_CONCURRENCY).toBeGreaterThanOrEqual(1);
     expect(BULK_ANALYZE_CONCURRENCY).toBeLessThanOrEqual(2);
+  });
+
+  // ─── Groq's per-request vision limit ────────────────────────────────────────
+
+  it("rejects a group with more than 5 images", async () => {
+    // Groq's vision API caps a request at 5 images: a bigger group fails
+    // generation outright rather than being analysed from its first five.
+    await expect(
+      admin().products.bulkAnalyze({
+        groups: [
+          {
+            groupId: "g1",
+            images: Array.from({ length: 6 }, () => ({
+              data: "d",
+              mimeType: "image/png",
+            })),
+          },
+        ],
+      }),
+    ).rejects.toThrow();
+  });
+
+  it("accepts a group at exactly the limit", async () => {
+    llmJson({
+      name: "R",
+      name_en: "R",
+      description: "d",
+      description_en: "d",
+      category: "Rings",
+    });
+
+    const res = await admin().products.bulkAnalyze({
+      groups: [
+        {
+          groupId: "g1",
+          images: Array.from({ length: VISION_MAX_IMAGES_PER_REQUEST }, () => ({
+            data: "d",
+            mimeType: "image/png",
+          })),
+        },
+      ],
+    });
+
+    expect(res[0].success).toBe(true);
+  });
+
+  it("keeps a full group's token cost inside one minute of budget", async () => {
+    // The cap is what makes a group payable rather than only servable by
+    // being throttled first.
+    llmJson({
+      name: "R",
+      name_en: "R",
+      description: "d",
+      description_en: "d",
+      category: "Rings",
+    });
+
+    await admin().products.bulkAnalyze({
+      groups: [
+        {
+          groupId: "g1",
+          images: Array.from({ length: VISION_MAX_IMAGES_PER_REQUEST }, () => ({
+            data: "d",
+            mimeType: "image/png",
+          })),
+        },
+      ],
+    });
+
+    const [cost] = acquireVisionBudget.mock.calls.at(-1)!;
+    expect(cost).toBeLessThanOrEqual(VISION_TOKENS_PER_MINUTE);
   });
 
   // ─── Category resilience ────────────────────────────────────────────────────

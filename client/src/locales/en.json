@@ -220,6 +220,7 @@
     "groups": "Groups ({{count}})",
     "photos_one": "{{count}} photo",
     "photos_other": "{{count}} photos",
+    "aiReadsFirst": "AI reads the first {{count}}",
     "willCreate_one": "This will create <strong>{{count}}</strong> product",
     "willCreate_other": "This will create <strong>{{count}}</strong> products",
     "groupedProducts_one": "{{count}} grouped product",

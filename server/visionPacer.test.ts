@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { VISION_MAX_IMAGES_PER_REQUEST } from "./routers/products";
 import {
   VISION_TOKENS_PER_IMAGE,
   VISION_TOKENS_PER_MINUTE,
@@ -168,22 +169,19 @@ describe("estimateVisionTokens", () => {
     expect(estimateVisionTokens(0)).toBeGreaterThan(0);
   });
 
-  it("fits a typical group inside a single minute's budget", () => {
-    // A group is one product's photos. Anything that fits a window can be
-    // paced properly; anything that doesn't can only get through by the
+  it("fits a maximum-size group inside a single minute's budget", () => {
+    // bulkAnalyze caps a group at VISION_MAX_IMAGES_PER_REQUEST (5, Groq's
+    // per-request vision limit). That cap is what keeps every possible group
+    // payable: anything larger could only get through the pacer by the
     // oversized-request escape hatch, i.e. by being rate-limited first.
-    expect(estimateVisionTokens(5)).toBeLessThanOrEqual(
-      VISION_TOKENS_PER_MINUTE,
-    );
+    expect(
+      estimateVisionTokens(VISION_MAX_IMAGES_PER_REQUEST),
+    ).toBeLessThanOrEqual(VISION_TOKENS_PER_MINUTE);
   });
 
-  it("documents that a maximum-size group does NOT fit one window", () => {
-    // bulkAnalyze accepts up to 8 photos per group, which at ~1,330 tokens an
-    // image is over 11,000 — more than the whole 8,000/minute budget. Such a
-    // group can only be served by spending a full window and then being
-    // throttled, so it succeeds via retry rather than via pacing. Lowering
-    // the per-group cap to 5 would remove that cliff entirely; until then this
-    // records the limitation rather than pretending it isn't there.
+  it("would not fit a group above the per-request limit", () => {
+    // Why the cap has to hold: one photo more than the schema allows already
+    // costs most of a window, and eight — the old cap — exceeds it outright.
     expect(estimateVisionTokens(8)).toBeGreaterThan(VISION_TOKENS_PER_MINUTE);
   });
 

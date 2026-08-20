@@ -44,6 +44,9 @@ import { estimateVisionTokens, visionPacer } from "../visionPacer";
 // provider's per-minute token budget, not server CPU.
 export const BULK_ANALYZE_CONCURRENCY = 2;
 
+/** Groq's per-request vision limit; see the note on bulkAnalyze's input. */
+export const VISION_MAX_IMAGES_PER_REQUEST = 5;
+
 // Categories are per-tenant now (tenant_categories), so the input shape is a
 // plain string; write paths verify it against the tenant's actual list via
 // assertTenantCategories in the handler.
@@ -312,7 +315,19 @@ export const productsRouter = router({
                   }),
                 )
                 .min(1)
-                .max(8),
+                // Groq's vision API caps a request at 5 images — a group over
+                // that limit fails generation outright rather than analysing
+                // the first 5. It is also what makes a group payable: at
+                // ~1,330 tokens an image, 5 plus the prompt is ~7,450, inside
+                // the 8,000/minute budget, so a group can be paced instead of
+                // only ever getting through by being throttled first.
+                //
+                // This bounds ANALYSIS only. A product may still carry more
+                // photos than this — bulkCreate and bulkUpsertImages take up
+                // to 8 — the model simply doesn't need all of them to write a
+                // description. The client sends the first
+                // ANALYZE_MAX_IMAGES_PER_GROUP of a larger group.
+                .max(VISION_MAX_IMAGES_PER_REQUEST),
             }),
           )
           .min(1)

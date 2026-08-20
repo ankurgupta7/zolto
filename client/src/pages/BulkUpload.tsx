@@ -102,6 +102,24 @@ export const ANALYZE_CHUNK_MAX_GROUPS = 3;
  */
 export const ANALYZE_CHUNK_MAX_IMAGES = 6;
 
+/**
+ * Photos per group sent for analysis. Groq's vision API rejects a request
+ * carrying more than five images outright, so a bigger group would fail
+ * generation rather than being partly analysed — and five plus the prompt is
+ * ~7,450 tokens, which fits inside one minute of the 8,000-token budget, so a
+ * group can be paced rather than only getting through by being throttled.
+ *
+ * This bounds analysis alone. A product keeps every photo the merchant grouped
+ * onto it: the extras are published to storage as normal, they just don't go
+ * to the model, which does not need eight angles to name a piece.
+ */
+export const ANALYZE_MAX_IMAGES_PER_GROUP = 5;
+
+/** The photos of a group that analysis actually sees. */
+export function photosForAnalysis<T>(photoIds: T[]): T[] {
+  return photoIds.slice(0, ANALYZE_MAX_IMAGES_PER_GROUP);
+}
+
 export interface AnalyzeGroupInput {
   groupId: string;
   images: Array<{ data: string; mimeType: string }>;
@@ -475,8 +493,9 @@ export default function BulkUpload() {
       const groups_input: AnalyzeGroupInput[] = await Promise.all(
         reviewGroups.map(async (rg) => ({
           groupId: rg.groupId,
+          // Only the first few photos go to the model; the rest still publish.
           images: await Promise.all(
-            rg.photoIds.map((pid) => {
+            photosForAnalysis(rg.photoIds).map((pid) => {
               const photo = photos.find((p) => p.id === pid)!;
               return resizeImageForAnalysis(photo.dataUrl, photo.mimeType);
             }),
@@ -1049,9 +1068,26 @@ export default function BulkUpload() {
                           />
                         ))}
                       </div>
-                      <p className="text-xs text-muted-foreground font-sans flex-shrink-0">
-                        {t("bulkUpload.photos", { count: groupPhotos.length })}
-                      </p>
+                      <div className="flex-shrink-0 text-right">
+                        <p className="text-xs text-muted-foreground font-sans">
+                          {t("bulkUpload.photos", {
+                            count: groupPhotos.length,
+                          })}
+                        </p>
+                        {/* Groq rejects a vision request over five images, so
+                            a bigger group is analysed from its first five.
+                            Every photo is still published — say so here, on
+                            the group it applies to, rather than leaving the
+                            merchant to wonder which angles the copy came
+                            from. */}
+                        {groupPhotos.length > ANALYZE_MAX_IMAGES_PER_GROUP && (
+                          <p className="text-[10px] text-muted-foreground/80 font-sans">
+                            {t("bulkUpload.aiReadsFirst", {
+                              count: ANALYZE_MAX_IMAGES_PER_GROUP,
+                            })}
+                          </p>
+                        )}
+                      </div>
                       <button
                         type="button"
                         onClick={() => ungroup(group.id)}

@@ -222,6 +222,7 @@
     "groups": "Gruppi ({{count}})",
     "photos_one": "{{count}} foto",
     "photos_other": "{{count}} foto",
+    "aiReadsFirst": "L'IA legge le prime {{count}}",
     "willCreate_one": "Verrà creato <strong>{{count}}</strong> prodotto",
     "willCreate_other": "Verranno creati <strong>{{count}}</strong> prodotti",
     "groupedProducts_one": "{{count}} prodotto raggruppato",

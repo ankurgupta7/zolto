@@ -2,7 +2,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   ANALYZE_CHUNK_MAX_GROUPS,
   ANALYZE_CHUNK_MAX_IMAGES,
+  ANALYZE_MAX_IMAGES_PER_GROUP,
   chunkGroupsForAnalysis,
+  photosForAnalysis,
   resizeImageForAnalysis,
   type AnalyzeGroupInput,
 } from "./BulkUpload";
@@ -61,12 +63,13 @@ describe("chunkGroupsForAnalysis", () => {
   });
 
   it("caps images per request, so full groups don't ride together", () => {
-    // A group holds up to 8 photos here, so a group cap of 3 would otherwise
-    // permit 24 images — roughly 32,000 tokens against an 8,000/minute budget.
+    // Even at the 5-image per-group limit, a group cap of 3 alone would
+    // permit 15 images in one request — ~22,000 tokens against an
+    // 8,000/minute budget, over two minutes of pacing.
     const groups = [
-      makeGroup("a", Array(8).fill(1)),
-      makeGroup("b", Array(8).fill(1)),
-      makeGroup("c", Array(8).fill(1)),
+      makeGroup("a", Array(5).fill(1)),
+      makeGroup("b", Array(5).fill(1)),
+      makeGroup("c", Array(5).fill(1)),
     ];
     const chunks = chunkGroupsForAnalysis(groups, 1_000_000, 3, 6);
 
@@ -114,6 +117,46 @@ describe("chunkGroupsForAnalysis", () => {
 
     expect(chunks.length).toBeGreaterThan(5);
     expect(chunks.flat()).toHaveLength(20);
+  });
+});
+
+describe("photosForAnalysis", () => {
+  it("passes a group at or under the limit through untouched", () => {
+    const ids = ["a", "b", "c"];
+    expect(photosForAnalysis(ids)).toEqual(ids);
+    const exactly = Array.from(
+      { length: ANALYZE_MAX_IMAGES_PER_GROUP },
+      (_, i) => `p${i}`,
+    );
+    expect(photosForAnalysis(exactly)).toEqual(exactly);
+  });
+
+  it("sends only the first few photos of a larger group", () => {
+    // Groq rejects a vision request over five images outright, so an
+    // 8-photo group would fail generation rather than be partly analysed.
+    const ids = Array.from({ length: 8 }, (_, i) => `p${i}`);
+    const sent = photosForAnalysis(ids);
+
+    expect(sent).toHaveLength(ANALYZE_MAX_IMAGES_PER_GROUP);
+    expect(sent).toEqual(ids.slice(0, ANALYZE_MAX_IMAGES_PER_GROUP));
+  });
+
+  it("never exceeds what the bulkAnalyze schema accepts", () => {
+    // The client must not be able to build a request the router rejects —
+    // one over-sized group would fail its whole chunk.
+    for (const size of [1, 5, 6, 8, 20]) {
+      const ids = Array.from({ length: size }, (_, i) => `p${i}`);
+      expect(photosForAnalysis(ids).length).toBeLessThanOrEqual(
+        ANALYZE_MAX_IMAGES_PER_GROUP,
+      );
+    }
+  });
+
+  it("does not mutate the group it was given, so publishing keeps every photo", () => {
+    // The extras still go to storage — only analysis is bounded.
+    const ids = Array.from({ length: 8 }, (_, i) => `p${i}`);
+    photosForAnalysis(ids);
+    expect(ids).toHaveLength(8);
   });
 });
 
