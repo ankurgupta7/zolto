@@ -1,4 +1,4 @@
-# Zolto Business Plan
+# Gwinn Business Plan
 
 > AI-run commerce platform for makers and artisans.  
 > Kalakosh (jewelry, Switzerland) is Tenant #1 — our launch partner, not our revenue model.  
@@ -10,11 +10,11 @@
 
 ## Executive Summary
 
-Zolto is an AI-run commerce platform that lets makers and artisans sell online and in-person without managing technology. Our first tenant, Kalakosh, is a jewelry maker in Switzerland doing ~60 offline sales per month who is launching their first online store using Zolto.
+Gwinn is an AI-run commerce platform that lets makers and artisans sell online and in-person without managing technology. Our first tenant, Kalakosh, is a jewelry maker in Switzerland doing ~60 offline sales per month who is launching their first online store using Gwinn.
 
 **The Business Model:** Kalakosh is free. Revenue comes from online-discovered customers who sign up via self-serve, attracted by content documenting Kalakosh's launch journey. Operations are almost entirely AI-run — an AI chatbot handles support, builds features on request, and drives content production.
 
-**The Opportunity:** The maker/artisan segment is underserved at the €20–€50 price point by tools that treat POS and online as one product built for someone who sells at markets, not a store chain. Square is free but feature-limited. Shopify starts at $39 but is not maker-specific. WJewel charges $99–$399 for jewelry-specific features. Zolto's durable wedge is **maker-first design plus true POS/online parity**; AI (product descriptions, support, onboarding) lowers operating cost and speeds iteration, but we treat it as a cost/velocity advantage rather than a defensible moat — incumbents are adding comparable AI features, and we plan accordingly (see §1.2, §2.3, and §8).
+**The Opportunity:** The maker/artisan segment is underserved at the €20–€50 price point by tools that treat POS and online as one product built for someone who sells at markets, not a store chain. Square is free but feature-limited. Shopify starts at $39 but is not maker-specific. WJewel charges $99–$399 for jewelry-specific features. Gwinn's durable wedge is **maker-first design plus true POS/online parity**; AI (product descriptions, support, onboarding) lowers operating cost and speeds iteration, but we treat it as a cost/velocity advantage rather than a defensible moat — incumbents are adding comparable AI features, and we plan accordingly (see §1.2, §2.3, and §8).
 
 **Phase Timeline:** Content engine (Months 1–2) → Productize & automate (Months 3–5) → Acquire via organic (Months 5–9) → Scale the AI engine (Months 9–18).
 
@@ -22,18 +22,18 @@ Zolto is an AI-run commerce platform that lets makers and artisans sell online a
 
 ## 1. Company Overview
 
-### 1.1 What Zolto Is
+### 1.1 What Gwinn Is
 
-Zolto is a multi-tenant commerce platform. Two of its three pillars are structural differentiators; the third is an operating advantage we do not claim as a moat:
+Gwinn is a multi-tenant commerce platform. Two of its three pillars are structural differentiators; the third is an operating advantage we do not claim as a moat:
 
 1. **Maker-First Design (primary wedge):** Built for artisans who sell at craft fairs and markets, not retail chains. The product assumes the user is a maker, not a store manager. This is the hardest thing for a generalist incumbent to retrofit.
-2. **POS + Online Parity (primary wedge):** Unlike Shopify (online-first) or Square (POS-first), Zolto treats both channels as equal, with real-time inventory sync — the workflow a market-and-online maker actually needs.
+2. **POS + Online Parity (primary wedge):** Unlike Shopify (online-first) or Square (POS-first), Gwinn treats both channels as equal, with real-time inventory sync — the workflow a market-and-online maker actually needs.
 3. **AI-Assisted Operations (velocity/cost advantage, not a moat):** An AI chatbot resolves customer queries, drafts features from customer requests, and generates content — lowering founder operational cost and increasing iteration speed. We assume incumbents will match AI feature-for-feature; our edge here is _how fast_ we ship on top of the maker wedge, not the AI itself.
 
-### 1.2 The Zolto Architecture (Multi-Tenant)
+### 1.2 The Gwinn Architecture (Multi-Tenant)
 
 ```
-Zolto Platform
+Gwinn Platform
 ├── Tenant 1: Kalakosh (jewelry, CH)
 │   ├── POS: ~60 sales/month (offline, in-person)
 │   ├── Online store: launching with this plan
@@ -106,7 +106,7 @@ At €19–€49/month blended: a **~€34M–€88M/year illustrative TAM**. Ev
 | **Lightspeed**  | $89/mo         | Yes          | No                | No                             |
 | **WJewel**      | $99–$399/mo    | Yes          | Yes (jewelry)     | No                             |
 | **Clover**      | $15/mo         | Yes          | No                | No                             |
-| **Zolto**       | €0–€99/mo      | Yes          | Yes (maker-first) | Yes (assume matched over time) |
+| **Gwinn**       | €0–€99/mo      | Yes          | Yes (maker-first) | Yes (assume matched over time) |
 
 > **Note on the AI column:** by 2026 AI product descriptions and AI support chat are becoming table stakes — Shopify (Magic/Sidekick) and others are shipping them. We do **not** treat "has AI" as a moat. The last column reflects presence of AI features today, not a defensible advantage.
 
@@ -223,7 +223,7 @@ Kalakosh's journey — from 60 offline sales/month to launching their first onli
 
 **Key messaging rule:** Never claim "10x growth" or "massive revenue." Kalakosh's value is authenticity. A maker who went from 0 to online is relatable.
 
-> **Content release is required — get it signed before publishing.** A prior draft assumed "Kalakosh is owned by Sheena Arora, so no content release form is needed." That reasoning is wrong. Whether Sheena _owns Kalakosh_ is irrelevant to whether **Zolto (a separate legal party)** may commercially use her name, likeness, photos, video, and business story to market the platform to other paying customers. That is exactly the situation a content/publicity release exists for — covering right of publicity, image rights, and permission to use her brand in Zolto's marketing. **Action:** get a signed content release (and ideally a lightweight pilot-partnership agreement covering the free-tier terms, exclusivity, and how her story may be used) _before_ the Launch Diary series goes live. This is cheap to do now and expensive to unwind later. It is retained as a Phase 1 success criterion (§9).
+> **Content release is required — get it signed before publishing.** A prior draft assumed "Kalakosh is owned by Sheena Arora, so no content release form is needed." That reasoning is wrong. Whether Sheena _owns Kalakosh_ is irrelevant to whether **Gwinn (a separate legal party)** may commercially use her name, likeness, photos, video, and business story to market the platform to other paying customers. That is exactly the situation a content/publicity release exists for — covering right of publicity, image rights, and permission to use her brand in Gwinn's marketing. **Action:** get a signed content release (and ideally a lightweight pilot-partnership agreement covering the free-tier terms, exclusivity, and how her story may be used) _before_ the Launch Diary series goes live. This is cheap to do now and expensive to unwind later. It is retained as a Phase 1 success criterion (§9).
 
 ### 5.2 Content Production Model (AI-Assisted)
 
@@ -253,7 +253,7 @@ Kalakosh's journey — from 60 offline sales/month to launching their first onli
 
 The first 5 online customers must:
 
-1. Find Zolto via organic search or content (not ads)
+1. Find Gwinn via organic search or content (not ads)
 2. Complete onboarding without human help
 3. Make their first sale within 14 days
 4. Not churn within 30 days
@@ -306,9 +306,9 @@ If this doesn't happen, fix onboarding or content before scaling.
 | LTV:CAC ratio                       | 8.8:1 (Phase 3), 14:1 (Phase 4)             |
 | Displayed prices                    | **No VAT component — under the CHF 100k threshold** |
 
-> **VAT / indirect tax — RESOLVED (owner decision): not applicable at current scale.** Swiss VAT registration is mandatory only once annual turnover exceeds **CHF 100,000** (MWSTG art. 10). Zolto is pre-revenue and far below that, so there is no Swiss VAT to charge on Pro or on the 1% platform fee, prices in `shared/platform.ts` are simply the price (no inclusive/exclusive qualifier needed), and **Stripe Tax stays off**.
+> **VAT / indirect tax — RESOLVED (owner decision): not applicable at current scale.** Swiss VAT registration is mandatory only once annual turnover exceeds **CHF 100,000** (MWSTG art. 10). Gwinn is pre-revenue and far below that, so there is no Swiss VAT to charge on Pro or on the 1% platform fee, prices in `shared/platform.ts` are simply the price (no inclusive/exclusive qualifier needed), and **Stripe Tax stays off**.
 >
-> **Two triggers that reopen this**, both to watch rather than act on now: (1) annual turnover approaching **CHF 100k** — registration becomes obligatory and every displayed price must then state which way it is quoted; (2) selling subscriptions **into the EU** — EU VAT is a separate regime from the Swiss threshold (B2C digital services fall under the **OSS** scheme at the customer's local rate; B2B is typically reverse-charged with a valid VAT ID), so an EU customer base creates an obligation the CHF 100k exemption does not cover. Zolto currently targets Swiss makers, so this is dormant, not dismissed.
+> **Two triggers that reopen this**, both to watch rather than act on now: (1) annual turnover approaching **CHF 100k** — registration becomes obligatory and every displayed price must then state which way it is quoted; (2) selling subscriptions **into the EU** — EU VAT is a separate regime from the Swiss threshold (B2C digital services fall under the **OSS** scheme at the customer's local rate; B2B is typically reverse-charged with a valid VAT ID), so an EU customer base creates an obligation the CHF 100k exemption does not cover. Gwinn currently targets Swiss makers, so this is dormant, not dismissed.
 
 ### 7.2 Revenue Trajectory
 
@@ -349,7 +349,7 @@ If this doesn't happen, fix onboarding or content before scaling.
 | Competitor matches AI features                                                                                                        | 3        | 4          | 12    | 🟠 ORANGE | AI is not the moat (see §1.2, §2.3). Defend on maker-first UX + POS/online parity + iteration speed, not on having AI.                                                                                                                                                                                            |
 | Kalakosh launch fails (no online store)                                                                                               | 4        | 2          | 8     | 🟡 YELLOW | 6-week deadline; fallback content plan (see §8.3) — publish the "journey" honestly without a live store                                                                                                                                                                                                           |
 | Swiss FADP **and** EU GDPR compliance (two regimes, not one)                                                                          | 3        | 3          | 9     | 🟡 YELLOW | Kalakosh + likely early tenants are Swiss → **nFADP/revFADP** applies (differs from GDPR on DPO thresholds, breach notice, register of processing). EU tenants → **GDPR** + DPA. Ship both a FADP-aware and GDPR-aware privacy policy; Stripe handles PCI. Do **not** assume "GDPR-compliant" covers Switzerland. |
-| VAT registration missed once a threshold is crossed (CH 100k / EU OSS)                                                                 | 3        | 1          | 3     | 🟢 GREEN  | **Resolved for now** (§7.1): below the CHF 100k Swiss registration threshold, so no VAT applies and Stripe Tax stays off. Residual risk is only *missing the moment it changes* — watch annual turnover against CHF 100k, and re-open if Zolto starts selling into the EU (separate OSS regime).                     |
+| VAT registration missed once a threshold is crossed (CH 100k / EU OSS)                                                                 | 3        | 1          | 3     | 🟢 GREEN  | **Resolved for now** (§7.1): below the CHF 100k Swiss registration threshold, so no VAT applies and Stripe Tax stays off. Residual risk is only *missing the moment it changes* — watch annual turnover against CHF 100k, and re-open if Gwinn starts selling into the EU (separate OSS regime).                     |
 | Founder time exceeds 10 hrs/week (Phase 4)                                                                                            | 3        | 2          | 6     | 🟡 YELLOW | Automate or hire; red line trigger                                                                                                                                                                                                                                                                                |
 
 ### 8.2 The Red Line (Kill Conditions)
@@ -369,7 +369,7 @@ The default content calendar (§10.2) assumes the launch happens: Launch Diary #
 | Planned (launch happens)              | Fallback (no live store in 6 weeks)                                                                                                                               |
 | ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | "Going Live" — first day, first order | **"What It Actually Takes to Launch"** — an honest teardown of the blockers (photography, catalog, payment setup) that delayed go-live. More relatable, not less. |
-| "First Online Order" — the milestone  | **"The Real Cost of Getting a Maker Online"** — time, tooling, decisions. Positions Zolto as the thing that removes those blockers.                               |
+| "First Online Order" — the milestone  | **"The Real Cost of Getting a Maker Online"** — time, tooling, decisions. Positions Gwinn as the thing that removes those blockers.                               |
 | Case study: Kalakosh success          | **Process case study:** the setup journey itself + the iteration log as proof the platform is real and evolving                                                   |
 
 The fallback also **advances the §8.1 mitigation**: it's a forcing function to have a second pilot tenant ready, so we're not narrating a single stalled launch indefinitely.
@@ -492,7 +492,7 @@ The fallback also **advances the §8.1 mitigation**: it's a forcing function to 
 | Week 4  | Case study page + SEO optimization     | Draft full page           | Review, publish           |
 | Ongoing | 1 blog post/week from chatbot insights | Draft from feature builds | Edit, add context         |
 
-### 10.3 Design System: Zolto — "Pearl Jeweller"
+### 10.3 Design System: Gwinn — "Pearl Jeweller"
 
 > Full spec + copy-paste patterns: [`docs/DESIGN-SYSTEM.md`](../DESIGN-SYSTEM.md).
 > Source of truth in code: `client/src/index.css` (`--brand-*` hex + `@theme`
@@ -503,7 +503,7 @@ and the merchant/storefront surface now share **one** warm, handcrafted system �
 there is zero `slate-*`/`violet-*` left in the app.
 
 ```
-Brand: Zolto — "AI-run commerce for makers"
+Brand: Gwinn — "AI-run commerce for makers"
 Colors (warm; never a cold grey):
   Ground:  #F7F3EE (oyster cream) — page background
   Surface: #EDE7DF / #FAF8F4 / #F0EBE3 (warm ivories)
@@ -555,6 +555,6 @@ Animation:
 
 ---
 
-> **Prepared by EStore Monetize for Zolto**  
+> **Prepared by EStore Monetize for Gwinn**  
 > **Skills applied:** SaaS Metrics Coach, Pricing Strategy, SEO Audit, Legal Risk Assessment, Test Suite Architect, Design System Builder  
 > **For questions or revisions:** Update this document in-place. Version history is maintained in the workspace.

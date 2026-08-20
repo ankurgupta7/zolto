@@ -1,4 +1,4 @@
-# Zolto Admin Architecture — Two-Plane Admin Area
+# Gwinn Admin Architecture — Two-Plane Admin Area
 
 This document describes how the merchant-facing admin should be structured so
 it can grow without collapsing: the current single `Admin.tsx` (~76 KB) has to
@@ -11,8 +11,8 @@ the UI, routes, and server routers should mirror that split.
 1. **Store plane — "My shop".** Everything the tenant does to run *their own
    rented website and POS*: catalogue, orders, branding, domain, channels,
    imports, insights. This is the day-to-day surface.
-2. **Account plane — "My Zolto account".** Everything about the tenant's
-   relationship *with Zolto*: org profile, team members & seats, plan &
+2. **Account plane — "My Gwinn account".** Everything about the tenant's
+   relationship *with Gwinn*: org profile, team members & seats, plan &
    billing, AI credits, POS/API access keys, data export, support, legal.
 
 Status legend: **[built]** ships today · **[partial]** exists but needs wiring
@@ -24,7 +24,7 @@ Status legend: **[built]** ships today · **[partial]** exists but needs wiring
 
 |                        | Store plane                              | Account plane                               |
 | ---------------------- | ---------------------------------------- | ------------------------------------------- |
-| Question answered      | "How is my shop doing, what do I change?" | "What am I paying Zolto, who has access?"   |
+| Question answered      | "How is my shop doing, what do I change?" | "What am I paying Gwinn, who has access?"   |
 | Visited                | Daily                                    | Occasionally, often by the owner only       |
 | Audience               | Owner + staff                            | Mostly owner/admin                          |
 | Failure mode if mixed  | Staff stumble into billing; owner can't  | find the team page; plan gates get bypassed |
@@ -93,7 +93,7 @@ Why a manifest and not ad-hoc `<Tabs>`:
 
 ### 2.3 The shell (`AdminLayout`)
 
-- Persistent **left sidebar** with two titled groups — "Shop" and "Zolto
+- Persistent **left sidebar** with two titled groups — "Shop" and "Gwinn
   account" — separated visually so the plane boundary is always visible.
 - **Topbar**: store switcher (future multi-store), environment-safe page
   title, credit-balance pill (links to `/admin/account/credits`), user menu.
@@ -116,7 +116,7 @@ Why a manifest and not ad-hoc `<Tabs>`:
 | **Orders** | Online orders, checkout holds, fulfilment status | `checkout.*` |
 | **Reconciliation** | Day-end AI guesses awaiting confirmation | `reconciliation.*` |
 | **Storefront** | Theme, logo, colours, hero copy, SEO meta, llms.txt preview | `tenant.updateSettings` |
-| **Domain** | zolto.ch subdomain, custom domain + DNS status, TLS state | `tenantSettings.publicDomain`, `/api/domain-ask` (Pro) |
+| **Domain** | gwinn.ch subdomain, custom domain + DNS status, TLS state | `tenantSettings.publicDomain`, `/api/domain-ask` (Pro) |
 | **Channels** | WhatsApp / Slack / Discord intake connections, Instagram | `whatsapp.ts`, `slack.ts`, `discord.ts`, `instagram.*` |
 | **POS** | Terminal location, Tap to Pay status, TWINT QR setup, POS API key link | `pos.ts` endpoints |
 | **Insights** | Stats dashboard + AI narrative | `insights.*` (Studio+, plan-gated) |
@@ -254,7 +254,7 @@ breaks mid-way because `Admin.tsx` stays mounted until its last tab leaves.
 2. **Extract account plane first** (smallest, clearest boundary): move
    `Billing.tsx` → `/admin/account/plan`; new Team page (data already in
    `staff.*`); new Credits page (ledger read); Org profile. This immediately
-   delivers the "relationship with Zolto" half.
+   delivers the "relationship with Gwinn" half.
 3. **Extract store plane tab by tab** out of `Admin.tsx`, biggest-first
    (Products → Import → Storefront → Orders/Reconciliation → Channels → POS).
    Each extraction is one PR: move markup, point tab at query hooks, delete

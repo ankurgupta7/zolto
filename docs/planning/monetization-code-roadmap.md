@@ -1,7 +1,7 @@
 # Monetization Code Roadmap (Single-Tenant → Multi-Tenant)
 
-> This document maps each phase of the Zolto monetization plan to specific code changes.
-> Read this alongside `./zolto-business-plan.md` and `./phase1/tracker.md`.
+> This document maps each phase of the Gwinn monetization plan to specific code changes.
+> Read this alongside `./gwinn-business-plan.md` and `./phase1/tracker.md`.
 > Historical context: written when the codebase was the single-tenant Kalakosh store; the
 > multi-tenant foundation (Sprint 1 + parts of Phase 2) is now implemented — see the
 > "Repo Implementation Status" table in `./phase1/tracker.md` for what has actually shipped.

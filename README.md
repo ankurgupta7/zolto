@@ -1,8 +1,8 @@
-# Zolto — Multi-Tenant POS + E-commerce Platform for Artisan Sellers
+# Gwinn — Multi-Tenant POS + E-commerce Platform for Artisan Sellers
 
-[![CI](https://dl.circleci.com/status-badge/img/gh/ankurgupta7/zolto/tree/main.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/ankurgupta7/zolto/tree/main)
+[![CI](https://dl.circleci.com/status-badge/img/gh/ankurgupta7/gwinn/tree/main.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/ankurgupta7/gwinn/tree/main)
 
-Zolto is a multi-tenant platform that powers online stores + in-person POS for artisan sellers (jewelry, crafts, boutiques). Built from the ground up based on real-world feedback from running a jewelry store in Zurich.
+Gwinn is a multi-tenant platform that powers online stores + in-person POS for artisan sellers (jewelry, crafts, boutiques). Built from the ground up based on real-world feedback from running a jewelry store in Zurich.
 
 Each tenant gets:
 
@@ -13,7 +13,7 @@ Each tenant gets:
 
 **Stack:** React 19 + Tailwind 4 + Express 4 + tRPC 11 + Drizzle ORM + MySQL
 
-> **Note:** Zolto is a fresh product built from scratch, inspired by real-world experience running a jewelry store in Zurich. Kalakosh (kalakosh.ch) remains a separate, independent business with its own repositories. Learnings from operating Kalakosh inform Zolto's design, but the codebases are entirely separate. Kalakosh has no special fallback or hardcoded references in Zolto — if they choose to migrate later, they'd be onboarded as a regular tenant like anyone else.
+> **Note:** Gwinn is a fresh product built from scratch, inspired by real-world experience running a jewelry store in Zurich. Kalakosh (kalakosh.ch) remains a separate, independent business with its own repositories. Learnings from operating Kalakosh inform Gwinn's design, but the codebases are entirely separate. Kalakosh has no special fallback or hardcoded references in Gwinn — if they choose to migrate later, they'd be onboarded as a regular tenant like anyone else.
 
 ---
 
@@ -37,9 +37,9 @@ top of this file reads `main`.
 | `unit`        | `tsc --noEmit`, the full vitest suite (server + client), deploy-script tests |
 | `integration` | `server/*.integration.test.ts` against **real Stripe test mode**             |
 | `e2e`         | Playwright storefront journey against a freshly-migrated MySQL               |
-| `android`     | ZoltoPOS contract tests, `gradle test`, and a debug APK                      |
+| `android`     | GwinnPOS contract tests, `gradle test`, and a debug APK                      |
 
-The native iOS POS app (`ios/ZoltoPOS/`) is **not** built on CircleCI —
+The native iOS POS app (`ios/GwinnPOS/`) is **not** built on CircleCI —
 macOS executors aren't on the free plan. Its pipeline is
 `.github/workflows/ios-pos-build.yml` (simulator build + unit/contract tests on
 PRs, unsigned sideload IPA on merges to `main`), with the `ios-pos-*` Codemagic
@@ -158,9 +158,9 @@ client/
     main.tsx           ← Providers
     index.css          ← global style & CSS variables
 android/               ← POS Terminal Android app (Tap to Pay)
-ios/                   ← iOS apps: Kalakosh WebView companion + ZoltoPOS
+ios/                   ← iOS apps: Kalakosh WebView companion + GwinnPOS
   Kalakosh/            ← WebView companion app sources
-  ZoltoPOS/            ← native POS Terminal app (Tap to Pay, TWINT, offline)
+  GwinnPOS/            ← native POS Terminal app (Tap to Pay, TWINT, offline)
                          — migrated from ankurgupta7/kalakosh-pos-ios; CI in
                          .github/workflows/ios-pos-build.yml + codemagic.yaml
 drizzle/               ← Schema & migrations

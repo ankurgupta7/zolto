@@ -1,5 +1,5 @@
 # ─────────────────────────────────────────────────────────────────────────────
-# Zolto (zolto.ch) — Self-Hosted Docker Compose
+# Gwinn (gwinn.ch) — Self-Hosted Docker Compose
 #
 # Services:
 #   app   — Node.js application (Express + tRPC + React frontend)
@@ -12,14 +12,14 @@
 #
 # Two serving modes:
 #   1. SHARED (default, recommended): the Kalakosh-ch stack's Caddy owns host
-#      ports 80/443 and reverse-proxies zolto.ch to this app over the shared
+#      ports 80/443 and reverse-proxies gwinn.ch to this app over the shared
 #      "kalakosh-shared" Docker network (this stack publishes NO host ports).
-#      In the Kalakosh-ch Caddyfile, point zolto.ch at `zolto-app:3000`:
-#          zolto.ch { reverse_proxy zolto-app:3000 }
-#          www.zolto.ch { redir https://zolto.ch{uri} permanent }
+#      In the Kalakosh-ch Caddyfile, point gwinn.ch at `gwinn-app:3000`:
+#          gwinn.ch { reverse_proxy gwinn-app:3000 }
+#          www.gwinn.ch { redir https://gwinn.ch{uri} permanent }
 #      Then just:  docker compose up -d
 #
-#   2. STANDALONE: this stack's own bundled Caddy serves zolto.ch itself.
+#   2. STANDALONE: this stack's own bundled Caddy serves gwinn.ch itself.
 #      Only usable if nothing else owns 80/443 on the host — so NOT alongside
 #      Kalakosh-ch unless you remap ports. Enable with:
 #          docker compose --profile standalone up -d
@@ -102,11 +102,11 @@ services:
     networks:
       internal: {}
       # Joined to the shared proxy network so the Kalakosh-ch stack's Caddy can
-      # reach this app directly and serve it at zolto.ch. The alias is the
+      # reach this app directly and serve it at gwinn.ch. The alias is the
       # hostname the Kalakosh-ch Caddyfile reverse-proxies to.
       shared:
         aliases:
-          - zolto-app
+          - gwinn-app
 
   # ── MySQL Database ───────────────────────────────────────────────────────────────────
   db:
@@ -175,7 +175,7 @@ services:
       # Served under a path prefix by Caddy, so Umami has to build its asset
       # URLs with that prefix rather than from the root.
       BASE_PATH: /_stats
-      # Zolto never asks a visitor to consent to a cookie because it sets none;
+      # Gwinn never asks a visitor to consent to a cookie because it sets none;
       # honouring the browser's own signal is the other half of that.
       DISABLE_TELEMETRY: "1"
     depends_on:
@@ -186,10 +186,10 @@ services:
 
   # ── Caddy (reverse proxy + automatic HTTPS) ──────────────────────────────────────────
   #
-  # This bundled Caddy is only needed to run Zolto STANDALONE (its own Caddy
-  # serving zolto.ch). When running alongside the Kalakosh-ch stack — the
+  # This bundled Caddy is only needed to run Gwinn STANDALONE (its own Caddy
+  # serving gwinn.ch). When running alongside the Kalakosh-ch stack — the
   # intended setup — leave it off: the Kalakosh-ch Caddy already owns ports
-  # 80/443 and serves zolto.ch for this app over the shared network, so a
+  # 80/443 and serves gwinn.ch for this app over the shared network, so a
   # second Caddy here would just compete for the host ports. It therefore
   # lives behind the "standalone" profile and does NOT start with a plain
   # `docker compose up`.
@@ -203,15 +203,15 @@ services:
       - standalone
     # Host ports are overridable. Defaults deliberately differ from 80/443 so
     # the standalone profile can also run on a host where something else owns
-    # the standard ports (e.g. while migrating DNS over to zolto.ch).
+    # the standard ports (e.g. while migrating DNS over to gwinn.ch).
     ports:
       - "${HTTP_PORT:-8080}:80"
       - "${HTTPS_PORT:-8443}:443"
     environment:
       # Caddyfile reads this to pick which domain(s) to serve — see Caddyfile.
-      # Defaults to zolto.ch; set ":80" for plain-HTTP testing by IP before
+      # Defaults to gwinn.ch; set ":80" for plain-HTTP testing by IP before
       # DNS is pointed at the server.
-      SITE_DOMAIN: ${SITE_DOMAIN:-zolto.ch}
+      SITE_DOMAIN: ${SITE_DOMAIN:-gwinn.ch}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
@@ -230,7 +230,7 @@ networks:
   internal:
     driver: bridge
   # Shared, cross-stack network that lets the Kalakosh-ch Caddy reach this
-  # app and serve it at zolto.ch. Declared external so both stacks attach to
+  # app and serve it at gwinn.ch. Declared external so both stacks attach to
   # the SAME Docker network regardless of start order. Create it once with:
   #   docker network create kalakosh-shared
   shared:

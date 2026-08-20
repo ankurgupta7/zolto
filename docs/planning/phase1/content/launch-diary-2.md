@@ -93,6 +93,6 @@ The store is live. The first order proved the model works. Now: documenting the 
 ## SEO Metadata
 
 ```html
-<title>Going Live: Kalakosh's First Day Online | Zolto Launch Diary</title>
+<title>Going Live: Kalakosh's First Day Online | Gwinn Launch Diary</title>
 <meta name="description" content="Day 1 of Kalakosh's online store: 34 visitors, 0 orders. Day 2: first sale. The real story of launching a pearl jewelry business in Zurich.">
 ```

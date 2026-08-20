@@ -1,6 +1,6 @@
 # Content Release Form
 
-## Kalakosh × Zolto Content Partnership
+## Kalakosh × Gwinn Content Partnership
 
 **Date:** _______________
 
@@ -8,7 +8,7 @@
 **Business Address:** _________________________________________________
 **Contact Email:** _________________________________________________
 
-**Content Publisher:** Zolto ("Publisher")
+**Content Publisher:** Gwinn ("Publisher")
 **Business Address:** _________________________________________________
 **Contact Email:** _________________________________________________
 
@@ -16,7 +16,7 @@
 
 ## 1. Purpose
 
-Kalakosh is the first customer (Tenant #1) on the Zolto platform. Zolto would like to document and publish Kalakosh's journey of launching their first online store, including but not limited to:
+Kalakosh is the first customer (Tenant #1) on the Gwinn platform. Gwinn would like to document and publish Kalakosh's journey of launching their first online store, including but not limited to:
 
 - Blog posts and articles
 - Photographs of workspace, products, and process
@@ -40,8 +40,8 @@ Creator hereby grants Publisher a perpetual, irrevocable, royalty-free, worldwid
 - [ ] **Name and Brand** — Use Creator's business name ("Kalakosh") in case studies and marketing
 
 ### 2.2 Distribution Channels
-- [ ] Zolto website and blog
-- [ ] Zolto social media accounts
+- [ ] Gwinn website and blog
+- [ ] Gwinn social media accounts
 - [ ] Press releases and media outreach
 - [ ] Investor and advisor presentations
 - [ ] Email newsletters
@@ -63,7 +63,7 @@ Publisher agrees to:
 Creator may request:
 - [ ] Full attribution ("Kalakosh, jewelry maker in Zurich")
 - [ ] Partial attribution ("A jewelry maker in Switzerland")
-- [ ] Anonymous ("A Zolto customer")
+- [ ] Anonymous ("A Gwinn customer")
 
 ### 3.4 Revocation
 Creator may revoke this authorization with **30 days written notice**. Previously published content may remain live but will not be used in new materials.
@@ -72,12 +72,12 @@ Creator may revoke this authorization with **30 days written notice**. Previousl
 
 ## 4. Compensation
 
-Creator acknowledges that this content partnership is part of Zolto's free service tier. No monetary compensation is provided for content use.
+Creator acknowledges that this content partnership is part of Gwinn's free service tier. No monetary compensation is provided for content use.
 
 **Benefits to Creator:**
-- Free use of Zolto platform
-- Exposure to Zolto's audience
-- Featured placement on Zolto's website and channels
+- Free use of Gwinn platform
+- Exposure to Gwinn's audience
+- Featured placement on Gwinn's website and channels
 
 ---
 
@@ -102,7 +102,7 @@ Date: _________________________
 
 ---
 
-**Publisher (Zolto):**
+**Publisher (Gwinn):**
 
 Signature: _________________________
 
@@ -124,4 +124,4 @@ Please attach:
 
 ---
 
-**Questions? Contact:** [partnerships@zolto.com]
+**Questions? Contact:** [partnerships@gwinn.com]

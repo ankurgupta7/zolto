@@ -73,7 +73,7 @@ PLAIN=hello
 QUOTED_DQ="double quoted"
 QUOTED_SQ='single quoted'
   export EXPORTED=fromexport
-PUBLIC_BASE_URL=https://zolto.ch
+PUBLIC_BASE_URL=https://gwinn.ch
 WITH_EQUALS=a=b=c
 EMPTY=
 FIRST=one
@@ -84,7 +84,7 @@ assert_eq "$(read_env_var "$ENV_A" PLAIN)" "hello" "reads a plain value"
 assert_eq "$(read_env_var "$ENV_A" QUOTED_DQ)" "double quoted" "strips double quotes"
 assert_eq "$(read_env_var "$ENV_A" QUOTED_SQ)" "single quoted" "strips single quotes"
 assert_eq "$(read_env_var "$ENV_A" EXPORTED)" "fromexport" "tolerates indentation and 'export '"
-assert_eq "$(read_env_var "$ENV_A" PUBLIC_BASE_URL)" "https://zolto.ch" "reads a URL"
+assert_eq "$(read_env_var "$ENV_A" PUBLIC_BASE_URL)" "https://gwinn.ch" "reads a URL"
 assert_eq "$(read_env_var "$ENV_A" WITH_EQUALS)" "a=b=c" "keeps '=' inside the value"
 assert_eq "$(read_env_var "$ENV_A" EMPTY)" "" "an empty value reads as empty"
 assert_eq "$(read_env_var "$ENV_A" FIRST)" "one" "first occurrence wins"
@@ -123,8 +123,8 @@ set_env_var "$ENV_B" TRICKY 'a&b|c/d\e'
 assert_eq "$(read_env_var "$ENV_B" TRICKY)" 'a&b|c/d\e' \
   "stores & | / and backslash literally (sed would have mangled these)"
 
-set_env_var "$ENV_B" POS_API_BASE_URL 'https://zolto.ch/api?a=1&b=2'
-assert_eq "$(read_env_var "$ENV_B" POS_API_BASE_URL)" 'https://zolto.ch/api?a=1&b=2' \
+set_env_var "$ENV_B" POS_API_BASE_URL 'https://gwinn.ch/api?a=1&b=2'
+assert_eq "$(read_env_var "$ENV_B" POS_API_BASE_URL)" 'https://gwinn.ch/api?a=1&b=2' \
   "stores a URL with a query string intact"
 
 # A file whose last line has no newline must not get its last key glued to the
@@ -233,11 +233,11 @@ export GH_BIN="$GH_STUB"
 export STUB_GH_ARGS="$WORK/gh-args"
 export STUB_GH_STDIN="$WORK/gh-stdin"
 
-github_secret_set "ankurgupta7/zolto" "POS_API_KEY" "deadbeef123"
+github_secret_set "ankurgupta7/gwinn" "POS_API_KEY" "deadbeef123"
 GH_ARGS="$(cat "$STUB_GH_ARGS")"
 assert_contains "$GH_ARGS" "secret" "invokes 'gh secret set'"
 assert_contains "$GH_ARGS" "POS_API_KEY" "passes the secret name"
-assert_contains "$GH_ARGS" "ankurgupta7/zolto" "passes the repo"
+assert_contains "$GH_ARGS" "ankurgupta7/gwinn" "passes the repo"
 assert_eq "$(cat "$STUB_GH_STDIN")" "deadbeef123" "sends the value on stdin"
 assert_not_contains "$GH_ARGS" "deadbeef123" \
   "never puts the secret in argv, where ps would expose it"

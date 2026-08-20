@@ -49,7 +49,7 @@ runs:
         # the heredoc terminator would have to sit at column 0 and that ends the
         # scalar (and <<- only strips tabs, not spaces).
         gh release create "$TAG" \
-          --title "Zolto POS — latest main build" \
+          --title "Gwinn POS — latest main build" \
           --notes-file "$GITHUB_ACTION_PATH/release-notes.md"
 
     - name: Upload assets

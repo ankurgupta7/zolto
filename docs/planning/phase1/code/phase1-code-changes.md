@@ -1,6 +1,6 @@
 # Phase 1 Code Changes
 
-> What to build in Phase 1 (Zolto-framed, not Kalakosh-revenue-first)
+> What to build in Phase 1 (Gwinn-framed, not Kalakosh-revenue-first)
 > This is NOT the full multi-tenant rewrite. This is the minimal set to:
 > 1. Launch Kalakosh's store
 > 2. Track baseline metrics

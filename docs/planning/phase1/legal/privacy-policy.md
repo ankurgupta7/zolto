@@ -2,7 +2,7 @@
 
 **Effective Date:** [Date]
 
-**Zolto** ("we," "us," or "our") operates the Zolto commerce platform (the "Service"). This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our Service.
+**Gwinn** ("we," "us," or "our") operates the Gwinn commerce platform (the "Service"). This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our Service.
 
 Please read this Privacy Policy carefully. If you do not agree with the terms of this Privacy Policy, please do not access the Service.
 
@@ -79,7 +79,7 @@ All third-party processors are bound by Data Processing Agreements (DPAs) compli
 | AI chatbot logs | 90 days (anonymized after 30 days) |
 | Deleted store data | 30 days in backup, then permanently erased |
 
-You may request deletion of your account and data at any time by emailing [privacy@zolto.com].
+You may request deletion of your account and data at any time by emailing [privacy@gwinn.com].
 
 ---
 
@@ -95,7 +95,7 @@ You have the right to:
 - **Objection:** Object to processing based on legitimate interests
 - **Withdraw Consent:** Opt out of marketing at any time
 
-To exercise these rights, email [privacy@zolto.com]. We respond within 30 days.
+To exercise these rights, email [privacy@gwinn.com]. We respond within 30 days.
 
 ---
 
@@ -125,7 +125,7 @@ For transfers outside the EEA/Switzerland, we use:
 
 ## 9. Children's Privacy
 
-The Service is not intended for users under 16. We do not knowingly collect data from children. If you believe we have collected data from a child, contact [privacy@zolto.com].
+The Service is not intended for users under 16. We do not knowingly collect data from children. If you believe we have collected data from a child, contact [privacy@gwinn.com].
 
 ---
 
@@ -137,8 +137,8 @@ We may update this Privacy Policy. Changes are effective when posted. Material c
 
 ## 11. Contact Us
 
-**Data Controller:** Zolto  
-**Email:** [privacy@zolto.com]  
+**Data Controller:** Gwinn  
+**Email:** [privacy@gwinn.com]  
 **Address:** [Your Business Address]
 
 For GDPR-related complaints, you may also contact your local supervisory authority.

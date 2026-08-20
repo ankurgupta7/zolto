@@ -35,7 +35,7 @@ if ! command -v docker >/dev/null 2>&1; then
 fi
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-CTR="zolto-migration-dryrun-$$"
+CTR="gwinn-migration-dryrun-$$"
 ROOT_PW="dryrunpw"
 DB="dryrun"
 FAILURES=0

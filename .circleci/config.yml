@@ -1,13 +1,13 @@
 version: 2.1
 
-# Zolto CI — runs the whole test estate on every push, so a merge to main is
+# Gwinn CI — runs the whole test estate on every push, so a merge to main is
 # always fully verified and the README badge means something.
 #
 # Four suites, because they need genuinely different environments:
 #   unit         — vitest (server + client) + typecheck + deploy-script tests
 #   integration  — the Stripe suites, against real test-mode Stripe
 #   e2e          — Playwright storefront journey against a real MySQL
-#   android      — the ZoltoPOS Gradle build, needs the Android SDK
+#   android      — the GwinnPOS Gradle build, needs the Android SDK
 #
 # COST FALLBACK: .github/workflows/ still contains android-build.yml and
 # e2e.yml, which cover the same ground as the `android` and `e2e` jobs here.
@@ -20,7 +20,7 @@ version: 2.1
 #
 # `unit` and `integration` have no GitHub equivalent, so they always run.
 #
-# The native iOS POS app (ios/ZoltoPOS/) is NOT built here — CircleCI's
+# The native iOS POS app (ios/GwinnPOS/) is NOT built here — CircleCI's
 # free plan has no macOS executors. Its pipeline is GitHub Actions
 # (.github/workflows/ios-pos-build.yml) with the ios-pos-* Codemagic
 # workflows (codemagic.yaml) as the signed-build / cost fallback.
@@ -142,9 +142,9 @@ jobs:
       - image: cimg/mysql:8.0
         environment:
           MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: zolto
+          MYSQL_DATABASE: gwinn
     environment:
-      DATABASE_URL: mysql://root:root@127.0.0.1:3306/zolto
+      DATABASE_URL: mysql://root:root@127.0.0.1:3306/gwinn
       E2E_STOREFRONT: "1"
       E2E_TENANT_SLUG: demo
       NODE_ENV: development
@@ -187,7 +187,7 @@ jobs:
           path: playwright-report
           destination: playwright-report
 
-  # ── Android (ZoltoPOS) ─────────────────────────────────────────────────────
+  # ── Android (GwinnPOS) ─────────────────────────────────────────────────────
   android:
     # No tag pin: the orb's default image is guaranteed to exist for the orb
     # version above, whereas a hand-picked cimg/android tag rots silently.

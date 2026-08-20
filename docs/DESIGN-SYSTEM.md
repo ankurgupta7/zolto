@@ -1,4 +1,4 @@
-# Zolto Design System — "Pearl Jeweller"
+# Gwinn Design System — "Pearl Jeweller"
 
 The single design language for the whole app. The marketing surface and the
 merchant/storefront surface share **one** warm, handcrafted system — the

@@ -34,10 +34,10 @@ The requirements were simple:
 Sheena started with 15 products. Not the full catalog — just the pieces that photograph well and sell consistently. The process:
 
 1. **Photograph each product once, roughly** — a single phone photo, no studio, no lighting kit, no white background. Pearls laid out on a bedsheet at home.
-2. **AI restyles the photo** — Zolto turns that one rough shot into a styled product photo (backdrop, lighting, composition) or a full lifestyle image (a model wearing the piece, a scene). No photographer booked. No model hired. No studio rented.
+2. **AI restyles the photo** — Gwinn turns that one rough shot into a styled product photo (backdrop, lighting, composition) or a full lifestyle image (a model wearing the piece, a scene). No photographer booked. No model hired. No studio rented.
 
-   **Disclosure:** in every AI-restyled image, the piece of jewelry is real — everything around it (backdrop, styling, and any model or scene) is AI-generated. Kalakosh discloses this on every AI-styled image, and so does Zolto: this isn't staged authenticity, it's a small maker being upfront about the tool she used.
-3. **Upload to Zolto** — bulk CSV upload for speed.
+   **Disclosure:** in every AI-restyled image, the piece of jewelry is real — everything around it (backdrop, styling, and any model or scene) is AI-generated. Kalakosh discloses this on every AI-styled image, and so does Gwinn: this isn't staged authenticity, it's a small maker being upfront about the tool she used.
+3. **Upload to Gwinn** — bulk CSV upload for speed.
 4. **AI descriptions** — the AI generated product descriptions from the photos. Not perfect, but 80% there. Sheena edited them to match her voice.
 
 **Time spent: under an hour.** The old bottleneck — booking a photographer, or a model, or renting a studio for a few product shots — is gone. Sheena's time went into picking which AI-restyled images to keep, not producing them.
@@ -53,7 +53,7 @@ Sheena started with 15 products. Not the full catalog — just the pieces that p
 
 This was the critical piece. Sheena's POS inventory (what's available at markets) needed to sync with the online store. If someone buys a bracelet at a Chilbi, it shouldn't show as available online 10 minutes later.
 
-Zolto handles this automatically. One inventory database, two sales channels. When a sale happens on POS, the online stock updates. When an online order comes in, the POS knows.
+Gwinn handles this automatically. One inventory database, two sales channels. When a sale happens on POS, the online stock updates. When an online order comes in, the POS knows.
 
 **Time spent: 30 minutes.** It just worked.
 
@@ -72,7 +72,7 @@ The store is configured. Products are uploaded. Payments work. Tomorrow: the sof
 
 ---
 
-*This is Part 1 of a 4-part series documenting Sheena Arora's first online store launch. Sheena is the founder of Kalakosh, a pearl and semi-precious stone jewelry maker in Zurich, and the first customer on Zolto. Follow her journey from market stalls to hybrid commerce.*
+*This is Part 1 of a 4-part series documenting Sheena Arora's first online store launch. Sheena is the founder of Kalakosh, a pearl and semi-precious stone jewelry maker in Zurich, and the first customer on Gwinn. Follow her journey from market stalls to hybrid commerce.*
 
 **Published:** [Date]  
 **Reading time:** 4 minutes  
@@ -83,7 +83,7 @@ The store is configured. Products are uploaded. Payments work. Tomorrow: the sof
 ## SEO Metadata
 
 ```html
-<title>How Sheena Arora Set Up Kalakosh's First Online Store | Zolto Launch Diary</title>
+<title>How Sheena Arora Set Up Kalakosh's First Online Store | Gwinn Launch Diary</title>
 <meta name="description" content="Follow Sheena Arora, founder of Kalakosh pearl jewelry in Zurich, as she sets up her first online store. Real process, real timeline, no growth hacks.">
 ```
 
@@ -97,7 +97,7 @@ The store is configured. Products are uploaded. Payments work. Tomorrow: the sof
   "description": "How Sheena Arora set up Kalakosh's first online store — real process, real timeline.",
   "author": {
     "@type": "Organization",
-    "name": "Zolto"
+    "name": "Gwinn"
   },
   "about": {
     "@type": "LocalBusiness",
@@ -114,17 +114,17 @@ The store is configured. Products are uploaded. Payments work. Tomorrow: the sof
   },
   "publisher": {
     "@type": "Organization",
-    "name": "Zolto",
+    "name": "Gwinn",
     "logo": {
       "@type": "ImageObject",
-      "url": "https://zolto.com/logo.png"
+      "url": "https://gwinn.com/logo.png"
     }
   },
   "datePublished": "2026-07-20",
   "dateModified": "2026-07-20",
   "mainEntityOfPage": {
     "@type": "WebPage",
-    "@id": "https://zolto.com/blog/launch-diary-1"
+    "@id": "https://gwinn.com/blog/launch-diary-1"
   }
 }
 ```
