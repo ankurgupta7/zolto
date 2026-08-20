@@ -35,6 +35,14 @@ import {
   getVerticalContext,
   storeIdentityLine,
 } from "../verticals";
+import { FALLBACK_CATEGORY_KEY } from "@shared/verticals";
+import { mapWithConcurrency } from "../concurrency";
+import { estimateVisionTokens, visionPacer } from "../visionPacer";
+
+// How many image groups the AI vision analysis may have in flight at once.
+// See the note at the call site in bulkAnalyze: the constraint is the
+// provider's per-minute token budget, not server CPU.
+export const BULK_ANALYZE_CONCURRENCY = 2;
 
 // Categories are per-tenant now (tenant_categories), so the input shape is a
 // plain string; write paths verify it against the tenant's actual list via
@@ -333,14 +341,32 @@ export const productsRouter = router({
         : `- suggested_price: use 0. This merchant has no priced items yet, so there is no honest basis for a suggestion and they must set the price themselves.
 - price_basis: use "No pricing history yet — set your own price."`;
 
-      const results = await Promise.all(
-        input.groups.map(async (group) => {
+      // Vision analysis is token-metered, not CPU-bound: Groq allows 8,000
+      // tokens/minute for a model like qwen/qwen3.6-27b and a single 1024px
+      // photo costs ~1,330 of them, so the real ceiling is roughly six images
+      // a minute. Fanning every group out at once converts that budget into
+      // 429s — a burst of 8 concurrent calls measured 2 successes and 6 rate
+      // limit errors.
+      //
+      // Two limits, doing different jobs. The concurrency cap bounds how many
+      // requests are open at once; visionPacer bounds how fast tokens are
+      // spent. The cap alone doesn't help — two calls that each return in four
+      // seconds still push thirty images a minute through an eight-image
+      // budget — so each group waits for its own estimated cost first.
+      const results = await mapWithConcurrency(
+        input.groups,
+        BULK_ANALYZE_CONCURRENCY,
+        async (group) => {
           try {
             // Build multimodal message: all images in the group + instruction
             const imageContents = group.images.map((img) => ({
               type: "image_url" as const,
               image_url: { url: img.data, detail: "auto" as const },
             }));
+
+            await visionPacer.acquire(
+              estimateVisionTokens(group.images.length),
+            );
 
             const response = await invokeLLM({
               messages: [
@@ -370,6 +396,10 @@ Return ONLY valid JSON, no markdown, no explanation.`,
                   ],
                 },
               ],
+              // Reasoning models default to reasoning ON and Groq strips those
+              // tokens from `content`, leaving structured output empty — this is a
+              // direct extraction task, so turn it off (see InvokeParams in llm.ts).
+              reasoning_effort: "none",
               response_format: {
                 type: "json_schema",
                 json_schema: {
@@ -466,6 +496,19 @@ Return ONLY valid JSON, no markdown, no explanation.`,
                 ? Math.round(suggested * 100) / 100
                 : null;
 
+            // The schema asks for a category from the tenant's own list, but
+            // json_schema is only as strict as the provider chooses to be and
+            // a reasoning model can return copy with the field missing
+            // entirely. That is no reason to throw away good copy the
+            // merchant would otherwise keep — they pick the category from a
+            // dropdown on the very next screen. Fall back rather than fail,
+            // and never pass through a key the catalogue doesn't have.
+            const category =
+              typeof parsed.category === "string" &&
+              keys.includes(parsed.category)
+                ? parsed.category
+                : FALLBACK_CATEGORY_KEY;
+
             return {
               groupId: group.groupId,
               success: true as const,
@@ -481,7 +524,7 @@ Return ONLY valid JSON, no markdown, no explanation.`,
               priceBasis: suggestedPrice
                 ? ((parsed.price_basis as string) ?? null)
                 : null,
-              category: parsed.category as string,
+              category,
             };
           } catch (err) {
             const msg = err instanceof Error ? err.message : String(err);
@@ -509,7 +552,7 @@ Return ONLY valid JSON, no markdown, no explanation.`,
               category: fb.category,
             };
           }
-        }),
+        },
       );
       return results;
     }),
@@ -866,6 +909,10 @@ Return ONLY valid JSON, no markdown.`,
               content: `Translate these products:\n${JSON.stringify(items)}`,
             },
           ],
+          // Reasoning models default to reasoning ON and Groq strips those
+          // tokens from `content`, leaving structured output empty — this is a
+          // direct extraction task, so turn it off (see InvokeParams in llm.ts).
+          reasoning_effort: "none",
           response_format: {
             type: "json_schema",
             json_schema: {
@@ -1026,6 +1073,10 @@ Return ONLY valid JSON, no markdown.`,
           },
         ],
         maxTokens: 1200,
+        // Reasoning models default to reasoning ON and Groq strips those
+        // tokens from `content`, leaving structured output empty — this is a
+        // direct extraction task, so turn it off (see InvokeParams in llm.ts).
+        reasoning_effort: "none",
         responseFormat: { type: "json_object" },
       });
 
@@ -1136,6 +1187,10 @@ Be specific with numbers. Each insight must be exactly one clear sentence.`,
           content: `Analyse this sales and inventory snapshot:\n${JSON.stringify(summary)}`,
         },
       ],
+      // Reasoning models default to reasoning ON and Groq strips those
+      // tokens from `content`, leaving structured output empty — this is a
+      // direct extraction task, so turn it off (see InvokeParams in llm.ts).
+      reasoning_effort: "none",
       response_format: {
         type: "json_schema",
         json_schema: {
@@ -1230,6 +1285,10 @@ Return only genuine near-duplicates. Return an empty duplicates array if there a
             content: `New product: ${JSON.stringify({ name: input.name, description: input.description, category: input.category })}\n\nExisting catalogue: ${JSON.stringify(catalogue)}`,
           },
         ],
+        // Reasoning models default to reasoning ON and Groq strips those
+        // tokens from `content`, leaving structured output empty — this is a
+        // direct extraction task, so turn it off (see InvokeParams in llm.ts).
+        reasoning_effort: "none",
         response_format: {
           type: "json_schema",
           json_schema: {
@@ -1321,6 +1380,10 @@ Return ONLY valid JSON, no markdown.`,
               content: `Classify these products:\n${JSON.stringify(items)}`,
             },
           ],
+          // Reasoning models default to reasoning ON and Groq strips those
+          // tokens from `content`, leaving structured output empty — this is a
+          // direct extraction task, so turn it off (see InvokeParams in llm.ts).
+          reasoning_effort: "none",
           response_format: {
             type: "json_schema",
             json_schema: {
@@ -1628,6 +1691,10 @@ Return ONLY a valid JSON object — no markdown, no extra text.`,
             ],
           },
         ],
+        // Reasoning models default to reasoning ON and Groq strips those
+        // tokens from `content`, leaving structured output empty — this is a
+        // direct extraction task, so turn it off (see InvokeParams in llm.ts).
+        reasoning_effort: "none",
         response_format: {
           type: "json_schema",
           json_schema: {

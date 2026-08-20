@@ -233,7 +233,7 @@
     "reviewTitle": "Vérifier & modifier",
     "reviewSubtitle": "L'IA a proposé des noms, des descriptions et des catégories. Corrigez ce qui doit l'être et fixez le prix de chaque article. Décochez un produit pour l'ignorer.",
     "analysingPhotos": "Analyse de vos photos…",
-    "analysisSub": "Cela prend quelques secondes par produit",
+    "analysisSub": "Environ 10 secondes par photo — un grand lot prend quelques minutes",
     "product": "Produit {{n}}",
     "aiFilledBadge": "Rempli par l'IA",
     "manualBadge": "Manuel",

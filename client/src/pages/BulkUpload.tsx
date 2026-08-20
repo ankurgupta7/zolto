@@ -77,6 +77,130 @@ interface MatchDecision {
 
 const GROUP_LABELS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
+// ─── Analysis request shaping ─────────────────────────────────────────────────
+
+// AI analysis used to send every group's full-resolution originals in a single
+// request: up to 20 groups of 8 photos, each as much as 8MB of base64. Three
+// separate ceilings make that fail — the server's JSON body limit, the client's
+// own request timeout on a slow uplink, and the provider's per-minute token
+// budget, which is the binding one. Groq meters vision models per minute
+// (8,000 tokens for qwen/qwen3.6-27b) and a 1024px photo costs ~1,330 tokens,
+// so a request has to be bounded in all three units.
+
+/** Base64 text per request, well under the server's JSON body limit. */
+export const ANALYZE_CHUNK_BYTE_BUDGET = 15 * 1024 * 1024;
+
+/** Groups per request, so one failure costs a chunk rather than the session. */
+export const ANALYZE_CHUNK_MAX_GROUPS = 3;
+
+/**
+ * Images per request. This is the token ceiling in disguise: at ~1,330 tokens
+ * an image plus ~800 per group of prompt, six images is roughly one minute of
+ * an 8,000/minute budget — about 70s of worst-case server-side pacing, safely
+ * inside the client's request timeout. A group count alone would not bound
+ * this, since a group holds 1-8 photos.
+ */
+export const ANALYZE_CHUNK_MAX_IMAGES = 6;
+
+export interface AnalyzeGroupInput {
+  groupId: string;
+  images: Array<{ data: string; mimeType: string }>;
+}
+
+export function chunkGroupsForAnalysis(
+  groups: AnalyzeGroupInput[],
+  byteBudget: number = ANALYZE_CHUNK_BYTE_BUDGET,
+  maxGroups: number = ANALYZE_CHUNK_MAX_GROUPS,
+  maxImages: number = ANALYZE_CHUNK_MAX_IMAGES,
+): AnalyzeGroupInput[][] {
+  const chunks: AnalyzeGroupInput[][] = [];
+  let current: AnalyzeGroupInput[] = [];
+  let currentSize = 0;
+  let currentImages = 0;
+
+  for (const group of groups) {
+    const groupSize = group.images.reduce(
+      (sum, img) => sum + img.data.length,
+      0,
+    );
+    // Whichever ceiling binds first closes the chunk. A group is never split:
+    // it is one product, and the model needs all its photos to describe it.
+    if (
+      current.length > 0 &&
+      (currentSize + groupSize > byteBudget ||
+        current.length >= maxGroups ||
+        currentImages + group.images.length > maxImages)
+    ) {
+      chunks.push(current);
+      current = [];
+      currentSize = 0;
+      currentImages = 0;
+    }
+    current.push(group);
+    currentSize += groupSize;
+    currentImages += group.images.length;
+  }
+  if (current.length > 0) chunks.push(current);
+  return chunks;
+}
+
+// Chunking bounds each request, but analysis never needed full-resolution
+// originals to begin with: vision cost scales with pixel count, and the server
+// forwards these bytes to the model verbatim. Downscaling here shrinks both
+// what crosses the wire and what the model is charged for. This only affects
+// the copy sent for analysis — `photos[].dataUrl`, used for the real upload to
+// storage, is untouched.
+const ANALYZE_IMAGE_MAX_DIMENSION = 1024;
+const ANALYZE_IMAGE_JPEG_QUALITY = 0.82;
+
+export function resizeImageForAnalysis(
+  dataUrl: string,
+  originalMimeType: string,
+): Promise<{ data: string; mimeType: string }> {
+  return new Promise((resolve) => {
+    const fallback = () =>
+      resolve({ data: dataUrl, mimeType: originalMimeType });
+
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const scale = Math.min(
+          1,
+          ANALYZE_IMAGE_MAX_DIMENSION /
+            Math.max(img.naturalWidth, img.naturalHeight),
+        );
+        const width = Math.max(1, Math.round(img.naturalWidth * scale));
+        const height = Math.max(1, Math.round(img.naturalHeight * scale));
+
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          fallback();
+          return;
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve({
+          data: canvas.toDataURL("image/jpeg", ANALYZE_IMAGE_JPEG_QUALITY),
+          mimeType: "image/jpeg",
+        });
+      } catch (err) {
+        console.error(
+          "[resizeImageForAnalysis] Falling back to original:",
+          err,
+        );
+        fallback();
+      }
+    };
+    // Some formats (e.g. HEIC outside Safari) can't be decoded into an <img>
+    // at all — fall back to the original bytes for just this photo rather than
+    // failing the whole analysis.
+    img.onerror = fallback;
+    img.src = dataUrl;
+  });
+}
+
 // ─── Step indicator ───────────────────────────────────────────────────────────
 
 function StepBar({ step }: { step: 1 | 2 | 3 | 4 }) {
@@ -162,6 +286,13 @@ export default function BulkUpload() {
   const [groupingMode, setGroupingMode] = useState(false);
   const [reviewCards, setReviewCards] = useState<ReviewCard[]>([]);
   const [analyzing, setAnalyzing] = useState(false);
+  // Analysis is now several paced requests rather than one call, and the
+  // provider's per-minute token budget means a large batch legitimately takes
+  // minutes. A spinner alone would read as a hang, so show the real position.
+  const [analyzeProgress, setAnalyzeProgress] = useState<{
+    current: number;
+    total: number;
+  } | null>(null);
   const [findingMatches, setFindingMatches] = useState(false);
   const [matches, setMatches] = useState<MatchResult[]>([]);
   const [matchDecisions, setMatchDecisions] = useState<
@@ -341,17 +472,41 @@ export default function BulkUpload() {
     setStep(3);
 
     try {
-      const groups_input = reviewGroups.map((rg) => ({
-        groupId: rg.groupId,
-        images: rg.photoIds.map((pid) => {
-          const photo = photos.find((p) => p.id === pid)!;
-          return { data: photo.dataUrl, mimeType: photo.mimeType };
-        }),
-      }));
+      const groups_input: AnalyzeGroupInput[] = await Promise.all(
+        reviewGroups.map(async (rg) => ({
+          groupId: rg.groupId,
+          images: await Promise.all(
+            rg.photoIds.map((pid) => {
+              const photo = photos.find((p) => p.id === pid)!;
+              return resizeImageForAnalysis(photo.dataUrl, photo.mimeType);
+            }),
+          ),
+        })),
+      );
 
-      const results = await bulkAnalyzeMutation.mutateAsync({
-        groups: groups_input,
-      });
+      const chunks = chunkGroupsForAnalysis(groups_input);
+      const results: Array<
+        Awaited<ReturnType<typeof bulkAnalyzeMutation.mutateAsync>>[number]
+      > = [];
+
+      for (let index = 0; index < chunks.length; index++) {
+        const chunk = chunks[index];
+        // 1-based, and set before the request rather than after it: each chunk
+        // takes the better part of a minute, so a completed-count would sit at
+        // "0 / 3" for that whole first minute and read as a stall.
+        setAnalyzeProgress({ current: index + 1, total: chunks.length });
+        try {
+          const chunkResults = await bulkAnalyzeMutation.mutateAsync({
+            groups: chunk,
+          });
+          results.push(...chunkResults);
+        } catch (err) {
+          // Non-fatal for the whole batch: this chunk's groups fall back to
+          // placeholder copy the merchant can fill in by hand, rather than
+          // every photo in the session being lost to one failed request.
+          console.error("[bulkAnalyze] chunk failed:", err);
+        }
+      }
 
       const cards: ReviewCard[] = reviewGroups.map((rg) => {
         const aiResult = results.find((r) => r.groupId === rg.groupId);
@@ -455,6 +610,7 @@ export default function BulkUpload() {
       );
     } finally {
       setAnalyzing(false);
+      setAnalyzeProgress(null);
       setFindingMatches(false);
     }
   };
@@ -1030,6 +1186,11 @@ export default function BulkUpload() {
                     ? t("bulkUpload.analysisSub")
                     : "Comparing with existing products..."}
                 </p>
+                {analyzing && analyzeProgress && analyzeProgress.total > 1 ? (
+                  <p className="text-muted-foreground text-xs font-sans tabular-nums">
+                    {analyzeProgress.current} / {analyzeProgress.total}
+                  </p>
+                ) : null}
               </div>
             ) : (
               <>

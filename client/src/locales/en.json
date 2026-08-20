@@ -231,7 +231,7 @@
     "reviewTitle": "Review & edit",
     "reviewSubtitle": "The AI has suggested names, descriptions, and categories. Edit anything that needs correcting and set the price for each item. Uncheck any product to skip it.",
     "analysingPhotos": "Analysing your photos…",
-    "analysisSub": "This takes a few seconds per product",
+    "analysisSub": "About 10 seconds per photo — a large batch takes a few minutes",
     "product": "Product {{n}}",
     "aiFilledBadge": "AI filled",
     "manualBadge": "Manual",

@@ -72,6 +72,19 @@ export type InvokeParams = {
   model?: string;
   thinking?: Record<string, unknown>;
   reasoning?: Record<string, unknown>;
+  // Groq reasoning-model controls (e.g. qwen/qwen3.6-27b). Reasoning models
+  // default to reasoning ON, which — combined with json_object/json_schema
+  // response formats — makes the model spend its output on reasoning tokens
+  // that Groq strips from `content`, leaving empty content that fails JSON
+  // validation (json_validate_failed with empty failed_generation). Pass
+  // reasoningEffort: "none" on structured extraction calls to avoid that.
+  //
+  // Not every model accepts the parameter; a model that rejects it is handled
+  // by the retry in invokeLLM rather than by the caller.
+  reasoningEffort?: "none" | "default" | "low" | "medium" | "high";
+  reasoning_effort?: "none" | "default" | "low" | "medium" | "high";
+  reasoningFormat?: "parsed" | "raw" | "hidden";
+  reasoning_format?: "parsed" | "raw" | "hidden";
 };
 
 export type ToolCall = {
@@ -280,9 +293,32 @@ const normalizeResponseFormat = ({
   };
 };
 
+// Does a 400 body blame the reasoning controls? Providers word this
+// differently ("unknown parameter", "unsupported value", "not supported"), so
+// match on the parameter name itself and let the surrounding status carry the
+// rest of the meaning.
+export const mentionsReasoningParameter = (errorText: string): boolean =>
+  /reasoning[_-]?(effort|format)/i.test(errorText);
+
 const RETRY_MAX_RETRIES = 4;
 const RETRY_BASE_DELAY_MS = 500;
 const RETRY_MAX_DELAY_MS = 30_000;
+
+// A 429 is not an error in the sense the other retryable statuses are: it is
+// the provider telling us, precisely, when to come back. Groq meters its
+// vision models per minute (8,000 tokens/minute for qwen/qwen3.6-27b) and
+// answers a burst with `retry-after: 7`. Four attempts on the generic ladder —
+// which tops out well under a minute — can easily still land inside the same
+// exhausted window, so rate limits get their own, longer budget and wait
+// exactly as long as they were asked to.
+const RATE_LIMIT_MAX_RETRIES = 8;
+// A retry-after is honoured in full up to this bound. The clamp only exists so
+// a bad header can't park a user-facing request indefinitely; it is far above
+// any window a per-minute quota can produce.
+const RATE_LIMIT_MAX_DELAY_MS = 120_000;
+// Added on top of retry-after so a group of requests throttled together don't
+// all resume on the same millisecond and re-trip the limit as one burst.
+const RATE_LIMIT_JITTER_MS = 500;
 
 type FetchInit = NonNullable<Parameters<typeof fetch>[1]>;
 
@@ -309,38 +345,97 @@ const computeBackoffDelay = (
   return Math.min(Math.max(jittered, retryAfterMs ?? 0), RETRY_MAX_DELAY_MS);
 };
 
-// Retries non-2xx responses and network errors with exponential backoff, then
-// returns the final Response so callers keep their existing error handling.
+// When the provider named a time, wait it out in full — a shorter wait just
+// spends another attempt landing in the same exhausted window. Only when there
+// is no retry-after do we guess with the exponential ladder.
+export const computeRateLimitDelay = (
+  attempt: number,
+  retryAfterMs?: number,
+): number => {
+  if (retryAfterMs !== undefined) {
+    return Math.min(
+      retryAfterMs + Math.random() * RATE_LIMIT_JITTER_MS,
+      RATE_LIMIT_MAX_DELAY_MS,
+    );
+  }
+  const cap = Math.min(
+    RETRY_BASE_DELAY_MS * 2 ** attempt,
+    RATE_LIMIT_MAX_DELAY_MS,
+  );
+  return cap / 2 + Math.random() * (cap / 2);
+};
+
+// Only a rate limit or a server-side fault can succeed on a retry. Every
+// other non-2xx (400 malformed payload, 401 bad key, 404 unknown model, 422
+// unsupported parameter) is deterministic: retrying it burns the full backoff
+// ladder — roughly 30s — before surfacing the very same error to the caller,
+// which on a user-facing request reads as a hang rather than a mistake.
+export const isRetryableStatus = (status: number): boolean =>
+  status === 429 || status >= 500;
+
+const discardBody = async (response: Response) => {
+  try {
+    await response.body?.cancel();
+  } catch {
+    // Body already settled; nothing to clean up.
+  }
+};
+
+// Retries rate-limited responses (on their own budget, honouring retry-after)
+// and server/network errors (exponential backoff), then returns the final
+// Response so callers keep their existing error handling.
 const fetchWithBackoff = async (
   url: string,
   init: FetchInit,
 ): Promise<Response> => {
   let lastError: unknown;
+  // Rate limits and faults are counted separately: a run of 429s must not eat
+  // the attempts a genuine 503 later needs, or vice versa.
+  let rateLimitRetries = 0;
+  let errorRetries = 0;
 
-  for (let attempt = 0; attempt <= RETRY_MAX_RETRIES; attempt++) {
+  for (;;) {
     try {
       const response = await fetch(url, init);
-      if (response.ok || attempt === RETRY_MAX_RETRIES) {
+      if (response.ok) return response;
+
+      const retryAfterMs = parseRetryAfter(response.headers.get("retry-after"));
+
+      if (response.status === 429) {
+        if (rateLimitRetries >= RATE_LIMIT_MAX_RETRIES) return response;
+        await discardBody(response);
+        const delay = computeRateLimitDelay(rateLimitRetries, retryAfterMs);
+        rateLimitRetries++;
+        console.warn(
+          `LLM request rate-limited, retry ${rateLimitRetries}/${RATE_LIMIT_MAX_RETRIES} in ${Math.round(delay)}ms`,
+        );
+        await sleep(delay);
+        continue;
+      }
+
+      if (
+        !isRetryableStatus(response.status) ||
+        errorRetries >= RETRY_MAX_RETRIES
+      ) {
         return response;
       }
 
-      const retryAfterMs = parseRetryAfter(response.headers.get("retry-after"));
-      try {
-        await response.body?.cancel();
-      } catch {
-        // Body already settled; nothing to clean up.
-      }
+      await discardBody(response);
+      const delay = computeBackoffDelay(errorRetries, retryAfterMs);
+      errorRetries++;
       console.warn(
-        `LLM request retry ${attempt + 1}/${RETRY_MAX_RETRIES} after status ${response.status}`,
+        `LLM request retry ${errorRetries}/${RETRY_MAX_RETRIES} after status ${response.status}`,
       );
-      await sleep(computeBackoffDelay(attempt, retryAfterMs));
+      await sleep(delay);
     } catch (error) {
       lastError = error;
-      if (attempt === RETRY_MAX_RETRIES) throw error;
+      if (errorRetries >= RETRY_MAX_RETRIES) break;
+      const delay = computeBackoffDelay(errorRetries);
+      errorRetries++;
       console.warn(
-        `LLM request retry ${attempt + 1}/${RETRY_MAX_RETRIES} after network error`,
+        `LLM request retry ${errorRetries}/${RETRY_MAX_RETRIES} after network error`,
       );
-      await sleep(computeBackoffDelay(attempt));
+      await sleep(delay);
     }
   }
 
@@ -364,6 +459,10 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     model,
     thinking,
     reasoning,
+    reasoningEffort,
+    reasoning_effort,
+    reasoningFormat,
+    reasoning_format,
     maxTokens,
     max_tokens,
   } = params;
@@ -402,6 +501,16 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     payload.reasoning = reasoning;
   }
 
+  const resolvedReasoningEffort = reasoning_effort ?? reasoningEffort;
+  if (resolvedReasoningEffort) {
+    payload.reasoning_effort = resolvedReasoningEffort;
+  }
+
+  const resolvedReasoningFormat = reasoning_format ?? reasoningFormat;
+  if (resolvedReasoningFormat) {
+    payload.reasoning_format = resolvedReasoningFormat;
+  }
+
   const normalizedResponseFormat = normalizeResponseFormat({
     responseFormat,
     response_format,
@@ -413,14 +522,44 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     payload.response_format = normalizedResponseFormat;
   }
 
-  const response = await fetchWithBackoff(resolveApiUrl(), {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      authorization: `Bearer ${process.env.LLM_API_KEY ?? process.env.OPENAI_API_KEY ?? ""}`,
-    },
-    body: JSON.stringify(payload),
-  });
+  const send = (body: Record<string, unknown>) =>
+    fetchWithBackoff(resolveApiUrl(), {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${process.env.LLM_API_KEY ?? process.env.OPENAI_API_KEY ?? ""}`,
+      },
+      body: JSON.stringify(body),
+    });
+
+  let response = await send(payload);
+
+  // This project is deployed against whatever OpenAI-compatible endpoint the
+  // operator configured — Groq, OpenAI, or a local Ollama — and only some
+  // models accept reasoning controls. Rather than maintain a list of which
+  // ones do, notice the rejection and repeat the call without them: callers
+  // asking for reasoning_effort: "none" want the structured output to work,
+  // not to insist on the parameter. A model that never wanted it is
+  // unaffected either way.
+  if (
+    !response.ok &&
+    response.status === 400 &&
+    (payload.reasoning_effort !== undefined ||
+      payload.reasoning_format !== undefined)
+  ) {
+    const errorText = await response.text();
+    if (mentionsReasoningParameter(errorText)) {
+      console.warn(
+        `LLM model ${String(payload.model ?? "(default)")} rejected reasoning controls; retrying without them`,
+      );
+      const { reasoning_effort: _e, reasoning_format: _f, ...rest } = payload;
+      response = await send(rest);
+    } else {
+      throw new Error(
+        `LLM invoke failed: ${response.status} ${response.statusText} – ${errorText}`,
+      );
+    }
+  }
 
   if (!response.ok) {
     const errorText = await response.text();

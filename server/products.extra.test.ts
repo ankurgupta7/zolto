@@ -60,8 +60,29 @@ vi.mock("./_core/notification", () => ({
 }));
 vi.mock("./ssrf", () => ({ assertPublicHostname }));
 
+// The real pacer would hold these tests to the live 8,000 tokens/minute
+// budget — the burst below alone would sleep for over a minute. Its own
+// behaviour is covered in visionPacer.test.ts against a fake clock; here we
+// only check that bulkAnalyze reserves the right budget before each call.
+const acquireVisionBudget = vi.hoisted(() =>
+  vi.fn().mockResolvedValue(undefined),
+);
+
+vi.mock("./visionPacer", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./visionPacer")>();
+  return {
+    ...actual,
+    visionPacer: {
+      acquire: (cost: number) => acquireVisionBudget(cost),
+      available: () => Number.POSITIVE_INFINITY,
+    },
+  };
+});
+
 import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
+import { BULK_ANALYZE_CONCURRENCY } from "./routers/products";
+import { estimateVisionTokens } from "./visionPacer";
 
 const TENANT_ID = 7;
 
@@ -392,6 +413,211 @@ describe("products.bulkAnalyze", () => {
     expect(db.insertBulkUploadLog).toHaveBeenCalledWith(
       expect.objectContaining({ operation: "analyze", ref: "g1" }),
     );
+  });
+
+  // ─── Rate limiting ──────────────────────────────────────────────────────────
+
+  it("disables reasoning so structured output isn't emptied by it", async () => {
+    // Reasoning models default to reasoning ON, and Groq strips reasoning
+    // tokens out of `content` — leaving a json_schema request with nothing to
+    // parse, which surfaces as every group falling back.
+    llmJson({
+      name: "R",
+      name_en: "R",
+      description: "d",
+      description_en: "d",
+      category: "Rings",
+    });
+
+    await admin().products.bulkAnalyze({
+      groups: [
+        { groupId: "g1", images: [{ data: "d", mimeType: "image/png" }] },
+      ],
+    });
+
+    expect(invokeLLM.mock.calls[0][0].reasoning_effort).toBe("none");
+  });
+
+  it("reserves the estimated token budget before each vision call", async () => {
+    llmJson({
+      name: "R",
+      name_en: "R",
+      description: "d",
+      description_en: "d",
+      category: "Rings",
+    });
+
+    await admin().products.bulkAnalyze({
+      groups: [
+        {
+          groupId: "g1",
+          images: [
+            { data: "a", mimeType: "image/png" },
+            { data: "b", mimeType: "image/png" },
+          ],
+        },
+      ],
+    });
+
+    expect(acquireVisionBudget).toHaveBeenCalledWith(estimateVisionTokens(2));
+  });
+
+  it("waits for budget before spending a request, not after", async () => {
+    const events: string[] = [];
+    acquireVisionBudget.mockImplementationOnce(async () => {
+      events.push("acquire");
+    });
+    invokeLLM.mockImplementationOnce(async () => {
+      events.push("invoke");
+      return {
+        choices: [
+          {
+            message: {
+              content: JSON.stringify({
+                name: "R",
+                name_en: "R",
+                description: "d",
+                description_en: "d",
+                category: "Rings",
+              }),
+            },
+          },
+        ],
+      };
+    });
+
+    await admin().products.bulkAnalyze({
+      groups: [
+        { groupId: "g1", images: [{ data: "d", mimeType: "image/png" }] },
+      ],
+    });
+
+    expect(events).toEqual(["acquire", "invoke"]);
+  });
+
+  it("analyses at most BULK_ANALYZE_CONCURRENCY groups at a time", async () => {
+    // A burst of 8 concurrent vision calls measured 2 successes and 6 rate
+    // limit errors against the live API. Fanning out with Promise.all is what
+    // produced that burst.
+    let running = 0;
+    let peak = 0;
+    const release: Array<() => void> = [];
+
+    invokeLLM.mockImplementation(async () => {
+      running++;
+      peak = Math.max(peak, running);
+      await new Promise<void>((resolve) => release.push(resolve));
+      running--;
+      return {
+        choices: [
+          {
+            message: {
+              content: JSON.stringify({
+                name: "R",
+                name_en: "R",
+                description: "d",
+                description_en: "d",
+                category: "Rings",
+              }),
+            },
+          },
+        ],
+      };
+    });
+
+    const promise = admin().products.bulkAnalyze({
+      groups: Array.from({ length: 8 }, (_, i) => ({
+        groupId: `g${i}`,
+        images: [{ data: "d", mimeType: "image/png" }],
+      })),
+    });
+
+    let settled = false;
+    void promise.then(
+      () => {
+        settled = true;
+      },
+      () => {
+        settled = true;
+      },
+    );
+    for (let i = 0; i < 200 && !settled; i++) {
+      while (release.length > 0) release.shift()!();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+
+    const res = await promise;
+    expect(res).toHaveLength(8);
+    expect(res.map((r) => r.groupId)).toEqual(
+      Array.from({ length: 8 }, (_, i) => `g${i}`),
+    );
+    expect(peak).toBeGreaterThan(0);
+    expect(peak).toBeLessThanOrEqual(BULK_ANALYZE_CONCURRENCY);
+  });
+
+  it("keeps the concurrency limit within the provider's token budget", () => {
+    expect(BULK_ANALYZE_CONCURRENCY).toBeGreaterThanOrEqual(1);
+    expect(BULK_ANALYZE_CONCURRENCY).toBeLessThanOrEqual(2);
+  });
+
+  // ─── Category resilience ────────────────────────────────────────────────────
+
+  it("defaults to the fallback category when the model omits it", async () => {
+    // Good copy plus a missing category used to pass `undefined` straight
+    // through as the product's category. The merchant picks the category from
+    // a dropdown on the next screen; the copy is the part worth keeping.
+    llmJson({
+      name: "Mondstein-Ring",
+      name_en: "Moonstone Ring",
+      description: "Schoen",
+      description_en: "Pretty",
+    });
+
+    const res = await admin().products.bulkAnalyze({
+      groups: [
+        { groupId: "g1", images: [{ data: "d", mimeType: "image/png" }] },
+      ],
+    });
+
+    expect(res[0].success).toBe(true);
+    expect(res[0].category).toBe("Other");
+    expect(res[0].name).toBe("Mondstein-Ring");
+  });
+
+  it("does not pass through a category the catalogue doesn't have", async () => {
+    llmJson({
+      name: "R",
+      name_en: "R",
+      description: "d",
+      description_en: "d",
+      category: "Spaceships",
+    });
+
+    const res = await admin().products.bulkAnalyze({
+      groups: [
+        { groupId: "g1", images: [{ data: "d", mimeType: "image/png" }] },
+      ],
+    });
+
+    expect(res[0].category).toBe("Other");
+  });
+
+  it("keeps a category the tenant's catalogue does have", async () => {
+    llmJson({
+      name: "R",
+      name_en: "R",
+      description: "d",
+      description_en: "d",
+      category: "Bangles",
+    });
+
+    const res = await admin().products.bulkAnalyze({
+      groups: [
+        { groupId: "g1", images: [{ data: "d", mimeType: "image/png" }] },
+      ],
+    });
+
+    expect(res[0].category).toBe("Bangles");
   });
 });
 

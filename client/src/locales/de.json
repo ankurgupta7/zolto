@@ -231,7 +231,7 @@
     "reviewTitle": "Überprüfen & bearbeiten",
     "reviewSubtitle": "Die KI hat Namen, Beschreibungen und Kategorien vorgeschlagen. Korrigieren Sie bei Bedarf und legen Sie den Preis für jeden Artikel fest. Deaktivieren Sie ein Produkt, um es zu überspringen.",
     "analysingPhotos": "Fotos werden analysiert…",
-    "analysisSub": "Dies dauert einige Sekunden pro Produkt",
+    "analysisSub": "Etwa 10 Sekunden pro Foto — grössere Mengen dauern einige Minuten",
     "product": "Produkt {{n}}",
     "aiFilledBadge": "KI ausgefüllt",
     "manualBadge": "Manuell",
